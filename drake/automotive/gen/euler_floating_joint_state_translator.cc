@@ -16,12 +16,13 @@ EulerFloatingJointStateTranslator::AllocateOutputVector() const {
 }
 
 void EulerFloatingJointStateTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+    const systems::VectorBase<double>& vector_base, double time,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const EulerFloatingJointState<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_euler_floating_joint_state_t message;
+  message.timestamp = static_cast<int64_t>(time);
   message.x = vector->x();
   message.y = vector->y();
   message.z = vector->z();

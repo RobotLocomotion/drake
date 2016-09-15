@@ -26,7 +26,7 @@ class DRAKEAUTOMOTIVE_EXPORT DrivingCommandTranslator
       const void* lcm_message_bytes, int lcm_message_length,
       systems::VectorBase<double>* vector_base) const override;
   void TranslateVectorBaseToLcm(
-      const systems::VectorBase<double>& vector_base,
+      const systems::VectorBase<double>& vector_base, double time,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 

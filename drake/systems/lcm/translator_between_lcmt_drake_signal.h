@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/framework/vector_base.h"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace systems {
@@ -37,6 +37,7 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
 
   void TranslateVectorBaseToLcm(
       const VectorBase<double>& vector_base,
+      double time,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
