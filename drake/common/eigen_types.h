@@ -58,6 +58,10 @@ using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
+/// A quaternion templated on scalar type.
+template <typename Scalar>
+using Quaternion = Eigen::Quaternion<Scalar>;
+
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
 
