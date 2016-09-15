@@ -1,8 +1,14 @@
-set(source_files rigid_body_plant.cc)
+set(source_files
+    rigid_body_plant.cc
+    translator_between_vector_base_and_lcmt_viewer_draw.cc)
 
 add_library_with_exports(LIB_NAME drake_rbp SOURCE_FILES ${source_files})
 target_link_libraries(drake_rbp
-        drakeCommon drakeSystemFramework drakeRBM drakeOptimization)
+        drakeCommon
+        drakeLCMSystem2
+        drakeSystemFramework
+        drakeRBM
+        drakeOptimization)
 
 drake_install_headers(rigid_body_plant.h)
 pods_install_libraries(drake_rbp)
