@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"

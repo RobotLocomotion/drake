@@ -1,10 +1,9 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
-#include "drake/systems/plants/collision/Element.h"
 #include "drake/drakeCollision_export.h"
+#include "drake/systems/plants/collision/Element.h"
 
 namespace DrakeCollision {
 

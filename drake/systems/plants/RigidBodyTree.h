@@ -1,11 +1,9 @@
 #pragma once
 
+#include <set>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include <Eigen/StdVector>
-#include <set>
-#include <stdexcept>
-#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
