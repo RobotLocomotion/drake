@@ -16,7 +16,7 @@ struct lcmt_scope_data {
   // xval = time.
   boolean resetOnXval;
 
-  // The following variables hold the unique data in this packet.
+  // The following variables hold the unique data in this message.
   double xdata;
   double ydata;
 }
