@@ -24,14 +24,14 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RbpPosesVector<T>::RbpPosesVector(int num_bodies) :
+VectorOfPoses<T>::VectorOfPoses(int num_bodies) :
     BasicVector<T>(7 * num_bodies) {}
 
 template <typename T>
-RbpPosesVector<T>::~RbpPosesVector() {}
+VectorOfPoses<T>::~VectorOfPoses() {}
 
 template <typename T>
-int RbpPosesVector<T>::get_num_bodies() const {
+int VectorOfPoses<T>::get_num_bodies() const {
   return this->size()/7;
 }
 
@@ -40,7 +40,7 @@ int RbpPosesVector<T>::get_num_bodies() const {
 // use the same memory layout as Eigen does. See issue #3470 which needs to be
 // resolved before we can fix this todo.
 template <typename T>
-Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) const {
+Quaternion<T> VectorOfPoses<T>::get_body_orientation(int body_index) const {
   const int body_start = 7 * body_index;
   return Quaternion<T>(this->GetAtIndex(body_start + 3),
                        this->GetAtIndex(body_start + 0),
@@ -49,7 +49,7 @@ Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) const {
 }
 
 template <typename T>
-Vector3<T> RbpPosesVector<T>::get_body_position(int body_index) const {
+Vector3<T> VectorOfPoses<T>::get_body_position(int body_index) const {
   const int body_start = 7 * body_index + 4;
   return Vector3<T>(this->GetAtIndex(body_start + 0),
                     this->GetAtIndex(body_start + 1),
@@ -57,22 +57,22 @@ Vector3<T> RbpPosesVector<T>::get_body_position(int body_index) const {
 }
 
 template <typename T>
-void RbpPosesVector<T>::set_body_orientation(int body_index,
+void VectorOfPoses<T>::set_body_orientation(int body_index,
                                              const Quaternion<T>& q) {
   const int body_start = 7 * body_index;
   this->get_mutable_value().template segment<4>(body_start) = q.coeffs();
 }
 
 template <typename T>
-void RbpPosesVector<T>::set_body_position(int body_index,
+void VectorOfPoses<T>::set_body_position(int body_index,
                                           const Vector3<T>& p) {
   const int body_start = 7 * body_index + 4;
   this->get_mutable_value().template segment<3>(body_start) = p;
 }
 
 template <typename T>
-RbpPosesVector<T>* RbpPosesVector<T>::DoClone() const {
-  auto poses = new RbpPosesVector<T>(get_num_bodies());
+VectorOfPoses<T>* VectorOfPoses<T>::DoClone() const {
+  auto poses = new VectorOfPoses<T>(get_num_bodies());
   poses->get_mutable_value() = this->get_value();
   return poses;
 }
@@ -88,8 +88,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
   // TODO(amcastro-tri): add separate output ports for each model_id.
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
-  // Declares an vector valued vector port for each rigid body pose.
-  // A semantically richer vector of type RbpPosesVector is allocated by the
+  // Declares a vector valued vector port for each rigid body pose.
+  // A semantically richer vector of type VectorOfPoses is allocated by the
   // RigidBodyPlant<T>::AllocateOutput method.
   System<T>::DeclareOutputPort(
       kVectorValued, 7 * get_num_bodies(), kContinuousSampling);
@@ -182,7 +182,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   // Allocates output for the RigidBodyPlant poses (output port 1).
   {
     std::unique_ptr<BasicVector<T>> data(
-        new RbpPosesVector<T>(get_num_bodies()));
+        new VectorOfPoses<T>(get_num_bodies()));
     std::unique_ptr<OutputPort> port(new OutputPort(move(data)));
     output->get_mutable_ports()->push_back(move(port));
   }
@@ -216,7 +216,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
 
   // Evaluates port 1 to be the poses for each rigid body.
   auto poses_vector =
-      dynamic_cast<RbpPosesVector<T>*>(output->GetMutableVectorData(1));
+      dynamic_cast<VectorOfPoses<T>*>(output->GetMutableVectorData(1));
   auto cache = InstantiateKinematicsCache(context);
 
   for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
@@ -466,7 +466,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_RBP_EXPORT RigidBodyPlant<double>;
-template class DRAKE_RBP_EXPORT RbpPosesVector<double>;
+template class DRAKE_RBP_EXPORT VectorOfPoses<double>;
 
 }  // namespace systems
 }  // namespace drake

@@ -209,7 +209,7 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
 // For a RigidBodyPlant<T> the first output of the system should equal the
 // state vector. The second output from this system should correspond to a
-// RigidBodyPlant<T>::PosesVector containing the poses of all bodies in the
+// RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
 // system.
 TEST_F(KukaArmTest, EvalOutput) {
   // Checks that the number of input and output ports in the system and context
@@ -257,8 +257,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   EXPECT_EQ(desired_state, output_state->get_value());
 
   // Evaluates the correctness of the poses output.
-  const RbpPosesVector<double>* output_poses =
-      dynamic_cast<const RbpPosesVector<double>*>(output_->get_vector_data(1));
+  auto output_poses =
+      dynamic_cast<const VectorOfPoses<double>*>(output_->get_vector_data(1));
   ASSERT_NE(nullptr, output_poses);
 
   VectorXd q = xc.topRows(kNumPositions_);
