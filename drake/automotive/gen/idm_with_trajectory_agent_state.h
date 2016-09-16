@@ -66,6 +66,7 @@ bool encode(const double& t,
             const IdmWithTrajectoryAgentState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_idm_with_trajectory_agent_state_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.x_e = wrap.x_e();
   msg.v_e = wrap.v_e();

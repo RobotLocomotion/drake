@@ -66,17 +66,16 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
   /**
    * Translates a `drake::systems::VectorBase` object into LCM message bytes.
    *
-   * @param[in] vector_base The object to convert into an LCM message.
-   *
    * @param[in] time The current time in seconds. This value is typically
    * obtained from drake::systems::Context::get_time().
+   *
+   * @param[in] vector_base The object to convert into an LCM message.
    *
    * @param[out] lcm_message_bytes The LCM message bytes.
    * This pointer must not be `nullptr`.
    */
-  virtual void TranslateVectorBaseToLcm(
+  virtual void TranslateVectorBaseToLcm(double time,
       const VectorBase<double>& vector_base,
-      double time,
       std::vector<uint8_t>* lcm_message_bytes) const = 0;
 
  private:

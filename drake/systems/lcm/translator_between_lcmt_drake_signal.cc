@@ -48,9 +48,8 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
+void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(double time,
     const VectorBase<double>& vector_base,
-    double time,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
   DRAKE_ASSERT(lcm_message_bytes != nullptr);
@@ -61,7 +60,7 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
   message.dim = vector_base.size();
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
-  message.timestamp = static_cast<int64_t>(time);
+  message.timestamp = static_cast<int64_t>(time * 1000);
 
   for (int i = 0; i < message.dim; ++i) {
     message.val[i] = vector_base.GetAtIndex(i);

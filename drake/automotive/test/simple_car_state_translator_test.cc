@@ -25,7 +25,7 @@ GTEST_TEST(SimpleCarStateTranslatorTest, RoundtripTest) {
   // Encode the message.
   double time = 0;
   std::vector<uint8_t> lcm_message_bytes;
-  dut.TranslateVectorBaseToLcm(publish_state_vector, time, &lcm_message_bytes);
+  dut.TranslateVectorBaseToLcm(time, publish_state_vector, &lcm_message_bytes);
   EXPECT_GT(lcm_message_bytes.size(), 0);
 
   // Decode the message.

@@ -107,6 +107,7 @@ template <typename ScalarType>
 bool encode(const double& t, const %(camel)s<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_%(snake)s_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
 """
 ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s();"""
@@ -238,7 +239,7 @@ class DRAKEAUTOMOTIVE_EXPORT %(camel)sTranslator
   void TranslateLcmToVectorBase(
       const void* lcm_message_bytes, int lcm_message_length,
       systems::VectorBase<double>* vector_base) const override;
-  void TranslateVectorBaseToLcm(
+  void TranslateVectorBaseToLcm(double time,
       const systems::VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
@@ -282,12 +283,13 @@ def generate_allocate_output_vector(cc, caller_context, fields):
 
 LCM_TO_VECTOR_BASE_BEGIN = """
 void %(camel)sTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+    double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const %(camel)s<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_%(snake)s_t message;
+  message.timestamp = static_cast<int64_t>(time * 1000);
 """
 LCM_FIELD_TO_VECTOR = """
   message.%(field)s = vector->%(field)s();

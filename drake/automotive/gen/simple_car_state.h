@@ -64,6 +64,7 @@ template <typename ScalarType>
 bool encode(const double& t, const SimpleCarState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_simple_car_state_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.x = wrap.x();
   msg.y = wrap.y();

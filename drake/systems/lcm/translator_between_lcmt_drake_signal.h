@@ -35,9 +35,8 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override;
 
-  void TranslateVectorBaseToLcm(
+  void TranslateVectorBaseToLcm(double time,
       const VectorBase<double>& vector_base,
-      double time,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
