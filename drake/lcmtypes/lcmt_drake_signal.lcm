@@ -7,7 +7,7 @@ struct lcmt_drake_signal {
   // The number of elements in the signal.
   int32_t dim;
 
-  // The value of element in the signal.
+  // The value of each element in the signal.
   double val[dim];
 
   // The name of each element in the signal.
