@@ -32,9 +32,11 @@ class RotationConversionTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
+    initializeSingularEulerAnglesTestCase();
     initializeAngleAxisTestCases();
     initializeQuaternionTestCases();
     initializeRotationMatrixTestCases();
+    initializeRollPitchYawTestCases();
   }
 
   void initializeAngleAxisTestCases() {
@@ -49,6 +51,7 @@ class RotationConversionTest : public ::testing::Test {
     // 8. Almost degenerate case, small negative rotation angle.
     // 9. Almost degenerate case, close to 180 rotation angle.
     // 10. Non-degenerate case.
+    // 11. Degenerate case, pi/2 pitch angle
 
     // Case 1. no rotation around x axis.
     a_[0] << 1, 0, 0, 0;
@@ -70,6 +73,9 @@ class RotationConversionTest : public ::testing::Test {
     a_[8] << 0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), (1-1E-6)*M_PI;
     // Case 10, non-degenerate case
     a_[9] << 0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), M_PI/4;
+    // Case 11, pi/2 pitch angle
+    auto singular_euler_a = Eigen::AngleAxis<double>(singular_euler_);
+    a_[10] << singular_euler_a.axis(), singular_euler_a.angle();
   }
 
   void initializeQuaternionTestCases() {
@@ -83,6 +89,7 @@ class RotationConversionTest : public ::testing::Test {
     // 7. Almost degenerate case, small negative rotation angle.
     // 8. Almost degenerate case, close to 180 rotation.
     // 9. Non-degenerate case.
+    // 10. Degenerate case, pi/2 pitch for Euler angles
 
     // Case 1. no rotation.
     q_[0] << 1, 0, 0, 0;
@@ -102,6 +109,8 @@ class RotationConversionTest : public ::testing::Test {
     q_[7] << cos((1-1E-6)*M_PI), 0.5*sqrt(2)*sin((1-1E-6)*M_PI), 0.4*sqrt(2)*sin((1-1E-6)*M_PI), 0.3*sqrt(2)*sin((1-1E-6)*M_PI);
     // Case 9. Non-degenerate case.
     q_[8] << 1/sqrt(2), 0.5, 1/sqrt(6), 1/sqrt(12);
+    // Case 10. pi/2 pitch for Euler angles.
+    q_[9] << singular_euler_.w(), singular_euler_.x(), singular_euler_.y(), singular_euler_.z();
   }
 
   void initializeRotationMatrixTestCases() {
@@ -112,8 +121,9 @@ class RotationConversionTest : public ::testing::Test {
     // 4. Degenerate case, 180 degrees rotation around x axis
     // 5. Almost degenerate case, very small positive rotation angle
     // 6. Almost degenerate case, very small negative rotation angle
-    // 7. Almost degenerate case, close 180 degree rotation.
-    // 7. Non-degenerage case
+    // 7. Almost degenerate case, close to 180 degree rotation.
+    // 8. Non-degenerage case
+    // 9. Degenerate case, pitch=pi/2 for Euler angles.
 
     // Case 1. no rotation
     R_[0] = Matrix3d::Identity();
@@ -142,8 +152,14 @@ class RotationConversionTest : public ::testing::Test {
     // Case 6. small negative rotation angle
     R_[5] = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), -1E-6*M_PI));
 
-    // Case 7. non-degenerate case
-    R_[6] = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), M_PI/6));
+    // Case 7. Almost degenerate case, close to 180 degree rotation
+    R_[6] = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), (1 - 1E-6)*M_PI));
+
+    // Case 8. non-degenerate case
+    R_[7] = axis2rotmat(Vector4d(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2), M_PI/6));
+
+    // Case 9. pitch = pi/2 for Euler angles
+    R_[8] = singular_euler_.toRotationMatrix();
   }
 
   void initializeRollPitchYawTestCases() {
@@ -155,12 +171,22 @@ class RotationConversionTest : public ::testing::Test {
     // Case 1, no rotation
     rpy_[0] <<0, 0, 0;
     // Case 2, pitch = pi/2;
-    rpy_[1]
+    rpy_[1] << M_PI/3, M_PI/2, M_PI/4;
+    // Case 3, non-degenerate case
+    rpy_[2] << M_PI/3, M_PI/4, M_PI/6;
   };
-  static const int kNumAxisAngleTestCases = 10;
-  static const int kNumQuaternionTestCases = 9;
-  static const int kNumRotationMatrixTestCases = 7;
-  static const int kNumRollPitchYawTestCases;
+
+  void initializeSingularEulerAnglesTestCase() {
+    singular_euler_  = Eigen::AngleAxisd(M_PI/3, Vector3d::UnitZ())
+        *Eigen::AngleAxisd(M_PI/2, Vector3d::UnitY())
+        *Eigen::AngleAxisd(M_PI/4, Vector3d::UnitX());
+  }
+
+  Eigen::Quaterniond singular_euler_; // singular euler angles, pitch = pi/2
+  static const int kNumAxisAngleTestCases = 11;
+  static const int kNumQuaternionTestCases = 10;
+  static const int kNumRotationMatrixTestCases = 9;
+  static const int kNumRollPitchYawTestCases = 3;
   Vector4d a_[kNumAxisAngleTestCases]; // axis-angle representations to be tested
   Vector4d q_[kNumQuaternionTestCases];  // quaternions to be tested
   Matrix3d R_[kNumRotationMatrixTestCases];  // rotation matrices to be tested
@@ -169,24 +195,21 @@ class RotationConversionTest : public ::testing::Test {
 
 TEST_F(RotationConversionTest, AxisQuat) {
   for (int i = 0; i < kNumAxisAngleTestCases; i++) {
+    // Computes the quaternion using Eigen geometry module, compares the result
+    // with axis2quat
+    auto a = Eigen::AngleAxis<double>(a_[i](3), a_[i].head<3>());
+    auto q_eigen = Eigen::Quaternion<double>(a);
+    Vector4d q_expected(q_eigen.w(), q_eigen.x(), q_eigen.y(), q_eigen.z());
     auto q = axis2quat(a_[i]);
-    // Manually computes one quaternion corresponding to the axis-angle representation.
-    Vector3d::PlainObject axis_normalized;
-    NormalizeVector(a_[i].head<3>(), axis_normalized);
-    Vector4d q_expected;
-    q_expected(0) = std::cos(a_[i](3) / 2);
-    q_expected.tail<3>() = std::sin(a_[i](3) / 2) * axis_normalized;
-
-    EXPECT_TRUE(CompareMatrices(q_expected, q, 1E-10, MatrixCompareType::absolute)
-        || CompareMatrices(q_expected, q, 1E-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(q, q_expected, 1E-10, MatrixCompareType::absolute) || CompareMatrices(q, -q_expected, 1E-10, MatrixCompareType::absolute));
   }
 }
 
 TEST_F(RotationConversionTest, AxisRotmat) {
-  // Manually computes the rotation matrix from axis-angle representation, using
-  // Rodriguez's rotation formula
-  // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
   for (int i = 0; i < kNumAxisAngleTestCases; i++) {
+    // Manually computes the rotation matrix from axis-angle representation,
+    // using Rodriguez's rotation formula
+    // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
     auto axis_skew = VectorToSkewSymmetric(a_[i].head<3>());
     auto rotmat_expected = Matrix3d::Identity() + std::sin(a_[i](3)) * axis_skew
         + (1.0 - std::cos(a_[i](3))) * axis_skew * axis_skew;
@@ -195,20 +218,43 @@ TEST_F(RotationConversionTest, AxisRotmat) {
                                 rotmat_expected,
                                 1E-10,
                                 MatrixCompareType::absolute));
+
+    // Computes the rotation matrix using Eigen geometry module, compares the
+    // result with axis2rotmat
+    auto a = Eigen::AngleAxis<double>(a_[i](3), a_[i].head<3>());
+    auto rotmat_expected2 = a.toRotationMatrix();
+    EXPECT_TRUE(CompareMatrices(rotmat_expected2,
+                                rotmat,
+                                1E-10,
+                                MatrixCompareType::absolute));
+  }
+}
+
+TEST_F(RotationConversionTest, AxisRPY) {
+  // Computes the rpy from Eigen geometry module, comapres the result with
+  // axis2rpy
+  for(int i = 0; i < kNumAxisAngleTestCases; i++) {
+    auto a = Eigen::AngleAxisd(a_[i](3), a_[i].head<3>());
+    auto euler_expected = a.toRotationMatrix().eulerAngles(2, 1, 0);
+    Vector3d rpy_expected(euler_expected(2), euler_expected(1), euler_expected(0));
+    auto rpy = axis2rpy(a_[i]);
+    EXPECT_TRUE(CompareMatrices(rpy_expected, rpy, 1E-10, MatrixCompareType::absolute));
   }
 }
 
 TEST_F(RotationConversionTest, QuatAxis) {
   for(int i = 0; i < kNumQuaternionTestCases; i++) {
+    // Computes the angle-axis representation using Eigen geometry module,
+    // compares the result with quat2axis
+    auto q = Eigen::Quaternion<double>(q_[i](0), q_[i](1), q_[i](2), q_[i](3));
+    auto a_eigen_expected = Eigen::AngleAxis<double>(q);
+
     auto a = quat2axis(q_[i]);
-    EXPECT_NEAR(a.head<3>().norm(), 1, 1E-6);
-    auto quat_expected = axis2quat(a);
-    EXPECT_TRUE(
-        CompareMatrices(quat_expected, q_[i], 1E-10, MatrixCompareType::absolute)
-            || CompareMatrices(quat_expected,
-                               -q_[i],
-                               1E-10,
-                               MatrixCompareType::absolute));
+    auto a_eigen = Eigen::AngleAxis<double>(a(3), a.head<3>());
+    if(!a_eigen_expected.isApprox(a_eigen, 1E-3)) {
+      std::cout<<"i:"<<i<<std::endl;
+    }
+    EXPECT_TRUE(a_eigen_expected.isApprox(a_eigen, 1E-3));
   }
 }
 
@@ -272,6 +318,32 @@ TEST_F(RotationConversionTest, RotmatAxis) {
   }
 }
 
+TEST_F(RotationConversionTest, RPYRotmat) {
+  // Computes the rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
+  // then compares the result with rpy2rotmat
+  for(int i = 0; i < kNumRollPitchYawTestCases; i++) {
+    auto rotation_expected = Eigen::AngleAxisd(rpy_[i](2), Vector3d::UnitZ())
+    * Eigen::AngleAxisd(rpy_[i](1), Vector3d::UnitY())
+    * Eigen::AngleAxisd(rpy_[i](0), Vector3d::UnitX());
+    auto rotmat = rpy2rotmat(rpy_[i]);
+    EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(), 1E-10, MatrixCompareType::absolute));
+  }
+}
+
+TEST_F(RotationConversionTest, RPYAxis) {
+  // Computes the angle-axis representation using Eigen's geometry module,
+  // compares the result with rpy2axis
+  for(int i = 0; i < kNumRollPitchYawTestCases; i++) {
+    auto rotation_expected = Eigen::AngleAxisd(rpy_[i](2), Vector3d::UnitZ())
+        * Eigen::AngleAxisd(rpy_[i](1), Vector3d::UnitY())
+        * Eigen::AngleAxisd(rpy_[i](0), Vector3d::UnitX());
+    auto angle_axis_expected = Eigen::AngleAxis<double>(rotation_expected);
+    auto a = rpy2axis(rpy_[i]);
+    Vector4d a_expected;
+    a_expected << angle_axis_expected.axis(), angle_axis_expected.angle();
+    EXPECT_TRUE(CompareMatrices(a, a_expected, 1E-10, MatrixCompareType::absolute) || CompareMatrices(a, -a_expected, 1E-10, MatrixCompareType::absolute));
+  }
+}
 /*
 TEST_F(RotationConversionTest, QuatRPY) {
   Vector3d rpy = quat2rpy(q_);
