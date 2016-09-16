@@ -21,7 +21,6 @@ endif()
 
 if(MATLAB_FOUND)
   add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
-  pods_use_pkg_config_packages(footstepCollocationConstraintsMex eigen3)
 
   pods_find_pkg_config(octomap 1.6.3)
 
