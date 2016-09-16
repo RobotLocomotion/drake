@@ -4,6 +4,9 @@ package drake;
 // signal passed around in Drake. Note that the channel name on which this
 // message is sent will represent the name of the overall signal.
 struct lcmt_drake_signal {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
   // The number of elements in the signal.
   int32_t dim;
 
@@ -12,7 +15,4 @@ struct lcmt_drake_signal {
 
   // The name of each element in the signal.
   string coord[dim];
-
-  // The timestamp in milliseconds.
-  int64_t timestamp;
 }

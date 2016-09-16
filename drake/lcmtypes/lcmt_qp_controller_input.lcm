@@ -1,10 +1,10 @@
 package drake;
 
 struct lcmt_qp_controller_input {
-  boolean be_silent;
-
   // The timestamp in milliseconds.
   int64_t timestamp;
+
+  boolean be_silent;
 
   lcmt_zmp_data zmp_data;
 
