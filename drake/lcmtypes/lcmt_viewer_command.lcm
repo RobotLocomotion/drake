@@ -1,7 +1,6 @@
 package drake;
 
-struct lcmt_viewer_command
-{
+struct lcmt_viewer_command {
   int8_t command_type;
   string command_data;
 

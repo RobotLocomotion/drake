@@ -8,8 +8,8 @@ using namespace Eigen;
 using namespace std;
 
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
-    const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,
-    const Ref<const MatrixXd> &S) {
+    const TVLQRData& sys, const PiecewisePolynomial<double>& zmp_trajectory,
+    const Ref<const MatrixXd>& S) {
   size_t n = static_cast<size_t>(zmp_trajectory.getNumberOfSegments());
   int d = zmp_trajectory.getSegmentPolynomialDegree(0);
   int k = d + 1;
@@ -50,7 +50,16 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     MatrixXd poly_coeffs = MatrixXd::Zero(nq, k);
 
     for (size_t x = 0; x < nq; x++) {
-      poly_coeffs.row(x) = poly_mat(x).GetCoefficients().transpose();
+      auto element_coeffs = poly_mat(x).GetCoefficients();
+
+      // Note that the number of coefficients of poly_mat(x) may not be k due to
+      // erasure of zero coefficients. It should always be less than or equal to
+      // k though. See #2165.
+      DRAKE_ASSERT(poly_coeffs.cols() >= element_coeffs.size());
+      poly_coeffs.row(x).setZero();
+      for (Index i = 0; i < element_coeffs.size(); i++) {
+        poly_coeffs.row(x)(i) = element_coeffs(i);
+      }
     }
 
     beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1);
