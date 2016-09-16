@@ -107,6 +107,7 @@ template <typename ScalarType>
 bool encode(const double& t, const %(camel)s<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_%(snake)s_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
 """
 ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s();"""

@@ -63,6 +63,7 @@ template <typename ScalarType>
 bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_driving_command_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.steering_angle = wrap.steering_angle();
   msg.throttle = wrap.throttle();
