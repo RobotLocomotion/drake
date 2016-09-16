@@ -13,7 +13,6 @@ if (lcm_FOUND)
   add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)
   target_link_libraries(atlas_dynamics_demo drakeRBSystem drakeLCMSystem)
   add_dependencies(atlas_dynamics_demo drake_lcmtypes drake_lcmtypes_hpp)
-  pods_use_pkg_config_packages(atlas_dynamics_demo lcm)
   drake_add_test(NAME atlas_dynamics_demo COMMAND atlas_dynamics_demo 0.4)
 endif()
 
