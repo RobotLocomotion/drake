@@ -49,8 +49,8 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
 }
 
 void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
-    const VectorBase<double>& vector_base,
     double time,
+    const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
   DRAKE_ASSERT(lcm_message_bytes != nullptr);
