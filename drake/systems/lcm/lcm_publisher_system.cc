@@ -45,7 +45,7 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
 
   // Translates the input vector into LCM message bytes.
   std::vector<uint8_t> lcm_message;
-  translator_.TranslateVectorBaseToLcm(*input_vector, context.get_time(),
+  translator_.TranslateVectorBaseToLcm(context.get_time(), *input_vector,
       &lcm_message);
 
   // Publishes onto the specified LCM channel.
