@@ -540,9 +540,11 @@ void inverseKinTrajBackend(
   qdot_sol->block(0, nT - 1, nq, 1) = qdotf.value();
   MatrixXd q_sol_tmp = *q_sol;
   q_sol_tmp.resize(nq * nT, 1);
-  MatrixXd qdot_sol_tmp = helper.velocity_mat() * q_sol_tmp;
-  qdot_sol_tmp.resize(nq, nT - 2);
-  qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
+  if (nT > 2) {
+    MatrixXd qdot_sol_tmp = helper.velocity_mat() * q_sol_tmp;
+    qdot_sol_tmp.resize(nq, nT - 2);
+    qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
+  }
   MatrixXd qddot_sol_tmp(nq * nT, 1);
   qddot_sol_tmp =
       helper.accel_mat() * q_sol_tmp +
