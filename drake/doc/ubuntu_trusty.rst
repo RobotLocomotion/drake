@@ -46,7 +46,7 @@ modifies `~/.bashrc` with the new ``PATH`` environment variable::
     tar zxvf cmake-3.5.2-Linux-x86_64.tar.gz
     rm cmake-3.5.2-Linux-x86_64.tar.gz
     cd cmake-3.5.2-Linux-x86_64/bin
-    echo "export PATH=`pwd`:$PATH" >> ~/.bashrc
+    echo "export PATH=`pwd`:\$PATH" >> ~/.bashrc
 
 .. _`CMake Download Page`: https://cmake.org/download/
 
