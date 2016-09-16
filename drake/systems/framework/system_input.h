@@ -7,6 +7,7 @@
 
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
 
@@ -17,7 +18,7 @@ namespace systems {
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
 class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
-    : public OutputPortListenerInterface {
+    : public detail::OutputPortListenerInterface {
  public:
   ~InputPort() override;
 

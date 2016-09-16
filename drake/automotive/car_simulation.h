@@ -130,7 +130,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @param index Selects which pre-programmed trajectory to use.
  */
 DRAKEAUTOMOTIVE_EXPORT
-std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index);
+std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index);
 
 /**
  * Creates a linear system to map NPC car state to the state vector of a
