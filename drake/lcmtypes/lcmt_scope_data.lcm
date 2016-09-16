@@ -3,16 +3,16 @@ package drake;
 struct lcmt_scope_data {
   // The following variables are plot settings. They shouldn't change often.
 
-  // Defines which subplot to draw in.
+  // Which subplot to draw in.
   int64_t scope_id;
 
-  // Specifies the length of the history to use for this trace.
+  // The length of the history to use for this trace.
   int32_t num_points;
 
-  // Specifies the MATLAB plot command linespec.
+  // The MATLAB plot command linespec.
   string linespec;
 
-  // If true, the plot will be cleared whenever xval decreses, e.g., when
+  // If true, the plot will be cleared whenever xval decreases, e.g., when
   // xval = time.
   boolean resetOnXval;
 

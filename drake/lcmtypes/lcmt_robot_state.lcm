@@ -9,8 +9,8 @@ struct lcmt_robot_state {
 
   int32_t num_joints;
 
-  // The following variable defines which model instance each joint is
-  // associated with. The range of the values is [0, num_model_instances).
+  // The following variable defines which robot each joint is
+  // associated with. The range of the values is [0, num_robots).
   int32_t joint_robot[num_joints];
 
   string joint_name[num_joints];
