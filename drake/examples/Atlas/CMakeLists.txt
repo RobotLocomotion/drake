@@ -38,7 +38,7 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX AND NOT APPLE) # FIXME: se
 endif()
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND UNIX) # FIXME: see #3147.
-  drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasWalking)
+  drake_add_matlab_test(NAME examples/Atlas/runAtlasWalking REQUIRES gurobi lcm libbot yaml-cpp COMMAND runAtlasWalking SIZE large)
 endif()
 
 # drake_add_matlab_test(NAME examples/Atlas/runAtlasBalancing REQUIRES gurobi COMMAND runAtlasBalancing)  # FIXME: see #2839
