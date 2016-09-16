@@ -155,4 +155,8 @@ $ drake-distro/drake/automotive/run_demo_multi_car.sh [N]
 This will start the demo with N cars; if N is not supplied, the
 default is 100 (and the minimum N is 1).  There are no controls.
 
+TODO(jwnimmer-tri) For the moment, the drake-visualizer will not show the cars;
+the multi-body visualizer for System 2.0 is not quite working yet.  You can use
+the bot-spy interface to watch the state evolve over time.
+
 Use Ctrl-C in your terminal to stop and close the demo.
