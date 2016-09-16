@@ -88,6 +88,11 @@ Clarifications
   * ``ptrdiff_t`` is allowed when doing arithmetic on bare pointers (this is
     very rare).  Do not use it as a generic "large signed integer" type, nor
     as a generic "index into a matrix" type.
+* Implementation comments should be
+  `imperative <https://en.wikipedia.org/wiki/Imperative_mood>`_.
+  This is as opposed to
+  `function comments <https://google.github.io/styleguide/cppguide.html#Function_Comments>`_,
+  which should be descriptive.
 
 .. _code-style-guide-cpp-exceptions:
 
