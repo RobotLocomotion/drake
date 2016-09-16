@@ -1,12 +1,22 @@
 #pragma once
 
-#include "drake/automotive/system1_cars_vectors.h"
+#include "drake/automotive/gen/driving_command.h"
+#include "drake/automotive/gen/simple_car_state.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
 namespace automotive {
+
+/// SimpleCar constants that are not templated on the scalar type in use.
+class DRAKEAUTOMOTIVE_EXPORT SimpleCarDefaults {
+ public:
+  static const drake::lcmt_simple_car_config_t kDefaultConfig;
+
+ private:
+  SimpleCarDefaults();  // disable
+};
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
@@ -32,64 +42,24 @@ namespace automotive {
 ///
 /// output vector: same as state vector.
 ///
-class DRAKEAUTOMOTIVE_EXPORT SimpleCar1 {
- public:
-  static const drake::lcmt_simple_car_config_t kDefaultConfig;
-
-  explicit SimpleCar1(
-      const drake::lcmt_simple_car_config_t& config = kDefaultConfig)
-      : config_(config) {}
-
-  const drake::lcmt_simple_car_config_t& config() const { return config_; }
-
-  /// @name Implement the Drake System concept.
-  ///
-  /// @tparam ScalarType must support certain arithmetic operations;
-  /// for details, see ./test/simple_car_scalartype_test.cc.
-  ///
-  /// Instantiated templates for the following ScalarTypes are provided:
-  /// - double
-  /// - drake::TaylorVarXd
-  ///
-  /// They are already available to link against in libdrakeAutomotive.
-  ///
-  /// To use other unusual ScalarType substitutions,
-  /// see http://drake.mit.edu/cxx_inl.html.
-  //@{
-
-  template <typename ScalarType>
-  using StateVector = SimpleCarState1<ScalarType>;
-  template <typename ScalarType>
-  using InputVector = DrivingCommand1<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = SimpleCarState1<ScalarType>;
-
-  template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& time,
-                                   const StateVector<ScalarType>& state,
-                                   const InputVector<ScalarType>& input) const;
-
-  template <typename ScalarType>
-  OutputVector<ScalarType> output(const ScalarType& time,
-                                  const StateVector<ScalarType>& state,
-                                  const InputVector<ScalarType>& input) const;
-
-  bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return false; }
-
-  //@}
-
- private:
-  const drake::lcmt_simple_car_config_t config_;
-};
-
-/// A System2 wrapper around the System1 SimpleCar1.
+/// @tparam T must support certain arithmetic operations;
+/// for details, see ./test/simple_car_scalartype_test.cc.
+///
+/// Instantiated templates for the following ScalarTypes are provided:
+/// - double
+/// - drake::TaylorVarXd
+///
+/// They are already available to link against in libdrakeAutomotive.
+///
+/// To use other unusual ScalarType substitutions,
+/// see http://drake.mit.edu/cxx_inl.html.
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
-  explicit SimpleCar(
-      const drake::lcmt_simple_car_config_t& config =
-      SimpleCar1::kDefaultConfig);
+  explicit SimpleCar(const drake::lcmt_simple_car_config_t& config =
+                         SimpleCarDefaults::kDefaultConfig);
+
+  const drake::lcmt_simple_car_config_t& config() const { return config_; }
 
  public:
   // System<T> overrides
@@ -108,7 +78,11 @@ class SimpleCar : public systems::LeafSystem<T> {
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 
  private:
-  const SimpleCar1 wrapped_;
+  void DoEvalOutput(const SimpleCarState<T>&, SimpleCarState<T>*) const;
+  void DoEvalTimeDerivatives(const SimpleCarState<T>&, const DrivingCommand<T>&,
+                             SimpleCarState<T>*) const;
+
+  const drake::lcmt_simple_car_config_t config_;
 };
 
 }  // namespace automotive

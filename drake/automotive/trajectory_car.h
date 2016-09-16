@@ -63,6 +63,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     // Trace the curve at a fixed speed.
     const double distance = speed_ * (time - start_time_);
     const Curve2<double>::PositionResult pose = curve_.GetPosition(distance);
+    DRAKE_ASSERT(pose.position_dot.norm() > 0.0);
 
     // Convert pose to output type.
     output->set_x(pose.position[0]);
