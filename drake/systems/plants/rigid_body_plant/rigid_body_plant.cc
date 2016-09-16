@@ -77,6 +77,19 @@ VectorOfPoses<T>* VectorOfPoses<T>::DoClone() const {
   return poses;
 }
 
+const std::string& BodyMetadata::name() const {
+  return body_.get_name();
+}
+
+int BodyMetadata::model_instance_id() const {
+  return body_.get_model_instance_id();
+}
+
+const DrakeShapes::VectorOfVisualElements& BodyMetadata::visual_elements()
+const {
+  return body_.get_visual_elements();
+}
+
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
     tree_(move(tree)) {

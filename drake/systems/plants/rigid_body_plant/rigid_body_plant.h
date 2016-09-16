@@ -14,7 +14,8 @@
 namespace drake {
 namespace systems {
 
-/// The output poses from a RigidBodyPlant.
+/// A vector of 3D poses each of which is represented by a quaternion and a
+/// position vector.
 /// The pose of a rigid body is represented as a quaternion for three
 /// dimensional orientation concatenated by a three dimensional vector for
 /// position both in the world's frame. Altogether these two representations
@@ -61,6 +62,14 @@ class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
 
  private:
   VectorOfPoses* DoClone() const override;
+};
+
+class DRAKE_RBP_EXPORT BodyMetadata {
+  const std::string& name() const;
+  int model_instance_id() const;
+  const DrakeShapes::VectorOfVisualElements& visual_elements() const;
+ private:
+  const RigidBody& body_;
 };
 
 /// This class provides a System interface around a multibody dynamics model
