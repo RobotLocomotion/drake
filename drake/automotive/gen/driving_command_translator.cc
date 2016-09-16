@@ -16,12 +16,13 @@ DrivingCommandTranslator::AllocateOutputVector() const {
 }
 
 void DrivingCommandTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+    double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const DrivingCommand<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_driving_command_t message;
+  message.timestamp = static_cast<int64_t>(time * 1000);
   message.steering_angle = vector->steering_angle();
   message.throttle = vector->throttle();
   message.brake = vector->brake();
