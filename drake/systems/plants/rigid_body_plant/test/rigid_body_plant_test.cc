@@ -269,6 +269,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
     Isometry3d pose = world.relativeTransform(cache, 0, ibody);
     Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
+    // Notice that Eigen quaternion elements are not laid out in memory in the
+    // same way Drake currently aligns them. See issue #3470.
     Quaterniond quat(
         quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
     Vector3d position = pose.translation();

@@ -37,7 +37,7 @@ int RbpPosesVector<T>::get_num_bodies() const {
 
 // TODO(amcastro-tri): Output a quaternion map referencing the actual memory in
 // BasicVector. However this is not possible right now given that Drake does not
-// use the same memory layout as Eigen does. See issue #???? which needs to be
+// use the same memory layout as Eigen does. See issue #3470 which needs to be
 // resolved before we can fix this todo.
 template <typename T>
 Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) const {

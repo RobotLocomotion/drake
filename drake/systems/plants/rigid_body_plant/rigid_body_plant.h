@@ -21,7 +21,7 @@ namespace systems {
 /// form a seven-dimensional vector for each body, quanterion first followed by
 /// the position vector.
 /// The concatenation of the poses for all bodies in the RigidBodyPlant is
-/// placed into a single contiguous vector of scalars entries of size `7*Nb`
+/// placed into a single contiguous vector of scalars entries of size `7 * Nb`
 /// with `Nb` the number of bodies.
 /// RbpPosesVector<T> offers a semantically richer representation of a simple
 /// BasicVector<T> that allows consumers of it to easily access for each body
