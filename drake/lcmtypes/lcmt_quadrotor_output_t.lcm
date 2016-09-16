@@ -1,8 +1,9 @@
 package drake;
 
-struct lcmt_quadrotor_output_t
-{
+struct lcmt_quadrotor_output_t {
+  // The timestamp in milliseconds.
   int64_t timestamp;
+
   double position[3];
   double orientation[4];
   double twist[6];
@@ -12,4 +13,3 @@ struct lcmt_quadrotor_output_t
   double lidar_returns[100];
   double rangefinder;
 }
-
