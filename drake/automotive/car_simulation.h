@@ -133,15 +133,6 @@ DRAKEAUTOMOTIVE_EXPORT
 std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index);
 
 /**
- * Creates a linear system to map NPC car state to the state vector of a
- * floating joint, allowing motion and steering in the x-y plane only.
- */
-DRAKEAUTOMOTIVE_EXPORT
-std::shared_ptr<drake::AffineSystem<
-  drake::NullVector, SimpleCarState1, EulerFloatingJointState1>>
-CreateSimpleCarVisualizationAdapter();
-
-/**
  * Returns the default simulation options for car simulations. The default
  * options include an initial step size of 5e-3 and a timeout of infinity.
  *
