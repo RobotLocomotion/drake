@@ -93,8 +93,8 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
     Eigen::VectorBlock<VectorX<double>> vector_value =
         vec->get_mutable_value();
 
-    for (int ii = 0; ii < kDim; ++ii) {
-      vector_value[ii] = ii;
+    for (int i = 0; i < kDim; ++i) {
+      vector_value[i] = i;
     }
   }
 
@@ -139,8 +139,8 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
     if (received_message.dim == kDim) {
       bool values_match = true;
 
-      for (int ii = 0; ii < kDim && values_match; ++ii) {
-        if (received_message.val[ii] != ii) values_match = false;
+      for (int i = 0; i < kDim && values_match; ++i) {
+        if (received_message.val[i] != i) values_match = false;
       }
 
       // At this point, if values_match is true, the received message contains
