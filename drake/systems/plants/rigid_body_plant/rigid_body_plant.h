@@ -25,13 +25,13 @@ namespace systems {
 /// with `Nb` the number of bodies.
 /// VectorOfPoses<T> offers a semantically richer representation of a simple
 /// BasicVector<T> that allows consumers of it to easily access for each body
-/// the quaternion representation of orientation as well as the 3D vector
-/// represenation of position.
+/// the quaternion representation of orientation and the 3D vector represenation
+/// of position.
 template <typename T>
 class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
  public:
-  // Constructs a poses vector for @p nbodies bodies.
-  // @param[in] nbodies the number of body poses.
+  /// Constructs a poses vector for @p nbodies bodies.
+  /// @param[in] nbodies the number of body poses.
   explicit VectorOfPoses(int num_bodies);
 
   ~VectorOfPoses() override;
@@ -48,13 +48,13 @@ class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
 
   /// Sets the quaternion representation of the three dimensional orientation
   /// of body @p body_index in the world's frame.
-  /// @param[in] body_index The body_index-th body entry in the vector.
+  /// @param[in] body_index The index of the body in the poses vector.
   /// @param[in] quaternion The quaternion representation of the body's pose.
   void set_body_orientation(int body_index, const Quaternion<T>& quaternion);
 
   /// Sets the three dimensional position of body @p body_index in world's
   /// frame.
-  /// @param[in] body_index The body_index-th body entry in the vector.
+  /// @param[in] body_index The index of the body in the poses vector.
   /// @param[in] position The three dimensional position of body @p body_index
   /// in world's frame.
   void set_body_position(int body_index, const Vector3<T>& position);
@@ -223,7 +223,7 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   // This method instantiates a KinematicsCache and updates it to the current
   // state of the system according to the context.
   // TODO(amcastro-tri): Completely remove this method once System 2.0 caching
-  // is in place. Right now this method is only used not to repeat the same
+  // is in place. Right now this method is only used to avoid repeating the same
   // piece of code across different methods.
   KinematicsCache<T> InstantiateKinematicsCache(
       const Context<T> &context) const;
