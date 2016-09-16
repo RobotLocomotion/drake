@@ -13,11 +13,6 @@ namespace systems {
 
 using std::runtime_error;
 
-// Defines the number of states per body. There are seven states: three position
-// states specified by a 3-vector (x, y, and z) and four orientation states
-// specified by a quaternion 4-vector (w, x, y, z).
-const int kNumStatesPerBody = 7;
-
 LcmtViewerDrawTranslator1::LcmtViewerDrawTranslator1(
     const RigidBodyTree& tree) :
     LcmAndVectorBaseTranslator(tree.number_of_positions() +

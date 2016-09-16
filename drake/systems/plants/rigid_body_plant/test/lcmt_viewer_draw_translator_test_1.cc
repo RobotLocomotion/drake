@@ -1,60 +1,64 @@
-#include <iostream>
 #include <memory>
+#include <vector>
 
-#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
-// #include "drake/common/drake_path.h"
-#include "drake/common/eigen_types.h"
-// #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
-// #include "drake/systems/plants/parser_model_instance_id_table.h"
-// #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigid_body_plant/lcmt_viewer_draw_translator_1.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {
 namespace systems {
 namespace {
 
 using std::make_unique;
-// using std::move;
-// using std::unique_ptr;
-
-using Eigen::Isometry3d;
-using Eigen::Quaterniond;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
 
 // Tests the basic functionality of the translator.
 GTEST_TEST(LcmtViewerDrawTranslator1Tests, BasicTest) {
+  // Define the number of rigid bodies in the RigidbodyTree.
+  const int kNumRigidBodies = 2;
+
   // Creates a RigidBodyTree with two rigid bodies.
-  // auto tree = make_unique<RigidBodyTree>();
+  auto tree = make_unique<RigidBodyTree>();
+  for (int i = 0; i < kNumRigidBodies; ++i) {
+    auto body = make_unique<RigidBody>();
+    tree->bodies.push_back(std::move(body));
+  }
+  tree->compile();
 
+  // TODO(liang.fok) Add two rigid bodies.
 
-  // LcmtViewerDrawTranslator1 translator(*tree.get());
+  // Creates an LcmtViewerDrawTranslator1 object using the tree that was just
+  // created. The name "dut" stands for "Device Under Test".
+  LcmtViewerDrawTranslator1 dut(*tree.get());
 
-  // const double kTime = 2.23606797749978;
-  // VectorX<double> eigen_vector;
+  // Instantiates a BasicVector<double> of the correct length. Since there are
+  // two bodies, there are 7 * 2 = 14 values.
+  int num_states = kNumRigidBodies *
+      LcmtViewerDrawTranslator1::kNumStatesPerBody;
 
-  // eigen_vector.resize(10);
-  // eigen_vector << 0.0, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9;
+  BasicVector<double> original_vector(num_states);
+  for (int i = 0; i < num_states; ++i) {
+    original_vector.SetAtIndex(i, i);
+  }
 
-  // BasicVector<double> basic_vector(10);
-  // basic_vector.set_value(eigen_vector);
+  // Encodes the basic vector into the byte representation of an
+  // lcmt_viewer_draw message.
+  double time = 0;
+  std::vector<uint8_t> lcm_message_bytes;
+  dut.TranslateVectorBaseToLcm(time, original_vector, &lcm_message_bytes);
+  EXPECT_GT(lcm_message_bytes.size(), 0);
 
-  // std::vector<uint8_t> lcm_message_bytes;
+  // Decodes the byte representation into the basic vector and ensures it equals
+  // the original basic vector that was defined above.
+  // values match the original values.
+  BasicVector<double> decoded_vector(num_states);
+  dut.TranslateLcmToVectorBase(lcm_message_bytes.data(),
+      lcm_message_bytes.size(), &decoded_vector);
 
-  // translator.TranslateLcmToVectorBase();
-  // translator.TranslateVectorBaseToLcm(kTime, basic_vector, lcm_message_bytes);
-
-  // VectorBase<double>* vector_base = nullptr;
-  // void LcmtViewerDrawTranslatorV1::TranslateLcmToVectorBase(
-  //   const void* lcm_message_bytes, int lcm_message_length,
-  //   VectorBase<double>* vector_base)
-
+  for (int i = 0; i < num_states; ++i) {
+    EXPECT_EQ(original_vector.GetAtIndex(i), decoded_vector.GetAtIndex(i));
+  }
 }
 
 }  // namespace
