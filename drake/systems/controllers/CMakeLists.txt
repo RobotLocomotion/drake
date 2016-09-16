@@ -35,11 +35,12 @@ endif()
 
 if(MATLAB_FOUND)
   pods_find_pkg_config(gurobi)
+  find_package(yaml-cpp)
 
   if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
+    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide drakeYAMLUtil)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
