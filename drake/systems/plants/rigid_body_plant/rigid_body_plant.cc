@@ -40,7 +40,7 @@ int RbpPosesVector<T>::get_num_bodies() const {
 // use the same memory layout as Eigen does. See issue #???? which needs to be
 // resolved before we can fix this todo.
 template <typename T>
-Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) {
+Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) const {
   const int body_start = 7 * body_index;
   return Quaternion<T>(this->GetAtIndex(body_start + 3),
                        this->GetAtIndex(body_start + 0),
@@ -49,7 +49,7 @@ Quaternion<T> RbpPosesVector<T>::get_body_orientation(int body_index) {
 }
 
 template <typename T>
-Vector3<T> RbpPosesVector<T>::get_body_position(int body_index) {
+Vector3<T> RbpPosesVector<T>::get_body_position(int body_index) const {
   const int body_start = 7 * body_index + 4;
   return Vector3<T>(this->GetAtIndex(body_start + 0),
                     this->GetAtIndex(body_start + 1),
@@ -466,6 +466,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_RBP_EXPORT RigidBodyPlant<double>;
+template class DRAKE_RBP_EXPORT RbpPosesVector<double>;
 
 }  // namespace systems
 }  // namespace drake

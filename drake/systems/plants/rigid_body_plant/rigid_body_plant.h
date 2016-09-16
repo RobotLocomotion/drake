@@ -40,11 +40,11 @@ class DRAKE_RBP_EXPORT RbpPosesVector : public BasicVector<T> {
 
   /// Returns the quaternion representation of the three dimensional orientation
   /// of body @p body_index in the world's frame.
-  Quaternion<T> get_body_orientation(int body_index);
+  Quaternion<T> get_body_orientation(int body_index) const;
 
   /// Returns the three dimensional position of body @p body_index in world's
   /// frame.
-  Vector3<T> get_body_position(int body_index);
+  Vector3<T> get_body_position(int body_index) const;
 
   /// Sets the quaternion representation of the three dimensional orientation
   /// of body @p body_index in the world's frame.

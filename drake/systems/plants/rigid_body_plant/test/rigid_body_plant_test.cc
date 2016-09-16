@@ -16,6 +16,7 @@
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -206,8 +207,10 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 }
 
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
-// For a RigidBodyPlant<T> the output of the system should equal the
-// state vector.
+// For a RigidBodyPlant<T> the first output of the system should equal the
+// state vector. The second output from this system should correspond to a
+// RigidBodyPlant<T>::PosesVector containing the poses of all bodies in the
+// system.
 TEST_F(KukaArmTest, EvalOutput) {
   // Checks that the number of input and output ports in the system and context
   // are consistent.
@@ -244,14 +247,34 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(xc, desired_state);
 
   ASSERT_EQ(2, output_->get_num_ports());
-  const BasicVector<double>* output_port =
+  const BasicVector<double>* output_state =
       dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
-  ASSERT_NE(nullptr, output_port);
+  ASSERT_NE(nullptr, output_state);
 
   kuka_system_->EvalOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
-  EXPECT_EQ(desired_state, output_port->get_value());
+  EXPECT_EQ(desired_state, output_state->get_value());
+
+  // Evaluates the correctness of the poses output.
+  const RbpPosesVector<double>* output_poses =
+      dynamic_cast<const RbpPosesVector<double>*>(output_->get_vector_data(1));
+  ASSERT_NE(nullptr, output_poses);
+
+  VectorXd q = xc.topRows(kNumPositions_);
+  VectorXd v = xc.bottomRows(kNumVelocities_);
+  auto& world = kuka_system_->get_multibody_world();
+  auto cache = world.doKinematics(q, v);
+
+  for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
+    Isometry3d pose = world.relativeTransform(cache, 0, ibody);
+    Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
+    Quaterniond quat(
+        quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+    Vector3d position = pose.translation();
+    EXPECT_TRUE(quat.isApprox(output_poses->get_body_orientation(ibody)));
+    EXPECT_TRUE(position.isApprox(output_poses->get_body_position(ibody)));
+  }
 }
 
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
