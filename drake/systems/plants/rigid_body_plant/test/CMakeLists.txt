@@ -4,13 +4,13 @@ if(bullet_FOUND)
       drake_rbp drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME rigid_body_plant_test COMMAND rigid_body_plant_test)
 
-  add_executable(translator_between_vector_base_and_lcmt_viewer_draw_test
-      translator_between_vector_base_and_lcmt_viewer_draw_test.cc)
-  target_link_libraries(translator_between_vector_base_and_lcmt_viewer_draw_test
+  add_executable(lcmt_viewer_draw_translator_test_1
+      lcmt_viewer_draw_translator_test_1.cc)
+  target_link_libraries(lcmt_viewer_draw_translator_test_1
       drake_rbp
       drakeLCMSystem2
       drakeRBSystem
       ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME translator_between_vector_base_and_lcmt_viewer_draw_test COMMAND
-      translator_between_vector_base_and_lcmt_viewer_draw_test)
+  add_test(NAME lcmt_viewer_draw_translator_test_1 COMMAND
+      lcmt_viewer_draw_translator_test_1)
 endif()

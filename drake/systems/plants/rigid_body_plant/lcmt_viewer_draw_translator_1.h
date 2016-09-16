@@ -12,14 +12,12 @@
 namespace drake {
 namespace systems {
 
-using lcm::LcmAndVectorBaseTranslator;
-
 /**
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`.
  */
-class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenVectorBaseAndLcmtViewerDraw
-    : public LcmAndVectorBaseTranslator {
+class DRAKELCMSYSTEM2_EXPORT LcmtViewerDrawTranslator1
+    : public lcm::LcmAndVectorBaseTranslator {
  public:
   /**
    * A constructor that initializes the internal state of this class and sets
@@ -32,16 +30,14 @@ class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenVectorBaseAndLcmtViewerDraw
    * message. This reference must remain valid for the lifetime of the object
    * instantiation of this class.
    */
-  explicit TranslatorBetweenVectorBaseAndLcmtViewerDraw(
-      const RigidBodyTree& tree);
+  explicit LcmtViewerDrawTranslator1(const RigidBodyTree& tree);
 
   void TranslateLcmToVectorBase(
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override;
 
-  void TranslateVectorBaseToLcm(
+  void TranslateVectorBaseToLcm(double time,
       const VectorBase<double>& vector_base,
-      double time,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 
  private:

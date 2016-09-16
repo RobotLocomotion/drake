@@ -1,5 +1,4 @@
-// NOLINT(readability/line_length)
-#include "drake/systems/plants/rigid_body_plant/translator_between_vector_base_and_lcmt_viewer_draw.h"
+#include "drake/systems/plants/rigid_body_plant/lcmt_viewer_draw_translator_1.h"
 
 #include <cstdint>
 #include <vector>
@@ -15,11 +14,11 @@ namespace systems {
 using std::runtime_error;
 
 // Defines the number of states per body. There are seven states: three position
-// states (x, y, and z) and four orientation states (w, x, y, z).
+// states specified by a 3-vector (x, y, and z) and four orientation states
+// specified by a quaternion 4-vector (w, x, y, z).
 const int kNumStatesPerBody = 7;
 
-// NOLINT(readability/line_length)
-TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslatorBetweenVectorBaseAndLcmtViewerDraw(
+LcmtViewerDrawTranslator1::LcmtViewerDrawTranslator1(
     const RigidBodyTree& tree) :
     LcmAndVectorBaseTranslator(tree.number_of_positions() +
                                tree.number_of_velocities()),
@@ -27,7 +26,7 @@ TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslatorBetweenVectorBaseAndLcmt
   initialize_draw_message();
 }
 
-void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateLcmToVectorBase(
+void LcmtViewerDrawTranslator1::TranslateLcmToVectorBase(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base);
@@ -38,7 +37,7 @@ void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateLcmToVectorBase(
   if (status < 0) {
     throw runtime_error(
       "drake::systems::plants::rigid_body_plant::"
-      "TranslatorBetweenVectorBaseAndLcmtViewerDraw: "
+      "LcmtViewerDrawTranslator1: "
       "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
       "status is " + std::to_string(status) + ".");
   }
@@ -48,7 +47,7 @@ void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateLcmToVectorBase(
   if (message.num_links * kNumStatesPerBody != vector_base->size()) {
     throw runtime_error(
       "drake::systems::plants::rigid_body_plant::"
-      "TranslatorBetweenVectorBaseAndLcmtViewerDraw: "
+      "LcmtViewerDrawTranslator1: "
       "TranslateLcmToBasicVector: ERROR: Size of LCM message (" +
       std::to_string(message.num_links * kNumStatesPerBody) +
       ") is not equal to the size of the vector vector (" +
@@ -62,9 +61,9 @@ void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateLcmToVectorBase(
   // }
 }
 
-void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateVectorBaseToLcm(
-    const VectorBase<double>& vector_base,
+void LcmtViewerDrawTranslator1::TranslateVectorBaseToLcm(
     double time,
+    const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
   DRAKE_ASSERT(lcm_message_bytes != nullptr);
@@ -73,7 +72,7 @@ void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateVectorBaseToLcm(
   // This is necessary since this method is declared const.
   drake::lcmt_viewer_draw message = draw_msg_;
 
-  // Instantiates and initializes a LCM message capturing the state of
+  // Instantiates and initializes an LCM message capturing the state of
   // parameter vector_base.
   message.timestamp = time;
 
@@ -101,7 +100,7 @@ void TranslatorBetweenVectorBaseAndLcmtViewerDraw::TranslateVectorBaseToLcm(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void TranslatorBetweenVectorBaseAndLcmtViewerDraw::initialize_draw_message() {
+void LcmtViewerDrawTranslator1::initialize_draw_message() {
   draw_msg_.num_links = tree_.bodies.size();
   std::vector<float> position = {0, 0, 0};
   std::vector<float> quaternion = {0, 0, 0, 1};
