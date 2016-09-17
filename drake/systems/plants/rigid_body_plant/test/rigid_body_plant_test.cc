@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -21,6 +22,7 @@ using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
+using std::vector;
 
 namespace drake {
 namespace systems {
@@ -212,6 +214,8 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 // RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
 // system.
 TEST_F(KukaArmTest, EvalOutput) {
+  auto& world = kuka_system_->get_multibody_world();
+
   // Checks that the number of input and output ports in the system and context
   // are consistent.
   ASSERT_EQ(1, kuka_system_->get_num_input_ports());
@@ -256,6 +260,15 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_state->get_value());
 
+  // Evaluates the correctness of the meta-data port.
+  auto& metadata_vector =
+      output_->get_data(2)->GetValue<vector<BodyMetadata>>();
+  ASSERT_EQ(static_cast<int>(metadata_vector.size()),
+            kuka_system_->get_num_bodies());
+  for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
+    EXPECT_EQ(metadata_vector[ibody].name(), world.get_body(ibody).get_name());
+  }
+
   // Evaluates the correctness of the poses output.
   auto output_poses =
       dynamic_cast<const VectorOfPoses<double>*>(output_->get_vector_data(1));
@@ -263,7 +276,6 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   VectorXd q = xc.topRows(kNumPositions_);
   VectorXd v = xc.bottomRows(kNumVelocities_);
-  auto& world = kuka_system_->get_multibody_world();
   auto cache = world.doKinematics(q, v);
 
   for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
