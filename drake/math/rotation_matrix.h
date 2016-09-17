@@ -96,16 +96,10 @@ Vector4<typename Derived::Scalar> rotmat2axis(
 template <typename Derived>
 Vector3<typename Derived::Scalar> rotmat2rpy(
     const Eigen::MatrixBase<Derived>& R) {
-  using std::atan2;
-  using std::pow;
-  using std::sqrt;
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
-  Vector3<typename Derived::Scalar> rpy;
-  rpy << atan2(R(2, 1), R(2, 2)),
-      atan2(-R(2, 0), sqrt(pow(R(2, 1), 2.0) + pow(R(2, 2), 2.0))),
-      atan2(R(1, 0), R(0, 0));
-  return rpy;
+  drake::Vector3<typename Derived::Scalar> euler_angle = R.eulerAngles(2, 1, 0);
+  return drake::Vector3<typename Derived::Scalar>(euler_angle(2), euler_angle(1), euler_angle(0));
 }
 
 template <typename Derived>
