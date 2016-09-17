@@ -208,7 +208,8 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   {
     unique_ptr<AbstractValue> owned_metadata =
         make_unique<Value<vector<BodyMetadata>>>(vector<BodyMetadata>());
-    auto metadata = owned_metadata->GetValue<vector<BodyMetadata>>();
+    auto& metadata = owned_metadata->GetMutableValue<vector<BodyMetadata>>();
+
     for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
       metadata.emplace_back(tree_->get_body(ibody));
     }
