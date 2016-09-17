@@ -57,7 +57,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   buffer->EvalOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
-  const BasicVector<T>* output_vector = output->get_vector_data(0)->get_value();
+  auto output_vector = output->get_vector_data(0)->get_value();
 
   // The expected output value equals the input.
   Vector3<T> expected;
