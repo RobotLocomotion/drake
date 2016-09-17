@@ -262,9 +262,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_state->get_value());
 
-  (void) world;
   // Evaluates the correctness of the meta-data port.
-#if 0
   auto& metadata_vector =
       output_->get_data(2)->GetValue<vector<BodyMetadata>>();
   ASSERT_EQ(static_cast<int>(metadata_vector.size()),
@@ -272,9 +270,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
     EXPECT_EQ(metadata_vector[ibody].name(), world.get_body(ibody).get_name());
   }
-#endif
 
-#if 0
   // Evaluates the correctness of the poses output.
   auto output_poses =
       dynamic_cast<const VectorOfPoses<double>*>(output_->get_vector_data(1));
@@ -295,7 +291,6 @@ TEST_F(KukaArmTest, EvalOutput) {
     EXPECT_TRUE(quat.isApprox(output_poses->get_body_orientation(ibody)));
     EXPECT_TRUE(position.isApprox(output_poses->get_body_position(ibody)));
   }
-#endif
 }
 
 #if 0

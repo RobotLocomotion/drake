@@ -109,7 +109,7 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
   System<T>::DeclareOutputPort(
       kVectorValued, 7 * get_num_bodies(), kContinuousSampling);
   // Declares an output port for metadata.
-  this->DeclareAbstractOutputPort(kInheritedSampling);
+  System<T>::DeclareAbstractOutputPort(kInheritedSampling);
 }
 
 template <typename T>
