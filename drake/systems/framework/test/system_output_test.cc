@@ -66,8 +66,7 @@ TEST_F(OutputPortVectorTest, Clone) {
   EXPECT_EQ(expected, clone->template get_vector_data<int>()->get_value());
 
   // The type should be preserved.
-  EXPECT_NE(nullptr, dynamic_cast<const BasicVector<int>*>(
-                         clone->template get_vector_data<int>()));
+  EXPECT_NE(nullptr, clone->template get_vector_data<int>());
 }
 
 // Tests that listeners are notified when GetMutableVectorData is called, and
@@ -158,8 +157,7 @@ TEST_F(LeafSystemOutputTest, Clone) {
     VectorX<int> expected(2);
     expected << 5, 25;
     EXPECT_EQ(expected, port.template get_vector_data<int>()->get_value());
-    EXPECT_NE(nullptr, dynamic_cast<const BasicVector<int>*>(
-                           port.template get_vector_data<int>()));
+    EXPECT_NE(nullptr, port.template get_vector_data<int>());
   }
 
   {
@@ -167,8 +165,7 @@ TEST_F(LeafSystemOutputTest, Clone) {
     VectorX<int> expected(3);
     expected << 125, 625, 3125;
     EXPECT_EQ(expected, port.template get_vector_data<int>()->get_value());
-    EXPECT_NE(nullptr, dynamic_cast<const BasicVector<int>*>(
-                           port.template get_vector_data<int>()));
+    EXPECT_NE(nullptr, port.template get_vector_data<int>());
   }
 }
 
