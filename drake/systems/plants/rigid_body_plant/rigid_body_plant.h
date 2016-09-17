@@ -65,6 +65,8 @@ class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
 };
 
 class DRAKE_RBP_EXPORT BodyMetadata {
+ public:
+  explicit BodyMetadata(const RigidBody& body);
   const std::string& name() const;
   int model_instance_id() const;
   const DrakeShapes::VectorOfVisualElements& visual_elements() const;

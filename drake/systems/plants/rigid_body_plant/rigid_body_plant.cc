@@ -77,6 +77,8 @@ VectorOfPoses<T>* VectorOfPoses<T>::DoClone() const {
   return poses;
 }
 
+BodyMetadata::BodyMetadata(const RigidBody& body) : body_(body) {}
+
 const std::string& BodyMetadata::name() const {
   return body_.get_name();
 }
@@ -199,6 +201,18 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     std::unique_ptr<OutputPort> port(new OutputPort(move(data)));
     output->get_mutable_ports()->push_back(move(port));
   }
+
+  // Allocates output for metadata (output port 2).
+  {
+    unique_ptr<AbstractValue> owned_metadata =
+        make_unique<Value<vector<BodyMetadata>>>(vector<BodyMetadata>());
+    auto metadata = owned_metadata->GetValue<vector<BodyMetadata>>();
+    for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
+      metadata.emplace_back(tree_->get_body(ibody));
+    }
+    output->add_port(move(owned_metadata));
+  }
+
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
