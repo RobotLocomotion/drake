@@ -36,7 +36,7 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
     std::unique_ptr<BasicVector<T>> data) {
   return make_unique<FreestandingInputPort>(std::move(data));
 }
-#if 0
+
 // Tests the ability to load a URDF model instance into the world of a rigid
 // body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
@@ -142,7 +142,6 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(dqdt.y(), positions_derivatives.GetAtIndex(5));
   EXPECT_EQ(dqdt.z(), positions_derivatives.GetAtIndex(6));
 }
-#endif
 
 class KukaArmTest : public ::testing::Test {
  protected:
@@ -173,7 +172,6 @@ class KukaArmTest : public ::testing::Test {
   std::unique_ptr<ContinuousState<double>> derivatives_;
 };
 
-#if 0
 // Tests that the KukaArm system allocates a continuous state of the proper
 // size in the context.
 TEST_F(KukaArmTest, StateHasTheRightSizes) {
@@ -209,7 +207,6 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
   ASSERT_EQ(kNumStates_, xc.size());
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
-#endif
 
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
 // For a RigidBodyPlant<T> the first output of the system should equal the
@@ -293,7 +290,6 @@ TEST_F(KukaArmTest, EvalOutput) {
   }
 }
 
-#if 0
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
 // The test is performed by comparing against the results obtained with an RBS1
 // model of the same Kuka arm.
@@ -387,7 +383,6 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   EXPECT_TRUE(rbs1->number_of_velocities() == rbs2->get_num_velocities());
   EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
 }
-#endif
 
 }  // namespace
 }  // namespace test

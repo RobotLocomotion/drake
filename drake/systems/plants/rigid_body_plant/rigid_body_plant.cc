@@ -198,24 +198,21 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
 
   // Allocates output for the RigidBodyPlant poses (output port 1).
   {
-    std::unique_ptr<BasicVector<T>> data(
-        new VectorOfPoses<T>(get_num_bodies()));
-    std::unique_ptr<OutputPort> port(new OutputPort(move(data)));
+    auto data = make_unique<VectorOfPoses<T>>(get_num_bodies());
+    auto port = make_unique<OutputPort> (move(data));
     output->get_mutable_ports()->push_back(move(port));
   }
 
   // Allocates output for metadata (output port 2).
   {
-    unique_ptr<AbstractValue> owned_metadata =
+    auto owned_metadata =
         make_unique<Value<vector<BodyMetadata>>>(vector<BodyMetadata>());
     auto& metadata = owned_metadata->GetMutableValue<vector<BodyMetadata>>();
-
     for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
       metadata.emplace_back(tree_->get_body(ibody));
     }
     output->add_port(move(owned_metadata));
   }
-
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 

@@ -64,11 +64,18 @@ class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
   VectorOfPoses* DoClone() const override;
 };
 
+/// This class encapsulates all the constant metadata that belongs to a given
+/// RigidBody. Notice that mass or moments of inertia can in general be
+/// parameters of a system and therefore could change.
 class DRAKE_RBP_EXPORT BodyMetadata {
  public:
+  /// Constructs a RigidBody metadata object from @p body.
   explicit BodyMetadata(const RigidBody& body);
+  /// Returns the name of the body.
   const std::string& name() const;
+  /// Returns the model instance id of the body.
   int model_instance_id() const;
+  /// Retuns the vector of visual collision elements for this body.
   const DrakeShapes::VectorOfVisualElements& visual_elements() const;
  private:
   const RigidBody& body_;
@@ -87,8 +94,12 @@ class DRAKE_RBP_EXPORT BodyMetadata {
 /// does not apply these limits. The gear box factor effectively is a
 /// multiplier on the input actuation to the RigidBodyPlant.
 ///
-/// <B>%System output</B>: A %RigidBodyPlant outputs the state of the system in
-/// a vector valued port.
+/// <B>%System output</B>:
+/// - Port 0: The state of the system in a vector valued port.
+/// - Port 1: A VectorOfPoses containing the poses for each RigidBody in the
+/// system.
+/// - Port 2: An AbstractValue port encapsulating a `std::vector<BodyMetadata>`
+/// containing the constant metadata associated to each RigidBody in the system.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case
