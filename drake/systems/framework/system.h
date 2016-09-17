@@ -383,8 +383,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
                                                    SamplingSpec sampling) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, kVectorValued,
-                               size, sampling);
+    output_ports_.emplace_back(
+        this, kOutputPort, port_number, type, size, sampling);
     return output_ports_.back();
   }
 
