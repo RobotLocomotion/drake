@@ -50,8 +50,7 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& source_->get_output_vector(context, 0);
   // to directly get an Eigen expression.
-  const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
   EXPECT_TRUE(kConstantVectorSource.isApprox(
       output_vector->get_value(), Eigen::NumTraits<double>::epsilon()));

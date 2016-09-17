@@ -111,12 +111,7 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
     dut->EvalOutput(*context.get(), output.get());
 
     // Gets the output of the LcmSubscriberSystem.
-    const drake::systems::VectorBase<double>* vector =
-        output->get_vector_data(0);
-
-    // Downcasts the output vector to be a pointer to a BasicVector.
-    const BasicVector<double>& basic_vector =
-        dynamic_cast<const BasicVector<double>&>(*vector);
+    const BasicVector<double>& basic_vector = *output->get_vector_data(0);
 
     // Verifies that the size of the basic vector is correct.
     if (basic_vector.size() == kDim) {
