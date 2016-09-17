@@ -3,6 +3,10 @@
 /// @file
 /// This file contains abbreviated definitions for certain specializations of
 /// Eigen::Matrix that are commonly used in Drake.
+/// These convenient definitions are templated on the scalar type of the Eigen
+/// object. While Drake uses `<T>` for scalar types across the entire code base
+/// we decided in this file to use `<Scalar>` to be more consistent with the
+/// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
 #include <Eigen/Dense>
