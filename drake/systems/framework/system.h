@@ -116,7 +116,18 @@ class System {
       // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
       // once abstract ports are implemented in 3164.
       if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorBase<T>* output_vector = output->get_vector_data(i);
+        const VectorBase<T>* output_vector;
+        // This try/catch only fails if there is an inconsistency between the
+        // type declared in the system's port descriptors and the actual
+        // output type.
+        try {
+          output_vector = output->get_vector_data(i);
+        } catch (std::bad_cast& e) {
+          std::string msg =
+              std::string("Output port #") + std::to_string(i) +
+                  std::string(" is not vector valued.");
+          DRAKE_ABORT_MSG(msg.c_str());
+        }
         DRAKE_THROW_UNLESS(output_vector != nullptr);
         DRAKE_THROW_UNLESS(output_vector->size() ==
                            get_output_port(i).get_size());
@@ -383,8 +394,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
                                                    SamplingSpec sampling) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(this, kOutputPort, port_number, kVectorValued,
-                               size, sampling);
+    output_ports_.emplace_back(
+        this, kOutputPort, port_number, type, size, sampling);
     return output_ports_.back();
   }
 
