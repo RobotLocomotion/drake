@@ -198,20 +198,10 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& q) {
-  using std::asin;
-  using std::atan2;
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto w = q_normalized(0);
-  auto x = q_normalized(1);
-  auto y = q_normalized(2);
-  auto z = q_normalized(3);
-
-  Vector3<typename Derived::Scalar> ret;
-  ret << atan2(2.0 * (w * x + y * z), w * w + z * z - (x * x + y * y)),
-      asin(2.0 * (w * y - z * x)),
-      atan2(2.0 * (w * z + x * y), w * w + x * x - (y * y + z * z));
-  return ret;
+  Eigen::Quaternion<typename Derived::Scalar> q_eigen(q(0), q(1), q(2), q(3));
+  drake::Vector3<typename Derived::Scalar> euler_angle = q_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
+  return drake::Vector3<typename Derived::Scalar>(euler_angle(2), euler_angle(1), euler_angle(0));
 }
 
 template <typename Derived>
