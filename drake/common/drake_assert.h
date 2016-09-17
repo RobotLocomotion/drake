@@ -71,7 +71,8 @@ namespace drake {
 namespace detail {
 // Abort the program with an error message.
 DRAKECOMMON_EXPORT
-void Abort(const char* condition, const char* func, const char* file, int line);
+[[ noreturn ]] void Abort(const char* condition,
+                          const char* func, const char* file, int line);
 }  // namespace detail
 }  // namespace drake
 
