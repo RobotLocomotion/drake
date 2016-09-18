@@ -22,10 +22,10 @@ class DRAKEAUTOMOTIVE_EXPORT SimpleCarStateTranslator
       : LcmAndVectorBaseTranslator(SimpleCarStateIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
-  void TranslateLcmToVectorBase(
+  void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       systems::VectorBase<double>* vector_base) const override;
-  void TranslateVectorBaseToLcm(
+  void Serialize(
       double time, const systems::VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };

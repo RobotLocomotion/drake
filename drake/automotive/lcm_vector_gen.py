@@ -236,10 +236,10 @@ class DRAKEAUTOMOTIVE_EXPORT %(camel)sTranslator
       : LcmAndVectorBaseTranslator(%(indices)s::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
-  void TranslateLcmToVectorBase(
+  void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       systems::VectorBase<double>* vector_base) const override;
-  void TranslateVectorBaseToLcm(double time,
+  void Serialize(double time,
       const systems::VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
@@ -282,7 +282,7 @@ def generate_allocate_output_vector(cc, caller_context, fields):
     put(cc, ALLOCATE_OUTPUT_VECTOR % context, 2)
 
 LCM_TO_VECTOR_BASE_BEGIN = """
-void %(camel)sTranslator::TranslateVectorBaseToLcm(
+void %(camel)sTranslator::Serialize(
     double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
@@ -311,7 +311,7 @@ def generate_lcm_to_vector_base(cc, caller_context, fields):
     put(cc, LCM_TO_VECTOR_BASE_END % context, 2)
 
 VECTOR_BASE_TO_LCM_BEGIN = """
-void %(camel)sTranslator::TranslateLcmToVectorBase(
+void %(camel)sTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);

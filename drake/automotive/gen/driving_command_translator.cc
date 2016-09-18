@@ -15,7 +15,7 @@ DrivingCommandTranslator::AllocateOutputVector() const {
   return std::make_unique<DrivingCommand<double>>();
 }
 
-void DrivingCommandTranslator::TranslateVectorBaseToLcm(
+void DrivingCommandTranslator::Serialize(
     double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
@@ -31,7 +31,7 @@ void DrivingCommandTranslator::TranslateVectorBaseToLcm(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void DrivingCommandTranslator::TranslateLcmToVectorBase(
+void DrivingCommandTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);

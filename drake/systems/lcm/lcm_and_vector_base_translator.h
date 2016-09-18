@@ -59,7 +59,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
    * This often occurs when the size of the @p vector_base does not equal
    * or is incompatible with the size of the decoded LCM message.
    */
-  virtual void TranslateLcmToVectorBase(
+  virtual void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const = 0;
 
@@ -74,7 +74,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmAndVectorBaseTranslator {
    * @param[out] lcm_message_bytes The LCM message bytes.
    * This pointer must not be `nullptr`.
    */
-  virtual void TranslateVectorBaseToLcm(double time,
+  virtual void Serialize(double time,
       const VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const = 0;
 

@@ -15,7 +15,7 @@ IdmWithTrajectoryAgentStateTranslator::AllocateOutputVector() const {
   return std::make_unique<IdmWithTrajectoryAgentState<double>>();
 }
 
-void IdmWithTrajectoryAgentStateTranslator::TranslateVectorBaseToLcm(
+void IdmWithTrajectoryAgentStateTranslator::Serialize(
     double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
@@ -33,7 +33,7 @@ void IdmWithTrajectoryAgentStateTranslator::TranslateVectorBaseToLcm(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void IdmWithTrajectoryAgentStateTranslator::TranslateLcmToVectorBase(
+void IdmWithTrajectoryAgentStateTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
