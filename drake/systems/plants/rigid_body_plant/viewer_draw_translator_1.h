@@ -19,9 +19,9 @@ namespace systems {
 class DRAKELCMSYSTEM2_EXPORT ViewerDrawTranslator1
     : public lcm::LcmAndVectorBaseTranslator {
  public:
-  // Defines the number of states per body. There are seven states: three position
-  // states specified by a 3-vector (x, y, and z) and four orientation states
-  // specified by a quaternion 4-vector (w, x, y, z).
+  // Defines the number of states per body. There are seven states: three
+  // position states specified by a 3-vector (x, y, and z) and four orientation
+  // states specified by a quaternion 4-vector (w, x, y, z).
   static const int kNumStatesPerBody = 7;
 
   /**

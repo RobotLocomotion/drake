@@ -6,7 +6,7 @@
 
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
-// NOLINT(readability/line_length)
+// NOLINT(whitespace/line_length)
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm_1.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
