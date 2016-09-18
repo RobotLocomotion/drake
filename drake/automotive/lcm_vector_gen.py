@@ -289,7 +289,7 @@ void %(camel)sTranslator::Serialize(
   drake::lcmt_%(snake)s_t message;
   message.timestamp = static_cast<int64_t>(time * 1000);
 """
-DESERIALIZE = """
+DESERIALIZE_FIELD = """
   message.%(field)s = vector->%(field)s();
 """
 DESERIALIZE_END = """
@@ -305,7 +305,7 @@ def generate_deserialize(cc, caller_context, fields):
     put(cc, DESERIALIZE_BEGIN % context, 1)
     for field in fields:
         context.update(field = field)
-        put(cc, DESERIALIZE % context, 1)
+        put(cc, DESERIALIZE_FIELD % context, 1)
     put(cc, DESERIALIZE_END % context, 2)
 
 SERIALIZE_BEGIN = """
