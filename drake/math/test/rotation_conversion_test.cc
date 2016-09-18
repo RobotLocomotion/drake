@@ -30,10 +30,11 @@ using std::cos;
 namespace drake {
 namespace math {
 namespace {
-// Compare the axis and angle separetly. We are not using AngleAxis.isApprox()
-// because a difference of 2*PI in rotation angle matters; Eigen thinks a
-// rotation of 0 around axis @p a is different from a rotation of 2*pi around
-// the same axis @p a.
+// Compare the equivalent rotation matrix.
+// Note that we are not comparing the axis-angle directly. This is because the
+// axis-angle has singularities around 0 degree rotation and 180 degree rotation
+// So two axis-angles that are slightly different when the angle is close to 0,
+// their equivalent rotation matrices are almost the same
 bool compareAngleAxis(const AngleAxisd &a1, const AngleAxisd &a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
