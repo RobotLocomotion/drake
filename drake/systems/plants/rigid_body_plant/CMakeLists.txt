@@ -1,6 +1,7 @@
 set(source_files
-    lcmt_viewer_draw_translator_1.cc
-    rigid_body_plant.cc)
+    rigid_body_plant.cc
+    rigid_body_tree_visualizer_lcm_1.cc
+    viewer_draw_translator_1.cc)
 
 add_library_with_exports(LIB_NAME drake_rbp SOURCE_FILES ${source_files})
 target_link_libraries(drake_rbp
@@ -11,8 +12,9 @@ target_link_libraries(drake_rbp
         drakeOptimization)
 
 drake_install_headers(
-    lcmt_viewer_draw_translator_1.h
-    rigid_body_plant.h)
+    rigid_body_plant.h
+    rigid_body_tree_visualizer_lcm_1.h
+    viewer_draw_translator_1.h)
 pods_install_libraries(drake_rbp)
 pods_install_pkg_config_file(drake-rbs
         CFLAGS -I${CMAKE_INSTALL_PREFIX}/include

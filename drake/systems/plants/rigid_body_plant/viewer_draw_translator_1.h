@@ -16,7 +16,7 @@ namespace systems {
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmtViewerDrawTranslator1
+class DRAKELCMSYSTEM2_EXPORT ViewerDrawTranslator1
     : public lcm::LcmAndVectorBaseTranslator {
  public:
   // Defines the number of states per body. There are seven states: three position
@@ -35,7 +35,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmtViewerDrawTranslator1
    * message. This reference must remain valid for the lifetime of the object
    * instantiation of this class.
    */
-  explicit LcmtViewerDrawTranslator1(const RigidBodyTree& tree);
+  explicit ViewerDrawTranslator1(const RigidBodyTree& tree);
 
   void TranslateLcmToVectorBase(
       const void* lcm_message_bytes, int lcm_message_length,

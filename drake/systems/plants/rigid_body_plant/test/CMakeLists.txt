@@ -6,13 +6,23 @@ if(BULLET_FOUND)
       drake_rbp drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME rigid_body_plant_test COMMAND rigid_body_plant_test)
 
-  add_executable(lcmt_viewer_draw_translator_test_1
-      lcmt_viewer_draw_translator_test_1.cc)
-  target_link_libraries(lcmt_viewer_draw_translator_test_1
+  add_executable(viewer_draw_translator_1_test
+      viewer_draw_translator_1_test.cc)
+  target_link_libraries(viewer_draw_translator_1_test
       drake_rbp
       drakeLCMSystem2
       drakeRBSystem
       ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME lcmt_viewer_draw_translator_test_1 COMMAND
-      lcmt_viewer_draw_translator_test_1)
+  add_test(NAME viewer_draw_translator_1_test COMMAND
+      viewer_draw_translator_1_test)
+
+  add_executable(rigid_body_tree_visualizer_lcm_1_test
+      rigid_body_tree_visualizer_lcm_1_test.cc)
+  target_link_libraries(rigid_body_tree_visualizer_lcm_1_test
+      drake_rbp
+      drakeLCMSystem2
+      drakeRBSystem
+      ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME rigid_body_tree_visualizer_lcm_1_test COMMAND
+      rigid_body_tree_visualizer_lcm_1_test)
 endif()
