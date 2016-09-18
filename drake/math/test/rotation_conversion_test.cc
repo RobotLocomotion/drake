@@ -35,11 +35,12 @@ namespace {
 // rotation of 0 around axis @p a is different from a rotation of 2*pi around
 // the same axis @p a.
 bool compareAngleAxis(const AngleAxisd &a1, const AngleAxisd &a2) {
-  bool ret = CompareMatrices(a1.axis(), a2.axis(), 1E-10, MatrixCompareType::absolute);
-  ret &= (std::abs(sin(a1.angle()) - sin(a2.angle())) < 1E-10) & (std::abs(cos(a1.angle()) - cos(a2.angle())) < 1E-10);
-  return ret;
+  return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
+bool compareQuaternion(const Vector4d &q1, const Vector4d &q2) {
+  return q1.isApprox(q2) | q1.isApprox(-q2);
+}
 Quaterniond eulerToQuaternion(const Vector3d euler) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''
   return AngleAxisd(euler(0), Vector3d::UnitZ())
@@ -148,6 +149,10 @@ TEST_F(RotationConversionTest, AxisQuat) {
     auto q = axis2quat(ai);
     auto q_eigen = quat2eigenQuaternion(q);
     EXPECT_TRUE(q_eigen.isApprox(q_eigen_expected));
+    // axis2quat should be the inversion of quat2axis
+    auto a_expected = quat2axis(q);
+    AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
+    EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
   }
 }
 
@@ -173,6 +178,11 @@ TEST_F(RotationConversionTest, AxisRotmat) {
                                 rotmat,
                                 1E-10,
                                 MatrixCompareType::absolute));
+
+    // axis2rotmat should be the inversion of rotmat2axis
+    auto a_expected = rotmat2axis(rotmat);
+    AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
+    EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
   }
 }
 
@@ -185,6 +195,10 @@ TEST_F(RotationConversionTest, AxisRPY) {
     auto rpy = axis2rpy(ai);
     Vector3d euler(rpy(2), rpy(1), rpy(0));
     EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
+    // axis2rpy should be the inversion of rpy2axis
+    auto a_expected = rpy2axis(rpy);
+    AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
+    EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
   }
 }
 
@@ -199,6 +213,9 @@ TEST_F(RotationConversionTest, QuatAxis) {
     auto a = quat2axis(qi);
     auto a_eigen = Eigen::AngleAxis<double>(a(3), a.head<3>());
     EXPECT_TRUE(compareAngleAxis(a_eigen, a_eigen_expected));
+    // quat2axis should be the inversion of axis2quat
+    auto quat_expected = axis2quat(a);
+    EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
 }
 
@@ -211,9 +228,9 @@ TEST_F(RotationConversionTest, QuatRotmat) {
     auto rotmat_expected = qi_eigen.toRotationMatrix();
     auto rotmat = quat2rotmat(qi);
     EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10, MatrixCompareType::absolute));
-    // compare quat2rotmat(q) and quat2rotmat(-q), the rotation matrices should
-    // be the same.
-    EXPECT_TRUE(CompareMatrices(rotmat, quat2rotmat(-qi), 1E-10, MatrixCompareType::absolute));
+    // quat2rotmat should be the inversion of rotmat2quat
+    auto quat_expected = rotmat2quat(rotmat);
+    EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
 }
 
@@ -227,6 +244,9 @@ TEST_F(RotationConversionTest, QuatRPY) {
     auto rpy = quat2rpy(qi);
     Vector3d ea(rpy(2), rpy(1), rpy(0));
     EXPECT_TRUE(compareEulerAngles(ea, ea_eigen));
+    // quat2rpy should be the inversion of rpy2quat
+    auto quat_expected = rpy2quat(rpy);
+    EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
 }
 
@@ -253,6 +273,9 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     auto quat_eigen = Quaterniond(quat(0), quat(1), quat(2), quat(3));
     auto quat_expected_eigen = Quaterniond(Ri);
     EXPECT_TRUE(quat_eigen.isApprox(quat_expected_eigen));
+    // rotmat2quat should be the inversion of quat2rotmat
+    auto rotmat_expected = quat2rotmat(quat);
+    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
 }
 
@@ -265,6 +288,9 @@ TEST_F(RotationConversionTest, RotmatAxis) {
     auto a = rotmat2axis(Ri);
     auto a_eigen = AngleAxisd(a(3), a.head<3>());
     EXPECT_TRUE(compareAngleAxis(a_eigen, a_eigen_expected));
+    // rotmat2axis should be the inversion of axis2rotmat
+    auto rotmat_expected = axis2rotmat(a);
+    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
 }
 
@@ -278,6 +304,9 @@ TEST_F(RotationConversionTest, RotmatRPY) {
     auto rpy = rotmat2rpy(Ri);
     Vector3d ea(rpy(2), rpy(1), rpy(0));
     EXPECT_TRUE(compareEulerAngles(ea, ea_expected));
+    // rotmat2rpy should be the inversion of rpy2rotmat
+    auto rotmat_expected = rpy2rotmat(rpy);
+    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
 }
 TEST_F(RotationConversionTest, RPYRotmat) {
@@ -291,6 +320,10 @@ TEST_F(RotationConversionTest, RPYRotmat) {
     * Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     auto rotmat = rpy2rotmat(rpyi);
     EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(), 1E-10, MatrixCompareType::absolute));
+    // rpy2rotmat should be the inversion of rotmat2rpy
+    Vector3d rpy_expected = rotmat2rpy(rotmat);
+    Vector3d euler_expected(rpy_expected(2), rpy_expected(1), rpy_expected(0));
+    EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
   }
 }
 
@@ -307,6 +340,11 @@ TEST_F(RotationConversionTest, RPYAxis) {
     auto a = rpy2axis(rpyi);
     AngleAxisd a_eigen(a(3), a.head<3>());
     EXPECT_TRUE(compareAngleAxis(a_eigen, a_eigen_expected));
+
+    // Compute rpy2axis should be the inversion of axis2rpy
+    Vector3d rpy_expected = axis2rpy(a);
+    Vector3d euler_expected (rpy_expected(2), rpy_expected(1), rpy_expected(0));
+    EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
   }
 }
 
@@ -320,37 +358,13 @@ TEST_F(RotationConversionTest, RPYQuat) {
     auto quat = rpy2quat(rpyi);
     auto quat_eigen = quat2eigenQuaternion(quat);
     EXPECT_TRUE(quat_eigen.isApprox((quat_eigen_expected)));
+    // rpy2quat should be the inversion of quat2rpy
+    auto rpy_expected = quat2rpy(quat);
+    Vector3d euler_expected(rpy_expected(2), rpy_expected(1), rpy_expected(0));
+    EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
   }
 }
 /*
-TEST_F(RotationConversionTest, QuatRPY) {
-  Vector3d rpy = quat2rpy(q_);
-  Vector4d q_back = rpy2quat(rpy);
-  EXPECT_NEAR(acos(std::abs(q_.transpose() * q_back)), 0.0, 1e-6);
-}
-
-TEST_F(RotationConversionTest, RotmatRPY) {
-  Vector3d rpy = rotmat2rpy(R_);
-  Matrix3d R_back = rpy2rotmat(rpy);
-  EXPECT_TRUE(CompareMatrices(R_, R_back, 1e-6, MatrixCompareType::absolute));
-}
-
-TEST_F(RotationConversionTest, AxisRPY) {
-  Vector3d rpy = rotmat2rpy(R_);
-  Vector4d axis = rpy2axis(rpy);
-  Vector3d rpy_back = axis2rpy(axis);
-  EXPECT_TRUE(
-      CompareMatrices(rpy, rpy_back, 1e-6, MatrixCompareType::absolute));
-}
-
-TEST_F(RotationConversionTest, QuatEigenQuaternion) {
-  Quaterniond eigenQuat = quat2eigenQuaternion(q_);
-  Matrix3d R_expected = quat2rotmat(q_);
-  Matrix3d R_eigen = eigenQuat.matrix();
-  EXPECT_TRUE(
-      CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
-}
-
 TEST_F(RotationConversionTest, DRPYRotmat) {
   Vector3d rpy = rotmat2rpy(R_);
   Matrix3d R = rpy2rotmat(rpy);
