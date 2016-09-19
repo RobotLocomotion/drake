@@ -3,15 +3,15 @@
 # 16.04 support is in beta. It is not tested in CI or officially supported.
 
 if [[ $EUID -ne 0 ]]; then
-   echo "The Drake prerequisite set-up script must run as root. Please use sudo." 1>&2
-   exit 1
+    echo "The Drake prerequisite set-up script must run as root. Please use sudo." 1>&2
+    exit 1
 fi
 
 . /etc/lsb-release
 
 if [[ $DISTRIB_RELEASE -ne "16.04" ]]; then
-  echo "The Drake prerequisite set-up script only supports Ubuntu 16.04." 1>&2
-  exit 1
+    echo "The Drake prerequisite set-up script only supports Ubuntu 16.04." 1>&2
+    exit 1
 fi
 
 # Install the APT dependencies.
@@ -64,7 +64,7 @@ unzip
 valgrind
 
 EOF
-)
+    )
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab
