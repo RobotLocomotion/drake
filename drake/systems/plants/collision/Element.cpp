@@ -27,7 +27,7 @@ Element::Element(const Element& other)
       // Issue #2662 tracks the resolution of these problems.
       id(reinterpret_cast<ElementId>(this)),
       is_static_(other.is_static_), body_(other.body_),
-      collision_cliques_(other.collision_cliques_) {}
+      collision_cliques_(other.collision_cliques_){}
 
 Element* Element::clone() const { return new Element(*this); }
 
