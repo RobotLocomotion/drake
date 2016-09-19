@@ -1,8 +1,10 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <set>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -15,12 +17,88 @@ namespace drake {
 namespace systems {
 
 /// DiagramBuilder is a factory class for Diagram. It collects the dependency
-/// graph of constituent systems, and topologically sorts them.
+/// graph of constituent systems, and topologically sorts them. It is single
+/// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
+/// of the constituent systems, and should therefore be discarded.
+///
+/// A system must be added to the DiagramBuilder with AddSystem before it can
+/// be wired up in any way.
 template <typename T>
 class DiagramBuilder {
  public:
   DiagramBuilder() {}
   virtual ~DiagramBuilder() {}
+
+  /// Takes ownership of @p system and adds it to the builder. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto foo = builder.AddSystem(std::make_unique<Foo<T>>());
+  /// @endcode
+  ///
+  /// @tparam S The type of system to add.
+  template<class S>
+  S* AddSystem(std::unique_ptr<S> system) {
+    S* raw_sys_ptr = system.get();
+    systems_.insert(raw_sys_ptr);
+    registered_systems_.push_back(std::move(system));
+    return raw_sys_ptr;
+  }
+
+  /// Constructs a new system with the given @p args, and adds it to the
+  /// builder, which retains ownership. Returns a bare pointer to the System,
+  /// which will remain valid for the lifetime of the Diagram built by this
+  /// builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   auto foo = builder.AddSystem<Foo<double>>("name", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto foo = builder.template AddSystem<Foo<T>>("name", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  ///
+  /// @tparam S The type of System to construct. Must subclass System<T>.
+  template<class S, typename... Args>
+  S* AddSystem(Args&&... args) {
+    return AddSystem(std::make_unique<S>(std::forward<Args>(args)...));
+  }
+
+  /// Constructs a new system with the given @p args, and adds it to the
+  /// builder, which retains ownership. Returns a bare pointer to the System,
+  /// which will remain valid for the lifetime of the Diagram built by this
+  /// builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   // Foo must be a template.
+  ///   auto foo = builder.AddSystem<Foo>("name", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto foo = builder.template AddSystem<Foo>("name", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  /// @tparam S A template for the type of System to construct. The template
+  /// will be specialized on the scalar type T of this builder.
+  template<template<typename Scalar> class S, typename... Args>
+  S<T>* AddSystem(Args&&... args) {
+    return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
+  }
 
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const SystemPortDescriptor<T>& src,
@@ -30,8 +108,8 @@ class DiagramBuilder {
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
     PortIdentifier src_id{src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
-    Register(src.get_system());
-    Register(dest.get_system());
+    ThrowIfSystemNotRegistered(src.get_system());
+    ThrowIfSystemNotRegistered(dest.get_system());
     dependency_graph_[dest_id] = src_id;
   }
 
@@ -61,7 +139,7 @@ class DiagramBuilder {
     DRAKE_DEMAND(input.get_face() == kInputPort);
     PortIdentifier id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
-    Register(input.get_system());
+    ThrowIfSystemNotRegistered(input.get_system());
     input_port_ids_.push_back(id);
     diagram_input_set_.insert(id);
   }
@@ -70,7 +148,7 @@ class DiagramBuilder {
   /// output of the entire diagram.
   void ExportOutput(const SystemPortDescriptor<T>& output) {
     DRAKE_DEMAND(output.get_face() == kOutputPort);
-    Register(output.get_system());
+    ThrowIfSystemNotRegistered(output.get_system());
     output_port_ids_.push_back(
         PortIdentifier{output.get_system(), output.get_index()});
   }
@@ -78,8 +156,10 @@ class DiagramBuilder {
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput. Throws std::logic_error if the graph is
   /// not buildable.
-  std::unique_ptr<Diagram<T>> Build() const {
-    return std::unique_ptr<Diagram<T>>(new Diagram<T>(Compile()));
+  std::unique_ptr<Diagram<T>> Build() {
+    std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
+    diagram->Own(std::move(registered_systems_));
+    return std::move(diagram);
   }
 
   /// Configures @p target to have the topology that has been described by
@@ -88,27 +168,23 @@ class DiagramBuilder {
   ///
   /// Only Diagram subclasses should call this method. The target must not
   /// already be initialized.
-  void BuildInto(Diagram<T>* target) const {
+  void BuildInto(Diagram<T>* target) {
     target->Initialize(Compile());
+    target->Own(std::move(registered_systems_));
   }
 
  private:
   typedef typename Diagram<T>::PortIdentifier PortIdentifier;
-
-  void Register(const System<T>* sys) {
-    if (systems_.find(sys) != systems_.end()) {
-      // This system is already registered.
-      return;
-    }
-    systems_.insert(sys);
-    registered_systems_.push_back(sys);
-  }
 
   void ThrowIfInputAlreadyWired(const PortIdentifier& id) const {
     if (dependency_graph_.find(id) != dependency_graph_.end() ||
         diagram_input_set_.find(id) != diagram_input_set_.end()) {
       throw std::logic_error("Input port is already wired.");
     }
+  }
+
+  void ThrowIfSystemNotRegistered(const System<T>* system) const {
+    DRAKE_THROW_UNLESS(systems_.find(system) != systems_.end());
   }
 
   // Runs Kahn's algorithm to compute the topological sort order of the
@@ -147,9 +223,9 @@ class DiagramBuilder {
 
     // Find the systems that have no direct-feedthrough inputs.
     std::vector<const System<T>*> nodes_with_in_degree_zero;
-    for (const System<T>* system : registered_systems_) {
-      if (dependencies.find(system) == dependencies.end()) {
-        nodes_with_in_degree_zero.push_back(system);
+    for (const auto& system : registered_systems_) {
+      if (dependencies.find(system.get()) == dependencies.end()) {
+        nodes_with_in_degree_zero.push_back(system.get());
       }
     }
 
@@ -207,7 +283,7 @@ class DiagramBuilder {
   // membership queries.
   std::set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
-  std::vector<const System<T>*> registered_systems_;
+  std::vector<std::unique_ptr<System<T>>> registered_systems_;
 };
 
 }  // namespace systems

@@ -15,7 +15,7 @@ namespace lcm {
 
 using std::runtime_error;
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
+void TranslatorBetweenLcmtDrakeSignal::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base);
@@ -48,7 +48,7 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(double time,
+void TranslatorBetweenLcmtDrakeSignal::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
