@@ -26,7 +26,7 @@ GTEST_TEST(SimpleCarStateTranslatorTest, RoundtripTest) {
   double time = 0;
   std::vector<uint8_t> lcm_message_bytes;
   dut.Serialize(time, publish_state_vector, &lcm_message_bytes);
-  EXPECT_GT(lcm_message_bytes.size(), 0);
+  EXPECT_GT(lcm_message_bytes.size(), 0u);
 
   // Decode the message.
   SimpleCarState<double> subscribe_state_vector;
