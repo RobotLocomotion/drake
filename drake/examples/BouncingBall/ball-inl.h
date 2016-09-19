@@ -73,7 +73,7 @@ template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 Ball<T>::AllocateContinuousState() const {
   std::unique_ptr<systems::BasicVector<T>> state(new systems::BasicVector<T>(2));
-  state->get_mutable_value() << 0, 0;   // initial state values.
+  state->get_mutable_value() << 10, 0;   // initial state values.
   return std::make_unique<systems::ContinuousState<T>>(std::move(state));
 }
 
