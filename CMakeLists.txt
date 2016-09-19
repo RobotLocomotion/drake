@@ -203,6 +203,7 @@ drake_add_external(nlopt PUBLIC
     --enable-maintainer-mode
     --enable-shared
     --prefix=${CMAKE_INSTALL_PREFIX}
+    --exec-prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
