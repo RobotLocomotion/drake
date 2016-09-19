@@ -91,7 +91,7 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2axis(
     const Eigen::MatrixBase<Derived>& R) {
-  return(quat2axis(rotmat2quat(R)));
+  return (quat2axis(rotmat2quat(R)));
 }
 
 template <typename Derived>
@@ -99,8 +99,11 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
     const Eigen::MatrixBase<Derived>& R) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
-  auto euler_angles = Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::template FromRotation<false, false, false>(R);
-  return drake::Vector3<typename Derived::Scalar>(euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
+  auto euler_angles =
+      Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
+          template FromRotation<false, false, false>(R);
+  return drake::Vector3<typename Derived::Scalar>(
+      euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
 }
 
 template <typename Derived>
