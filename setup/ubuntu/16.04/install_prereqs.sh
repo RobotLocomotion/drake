@@ -16,51 +16,55 @@ fi
 
 # Install the APT dependencies.
 # TODO(david-german-tri): Can we remove libvtk-java, subversion?
-apt install --no-install-recommends \
-autoconf \
-automake \
-bison \
-clang \
-cmake \
-cmake-curses-gui \
-default-jdk \
-doxygen \
-flex \
-g++-5 \
-g++-5-multilib \
-gdb \
-gfortran \
-gfortran-5 \
-git \
-graphviz \
-libgtk2.0-dev \
-libhtml-form-perl \
-libmpfr-dev \
-libpng12-dev \
-libqt4-dev \
-libqt4-opengl-dev \
-libqwt-dev \
-libterm-readkey-perl \
-libtool \
-libvtk5-dev \
-libvtk5-qt4-dev \
-libvtk-java \
-libwww-perl \
-make \
-ninja-build \
-perl \
-pkg-config \
-python-bs4 \
-python-dev \
-python-gtk2 \
-python-html5lib \
-python-numpy \
-python-sphinx \
-python-vtk \
-subversion \
-swig \
-unzip \
+apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+
+autoconf
+automake
+bison
+clang
+cmake
+cmake-curses-gui
+default-jdk
+doxygen
+flex
+g++-5
+g++-5-multilib
+gdb
+gfortran
+gfortran-5
+git
+graphviz
+libgtk2.0-dev
+libhtml-form-perl
+libmpfr-dev
+libpng12-dev
+libqt4-dev
+libqt4-opengl-dev
+libqwt-dev
+libterm-readkey-perl
+libtool
+libvtk5-dev
+libvtk5-qt4-dev
+libvtk-java
+libwww-perl
+make
+ninja-build
+perl
+pkg-config
+python-bs4
+python-dev
+python-gtk2
+python-html5lib
+python-numpy
+python-sphinx
+python-vtk
+subversion
+swig
+unzip
 valgrind
+
+EOF
+)
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab
