@@ -156,7 +156,7 @@ bool RigidBody::adjacentTo(const RigidBody& other) const {
            !(other.joint_ && other.joint_->isFloating())));
 }
 
-bool RigidBody::CollidesWith(const RigidBody& other) const {
+bool RigidBody::CanCollideWith(const RigidBody &other) const {
   bool ignored =
       this == &other || adjacentTo(other) ||
       (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||

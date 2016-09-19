@@ -51,10 +51,10 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Returns true if this element should be checked for collisions
-   * with the other object.  CollidesWith should be symmetric: if
-   * A collides with B, B collides with A.
+   * with the other object.  CanCollidesWith should be symmetric: if
+   * A can collide with B, B can collide with A.
    */
-  virtual bool CollidesWith(const Element* other) const { return true; }
+  virtual bool CanCollideWith(const Element *other) const { return true; }
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
   is attached. **/
