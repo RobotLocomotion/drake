@@ -258,7 +258,14 @@ class DRAKERBM_EXPORT RigidBody {
   // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const;
 
-  bool CollidesWith(const RigidBody& other) const;
+  /**
+   * Returns `true` if this body should be checked for collisions
+   * with the other body.  CanCollidesWith should be symmetric: if
+   * A can collide with B, B can collide with A.
+   * @param other   The body to query against.
+   * @return `true` if collision between this and other should be tested.
+   */
+  bool CanCollideWith(const RigidBody &other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
