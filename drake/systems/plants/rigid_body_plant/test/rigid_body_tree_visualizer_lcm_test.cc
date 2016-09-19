@@ -7,7 +7,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 // NOLINT(whitespace/line_length)
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm_1.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
 namespace drake {
@@ -18,8 +18,8 @@ using std::make_unique;
 
 using DrakeShapes::Sphere;
 
-// Tests the basic functionality of the RigidBodyTreeVisualizerLcm1.
-GTEST_TEST(RigidBodyTreeVisualizerLcm1Tests, BasicTest) {
+// Tests the basic functionality of the RigidBodyTreeVisualizerLcm.
+GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
   // Define the number of rigid bodies in the RigidbodyTree.
   const int kNumBodies = 5;
 
@@ -69,9 +69,9 @@ GTEST_TEST(RigidBodyTreeVisualizerLcm1Tests, BasicTest) {
   // Instantiates the LCM subsystem.
   ::lcm::LCM lcm;
 
-  // Creates an RigidBodyTreeVisualizerLcm1 object using the tree and LCM that
+  // Creates an RigidBodyTreeVisualizerLcm object using the tree and LCM that
   // was just created. The name "dut" stands for "Device Under Test".
-  RigidBodyTreeVisualizerLcm1 dut(*tree.get(), &lcm);
+  RigidBodyTreeVisualizerLcm dut(*tree.get(), &lcm);
 
   // Verifies that the name of the system is correct.
   EXPECT_EQ(dut.get_name(), "rigid_body_tree_visualizer_lcm_1");

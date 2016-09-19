@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "drake/drakeLCMSystem2_export.h"
+#include "drake/drake_rbp_export.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -16,7 +16,7 @@ namespace systems {
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`.
  */
-class DRAKELCMSYSTEM2_EXPORT ViewerDrawTranslator1
+class DRAKE_RBP_EXPORT ViewerDrawTranslator
     : public lcm::LcmAndVectorBaseTranslator {
  public:
   // Defines the number of states per body. There are seven states: three
@@ -35,7 +35,7 @@ class DRAKELCMSYSTEM2_EXPORT ViewerDrawTranslator1
    * message. This reference must remain valid for the lifetime of the object
    * instantiation of this class.
    */
-  explicit ViewerDrawTranslator1(const RigidBodyTree& tree);
+  explicit ViewerDrawTranslator(const RigidBodyTree& tree);
 
   void TranslateLcmToVectorBase(
       const void* lcm_message_bytes, int lcm_message_length,

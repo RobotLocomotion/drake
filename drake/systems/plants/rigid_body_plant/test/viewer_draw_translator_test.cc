@@ -5,7 +5,7 @@
 
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator_1.h"
+#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
 namespace drake {
 namespace systems {
@@ -14,7 +14,7 @@ namespace {
 using std::make_unique;
 
 // Tests the basic functionality of the translator.
-GTEST_TEST(ViewerDrawTranslator1Tests, BasicTest) {
+GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // Define the number of rigid bodies to add to the `RigidbodyTree`.
   const int kNumBodies = 2;
 
@@ -27,14 +27,14 @@ GTEST_TEST(ViewerDrawTranslator1Tests, BasicTest) {
   }
   tree->compile();
 
-  // Creates an `LcmtViewerDrawTranslator1` object using the tree that was just
+  // Creates an `LcmtViewerDrawTranslator` object using the tree that was just
   // created. The name "dut" stands for "Device Under Test".
-  ViewerDrawTranslator1 dut(*tree.get());
+  ViewerDrawTranslator dut(*tree.get());
 
   // Instantiates a `BasicVector<double>`. Since there are `kNumBodies` bodies,
-  // there are `kNumBodies * ViewerDrawTranslator1::kNumStatesPerBody` values.
+  // there are `kNumBodies * ViewerDrawTranslator::kNumStatesPerBody` values.
   int num_states = kNumBodies *
-      ViewerDrawTranslator1::kNumStatesPerBody;
+      ViewerDrawTranslator::kNumStatesPerBody;
 
   BasicVector<double> original_vector(num_states);
   for (int i = 0; i < num_states; ++i) {

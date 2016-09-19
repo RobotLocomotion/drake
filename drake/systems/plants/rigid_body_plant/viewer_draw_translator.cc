@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator_1.h"
+#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
 #include <cstdint>
 #include <vector>
@@ -13,7 +13,7 @@ namespace systems {
 
 using std::runtime_error;
 
-ViewerDrawTranslator1::ViewerDrawTranslator1(
+ViewerDrawTranslator::ViewerDrawTranslator(
     const RigidBodyTree& tree) :
     // The minus one is needed to omit the world.
     LcmAndVectorBaseTranslator((tree.get_number_of_bodies() - 1) *
@@ -23,7 +23,7 @@ ViewerDrawTranslator1::ViewerDrawTranslator1(
 }
 
 // TODO(liang.fok) Implement this method.
-void ViewerDrawTranslator1::TranslateLcmToVectorBase(
+void ViewerDrawTranslator::TranslateLcmToVectorBase(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_ABORT_MSG("Unable to convert from a drake::lcmt_viewer_draw message to "
@@ -31,7 +31,7 @@ void ViewerDrawTranslator1::TranslateLcmToVectorBase(
                   "generalized state.");
 }
 
-void ViewerDrawTranslator1::TranslateVectorBaseToLcm(double time,
+void ViewerDrawTranslator::TranslateVectorBaseToLcm(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
@@ -74,7 +74,7 @@ void ViewerDrawTranslator1::TranslateVectorBaseToLcm(double time,
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void ViewerDrawTranslator1::initialize_draw_message() {
+void ViewerDrawTranslator::initialize_draw_message() {
   draw_msg_.num_links = tree_.bodies.size();
   std::vector<float> position = {0, 0, 0};
   std::vector<float> quaternion = {0, 0, 0, 1};

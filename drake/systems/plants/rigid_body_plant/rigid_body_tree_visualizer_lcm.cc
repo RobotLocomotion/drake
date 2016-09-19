@@ -1,15 +1,15 @@
 // NOLINT(whitespace/line_length)
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm_1.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
 
 namespace drake {
 namespace systems {
 
 namespace {
-// Defines the index of the port that the RigidBodyTreeVisualizerLcm1 uses.
+// Defines the index of the port that the RigidBodyTreeVisualizerLcm uses.
 const int kPortIndex = 0;
 }  // namespace
 
-RigidBodyTreeVisualizerLcm1::RigidBodyTreeVisualizerLcm1(
+RigidBodyTreeVisualizerLcm::RigidBodyTreeVisualizerLcm(
     const RigidBodyTree& tree, ::lcm::LCM* lcm) :
     lcm_(lcm), draw_message_translator_(tree) {
   int vector_size = tree.number_of_positions() + tree.number_of_velocities();
@@ -17,21 +17,21 @@ RigidBodyTreeVisualizerLcm1::RigidBodyTreeVisualizerLcm1(
   InitializeLoadMessage(tree);
 }
 
-std::string RigidBodyTreeVisualizerLcm1::get_name() const {
+std::string RigidBodyTreeVisualizerLcm::get_name() const {
   return "rigid_body_tree_visualizer_lcm_1";
 }
 
 const drake::lcmt_viewer_load_robot&
-RigidBodyTreeVisualizerLcm1::get_load_message() const {
+RigidBodyTreeVisualizerLcm::get_load_message() const {
   return load_message_;
 }
 
 const std::vector<uint8_t>&
-RigidBodyTreeVisualizerLcm1::get_draw_message_bytes() const {
+RigidBodyTreeVisualizerLcm::get_draw_message_bytes() const {
   return message_bytes_;
 }
 
-void RigidBodyTreeVisualizerLcm1::DoPublish(const Context<double>& context)
+void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
     const {
   // Before any draw commands, we need to send the load_robot message.
   if (context.get_time() == 0.0) {
@@ -57,12 +57,12 @@ void RigidBodyTreeVisualizerLcm1::DoPublish(const Context<double>& context)
   message_bytes_ = lcm_message_bytes;
 }
 
-void RigidBodyTreeVisualizerLcm1::PublishLoadRobot() const {
+void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
   lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT", &load_message_);
   sent_load_robot_ = true;
 }
 
-void RigidBodyTreeVisualizerLcm1::InitializeLoadMessage(
+void RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
     const RigidBodyTree& tree) {
   load_message_.num_links = tree.bodies.size();
   for (const auto& body : tree.bodies) {

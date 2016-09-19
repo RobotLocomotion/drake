@@ -2,11 +2,12 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/drake_rbp_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator_1.h"
+#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
@@ -38,7 +39,7 @@ namespace systems {
  *
  * @ingroup systems
  */
-class RigidBodyTreeVisualizerLcm1 : public LeafSystem<double> {
+class DRAKE_RBP_EXPORT RigidBodyTreeVisualizerLcm : public LeafSystem<double> {
  public:
   /**
    * A constructor that initializes the input port from which the generalized
@@ -54,7 +55,7 @@ class RigidBodyTreeVisualizerLcm1 : public LeafSystem<double> {
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    */
-  explicit RigidBodyTreeVisualizerLcm1(const RigidBodyTree& tree,
+  explicit RigidBodyTreeVisualizerLcm(const RigidBodyTree& tree,
       ::lcm::LCM* lcm);
 
   std::string get_name() const override;
@@ -100,7 +101,7 @@ class RigidBodyTreeVisualizerLcm1 : public LeafSystem<double> {
 
   // The translator that convert from the rigid body tree's generalized state
   // vector to an drake::lcmt_viewer_draw message.
-  ViewerDrawTranslator1 draw_message_translator_;
+  ViewerDrawTranslator draw_message_translator_;
 
   // Using 'mutable' here is OK since it's only used for unit testing checking.
   mutable std::vector<uint8_t> message_bytes_;
