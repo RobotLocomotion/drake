@@ -23,6 +23,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   for (int i = 0; i < kNumBodies; ++i) {
     auto body = make_unique<RigidBody>();
     body->set_name("body" + std::to_string(i));
+    body->set_model_instance_id(tree->add_model_instance());
     tree->bodies.push_back(std::move(body));
   }
   tree->compile();
@@ -36,22 +37,61 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   int num_states = kNumBodies *
       ViewerDrawTranslator::kNumStatesPerBody;
 
-  BasicVector<double> original_vector(num_states);
+  BasicVector<double> generalized_state(num_states);
   for (int i = 0; i < num_states; ++i) {
-    original_vector.SetAtIndex(i, i);
+    generalized_state.SetAtIndex(i, i);
   }
 
   // Transforms the basic vector into the byte array representation of a
   // `drake::lcmt_viewer_draw` message.
   double time = 0;
-  std::vector<uint8_t> lcm_message_bytes;
-  dut.Serialize(time, original_vector, &lcm_message_bytes);
-  EXPECT_GT(lcm_message_bytes.size(), 0);
+  std::vector<uint8_t> message_bytes;
+  dut.Serialize(time, generalized_state, &message_bytes);
+  EXPECT_GT(message_bytes.size(), 0);
 
-  // TODO(liang.fok): Verify that the serialized message is correct. I believe
-  // this entails (1) manually creating a the correct `drake::lcmt_viewer_draw`
-  // message, (2) serializing it into an array of bytes, and (3) verifying that
-  // the byte array matches `lcm_message_bytes`.
+  // Verifies that the serialized message is correct. This entails:
+  //     (1) manually creating a the correct `drake::lcmt_viewer_draw`
+  //     (2) serializing it into an array of bytes
+  //     (3) verifying that the byte array matches `message_bytes`
+  lcmt_viewer_draw expected_message;
+  expected_message.timestamp = 0;
+  expected_message.num_links = tree->get_number_of_bodies();
+  const Eigen::VectorXd q = generalized_state.CopyToVector().head(
+      tree->number_of_positions());
+  KinematicsCache<double> cache = tree->doKinematics(q);
+  for (int i = 0; i < expected_message.num_links; ++i) {
+    const RigidBody& body = tree->get_body(i);
+    expected_message.link_name.push_back(body.get_name());
+    expected_message.robot_num.push_back(body.get_model_instance_id());
+
+    auto transform = tree->relativeTransform(cache, 0, i);
+    auto quat = drake::math::rotmat2quat(transform.linear());
+
+    std::vector<float> position;
+    auto translation = transform.translation();
+    for (int j = 0; j < 3; ++j) {
+      position.push_back(static_cast<float>(translation(j)));
+    }
+    expected_message.position.push_back(position);
+
+    std::vector<float> orientation;
+    for (int j = 0; j < 4; ++j) {
+      orientation.push_back(static_cast<float>(quat(j)));
+    }
+    expected_message.quaternion.push_back(orientation);
+  }
+
+  const int expected_message_length = expected_message.getEncodedSize();
+  EXPECT_EQ(expected_message_length, message_bytes.size());
+
+  std::vector<uint8_t> expected_message_bytes;
+  expected_message_bytes.resize(expected_message_length);
+  expected_message.encode(expected_message_bytes.data(), 0,
+                          expected_message_length);
+
+  for (int i = 0; i < expected_message_length; ++i) {
+    EXPECT_EQ(expected_message_bytes[i], message_bytes[i]);
+  }
 }
 
 }  // namespace

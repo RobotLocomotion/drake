@@ -15,9 +15,7 @@ using std::runtime_error;
 
 ViewerDrawTranslator::ViewerDrawTranslator(
     const RigidBodyTree& tree) :
-    // The minus one is needed to omit the world.
-    LcmAndVectorBaseTranslator((tree.get_number_of_bodies() - 1) *
-        kNumStatesPerBody),
+    LcmAndVectorBaseTranslator(tree.get_number_of_bodies() * kNumStatesPerBody),
     tree_(tree) {
   initialize_draw_message();
 }

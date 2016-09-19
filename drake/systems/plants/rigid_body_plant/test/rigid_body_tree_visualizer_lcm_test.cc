@@ -69,8 +69,8 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
   // Instantiates the LCM subsystem.
   ::lcm::LCM lcm;
 
-  // Creates an RigidBodyTreeVisualizerLcm object using the tree and LCM that
-  // was just created. The name "dut" stands for "Device Under Test".
+  // Creates a RigidBodyTreeVisualizerLcm object using the previously created
+  // RigidBodyTree. The name "dut" stands for "Device Under Test".
   RigidBodyTreeVisualizerLcm dut(*tree.get(), &lcm);
 
   // Verifies that the name of the system is correct.
