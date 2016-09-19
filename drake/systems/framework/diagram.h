@@ -332,6 +332,23 @@ class Diagram : public System<T> {
     }
   }
 
+  // Takes ownership of the @p registered_systems from DiagramBuilder.
+  void Own(std::vector<std::unique_ptr<System<T>>> registered_systems) {
+    // We must be given something to own.
+    DRAKE_DEMAND(!registered_systems.empty());
+    // We must not already own any subsystems.
+    DRAKE_DEMAND(registered_systems_.empty());
+    // The subsystems we are being given to own must be exactly the set of
+    // subsystems for which we have an execution order.
+    DRAKE_DEMAND(registered_systems.size() == sorted_systems_.size());
+    for (const auto& system : registered_systems) {
+      const auto it = sorted_systems_map_.find(system.get());
+      DRAKE_DEMAND(it != sorted_systems_map_.end());
+    }
+    // All of those checks having passed, take ownership of the subsystems.
+    registered_systems_ = std::move(registered_systems);
+  }
+
   // Exposes the given port as an input of the Diagram.
   void ExportInput(const PortIdentifier& port) {
     const System<T>* const sys = port.first;
@@ -525,6 +542,10 @@ class Diagram : public System<T> {
 
   // The topologically sorted list of Systems in this Diagram.
   std::vector<const System<T>*> sorted_systems_;
+
+  // The Systems in this Diagram, which are owned by this Diagram, in the order
+  // they were registered.
+  std::vector<std::unique_ptr<System<T>>> registered_systems_;
 
   // For fast conversion queries: what is the index of this System in the
   // sorted order?

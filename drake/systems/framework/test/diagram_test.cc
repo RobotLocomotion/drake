@@ -33,15 +33,15 @@ class ExampleDiagram : public Diagram<double> {
   explicit ExampleDiagram(int length) {
     DiagramBuilder<double> builder;
 
-    adder0_.reset(new Adder<double>(2 /* inputs */, length));
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
     adder0_->set_name("adder0");
-    adder1_.reset(new Adder<double>(2 /* inputs */, length));
+    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
     adder1_->set_name("adder1");
-    adder2_.reset(new Adder<double>(2 /* inputs */, length));
+    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
     adder2_->set_name("adder2");
 
-    integrator0_.reset(new Integrator<double>(length));
-    integrator1_.reset(new Integrator<double>(length));
+    integrator0_ = builder.AddSystem<Integrator<double>>(length);
+    integrator1_ = builder.AddSystem<Integrator<double>>(length);
 
     builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
@@ -62,17 +62,17 @@ class ExampleDiagram : public Diagram<double> {
     builder.BuildInto(this);
   }
 
-  Adder<double>* adder0() { return adder0_.get(); }
-  Integrator<double>* integrator0() { return integrator0_.get(); }
-  Integrator<double>* integrator1() { return integrator1_.get(); }
+  Adder<double>* adder0() { return adder0_; }
+  Integrator<double>* integrator0() { return integrator0_; }
+  Integrator<double>* integrator1() { return integrator1_; }
 
  private:
-  std::unique_ptr<Adder<double>> adder0_;
-  std::unique_ptr<Adder<double>> adder1_;
-  std::unique_ptr<Adder<double>> adder2_;
+  Adder<double>* adder0_ = nullptr;
+  Adder<double>* adder1_ = nullptr;
+  Adder<double>* adder2_ = nullptr;
 
-  std::unique_ptr<Integrator<double>> integrator0_;
-  std::unique_ptr<Integrator<double>> integrator1_;
+  Integrator<double>* integrator0_ = nullptr;
+  Integrator<double>* integrator1_ = nullptr;
 };
 
 class DiagramTest : public ::testing::Test {
@@ -288,10 +288,10 @@ TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
 class DiagramOfDiagramsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    subdiagram0_ = std::make_unique<ExampleDiagram>(kLength);
-    subdiagram1_ = std::make_unique<ExampleDiagram>(kLength);
-
     DiagramBuilder<double> builder;
+    subdiagram0_ = builder.AddSystem<ExampleDiagram>(kLength);
+    subdiagram1_ = builder.AddSystem<ExampleDiagram>(kLength);
+
     // Hook up the two diagrams in portwise series.
     for (int i = 0; i < 3; i++) {
       builder.ExportInput(subdiagram0_->get_input_port(i));
@@ -315,9 +315,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
     // Initialize the integrator states.
     Context<double>* d0_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram0_.get());
+        context_.get(), subdiagram0_);
     Context<double>* d1_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram1_.get());
+        context_.get(), subdiagram1_);
 
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
@@ -338,9 +338,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
   const int kLength = 1;
 
-  std::unique_ptr<Diagram<double>> diagram_;
-  std::unique_ptr<ExampleDiagram> subdiagram0_;
-  std::unique_ptr<ExampleDiagram> subdiagram1_;
+  std::unique_ptr<Diagram<double>> diagram_ = nullptr;
+  ExampleDiagram* subdiagram0_ = nullptr;
+  ExampleDiagram* subdiagram1_ = nullptr;
 
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
@@ -371,10 +371,11 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
 class AddConstantDiagram : public Diagram<double> {
  public:
   explicit AddConstantDiagram(double constant) : Diagram<double>() {
-    constant_.reset(new ConstantVectorSource<double>(Vector1d{constant}));
-    adder_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
-
     DiagramBuilder<double> builder;
+
+    constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
+    adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* length */);
+
     builder.Connect(constant_->get_output_port(0), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
     builder.ExportOutput(adder_->get_output_port(0));
@@ -382,8 +383,8 @@ class AddConstantDiagram : public Diagram<double> {
   }
 
  private:
-  std::unique_ptr<Adder<double>> adder_;
-  std::unique_ptr<ConstantVectorSource<double>> constant_;
+  Adder<double>* adder_ = nullptr;
+  ConstantVectorSource<double>* constant_ = nullptr;
 };
 
 GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
@@ -431,10 +432,13 @@ class PublishingSystem : public LeafSystem<double> {
 class PublishNumberDiagram : public Diagram<double> {
  public:
   explicit PublishNumberDiagram(double constant) : Diagram<double>() {
-    constant_.reset(new ConstantVectorSource<double>(Vector1d{constant}));
-    publisher_.reset(new PublishingSystem([this](double v) { this->set(v); }));
-
     DiagramBuilder<double> builder;
+
+    constant_ = builder.AddSystem<ConstantVectorSource<double>>(
+        Vector1d{constant});
+    publisher_ = builder.AddSystem<PublishingSystem>(
+        [this](double v) { this->set(v); });
+
     builder.Connect(constant_->get_output_port(0),
                     publisher_->get_input_port(0));
     builder.BuildInto(this);
@@ -445,8 +449,8 @@ class PublishNumberDiagram : public Diagram<double> {
  private:
   void set(double value) { published_value_ = value; }
 
-  std::unique_ptr<ConstantVectorSource<double>> constant_;
-  std::unique_ptr<PublishingSystem> publisher_;
+  ConstantVectorSource<double>* constant_ = nullptr;
+  PublishingSystem* publisher_ = nullptr;
   double published_value_ = 0;
 };
 
@@ -464,30 +468,30 @@ GTEST_TEST(DiagramPublishTest, Publish) {
 class FeedbackDiagram : public Diagram<double> {
  public:
   FeedbackDiagram() : Diagram<double>() {
-    integrator_ = std::make_unique<Integrator<double>>(1 /* length */);
-    gain_ = std::make_unique<Gain<double>>(1.0 /* gain */, 1 /* length */);
+    DiagramBuilder<double> builder;
 
     DiagramBuilder<double> integrator_builder;
+    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* length */);
     integrator_builder.ExportInput(integrator_->get_input_port(0));
     integrator_builder.ExportOutput(integrator_->get_output_port(0));
-    integrator_diagram_ = integrator_builder.Build();
+    integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
+    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
     gain_builder.ExportInput(gain_->get_input_port(0));
     gain_builder.ExportOutput(gain_->get_output_port(0));
-    gain_diagram_ = gain_builder.Build();
+    gain_diagram_ = builder.AddSystem(gain_builder.Build());
 
-    DiagramBuilder<double> builder;
     builder.Connect(*integrator_diagram_, *gain_diagram_);
     builder.Connect(*gain_diagram_, *integrator_diagram_);
     builder.BuildInto(this);
   }
 
  private:
-  std::unique_ptr<Integrator<double>> integrator_;
-  std::unique_ptr<Gain<double>> gain_;
-  std::unique_ptr<Diagram<double>> integrator_diagram_;
-  std::unique_ptr<Diagram<double>> gain_diagram_;
+  Integrator<double>* integrator_ = nullptr;
+  Gain<double>* gain_ = nullptr;
+  Diagram<double>* integrator_diagram_ = nullptr;
+  Diagram<double>* gain_diagram_ = nullptr;
 };
 
 // Tests that since there are no outputs, there is no direct feedthrough.

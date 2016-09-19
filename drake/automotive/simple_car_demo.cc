@@ -10,6 +10,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -113,36 +114,35 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 int do_main(int argc, const char* argv[]) {
   auto lcm = std::make_unique<lcm::LCM>();
 
+  systems::DiagramBuilder<double> builder;
   const DrivingCommandTranslator driving_command_translator;
-  auto command_subscriber = std::make_unique<systems::lcm::LcmSubscriberSystem>(
-      "DRIVING_COMMAND", driving_command_translator, lcm.get());
+  auto command_subscriber =
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
+          "DRIVING_COMMAND", driving_command_translator, lcm.get());
 
-  auto simple_car = std::make_unique<SimpleCar<double>>();
-  auto coord_transform =
-      std::make_unique<SimpleCarToEulerFloatingJoint<double>>();
+  auto simple_car = builder.AddSystem<SimpleCar>();
+  auto coord_transform = builder.AddSystem<SimpleCarToEulerFloatingJoint>();
 
   const SimpleCarStateTranslator simple_car_state_translator;
   auto simple_car_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
           "SIMPLE_CAR_STATE", simple_car_state_translator, lcm.get());
 
   const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
   auto euler_floating_joint_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
           "FLOATING_JOINT_STATE", euler_floating_joint_state_translator,
           lcm.get());
 
-  auto bot_visualizer_hack = std::make_unique<BotVisualizerHack<double>>(
-      lcm.get());
+  auto bot_visualizer_hack = builder.AddSystem<BotVisualizerHack>(lcm.get());
 
-  auto builder = std::make_unique<systems::DiagramBuilder<double>>();
-  builder->Connect(*command_subscriber, *simple_car);
-  builder->Connect(*simple_car, *simple_car_state_publisher);
-  builder->Connect(*simple_car, *coord_transform);
-  builder->Connect(*coord_transform, *bot_visualizer_hack);
-  builder->Connect(*coord_transform, *euler_floating_joint_state_publisher);
+  builder.Connect(*command_subscriber, *simple_car);
+  builder.Connect(*simple_car, *simple_car_state_publisher);
+  builder.Connect(*simple_car, *coord_transform);
+  builder.Connect(*coord_transform, *bot_visualizer_hack);
+  builder.Connect(*coord_transform, *euler_floating_joint_state_publisher);
 
-  auto diagram = builder->Build();
+  auto diagram = builder.Build();
 
   auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
       lcm.get());
