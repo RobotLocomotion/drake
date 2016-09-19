@@ -122,22 +122,19 @@ class DiagramTest : public ::testing::Test {
     Eigen::Vector3d expected_output2;
     expected_output2 << 81, 243, 729;  // state of integrator1_
 
-    const BasicVector<double>* output0 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+    const BasicVector<double>* output0 = output_->get_vector_data(0);
     ASSERT_TRUE(output0 != nullptr);
     EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
     EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
     EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-    const BasicVector<double>* output1 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
+    const BasicVector<double>* output1 = output_->get_vector_data(1);
     ASSERT_TRUE(output1 != nullptr);
     EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
     EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
     EXPECT_EQ(expected_output1[2], output1->get_value()[2]);
 
-    const BasicVector<double>* output2 =
-        dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(2));
+    const BasicVector<double>* output2 = output_->get_vector_data(2);
     ASSERT_TRUE(output2 != nullptr);
     EXPECT_EQ(expected_output2[0], output2->get_value()[0]);
     EXPECT_EQ(expected_output2[1], output2->get_value()[1]);
@@ -254,8 +251,7 @@ TEST_F(DiagramTest, Clone) {
 
   Eigen::Vector3d expected_output0;
   expected_output0 << 3 + 8 + 64, 6 + 16 + 128, 9 + 32 + 256;  // B
-  const BasicVector<double>* output0 =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
@@ -264,8 +260,7 @@ TEST_F(DiagramTest, Clone) {
   Eigen::Vector3d expected_output1;
   expected_output1 << 3 + 8, 6 + 16, 9 + 32;  // A
   expected_output1 += expected_output0;       // A + B
-  const BasicVector<double>* output1 =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(1));
+  const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
   EXPECT_EQ(expected_output1[1], output1->get_value()[1]);
