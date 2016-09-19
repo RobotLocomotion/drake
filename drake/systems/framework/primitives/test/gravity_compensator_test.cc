@@ -57,9 +57,6 @@ class GravityCompensatorTest : public ::testing::Test {
 
   void SetUp() override {
     tree_ = make_unique<RigidBodyTree>();
-//    tree_->
-//    (RigidBodyTree(drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-//                        DrakeJoint::FIXED)) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
     drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
     DrakeJoint::FIXED, nullptr /* weld to frame */, tree_.get());
@@ -108,7 +105,7 @@ VectorXd expected_gravity_vector = ComputeIiwaGravityTorque(robot_state);
 EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
 }
 
-// Tests that Gain allocates no state variables in the context_.
+// Tests that Gain allocates no state variables in the context.
 TEST_F(GravityCompensatorTest, GravityCompensatorIsStateless) {
 EXPECT_EQ(nullptr, context_->get_state().continuous_state);
 }
