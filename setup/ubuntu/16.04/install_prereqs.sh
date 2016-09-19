@@ -47,6 +47,7 @@ libvtk-java
 libvtk5-dev
 libvtk5-qt4-dev
 libwww-perl
+libxmu-dev
 make
 ninja-build
 perl
