@@ -165,6 +165,11 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
     body->set_name("body" + std::to_string(i));
     body->set_model_instance_id(tree->add_model_instance());
 
+    // The inertia model must be set to prevent RigidBodyTree::compile() from
+    // replacing the body's joint with a FixedJoint.
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
     // Creates a sphere with a radius of 0.54 meters.
     Sphere sphere_shape(0.54);
 
@@ -178,7 +183,7 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
 
     body->AddVisualElement(visual_element);
 
-    // Connects the body to the world using a floating joint.
+    // Connects the body to the world using a RPY floating joint.
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),

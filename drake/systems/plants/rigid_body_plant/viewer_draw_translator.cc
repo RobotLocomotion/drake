@@ -15,7 +15,8 @@ using std::runtime_error;
 
 ViewerDrawTranslator::ViewerDrawTranslator(
     const RigidBodyTree& tree) :
-    LcmAndVectorBaseTranslator(tree.get_number_of_bodies() * kNumStatesPerBody),
+    LcmAndVectorBaseTranslator(
+        tree.number_of_positions() + tree.number_of_velocities()),
     tree_(tree) {
   initialize_draw_message();
 }
@@ -32,9 +33,6 @@ void ViewerDrawTranslator::Deserialize(
 void ViewerDrawTranslator::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
-  std::cout << "************ViewerDrawTranslator::Serialize:" << std::endl
-            << "  - vector_base.size() = " << vector_base.size() << std::endl
-            << "  - get_vector_size() = " << get_vector_size() << std::endl;
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
   DRAKE_ASSERT(lcm_message_bytes != nullptr);
 

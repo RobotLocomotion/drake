@@ -5,6 +5,7 @@
 
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
 namespace drake {
@@ -24,6 +25,19 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
     auto body = make_unique<RigidBody>();
     body->set_name("body" + std::to_string(i));
     body->set_model_instance_id(tree->add_model_instance());
+
+    // The inertia model must be set to prevent RigidBodyTree::compile() from
+    // replacing the body's joint with a FixedJoint.
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    // Connects the body to the world using a RPY floating joint.
+    auto joint = make_unique<RollPitchYawFloatingJoint>(
+        "Joint" + std::to_string(i), Eigen::Isometry3d::Identity());
+
+    body->add_joint(&tree->world(), std::move(joint));
+
+    // Adds the body to the tree.
     tree->bodies.push_back(std::move(body));
   }
   tree->compile();
@@ -34,8 +48,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   // Instantiates a `BasicVector<double>`. Since there are `kNumBodies` bodies,
   // there are `kNumBodies * ViewerDrawTranslator::kNumStatesPerBody` values.
-  int num_states = kNumBodies *
-      ViewerDrawTranslator::kNumStatesPerBody;
+  int num_states = tree->number_of_positions() + tree->number_of_velocities();
 
   BasicVector<double> generalized_state(num_states);
   for (int i = 0; i < num_states; ++i) {
