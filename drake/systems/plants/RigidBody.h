@@ -400,6 +400,34 @@ class DRAKERBM_EXPORT RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
 
+  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
+  typedef typename CollisionElementsVector::const_iterator
+      CollisionElementsConstIterator;
+
+  CollisionElementsIterator CollisionElementsBegin() {
+    return collision_elements_.begin();
+  }
+
+  CollisionElementsIterator CollisionElementsEnd() {
+    return collision_elements_.end();
+  }
+
+  /** Adds collision element `e` to this rigid body.
+   @param e The collision element being added to this body. **/
+  void AddCollisionElement(DrakeCollision::Element* e) {
+    collision_elements_.push_back(e);
+  }
+
+  /** Adds body to a given collision clique by clique id.
+
+   This call adds each of the collision elements in this body to the provided
+   collision clique.
+   @param[in] clique_id Collision clique id. Collision elements in this clique
+   do not interact.
+   @see CollisionElement::AddToCollisionClique. **/
+  void AddToCollisionClique(int clique_id);
+
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
 
@@ -411,4 +439,9 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The spatial inertia of this rigid body.
   drake::SquareTwistMatrix<double> spatial_inertia_;
+
+  // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
+  // body.  As such, it should be moved into a factory so that the runtime
+  // class only has runtime data.
+  CollisionElementsVector collision_elements_;
 };
