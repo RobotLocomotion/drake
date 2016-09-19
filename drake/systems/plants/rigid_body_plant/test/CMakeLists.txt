@@ -10,8 +10,6 @@ if(BULLET_FOUND)
       viewer_draw_translator_test.cc)
   target_link_libraries(viewer_draw_translator_test
       drake_rbp
-      drakeLCMSystem2
-      drakeRBSystem
       ${GTEST_BOTH_LIBRARIES})
   add_test(NAME viewer_draw_translator_test COMMAND
       viewer_draw_translator_test)
@@ -20,8 +18,6 @@ if(BULLET_FOUND)
       rigid_body_tree_visualizer_lcm_test.cc)
   target_link_libraries(rigid_body_tree_visualizer_lcm_test
       drake_rbp
-      drakeLCMSystem2
-      drakeRBSystem
       ${GTEST_BOTH_LIBRARIES})
   add_test(NAME rigid_body_tree_visualizer_lcm_test COMMAND
       rigid_body_tree_visualizer_lcm_test)

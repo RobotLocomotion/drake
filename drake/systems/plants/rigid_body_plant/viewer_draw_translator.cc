@@ -18,10 +18,18 @@ ViewerDrawTranslator::ViewerDrawTranslator(
     LcmAndVectorBaseTranslator(
         tree.number_of_positions() + tree.number_of_velocities()),
     tree_(tree) {
-  initialize_draw_message();
+  // Initializes the draw message.
+  draw_message_.num_links = tree_.bodies.size();
+  std::vector<float> position = {0, 0, 0};
+  std::vector<float> quaternion = {0, 0, 0, 1};
+  for (const auto& body : tree_.bodies) {
+    draw_message_.link_name.push_back(body->get_name());
+    draw_message_.robot_num.push_back(body->get_model_instance_id());
+    draw_message_.position.push_back(position);
+    draw_message_.quaternion.push_back(quaternion);
+  }
 }
 
-// TODO(liang.fok) Implement this method.
 void ViewerDrawTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
@@ -33,12 +41,12 @@ void ViewerDrawTranslator::Deserialize(
 void ViewerDrawTranslator::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
-  DRAKE_ASSERT(vector_base.size() == get_vector_size());
-  DRAKE_ASSERT(lcm_message_bytes != nullptr);
+  DRAKE_DEMAND(vector_base.size() == get_vector_size());
+  DRAKE_DEMAND(lcm_message_bytes != nullptr);
 
   // Creates a copy of the partially-initialized lcmt_viewer_draw message.
   // This is necessary since this method is declared const.
-  drake::lcmt_viewer_draw message = draw_msg_;
+  drake::lcmt_viewer_draw message = draw_message_;
 
   // Updates the timestamp in the message.
   message.timestamp = static_cast<int64_t>(time * 1000);
@@ -47,8 +55,7 @@ void ViewerDrawTranslator::Serialize(double time,
   const Eigen::VectorXd q = vector_base.CopyToVector().head(
       tree_.number_of_positions());
 
-  // Calls RigidBodyTree::doKinematics() using the generalized position vector.
-  // This computes the poses of each body.
+  // Computes the poses of each body.
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   // Saves the poses of each body in the lcmt_viewer_draw message.
@@ -71,18 +78,6 @@ void ViewerDrawTranslator::Serialize(double time,
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
-}
-
-void ViewerDrawTranslator::initialize_draw_message() {
-  draw_msg_.num_links = tree_.bodies.size();
-  std::vector<float> position = {0, 0, 0};
-  std::vector<float> quaternion = {0, 0, 0, 1};
-  for (const auto& body : tree_.bodies) {
-    draw_msg_.link_name.push_back(body->get_name());
-    draw_msg_.robot_num.push_back(body->get_model_instance_id());
-    draw_msg_.position.push_back(position);
-    draw_msg_.quaternion.push_back(quaternion);
-  }
 }
 
 }  // namespace systems

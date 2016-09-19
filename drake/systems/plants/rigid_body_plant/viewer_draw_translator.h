@@ -21,24 +21,21 @@ namespace systems {
 class DRAKE_RBP_EXPORT ViewerDrawTranslator
     : public lcm::LcmAndVectorBaseTranslator {
  public:
-  // Defines the number of states per body. There are seven states: three
-  // position states specified by a 3-vector (x, y, and z) and four orientation
-  // states specified by a quaternion 4-vector (w, x, y, z).
-  static const int kNumStatesPerBody = 7;
-
   /**
-   * A constructor that initializes the internal state of this class and sets
-   * the expected sizes of both the LCM message and VectorBase vector to be the
-   * size of the generalized state of the RigidBodyTree, which is the sum of the
-   * position and velocity states in the RigidBodyTree.
+   * A constructor that sets the expected sizes of both the LCM message and
+   * VectorBase vector to be the size of the generalized state of @p tree,
+   * which is the sum of the number of position and velocity states in @p tree.
    *
    * @param[in] tree A reference to the RigidBodyTree with which to obtain the
    * pose of each RigidBody to be included in the `drake::lcmt_viewer_draw` LCM
-   * message. This reference must remain valid for the lifetime of the object
-   * instantiation of this class.
+   * message. This reference must remain valid for the lifetime of this object.
    */
   explicit ViewerDrawTranslator(const RigidBodyTree& tree);
 
+  /**
+   * <b>This method must not be called.</b> It is not implemented an will abort
+   * if called.
+   */
   void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override;
@@ -48,17 +45,14 @@ class DRAKE_RBP_EXPORT ViewerDrawTranslator
       std::vector<uint8_t>* lcm_message_bytes) const override;
 
  private:
-  // Initializes member variable draw_msg_. This is only called once by the
-  // constructor.
-  void initialize_draw_message();
-
   // The RigidBodyTree with which the poses of each RigidBody can be
   // determined given the generalized state of the RigidBodyTree.
   const RigidBodyTree& tree_;
 
-  // The LCM draw message to send to the Drake Visualizer. This member variable
-  // is declared mutable so it can be modified by EvalOutput().
-  drake::lcmt_viewer_draw draw_msg_;
+  // A partially initialized LCM draw message. This is used by
+  // ViewerDrawTranslator::Serialize() to avoid having to re-initialize the
+  // message each time it publishes draw message.
+  drake::lcmt_viewer_draw draw_message_;
 };
 
 }  // namespace systems

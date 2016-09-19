@@ -6,7 +6,7 @@ set(source_files
 add_library_with_exports(LIB_NAME drake_rbp SOURCE_FILES ${source_files})
 target_link_libraries(drake_rbp
         drakeCommon
-        drakeLCMSystem2
+        drakeLCMSystem2  # TODO(liang.fok) Remove dependency on LCM.
         drakeSystemFramework
         drakeRBM
         drakeOptimization)

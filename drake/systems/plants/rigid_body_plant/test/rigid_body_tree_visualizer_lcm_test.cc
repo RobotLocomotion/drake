@@ -77,14 +77,7 @@ void VerifyLoadMessage(const RigidBodyTree& tree,
   load_message.encode(load_message_bytes.data(), 0,
                                load_message_byte_count);
 
-  bool load_message_bytes_match = true;
-  for (int i = 0; i < load_message_byte_count && load_message_bytes_match;
-      ++i) {
-    load_message_bytes_match =
-        (load_message_bytes[i] == expected_load_message_bytes[i]);
-  }
-
-  EXPECT_TRUE(load_message_bytes_match);
+  EXPECT_EQ(load_message_bytes, expected_load_message_bytes);
 }
 
 void VerifyDrawMessage(const RigidBodyTree& tree,

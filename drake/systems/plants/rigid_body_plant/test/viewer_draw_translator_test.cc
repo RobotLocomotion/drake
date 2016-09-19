@@ -44,10 +44,10 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   // Creates an `LcmtViewerDrawTranslator` object using the tree that was just
   // created. The name "dut" stands for "Device Under Test".
-  ViewerDrawTranslator dut(*tree.get());
+  ViewerDrawTranslator dut(*tree);
 
-  // Instantiates a `BasicVector<double>`. Since there are `kNumBodies` bodies,
-  // there are `kNumBodies * ViewerDrawTranslator::kNumStatesPerBody` values.
+  // Instantiates a `BasicVector<double>` with a size that matches the number
+  // of generalized state in the RigidBodyTree.
   int num_states = tree->number_of_positions() + tree->number_of_velocities();
 
   BasicVector<double> generalized_state(num_states);
@@ -67,7 +67,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   //     (2) serializing it into an array of bytes
   //     (3) verifying that the byte array matches `message_bytes`
   lcmt_viewer_draw expected_message;
-  expected_message.timestamp = time;
+  expected_message.timestamp = static_cast<int64_t>(time * 1000);
   expected_message.num_links = tree->get_number_of_bodies();
   const Eigen::VectorXd q = generalized_state.CopyToVector().head(
       tree->number_of_positions());
@@ -102,9 +102,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.encode(expected_message_bytes.data(), 0,
                           expected_message_length);
 
-  for (int i = 0; i < expected_message_length; ++i) {
-    EXPECT_EQ(expected_message_bytes[i], message_bytes[i]);
-  }
+  EXPECT_EQ(message_bytes, expected_message_bytes);
 }
 
 }  // namespace
