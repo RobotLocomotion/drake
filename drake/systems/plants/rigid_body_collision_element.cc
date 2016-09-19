@@ -27,12 +27,12 @@ RigidBodyCollisionElement* RigidBodyCollisionElement::clone() const {
   return new RigidBodyCollisionElement(*this);
 }
 
-bool RigidBodyCollisionElement::CollidesWith(
-    const DrakeCollision::Element* other) const {
+bool RigidBodyCollisionElement::CanCollideWith(
+    const DrakeCollision::Element *other) const {
   auto other_rb = dynamic_cast<const RigidBodyCollisionElement*>(other);
   bool collides = true;
   if (other_rb != nullptr) {
-    collides = get_body()->CollidesWith(*other_rb->get_body());
+    collides = get_body()->CanCollideWith(*other_rb->get_body());
   }
   return collides;
 }
