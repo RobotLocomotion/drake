@@ -35,26 +35,27 @@ namespace {
 // axis-angle has singularities around 0 degree rotation and 180 degree rotation
 // So two axis-angles that are slightly different when the angle is close to 0,
 // their equivalent rotation matrices are almost the same
-bool compareAngleAxis(const AngleAxisd &a1, const AngleAxisd &a2) {
+bool compareAngleAxis(const AngleAxisd& a1, const AngleAxisd& a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
-bool compareQuaternion(const Vector4d &q1, const Vector4d &q2) {
+bool compareQuaternion(const Vector4d& q1, const Vector4d& q2) {
   return q1.isApprox(q2) | q1.isApprox(-q2);
 }
 Quaterniond eulerToQuaternion(const Vector3d euler) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''
-  return AngleAxisd(euler(0), Vector3d::UnitZ())
-      *AngleAxisd(euler(1), Vector3d::UnitY())
-          *AngleAxisd(euler(2), Vector3d::UnitX());
+  return AngleAxisd(euler(0), Vector3d::UnitZ()) *
+         AngleAxisd(euler(1), Vector3d::UnitY()) *
+         AngleAxisd(euler(2), Vector3d::UnitX());
 }
-bool compareEulerAngles(const Vector3d &euler_angles1, const Vector3d &euler_angles2) {
+bool compareEulerAngles(const Vector3d& euler_angles1,
+                        const Vector3d& euler_angles2) {
   auto q1 = eulerToQuaternion(euler_angles1);
   auto q2 = eulerToQuaternion(euler_angles2);
   return q1.isApprox(q2);
 }
 
-Vector4d eigenAxisToAxis(const AngleAxisd &a) {
+Vector4d eigenAxisToAxis(const AngleAxisd& a) {
   Vector4d ret;
   ret << a.axis(), a.angle();
   return ret;
@@ -96,7 +97,7 @@ class RotationConversionTest : public ::testing::Test {
     test_orientation_.push_back(AngleAxisd(0, Vector3d::UnitZ()));
 
     // 0 rotation around a unit axis
-    Vector3d axis(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2));
+    Vector3d axis(0.5 * sqrt(2), 0.4 * sqrt(2), 0.3 * sqrt(2));
     test_orientation_.push_back(AngleAxisd(0, axis));
 
     // small positive rotation
@@ -115,34 +116,34 @@ class RotationConversionTest : public ::testing::Test {
     test_orientation_.push_back(AngleAxisd(M_PI, Vector3d::UnitZ()));
 
     // close to 180 rotation around a unit axis
-    test_orientation_.push_back(AngleAxisd((1-1E-6)*M_PI, axis));
+    test_orientation_.push_back(AngleAxisd((1 - 1E-6) * M_PI, axis));
 
     // pitch = pi/2
-    AngleAxisd a1(AngleAxisd(M_PI/3, Vector3d::UnitZ())
-                      *AngleAxisd(M_PI/2, Vector3d::UnitY())
-                      *AngleAxisd(M_PI/4, Vector3d::UnitX()));
+    AngleAxisd a1(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
+                  AngleAxisd(M_PI / 2, Vector3d::UnitY()) *
+                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
     test_orientation_.push_back(a1);
 
     // pitch close to pi/2
-    AngleAxisd a2(AngleAxisd(M_PI/3, Vector3d::UnitZ())
-                      *AngleAxisd(M_PI/2-1E-6*M_PI, Vector3d::UnitY())
-                      *AngleAxisd(M_PI/4, Vector3d::UnitX()));
+    AngleAxisd a2(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
+                  AngleAxisd(M_PI / 2 - 1E-6 * M_PI, Vector3d::UnitY()) *
+                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
     test_orientation_.push_back(a2);
 
     // pitch close to pi/2
-    AngleAxisd a3(AngleAxisd(M_PI/3, Vector3d::UnitZ())
-                      *AngleAxisd(M_PI/2+1E-6*M_PI, Vector3d::UnitY())
-                      *AngleAxisd(M_PI/4, Vector3d::UnitX()));
+    AngleAxisd a3(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
+                  AngleAxisd(M_PI / 2 + 1E-6 * M_PI, Vector3d::UnitY()) *
+                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
     test_orientation_.push_back(a3);
 
     // non-degenerate case
-    test_orientation_.push_back(AngleAxisd(M_PI/3, axis));
+    test_orientation_.push_back(AngleAxisd(M_PI / 3, axis));
   }
-  std::vector<AngleAxisd> test_orientation_; // test cases
+  std::vector<AngleAxisd> test_orientation_;  // test cases
 };
 
 TEST_F(RotationConversionTest, AxisQuat) {
-  for (const auto &ai_eigen:test_orientation_) {
+  for (const auto& ai_eigen : test_orientation_) {
     // Compute the quaternion using Eigen geometry module, compare the result
     // with axis2quat
     auto ai = eigenAxisToAxis(ai_eigen);
@@ -158,26 +159,22 @@ TEST_F(RotationConversionTest, AxisQuat) {
 }
 
 TEST_F(RotationConversionTest, AxisRotmat) {
-  for (const auto &ai_eigen:test_orientation_) {
+  for (const auto& ai_eigen : test_orientation_) {
     // Manually computes the rotation matrix from axis-angle representation,
     // using Rodriguez's rotation formula
     // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
     auto ai = eigenAxisToAxis(ai_eigen);
     auto axis_skew = VectorToSkewSymmetric(ai.head<3>());
-    auto rotmat_expected = Matrix3d::Identity() + std::sin(ai(3)) * axis_skew
-        + (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
+    auto rotmat_expected = Matrix3d::Identity() + std::sin(ai(3)) * axis_skew +
+                           (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
     auto rotmat = axis2rotmat(ai);
-    EXPECT_TRUE(CompareMatrices(rotmat,
-                                rotmat_expected,
-                                1E-10,
+    EXPECT_TRUE(CompareMatrices(rotmat, rotmat_expected, 1E-10,
                                 MatrixCompareType::absolute));
 
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with axis2rotmat
     auto rotmat_expected2 = ai_eigen.toRotationMatrix();
-    EXPECT_TRUE(CompareMatrices(rotmat_expected2,
-                                rotmat,
-                                1E-10,
+    EXPECT_TRUE(CompareMatrices(rotmat_expected2, rotmat, 1E-10,
                                 MatrixCompareType::absolute));
 
     // axis2rotmat should be the inversion of rotmat2axis
@@ -190,7 +187,7 @@ TEST_F(RotationConversionTest, AxisRotmat) {
 TEST_F(RotationConversionTest, AxisRPY) {
   // Compute the rpy from Eigen geometry module, comapres the result with
   // axis2rpy
-  for(const auto ai_eigen:test_orientation_) {
+  for (const auto ai_eigen : test_orientation_) {
     auto euler_expected = ai_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
     auto ai = eigenAxisToAxis(ai_eigen);
     auto rpy = axis2rpy(ai);
@@ -204,7 +201,7 @@ TEST_F(RotationConversionTest, AxisRPY) {
 }
 
 TEST_F(RotationConversionTest, QuatAxis) {
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     // Compute the angle-axis representation using Eigen geometry module,
     // compare the result with quat2axis
     Quaterniond qi_eigen(ai);
@@ -221,14 +218,15 @@ TEST_F(RotationConversionTest, QuatAxis) {
 }
 
 TEST_F(RotationConversionTest, QuatRotmat) {
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with quat2rotmat
     Quaterniond qi_eigen(ai);
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
     auto rotmat_expected = qi_eigen.toRotationMatrix();
     auto rotmat = quat2rotmat(qi);
-    EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10,
+                                MatrixCompareType::absolute));
     // quat2rotmat should be the inversion of rotmat2quat
     auto quat_expected = rotmat2quat(rotmat);
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
@@ -238,7 +236,7 @@ TEST_F(RotationConversionTest, QuatRotmat) {
 TEST_F(RotationConversionTest, QuatRPY) {
   // Compute the roll pitch yaw angle using Eigen geometry module, compare the
   // result with quat2rpy
-  for (const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     Quaterniond qi_eigen(ai);
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
     auto ea_eigen = qi_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
@@ -252,23 +250,20 @@ TEST_F(RotationConversionTest, QuatRPY) {
 }
 
 TEST_F(RotationConversionTest, QuatEigenQuaternion) {
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     Quaterniond qi_eigen(ai);
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
     Quaterniond eigenQuat = quat2eigenQuaternion(qi);
     Matrix3d R_expected = quat2rotmat(qi);
     Matrix3d R_eigen = eigenQuat.matrix();
-    EXPECT_TRUE(
-        CompareMatrices(R_expected,
-                        R_eigen,
-                        1e-6,
-                        MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(R_expected, R_eigen, 1e-6,
+                                MatrixCompareType::absolute));
   }
 }
 TEST_F(RotationConversionTest, RotmatQuat) {
   // Compute the quaternion using Eigen geomery module, compare the result with
   // rotmat2quat
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto Ri = ai.toRotationMatrix();
     auto quat = rotmat2quat(Ri);
     auto quat_eigen = Quaterniond(quat(0), quat(1), quat(2), quat(3));
@@ -283,7 +278,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
 TEST_F(RotationConversionTest, RotmatAxis) {
   // Compute angle-axis using Eigen geometry module, compare the result with
   // rotmat2axis
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto Ri = ai.toRotationMatrix();
     auto a_eigen_expected = AngleAxisd(Ri);
     auto a = rotmat2axis(Ri);
@@ -298,7 +293,7 @@ TEST_F(RotationConversionTest, RotmatAxis) {
 TEST_F(RotationConversionTest, RotmatRPY) {
   // Compute roll pitch yaw using Eigen geometry module, compare the result with
   // rotmat2rpy
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto Ri = ai.toRotationMatrix();
     auto ea_expected = Ri.eulerAngles(2, 1, 0);
     Vector3d rpy_expected(ea_expected(2), ea_expected(1), ea_expected(0));
@@ -313,14 +308,15 @@ TEST_F(RotationConversionTest, RotmatRPY) {
 TEST_F(RotationConversionTest, RPYRotmat) {
   // Compute the rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
   // then compare the result with rpy2rotmat
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto euler = ai.toRotationMatrix().eulerAngles(2, 1, 0);
     Vector3d rpyi(euler(2), euler(1), euler(0));
-    auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ())
-    * Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY())
-    * Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
+    auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
+                             Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
+                             Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     auto rotmat = rpy2rotmat(rpyi);
-    EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(), 1E-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(),
+                                1E-10, MatrixCompareType::absolute));
     // rpy2rotmat should be the inversion of rotmat2rpy
     Vector3d rpy_expected = rotmat2rpy(rotmat);
     Vector3d euler_expected(rpy_expected(2), rpy_expected(1), rpy_expected(0));
@@ -331,12 +327,12 @@ TEST_F(RotationConversionTest, RPYRotmat) {
 TEST_F(RotationConversionTest, RPYAxis) {
   // Compute the angle-axis representation using Eigen's geometry module,
   // compare the result with rpy2axis
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto euler = ai.toRotationMatrix().eulerAngles(2, 1, 0);
     Vector3d rpyi(euler(2), euler(1), euler(0));
-    auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ())
-        * Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY())
-        * Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
+    auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
+                             Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
+                             Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     auto a_eigen_expected = Eigen::AngleAxis<double>(rotation_expected);
     auto a = rpy2axis(rpyi);
     AngleAxisd a_eigen(a(3), a.head<3>());
@@ -344,7 +340,7 @@ TEST_F(RotationConversionTest, RPYAxis) {
 
     // Compute rpy2axis should be the inversion of axis2rpy
     Vector3d rpy_expected = axis2rpy(a);
-    Vector3d euler_expected (rpy_expected(2), rpy_expected(1), rpy_expected(0));
+    Vector3d euler_expected(rpy_expected(2), rpy_expected(1), rpy_expected(0));
     EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
   }
 }
@@ -352,7 +348,7 @@ TEST_F(RotationConversionTest, RPYAxis) {
 TEST_F(RotationConversionTest, RPYQuat) {
   // Compute the quaternion representation using Eigen's geometry model,
   // compare the result with rpy2quat
-  for(const auto &ai:test_orientation_) {
+  for (const auto& ai : test_orientation_) {
     auto euler = ai.toRotationMatrix().eulerAngles(2, 1, 0);
     Vector3d rpyi(euler(2), euler(1), euler(0));
     auto quat_eigen_expected = eulerToQuaternion(euler);

@@ -149,25 +149,26 @@ Vector4<typename Derived::Scalar> quat2axis(
   using std::sqrt;
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   using Scalar = typename Derived::Scalar;
-  Scalar sa2 = q.template tail<3>().norm(); // sin(angle/2)*axis
+  Scalar sa2 = q.template tail<3>().norm();  // sin(angle/2)*axis
   Scalar epsilon_scalar = std::numeric_limits<Scalar>::epsilon();
 
   Vector4<Scalar> a;
-  if(sa2 < epsilon_scalar * epsilon_scalar) {
+  if (sa2 < epsilon_scalar * epsilon_scalar) {
     // no rotation
     a << 1.0, 0.0, 0.0, 0.0;
     return a;
-  }
-  else {
+  } else {
     // Use atan2.  Do NOT just use acos(q[0]) to calculate the rotation angle!!!
-    // Otherwise results are numerical garbage anywhere near zero (or less near).
+    // Otherwise results are numerical garbage anywhere near zero (or less
+    // near).
     Scalar angle = 2 * std::atan2(sa2, q(0));
 
     // Since sa2>=0, atan2 returns a value between 0 and pi, which is then
     // multiplied by 2 which means the angle is between 0 and 2pi.
     // We want an angle in the range:  -pi < angle <= pi range.
-    // E.g., instead of rotating 359 degrees clockwise, rotate -1 degree counterclockwise.
-    if( angle > M_PI ) angle -= 2*M_PI;
+    // E.g., instead of rotating 359 degrees clockwise, rotate -1 degree
+    // counterclockwise.
+    if (angle > M_PI) angle -= 2 * M_PI;
 
     // Normalize the axis part of the return value
     a.template head<3>() = q.template tail<3>() / sa2;
@@ -202,9 +203,13 @@ Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& q) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   Eigen::Quaternion<typename Derived::Scalar> q_eigen(q(0), q(1), q(2), q(3));
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> rotmat = q_eigen.toRotationMatrix();
-  auto euler_angles = Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::template FromRotation<false, false, false>(rotmat);
-  return drake::Vector3<typename Derived::Scalar>(euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
+  Eigen::Matrix<typename Derived::Scalar, 3, 3> rotmat =
+      q_eigen.toRotationMatrix();
+  auto euler_angles =
+      Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
+          template FromRotation<false, false, false>(rotmat);
+  return drake::Vector3<typename Derived::Scalar>(
+      euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
 }
 
 template <typename Derived>
