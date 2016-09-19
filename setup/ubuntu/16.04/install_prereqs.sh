@@ -43,9 +43,9 @@ libqt4-opengl-dev
 libqwt-dev
 libterm-readkey-perl
 libtool
+libvtk-java
 libvtk5-dev
 libvtk5-qt4-dev
-libvtk-java
 libwww-perl
 make
 ninja-build
