@@ -17,8 +17,8 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
                    MatrixBase<DerivedC>* q_sol, int* info) {
   int num_kc = 0;
   int nq = model->number_of_positions();
-  SingleTimeKinematicConstraint** kc_array =
-      new SingleTimeKinematicConstraint* [num_constraints];
+  const SingleTimeKinematicConstraint** kc_array =
+      new const SingleTimeKinematicConstraint* [num_constraints];
   double* joint_lb = new double[nq];
   double* joint_ub = new double[nq];
   for (int j = 0; j < nq; j++) {
@@ -29,14 +29,15 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
     int constraint_category = constraint_array[i]->getCategory();
     if (constraint_category ==
         RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
-      kc_array[num_kc] =
-          static_cast<SingleTimeKinematicConstraint*>(constraint_array[i]);
+      kc_array[num_kc] = static_cast<
+        const SingleTimeKinematicConstraint*>(constraint_array[i]);
+
       num_kc++;
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
       VectorXd joint_min, joint_max;
-      PostureConstraint* pc =
-          static_cast<PostureConstraint*>(constraint_array[i]);
+      const PostureConstraint* pc =
+          static_cast<const PostureConstraint*>(constraint_array[i]);
       pc->bounds(nullptr, joint_min, joint_max);
       for (int j = 0; j < nq; j++) {
         joint_lb[j] = (joint_lb[j] < joint_min[j] ? joint_min[j] : joint_lb[j]);
