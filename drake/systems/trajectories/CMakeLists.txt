@@ -26,6 +26,10 @@ if(BLAS_LIBRARY AND snopt_c_FOUND AND BULLET_FOUND AND MATLAB_FOUND)
   target_link_libraries(shiftFunnel_snopt_mex -lblas drakeMexUtil ${BULLET_LIBRARIES})
   target_link_libraries(isCollisionFree_mex drakeMexUtil ${BULLET_LIBRARIES})
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil ${BULLET_LIBRARIES})
+  target_include_directories(replanFunnels_mex SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
+  target_include_directories(shiftFunnel_snopt_mex SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
+  target_include_directories(isCollisionFree_mex SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
+  target_include_directories(ptToPolyBullet_mex SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
 
   # These warnings are not worth fixing.
   target_compile_options(replanFunnels_mex PRIVATE ${CXX_FLAGS_NO_ERROR_SHADOW})
