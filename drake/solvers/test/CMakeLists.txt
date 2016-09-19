@@ -13,14 +13,18 @@ add_executable(moby_lcp_solver_test moby_lcp_solver_test.cc)
 target_link_libraries(moby_lcp_solver_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME moby_lcp_solver_test COMMAND moby_lcp_solver_test)
 
+add_executable(fastqp_solver_test fastqp_solver_test.cc)
+target_link_libraries(fastqp_solver_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME fastqp_solver_test COMMAND fastqp_solver_test)
+
 add_executable(system_identification_test system_identification_test.cc)
 target_link_libraries(system_identification_test
   drakeOptimization drakeCommon ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME system_identification_test COMMAND system_identification_test SIZE medium)
+
 add_executable(gurobi_solver_test gurobi_solver_test.cc)
 target_link_libraries(gurobi_solver_test drakeOptimization
   ${GTEST_BOTH_LIBRARIES})
-
 if(gurobi_FOUND)
   drake_add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
 endif()

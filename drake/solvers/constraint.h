@@ -111,6 +111,12 @@ class QuadraticConstraint : public Constraint {
 
   virtual const Eigen::VectorXd& b() const { return b_; }
 
+  template <typename DerivedQ>
+  void set_Q(const Eigen::MatrixBase<DerivedQ>& Q) { Q_ = Q; }
+
+  template <typename DerivedQ>
+  void set_b(const Eigen::MatrixBase<DerivedQ>& b) { b_ = b; }
+
  private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
