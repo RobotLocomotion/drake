@@ -30,7 +30,7 @@
 	url = https://github.com/mitdrc/signal-scope.git
 [submodule "externals/octomap"]
 	path = externals/octomap
-	url = https://github.com/RobotLocomotion/octomap-pod.git
+	url = https://github.com/OctoMap/octomap
 [submodule "externals/snopt"]
 	path = externals/snopt
 	url = git@github.com:RobotLocomotion/snopt.git
