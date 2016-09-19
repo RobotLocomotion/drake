@@ -19,6 +19,7 @@ namespace ros {
 namespace systems {
 
 bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
+            // NOLINTNEXTLINE(runtime/references) due to LCMSystem.
             drake::automotive::DrivingCommand<double>& x) {
   x.set_steering_angle(msg.drive.steering_angle);
   if (msg.drive.speed > 0) {
@@ -119,6 +120,7 @@ class ROSAckermannCommandReceiverSystem {
 template <typename System>
 void run_ros_vehicle_sim(
     std::shared_ptr<System> sys, double t0, double tf,
+    // NOLINTNEXTLINE(runtime/references) False positive.
     const typename System::template StateVector<double>& x0,
     const SimulationOptions& options = SimulationOptions()) {
   auto ros_ackermann_input =
