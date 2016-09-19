@@ -19,9 +19,9 @@ template <typename T>
 class GravityCompensator : public LeafSystem<T> {
  public:
   /// Constructs a gravity compensator (corresponding to a RigidBodyTree) with
-  /// the dimension of the input and output port equalling the dimension of the
+  /// the dimension of the input and output port equaling the dimension of the
   /// Degrees of Freedom of the RigidBodyTree (positions of a RigidBodySystem)
-  /// @param rigit_body_tree_ptr a shared pointer to a RigidBodyTree object
+  /// @param rigid_body_tree_ptr a shared pointer to a RigidBodyTree object
   /// which in turn is externally derived from a RigidBodySystem object to be
   /// controlled.
   GravityCompensator(const RigidBodyTree& rigid_body_tree);
@@ -34,7 +34,7 @@ class GravityCompensator : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const RigidBodyTree &rigid_body_tree_;
+  const RigidBodyTree &mdb_world_;
 };
 
 }  // namespace systems
