@@ -112,10 +112,14 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::VectorXd& b() const { return b_; }
 
   template <typename DerivedQ>
-  void set_Q(const Eigen::MatrixBase<DerivedQ>& Q) { Q_ = Q; }
+  void set_Q(const Eigen::MatrixBase<DerivedQ>& Q) {
+    Q_ = Q;
+  }
 
   template <typename DerivedQ>
-  void set_b(const Eigen::MatrixBase<DerivedQ>& b) { b_ = b; }
+  void set_b(const Eigen::MatrixBase<DerivedQ>& b) {
+    b_ = b;
+  }
 
  private:
   Eigen::MatrixXd Q_;
@@ -154,7 +158,6 @@ class SemidefiniteConstraint : public Constraint {
     throw std::runtime_error(
         "Eval is not implemented in SemidefiniteConstraint.");
   };
-
 
   virtual const Eigen::MatrixXd& G() const { return G_; }
 
@@ -217,8 +220,7 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, TaylorVarXd>
-      taylor_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,

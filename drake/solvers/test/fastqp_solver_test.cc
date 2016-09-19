@@ -32,39 +32,38 @@ GTEST_TEST(testFastQP, unitBallExample) {
   for (int i = 0; i < N; i++) {
     double theta = 2.0 * M_PI * i / N;
     x_desired << sin(theta), cos(theta);
-    objective->set_b(-2*Q*x_desired);
+    objective->set_b(-2 * Q * x_desired);
 
     if (theta <= M_PI_2) {
       // simple lagrange multiplier problem:
       // min (x-x_d)^2 + (y-y_d)^2 s.t. x+y=1
-      x_expected << (x_desired(0) - x_desired(1) + 1.0)/2.0,
-          (x_desired(1) - x_desired(0) + 1.0)/2.0;
+      x_expected << (x_desired(0) - x_desired(1) + 1.0) / 2.0,
+          (x_desired(1) - x_desired(0) + 1.0) / 2.0;
     } else if (theta <= M_PI) {
       // min (x-x_d)^2 + (y-y_d)^2 s.t. x-y=1
-      x_expected << (x_desired(0) + x_desired(1) + 1.0)/2.0,
-          (x_desired(0) + x_desired(1) - 1.0)/2.0;
-    } else if (theta <= 3.0*M_PI_2) {
+      x_expected << (x_desired(0) + x_desired(1) + 1.0) / 2.0,
+          (x_desired(0) + x_desired(1) - 1.0) / 2.0;
+    } else if (theta <= 3.0 * M_PI_2) {
       // min (x-x_d)^2 + (y-y_d)^2 s.t. x+y=-1
-      x_expected << (x_desired(0) - x_desired(1) - 1.0)/2.0,
-          (x_desired(1) - x_desired(0) - 1.0)/2.0;
+      x_expected << (x_desired(0) - x_desired(1) - 1.0) / 2.0,
+          (x_desired(1) - x_desired(0) - 1.0) / 2.0;
     } else {
       // min (x-x_d)^2 + (y-y_d)^2 s.t. x-y=-1
-      x_expected << (x_desired(0) + x_desired(1) - 1.0)/2.0,
-          (x_desired(0) + x_desired(1) + 1.0)/2.0;
+      x_expected << (x_desired(0) + x_desired(1) - 1.0) / 2.0,
+          (x_desired(0) + x_desired(1) + 1.0) / 2.0;
     }
 
     SolutionResult result = SolutionResult::kUnknownError;
 
-    ASSERT_NO_THROW(result = prog.Solve());      // todo: call fastQP solver explicitly
+    ASSERT_NO_THROW(result =
+                        prog.Solve());  // todo: call fastQP solver explicitly
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     // todo: assert that fastQP only falls back on the expected iterations
 
-    EXPECT_TRUE( CompareMatrices(x.value(), x_expected, 1e-4,
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
                                 MatrixCompareType::absolute));
-
   }
 }
-
 }
 }
 }  // end namespaces
