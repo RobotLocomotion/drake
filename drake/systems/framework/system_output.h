@@ -136,7 +136,7 @@ class SystemOutput {
   /// Returns the abstract value in the port at @p index.
   const AbstractValue* get_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_port(index).get_data();
+    return get_port(index).get_abstract_data();
   }
 
   /// Returns the vector value in the port at @p index. Throws std::bad_cast if
