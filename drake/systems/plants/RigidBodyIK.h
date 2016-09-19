@@ -50,14 +50,15 @@ class RigidBodyTree;
  * @param ikoptions    The options to set parameters of IK problem.
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKin(RigidBodyTree* model,
-                               const Eigen::MatrixBase<DerivedA>& q_seed,
-                               const Eigen::MatrixBase<DerivedB>& q_nom,
-                               const int num_constraints,
-                               RigidBodyConstraint** const constraint_array,
-                               const IKoptions& ikoptions,
-                               Eigen::MatrixBase<DerivedC>* q_sol, int* info,
-                               std::vector<std::string>* infeasible_constraint);
+DRAKEIK_EXPORT void inverseKin(
+    RigidBodyTree* model,
+    const Eigen::MatrixBase<DerivedA>& q_seed,
+    const Eigen::MatrixBase<DerivedB>& q_nom,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
+    const IKoptions& ikoptions,
+    Eigen::MatrixBase<DerivedC>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 
 /**
  * Return type for simplified versions of IK functions.
@@ -95,14 +96,15 @@ DRAKEIK_EXPORT IKResults inverseKinSimple(
  * @param ikoptions  Same as in inverseKin
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void approximateIK(RigidBodyTree* model,
-                                  const Eigen::MatrixBase<DerivedA>& q_seed,
-                                  const Eigen::MatrixBase<DerivedB>& q_nom,
-                                  const int num_constraints,
-                                  RigidBodyConstraint** const constraint_array,
-                                  const IKoptions& ikoptions,
-                                  Eigen::MatrixBase<DerivedC>* q_sol,
-                                  int* info);
+DRAKEIK_EXPORT void approximateIK(
+    RigidBodyTree* model,
+    const Eigen::MatrixBase<DerivedA>& q_seed,
+    const Eigen::MatrixBase<DerivedB>& q_nom,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
+    const IKoptions& ikoptions,
+    Eigen::MatrixBase<DerivedC>* q_sol,
+    int* info);
 
 /**
  * inverseKinPointwise   solves inverse kinematics problem at each t[i]
@@ -135,7 +137,7 @@ DRAKEIK_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedC>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
@@ -188,7 +190,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
     const Eigen::MatrixBase<DerivedA>& qdot0_seed,
     const Eigen::MatrixBase<DerivedB>& q_seed,
     const Eigen::MatrixBase<DerivedC>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedD>* q_sol, Eigen::MatrixBase<DerivedE>* qdot_sol,
     Eigen::MatrixBase<DerivedF>* qddot_sol, int* info,

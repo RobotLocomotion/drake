@@ -12,7 +12,7 @@ using namespace Eigen;
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
                    const MatrixBase<DerivedB>& q_nom, const int num_constraints,
-                   RigidBodyConstraint* *const constraint_array,
+                   const RigidBodyConstraint* const* constraint_array,
                    const IKoptions& ikoptions,
                    MatrixBase<DerivedC>* q_sol, int* info) {
   int num_kc = 0;
@@ -209,10 +209,12 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
 
 template DRAKEIK_EXPORT void approximateIK(
   RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
-  const MatrixBase<Map<VectorXd>>& , const int, RigidBodyConstraint** const,
+  const MatrixBase<Map<VectorXd>>& , const int,
+  const RigidBodyConstraint* const*,
   const IKoptions&, MatrixBase<Map<VectorXd>>*, int*);
 
 template DRAKEIK_EXPORT void approximateIK(
   RigidBodyTree*, const MatrixBase<VectorXd>& ,
-  const MatrixBase<VectorXd>& , const int, RigidBodyConstraint** const,
+  const MatrixBase<VectorXd>& , const int,
+  const RigidBodyConstraint* const*,
   const IKoptions&, MatrixBase<VectorXd>*, int*);
