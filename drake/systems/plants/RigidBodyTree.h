@@ -47,15 +47,15 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * ...
  * </pre>
  *
- * Each RigidBody object maintains indices to its mobilizer's generalized
+ * Each RigidBody object maintains indices to its joint's generalized
  * coordinate vector and generalized velocity vector in the RigidBodyTree's
  * generalized state vector.
  *
- * The starting index of a RigidBody's mobilizer's generalized coordinate vector
+ * The starting index of a RigidBody's joint's generalized coordinate vector
  * in the RigidBodyTree's generalized state vector can be obtained by executing
  * RigidBody::get_position_start_index().
  *
- * The starting index of a RigidBody's mobilizer's generalized velocity vector
+ * The starting index of a RigidBody's joint's generalized velocity vector
  * in the RigidBodyTree's generalized state vector can be computed as follows:
  * RigidBodyTree::number_of_positions() +
  * RigidBody::get_velocity_start_index(). Note that the velocity index starts
