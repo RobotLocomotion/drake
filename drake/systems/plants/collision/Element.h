@@ -54,7 +54,13 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    * with the other object.  CanCollidesWith should be symmetric: if
    * A can collide with B, B can collide with A.
    */
-  virtual bool CanCollideWith(const Element *other) const { return true; }
+  virtual bool CanCollideWith(const Element *other) const;
+
+  void AddToCollisionClique(int clique_id);
+
+  int number_of_cliques() const;
+
+  const std::vector<int>& collision_cliques() const;
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement
   is attached. **/
@@ -76,6 +82,23 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   ElementId id;
   bool is_static_{false};
   const RigidBody* body_{};
+
+  // Collision cliques are defined as a group of collision elements that do not
+  // collide.
+  // Collision cliques in Drake are represented simply by an integer.
+  // A collision element can belong to more than one clique.
+  // Conceptually it would seem like std::set is the right fit for
+  // CollisionElement::collision_cliques_. However, std::set is really good for
+  // dynamically adding elements to a set that needs to change.
+  // Once you are done adding elements to your set, access time is poor when
+  // compared to a simple std::vector (nothing faster than scanning a vector of
+  // adjacent entries in memory).
+  // Here adding elements to the cliques vector only happens during problem
+  // setup by the user or from a URDF/SDF file. What we really want is that once
+  // this vector is setup, we can query it very fast during simulation.
+  // This is done in CollisionElement::CanCollideWith which to be Order(N)
+  // requires the entries in CollisionElement::collision_cliques_ to be sorted.
+  std::vector<int> collision_cliques_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
