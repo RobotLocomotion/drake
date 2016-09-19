@@ -15,7 +15,8 @@ DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<DerivedA>& qdot0_seed, const MatrixBase<DerivedB>& q_seed,
     const MatrixBase<DerivedC>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array, const IKoptions& ikoptions_in,
+    const RigidBodyConstraint* const* constraint_array,
+    const IKoptions& ikoptions_in,
     MatrixBase<DerivedD>* q_sol, MatrixBase<DerivedE>* qdot_sol,
     MatrixBase<DerivedF>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint) {
@@ -33,7 +34,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     const MatrixBase<Map<VectorXd>>& qdot0_seed,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<Map<MatrixXd>>* qdot_sol,
     MatrixBase<Map<MatrixXd>>* qddot_sol, int* info,
@@ -42,7 +43,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<VectorXd>& qdot0_seed, const MatrixBase<MatrixXd>& q_seed,
     const MatrixBase<MatrixXd>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
     MatrixBase<MatrixXd>* qdot_sol, MatrixBase<MatrixXd>* qddot_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
@@ -65,8 +66,7 @@ DRAKEIK_EXPORT IKResults inverseKinTrajSimple(
 
   inverseKinTrajBackend(
       model, t.size(), t.data(), q_seed, q_nom,
-      constraint_array.size(),
-      const_cast<RigidBodyConstraint** const>(constraint_array.data()),
+      constraint_array.size(), constraint_array.data(),
       ikoptions, &q_sol_mat, &qdot_sol_dummy, &qddot_sol_dummy,
       results.info.data(), &results.infeasible_constraints);
   results.q_sol.resize(t.size());
