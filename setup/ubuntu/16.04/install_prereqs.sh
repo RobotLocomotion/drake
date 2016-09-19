@@ -2,17 +2,20 @@
 # Prerequisite set-up script for Drake on Ubuntu 16.04.
 # 16.04 support is in beta. It is not tested in CI or officially supported.
 
-if [[ $EUID -ne 0 ]]; then
-    echo "The Drake prerequisite set-up script must run as root. Please use sudo." 1>&2
+set -eu
+
+die () {
+    echo "$@" 1>&2
     exit 1
-fi
+}
+
+me="The Drake prerequisite set-up script"
+
+[[ $EUID -eq 0 ]] || die "$me must run as root. Please use sudo."
 
 . /etc/lsb-release
 
-if [[ $DISTRIB_RELEASE -ne "16.04" ]]; then
-    echo "The Drake prerequisite set-up script only supports Ubuntu 16.04." 1>&2
-    exit 1
-fi
+[[ $DISTRIB_RELEASE == "16.04" ]] || die "$me only supports Ubuntu 16.04."
 
 # Install the APT dependencies.
 # TODO(david-german-tri): Can we remove libvtk-java, subversion?
