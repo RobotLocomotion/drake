@@ -45,7 +45,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // `drake::lcmt_viewer_draw` message.
   double time = 0;
   std::vector<uint8_t> lcm_message_bytes;
-  dut.TranslateVectorBaseToLcm(time, original_vector, &lcm_message_bytes);
+  dut.Serialize(time, original_vector, &lcm_message_bytes);
   EXPECT_GT(lcm_message_bytes.size(), 0);
 
   // TODO(liang.fok): Verify that the serialized message is correct. I believe

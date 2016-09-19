@@ -37,11 +37,11 @@ class DRAKE_RBP_EXPORT ViewerDrawTranslator
    */
   explicit ViewerDrawTranslator(const RigidBodyTree& tree);
 
-  void TranslateLcmToVectorBase(
+  void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override;
 
-  void TranslateVectorBaseToLcm(double time,
+  void Serialize(double time,
       const VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 

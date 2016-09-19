@@ -23,7 +23,7 @@ ViewerDrawTranslator::ViewerDrawTranslator(
 }
 
 // TODO(liang.fok) Implement this method.
-void ViewerDrawTranslator::TranslateLcmToVectorBase(
+void ViewerDrawTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_ABORT_MSG("Unable to convert from a drake::lcmt_viewer_draw message to "
@@ -31,7 +31,7 @@ void ViewerDrawTranslator::TranslateLcmToVectorBase(
                   "generalized state.");
 }
 
-void ViewerDrawTranslator::TranslateVectorBaseToLcm(double time,
+void ViewerDrawTranslator::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
