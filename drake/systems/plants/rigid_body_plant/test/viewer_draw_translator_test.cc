@@ -54,7 +54,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   //     (2) serializing it into an array of bytes
   //     (3) verifying that the byte array matches `message_bytes`
   lcmt_viewer_draw expected_message;
-  expected_message.timestamp = 0;
+  expected_message.timestamp = time;
   expected_message.num_links = tree->get_number_of_bodies();
   const Eigen::VectorXd q = generalized_state.CopyToVector().head(
       tree->number_of_positions());
