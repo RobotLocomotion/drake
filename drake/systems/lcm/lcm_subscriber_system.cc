@@ -44,7 +44,7 @@ void LcmSubscriberSystem::EvalOutput(const Context<double>&,
   VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   if (!received_message_.empty()) {
-    translator_.TranslateLcmToVectorBase(
+    translator_.Deserialize(
         received_message_.data(), received_message_.size(), output_vector);
   }
 }
