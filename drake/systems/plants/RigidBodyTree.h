@@ -56,9 +56,9 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * vector in the RigidBodyTree's generalized state vector can be obtained by
  * executing RigidBody::get_position_start_index().
  *
- * The starting index of a RigidBody's inboard joint's generalized velocity vector
- * in the RigidBodyTree's generalized state vector can be computed as follows:
- * RigidBodyTree::number_of_positions() +
+ * The starting index of a RigidBody's inboard joint's generalized velocity
+ * vector in the RigidBodyTree's generalized state vector can be computed as
+ * follows: RigidBodyTree::number_of_positions() +
  * RigidBody::get_velocity_start_index(). Note that the velocity index starts
  * at the beginning of the velocity state variables and not at the beginning of
  * the full state of this RigidBodyTree. This is why the total number of
