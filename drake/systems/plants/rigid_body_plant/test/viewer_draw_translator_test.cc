@@ -8,6 +8,9 @@
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
+
+#include <lcm/lcm-cpp.hpp>
+
 namespace drake {
 namespace systems {
 namespace {
@@ -16,10 +19,9 @@ using std::make_unique;
 
 // Tests the basic functionality of the translator.
 GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
-  // Define the number of rigid bodies to add to the `RigidbodyTree`.
+  // Creates a `RigidBodyTree` with `kNumBodies` rigid bodies.
   const int kNumBodies = 2;
 
-  // Creates a `RigidBodyTree` with `kNumBodies` rigid bodies.
   auto tree = make_unique<RigidBodyTree>();
   for (int i = 0; i < kNumBodies; ++i) {
     auto body = make_unique<RigidBody>();
@@ -31,32 +33,27 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    // Connects the body to the world using a RPY floating joint.
     auto joint = make_unique<RollPitchYawFloatingJoint>(
         "Joint" + std::to_string(i), Eigen::Isometry3d::Identity());
 
     body->add_joint(&tree->world(), std::move(joint));
 
-    // Adds the body to the tree.
     tree->bodies.push_back(std::move(body));
   }
   tree->compile();
 
-  // Creates an `LcmtViewerDrawTranslator` object using the tree that was just
-  // created. The name "dut" stands for "Device Under Test".
+  // Creates an `LcmtViewerDrawTranslator` object using the `RigidBodyTree` that
+  // was just created. The name "dut" stands for "Device Under Test".
   ViewerDrawTranslator dut(*tree);
 
-  // Instantiates a `BasicVector<double>` with a size that matches the number
-  // of generalized state in the RigidBodyTree.
+  // Instantiates a generalized state vector containing all zeros. This is
+  // selected to make the resulting quaternion values be easily specified.
   int num_states = tree->number_of_positions() + tree->number_of_velocities();
-
   BasicVector<double> generalized_state(num_states);
-  for (int i = 0; i < num_states; ++i) {
-    generalized_state.SetAtIndex(i, i);
-  }
+  generalized_state.set_value(Eigen::VectorXd::Zero(num_states));
 
-  // Transforms the basic vector into the byte array representation of a
-  // `drake::lcmt_viewer_draw` message.
+  // Uses the `ViewerDrawTranslator` to convert the `BasicVector<double>` into
+  // a byte array for a `drake::lcmt_viewer_draw` message.
   double time = 0;
   std::vector<uint8_t> message_bytes;
   dut.Serialize(time, generalized_state, &message_bytes);
@@ -66,43 +63,37 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   //     (1) manually creating a the correct `drake::lcmt_viewer_draw`
   //     (2) serializing it into an array of bytes
   //     (3) verifying that the byte array matches `message_bytes`
+
+  // TODO(liang.fok) Move the following two lines to a shareable location.
+  std::vector<float> zero_position = {0, 0, 0};
+  std::vector<float> zero_quaternion = {1, 0, 0, 0};
+
   lcmt_viewer_draw expected_message;
   expected_message.timestamp = static_cast<int64_t>(time * 1000);
   expected_message.num_links = tree->get_number_of_bodies();
-  const Eigen::VectorXd q = generalized_state.CopyToVector().head(
-      tree->number_of_positions());
-  KinematicsCache<double> cache = tree->doKinematics(q);
-  for (int i = 0; i < expected_message.num_links; ++i) {
-    const RigidBody& body = tree->get_body(i);
-    expected_message.link_name.push_back(body.get_name());
-    expected_message.robot_num.push_back(body.get_model_instance_id());
+  expected_message.link_name.push_back("world");
+  expected_message.link_name.push_back("body0");
+  expected_message.link_name.push_back("body1");
+  expected_message.robot_num.push_back(0);
+  expected_message.robot_num.push_back(0);
+  expected_message.robot_num.push_back(1);
+  expected_message.position.push_back(zero_position);
+  expected_message.position.push_back(zero_position);
+  expected_message.position.push_back(zero_position);
+  expected_message.quaternion.push_back(zero_quaternion);
+  expected_message.quaternion.push_back(zero_quaternion);
+  expected_message.quaternion.push_back(zero_quaternion);
 
-    auto transform = tree->relativeTransform(cache, 0, i);
-    auto quat = drake::math::rotmat2quat(transform.linear());
+  const int byte_count = expected_message.getEncodedSize();
+  EXPECT_EQ(byte_count, message_bytes.size());
 
-    std::vector<float> position;
-    auto translation = transform.translation();
-    for (int j = 0; j < 3; ++j) {
-      position.push_back(static_cast<float>(translation(j)));
-    }
-    expected_message.position.push_back(position);
+  std::vector<uint8_t> expected_bytes(byte_count);
+  expected_message.encode(expected_bytes.data(), 0, byte_count);
 
-    std::vector<float> orientation;
-    for (int j = 0; j < 4; ++j) {
-      orientation.push_back(static_cast<float>(quat(j)));
-    }
-    expected_message.quaternion.push_back(orientation);
-  }
+  EXPECT_EQ(expected_bytes, message_bytes);
 
-  const int expected_message_length = expected_message.getEncodedSize();
-  EXPECT_EQ(expected_message_length, message_bytes.size());
-
-  std::vector<uint8_t> expected_message_bytes;
-  expected_message_bytes.resize(expected_message_length);
-  expected_message.encode(expected_message_bytes.data(), 0,
-                          expected_message_length);
-
-  EXPECT_EQ(expected_message_bytes, message_bytes);
+  ::lcm::LCM lcm;
+  lcm.publish("DRAKE_FOO", expected_bytes.data(), expected_bytes.size());
 }
 
 }  // namespace

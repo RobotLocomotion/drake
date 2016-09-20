@@ -201,16 +201,8 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
 
 // Verifies that @p message_bytes is correct.
 void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
-  std::vector<float> zero_position(3);
-  zero_position[0] = 0;
-  zero_position[1] = 0;
-  zero_position[2] = 0;
-
-  std::vector<float> zero_quaternion(4);
-  zero_quaternion[0] = 1;
-  zero_quaternion[1] = 0;
-  zero_quaternion[2] = 0;
-  zero_quaternion[3] = 0;
+  std::vector<float> zero_position = {0, 0, 0};
+  std::vector<float> zero_quaternion = {1, 0, 0, 0};
 
   // Instantiates a `drake::lcmt_viewer_draw` message that contains the expected
   // state.
@@ -459,15 +451,8 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
 
 // Tests the basic functionality of the RigidBodyTreeVisualizerLcm.
 GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
-  // Creates a RigidBodyTree with kNumBodies rigid bodies. Each rigid body is
-  // a sphere and belongs to a different model instance. The X coordinate of
-  // each sphere in the world frame is 1, 2, ...
   unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
-
   ::lcm::LCM lcm;
-
-  // Creates a RigidBodyTreeVisualizerLcm object using the previously created
-  // RigidBodyTree. The name "dut" stands for "Device Under Test".
   RigidBodyTreeVisualizerLcm dut(*tree.get(), &lcm);
 
   EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
@@ -476,25 +461,22 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
 
   // Sets the time to be zero. This is necessary since the load robot message
   // is only transmitted when the time is zero.
+  //
   // TODO(liang.fok) Remove this assumption once systems are able to declare
   // that they want to publish at the simulation's start time.
   context->set_time(0);
 
   EXPECT_EQ(1, context->get_num_input_ports());
 
-  // Initializes the input vector to contain all zeros.
+  // Initializes the system's input vector to contain all zeros.
   int vector_size = tree->number_of_positions() + tree->number_of_velocities();
   auto input_data = make_unique<BasicVector<double>>(vector_size);
+  input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 
-  for (int i = 0; i < vector_size; ++i) {
-    input_data->SetAtIndex(i, 0);
-  }
-
-  // Saves the input vector into the context's input port.
   context->SetInputPort(0,
       std::make_unique<systems::FreestandingInputPort>(std::move(input_data)));
 
-  // Make the `dut` system publish the `RigidBodyTree` visualization messages.
+  // Publishes the `RigidBodyTree` visualization messages.
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
