@@ -1,9 +1,10 @@
 #pragma once
 
 #include <math.h>
-#include <Eigen/Dense>
 #include <set>
 #include <vector>
+
+#include <Eigen/Dense>
 
 #include "drake/common/eigen_stl_types.h"
 #include "drake/drakeControlUtil_export.h"
