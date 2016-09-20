@@ -222,30 +222,6 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
 }
 
 template <typename T>
-KinematicsCache<T> RigidBodyPlant<T>::InstantiateKinematicsCache(
-    const Context<T> &context) const {
-  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
-  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
-  auto x = dynamic_cast<const BasicVector<T> &>(
-      context.get_state().continuous_state->get_state()).get_value();
-
-  const int nq = get_num_positions();
-  const int nv = get_num_velocities();
-
-  // TODO(amcastro-tri): we would like to compile here with `auto` instead of
-  // `VectorX<T>`. However it seems we get some sort of block from a block which
-  // is not instantiated in drakeRBM.
-  VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = x.bottomRows(nv);
-  // TODO(amcastro-tri): place kinematics cache in the context so it can be
-  // reused.
-  return tree_->doKinematics(q, v);
-}
-
-
-template <typename T>
 void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

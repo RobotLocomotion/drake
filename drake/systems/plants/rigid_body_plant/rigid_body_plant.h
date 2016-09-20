@@ -215,14 +215,6 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   T friction_coefficient_{0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
-
-  // This method instantiates a KinematicsCache and updates it to the current
-  // state of the system according to the context.
-  // TODO(amcastro-tri): Completely remove this method once System 2.0 caching
-  // is in place. Right now this method is only used to avoid repeating the same
-  // piece of code across different methods.
-  KinematicsCache<T> InstantiateKinematicsCache(
-      const Context<T> &context) const;
 };
 
 }  // namespace systems
