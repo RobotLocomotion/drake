@@ -60,6 +60,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
+  /// Returns the default name for a system that subscribes to @p channel.
+  static std::string get_name(const std::string& channel);
+
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
