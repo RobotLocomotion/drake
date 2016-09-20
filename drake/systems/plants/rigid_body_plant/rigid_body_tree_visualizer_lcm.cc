@@ -11,24 +11,21 @@ const int kPortIndex = 0;
 
 RigidBodyTreeVisualizerLcm::RigidBodyTreeVisualizerLcm(
     const RigidBodyTree& tree, ::lcm::LCM* lcm) :
-    lcm_(lcm), draw_message_translator_(tree) {
+    lcm_(lcm), load_message_(InitializeLoadMessage(tree)),
+    draw_message_translator_(tree) {
+  set_name("rigid_body_tree_visualizer_lcm");
   int vector_size = tree.number_of_positions() + tree.number_of_velocities();
   DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
-  InitializeLoadMessage(tree);
 }
 
-std::string RigidBodyTreeVisualizerLcm::get_name() const {
-  return "rigid_body_tree_visualizer_lcm_1";
-}
-
-const drake::lcmt_viewer_load_robot&
+const lcmt_viewer_load_robot&
 RigidBodyTreeVisualizerLcm::get_load_message() const {
   return load_message_;
 }
 
 const std::vector<uint8_t>&
 RigidBodyTreeVisualizerLcm::get_draw_message_bytes() const {
-  return message_bytes_;
+  return draw_message_bytes_;
 }
 
 void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
@@ -53,8 +50,10 @@ void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
   lcm_->publish("DRAKE_VIEWER_DRAW", lcm_message_bytes.data(),
       lcm_message_bytes.size());
 
-  // Saves the message bytes into a local member variable.
-  message_bytes_ = lcm_message_bytes;
+  // Saves the message bytes into a local member variable. This is used for
+  // testing purposes.
+  draw_message_translator_.Serialize(
+      context.get_time(), *input_vector, &draw_message_bytes_);
 }
 
 void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
@@ -62,86 +61,93 @@ void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
   sent_load_robot_ = true;
 }
 
-void RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
+lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
     const RigidBodyTree& tree) {
-  load_message_.num_links = tree.bodies.size();
+  lcmt_viewer_load_robot load_message;
+  load_message.num_links = tree.bodies.size();
   for (const auto& body : tree.bodies) {
-    drake::lcmt_viewer_link_data link;
+    lcmt_viewer_link_data link;
     link.name = body->get_name();
     link.robot_num = body->get_model_instance_id();
     link.num_geom = body->get_visual_elements().size();
-    for (const auto& v : body->get_visual_elements()) {
-      drake::lcmt_viewer_geometry_data gdata;
-      const DrakeShapes::Geometry& geometry = v.getGeometry();
-      switch (v.getShape()) {  // would prefer to do this through virtual
-                               // methods, but don't want to introduce any LCM
-                               // dependency on the Geometry classes
+    for (const auto& visual_element : body->get_visual_elements()) {
+      lcmt_viewer_geometry_data geometry_data;
+      const DrakeShapes::Geometry& geometry = visual_element.getGeometry();
+
+      // TODO(liang.fok) Do this through virtual methods without introducing any
+      // LCM dependency on the Geometry classes.
+      switch (visual_element.getShape()) {
         case DrakeShapes::BOX: {
-          gdata.type = gdata.BOX;
-          gdata.num_float_data = 3;
-          auto b = dynamic_cast<const DrakeShapes::Box&>(geometry);
+          geometry_data.type = geometry_data.BOX;
+          geometry_data.num_float_data = 3;
+          auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
           for (int i = 0; i < 3; ++i)
-            gdata.float_data.push_back(static_cast<float>(b.size(i)));
+            geometry_data.float_data.push_back(static_cast<float>(box.size(i)));
           break;
         }
         case DrakeShapes::SPHERE: {
-          gdata.type = gdata.SPHERE;
-          gdata.num_float_data = 1;
-          auto b = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
-          gdata.float_data.push_back(static_cast<float>(b.radius));
+          geometry_data.type = geometry_data.SPHERE;
+          geometry_data.num_float_data = 1;
+          auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
+          geometry_data.float_data.push_back(static_cast<float>(sphere.radius));
           break;
         }
         case DrakeShapes::CYLINDER: {
-          gdata.type = gdata.CYLINDER;
-          gdata.num_float_data = 2;
-          auto c = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
-          gdata.float_data.push_back(static_cast<float>(c.radius));
-          gdata.float_data.push_back(static_cast<float>(c.length));
+          geometry_data.type = geometry_data.CYLINDER;
+          geometry_data.num_float_data = 2;
+          auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
+          geometry_data.float_data.push_back(static_cast<float>(cylinder.radius));
+          geometry_data.float_data.push_back(static_cast<float>(cylinder.length));
           break;
         }
         case DrakeShapes::MESH: {
-          gdata.type = gdata.MESH;
-          gdata.num_float_data = 3;
-          auto m = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
-          gdata.float_data.push_back(static_cast<float>(m.scale_[0]));
-          gdata.float_data.push_back(static_cast<float>(m.scale_[1]));
-          gdata.float_data.push_back(static_cast<float>(m.scale_[2]));
+          geometry_data.type = geometry_data.MESH;
+          geometry_data.num_float_data = 3;
+          auto mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[0]));
+          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[1]));
+          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[2]));
 
-          if (m.uri_.find("package://") == 0) {
-            gdata.string_data = m.uri_;
+          if (mesh.uri_.find("package://") == 0) {
+            geometry_data.string_data = mesh.uri_;
           } else {
-            gdata.string_data = m.resolved_filename_;
+            geometry_data.string_data = mesh.resolved_filename_;
           }
 
           break;
         }
         case DrakeShapes::CAPSULE: {
-          gdata.type = gdata.CAPSULE;
-          gdata.num_float_data = 2;
+          geometry_data.type = geometry_data.CAPSULE;
+          geometry_data.num_float_data = 2;
           auto c = dynamic_cast<const DrakeShapes::Capsule&>(geometry);
-          gdata.float_data.push_back(static_cast<float>(c.radius));
-          gdata.float_data.push_back(static_cast<float>(c.length));
+          geometry_data.float_data.push_back(static_cast<float>(c.radius));
+          geometry_data.float_data.push_back(static_cast<float>(c.length));
           break;
         }
         default: {
-          // intentionally do nothing
+          // Intentionally do nothing.
           break;
         }
       }
 
-      Eigen::Isometry3d T = v.getLocalTransform();
-      Eigen::Map<Eigen::Vector3f> position(gdata.position);
-      position = T.translation().cast<float>();
-      Eigen::Map<Eigen::Vector4f> quaternion(gdata.quaternion);
-      quaternion = drake::math::rotmat2quat(T.rotation()).cast<float>();
+      // Saves the location and orientation of the visualization geometry in the
+      // `lcmt_viewer_geometry_data` object. The location and orientation are
+      // specified in the body's frame.
+      Eigen::Isometry3d transform = visual_element.getLocalTransform();
+      Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
+      position = transform.translation().cast<float>();
+      Eigen::Map<Eigen::Vector4f> quaternion(geometry_data.quaternion);
+      quaternion = math::rotmat2quat(transform.rotation()).cast<float>();
 
-      Eigen::Map<Eigen::Vector4f> color(gdata.color);
-      color = v.getMaterial().template cast<float>();
+      Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
+      color = visual_element.getMaterial().template cast<float>();
 
-      link.geom.push_back(gdata);
+      link.geom.push_back(geometry_data);
     }
-    load_message_.link.push_back(link);
+    load_message.link.push_back(link);
   }
+
+  return load_message;
 }
 
 }  // namespace systems

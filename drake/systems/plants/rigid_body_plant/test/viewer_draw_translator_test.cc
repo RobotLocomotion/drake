@@ -102,7 +102,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.encode(expected_message_bytes.data(), 0,
                           expected_message_length);
 
-  EXPECT_EQ(message_bytes, expected_message_bytes);
+  EXPECT_EQ(expected_message_bytes, message_bytes);
 }
 
 }  // namespace

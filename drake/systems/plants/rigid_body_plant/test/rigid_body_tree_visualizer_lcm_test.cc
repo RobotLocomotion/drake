@@ -1,3 +1,6 @@
+// NOLINT(whitespace/line_length)
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
+
 #include <memory>
 #include <vector>
 
@@ -6,8 +9,6 @@
 
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
-// NOLINT(whitespace/line_length)
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
 namespace drake {
@@ -20,8 +21,7 @@ using DrakeShapes::Sphere;
 
 void VerifyLoadMessage(const RigidBodyTree& tree,
     const drake::lcmt_viewer_load_robot& load_message) {
-  // Instantiates a `drake::lcmt_viewer_load_robot` message that contains the
-  // expected state.
+  // Computes the expected `lcmt_viewer_load_robot` message given the the tree.
   drake::lcmt_viewer_load_robot expected_load_message;
   expected_load_message.num_links = tree.get_number_of_bodies();
   for (int i = 0; i < expected_load_message.num_links; ++i) {
@@ -74,10 +74,9 @@ void VerifyLoadMessage(const RigidBodyTree& tree,
 
   std::vector<uint8_t> load_message_bytes;
   load_message_bytes.resize(load_message_byte_count);
-  load_message.encode(load_message_bytes.data(), 0,
-                               load_message_byte_count);
+  load_message.encode(load_message_bytes.data(), 0, load_message_byte_count);
 
-  EXPECT_EQ(load_message_bytes, expected_load_message_bytes);
+  EXPECT_EQ(expected_load_message_bytes, load_message_bytes);
 }
 
 void VerifyDrawMessage(const RigidBodyTree& tree,
@@ -166,7 +165,7 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
     // Creates a sphere with a radius of 0.54 meters.
     Sphere sphere_shape(0.54);
 
-    // Specifies the color of the sphere
+    // Specifies a color. This will be the color of the sphere.
     Eigen::Vector4d material;
     material << 0.3, 0.4, 0.5, 1.0;
 
@@ -179,8 +178,8 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
     // Connects the body to the world using a RPY floating joint.
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero(),
-                      xyz = Eigen::Vector3d::Zero();
+      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
       xyz(0) = i;
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
@@ -189,30 +188,27 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
         "Joint" + std::to_string(i), joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
-    // Adds the body to the tree.
     tree->bodies.push_back(std::move(body));
   }
   tree->compile();
 
-  // Instantiates the LCM subsystem.
   ::lcm::LCM lcm;
 
   // Creates a RigidBodyTreeVisualizerLcm object using the previously created
   // RigidBodyTree. The name "dut" stands for "Device Under Test".
   RigidBodyTreeVisualizerLcm dut(*tree.get(), &lcm);
 
-  // Verifies that the name of the system is correct.
-  EXPECT_EQ(dut.get_name(), "rigid_body_tree_visualizer_lcm_1");
+  EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
 
   auto context = dut.CreateDefaultContext();
 
   // Sets the time to be zero. This is necessary since the load robot message
   // is only transmitted when the time is zero.
-  // TODO(liang.fok) Remove this assumption once System::Initialize() exists.
+  // TODO(liang.fok) Remove this assumption once systems are able to declare
+  // that they want to publish at the simulation's start time.
   context->set_time(0);
 
-  // Verifies that the `dut` system has the correct number of input ports.
-  EXPECT_EQ(context->get_num_input_ports(), 1);
+  EXPECT_EQ(1, context->get_num_input_ports());
 
   // Initializes the input vector to contain all zeros.
   int vector_size = tree->number_of_positions() + tree->number_of_velocities();
