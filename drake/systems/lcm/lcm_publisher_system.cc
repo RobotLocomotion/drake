@@ -44,11 +44,20 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
       context.get_vector_input(kPortIndex);
 
   // Translates the input vector into LCM message bytes.
-  std::vector<uint8_t> lcm_message;
-  translator_.Serialize(context.get_time(), *input_vector, &lcm_message);
+  translator_.Serialize(context.get_time(), *input_vector, &message_bytes_);
 
   // Publishes onto the specified LCM channel.
-  lcm_->publish(channel_, lcm_message.data(), lcm_message.size());
+  lcm_->publish(channel_, message_bytes_.data(), message_bytes_.size());
+}
+
+std::vector<uint8_t> LcmPublisherSystem::GetMessage() const {
+  return message_bytes_;
+}
+
+void LcmPublisherSystem::GetMessage(BasicVector<double>* message_vector) const {
+  // We use GetMessage() here to ensure we stay in sync with its implementation.
+  const std::vector<uint8_t> bytes = GetMessage();
+  translator_.Deserialize(bytes.data(), bytes.size(), message_vector);
 }
 
 }  // namespace lcm
