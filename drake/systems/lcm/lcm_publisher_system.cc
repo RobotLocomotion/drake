@@ -6,6 +6,11 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/system_input.h"
 
+// Clean up windows junk; see http://stackoverflow.com/questions/4111899/.
+#if defined(WIN32) || defined(WIN64)
+  #undef GetMessage
+#endif
+
 namespace drake {
 namespace systems {
 namespace lcm {
