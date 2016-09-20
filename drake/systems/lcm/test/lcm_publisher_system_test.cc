@@ -10,7 +10,7 @@
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
-#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace systems {
@@ -174,7 +174,7 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
 GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   ::lcm::LCM lcm;
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
-  TranslatorBetweenLcmtDrakeSignal translator(kDim);
+  LcmtDrakeSignalTranslator translator(kDim);
 
   // Instantiates an LcmPublisherSystem that takes as input System 2.0 Vectors
   // of type drake::systems::VectorBase and publishes LCM messages of type
@@ -196,7 +196,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(
       channel_name,
-      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 

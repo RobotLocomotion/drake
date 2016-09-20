@@ -1,4 +1,4 @@
-#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 #include <cstdint>
 #include <vector>
@@ -15,7 +15,7 @@ namespace lcm {
 
 using std::runtime_error;
 
-void TranslatorBetweenLcmtDrakeSignal::Deserialize(
+void LcmtDrakeSignalTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base);
@@ -25,20 +25,19 @@ void TranslatorBetweenLcmtDrakeSignal::Deserialize(
   int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
   if (status < 0) {
     throw runtime_error(
-      "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
-      "TranslateLcmToBasicVector: ERROR: Failed to decode LCM message, the "
-      "status is " + std::to_string(status) + ".");
+        "drake::systems::lcm::LcmtDrakeSignalTranslator: Deserialize: ERROR: "
+        "Failed to decode LCM message, the status is " +
+        std::to_string(status) + ".");
   }
 
   // Verifies that the LCM message and vector_base both have the same size.
   // Throws an exception if the sizes do not match.
   if (message.dim != vector_base->size()) {
     throw runtime_error(
-      "drake::systems::lcm::TranslatorBetweenLcmtDrakeSignal: "
-      "TranslateLcmToVectorBase: ERROR: The LCM message's size (" +
-      std::to_string(message.dim) +
-      ") is not equal to vector_base's size (" +
-      std::to_string(vector_base->size()) + ").");
+        "drake::systems::lcm::LcmtDrakeSignalTranslator: Deserialize: ERROR: "
+        "The LCM message's size (" + std::to_string(message.dim) + ") is not "
+        "equal to vector_base's size (" +
+        std::to_string(vector_base->size()) + ").");
   }
 
   // Saves the values from the LCM message into vector_base.
@@ -48,7 +47,7 @@ void TranslatorBetweenLcmtDrakeSignal::Deserialize(
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::Serialize(double time,
+void LcmtDrakeSignalTranslator::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());

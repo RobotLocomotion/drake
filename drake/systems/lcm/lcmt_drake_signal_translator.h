@@ -18,18 +18,17 @@ namespace lcm {
  * Assumes the number and order of values in the LCM message and the
  * drake::systems::VectorBase are identical.
  */
-class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
+class DRAKELCMSYSTEM2_EXPORT LcmtDrakeSignalTranslator
     : public LcmAndVectorBaseTranslator {
  public:
   /**
-   * A constructor that stores the expected sizes of the LCM message and
-   * the BasicVector. Both the LCM message and BasicVector are expected to have
-   * the same size.
+   * A constructor that sets the expected sizes of the LCM message and the
+   * BasicVector. Both the LCM message and BasicVector must be the same size.
    *
-   * @param[in] size The number of elements in both the
-   * drake::systems::VectorBase and the `drake::lcmt_drake_signal`.
+   * @param[in] size The number of elements in both `VectorBase` and
+   * `drake::lcmt_drake_signal`.
    */
-  explicit TranslatorBetweenLcmtDrakeSignal(int size)
+  explicit LcmtDrakeSignalTranslator(int size)
       : LcmAndVectorBaseTranslator(size) {}
 
   void Deserialize(
