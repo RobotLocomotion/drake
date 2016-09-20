@@ -11,4 +11,8 @@ constexpr int kRpySize = 3;
 /// https://en.wikipedia.org/wiki/Screw_theory#Twist
 constexpr int kTwistSize = 6;
 
+/// http://www.euclideanspace.com/maths/geometry/affine/matrix4x4/
+constexpr int kHomogeneousTransformSize = 16;
+
+const int kRotmatSize = kSpaceDimension * kSpaceDimension;
 }  // namespace drake

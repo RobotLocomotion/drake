@@ -15,13 +15,14 @@ EulerFloatingJointStateTranslator::AllocateOutputVector() const {
   return std::make_unique<EulerFloatingJointState<double>>();
 }
 
-void EulerFloatingJointStateTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+void EulerFloatingJointStateTranslator::Serialize(
+    double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const EulerFloatingJointState<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_euler_floating_joint_state_t message;
+  message.timestamp = static_cast<int64_t>(time * 1000);
   message.x = vector->x();
   message.y = vector->y();
   message.z = vector->z();
@@ -33,7 +34,7 @@ void EulerFloatingJointStateTranslator::TranslateVectorBaseToLcm(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void EulerFloatingJointStateTranslator::TranslateLcmToVectorBase(
+void EulerFloatingJointStateTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);

@@ -130,16 +130,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @param index Selects which pre-programmed trajectory to use.
  */
 DRAKEAUTOMOTIVE_EXPORT
-std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index);
-
-/**
- * Creates a linear system to map NPC car state to the state vector of a
- * floating joint, allowing motion and steering in the x-y plane only.
- */
-DRAKEAUTOMOTIVE_EXPORT
-std::shared_ptr<drake::AffineSystem<
-  drake::NullVector, SimpleCarState1, EulerFloatingJointState1>>
-CreateSimpleCarVisualizationAdapter();
+std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index);
 
 /**
  * Returns the default simulation options for car simulations. The default

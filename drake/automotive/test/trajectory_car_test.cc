@@ -20,7 +20,7 @@ GTEST_TEST(TrajectoryCarTest, StationaryTest) {
   const Curve2d empty_curve{empty_waypoints};
   const double speed{99.0};
   const double start_time{0.0};
-  EXPECT_THROW((TrajectoryCar1{empty_curve, speed, start_time}),
+  EXPECT_THROW((TrajectoryCar<double>{empty_curve, speed, start_time}),
                std::exception);
 }
 

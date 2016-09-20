@@ -1,8 +1,7 @@
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp Model.cpp)
-pods_find_pkg_config(bullet)
+find_package(Bullet)
 
-if(bullet_FOUND)
-  add_definitions(-DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION)
+if(BULLET_FOUND)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
   set(bullet "yes" CACHE STRING "yes")
 endif()
@@ -10,8 +9,10 @@ set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} unusable_model.cc)
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
 
-if(bullet_FOUND)
-  pods_use_pkg_config_packages(drakeCollision bullet)
+if(BULLET_FOUND)
+  target_compile_definitions(drakeCollision PUBLIC BULLET_COLLISION)
+  target_include_directories(drakeCollision PUBLIC ${BULLET_INCLUDE_DIRS})
+  target_link_libraries(drakeCollision ${BULLET_LIBRARIES})
 endif()
 target_link_libraries(drakeCollision drakeShapes drakeCommon)
 

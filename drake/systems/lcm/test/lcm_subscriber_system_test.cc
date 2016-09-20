@@ -219,7 +219,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     return std::make_unique<CustomVector>();
   }
 
-  void TranslateLcmToVectorBase(
+  void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
       VectorBase<double>* vector_base) const override {
     CustomVector* const custom_vector =
@@ -239,7 +239,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     }
   }
 
-  void TranslateVectorBaseToLcm(
+  void Serialize(double time,
       const VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override {
     const CustomVector* const custom_vector =
@@ -252,6 +252,8 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
     message.dim = kDim;
     message.val.resize(kDim);
     message.coord.resize(kDim);
+    message.timestamp = static_cast<int64_t>(time * 1000);
+
     for (int i = 0; i < kDim; ++i) {
       message.val.at(i) = custom_vector->GetAtIndex(i);
       message.coord.at(i) = custom_vector->GetName(i);
@@ -280,8 +282,9 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   }
 
   // Force a message into the dut.
+  double time = 0;
   std::vector<uint8_t> message_bytes;
-  translator.TranslateVectorBaseToLcm(sample_vector, &message_bytes);
+  translator.Serialize(time, sample_vector, &message_bytes);
   dut.SetMessage(message_bytes);
 
   // Read back the vector via EvalOutput.

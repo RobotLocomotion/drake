@@ -1,28 +1,23 @@
-#include <cmath>
-#include <cstdlib>
+#include <iostream>
 #include <memory>
-#include <sstream>
-
-#include "drake/common/drake_path.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/n_ary_state.h"
-#include "drake/systems/n_ary_system.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 #include "drake/automotive/car_simulation.h"
+#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
+#include "drake/automotive/gen/simple_car_state_translator.h"
+#include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
+#include "drake/common/text_logging.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_receive_thread.h"
 
 namespace drake {
 namespace automotive {
 namespace {
 
-using drake::systems::plants::joints::kRollPitchYaw;
-
-int DoMain(int argc, const char* argv[]) {
+int do_main(int argc, const char* argv[]) {
   int num_cars = 100;
   if (argc == 2) {
     num_cars = atoi(argv[1]);
@@ -32,61 +27,42 @@ int DoMain(int argc, const char* argv[]) {
     }
   }
 
-  auto car_vis_adapter = CreateSimpleCarVisualizationAdapter();
-
-  const std::string kSedanUrdf = drake::GetDrakePath() +
-      "/automotive/models/sedan.urdf";
-  const std::string kBreadtruckUrdf = drake::GetDrakePath() +
-      "/automotive/models/breadtruck.urdf";
-
-  // RigidBodyTree for visualization.
-  auto world_tree = std::make_shared<RigidBodyTree>();
-
-  // NarySystem for car 'physics'.
-  //  U: ()
-  //  X: ()
-  //  Y: [(xy-position, heading, velocity), ...] per SimpleCarState
-  auto cars_system = std::make_shared<NArySystem<TrajectoryCar1>>();
-  // NarySystem for car visualization.
-  // BotVisualizer:
-  //  U: [(xy-position, heading, velocity), ...] per SimpleCarState
-  //  X: ()
-  //  Y: [(x, y, z, roll, pitch, yaw), ...] per kRollPitchYaw per car
-  auto cars_vis_adapter = std::make_shared<
-    NArySystem<decltype(car_vis_adapter)::element_type>>();
-  // NB:  One could compose the other way as well (i.e., individually cascade
-  // each TrajectoryCar with a car_vis_adapter, and then stack each of those
-  // pairs into a single NArySystem).
+  // Objects shared across systems.
+  auto lcm = std::make_unique<lcm::LCM>();
+  const SimpleCarStateTranslator simple_car_state_translator;
+  const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
 
   // Add all of the desired cars.
+  systems::DiagramBuilder<double> builder;
   for (int i = 0; i < num_cars; ++i) {
-    // Add the visualization entity.
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        (i % 5) ? kSedanUrdf : kBreadtruckUrdf, kRollPitchYaw,
-        nullptr /* weld_to_frame */, world_tree.get());
+    const std::string suffix("_" + std::to_string(i));
+    auto trajectory_car = builder.AddSystem(CreateTrajectoryCarSystem(i));
+    auto coord_transform = builder.AddSystem<SimpleCarToEulerFloatingJoint>();
+    auto simple_car_state_publisher =
+        builder.AddSystem<systems::lcm::LcmPublisherSystem>(
+            "SIMPLE_CAR_STATE" + suffix,
+            simple_car_state_translator, lcm.get());
+    auto euler_floating_joint_state_publisher =
+        builder.AddSystem<systems::lcm::LcmPublisherSystem>(
+            "FLOATING_JOINT_STATE" + suffix,
+            euler_floating_joint_state_translator, lcm.get());
 
-    // Add the trajectory car, and its visualization adapter.
-    cars_system->AddSystem(CreateTrajectoryCarSystem(i));
-    cars_vis_adapter->AddSystem(car_vis_adapter);
+    builder.Connect(*trajectory_car, *simple_car_state_publisher);
+    builder.Connect(*trajectory_car, *coord_transform);
+    builder.Connect(*coord_transform, *euler_floating_joint_state_publisher);
   }
+  auto diagram = builder.Build();
 
-  // Add LCM support, for visualization.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
-  auto visualizer =
-      std::make_shared<drake::BotVisualizer<
-        decltype(cars_vis_adapter)::element_type::OutputVector>>(
-            lcm, world_tree);
+  auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
+      lcm.get());
 
-  // Compose the system together from the parts.
-  auto the_system = drake::cascade(drake::cascade(
-      cars_system, cars_vis_adapter), visualizer);
-
-  decltype(the_system)::element_type::StateVector<double> initial_state;
-  drake::SimulationOptions options;
-  options.realtime_factor = 0.0;
-  const double t0 = 0.0;
-  const double tf = std::numeric_limits<double>::infinity();
-  runLCM(the_system, lcm, t0, tf, initial_state, options);
+  auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
+  simulator->Initialize();
+  while (true) {
+    const double time = simulator->get_context().get_time();
+    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
+    simulator->StepTo(time + 0.01);
+  }
 
   return 0;
 }
@@ -96,5 +72,5 @@ int DoMain(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::automotive::DoMain(argc, argv);
+  return drake::automotive::do_main(argc, argv);
 }
