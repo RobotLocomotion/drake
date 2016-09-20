@@ -2,7 +2,8 @@
 
 #include <memory>
 
-#include "drake/examples/BouncingBall/ball.h"
+//#include "drake/examples/BouncingBall/ball.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace bouncingball {
@@ -20,17 +21,19 @@ namespace bouncingball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class BouncingBall : Ball<T> {
+class BouncingBall : public systems::LeafSystem<T> {
  public:
   /// Constructs a BouncingBall system.
   BouncingBall();
+
+  void EvalBlah() const override;
 
   T EvalGuard(const systems::Context<T>& context) const override;
 
   void PerformReset(const systems::Context<T>* context) const override;
 
  private:
-  const T r = 1;  // radius of ball
+  //const T r = 1;  // radius of ball
   const T cor = 0.8;  // coefficient of restitution
 };
 
