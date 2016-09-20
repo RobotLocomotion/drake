@@ -5,6 +5,7 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "drake/drakeLCMUtil_export.h"
+#include "lcmtypes/bot_core/pose_t.hpp"
 #include "lcmtypes/bot_core/position_3d_t.hpp"
 #include "lcmtypes/bot_core/quaternion_t.hpp"
 #include "lcmtypes/bot_core/twist_t.hpp"
@@ -13,12 +14,6 @@
 #include "lcmtypes/drake/lcmt_polynomial.hpp"
 #include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
-
-// Suppress pose_t shadowing warning (member and local variable both named pos).
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#include "lcmtypes/bot_core/pose_t.hpp"
-#pragma clang diagnostic pop
 
 DRAKELCMUTIL_EXPORT void EncodeVector3d(
     const Eigen::Ref<const Eigen::Vector3d>& vec, bot_core::vector_3d_t& msg);
