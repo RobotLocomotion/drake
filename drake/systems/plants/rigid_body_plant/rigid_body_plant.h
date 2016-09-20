@@ -133,6 +133,7 @@ class DRAKE_RBP_EXPORT BodyMetadata {
 /// where `N(q)` is a transformation matrix only dependent on the positions.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
 class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
