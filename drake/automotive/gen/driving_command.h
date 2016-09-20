@@ -8,15 +8,15 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a DrivingCommand.
-struct DRAKECARS_EXPORT DrivingCommandIndices {
+struct DRAKEAUTOMOTIVE_EXPORT DrivingCommandIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 3;
 
@@ -63,6 +63,7 @@ template <typename ScalarType>
 bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_driving_command_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.steering_angle = wrap.steering_angle();
   msg.throttle = wrap.throttle();
@@ -83,5 +84,5 @@ bool decode(const drake::lcmt_driving_command_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

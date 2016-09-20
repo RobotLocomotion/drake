@@ -57,7 +57,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   auto R = drake::math::quat2rotmat(q);
   auto dq2R = dquat2rotmat(q);
-  Matrix<double, RotmatSize, Dynamic> dR = dq2R * dq;
+  Matrix<double, drake::kRotmatSize, Dynamic> dR = dq2R * dq;
   auto drpydR = drotmat2rpy(R, dR);
   auto dqdR = drotmat2quat(R, dR);
 

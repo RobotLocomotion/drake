@@ -8,20 +8,21 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 std::unique_ptr<systems::BasicVector<double>>
 DrivingCommandTranslator::AllocateOutputVector() const {
   return std::make_unique<DrivingCommand<double>>();
 }
 
-void DrivingCommandTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+void DrivingCommandTranslator::Serialize(
+    double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const DrivingCommand<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_driving_command_t message;
+  message.timestamp = static_cast<int64_t>(time * 1000);
   message.steering_angle = vector->steering_angle();
   message.throttle = vector->throttle();
   message.brake = vector->brake();
@@ -30,7 +31,7 @@ void DrivingCommandTranslator::TranslateVectorBaseToLcm(
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
 }
 
-void DrivingCommandTranslator::TranslateLcmToVectorBase(
+void DrivingCommandTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
@@ -47,5 +48,5 @@ void DrivingCommandTranslator::TranslateLcmToVectorBase(
   my_vector->set_brake(message.brake);
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

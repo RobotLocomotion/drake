@@ -179,7 +179,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // RBT::ComputeGeneralizedJointLimitForces(C)?
   {
     for (auto const& b : tree_->bodies) {
-      if (!b->hasParent()) continue;
+      if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Only for single-axis joints.
       if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
@@ -338,7 +338,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_RBP_EXPORT RigidBodyPlant<double>;
+template class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant<double>;
 
 }  // namespace systems
 }  // namespace drake

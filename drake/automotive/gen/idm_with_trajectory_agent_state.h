@@ -8,15 +8,15 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a IdmWithTrajectoryAgentState.
-struct DRAKECARS_EXPORT IdmWithTrajectoryAgentStateIndices {
+struct DRAKEAUTOMOTIVE_EXPORT IdmWithTrajectoryAgentStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 5;
 
@@ -66,6 +66,7 @@ bool encode(const double& t,
             const IdmWithTrajectoryAgentState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_idm_with_trajectory_agent_state_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.x_e = wrap.x_e();
   msg.v_e = wrap.v_e();
@@ -90,5 +91,5 @@ bool decode(const drake::lcmt_idm_with_trajectory_agent_state_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

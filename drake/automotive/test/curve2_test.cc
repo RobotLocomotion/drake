@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 typedef Curve2<double> Curve2d;
@@ -52,5 +52,5 @@ GTEST_TEST(Curve2Test, BasicTest) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

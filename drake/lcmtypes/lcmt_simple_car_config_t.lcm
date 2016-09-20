@@ -1,7 +1,6 @@
 package drake;
 
-struct lcmt_simple_car_config_t
-{
+struct lcmt_simple_car_config_t {
   int64_t instance_id;
   double wheelbase;
   double track;

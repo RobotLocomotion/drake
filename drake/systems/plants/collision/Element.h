@@ -1,11 +1,10 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"

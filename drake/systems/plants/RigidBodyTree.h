@@ -1,11 +1,9 @@
 #pragma once
 
+#include <set>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include <Eigen/StdVector>
-#include <set>
-#include <stdexcept>
-#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
@@ -49,22 +47,23 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * ...
  * </pre>
  *
- * Each RigidBody object maintains indices to its mobilizer's generalized
- * coordinate vector and generalized velocity vector in the RigidBodyTree's
- * generalized state vector.
+ * Each RigidBody maintains for its joint that connects to its parent the
+ * indices of the joint's generalized coordinate vector and generalized velocity
+ * vector in the RigidBodyTree's generalized state vector.
  *
- * The starting index of a RigidBody's mobilizer's generalized coordinate vector
- * in the RigidBodyTree's generalized state vector can be obtained by executing
+ * The starting index of the joint's generalized coordinate vector in the
+ * RigidBodyTree's generalized state vector can be obtained by executing
  * RigidBody::get_position_start_index().
  *
- * The starting index of a RigidBody's mobilizer's generalized velocity vector
- * in the RigidBodyTree's generalized state vector can be computed as follows:
- * RigidBodyTree::number_of_positions() +
- * RigidBody::get_velocity_start_index(). Note that the velocity index starts
- * at the beginning of the velocity state variables and not at the beginning of
- * the full state of this RigidBodyTree. This is why the total number of
- * positions needs to be added to the velocity index to get its index in the
- * RigidBodyTree's full state vector.
+ * The starting index of the joint's generalized velocity vector in the
+ * RigidBodyTree's generalized state vector can be computed as
+ * follows: RigidBodyTree::number_of_positions() +
+ * RigidBody::get_velocity_start_index().
+ *
+ * Note that the velocity index starts at the beginning of the velocity state
+ * variables and not at the beginning of the full state of the RigidBodyTree.
+ * This is why the total number of positions needs to be added to the velocity
+ * index to get its index in the RigidBodyTree's full state vector.
  */
 class DRAKERBM_EXPORT RigidBodyTree {
  public:

@@ -520,7 +520,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
       transform_parent_to_model.inverse() * transform_to_model;
 
-  if (child->has_mobilizer_joint()) {
+  if (child->has_parent_body()) {
     // ... then implement it as a loop joint.
 
     // Gets the loop point in the joint's reference frame. Since the SDF

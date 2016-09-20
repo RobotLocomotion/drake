@@ -14,7 +14,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct DRAKECARS_EXPORT %(indices)s {
+struct DRAKEAUTOMOTIVE_EXPORT %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -107,6 +107,7 @@ template <typename ScalarType>
 bool encode(const double& t, const %(camel)s<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_%(snake)s_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
 """
 ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s();"""
@@ -161,12 +162,12 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CLASS_BEGIN = """
@@ -189,7 +190,7 @@ VECTOR_CLASS_END = """
 """
 
 VECTOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -200,11 +201,11 @@ VECTOR_CC_PREAMBLE = """
 // See %(generator)s.
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 VECTOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -215,12 +216,12 @@ TRANSLATOR_HH_PREAMBLE = """
 // See %(generator)s.
 
 #include "drake/automotive/gen/%(snake)s.h"
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CLASS_DECL = """
@@ -228,24 +229,22 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKECARS_EXPORT %(camel)sTranslator
+class DRAKEAUTOMOTIVE_EXPORT %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
       : LcmAndVectorBaseTranslator(%(indices)s::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
-  void TranslateLcmToVectorBase(
-      const void* lcm_message_bytes, int lcm_message_length,
+  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
       systems::VectorBase<double>* vector_base) const override;
-  void TranslateVectorBaseToLcm(
-      const systems::VectorBase<double>& vector_base,
+  void Serialize(double time, const systems::VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 """
 
 TRANSLATOR_HH_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -260,11 +259,11 @@ TRANSLATOR_CC_PREAMBLE = """
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 """
 
 TRANSLATOR_CC_POSTAMBLE = """
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 """
 
@@ -280,19 +279,20 @@ def generate_allocate_output_vector(cc, caller_context, fields):
     context = dict(caller_context)
     put(cc, ALLOCATE_OUTPUT_VECTOR % context, 2)
 
-LCM_TO_VECTOR_BASE_BEGIN = """
-void %(camel)sTranslator::TranslateVectorBaseToLcm(
-    const systems::VectorBase<double>& vector_base,
+DESERIALIZE_BEGIN = """
+void %(camel)sTranslator::Serialize(
+    double time, const systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const %(camel)s<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
   drake::lcmt_%(snake)s_t message;
+  message.timestamp = static_cast<int64_t>(time * 1000);
 """
-LCM_FIELD_TO_VECTOR = """
+DESERIALIZE_FIELD = """
   message.%(field)s = vector->%(field)s();
 """
-LCM_TO_VECTOR_BASE_END = """
+DESERIALIZE_END = """
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -300,16 +300,16 @@ LCM_TO_VECTOR_BASE_END = """
 """
 
 
-def generate_lcm_to_vector_base(cc, caller_context, fields):
+def generate_deserialize(cc, caller_context, fields):
     context = dict(caller_context)
-    put(cc, LCM_TO_VECTOR_BASE_BEGIN % context, 1)
+    put(cc, DESERIALIZE_BEGIN % context, 1)
     for field in fields:
         context.update(field = field)
-        put(cc, LCM_FIELD_TO_VECTOR % context, 1)
-    put(cc, LCM_TO_VECTOR_BASE_END % context, 2)
+        put(cc, DESERIALIZE_FIELD % context, 1)
+    put(cc, DESERIALIZE_END % context, 2)
 
-VECTOR_BASE_TO_LCM_BEGIN = """
-void %(camel)sTranslator::TranslateLcmToVectorBase(
+SERIALIZE_BEGIN = """
+void %(camel)sTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
@@ -322,28 +322,27 @@ void %(camel)sTranslator::TranslateLcmToVectorBase(
     throw std::runtime_error("Failed to decode LCM message %(snake)s.");
   }
 """
-VECTOR_TO_LCM_FIELD = """  my_vector->set_%(field)s(message.%(field)s);"""
-VECTOR_BASE_TO_LCM_END = """
+SERIALIZE_FIELD = """  my_vector->set_%(field)s(message.%(field)s);"""
+SERIALIZE_END = """
 }
 """
 
 
-def generate_vector_base_to_lcm(cc, caller_context, fields):
+def generate_serialize(cc, caller_context, fields):
     context = dict(caller_context)
-    put(cc, VECTOR_BASE_TO_LCM_BEGIN % context, 1)
+    put(cc, SERIALIZE_BEGIN % context, 1)
     for field in fields:
         context.update(field = field)
-        put(cc, VECTOR_TO_LCM_FIELD % context, 1)
-    put(cc, VECTOR_BASE_TO_LCM_END % context, 2)
+        put(cc, SERIALIZE_FIELD % context, 1)
+    put(cc, SERIALIZE_END % context, 2)
 
 LCMTYPE_PREAMBLE = """
 // This file is generated by %(generator)s. Do not edit.
 package drake;
 
-struct lcmt_%(snake)s_t
-{
+struct lcmt_%(snake)s_t {
+  // The timestamp in milliseconds.
   int64_t timestamp;
-
 """
 
 LCMTYPE_POSTAMBLE = """
@@ -396,12 +395,12 @@ def generate_code(args):
     with open(os.path.join(cxx_dir, "%s_translator.cc" % snake), 'w') as cc:
         put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
         generate_allocate_output_vector(cc, context, args.fields)
-        generate_lcm_to_vector_base(cc, context, args.fields)
-        generate_vector_base_to_lcm(cc, context, args.fields)
+        generate_deserialize(cc, context, args.fields)
+        generate_serialize(cc, context, args.fields)
         put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
 
     with open(os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake), 'w') as lcm:
-        put(lcm, LCMTYPE_PREAMBLE % context, 1)
+        put(lcm, LCMTYPE_PREAMBLE % context, 2)
         for field in args.fields:
             put(lcm, "  double %s;" % field, 1)
         put(lcm, LCMTYPE_POSTAMBLE % context, 1)

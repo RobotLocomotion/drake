@@ -8,7 +8,9 @@
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -16,7 +18,7 @@
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 // Publish hand-crafted BotVisualizer LCM messages so we can see this demo.
@@ -27,7 +29,7 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
   explicit BotVisualizerHack(::lcm::LCM* lcm)
       : lcm_(lcm) {
     this->DeclareInputPort(systems::kVectorValued,
-                           SimpleCarStateIndices::kNumCoordinates,
+                           EulerFloatingJointStateIndices::kNumCoordinates,
                            systems::kContinuousSampling);
   }
 
@@ -44,13 +46,25 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
     }
     DRAKE_DEMAND(sent_load_robot_);
 
-    auto input = context.get_vector_input(0)->get_value().cast<float>();
-    DRAKE_DEMAND(input.size() == 6);
+    const systems::VectorBase<double>* const input_base =
+        context.get_vector_input(0);
+    DRAKE_DEMAND(input_base != nullptr);
+    const EulerFloatingJointState<double>* const input =
+        dynamic_cast<const EulerFloatingJointState<double>*>(input_base);
+    DRAKE_DEMAND(input != nullptr);
+
+    const Eigen::Vector3f pos =
+        (Eigen::Vector3d() << input->x(), input->y(), input->z())
+        .finished().cast<float>();
+    const Eigen::Vector3d rpy =
+        (Eigen::Vector3d() << input->roll(), input->pitch(), input->yaw())
+        .finished();
+    const Eigen::Vector4f quat = math::rpy2quat(rpy).cast<float>();
 
     drake::lcmt_viewer_draw draw_msg;
     draw_msg.num_links = 1;
-    std::vector<float> position{input(0), input(1), input(2)};
-    std::vector<float> quaternion{0, 0, 0, 1};
+    std::vector<float> position{pos(0), pos(1), pos(2)};
+    std::vector<float> quaternion{quat(0), quat(1), quat(2), quat(3)};
     draw_msg.link_name.push_back("");
     draw_msg.robot_num.push_back(0);
     draw_msg.position.push_back(position);
@@ -64,7 +78,7 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
     drake::lcmt_viewer_geometry_data gdata;
     gdata.type = gdata.BOX;
     gdata.num_float_data = 3;
-    gdata.float_data = std::vector<float>{2, 2, 1};
+    gdata.float_data = std::vector<float>{2, 1, 1};
     gdata.position[0] = 0.0;
     gdata.position[1] = 0.0;
     gdata.position[2] = 0.0;
@@ -100,36 +114,35 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 int do_main(int argc, const char* argv[]) {
   auto lcm = std::make_unique<lcm::LCM>();
 
+  systems::DiagramBuilder<double> builder;
   const DrivingCommandTranslator driving_command_translator;
-  auto command_subscriber = std::make_unique<systems::lcm::LcmSubscriberSystem>(
-      "DRIVING_COMMAND", driving_command_translator, lcm.get());
+  auto command_subscriber =
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
+          "DRIVING_COMMAND", driving_command_translator, lcm.get());
 
-  auto simple_car = std::make_unique<SimpleCar<double>>();
-  auto coord_transform =
-      std::make_unique<SimpleCarToEulerFloatingJoint<double>>();
+  auto simple_car = builder.AddSystem<SimpleCar>();
+  auto coord_transform = builder.AddSystem<SimpleCarToEulerFloatingJoint>();
 
   const SimpleCarStateTranslator simple_car_state_translator;
   auto simple_car_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
           "SIMPLE_CAR_STATE", simple_car_state_translator, lcm.get());
 
   const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
   auto euler_floating_joint_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
+      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
           "FLOATING_JOINT_STATE", euler_floating_joint_state_translator,
           lcm.get());
 
-  auto bot_visualizer_hack = std::make_unique<BotVisualizerHack<double>>(
-      lcm.get());
+  auto bot_visualizer_hack = builder.AddSystem<BotVisualizerHack>(lcm.get());
 
-  auto builder = std::make_unique<systems::DiagramBuilder<double>>();
-  builder->Connect(*command_subscriber, *simple_car);
-  builder->Connect(*simple_car, *simple_car_state_publisher);
-  builder->Connect(*simple_car, *coord_transform);
-  builder->Connect(*coord_transform, *bot_visualizer_hack);
-  builder->Connect(*coord_transform, *euler_floating_joint_state_publisher);
+  builder.Connect(*command_subscriber, *simple_car);
+  builder.Connect(*simple_car, *simple_car_state_publisher);
+  builder.Connect(*simple_car, *coord_transform);
+  builder.Connect(*coord_transform, *bot_visualizer_hack);
+  builder.Connect(*coord_transform, *euler_floating_joint_state_publisher);
 
-  auto diagram = builder->Build();
+  auto diagram = builder.Build();
 
   auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
       lcm.get());
@@ -146,9 +159,9 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::cars::do_main(argc, argv);
+  return drake::automotive::do_main(argc, argv);
 }
