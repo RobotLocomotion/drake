@@ -48,8 +48,8 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * </pre>
  *
  * Each RigidBody maintains for its joint that connects to its parent the
- * joint's generalized coordinate vector and generalized velocity vector in the
- * RigidBodyTree's generalized state vector.
+ * indices of the joint's generalized coordinate vector and generalized velocity
+ * vector in the RigidBodyTree's generalized state vector.
  *
  * The starting index of the joint's generalized coordinate vector in the
  * RigidBodyTree's generalized state vector can be obtained by executing
