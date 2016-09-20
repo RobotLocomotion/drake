@@ -335,6 +335,15 @@ class DRAKERBM_EXPORT RigidBody {
   void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
 
+  /** Adds body to a given collision clique by clique id.
+
+   This call adds each of the collision elements in this body to the provided
+   collision clique.
+   @param[in] clique_id Collision clique id. Collision elements in this clique
+   do not interact.
+   @see CollisionElement::AddToCollisionClique. **/
+  void AddToCollisionClique(int clique_id);
+
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
@@ -418,16 +427,6 @@ class DRAKERBM_EXPORT RigidBody {
   void AddCollisionElement(DrakeCollision::Element* e) {
     collision_elements_.push_back(e);
   }
-
-  /** Adds body to a given collision clique by clique id.
-
-   This call adds each of the collision elements in this body to the provided
-   collision clique.
-   @param[in] clique_id Collision clique id. Collision elements in this clique
-   do not interact.
-   @see CollisionElement::AddToCollisionClique. **/
-  void AddToCollisionClique(int clique_id);
-
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
 

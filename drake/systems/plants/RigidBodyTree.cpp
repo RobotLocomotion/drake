@@ -257,7 +257,35 @@ void RigidBodyTree::compile(void) {
     body.set_contact_points(contact_points);
   }
 
+  // Create collision cliques for the DrakeCollision::Model according to the
+  // policy imposed by RigidBody::CollidesWith.
+  // These cliques include:
+  //   * CollisionElement's in the same RigidBody.
+  //   * CollisionElement's in adjacent RigidBody's.
+  // For details on this policy see RigidBody::CollidesWith.
+  CreateCollisionCliques();
+
   initialized_ = true;
+}
+
+void RigidBodyTree::CreateCollisionCliques() {
+  int ncol_groups = 0;
+  // 1) For collision elements in the same body
+  for (auto& body : bodies) {
+    // TODO(SeanCurtis-TRI): If the body contains only a single collision
+    // element, than this step provides no value.  Only apply a per-body
+    // clique if the body has multiple collision elements.
+    body->AddToCollisionClique(ncol_groups++);
+  }
+
+  // 2) For collision elements in different bodies
+  for (size_t i = 0; i < bodies.size(); ++i)
+    for (size_t j = i + 1; j < bodies.size(); ++j)
+      if (!bodies[i]->CanCollideWith(*bodies[j])) {
+        bodies[i]->AddToCollisionClique(ncol_groups);
+        bodies[j]->AddToCollisionClique(ncol_groups);
+        ++ncol_groups;
+      }
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
