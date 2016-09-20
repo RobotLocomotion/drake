@@ -50,7 +50,7 @@ TEST_F(BallTest, Output) {
 
   // Starting state and output is all zeros.
   dut_->EvalOutput(*context_, output_.get());
-  EXPECT_EQ(0.0, result->GetAtIndex(0));
+  EXPECT_EQ(10.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // New state just propagates through.
