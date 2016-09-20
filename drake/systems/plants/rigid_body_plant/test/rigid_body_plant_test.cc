@@ -268,10 +268,11 @@ TEST_F(KukaArmTest, EvalOutput) {
     EXPECT_EQ(metadata_vector[ibody].name(), world.get_body(ibody).get_name());
   }
 
-  // Evaluates the correctness of the poses output.
-  auto output_poses =
-      dynamic_cast<const VectorOfPoses<double>*>(output_->get_vector_data(1));
-  ASSERT_NE(nullptr, output_poses);
+  // Evaluates the correctness of the kinematics results port.
+  auto& kinematics_results =
+      output_->get_data(1)->GetValue<KinematicsResults<double>>();
+  ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
+  ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
 
   VectorXd q = xc.topRows(kNumPositions_);
   VectorXd v = xc.bottomRows(kNumVelocities_);
@@ -285,8 +286,8 @@ TEST_F(KukaArmTest, EvalOutput) {
     Quaterniond quat(
         quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
     Vector3d position = pose.translation();
-    EXPECT_TRUE(quat.isApprox(output_poses->get_body_orientation(ibody)));
-    EXPECT_TRUE(position.isApprox(output_poses->get_body_position(ibody)));
+    EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
+    EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
   }
 }
 

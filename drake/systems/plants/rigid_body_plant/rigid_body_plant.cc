@@ -197,7 +197,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   {
     auto kinematics_results =
         make_unique<Value<KinematicsResults<T>>>(
-            KinematicsResults<T>(tree_->bodies));
+            KinematicsResults<T>(*tree_));
     output->add_port(move(kinematics_results));
   }
 
@@ -240,9 +240,12 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
       context.get_continuous_state().CopyToVector();
 
   // Evaluates port 1 to have the kinematics results.
-  auto kinematics_results =
-      output->GetMutableData(1)->GetMutableValue<KinematicsResults<T>>();
+  auto& kinematics_results =
+      output->GetMutableData(1)->
+          template GetMutableValue<KinematicsResults<T>>();
+  kinematics_results.UpdateFromContext(context);
 
+#if 0
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T> &>(
@@ -259,6 +262,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
 
   kinematics_results.initialize(q, v);
   tree_->doKinematics(kinematics_results, false);
+#endif
 
 #if 0
   // Evaluates port 1 to be the poses for each rigid body.

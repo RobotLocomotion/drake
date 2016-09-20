@@ -14,10 +14,72 @@
 namespace drake {
 namespace systems {
 
+template <typename T> class RigidBodyPlant;
+
 /// A class containing the results from peforming kinematics on a
 /// RigidBodyPlant.
+//template <typename T>
+//using KinematicsResults = KinematicsCache<T>;
+
 template <typename T>
-using KinematicsResults = KinematicsCache<T>;
+class KinematicsResults {
+  // RigidBodyPlant is the only class allowed to update KinematicsResults
+  // through UpdateFromContext().
+  friend class RigidBodyPlant<T>;
+ public:
+  explicit KinematicsResults(const RigidBodyTree& tree) :
+      tree_(tree), kinematics_cache_(tree_.bodies) {
+  }
+
+  int get_num_bodies() const { return tree_.get_number_of_bodies(); }
+
+  int get_num_positions() const { return kinematics_cache_.getNumPositions(); }
+
+  int get_num_velocities() const { return kinematics_cache_.getNumVelocities(); }
+
+  /// Returns the quaternion representation of the three dimensional orientation
+  /// of body @p body_index in the world's frame.
+  Quaternion<T> get_body_orientation(int body_index) const {
+    Isometry3<T> pose = tree_.relativeTransform(kinematics_cache_, 0, body_index);
+    Vector4<T> quat_vector = drake::math::rotmat2quat(pose.linear());
+    // Note that Eigen quaternion elements are not laid out in memory in the
+    // same way Drake currently aligns them. See issue #3470.
+    return Quaternion<T>(quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+  }
+
+  /// Returns the three dimensional position of body @p body_index in world's
+  /// frame.
+  Vector3<T> get_body_position(int body_index) const {
+    Isometry3<T> pose = tree_.relativeTransform(kinematics_cache_, 0, body_index);
+    return pose.translation();
+  }
+
+ private:
+  // Private method used to update KinematicsResults from a context provided by
+  // RigidBodyPlant. RigidBodyPlant has access to this method since it is a
+  // friend.
+  void UpdateFromContext(const Context<T>& context) {
+    // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
+    // LeafSystems.
+    auto x = dynamic_cast<const BasicVector<T> &>(
+        context.get_state().continuous_state->get_state()).get_value();
+
+    const int nq = tree_.number_of_positions();
+    const int nv = tree_.number_of_velocities();
+
+    // TODO(amcastro-tri): we would like to compile here with `auto` instead of
+    // `VectorX<T>`. However it seems we get some sort of block from a block which
+    // is not instantiated in drakeRBM.
+    VectorX<T> q = x.topRows(nq);
+    VectorX<T> v = x.bottomRows(nv);
+
+    kinematics_cache_.initialize(q, v);
+    tree_.doKinematics(kinematics_cache_, false);
+  }
+
+  const RigidBodyTree& tree_;
+  KinematicsCache<T> kinematics_cache_;
+};
 
 /// A vector of 3D poses each of which is represented by a quaternion and a
 /// position vector.
