@@ -20,7 +20,7 @@ namespace bouncingball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class BouncingBall : public Ball<T> {
+class BouncingBall : Ball<T> {
  public:
   /// Constructs a BouncingBall system.
   BouncingBall();
