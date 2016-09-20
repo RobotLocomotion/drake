@@ -26,6 +26,15 @@ const Element* Model::FindElement(ElementId id) const {
   }
 }
 
+Element* Model::FindMutableElement(ElementId id) {
+  auto element_iter = elements.find(id);
+  if (element_iter != elements.end()) {
+    return element_iter->second.get();
+  } else {
+    return nullptr;
+  }
+}
+
 void Model::getTerrainContactPoints(ElementId id0,
                                     Eigen::Matrix3Xd& terrain_points) {
   auto element_iter = elements.find(id0);
