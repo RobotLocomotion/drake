@@ -36,7 +36,10 @@
 %shared_ptr(RigidBodyFrame)
 
 %eigen_typemaps(Eigen::VectorXd)
+%eigen_typemaps(Eigen::Vector2d)
 %eigen_typemaps(Eigen::Vector3d)
+%eigen_typemaps(Eigen::Vector4d)
+%eigen_typemaps(Eigen::Matrix4d)
 %eigen_typemaps(Eigen::Matrix<double, drake::kSpaceDimension, 1>)
 %eigen_typemaps(Eigen::Matrix3Xd)
 %eigen_typemaps(Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic>)
@@ -133,4 +136,3 @@
     return $self->getRandomConfiguration(generator);
   }
 }
-

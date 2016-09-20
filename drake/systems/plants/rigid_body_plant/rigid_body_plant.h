@@ -5,8 +5,7 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/drake_rbp_export.h"
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -108,7 +107,7 @@ class KinematicsResults {
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 /// @ingroup systems
 template <typename T>
-class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.

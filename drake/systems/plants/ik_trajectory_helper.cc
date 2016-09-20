@@ -24,42 +24,46 @@ IKTrajectoryHelper::IKTrajectoryHelper(
   ikoptions.getQa(Qa_);
   ikoptions.getQv(Qv_);
 
-  // Calculate our velocity and acceleration matrices.
-
-  // This part can be rewritten using the sparse matrix if efficiency becomes
-  // a concern
-  MatrixXd velocity_mat1 = MatrixXd::Zero(nq * nT, nq * nT);
-  MatrixXd velocity_mat2 = MatrixXd::Zero(nq * nT, nq * nT);
-  velocity_mat1.block(0, 0, nq, nq) = MatrixXd::Identity(nq, nq);
-  velocity_mat1.block(nq * (nT - 1), nq * (nT - 1), nq, nq) =
-      MatrixXd::Identity(nq, nq);
-  for (int j = 1; j < nT - 1; j++) {
-    double val_tmp1 = dt[j - 1];
-    double val_tmp2 = dt[j - 1] * (2.0 + 2.0 * dt_ratio[j - 1]);
-    double val_tmp3 = dt[j - 1] * dt_ratio[j - 1];
-    double val_tmp4 = 3.0 - 3.0 * dt_ratio[j - 1] * dt_ratio[j - 1];
-    double val_tmp5 = 3.0 - val_tmp4;
-    for (int k = 0; k < nq; k++) {
-      velocity_mat1(j * nq + k, (j - 1) * nq + k) = val_tmp1;
-      velocity_mat1(j * nq + k, j * nq + k) = val_tmp2;
-      velocity_mat1(j * nq + k, (j + 1) * nq + k) = val_tmp3;
-      velocity_mat2(j * nq + k, (j - 1) * nq + k) = -3.0;
-      velocity_mat2(j * nq + k, j * nq + k) = val_tmp4;
-      velocity_mat2(j * nq + k, (j + 1) * nq + k) = val_tmp5;
+  // Calculate our velocity and acceleration matrices.  This part can
+  // be rewritten using the sparse matrix if efficiency becomes a
+  // concern.
+  //
+  // We can't actually calculate these if we only have two timesteps,
+  // so we skip a bunch of work in that case.
+  if (nT > 2) {
+    MatrixXd velocity_mat1 = MatrixXd::Zero(nq * nT, nq * nT);
+    MatrixXd velocity_mat2 = MatrixXd::Zero(nq * nT, nq * nT);
+    velocity_mat1.block(0, 0, nq, nq) = MatrixXd::Identity(nq, nq);
+    velocity_mat1.block(nq * (nT - 1), nq * (nT - 1), nq, nq) =
+        MatrixXd::Identity(nq, nq);
+    for (int j = 1; j < nT - 1; j++) {
+      double val_tmp1 = dt[j - 1];
+      double val_tmp2 = dt[j - 1] * (2.0 + 2.0 * dt_ratio[j - 1]);
+      double val_tmp3 = dt[j - 1] * dt_ratio[j - 1];
+      double val_tmp4 = 3.0 - 3.0 * dt_ratio[j - 1] * dt_ratio[j - 1];
+      double val_tmp5 = 3.0 - val_tmp4;
+      for (int k = 0; k < nq; k++) {
+        velocity_mat1(j * nq + k, (j - 1) * nq + k) = val_tmp1;
+        velocity_mat1(j * nq + k, j * nq + k) = val_tmp2;
+        velocity_mat1(j * nq + k, (j + 1) * nq + k) = val_tmp3;
+        velocity_mat2(j * nq + k, (j - 1) * nq + k) = -3.0;
+        velocity_mat2(j * nq + k, j * nq + k) = val_tmp4;
+        velocity_mat2(j * nq + k, (j + 1) * nq + k) = val_tmp5;
+      }
     }
-  }
-  velocity_mat_.resize(nq * (nT - 2), nq * nT);
-  velocity_mat_ =
-      velocity_mat1.inverse().block(nq, 0, nq * (nT - 2), nq * nT) *
-      velocity_mat2;
+    velocity_mat_.resize(nq * (nT - 2), nq * nT);
+    velocity_mat_ =
+        velocity_mat1.inverse().block(nq, 0, nq * (nT - 2), nq * nT) *
+        velocity_mat2;
 
-  MatrixXd velocity_mat1_middle_inv =
-      (velocity_mat1.block(nq, nq, nq * (nT - 2), nq * (nT - 2))).inverse();
-  velocity_mat_qd0_ = -velocity_mat1_middle_inv *
-      velocity_mat1.block(nq, 0, nq * (nT - 2), nq);
-  velocity_mat_qdf_ =
-      -velocity_mat1_middle_inv *
-      velocity_mat1.block(nq, nq * (nT - 1), nq * (nT - 2), nq);
+    MatrixXd velocity_mat1_middle_inv =
+        (velocity_mat1.block(nq, nq, nq * (nT - 2), nq * (nT - 2))).inverse();
+    velocity_mat_qd0_ = -velocity_mat1_middle_inv *
+        velocity_mat1.block(nq, 0, nq * (nT - 2), nq);
+    velocity_mat_qdf_ =
+        -velocity_mat1_middle_inv *
+        velocity_mat1.block(nq, nq * (nT - 1), nq * (nT - 2), nq);
+  }
 
   MatrixXd accel_mat1 = MatrixXd::Zero(nq * nT, nq * nT);
   MatrixXd accel_mat2 = MatrixXd::Zero(nq * nT, nq * nT);
@@ -86,16 +90,25 @@ IKTrajectoryHelper::IKTrajectoryHelper(
     accel_mat2((nT - 1) * nq + k, (nT - 1) * nq + k) = val_tmp4;
   }
   accel_mat_.resize(nq * nT, nq * nT);
-  accel_mat_ = accel_mat1 +
-      accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_;
+  accel_mat_ = accel_mat1;
+  if (nT > 2) {
+    accel_mat_ +=
+        accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_;
+  }
+
   accel_mat_qd0_.resize(nq * nT, nq);
-  accel_mat_qd0_ =
-      accel_mat2.block(0, 0, nq * nT, nq) +
-      accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qd0_;
+  accel_mat_qd0_ = accel_mat2.block(0, 0, nq * nT, nq);
+  if (nT > 2) {
+    accel_mat_qd0_ +=
+        accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qd0_;
+  }
+
   accel_mat_qdf_.resize(nq * nT, nq);
-  accel_mat_qdf_ =
-      accel_mat2.block(0, (nT - 1) * nq, nT * nq, nq) +
-      accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qdf_;
+  accel_mat_qdf_ = accel_mat2.block(0, (nT - 1) * nq, nT * nq, nq);
+  if (nT > 2) {
+    accel_mat_qdf_ +=
+        accel_mat2.block(0, nq, nq * nT, nq * (nT - 2)) * velocity_mat_qdf_;
+  }
 
   // Calculate all of our "in between" samples.
   std::set<double> t_set(t, t + nT);
@@ -238,10 +251,12 @@ double IKTrajectoryHelper::CalculateCost(
   MatrixXd qdot(nq_ * nT_, 1);
   MatrixXd qddot(nq_ * nT_, 1);
   qdot.block(0, 0, nq_, 1) = qdot0;
-  qdot.block(nq_, 0, nq_ * (nT_ - 2), 1) =
-      velocity_mat_ * q_local +
-      velocity_mat_qd0_ * qdot0 +
-      velocity_mat_qdf_ * qdotf;
+  if (nT_ > 2) {
+    qdot.block(nq_, 0, nq_ * (nT_ - 2), 1) =
+        velocity_mat_ * q_local +
+        velocity_mat_qd0_ * qdot0 +
+        velocity_mat_qdf_ * qdotf;
+  }
   qdot.block(nq_ * (nT_ - 1), 0, nq_, 1) = qdotf;
   qddot = accel_mat_ * q_local +
       accel_mat_qd0_ * qdot0 +
@@ -260,13 +275,16 @@ double IKTrajectoryHelper::CalculateCost(
   MatrixXd tmp5 = 0.5 * Q_ * q_diff;
   MatrixXd tmp6 = tmp5.cwiseProduct(q_diff);
   J += tmp6.sum();
-  MatrixXd dJdqd =
-      2 * tmp3.block(0, 1, nq_, nT_ - 2);  // [dJdqd(2) dJdqd(3) dJdqd(nT_-1)]
-  dJdqd.resize(1, nq_ * (nT_ - 2));
-  dJ_vec->block(0, 0, 1, nq_ * num_qfree_) =
-      dJdqd *
-      velocity_mat_.block(0, nq_ * qstart_idx,
-                          (nT_ - 2) * nq_, nq_ * num_qfree_);
+  MatrixXd dJdqd;
+  if (nT_ > 2) {
+    // [dJdqd(2) dJdqd(3) dJdqd(nT_-1)]
+    dJdqd = 2 * tmp3.block(0, 1, nq_, nT_ - 2);
+    dJdqd.resize(1, nq_ * (nT_ - 2));
+    dJ_vec->block(0, 0, 1, nq_ * num_qfree_) =
+        dJdqd *
+        velocity_mat_.block(0, nq_ * qstart_idx,
+                            (nT_ - 2) * nq_, nq_ * num_qfree_);
+  }
   MatrixXd dJdqdiff = 2 * tmp5;
   dJdqdiff.resize(1, nq_ * num_qfree_);
   dJ_vec->block(0, 0, 1, nq_ * num_qfree_) += dJdqdiff;
@@ -276,15 +294,19 @@ double IKTrajectoryHelper::CalculateCost(
       dJdqdd * accel_mat_.block(0, nq_ * qstart_idx,
                                 nq_ * nT_, nq_ * num_qfree_);
   MatrixXd dJdqdotf;
-  dJdqdotf = dJdqdd * accel_mat_qdf_ + qdotf.transpose() * Qv_ +
-             dJdqd * velocity_mat_qdf_;
+  dJdqdotf = dJdqdd * accel_mat_qdf_ + qdotf.transpose() * Qv_;
+  if (nT_ > 2) {
+    dJdqdotf += dJdqd * velocity_mat_qdf_;
+  }
   dJdqdotf.resize(1, nq_);
   if (fix_initial_state) {
     dJ_vec->block(0, nq_ * num_qfree_, 1, nq_) = dJdqdotf;
   } else {
     MatrixXd dJdqdot0;
-    dJdqdot0 = dJdqdd * accel_mat_qd0_ + qdot0.transpose() * Qv_ +
-               dJdqd * velocity_mat_qd0_;
+    dJdqdot0 = dJdqdd * accel_mat_qd0_ + qdot0.transpose() * Qv_;
+    if (nT_ > 2) {
+      dJdqdot0 += dJdqd * velocity_mat_qd0_;
+    }
     dJdqdot0.resize(1, nq_);
     dJ_vec->block(0, nq_ * num_qfree_, 1, nq_) = dJdqdot0;
     dJ_vec->block(0, nq_ * num_qfree_ + nq_, 1, nq_) = dJdqdotf;

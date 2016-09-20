@@ -432,8 +432,8 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_RBP_EXPORT RigidBodyPlant<double>;
-template class DRAKE_RBP_EXPORT KinematicsResults<double>;
+template class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant<double>;
+template class DRAKERIGIDBODYPLANT_EXPORT KinematicsResults<double>;
 
 }  // namespace systems
 }  // namespace drake
