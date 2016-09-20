@@ -16,6 +16,8 @@ const double Kd = 1.0;  // Controller's derivative constant.
 const double Ki = 1.0;  // Controller's integral constant.
 const double x_target = 1.0;  // The target position.
 
+// A unit test fixture to evaluate the correct functioning of the
+// PidControlledSpringMassSystem example.
 class SpringMassSystemTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -26,20 +28,14 @@ class SpringMassSystemTest : public ::testing::Test {
     model_context_ = model_->CreateDefaultContext();
     output_ = model_->AllocateOutput(*model_context_);
 
-    // Initialize to default conditions.
+    // Initialize to default conditions (zero position, velocity and
+    // controllers' integral).
     model_->SetDefaultState(model_context_.get());
 
-    // Gets the plant context.
+    // Gets the plant subcontext.
     plant_context_ =
         model_->GetMutableSubsystemContext(
             model_context_.get(), &model_->get_plant());
-  }
-
-  // Returns the continuous state of the given @p system.
-  ContinuousState<double>* GetMutableContinuousState(
-      const System<double>* system) {
-    return model_->GetMutableSubsystemState(model_context_.get(), system)
-        ->continuous_state.get();
   }
 
   std::unique_ptr<PidControlledSpringMassSystem<double>> model_;
@@ -50,17 +46,20 @@ class SpringMassSystemTest : public ::testing::Test {
 
 // Tests that the diagram computes the correct sum.
 TEST_F(SpringMassSystemTest, EvalOutput) {
+  const double x0 = 2.0;
+  const double v0 = -1.0;
   // Sets a non-zero initial condition.
-  model_->set_position(model_context_.get(), 2.0);
-  model_->set_velocity(model_context_.get(), -1.0);
-
-  model_->EvalOutput(*model_context_, output_.get());
+  model_->set_position(model_context_.get(), x0);
+  model_->set_velocity(model_context_.get(), v0);
 
   ASSERT_EQ(1, output_->get_num_ports());
-  Eigen::Vector3d expected_output(2.0, -1.0, 0.0);
+  model_->EvalOutput(*model_context_, output_.get());
 
-  const BasicVector<double>* output =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  // Output equals the state of the system. The integral is zero by default as
+  // initialized by SetDefaultState in the fixture.
+  Eigen::Vector3d expected_output(x0, v0, 0.0);
+
+  const BasicVector<double>* output = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output);
   EXPECT_EQ(expected_output[0], output->get_value()[0]);
   EXPECT_EQ(expected_output[1], output->get_value()[1]);
@@ -68,9 +67,6 @@ TEST_F(SpringMassSystemTest, EvalOutput) {
 }
 
 TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
-  std::unique_ptr<ContinuousState<double>> derivatives =
-      model_->AllocateTimeDerivatives();
-
   const double x0 = 2.0;
   const double v0 = -1.5;
 
@@ -78,6 +74,8 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   model_->set_position(model_context_.get(), x0);
   model_->set_velocity(model_context_.get(), v0);
 
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      model_->AllocateTimeDerivatives();
   model_->EvalTimeDerivatives(*model_context_, derivatives.get());
 
   // The spring-mass plant has a state vector of size 3. One position, one
