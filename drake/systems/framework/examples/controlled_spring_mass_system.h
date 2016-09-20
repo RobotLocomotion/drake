@@ -42,7 +42,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   void set_velocity(Context<T>* context, const T& position) const;
 
   /// Returns the SpringMassSystem plant of the model.
-  const SpringMassSystem& get_plant() const { return *plant_.get(); }
+  const SpringMassSystem& get_plant() const { return *plant_; }
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
@@ -53,13 +53,13 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   void SetDefaultState(Context<T>* context) const;
 
  private:
-  std::unique_ptr<SpringMassSystem> plant_;
-  std::unique_ptr<PidController<T>> controller_;
-  std::unique_ptr<Demultiplexer<T>> demux_;
-  std::unique_ptr<Gain<T>> pid_inverter_;
-  std::unique_ptr<Gain<T>> target_inverter_;
-  std::unique_ptr<ConstantVectorSource<T>> target_;
-  std::unique_ptr<Adder<T>> state_minus_target_;
+  SpringMassSystem* plant_;
+  PidController<T>* controller_;
+  Demultiplexer<T>* demux_;
+  Gain<T>* pid_inverter_;
+  Gain<T>* target_inverter_;
+  ConstantVectorSource<T>* target_;
+  Adder<T>* state_minus_target_;
 };
 
 }  // namespace systems

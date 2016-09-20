@@ -20,22 +20,27 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   DRAKE_ASSERT(Ki >= 0);
   DRAKE_ASSERT(Kd >= 0);
 
-  plant_ = make_unique<SpringMassSystem>(
-      spring_stiffness, mass, true /* is forced */);
-  controller_ = make_unique<PidController<T>>(Kp, Ki, Kd, 1 /* size */);
-  pid_inverter_ = make_unique<Gain<T>>(-1 /* gain */, 1 /* size */);
-  target_inverter_ = make_unique<Gain<T>>(-1 /* gain */, 1 /* size */);
-  target_ = make_unique<ConstantVectorSource<T>>(target_position);
-  state_minus_target_ = make_unique<Adder<T>>(2 /* num inputs */, 1 /* size */);
+  DiagramBuilder<T> builder;
+
+  plant_ = builder.template
+      AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
+  controller_ = builder.template
+      AddSystem<PidController>(Kp, Ki, Kd, 1 /* size */);
+  pid_inverter_ = builder.template
+      AddSystem<Gain>(-1 /* gain */, 1 /* size */);
+  target_inverter_ = builder.template
+      AddSystem<Gain>(-1 /* gain */, 1 /* size */);
+  target_ = builder.template AddSystem<ConstantVectorSource>(target_position);
+  state_minus_target_ = builder.template
+      AddSystem<Adder>(2 /* num inputs */, 1 /* size */);
 
   // A demux is used to split the output from the spring-mass system into two
   // ports. One port with the mass position and another port with the mass
   // velocity so that they can be connected to the controller.
   // The third output from the demultiplexer is the spring-mass system energy
   // and it is left unconnected.
-  demux_ = make_unique<Demultiplexer<T>>(3);
+  demux_ = builder.template AddSystem<Demultiplexer>(3);
 
-  DiagramBuilder<T> builder;
   builder.Connect(plant_->get_output_port(0),
                   demux_->get_input_port(0));
 
@@ -74,11 +79,11 @@ template <typename T>
 void PidControlledSpringMassSystem<T>::SetDefaultState(
     Context<T>* context) const {
   Context<T>* controller_context =
-      Diagram<T>::GetMutableSubsystemContext(context, controller_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, controller_);
   controller_->set_integral_value(controller_context, VectorX<T>::Zero(1));
 
   Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, plant_);
   plant_->set_position(plant_context, 0.0);
   plant_->set_velocity(plant_context, 0.0);
   plant_->set_conservative_work(plant_context, 0.0);
@@ -88,7 +93,7 @@ template <typename T>
 void PidControlledSpringMassSystem<T>::set_position(
     Context<T>* context, const T& position) const {
   Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, plant_);
   plant_->set_position(plant_context, position);
 }
 
@@ -96,7 +101,7 @@ template <typename T>
 void PidControlledSpringMassSystem<T>::set_velocity(
     Context<T>* context, const T& velocity) const {
   Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_.get());
+      Diagram<T>::GetMutableSubsystemContext(context, plant_);
   plant_->set_velocity(plant_context, velocity);
 }
 
