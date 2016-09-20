@@ -18,9 +18,9 @@ namespace math {
   * rotz(a) = \begin{bmatrix} cos(a)& -sin(a) & 0\\
   *                           sin(a) & cos(a) & 0\\
   *                             0    &  0     & 1 \end{bmatrix}\;,
-  * roty(b) = \begin{bmatrix} cos(b)& 0 & -sin(b)\\
-  *                           0     & 1 &    0   \\
-  *                           sin(b)& 0 & cos(b)\end{bmatrix}\;,
+  * roty(b) = \begin{bmatrix} cos(b)  & 0 & sin(b)\\
+  *                           0       & 1 &    0   \\
+  *                           -sin(b) & 0 & cos(b)\end{bmatrix}\;,
   * rotx(c) = \begin{bmatrix} 1 &  0     &      0 \\
   *                           0 & cos(c) & -sin(c)\\
   *                           0 & sin(c) & cos(c)\end{bmatrix}
