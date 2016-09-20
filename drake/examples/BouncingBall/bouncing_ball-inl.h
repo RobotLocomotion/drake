@@ -5,13 +5,27 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
+#include "drake/examples/BouncingBall/ball-inl.h"
+#include "drake/examples/BouncingBall/bouncing_ball.h"
+
 #include <stdexcept>
 #include <string>
 
-#include "drake/examples/BouncingBall/ball.h"
+#include "drake/common/drake_assert.h"
+#include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace bouncingball {
+
+template <typename T>
+BouncingBall<T>::BouncingBall() : Ball<T>::Ball() {
+  this->DeclareOutputPort(systems::kVectorValued, 
+			  2, 
+			  systems::kContinuousSampling);
+}
+  
 template <typename T>
 T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -21,7 +35,7 @@ T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
     context.get_state().continuous_state->get_state();
   const systems::BasicVector<T>* const x =
     dynamic_cast<const systems::BasicVector<T>*>(&context_x);
-  DRAKE_ASSERT(state != nullptr);
+  DRAKE_ASSERT(x != nullptr);
 
   // The guard is satisfied (returns a non-positive value) when 
   // the ball's position is less than or equal to zero and its 
@@ -42,7 +56,7 @@ void BouncingBall<T>::PerformReset(const systems::Context<T>* context) const {
 
   // Perform the reset: map the position to itself and negate the
   // velocity and attenuate by the coefficient of restitution.
-  new_context->SetAtIndex(1,-1 * cor * new_context);
+  new_context->SetAtIndex(1,-1 * cor * new_context->GetAtIndex(1));
 }  
 
 }  // namespace bouncingball
