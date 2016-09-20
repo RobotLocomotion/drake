@@ -8,15 +8,15 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeCars_export.h"
+#include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "lcmtypes/drake/lcmt_simple_car_state_t.hpp"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Describes the row indices of a SimpleCarState.
-struct DRAKECARS_EXPORT SimpleCarStateIndices {
+struct DRAKEAUTOMOTIVE_EXPORT SimpleCarStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 4;
 
@@ -64,6 +64,7 @@ template <typename ScalarType>
 bool encode(const double& t, const SimpleCarState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_simple_car_state_t& msg) {
+  // The timestamp in milliseconds.
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.x = wrap.x();
   msg.y = wrap.y();
@@ -86,5 +87,5 @@ bool decode(const drake::lcmt_simple_car_state_t& msg,
   return true;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 namespace {
 
 class SimpleCarTest : public ::testing::Test {
@@ -109,7 +109,8 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_EQ(0.0, result->velocity());
 
   // Half throttle yields half of the max acceleration.
-  const double max_acceleration = SimpleCar1::kDefaultConfig.max_acceleration;
+  const double max_acceleration =
+      SimpleCarDefaults::kDefaultConfig.max_acceleration;
   SetInputValue(0.0, 0.5, 0.0);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->x());
@@ -129,7 +130,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 
   // A non-zero steering_angle turns in the same direction.  We'd like to turn
   // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
-  const double wheelbase = SimpleCar1::kDefaultConfig.wheelbase;
+  const double wheelbase = SimpleCarDefaults::kDefaultConfig.wheelbase;
   const double steering_angle = std::atan(0.01 * wheelbase);
   SetInputValue(steering_angle, 0.0, 0.0);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
@@ -150,7 +151,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
-  EXPECT_NEAR(-0.5 * SimpleCar1::kDefaultConfig.max_acceleration,
+  EXPECT_NEAR(-0.5 * SimpleCarDefaults::kDefaultConfig.max_acceleration,
               result->velocity(), kTolerance);
 
   // A heading of +90deg points us at +y.
@@ -164,5 +165,5 @@ TEST_F(SimpleCarTest, Derivatives) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

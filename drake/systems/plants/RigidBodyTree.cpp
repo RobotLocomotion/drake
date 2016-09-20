@@ -26,16 +26,18 @@ using namespace Eigen;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;
-using drake::kQuaternionSize;
-using drake::kRpySize;
-using drake::kSpaceDimension;
 using drake::Matrix3X;
 using drake::Matrix4X;
+using drake::Matrix6X;
 using drake::MatrixX;
 using drake::TwistMatrix;
 using drake::TwistVector;
 using drake::Vector3;
 using drake::VectorX;
+using drake::WrenchVector;
+using drake::kQuaternionSize;
+using drake::kRpySize;
+using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
@@ -120,7 +122,7 @@ void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
   for (size_t i = 0; i < bodies.size() - 1; ) {
-    if (bodies[i]->has_mobilizer_joint()) {
+    if (bodies[i]->has_parent_body()) {
       auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                [&](std::unique_ptr<RigidBody> const& p) {
                                  return bodies[i]->has_as_parent(*p);
@@ -167,7 +169,7 @@ void RigidBodyTree::compile(void) {
   //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->has_mobilizer_joint() &&
+    if (bodies[i]->has_parent_body() &&
         bodies[i]->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); ++j) {
@@ -205,7 +207,7 @@ void RigidBodyTree::compile(void) {
   num_velocities_ = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       body.set_position_start_index(num_positions_);
       num_positions_ += body.getJoint().getNumPositions();
       body.set_velocity_start_index(num_velocities_);
@@ -233,7 +235,7 @@ void RigidBodyTree::compile(void) {
                                        std::numeric_limits<double>::infinity());
   for (size_t i = 0; i < bodies.size(); ++i) {
     auto& body = bodies[i];
-    if (body->has_mobilizer_joint()) {
+    if (body->has_parent_body()) {
       const DrakeJoint& joint = body->getJoint();
       joint_limit_min.segment(body->get_position_start_index(),
                               joint.getNumPositions()) =
@@ -261,7 +263,7 @@ void RigidBodyTree::compile(void) {
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->has_mobilizer_joint()) {
+    if (body_ptr->has_parent_body()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -275,7 +277,7 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
     std::default_random_engine& generator) const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
-    if (body_ptr->has_mobilizer_joint()) {
+    if (body_ptr->has_parent_body()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.getNumPositions()) =
@@ -332,7 +334,7 @@ void RigidBodyTree::drawKinematicTree(
     dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
             << endl;
     dotfile << "\"];" << endl;
-    if (body->has_mobilizer_joint()) {
+    if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
       dotfile << "  " << body->get_name() << " -> "
               << body->get_parent()->get_name()
@@ -403,7 +405,7 @@ void RigidBodyTree::updateCollisionElements(
 void RigidBodyTree::updateStaticCollisionElements() {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (!body.has_mobilizer_joint()) {
+    if (!body.has_parent_body()) {
       updateCollisionElements(body, Isometry3d::Identity());
     }
   }
@@ -415,7 +417,7 @@ void RigidBodyTree::updateDynamicCollisionElements(
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       updateCollisionElements(body, cache.getElement(body).transform_to_world);
     }
   }
@@ -721,7 +723,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
     RigidBody& body = *bodies[i];
     KinematicsCacheElement<Scalar>& element = cache.getElement(body);
 
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       const KinematicsCacheElement<Scalar>& parent_element =
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
@@ -827,7 +829,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
     // N.B. Reverse iteration.
     for (auto it = bodies.rbegin(); it != bodies.rend(); ++it) {
       const RigidBody& body = **it;
-      if (body.has_mobilizer_joint()) {
+      if (body.has_parent_body()) {
         const auto& element = cache.getElement(body);
         auto& parent_element = cache.getElement(*body.get_parent());
         parent_element.crb_in_world += element.crb_in_world;
@@ -852,7 +854,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   int gradient_row_start = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       const auto& element = cache.getElement(body);
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
@@ -889,7 +891,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   ret.setZero();
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
@@ -1101,7 +1103,7 @@ std::vector<int> RigidBodyTree::FindAncestorBodies(
 
   std::vector<int> ancestor_body_list;
   const RigidBody* current_body = bodies[body_index].get();
-  while (current_body->has_mobilizer_joint()) {
+  while (current_body->has_parent_body()) {
     ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
@@ -1349,7 +1351,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
   for (size_t i = 0; i < bodies.size(); ++i) {
     RigidBody& body_i = *bodies[i];
-    if (body_i.has_mobilizer_joint()) {
+    if (body_i.has_parent_body()) {
       const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.get_velocity_start_index();
       int nv_i = body_i.getJoint().getNumVelocities();
@@ -1362,7 +1364,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 
       // Hij
       const RigidBody* body_j(body_i.get_parent());
-      while (body_j->has_mobilizer_joint()) {
+      while (body_j->has_parent_body()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->get_velocity_start_index();
         int nv_j = body_j->getJoint().getNumVelocities();
@@ -1381,83 +1383,199 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const drake::eigen_aligned_std_unordered_map<
+        RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
     bool include_velocity_terms) const {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities_, 1);
   vd.setZero();
-  return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
+  return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
 }
 
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const*, TwistVector<Scalar>>&
-        f_ext,
+    const drake::eigen_aligned_std_unordered_map<
+        RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
     const Matrix<Scalar, Eigen::Dynamic, 1>& vd,
     bool include_velocity_terms) const {
   cache.checkCachedKinematicsSettings(
       include_velocity_terms, include_velocity_terms, "inverseDynamics");
 
+  // Let w denote the world rigid body. Note that all quantities used in this
+  // algorithm are expressed in world frame. For each body i, compute its
+  // rigid body inertia in world frame, denoted I^w_i.
+  // Composite rigid body inertias are computed as well, but note that we don't
+  // actually need composite rigid body inertias for this algorithm.
   updateCompositeRigidBodyInertias(cache);
 
-  TwistVector<Scalar> root_accel = -a_grav.cast<Scalar>();
-  TwistMatrix<Scalar> net_wrenches(kTwistSize, bodies.size());
-  net_wrenches.col(0).setZero();
+  // TODO(#3114) pass this in as an argument
+  const bool include_acceleration_terms = true;
 
+  // Compute spatial accelerations and net wrenches that should be exerted to
+  // achieve those accelerations.
+  // TODO(tkoolen) should preallocate:
+  Matrix6X<Scalar> body_accelerations(kTwistSize, bodies.size());
+  Matrix6X<Scalar> net_wrenches(kTwistSize, bodies.size());
   for (size_t i = 0; i < bodies.size(); ++i) {
-    RigidBody& body = *bodies[i];
-    if (body.has_mobilizer_joint()) {
-      const auto& element = cache.getElement(body);
+    const RigidBody& body = *bodies[i];
+    if (body.has_parent_body()) {
+      const RigidBody& parent_body = *(body.get_parent());
+      const auto& cache_element = cache.getElement(body);
 
-      TwistVector<Scalar> spatial_accel = root_accel;
-      if (include_velocity_terms)
-        spatial_accel += element.motion_subspace_in_world_dot_times_v;
+      // Denote the spatial acceleration twist derivative) of body i with
+      // respect to the world as Tdot^w_i. Let lambda(i) denote the parent of
+      // body i. The spatial acceleration of body i is the sum of the spatial
+      // acceleration of lambda(i) and the relative acceleration of i with
+      // respect to lambda(i):
+      //
+      //    Tdot^w_i = Tdot^w_lambda(i) + Tdot^lambda(i)_i
+      //
+      // The relative acceleration Tdot^lambda(i)_i is the derivative of the
+      // twist T^lambda(i)_i of i with respect to lambda(i). The twist
+      // T^lambda(i)_i can be written as
+      //
+      //    T^lambda(i)_i = J^lambda(i)_i v_i
+      //
+      // where J^lambda(i)_i is the motion subspace, expressed in world
+      // frame, of the joint between i and lambda(i) (a geometric Jacobian),
+      // and v_i is the joint velocity vector for this joint. Differentiating
+      // results in
+      //
+      //    Tdot^lambda(i)_i = Jdot^lambda(i)_i v_i + J^lambda(i)_i vdot_i
+      //
+      // where the term Jdot^lambda(i)_i v_i will be referred to as the bias
+      // acceleration of body i w.r.t. lambda(i), and is seen to be the
+      // spatial acceleration of body i w.r.t lambda(i) when there is no
+      // joint acceleration (vdot_i = 0).
+      // KinematicsCache stores the bias acceleration of each body with
+      // respect to the world: Jdot^w_i v^w_i, where v^w_i denotes the vector of
+      // joint velocities on the path between body i and the world. The bias
+      // acceleration with respect to lambda(i) can be obtained simply as
+      //
+      //    Jdot^lambda(i)_i v_i = Jdot^w_i v^w_i - Jdot^w_lambda(i)
+      //        v^w_lambda(i)
+      //
+      // In the code, we refer to:
+      // * Tdot^w_lambda(i) as parent_acceleration,
+      // * Jdot^w_i v^w_i as motion_subspace_in_world_dot_times_v,
+      // * vdot_i as vd_joint.
+      auto body_acceleration = body_accelerations.col(i);
 
-      int nv_joint = body.getJoint().getNumVelocities();
-      auto vdJoint = vd.middleRows(body.get_velocity_start_index(), nv_joint);
-      spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
+      // Initialize body acceleration to acceleration of parent body.
+      auto parent_acceleration =
+          body_accelerations.col(parent_body.get_body_index());
+      body_acceleration = parent_acceleration;
 
-      net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
+      // Add bias acceleration relative to parent body.
       if (include_velocity_terms) {
-        auto I_times_twist =
-            (element.inertia_in_world * element.twist_in_world).eval();
-        net_wrenches.col(i).noalias() +=
-            crossSpatialForce(element.twist_in_world, I_times_twist);
+        const auto& parent_cache_element = cache.getElement(parent_body);
+        body_acceleration += cache_element.motion_subspace_in_world_dot_times_v;
+        body_acceleration -=
+            parent_cache_element.motion_subspace_in_world_dot_times_v;
       }
 
-      auto f_ext_iterator = f_ext.find(bodies[i].get());
-      if (f_ext_iterator != f_ext.end()) {
-        const auto& f_ext_i = f_ext_iterator->second;
-        net_wrenches.col(i) -=
-            transformSpatialForce(element.transform_to_world, f_ext_i);
+      // Add component due to joint acceleration.
+      if (include_acceleration_terms) {
+        const DrakeJoint& joint = body.getJoint();
+        auto vd_joint = vd.middleRows(body.get_velocity_start_index(),
+                                      joint.getNumVelocities());
+        body_acceleration.noalias() +=
+            cache_element.motion_subspace_in_world * vd_joint;
       }
+
+      // Now that the spatial acceleration of the body with respect to the
+      // world is known, we compute the net wrench on the body required to
+      // effect the acceleration.
+      // Denote the (spatial) momentum of body i as h_i. h_i can be computed as
+      //
+      //    h_i = I^w_i T^w_i
+      //
+      // The Newton-Euler equations state that
+      //
+      //    hdot_i = W_i
+      //
+      // where W_i is the net wrench exerted upon body i. Differentiating, we
+      // find
+      //
+      //   W_i = hdot_i = Idot^w_i T^w_i + I^w_i Tdot^w_i
+      //
+      // The term Idot^w_i T^w_i is
+      //
+      //   Idot^w_i = cross(T^w_i, I^w_i T^w_i)
+      //
+      // where cross denotes a spatial force cross product. This can be
+      // derived by differentiating the transformation rule for spatial
+      // inertias.
+
+      auto net_wrench = net_wrenches.col(i);
+      const auto& body_inertia = cache_element.inertia_in_world;
+      net_wrench.noalias() = body_inertia * body_acceleration;
+      if (include_velocity_terms) {
+        const auto& body_twist = cache_element.twist_in_world;
+        auto inertia_times_twist = (body_inertia * body_twist).eval();
+        net_wrench += crossSpatialForce(body_twist, inertia_times_twist);
+      }
+
+      // Subtract off any external wrench that may be acting on body (and
+      // hence contributing to the achievement of the net wrench).
+      auto external_wrench_it = external_wrenches.find(&body);
+      if (external_wrench_it != external_wrenches.end()) {
+        const auto& external_wrench = external_wrench_it->second;
+        const auto& body_to_world = cache_element.transform_to_world;
+        net_wrench -= transformSpatialForce(body_to_world, external_wrench);
+      }
+    } else {
+      body_accelerations.col(i) = -a_grav.cast<Scalar>();
+      net_wrenches.col(i).setZero();
     }
   }
 
-  Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities_, 1);
+  // Do a backwards pass to compute joint wrenches from net wrenches (update in
+  // place), and project the joint wrenches onto the joint's motion subspace to
+  // find the joint torque.
+  auto& joint_wrenches = net_wrenches;
+  // the following will eliminate the need for another explicit instantiation:
+  const auto& joint_wrenches_const = net_wrenches;
 
-  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; --i) {
+  VectorX<Scalar> torques(num_velocities_, 1);
+  for (ptrdiff_t i = bodies.size() - 1; i >= 0; --i) {
     RigidBody& body = *bodies[i];
-    if (body.has_mobilizer_joint()) {
-      const auto& element = cache.getElement(body);
-      const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
-                                                      // another explicit
-                                                      // instantiation
-      auto joint_wrench = net_wrenches_const.col(i);
-      int nv_joint = body.getJoint().getNumVelocities();
-      auto J_transpose = element.motion_subspace_in_world.transpose();
-      ret.middleRows(body.get_velocity_start_index(), nv_joint).noalias() =
-          J_transpose * joint_wrench;
-      auto parent_net_wrench = net_wrenches.col(
-          body.get_parent()->get_body_index());
-      parent_net_wrench += joint_wrench;
+    if (body.has_parent_body()) {
+      const auto& cache_element = cache.getElement(body);
+      const auto& joint = body.getJoint();
+      auto joint_wrench = joint_wrenches_const.col(i);
+
+      // Compute joint torques associated with the joint wrench. Joint torque
+      // tau_i can be computed from the wrench across the joint between i and
+      // lambda(i) as
+      //
+      //    J^lambda(i)_i ' * W_i
+      //
+      // This can be derived from a power balance.
+      const auto& motion_subspace = cache_element.motion_subspace_in_world;
+      auto joint_torques = torques.middleRows(body.get_velocity_start_index(),
+                                              joint.getNumVelocities());
+      joint_torques.noalias() = motion_subspace.transpose() * joint_wrench;
+
+      // The joint wrench W exerted upon body i through the joint between i
+      // and lambda(i) acts in the opposite direction on lambda(i) (Newton's
+      // third law). This wrench, -W, should be subtracted from the net
+      // wrench exerted upon lambda(i) (similar to external wrenches), so W
+      // should be *added* to the net wrench.
+      const RigidBody& parent_body = *(body.get_parent());
+      auto parent_joint_wrench =
+          joint_wrenches.col(parent_body.get_body_index());
+      parent_joint_wrench += joint_wrench;
     }
   }
 
-  if (include_velocity_terms) ret += frictionTorques(cache.getV());
+  if (include_velocity_terms) {
+    // TODO(#1476) frictionTorques uses abs. To support e.g. TrigPoly, there
+    // should be a version of inverseDynamics that doesn't call frictionTorques.
+    torques += frictionTorques(cache.getV());
+  }
 
-  return ret;
+  return torques;
 }
 
 template <typename DerivedV>
@@ -1468,7 +1586,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
-    if (body.has_mobilizer_joint()) {
+    if (body.has_parent_body()) {
       const DrakeJoint& joint = body.getJoint();
       int nv_joint = joint.getNumVelocities();
       int v_start_joint = body.get_velocity_start_index();
@@ -1927,7 +2045,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   // `true` or `false` in vector `name_match` based on whether the body's parent
   // joint's name matches @p joint_name.
   for (size_t i = 0; i < bodies.size(); ++i) {
-    if (bodies[i]->has_mobilizer_joint()) {
+    if (bodies[i]->has_parent_body()) {
       // Obtains the name of the rigid body's parent joint and then converts it
       // to be lower case.
       std::string current_joint_name = bodies[i]->getJoint().getName();
@@ -2218,25 +2336,26 @@ template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
-        RigidBody const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
+        RigidBody const*, WrenchVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
         equal_to<RigidBody const*>,
-        Eigen::aligned_allocator<
-            pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
+        Eigen::aligned_allocator<pair<RigidBody const* const,
+                                      WrenchVector<AutoDiffUpTo73d>>>> const&,
     bool) const;
 template DRAKERBM_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
-    unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
-                  hash<RigidBody const*>, equal_to<RigidBody const*>,
-                  Eigen::aligned_allocator<pair<
-                      RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
+    unordered_map<
+        RigidBody const*, WrenchVector<AutoDiffXd>, hash<RigidBody const*>,
+        equal_to<RigidBody const*>,
+        Eigen::aligned_allocator<
+            pair<RigidBody const* const, WrenchVector<AutoDiffXd>>>> const&,
     bool) const;
 template DRAKERBM_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody const*, TwistVector<double>, hash<RigidBody const*>,
-                  equal_to<RigidBody const*>,
+    unordered_map<RigidBody const*, WrenchVector<double>,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
                   Eigen::aligned_allocator<pair<RigidBody const* const,
-                                                TwistVector<double>>>> const&,
+                                                WrenchVector<double>>>> const&,
     bool) const;
 
 // Explicit template instantiations for geometricJacobian.
@@ -2361,6 +2480,14 @@ RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int,
                                      int) const;
 
 // Explicit template instantiations for worldMomentumMatrix.
+template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
+RigidBodyTree::worldMomentumMatrix<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d>&,
+    set<int, less<int>, allocator<int>> const&, bool) const;
+template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
+RigidBodyTree::worldMomentumMatrix<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
+    bool) const;
 template DRAKERBM_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
     double>(KinematicsCache<double>&,
             set<int, less<int>, allocator<int>> const&, bool) const;
@@ -2376,14 +2503,40 @@ RigidBodyTree::transformSpatialAcceleration<double>(
     KinematicsCache<double> const&, TwistVector<double> const&, int, int, int,
     int) const;
 
+// Explicit template instantiations for frictionTorques
+template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+RigidBodyTree::frictionTorques(
+    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const& v) const;
+template DRAKERBM_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const& v) const;
+template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
+    Eigen::MatrixBase<VectorX<double>> const& v) const;
+
 // Explicit template instantiations for inverseDynamics.
-template DRAKERBM_EXPORT VectorXd RigidBodyTree::inverseDynamics<double>(
+template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d>&,
+    unordered_map<
+        RigidBody const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
+        equal_to<RigidBody const*>,
+        Eigen::aligned_allocator<
+            pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
+    VectorX<AutoDiffUpTo73d> const&, bool) const;
+template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+RigidBodyTree::inverseDynamics<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&,
+    unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
+                  Eigen::aligned_allocator<pair<
+                      RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
+    VectorX<AutoDiffXd> const&, bool) const;
+template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody const*, TwistVector<double>, hash<RigidBody const*>,
-                  equal_to<RigidBody const*>,
+    unordered_map<RigidBody const*, WrenchVector<double>,
+                  hash<RigidBody const*>, equal_to<RigidBody const*>,
                   Eigen::aligned_allocator<pair<RigidBody const* const,
-                                                TwistVector<double>>>> const&,
-    VectorXd const&, bool) const;
+                                                WrenchVector<double>>>> const&,
+    VectorX<double> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.
 template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<

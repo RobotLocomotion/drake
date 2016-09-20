@@ -15,7 +15,7 @@
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 template <typename T>
 IdmWithTrajectoryAgent<T>::IdmWithTrajectoryAgent() {
@@ -103,5 +103,5 @@ IdmWithTrajectoryAgent<T>::AllocateOutputVector(
   return std::make_unique<IdmWithTrajectoryAgentState<T>>();
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

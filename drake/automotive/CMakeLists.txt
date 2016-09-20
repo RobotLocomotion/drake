@@ -2,7 +2,7 @@ add_subdirectory(test)
 if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
 
-  add_library_with_exports(LIB_NAME drakeCars SOURCE_FILES
+  add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
     car_simulation.cc
     curve2.cc
     gen/driving_command.cc
@@ -17,7 +17,7 @@ if(lcm_FOUND)
     simple_car.cc
     trajectory_car.cc
     )
-  target_link_libraries(drakeCars
+  target_link_libraries(drakeAutomotive
     drakeCommon
     drakeLCMSystem
     drakeLCMSystem2
@@ -26,7 +26,7 @@ if(lcm_FOUND)
     drakeSystemAnalysis
     drakeSystemFramework
     )
-  pods_install_libraries(drakeCars)
+  pods_install_libraries(drakeAutomotive)
   drake_install_headers(
     curve2.h
     car_simulation.h
@@ -37,25 +37,25 @@ if(lcm_FOUND)
     system1_vector.h
     )
   add_subdirectory(gen)
-  pods_install_pkg_config_file(drake-cars
-    LIBS -ldrakeCars
+  pods_install_pkg_config_file(drake-automotive
+    LIBS -ldrakeAutomotive
     REQUIRES
     VERSION 0.0.1)
 
-  add_dependencies(drakeCars drake_lcmtypes_hpp)
+  add_dependencies(drakeAutomotive drake_lcmtypes_hpp)
   add_executable(simple_car_demo simple_car_demo.cc)
-  target_link_libraries(simple_car_demo drakeCars)
+  target_link_libraries(simple_car_demo drakeAutomotive)
 
   add_executable(car_sim_lcm car_sim_lcm.cc)
   add_dependencies(car_sim_lcm drake_lcmtypes_hpp)
-  target_link_libraries(car_sim_lcm drakeCars)
+  target_link_libraries(car_sim_lcm drakeAutomotive)
 
   add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
   add_dependencies(multi_car_sim_lcm drake_lcmtypes_hpp)
-  target_link_libraries(multi_car_sim_lcm drakeCars)
+  target_link_libraries(multi_car_sim_lcm drakeAutomotive)
 
   drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
 
   add_executable(demo_multi_car demo_multi_car.cc)
-  target_link_libraries(demo_multi_car drakeCars)
+  target_link_libraries(demo_multi_car drakeAutomotive)
 endif()

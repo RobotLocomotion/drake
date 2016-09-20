@@ -5,7 +5,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 /// Converts SimpleCarState to a full 6-DOF EulerFloatingJointState.
 template <typename T>
@@ -53,5 +53,5 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
   }
 };
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

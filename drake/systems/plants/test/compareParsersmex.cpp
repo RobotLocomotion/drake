@@ -61,7 +61,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                                                             // of matlab_model
                                                             // to cpp_model
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
-    if (cpp_model->bodies[i]->has_mobilizer_joint() &&
+    if (cpp_model->bodies[i]->has_parent_body() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {
       RigidBody* b = matlab_model->FindChildBodyOfJoint(
           cpp_model->bodies[i]->getJoint().getName());
@@ -111,9 +111,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         cpp_model->doKinematics(cpp_q, cpp_v, true);
 
     {  // compare H, C, and B
-      eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-          f_ext;
-
       auto matlab_H = matlab_model->massMatrix(matlab_cache);
       auto cpp_H = cpp_model->massMatrix(cpp_cache);
 
@@ -124,8 +121,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "Drake: CompareParserMex: ERROR: H doesn't match: " + explanation);
       }
 
-      auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache, f_ext);
-      auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, f_ext);
+      const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+      auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache,
+                                                     no_external_wrenches);
+      auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, no_external_wrenches);
 
       if (!CompareMatrices(matlab_C, cpp_C, 1e-8, MatrixCompareType::absolute,
                            &explanation)) {

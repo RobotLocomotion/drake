@@ -15,7 +15,7 @@ namespace lcm {
 
 using std::runtime_error;
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
+void TranslatorBetweenLcmtDrakeSignal::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base);
@@ -43,12 +43,12 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateLcmToVectorBase(
 
   // Saves the values in from the LCM message into the basic vector.
   // Assumes that the order of the values in both vectors are identical.
-  for (int ii = 0; ii < message.dim; ++ii) {
-    vector_base->SetAtIndex(ii, message.val[ii]);
+  for (int i = 0; i < message.dim; ++i) {
+    vector_base->SetAtIndex(i, message.val[i]);
   }
 }
 
-void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
+void TranslatorBetweenLcmtDrakeSignal::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   DRAKE_ASSERT(vector_base.size() == get_vector_size());
@@ -60,9 +60,10 @@ void TranslatorBetweenLcmtDrakeSignal::TranslateVectorBaseToLcm(
   message.dim = vector_base.size();
   message.val.resize(message.dim);
   message.coord.resize(message.dim);
+  message.timestamp = static_cast<int64_t>(time * 1000);
 
-  for (int ii = 0; ii < message.dim; ++ii) {
-    message.val[ii] = vector_base.GetAtIndex(ii);
+  for (int i = 0; i < message.dim; ++i) {
+    message.val[i] = vector_base.GetAtIndex(i);
   }
 
   const int lcm_message_length = message.getEncodedSize();

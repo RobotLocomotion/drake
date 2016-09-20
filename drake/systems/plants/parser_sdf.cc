@@ -31,8 +31,21 @@ namespace parsers {
 namespace sdf {
 namespace {
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using std::allocate_shared;
+using std::cerr;
+using std::endl;
+using std::max;
+using std::move;
+using std::numeric_limits;
+using std::pair;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
 
 using tinyxml2::XMLElement;
 using tinyxml2::XMLDocument;
@@ -507,7 +520,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
       transform_parent_to_model.inverse() * transform_to_model;
 
-  if (child->has_mobilizer_joint()) {
+  if (child->has_parent_body()) {
     // ... then implement it as a loop joint.
 
     // Gets the loop point in the joint's reference frame. Since the SDF

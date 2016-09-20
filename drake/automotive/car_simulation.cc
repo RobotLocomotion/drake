@@ -8,13 +8,12 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
 namespace drake {
-namespace cars {
+namespace automotive {
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-using drake::AffineSystem;
 using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
 using drake::systems::plants::joints::kFixed;
@@ -278,7 +277,7 @@ Curve2<double> MakeCurve(double radius, double inset) {
 }
 }  // namespace anonymous
 
-std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index) {
+std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index) {
   // The possible curves to trace (lanes).
   const std::vector<Curve2<double>> curves{
     MakeCurve(40.0, 0.0),  // BR
@@ -290,30 +289,7 @@ std::shared_ptr<TrajectoryCar1> CreateTrajectoryCarSystem(int index) {
   const auto& curve = curves[index % curves.size()];
   const double start_time = (index / curves.size()) * 0.8;
   const double kSpeed = 8.0;
-  return std::make_shared<TrajectoryCar1>(curve, kSpeed, start_time);
-}
-
-std::shared_ptr<
-    AffineSystem<NullVector, SimpleCarState1, EulerFloatingJointState1>>
-CreateSimpleCarVisualizationAdapter() {
-  const int insize = SimpleCarState1<double>().size();
-  const int outsize = EulerFloatingJointState1<double>().size();
-  MatrixXd D;
-  D.setZero(outsize, insize);
-  D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
-  D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
-  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
-  EulerFloatingJointState1<double> y0;
-  return std::make_shared<
-    AffineSystem<
-        NullVector,
-        SimpleCarState1,
-        EulerFloatingJointState1>>(
-            MatrixXd::Zero(0, 0),
-            MatrixXd::Zero(0, insize),
-            VectorXd::Zero(0),
-            MatrixXd::Zero(outsize, 0),
-            D, toEigen(y0));
+  return std::make_unique<TrajectoryCar<double>>(curve, kSpeed, start_time);
 }
 
 SimulationOptions GetCarSimulationDefaultOptions() {
@@ -331,5 +307,5 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
   return x0;
 }
 
-}  // namespace cars
+}  // namespace automotive
 }  // namespace drake

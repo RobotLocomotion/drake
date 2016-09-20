@@ -18,37 +18,20 @@ except ImportError:
 
 THIS_FILE = os.path.abspath(__file__)
 THIS_DIR = os.path.dirname(THIS_FILE)
-DRAKE_DIR = os.path.dirname(os.path.dirname(THIS_DIR))
+DRAKE_DIR = os.path.dirname(THIS_DIR)
 DRAKE_DIST_DIR = os.path.dirname(DRAKE_DIR)
 DRAKE_DIST_BUILD_DIR = os.getenv(
     'DRAKE_DIST_BUILD',
     os.path.join(DRAKE_DIST_DIR, 'build'))
 DRAKE_LCMTYPES_DIR = os.path.join(
     DRAKE_DIST_BUILD_DIR, 'drake/lcmtypes')
-DRAKE_PYTHON_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, 'install/lib/python2.7')
+LCM_PYTHON_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, 'externals/lcm/lib/python2.7')
 sys.path.extend([
     DRAKE_LCMTYPES_DIR,  # First (to pick up local edits to messages).
-    os.path.join(DRAKE_PYTHON_DIR, 'dist-packages'),
-    os.path.join(DRAKE_PYTHON_DIR, 'site-packages')])
+    os.path.join(LCM_PYTHON_DIR, 'dist-packages'),
+    os.path.join(LCM_PYTHON_DIR, 'site-packages')])
 
-try:
-    import lcm
-except ImportError as e:
-    # TODO(#3397) This whole mess shouldn't be necessary.
-    disable_retry_flag = 'IMPORT_LCM_DISABLE_RETRY'
-    if ('cannot open shared object file' in e.message and
-        disable_retry_flag not in os.environ):
-        print 'warning:', e.message, '(will retry now)'
-        LD_LIBRARY_PATH = ':'.join([
-            os.path.join(DRAKE_DIST_BUILD_DIR, 'install/lib'),
-            os.getenv('LD_LIBRARY_PATH', default='')])
-        new_env = dict(os.environ)
-        new_env['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
-        new_env[disable_retry_flag] = '1'
-        sys.exit(subprocess.call(
-            [sys.executable] + sys.argv,
-            env=new_env))
-    raise
+import lcm
 
 from drake.lcmt_driving_command_t import lcmt_driving_command_t as lcm_msg
 

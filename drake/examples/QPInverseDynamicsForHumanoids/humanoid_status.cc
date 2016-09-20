@@ -36,9 +36,8 @@ void HumanoidStatus::Update(double t, const VectorXd& q, const VectorXd& v,
   robot_->doKinematics(cache_, true);
 
   M_ = robot_->massMatrix(cache_);
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
-  bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  bias_term_ = robot_->dynamicsBiasTerm(cache_, no_external_wrenches);
 
   // com
   com_ = robot_->centerOfMass(cache_);

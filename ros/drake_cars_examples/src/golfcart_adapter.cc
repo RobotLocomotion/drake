@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace ros {
-namespace cars {
+namespace automotive {
 namespace {
 
 /**
@@ -236,10 +236,10 @@ int DoMain(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace ros
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::ros::cars::DoMain(argc, argv);
+  return drake::ros::automotive::DoMain(argc, argv);
 }

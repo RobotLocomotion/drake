@@ -1,6 +1,8 @@
 #include "QuaternionFloatingJoint.h"
 #include <random>
 
+#include "drake/math/random_rotation.h"
+
 using namespace Eigen;
 using namespace std;
 
@@ -61,7 +63,7 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
   q[2] = normal(generator);
 
   // orientation
-  Vector4d quat = uniformlyRandomQuat(generator);
+  Vector4d quat = drake::math::UniformlyRandomQuat(generator);
   q[3] = quat(0);
   q[4] = quat(1);
   q[5] = quat(2);

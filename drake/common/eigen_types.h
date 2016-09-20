@@ -50,6 +50,10 @@ using Matrix3X = Eigen::Matrix<Scalar, 3, Eigen::Dynamic>;
 template <typename Scalar>
 using Matrix4X = Eigen::Matrix<Scalar, 4, Eigen::Dynamic>;
 
+/// A matrix of 6 rows, dynamic columns, templated on scalar type.
+template <typename Scalar>
+using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
+
 /// A matrix of dynamic size, templated on scalar type.
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
@@ -68,5 +72,9 @@ using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
 /// A six-by-six matrix.
 template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
+
+/// A column vector consisting of one wrench.
+template <typename Scalar>
+using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 
 }  // namespace drake

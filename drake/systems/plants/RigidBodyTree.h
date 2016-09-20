@@ -1,14 +1,13 @@
 #pragma once
 
+#include <set>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include <Eigen/StdVector>
-#include <set>
-#include <stdexcept>
-#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
@@ -24,7 +23,6 @@
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -335,6 +333,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(
       KinematicsCache<Scalar>& cache) const;
 
+#ifndef SWIG
+  /// Convenience alias for rigid body to external wrench map, for use with
+  /// inverseDynamics and dynamicsBiasTerm.
+  template <typename Scalar>
+  using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
+    RigidBody const*, drake::WrenchVector<Scalar>>;
+#endif
+
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
   *equations
   *  \f[
@@ -348,8 +354,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const drake::eigen_aligned_std_unordered_map<
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -371,7 +377,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   *
   * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
   * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
-  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param external_wrenches external wrenches exerted upon bodies
+  * (\f$ f_\text{ext} \f$). Expressed in body frame.
   * \param vd \f$ \dot{v} \f$
   * \param include_velocity_terms whether to include velocity-dependent terms in
   *\f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is
@@ -381,8 +388,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const drake::eigen_aligned_std_unordered_map<
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
