@@ -355,6 +355,13 @@ class DRAKERBM_EXPORT RigidBody {
    @see CollisionElement::AddToCollisionClique. **/
   void AddToCollisionClique(int clique_id);
 
+  /** Adds collision element `e` to this rigid body.
+   @param e The collision element being added to this body.
+   **/
+  void AddCollisionElement(DrakeCollision::Element* e) {
+    collision_elements_.push_back(e);
+  }
+
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
@@ -433,11 +440,6 @@ class DRAKERBM_EXPORT RigidBody {
     return collision_elements_.end();
   }
 
-  /** Adds collision element `e` to this rigid body.
-   @param e The collision element being added to this body. **/
-  void AddCollisionElement(DrakeCollision::Element* e) {
-    collision_elements_.push_back(e);
-  }
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
 
