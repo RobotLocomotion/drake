@@ -13,42 +13,43 @@
 namespace drake {
 namespace systems {
 
-/// A PID controller system. Given an error signal `e` and its derivative `edot`
-/// the output of this sytem is
-/// \f[
-///   y = k_p \varepsilon + k_i \int{\varepsilon~dt} + k_d \dot{\varepsilon}
-/// \f]
-/// When the proportional constant is non-zero the input to this system
-/// directly feeds through to its output.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// A model of a one-dimensional spring-mass system controlled to achieve a
+/// given target position using a PID controller.
+/// @see SpringMassSystem, PidController.
+/// @ingroup systems
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
  public:
-  /// Constructs a PID controller with proportional constant @p Kp,
-  /// integral constant @p Ki and derivative constant @p Kd.
-  /// Input/output ports are limited to have size @p length.
+  /// Constructs a spring-mass system with a fixed spring constant and given
+  /// mass controlled by a PID controller to achieve a specified target
+  /// position.
+  /// @param[in] spring_stiffness The spring constant.
+  /// @param[in] mass The value of the mass attached to the spring.
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
-  /// @param target_position the derivative constant.
+  /// @param target_position the desired target position.
   PidControlledSpringMassSystem(const T& spring_stiffness, const T& mass,
                                 const T& Kp, const T& Ki, const T& Kd,
                                 const T& target_position);
 
   ~PidControlledSpringMassSystem() override {}
 
+  /// Sets the position of the mass in the given Context.
   void set_position(Context<T>* context, const T& position) const;
 
+  /// Sets the velocity of the mass in the given Context.
   void set_velocity(Context<T>* context, const T& position) const;
 
+  /// Returns the SpringMassSystem plant of the model.
   const SpringMassSystem& get_plant() const { return *plant_.get(); }
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state in which the integral of the
-  /// controller is zero.
+  /// Sets @p context to a default state in which the postion and velocity of
+  /// the mass are both zero.
+  /// The integral of the controller is also set to zero.
   void SetDefaultState(Context<T>* context) const;
 
  private:
