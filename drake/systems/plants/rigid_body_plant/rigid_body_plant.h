@@ -14,13 +14,10 @@
 namespace drake {
 namespace systems {
 
+// Forward declaration for KinematicsResults.
 template <typename T> class RigidBodyPlant;
 
-/// A class containing the results from peforming kinematics on a
-/// RigidBodyPlant.
-//template <typename T>
-//using KinematicsResults = KinematicsCache<T>;
-
+/// A class containing the kinematics results from a RigidBodyPlant system.
 template <typename T>
 class KinematicsResults {
   // RigidBodyPlant is the only class allowed to update KinematicsResults
@@ -31,10 +28,13 @@ class KinematicsResults {
       tree_(tree), kinematics_cache_(tree_.bodies) {
   }
 
+  /// Returns the number of bodies in the kinematics results.
   int get_num_bodies() const { return tree_.get_number_of_bodies(); }
 
+  /// Returns the number of generalized positions.
   int get_num_positions() const { return kinematics_cache_.getNumPositions(); }
 
+  /// Returns the number of generalized velocities.
   int get_num_velocities() const { return kinematics_cache_.getNumVelocities(); }
 
   /// Returns the quaternion representation of the three dimensional orientation
@@ -79,56 +79,6 @@ class KinematicsResults {
 
   const RigidBodyTree& tree_;
   KinematicsCache<T> kinematics_cache_;
-};
-
-/// A vector of 3D poses each of which is represented by a quaternion and a
-/// position vector.
-/// The pose of a rigid body is represented as a quaternion for three
-/// dimensional orientation concatenated by a three dimensional vector for
-/// position both in the world's frame. Altogether these two representations
-/// form a seven-dimensional vector for each body, quanterion first followed by
-/// the position vector.
-/// The concatenation of the poses for all bodies in the RigidBodyPlant is
-/// placed into a single contiguous vector of scalars entries of size `7 * Nb`
-/// with `Nb` the number of bodies.
-/// VectorOfPoses<T> offers a semantically richer representation of a simple
-/// BasicVector<T> that allows consumers of it to easily access for each body
-/// the quaternion representation of orientation and the 3D vector represenation
-/// of position.
-template <typename T>
-class DRAKE_RBP_EXPORT VectorOfPoses : public BasicVector<T> {
- public:
-  /// Constructs a poses vector for @p nbodies bodies.
-  /// @param[in] nbodies the number of body poses.
-  explicit VectorOfPoses(int num_bodies);
-
-  ~VectorOfPoses() override;
-
-  int get_num_bodies() const;
-
-  /// Returns the quaternion representation of the three dimensional orientation
-  /// of body @p body_index in the world's frame.
-  Quaternion<T> get_body_orientation(int body_index) const;
-
-  /// Returns the three dimensional position of body @p body_index in world's
-  /// frame.
-  Vector3<T> get_body_position(int body_index) const;
-
-  /// Sets the quaternion representation of the three dimensional orientation
-  /// of body @p body_index in the world's frame.
-  /// @param[in] body_index The index of the body in the poses vector.
-  /// @param[in] quaternion The quaternion representation of the body's pose.
-  void set_body_orientation(int body_index, const Quaternion<T>& quaternion);
-
-  /// Sets the three dimensional position of body @p body_index in world's
-  /// frame.
-  /// @param[in] body_index The index of the body in the poses vector.
-  /// @param[in] position The three dimensional position of body @p body_index
-  /// in world's frame.
-  void set_body_position(int body_index, const Vector3<T>& position);
-
- private:
-  VectorOfPoses* DoClone() const override;
 };
 
 /// This class encapsulates all the constant metadata that belongs to a given

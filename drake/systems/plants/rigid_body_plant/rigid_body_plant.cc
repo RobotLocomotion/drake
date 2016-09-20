@@ -23,60 +23,6 @@ using drake::parsers::ModelInstanceIdTable;
 namespace drake {
 namespace systems {
 
-template <typename T>
-VectorOfPoses<T>::VectorOfPoses(int num_bodies) :
-    BasicVector<T>(7 * num_bodies) {}
-
-template <typename T>
-VectorOfPoses<T>::~VectorOfPoses() {}
-
-template <typename T>
-int VectorOfPoses<T>::get_num_bodies() const {
-  return this->size()/7;
-}
-
-// TODO(amcastro-tri): Output a quaternion map referencing the actual memory in
-// BasicVector. However this is not possible right now given that Drake does not
-// use the same memory layout as Eigen does. See issue #3470 which needs to be
-// resolved before we can fix this todo.
-template <typename T>
-Quaternion<T> VectorOfPoses<T>::get_body_orientation(int body_index) const {
-  const int body_start = 7 * body_index;
-  return Quaternion<T>(this->GetAtIndex(body_start + 3),
-                       this->GetAtIndex(body_start + 0),
-                       this->GetAtIndex(body_start + 1),
-                       this->GetAtIndex(body_start + 2));
-}
-
-template <typename T>
-Vector3<T> VectorOfPoses<T>::get_body_position(int body_index) const {
-  const int body_start = 7 * body_index + 4;
-  return Vector3<T>(this->GetAtIndex(body_start + 0),
-                    this->GetAtIndex(body_start + 1),
-                    this->GetAtIndex(body_start + 2));
-}
-
-template <typename T>
-void VectorOfPoses<T>::set_body_orientation(int body_index,
-                                             const Quaternion<T>& q) {
-  const int body_start = 7 * body_index;
-  this->get_mutable_value().template segment<4>(body_start) = q.coeffs();
-}
-
-template <typename T>
-void VectorOfPoses<T>::set_body_position(int body_index,
-                                          const Vector3<T>& p) {
-  const int body_start = 7 * body_index + 4;
-  this->get_mutable_value().template segment<3>(body_start) = p;
-}
-
-template <typename T>
-VectorOfPoses<T>* VectorOfPoses<T>::DoClone() const {
-  auto poses = new VectorOfPoses<T>(get_num_bodies());
-  poses->get_mutable_value() = this->get_value();
-  return poses;
-}
-
 BodyMetadata::BodyMetadata(const RigidBody& body) : body_(body) {}
 
 const std::string& BodyMetadata::name() const {
@@ -518,7 +464,6 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_RBP_EXPORT RigidBodyPlant<double>;
-template class DRAKE_RBP_EXPORT VectorOfPoses<double>;
 
 }  // namespace systems
 }  // namespace drake
