@@ -57,8 +57,14 @@ void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source,
 
 // note for if/when we split off all Matlab related stuff into a different file:
 // this function is not Matlab related
-// can only be used when the dimension information of the array is known at
-// compile time
+/** Copies the elements of a (row or column) Eigen vector to an array.
+ *
+ * Can only be used when the dimension information of the array is known at compile time.
+ * Note that the scalar type of @p source need not match the scalar type of @p destination (@p DestScalar). A static_cast will be performed to convert to elements of @p source to @p DestScalar.
+ *
+ * @param[in] source Eigen vector source
+ * @param[out] destination std::vector destination
+ */
 template <typename DestScalar, size_t Size, typename Derived>
 void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source,
                          DestScalar(&destination)[Size]) {
@@ -71,13 +77,20 @@ void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source,
 
 // note for if/when we split off all Matlab related stuff into a different file:
 // this function is not Matlab related
+/** Copies the elements of a (row or column) Eigen vector to a std::vector
+ *
+ * Note that the scalar type of @p source need not match the scalar type of @p destination (@p DestScalar). A static_cast will be performed to convert to elements of @p source to @p DestScalar.
+ *
+ * @param[in] source Eigen vector source
+ * @param[out] destination std::vector destination
+ */
 template <typename DestScalar, typename Derived>
-static void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source,
+void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source,
                                    std::vector<DestScalar>& destination) {
   DRAKE_ASSERT(source.rows() == 1 || source.cols() == 1);
   destination.resize(static_cast<size_t>(source.size()));
   for (Eigen::Index i = 0; i < source.size(); i++) {
-    destination[static_cast<size_t>(i)] = static_cast<DestScalar>(source[i]);
+    destination[static_cast<size_t>(i)] = static_cast<DestScalar>(source(i));
   }
 }
 

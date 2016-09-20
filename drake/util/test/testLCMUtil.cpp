@@ -60,7 +60,7 @@ GTEST_TEST(TestLcmUtil, testPiecewisePolynomial) {
 
 GTEST_TEST(TestLcmUtil, testVector3d) {
   const int kVectorSize = 3;
-  Eigen::Vector3d vec = Vector3d::LinSpaced(Sequential, 0, kVectorSize);
+  const Eigen::Vector3d vec = Vector3d::LinSpaced(Sequential, 0, kVectorSize);
   bot_core::vector_3d_t msg;
   EncodeVector3d(vec, msg);
   Eigen::Vector3d vec_back = DecodeVector3d(msg);
@@ -70,7 +70,7 @@ GTEST_TEST(TestLcmUtil, testVector3d) {
 GTEST_TEST(TestLcmUtil, testQuaternion) {
   default_random_engine generator;
   generator.seed(0);
-  auto quaternion = drake::math::UniformlyRandomQuat(generator);
+  const auto quaternion = drake::math::UniformlyRandomQuat(generator);
   bot_core::quaternion_t msg;
   EncodeQuaternion(quaternion, msg);
   auto quat_back = DecodeQuaternion(msg);
@@ -85,15 +85,16 @@ GTEST_TEST(TestLcmUtil, testPose) {
   pose.linear() = drake::math::UniformlyRandomRotmat(generator);
   pose.translation().setLinSpaced(0, drake::kSpaceDimension);
   pose.makeAffine();
+  const Eigen::Isometry3d& const_pose = pose;
   bot_core::position_3d_t msg;
-  EncodePose(pose, msg);
+  EncodePose(const_pose, msg);
   Eigen::Isometry3d pose_back = DecodePose(msg);
   EXPECT_TRUE(CompareMatrices(pose.matrix(), pose_back.matrix(), 1e-12,
                               MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestLcmUtil, testTwist) {
-  drake::TwistVector<double> twist =
+  const drake::TwistVector<double> twist =
       drake::TwistVector<double>::LinSpaced(Sequential, 0, drake::kTwistSize);
   bot_core::twist_t msg;
   EncodeTwist(twist, msg);
