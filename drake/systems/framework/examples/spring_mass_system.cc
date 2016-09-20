@@ -46,12 +46,12 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
     : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
-  // Declare input port for forcing term.
-  if (system_is_forced)
-    this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+  // Declares input port for forcing term.
+  if (system_is_forced_)
+    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
 
-  // Output port of q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
+  // Declares output port for q, qdot, Energy.
+  DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
 }
 
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
@@ -74,7 +74,7 @@ double SpringMassSystem::EvalKineticEnergy(const MyContext& context) const {
 }
 
 double SpringMassSystem::EvalConservativePower(const MyContext& context) const {
-  DRAKE_ASSERT_VOID(this->CheckValidContext(context));
+  DRAKE_ASSERT_VOID(CheckValidContext(context));
   const double power_c = EvalSpringForce(context) * get_velocity(context);
   return power_c;
 }
