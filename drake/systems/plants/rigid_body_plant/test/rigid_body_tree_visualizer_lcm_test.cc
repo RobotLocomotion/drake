@@ -189,8 +189,7 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
 
   // Serializes both messages.
   std::vector<uint8_t> expected_message_bytes(byte_count);
-  expected_message.encode(expected_message_bytes.data(), 0,
-                               byte_count);
+  expected_message.encode(expected_message_bytes.data(), 0, byte_count);
 
   std::vector<uint8_t> message_bytes(byte_count);
   message.encode(message_bytes.data(), 0, byte_count);
@@ -202,8 +201,8 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
 // Verifies that @p message_bytes is correct.
 void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   // TODO(liang.fok): Replace the following two lines with
-  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts
-  // converts it into a std::vector<float>. Related issue: #3470.
+  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts it
+  // into a std::vector<float>. Related issue: #3470.
   std::vector<float> zero_position = {0, 0, 0};
   std::vector<float> zero_quaternion = {1, 0, 0, 0};
 
@@ -285,12 +284,14 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   EXPECT_EQ(expected_message_bytes, message_bytes);
 }
 
-// Creates a RigidBodyTree. The tree has X rigid bodies. The visualizations of
-// the rigid bodies span all possible visualization types. Each ....
+// Creates a RigidBodyTree. The tree has 6 rigid bodies including the world. The
+// visualizations of the rigid bodies span all possible visualization types.
+// Each non-world body belongs to a different model instance.
 unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
   auto tree = make_unique<RigidBodyTree>();
 
-  // Adds a RigidBody that looks like a box to the tree.
+  // Adds a RigidBody that looks like a box to the tree to achieve some level
+  // of unit test coverage for the box geometry.
   {
     auto body = make_unique<RigidBody>();
     body->set_name("box_body");
@@ -322,7 +323,8 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
     tree->bodies.push_back(std::move(body));
   }
 
-  // Adds a RigidBody that looks like a capsule to the tree.
+  // Adds a RigidBody that looks like a capsule to the tree to achieve some
+  // level of unit test coverage for the box geometry.
   {
     auto body = make_unique<RigidBody>();
     body->set_name("capsule_body");
@@ -353,7 +355,8 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
     tree->bodies.push_back(std::move(body));
   }
 
-  // Adds a RigidBody that looks like a cylinder to the tree.
+  // Adds a RigidBody that looks like a cylinder to the tree to achieve some
+  // level of unit test coverage for the cylinder geometry.
   {
     auto body = make_unique<RigidBody>();
     body->set_name("cylinder_body");
@@ -384,7 +387,8 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
     tree->bodies.push_back(std::move(body));
   }
 
-  // Adds a RigidBody that looks like a mesh to the tree. The mesh is specified
+  // Adds a RigidBody that looks like a mesh to the tree to achieve some
+  // level of unit test coverage for the mesh geometry. The mesh is specified
   // by an OBJ file.
   {
     auto body = make_unique<RigidBody>();
@@ -418,7 +422,8 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
     tree->bodies.push_back(std::move(body));
   }
 
-  // Adds a RigidBody that looks like a sphere to the tree.
+  // Adds a RigidBody that looks like a sphere to the tree to achieve some
+  // level of unit test coverage for the sphere geometry.
   {
     auto body = make_unique<RigidBody>();
     body->set_name("sphere_body");
@@ -456,7 +461,7 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
 GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
   unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
   ::lcm::LCM lcm;
-  RigidBodyTreeVisualizerLcm dut(*tree.get(), &lcm);
+  RigidBodyTreeVisualizerLcm dut(*tree, &lcm);
 
   EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
 

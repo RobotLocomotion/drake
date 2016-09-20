@@ -3,11 +3,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
-
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -16,6 +17,8 @@ namespace systems {
 namespace {
 
 using std::make_unique;
+
+using drake::math::rpy2quat;
 
 // Tests the basic functionality of the translator.
 GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
@@ -52,6 +55,13 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   BasicVector<double> generalized_state(num_states);
   generalized_state.set_value(Eigen::VectorXd::Zero(num_states));
 
+  // Places body0 to be at location X = 1, Y = 2, Z = 3 with an orientation of
+  // roll = PI.
+  generalized_state.SetAtIndex(0, 1);
+  generalized_state.SetAtIndex(1, 2);
+  generalized_state.SetAtIndex(2, 3);
+  generalized_state.SetAtIndex(3, 3.141592653589793);
+
   // Uses the `ViewerDrawTranslator` to convert the `BasicVector<double>` into
   // a byte array for a `drake::lcmt_viewer_draw` message.
   double time = 0;
@@ -65,10 +75,21 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   //     (3) verifying that the byte array matches `message_bytes`
 
   // TODO(liang.fok): Replace the following two lines with
-  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts
-  // converts it into a std::vector<float>. Related issue: #3470.
+  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts it
+  // into a std::vector<float>. Related issue: #3470.
   std::vector<float> zero_position = {0, 0, 0};
   std::vector<float> zero_quaternion = {1, 0, 0, 0};
+
+  std::vector<float> body0_position = {1, 2, 3};
+
+  // TODO(liang.fok): Verify this works on 32-bit machines.
+  Vector3<double> body0_rpy = {3.141592653589793, 0, 0};
+  Vector4<double> body0_quaternion_eigen = rpy2quat(body0_rpy);
+  std::vector<float> body0_quaternion(4);
+  body0_quaternion[0] = static_cast<float>(body0_quaternion_eigen(0));
+  body0_quaternion[1] = static_cast<float>(body0_quaternion_eigen(1));
+  body0_quaternion[2] = static_cast<float>(body0_quaternion_eigen(2));
+  body0_quaternion[3] = static_cast<float>(body0_quaternion_eigen(3));
 
   lcmt_viewer_draw expected_message;
   expected_message.timestamp = static_cast<int64_t>(time * 1000);
@@ -80,10 +101,10 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.robot_num.push_back(0);
   expected_message.robot_num.push_back(1);
   expected_message.position.push_back(zero_position);
-  expected_message.position.push_back(zero_position);
+  expected_message.position.push_back(body0_position);
   expected_message.position.push_back(zero_position);
   expected_message.quaternion.push_back(zero_quaternion);
-  expected_message.quaternion.push_back(zero_quaternion);
+  expected_message.quaternion.push_back(body0_quaternion);
   expected_message.quaternion.push_back(zero_quaternion);
 
   const int byte_count = expected_message.getEncodedSize();
@@ -95,7 +116,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   EXPECT_EQ(expected_bytes, message_bytes);
 
   ::lcm::LCM lcm;
-  lcm.publish("DRAKE_FOO", expected_bytes.data(), expected_bytes.size());
+  lcm.publish("DRAKE_FOO", message_bytes.data(), message_bytes.size());
 }
 
 }  // namespace

@@ -2,7 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/drake_rbp_export.h"
+#include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -34,7 +34,8 @@ namespace systems {
  *
  * @ingroup systems
  */
-class DRAKE_RBP_EXPORT RigidBodyTreeVisualizerLcm : public LeafSystem<double> {
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
+    : public LeafSystem<double> {
  public:
   /**
    * A constructor that prepares for the tranmission of `lcmt_viewer_load_robot`
