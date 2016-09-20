@@ -19,7 +19,7 @@ GravityCompensator<T>::GravityCompensator(
 }
 
 template <typename T>
-void GravityCompensator<T>::EvalOutput(const ContextBase<T>& context,
+void GravityCompensator<T>::EvalOutput(const Context<T>& context,
                                         SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
@@ -30,7 +30,7 @@ void GravityCompensator<T>::EvalOutput(const ContextBase<T>& context,
   KinematicsCache<double> cache =
       mdb_world_.doKinematics(x.head(number_of_positions),
                                     x.tail(number_of_velocities));
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
+  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   f_ext.clear();
   Eigen::VectorXd vd(number_of_velocities);
