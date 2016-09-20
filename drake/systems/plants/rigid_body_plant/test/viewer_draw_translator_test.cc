@@ -1,3 +1,6 @@
+#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
+
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -8,7 +11,6 @@
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
 namespace drake {
 namespace systems {
@@ -58,7 +60,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   generalized_state.SetAtIndex(0, 1);
   generalized_state.SetAtIndex(1, 2);
   generalized_state.SetAtIndex(2, 3);
-  generalized_state.SetAtIndex(3, 3.141592653589793);
+  generalized_state.SetAtIndex(3, M_PI);
 
   // Uses the `ViewerDrawTranslator` to convert the `BasicVector<double>` into
   // a byte array for a `drake::lcmt_viewer_draw` message.
@@ -81,7 +83,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   std::vector<float> body0_position = {1, 2, 3};
 
   // TODO(liang.fok): Verify this works on 32-bit machines.
-  Vector3<double> body0_rpy = {3.141592653589793, 0, 0};
+  Vector3<double> body0_rpy = {M_PI, 0, 0};
   Vector4<double> body0_quaternion_eigen = rpy2quat(body0_rpy);
   std::vector<float> body0_quaternion(4);
   body0_quaternion[0] = static_cast<float>(body0_quaternion_eigen(0));
