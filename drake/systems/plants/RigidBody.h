@@ -256,6 +256,17 @@ class DRAKERBM_EXPORT RigidBody {
   void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
+  // TODO(SeanCurtis-TRI): This method is only used by the collision clique
+  // calculation.  Maybe it would be better if the name reflected this: e.g.,
+  // is_collision_adjacent(), or some such thing.
+  /**
+   * Report if this body is considered "adjacent" to the given body.
+   *
+   * "Adjacency" refers to the idea that the bodies are connected to each other
+   * in the rigid body tree by a non-floating joint.
+   * @param other The body to test agasint this body.
+   * @return `true` if the bodies are "adjacent".
+   */
   bool adjacentTo(const RigidBody& other) const;
 
   /**
