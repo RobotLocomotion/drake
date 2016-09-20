@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <vector>
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -22,7 +21,6 @@ using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
-using std::vector;
 
 namespace drake {
 namespace systems {
