@@ -68,6 +68,9 @@ class KinematicsResults {
 /// does not apply these limits. The gear box factor effectively is a
 /// multiplier on the input actuation to the RigidBodyPlant.
 ///
+/// The state of a %RigidBodyPlant consists of a vector containing the
+/// generalized positions of the system followed by the generalized velocities.
+///
 /// <B>%System output</B>:
 /// - Port 0: The state of the system in a vector valued port.
 /// - Port 1: A KinematicsResults class allowing to access the results from
