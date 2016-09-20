@@ -23,21 +23,6 @@ using drake::parsers::ModelInstanceIdTable;
 namespace drake {
 namespace systems {
 
-BodyMetadata::BodyMetadata(const RigidBody& body) : body_(body) {}
-
-const std::string& BodyMetadata::name() const {
-  return body_.get_name();
-}
-
-int BodyMetadata::model_instance_id() const {
-  return body_.get_model_instance_id();
-}
-
-const DrakeShapes::VectorOfVisualElements& BodyMetadata::visual_elements()
-const {
-  return body_.get_visual_elements();
-}
-
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
     tree_(move(tree)) {
@@ -50,8 +35,6 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
   // Declares an abstract valued port for kinematics results.
-  System<T>::DeclareAbstractOutputPort(kInheritedSampling);
-  // Declares an output port for metadata.
   System<T>::DeclareAbstractOutputPort(kInheritedSampling);
 }
 
@@ -147,16 +130,6 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     output->add_port(move(kinematics_results));
   }
 
-  // Allocates output for metadata (output port 2).
-  {
-    auto owned_metadata =
-        make_unique<Value<vector<BodyMetadata>>>(vector<BodyMetadata>());
-    auto& metadata = owned_metadata->GetMutableValue<vector<BodyMetadata>>();
-    for (int ibody = 0; ibody < get_num_bodies(); ++ibody) {
-      metadata.emplace_back(tree_->get_body(ibody));
-    }
-    output->add_port(move(owned_metadata));
-  }
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 

@@ -81,23 +81,6 @@ class KinematicsResults {
   KinematicsCache<T> kinematics_cache_;
 };
 
-/// This class encapsulates all the constant metadata that belongs to a given
-/// RigidBody. Notice that mass or moments of inertia can in general be
-/// parameters of a system and therefore could change.
-class DRAKE_RBP_EXPORT BodyMetadata {
- public:
-  /// Constructs a RigidBody metadata object from @p body.
-  explicit BodyMetadata(const RigidBody& body);
-  /// Returns the name of the body.
-  const std::string& name() const;
-  /// Returns the model instance id of the body.
-  int model_instance_id() const;
-  /// Retuns the vector of visual collision elements for this body.
-  const DrakeShapes::VectorOfVisualElements& visual_elements() const;
- private:
-  const RigidBody& body_;
-};
-
 /// This class provides a System interface around a multibody dynamics model
 /// of the world represented by a RigidBodyTree.
 ///
@@ -113,10 +96,8 @@ class DRAKE_RBP_EXPORT BodyMetadata {
 ///
 /// <B>%System output</B>:
 /// - Port 0: The state of the system in a vector valued port.
-/// - Port 1: A VectorOfPoses containing the poses for each RigidBody in the
-/// system.
-/// - Port 2: An AbstractValue port encapsulating a `std::vector<BodyMetadata>`
-/// containing the constant metadata associated to each RigidBody in the system.
+/// - Port 1: A KinematicsResults class allowing to access the results from
+/// kinematics computations for each RigidBody.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case

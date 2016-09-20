@@ -250,7 +250,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state().CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  ASSERT_EQ(3, output_->get_num_ports());
+  ASSERT_EQ(2, output_->get_num_ports());
   const BasicVector<double>* output_state = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
 
@@ -258,15 +258,6 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   // Asserts the output equals the state.
   EXPECT_EQ(desired_state, output_state->get_value());
-
-  // Evaluates the correctness of the meta-data port.
-  auto& metadata_vector =
-      output_->get_data(2)->GetValue<vector<BodyMetadata>>();
-  ASSERT_EQ(static_cast<int>(metadata_vector.size()),
-            kuka_system_->get_num_bodies());
-  for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
-    EXPECT_EQ(metadata_vector[ibody].name(), world.get_body(ibody).get_name());
-  }
 
   // Evaluates the correctness of the kinematics results port.
   auto& kinematics_results =
