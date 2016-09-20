@@ -9,9 +9,24 @@
 
 namespace drake {
 namespace math {
-// We use an extrinsic rotation about axis x-y-z, or equivalently an intrinsic
-// rotation about axis z-y'-x''. The rotation matrix is
-// rotz(rpy(2)) * roty(rpy(1)) * rotx(rpy(0))
+/** We use an extrinsic rotation about Space-fixed x-y-z axes by angles [rpy(0), rpy(1), rpy(2)].
+  * Or equivalently, we use an intrinsic
+  * rotation about Body-fixed z-y'-x'' axes by angles [rpy(2), rpy(1), rpy(0)].
+  * The rotation matrix returned is equivalent to
+  * rotz(rpy(2)) * roty(rpy(1)) * rotx(rpy(0)), where
+  * @f[
+  * rotz(a) = \begin{bmatrix} cos(a)& -sin(a) & 0\\
+  *                           sin(a) & cos(a) & 0\\
+  *                             0    &  0     & 1 \end{bmatrix}\;,
+  * roty(b) = \begin{bmatrix} cos(b)& 0 & -sin(b)\\
+  *                           0     & 1 &    0   \\
+  *                           sin(b)& 0 & cos(b)\end{bmatrix}\;,
+  * rotx(c) = \begin{bmatrix} 1 &  0     &      0 \\
+  *                           0 & cos(c) & -sin(c)\\
+  *                           0 & sin(c) & cos(c)\end{bmatrix}
+  * @f]
+  */
+
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2quat(
     const Eigen::MatrixBase<Derived>& rpy) {
