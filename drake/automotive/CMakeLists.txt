@@ -3,6 +3,7 @@ if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
 
   add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
+    automotive_simulator.cc
     car_simulation.cc
     curve2.cc
     gen/driving_command.cc
@@ -28,6 +29,7 @@ if(lcm_FOUND)
     )
   pods_install_libraries(drakeAutomotive)
   drake_install_headers(
+    automotive_simulator.h
     curve2.h
     car_simulation.h
     simple_car.h
