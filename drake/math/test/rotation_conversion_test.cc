@@ -75,7 +75,7 @@ Matrix3d rotz(double a) {
 
 Matrix3d roty(double b) {
   Matrix3d ret;
-  ret << cos(b) , 0, -sin(b),
+  ret << cos(b) , 0, sin(b),
          0      , 1, 0      ,
          -sin(b), 0, cos(b);
   return ret;
@@ -90,13 +90,30 @@ Matrix3d rotx(double c) {
 }
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
   // Verify ea = Eigen::eulerAngles(0, 1, 2) returns Euler angles about
-  // Body-fixed x-y'-z'' by [ea(0), ea(1), ea(2)]
+  // Body-fixed x-y'-z'' axes by [ea(0), ea(1), ea(2)]
   Vector3d ea(0.5, 0.4, 0.3);
   Matrix3d rotmat = rotx(ea(0)) * roty(ea(1)) * rotz(ea(2));
   auto ea_expected = rotmat.eulerAngles(0, 1, 2);
   EXPECT_TRUE(ea.isApprox(ea_expected));
 }
 
+GTEST_TEST(EigenEulerAngleTest, BodyZYX) {
+  // Verify ea = Eigen::eulerAngles(2, 1, 0) returns Euler angles about
+  // Body-fixed z-y'-x'' axes by [ea(0), ea(1), ea(2)]
+  Vector3d ea(0.5, 0.4, 0.3);
+  Matrix3d rotmat = rotz(ea(0)) * roty(ea(1)) * rotx(ea(2));
+  auto ea_expected = rotmat.eulerAngles(2, 1, 0);
+  EXPECT_TRUE(ea.isApprox(ea_expected));
+}
+
+GTEST_TEST(EigenEulerAngleTest, BodyZYZ) {
+  // Verify ea = Eigen::eulerAngles(2, 1, 0) returns Euler angles about
+  // Body-fixed z-y'-z'' axes by [ea(0), ea(1), ea(2)]
+  Vector3d ea(0.5, 0.4, 0.3);
+  Matrix3d rotmat = rotz(ea(0)) * roty(ea(1)) * rotz(ea(2));
+  auto ea_expected = rotmat.eulerAngles(2, 1, 2);
+  EXPECT_TRUE(ea.isApprox(ea_expected));
+}
 class RotationConversionTest : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
