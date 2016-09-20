@@ -102,54 +102,6 @@ def generate_accessors(hh, caller_context, fields):
         put(hh, ACCESSOR % context, 1)
     put(hh, ACCESSOR_END % context, 2)
 
-ENCODE_BEGIN = """
-template <typename ScalarType>
-bool encode(const double& t, const %(camel)s<ScalarType>& wrap,
-            // NOLINTNEXTLINE(runtime/references)
-            drake::lcmt_%(snake)s_t& msg) {
-  // The timestamp in milliseconds.
-  msg.timestamp = static_cast<int64_t>(t * 1000);
-"""
-ENCODE_FIELD = """  msg.%(field)s = wrap.%(field)s();"""
-ENCODE_END = """
-  return true;
-}
-"""
-
-
-def generate_encode(hh, caller_context, fields):
-    context = dict(caller_context)
-    put(hh, ENCODE_BEGIN % context, 1)
-    for field in fields:
-        context.update(field = field)
-        put(hh, ENCODE_FIELD % context, 1)
-    put(hh, ENCODE_END % context, 2)
-
-
-DECODE_BEGIN = """
-template <typename ScalarType>
-bool decode(const drake::lcmt_%(snake)s_t& msg,
-            // NOLINTNEXTLINE(runtime/references)
-            double& t,
-            // NOLINTNEXTLINE(runtime/references)
-            %(camel)s<ScalarType>& wrap) {
-  t = static_cast<double>(msg.timestamp) / 1000.0;
-"""
-DECODE_FIELD = """  wrap.set_%(field)s(msg.%(field)s);"""
-DECODE_END = """
-  return true;
-}
-"""
-
-
-def generate_decode(hh, caller_context, fields):
-    context = dict(caller_context)
-    put(hh, DECODE_BEGIN % context, 1)
-    for k, field in enumerate(fields):
-        context.update(field = field)
-        put(hh, DECODE_FIELD % context, 1)
-    put(hh, DECODE_END % context, 2)
-
 
 VECTOR_HH_PREAMBLE = """
 #pragma once
@@ -164,7 +116,6 @@ VECTOR_HH_PREAMBLE = """
 
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
 namespace automotive {
@@ -181,11 +132,6 @@ class %(camel)s : public systems::BasicVector<T> {
 """
 
 VECTOR_CLASS_END = """
-  /// @name Implement the LCMVector concept
-  //@{
-  typedef drake::lcmt_%(snake)s_t LCMMessageType;
-  static std::string channel() { return "%(screaming_snake)s"; }
-  //@}
 };
 """
 
@@ -378,8 +324,6 @@ def generate_code(args):
         generate_default_ctor(hh, context, args.fields)
         generate_accessors(hh, context, args.fields)
         put(hh, VECTOR_CLASS_END % context, 2)
-        generate_encode(hh, context, args.fields)
-        generate_decode(hh, context, args.fields)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
     with open(os.path.join(cxx_dir, "%s.cc" % snake), 'w') as cc:

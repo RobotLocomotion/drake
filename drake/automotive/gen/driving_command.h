@@ -10,7 +10,6 @@
 
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 namespace automotive {
@@ -51,38 +50,7 @@ class DrivingCommand : public systems::BasicVector<T> {
   const T brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}
-
-  /// @name Implement the LCMVector concept
-  //@{
-  typedef drake::lcmt_driving_command_t LCMMessageType;
-  static std::string channel() { return "DRIVING_COMMAND"; }
-  //@}
 };
-
-template <typename ScalarType>
-bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
-            // NOLINTNEXTLINE(runtime/references)
-            drake::lcmt_driving_command_t& msg) {
-  // The timestamp in milliseconds.
-  msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.steering_angle = wrap.steering_angle();
-  msg.throttle = wrap.throttle();
-  msg.brake = wrap.brake();
-  return true;
-}
-
-template <typename ScalarType>
-bool decode(const drake::lcmt_driving_command_t& msg,
-            // NOLINTNEXTLINE(runtime/references)
-            double& t,
-            // NOLINTNEXTLINE(runtime/references)
-            DrivingCommand<ScalarType>& wrap) {
-  t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.set_steering_angle(msg.steering_angle);
-  wrap.set_throttle(msg.throttle);
-  wrap.set_brake(msg.brake);
-  return true;
-}
 
 }  // namespace automotive
 }  // namespace drake

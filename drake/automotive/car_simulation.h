@@ -5,18 +5,25 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/system1_cars_vectors.h"
+#include "drake/automotive/gen/driving_command.h"
+#include "drake/automotive/system1_vector.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/pd_control_system.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 namespace automotive {
+
+/// Compatibility typedef for System 1 code.
+// TODO(jwnimmer-tri) Remove me.
+template <typename T>
+using DrivingCommand1 = class System1Vector<DrivingCommand<T>, T>;
 
 /**
  * Prints the usage instructions to std::cout.
@@ -149,6 +156,34 @@ SimulationOptions GetCarSimulationDefaultOptions();
  */
 DRAKEAUTOMOTIVE_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
+
+/// Compatibility function for System 1 code.
+// TODO(jwnimmer-tri) Remove me.
+template <typename ScalarType>
+bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
+            // NOLINTNEXTLINE(runtime/references)
+            drake::lcmt_driving_command_t& msg) {
+  msg.timestamp = static_cast<int64_t>(t * 1000);
+  msg.steering_angle = wrap.steering_angle();
+  msg.throttle = wrap.throttle();
+  msg.brake = wrap.brake();
+  return true;
+}
+
+/// Compatibility function for System 1 code.
+// TODO(jwnimmer-tri) Remove me.
+template <typename ScalarType>
+bool decode(const drake::lcmt_driving_command_t& msg,
+            // NOLINTNEXTLINE(runtime/references)
+            double& t,
+            // NOLINTNEXTLINE(runtime/references)
+            DrivingCommand<ScalarType>& wrap) {
+  t = static_cast<double>(msg.timestamp) / 1000.0;
+  wrap.set_steering_angle(msg.steering_angle);
+  wrap.set_throttle(msg.throttle);
+  wrap.set_brake(msg.brake);
+  return true;
+}
 
 }  // namespace automotive
 }  // namespace drake

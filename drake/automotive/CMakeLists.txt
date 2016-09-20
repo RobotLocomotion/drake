@@ -32,7 +32,6 @@ if(lcm_FOUND)
     car_simulation.h
     simple_car.h
     simple_car-inl.h
-    system1_cars_vectors.h
     trajectory_car.h
     system1_vector.h
     )
