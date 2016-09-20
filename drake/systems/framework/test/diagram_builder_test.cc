@@ -140,6 +140,15 @@ TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
   EXPECT_THROW(builder_.Connect(*in1out2_, *in1out1_), std::exception);
 }
 
+// Test for GetMutableSystems.
+GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
+  DiagramBuilder<double> builder;
+  auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* length */);
+  auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* length */);
+  EXPECT_EQ((std::vector<System<double>*>{adder1, adder2}),
+            builder.GetMutableSystems());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

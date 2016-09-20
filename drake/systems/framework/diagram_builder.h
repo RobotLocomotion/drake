@@ -100,6 +100,16 @@ class DiagramBuilder {
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
+  /// Returns the list of contained Systems.
+  std::vector<systems::System<T>*> GetMutableSystems() {
+    std::vector<systems::System<T>*> result;
+    result.reserve(registered_systems_.size());
+    for (const auto& system : registered_systems_) {
+      result.push_back(system.get());
+    }
+    return result;
+  }
+
   /// Declares that input port @p dest is connected to output port @p src.
   void Connect(const SystemPortDescriptor<T>& src,
                const SystemPortDescriptor<T>& dest) {
