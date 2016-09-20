@@ -42,18 +42,12 @@ void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.
-  std::vector<uint8_t> lcm_message_bytes;
-  draw_message_translator_.Serialize(
-      context.get_time(), *input_vector, &lcm_message_bytes);
-
-  // Publishes onto the specified LCM channel.
-  lcm_->publish("DRAKE_VIEWER_DRAW", lcm_message_bytes.data(),
-      lcm_message_bytes.size());
-
-  // Saves the message bytes into a local member variable. This is used for
-  // testing purposes.
   draw_message_translator_.Serialize(
       context.get_time(), *input_vector, &draw_message_bytes_);
+
+  // Publishes onto the specified LCM channel.
+  lcm_->publish("DRAKE_VIEWER_DRAW", draw_message_bytes_.data(),
+      draw_message_bytes_.size());
 }
 
 void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
