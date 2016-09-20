@@ -31,6 +31,12 @@ class Ball : public systems::LeafSystem<T> {
   void EvalTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+ protected:
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+    const override;
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
+    const systems::SystemPortDescriptor<T>& descriptor) const override;  
 };
 
 }  // namespace bouncingball
