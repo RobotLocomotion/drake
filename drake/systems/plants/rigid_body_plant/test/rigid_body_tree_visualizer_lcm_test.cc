@@ -201,6 +201,9 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
 
 // Verifies that @p message_bytes is correct.
 void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
+  // TODO(liang.fok): Replace the following two lines with
+  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts
+  // converts it into a std::vector<float>. Related issue: #3470.
   std::vector<float> zero_position = {0, 0, 0};
   std::vector<float> zero_quaternion = {1, 0, 0, 0};
 

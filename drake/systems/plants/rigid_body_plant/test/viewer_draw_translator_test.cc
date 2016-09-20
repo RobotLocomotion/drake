@@ -64,7 +64,9 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   //     (2) serializing it into an array of bytes
   //     (3) verifying that the byte array matches `message_bytes`
 
-  // TODO(liang.fok) Move the following two lines to a shareable location.
+  // TODO(liang.fok): Replace the following two lines with
+  // `Eigen::Quaterniond::Identity()` and a method in lcmUtil.h that converts
+  // converts it into a std::vector<float>. Related issue: #3470.
   std::vector<float> zero_position = {0, 0, 0};
   std::vector<float> zero_quaternion = {1, 0, 0, 0};
 
