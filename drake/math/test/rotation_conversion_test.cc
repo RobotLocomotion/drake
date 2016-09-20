@@ -65,6 +65,38 @@ Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
+Matrix3d rotz(double a) {
+  Matrix3d ret;
+  ret << cos(a), -sin(a), 0,
+         sin(a), cos(a) , 0,
+         0     , 0      , 1;
+  return ret;
+}
+
+Matrix3d roty(double b) {
+  Matrix3d ret;
+  ret << cos(b) , 0, -sin(b),
+         0      , 1, 0      ,
+         -sin(b), 0, cos(b);
+  return ret;
+}
+
+Matrix3d rotx(double c) {
+  Matrix3d ret;
+  ret << 1, 0,      0,
+         0, cos(c), -sin(c),
+         0, sin(c), cos(c);
+  return ret;
+}
+GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
+  // Verify ea = Eigen::eulerAngles(0, 1, 2) returns Euler angles about
+  // Body-fixed x-y'-z'' by [ea(0), ea(1), ea(2)]
+  Vector3d ea(0.5, 0.4, 0.3);
+  Matrix3d rotmat = rotx(ea(0)) * roty(ea(1)) * rotz(ea(2));
+  auto ea_expected = rotmat.eulerAngles(0, 1, 2);
+  EXPECT_TRUE(ea.isApprox(ea_expected));
+}
+
 class RotationConversionTest : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
