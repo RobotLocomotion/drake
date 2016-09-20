@@ -30,12 +30,12 @@ VectorXd ComputeIiwaGravityTorque(VectorXd robot_state)
 {
   RigidBodyTree rigid_body_tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
   int num_DoF = rigid_body_tree.number_of_positions();
   KinematicsCache<double> cache =
       rigid_body_tree.doKinematics(
           robot_state.head(num_DoF), robot_state.tail(num_DoF));
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
+  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   f_ext.clear();
   Eigen::VectorXd vd(num_DoF);
@@ -59,7 +59,7 @@ class GravityCompensatorTest : public ::testing::Test {
     tree_ = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
     drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-    DrakeJoint::FIXED, nullptr /* weld to frame */, tree_.get());
+    drake::systems::plants::joints::kFixed, nullptr /* weld to frame */, tree_.get());
 
     gravity_compensator_ = make_unique<GravityCompensator<double>>(*move(tree_).get());
     context_ = gravity_compensator_->CreateDefaultContext();
@@ -70,7 +70,7 @@ class GravityCompensatorTest : public ::testing::Test {
 
   std::unique_ptr<RigidBodyTree> tree_;
   std::unique_ptr<System<double>> gravity_compensator_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
