@@ -272,10 +272,11 @@ void RigidBodyTree::CreateCollisionCliques() {
   int ncol_groups = 0;
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
-    // TODO(SeanCurtis-TRI): If the body contains only a single collision
-    // element, than this step provides no value.  Only apply a per-body
-    // clique if the body has multiple collision elements.
-    body->AddToCollisionClique(ncol_groups++);
+    // No point in adding a body-derived clique if the body has only a single
+    // collision element.
+    if ( body->get_collision_element_ids().size() > 1) {
+      body->AddToCollisionClique(ncol_groups++);
+    }
   }
 
   // 2) For collision elements in different bodies
