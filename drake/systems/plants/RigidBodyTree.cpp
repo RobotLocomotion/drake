@@ -257,12 +257,6 @@ void RigidBodyTree::compile(void) {
     body.set_contact_points(contact_points);
   }
 
-  // Create collision cliques for the DrakeCollision::Model according to the
-  // policy imposed by RigidBody::CollidesWith.
-  // These cliques include:
-  //   * CollisionElement's in the same RigidBody.
-  //   * CollisionElement's in adjacent RigidBody's.
-  // For details on this policy see RigidBody::CollidesWith.
   CreateCollisionCliques();
 
   initialized_ = true;
@@ -418,6 +412,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
   if (id != 0) {
     body.AddCollisionElement(id);
     body.AddCollisionElementToGroup(group_name, id);
+    body.AddCollisionElement(collision_model_->FindMutableElement(id));
   }
   return id;
 }
