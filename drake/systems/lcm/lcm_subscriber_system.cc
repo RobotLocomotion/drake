@@ -54,6 +54,13 @@ void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
   received_message_ = message_bytes;
 }
 
+void LcmSubscriberSystem::SetMessage(
+    double time, const BasicVector<double>& message_vector) {
+  std::vector<uint8_t> message_bytes;
+  translator_.Serialize(time, message_vector, &message_bytes);
+  SetMessage(message_bytes);
+}
+
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);

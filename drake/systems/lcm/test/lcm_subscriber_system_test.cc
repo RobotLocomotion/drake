@@ -282,10 +282,8 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   }
 
   // Force a message into the dut.
-  double time = 0;
-  std::vector<uint8_t> message_bytes;
-  translator.Serialize(time, sample_vector, &message_bytes);
-  dut.SetMessage(message_bytes);
+  const double time = 0;
+  dut.SetMessage(time, sample_vector);
 
   // Read back the vector via EvalOutput.
   auto context = dut.CreateDefaultContext();
