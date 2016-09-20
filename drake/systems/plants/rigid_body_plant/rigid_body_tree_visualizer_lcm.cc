@@ -92,17 +92,22 @@ lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
           geometry_data.type = geometry_data.CYLINDER;
           geometry_data.num_float_data = 2;
           auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(cylinder.radius));
-          geometry_data.float_data.push_back(static_cast<float>(cylinder.length));
+          geometry_data.float_data.push_back(static_cast<float>(
+              cylinder.radius));
+          geometry_data.float_data.push_back(static_cast<float>(
+              cylinder.length));
           break;
         }
         case DrakeShapes::MESH: {
           geometry_data.type = geometry_data.MESH;
           geometry_data.num_float_data = 3;
           auto mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
-          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[0]));
-          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[1]));
-          geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[2]));
+          geometry_data.float_data.push_back(static_cast<float>(
+              mesh.scale_[0]));
+          geometry_data.float_data.push_back(static_cast<float>(
+              mesh.scale_[1]));
+          geometry_data.float_data.push_back(static_cast<float>(
+              mesh.scale_[2]));
 
           if (mesh.uri_.find("package://") == 0) {
             geometry_data.string_data = mesh.uri_;
