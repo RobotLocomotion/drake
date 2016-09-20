@@ -22,7 +22,7 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
-
+ - [#3475][] Moved field `timestamp` within all Drake LCM messages to be first.
  - [#3276][] The `measure::execution()` function has been replaced by `MeasureExecutionTime()`.
  - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.
  - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
@@ -140,3 +140,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3191]: https://github.com/RobotLocomotion/drake/issues/3191
 [#3246]: https://github.com/RobotLocomotion/drake/issues/3246
 [#3276]: https://github.com/RobotLocomotion/drake/issues/3276
+[#3475]: https://github.com/RobotLocomotion/drake/issues/3475
