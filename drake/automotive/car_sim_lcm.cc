@@ -6,7 +6,7 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_driving_command_t.hpp"
 
 using Eigen::VectorXd;
 

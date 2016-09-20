@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include "lcmtypes/drake/lcmt_quadrotor_input_t.hpp"
+#include "drake/lcmt_quadrotor_input_t.hpp"
 
 template <typename ScalarType = double>
 class QuadrotorInput {

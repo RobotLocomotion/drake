@@ -14,8 +14,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 namespace automotive {

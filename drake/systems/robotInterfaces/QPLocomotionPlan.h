@@ -12,7 +12,7 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/zmpUtil.h"

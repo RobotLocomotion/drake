@@ -10,7 +10,7 @@
 
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
+#include "drake/lcmt_euler_floating_joint_state_t.hpp"
 
 namespace drake {
 namespace automotive {

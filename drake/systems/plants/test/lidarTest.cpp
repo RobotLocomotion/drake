@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lcmtypes/bot_core/planar_lidar_t.hpp"
+#include "bot_core/planar_lidar_t.hpp"
 
 #include "drake/common/drake_path.h"
 #include "drake/systems/LCMSystem.h"

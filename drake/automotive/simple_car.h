@@ -4,7 +4,7 @@
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
+#include "drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
 namespace automotive {
