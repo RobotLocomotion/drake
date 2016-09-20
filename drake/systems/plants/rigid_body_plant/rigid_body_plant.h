@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "drake/drake_rbp_export.h"
+#include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -65,7 +65,7 @@ namespace systems {
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.
