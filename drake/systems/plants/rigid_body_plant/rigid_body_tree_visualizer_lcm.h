@@ -89,7 +89,7 @@ class DRAKE_RBP_EXPORT RigidBodyTreeVisualizerLcm : public LeafSystem<double> {
   mutable bool sent_load_robot_{false};
 
   // The LCM load message to send to the Drake Visualizer.
-  lcmt_viewer_load_robot load_message_;
+  const lcmt_viewer_load_robot load_message_;
 
   // The translator that converts from the RigidBodyTree's generalized state
   // vector to a lcmt_viewer_draw message.

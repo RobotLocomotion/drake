@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_path.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/shapes/Geometry.h"
@@ -16,181 +17,452 @@ namespace systems {
 namespace {
 
 using std::make_unique;
+using std::unique_ptr;
 
+using DrakeShapes::Box;
+using DrakeShapes::Capsule;
+using DrakeShapes::Cylinder;
+using DrakeShapes::Mesh;
 using DrakeShapes::Sphere;
 
-void VerifyLoadMessage(const RigidBodyTree& tree,
-    const drake::lcmt_viewer_load_robot& load_message) {
-  // Computes the expected `lcmt_viewer_load_robot` message given the the tree.
-  drake::lcmt_viewer_load_robot expected_load_message;
-  expected_load_message.num_links = tree.get_number_of_bodies();
-  for (int i = 0; i < expected_load_message.num_links; ++i) {
-    const RigidBody& body = tree.get_body(i);
+// Verifies that @p message is correct.
+void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
+  // Instantiates the expected message.
+  drake::lcmt_viewer_load_robot expected_message;
+  expected_message.num_links = 6;
 
-    lcmt_viewer_link_data link_message;
-    link_message.name = body.get_name();
-    link_message.robot_num = body.get_model_instance_id();
-
-    // Unlike the rest of the bodies in the RigidBodyTree, the world body has no
-    // geometry. Thus, treat it as a special case.
-    if (i == RigidBodyTree::kWorldBodyIndex) {
-      link_message.num_geom = 0;
-    } else {
-      link_message.num_geom = 1;
-
-      lcmt_viewer_geometry_data geom_message;
-      geom_message.type = lcmt_viewer_geometry_data::SPHERE;
-      geom_message.position[0] = 0;
-      geom_message.position[1] = 0;
-      geom_message.position[2] = 0;
-      geom_message.quaternion[0] = 1;
-      geom_message.quaternion[1] = 0;
-      geom_message.quaternion[2] = 0;
-      geom_message.quaternion[3] = 0;
-      geom_message.color[0] = 0.3;
-      geom_message.color[1] = 0.4;
-      geom_message.color[2] = 0.5;
-      geom_message.color[3] = 1.0;
-      geom_message.num_float_data = 1;
-      geom_message.float_data.push_back(0.54);
-
-      link_message.geom.push_back(geom_message);
-    }
-    expected_load_message.link.push_back(link_message);
+  // Adds the world body.
+  {
+    lcmt_viewer_link_data link_data;
+    link_data.name = "world";
+    link_data.robot_num = 0;
+    link_data.num_geom = 0;
+    expected_message.link.push_back(link_data);
   }
 
-  // Ensures the serialized versions of both the load message and expected load
-  // message have the same length.
-  EXPECT_EQ(expected_load_message.getEncodedSize(),
-            load_message.getEncodedSize());
-  int load_message_byte_count = expected_load_message.getEncodedSize();
+  // Adds the box body.
+  {
+    lcmt_viewer_geometry_data geometry_data;
+    geometry_data.type = geometry_data.BOX;
+    geometry_data.position[0] = 0;
+    geometry_data.position[1] = 0;
+    geometry_data.position[2] = 0;
+    geometry_data.quaternion[0] = 1;
+    geometry_data.quaternion[1] = 0;
+    geometry_data.quaternion[2] = 0;
+    geometry_data.quaternion[3] = 0;
+    geometry_data.color[0] = 0.3;
+    geometry_data.color[1] = 0.4;
+    geometry_data.color[2] = 0.5;
+    geometry_data.color[3] = 1.0;
+    geometry_data.num_float_data = 3;
+    geometry_data.float_data.push_back(0.5);
+    geometry_data.float_data.push_back(0.5);
+    geometry_data.float_data.push_back(0.5);
 
-  // Serializes both the load message and expected load message. Then verifies
-  // that both byte arrays are identical.
-  std::vector<uint8_t> expected_load_message_bytes;
-  expected_load_message_bytes.resize(load_message_byte_count);
-  expected_load_message.encode(expected_load_message_bytes.data(), 0,
-                               load_message_byte_count);
+    lcmt_viewer_link_data link_data;
+    link_data.name = "box_body";
+    link_data.robot_num = 0;
+    link_data.num_geom = 1;
+    link_data.geom.push_back(geometry_data);
 
-  std::vector<uint8_t> load_message_bytes;
-  load_message_bytes.resize(load_message_byte_count);
-  load_message.encode(load_message_bytes.data(), 0, load_message_byte_count);
+    expected_message.link.push_back(link_data);
+  }
 
-  EXPECT_EQ(expected_load_message_bytes, load_message_bytes);
+  // Adds the capsule body.
+  {
+    lcmt_viewer_geometry_data geometry_data;
+    geometry_data.type = geometry_data.CAPSULE;
+    geometry_data.position[0] = 0;
+    geometry_data.position[1] = 0;
+    geometry_data.position[2] = 0;
+    geometry_data.quaternion[0] = 1;
+    geometry_data.quaternion[1] = 0;
+    geometry_data.quaternion[2] = 0;
+    geometry_data.quaternion[3] = 0;
+    geometry_data.color[0] = 0.7;
+    geometry_data.color[1] = 0.7;
+    geometry_data.color[2] = 0.7;
+    geometry_data.color[3] = 1.0;
+    geometry_data.num_float_data = 2;
+    geometry_data.float_data.push_back(0.1);
+    geometry_data.float_data.push_back(0.5);
+
+    lcmt_viewer_link_data link_data;
+    link_data.name = "capsule_body";
+    link_data.robot_num = 1;
+    link_data.num_geom = 1;
+    link_data.geom.push_back(geometry_data);
+
+    expected_message.link.push_back(link_data);
+  }
+
+  // Adds the cylinder body.
+  {
+    lcmt_viewer_geometry_data geometry_data;
+    geometry_data.type = geometry_data.CYLINDER;
+    geometry_data.position[0] = 0;
+    geometry_data.position[1] = 0;
+    geometry_data.position[2] = 0;
+    geometry_data.quaternion[0] = 1;
+    geometry_data.quaternion[1] = 0;
+    geometry_data.quaternion[2] = 0;
+    geometry_data.quaternion[3] = 0;
+    geometry_data.color[0] = 0.9;
+    geometry_data.color[1] = 0.0;
+    geometry_data.color[2] = 0.7;
+    geometry_data.color[3] = 1.0;
+    geometry_data.num_float_data = 2;
+    geometry_data.float_data.push_back(0.2);
+    geometry_data.float_data.push_back(0.25);
+
+    lcmt_viewer_link_data link_data;
+    link_data.name = "cylinder_body";
+    link_data.robot_num = 2;
+    link_data.num_geom = 1;
+    link_data.geom.push_back(geometry_data);
+
+    expected_message.link.push_back(link_data);
+  }
+
+  // Adds the mesh body.
+  {
+    lcmt_viewer_geometry_data geometry_data;
+    geometry_data.type = geometry_data.MESH;
+    geometry_data.position[0] = 0;
+    geometry_data.position[1] = 0;
+    geometry_data.position[2] = 0;
+    geometry_data.quaternion[0] = 1;
+    geometry_data.quaternion[1] = 0;
+    geometry_data.quaternion[2] = 0;
+    geometry_data.quaternion[3] = 0;
+    geometry_data.color[0] = 0.2;
+    geometry_data.color[1] = 0.7;
+    geometry_data.color[2] = 0.3;
+    geometry_data.color[3] = 1.0;
+    geometry_data.string_data = drake::GetDrakePath() +
+        "/systems/plants/collision/test/spherical_cap.obj";
+    geometry_data.num_float_data = 3;
+    geometry_data.float_data.push_back(1);
+    geometry_data.float_data.push_back(1);
+    geometry_data.float_data.push_back(1);
+
+    lcmt_viewer_link_data link_data;
+    link_data.name = "mesh_body";
+    link_data.robot_num = 3;
+    link_data.num_geom = 1;
+    link_data.geom.push_back(geometry_data);
+
+    expected_message.link.push_back(link_data);
+  }
+
+  // Adds the sphere body.
+  {
+    lcmt_viewer_geometry_data geometry_data;
+    geometry_data.type = geometry_data.SPHERE;
+    geometry_data.position[0] = 0;
+    geometry_data.position[1] = 0;
+    geometry_data.position[2] = 0;
+    geometry_data.quaternion[0] = 1;
+    geometry_data.quaternion[1] = 0;
+    geometry_data.quaternion[2] = 0;
+    geometry_data.quaternion[3] = 0;
+    geometry_data.color[0] = 0.8;
+    geometry_data.color[1] = 0.7;
+    geometry_data.color[2] = 0.6;
+    geometry_data.color[3] = 1.0;
+    geometry_data.num_float_data = 1;
+    geometry_data.float_data.push_back(0.54);
+
+    lcmt_viewer_link_data link_data;
+    link_data.name = "sphere_body";
+    link_data.robot_num = 4;
+    link_data.num_geom = 1;
+    link_data.geom.push_back(geometry_data);
+
+    expected_message.link.push_back(link_data);
+  }
+
+  // Ensures both messages have the same length.
+  EXPECT_EQ(expected_message.getEncodedSize(), message.getEncodedSize());
+  int byte_count = expected_message.getEncodedSize();
+
+  // Serializes both messages.
+  std::vector<uint8_t> expected_message_bytes(byte_count);
+  expected_message.encode(expected_message_bytes.data(), 0,
+                               byte_count);
+
+  std::vector<uint8_t> message_bytes(byte_count);
+  message.encode(message_bytes.data(), 0, byte_count);
+
+  // Verifies that the messages are equal.
+  EXPECT_EQ(expected_message_bytes, message_bytes);
 }
 
-void VerifyDrawMessage(const RigidBodyTree& tree,
-                       const Context<double>& context,
-                       const std::vector<uint8_t>& draw_message_bytes) {
-  std::vector<float> quaternion_zero_rotation;
-  quaternion_zero_rotation.resize(4);
-  quaternion_zero_rotation[0] = 1;
-  quaternion_zero_rotation[1] = 0;
-  quaternion_zero_rotation[2] = 0;
-  quaternion_zero_rotation[3] = 0;
+// Verifies that @p message_bytes is correct.
+void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
+  std::vector<float> zero_position(3);
+  zero_position[0] = 0;
+  zero_position[1] = 0;
+  zero_position[2] = 0;
+
+  std::vector<float> zero_quaternion(4);
+  zero_quaternion[0] = 1;
+  zero_quaternion[1] = 0;
+  zero_quaternion[2] = 0;
+  zero_quaternion[3] = 0;
 
   // Instantiates a `drake::lcmt_viewer_draw` message that contains the expected
   // state.
-  drake::lcmt_viewer_draw expected_draw_message;
-  expected_draw_message.timestamp = context.get_time();
-  expected_draw_message.num_links = tree.get_number_of_bodies();
-  for (int i = 0; i < expected_draw_message.num_links; ++i) {
-    const RigidBody& body = tree.get_body(i);
+  drake::lcmt_viewer_draw expected_message;
+  expected_message.timestamp = 0;
+  expected_message.num_links = 6;
 
-    expected_draw_message.link_name.push_back(body.get_name());
-    expected_draw_message.robot_num.push_back(body.get_model_instance_id());
-    std::vector<float> position;
-    position.resize(3);
-
-    // Unlike the rest of the bodies in the RigidBodyTree, the world body's
-    // position is not a function of `i`. Thus, treat it as a special case.
-    if (i == RigidBodyTree::kWorldBodyIndex) {
-      position[0] = 0;
-      position[1] = 0;
-      position[2] = 0;
-    } else {
-      position[0] = i - 1;
-      position[1] = 0;
-      position[2] = 0;
-    }
-
-    expected_draw_message.position.push_back(position);
-    expected_draw_message.quaternion.push_back(quaternion_zero_rotation);
+  // Adds the world body.
+  {
+    expected_message.link_name.push_back("world");
+    expected_message.robot_num.push_back(0);
+    expected_message.position.push_back(zero_position);
+    expected_message.quaternion.push_back(zero_quaternion);
   }
 
-  // Ensures the serialized versions of both the draw message and expected draw
-  // message have the same length.
-  EXPECT_EQ(expected_draw_message.getEncodedSize(), draw_message_bytes.size());
-  int draw_message_byte_count = expected_draw_message.getEncodedSize();
+  // Adds the box body.
+  {
+    std::vector<float> position = zero_position;
+    position[0] = 1;
 
-  // Serializes expected draw message. Then verifies
-  // that both byte arrays are identical.
-  std::vector<uint8_t> expected_draw_message_bytes;
-  expected_draw_message_bytes.resize(draw_message_byte_count);
-  expected_draw_message.encode(expected_draw_message_bytes.data(), 0,
-                               draw_message_byte_count);
-
-  bool draw_message_bytes_match = true;
-  for (int i = 0; i < draw_message_byte_count && draw_message_bytes_match;
-      ++i) {
-    draw_message_bytes_match =
-        (draw_message_bytes[i] == expected_draw_message_bytes[i]);
+    expected_message.link_name.push_back("box_body");
+    expected_message.robot_num.push_back(0);
+    expected_message.position.push_back(position);
+    expected_message.quaternion.push_back(zero_quaternion);
   }
 
-  EXPECT_TRUE(draw_message_bytes_match);
+  // Adds the capsule body.
+  {
+    std::vector<float> position = zero_position;
+    position[0] = 2;
+
+    expected_message.link_name.push_back("capsule_body");
+    expected_message.robot_num.push_back(1);
+    expected_message.position.push_back(position);
+    expected_message.quaternion.push_back(zero_quaternion);
+  }
+
+  // Adds the cylinder body.
+  {
+    std::vector<float> position = zero_position;
+    position[0] = -1;
+
+    expected_message.link_name.push_back("cylinder_body");
+    expected_message.robot_num.push_back(2);
+    expected_message.position.push_back(position);
+    expected_message.quaternion.push_back(zero_quaternion);
+  }
+
+  // Adds the mesh body.
+  {
+    std::vector<float> position = zero_position;
+    position[1] = -2;
+
+    expected_message.link_name.push_back("mesh_body");
+    expected_message.robot_num.push_back(3);
+    expected_message.position.push_back(position);
+    expected_message.quaternion.push_back(zero_quaternion);
+  }
+
+  // Adds the sphere body.
+  {
+    expected_message.link_name.push_back("sphere_body");
+    expected_message.robot_num.push_back(4);
+    expected_message.position.push_back(zero_position);
+    expected_message.quaternion.push_back(zero_quaternion);
+  }
+
+  // Ensures both messages have the same length.
+  EXPECT_EQ(expected_message.getEncodedSize(), message_bytes.size());
+  int byte_count = expected_message.getEncodedSize();
+
+  // Serializes the expected message.
+  std::vector<uint8_t> expected_message_bytes(byte_count);
+  expected_message.encode(expected_message_bytes.data(), 0, byte_count);
+
+  // Verifies that the messages are equal.
+  EXPECT_EQ(expected_message_bytes, message_bytes);
 }
 
-// Tests the basic functionality of the RigidBodyTreeVisualizerLcm.
-GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
-  // Define the number of rigid bodies in the RigidbodyTree.
-  const int kNumBodies = 5;
-
-  // Creates a RigidBodyTree with kNumBodies rigid bodies. Each rigid body is
-  // a sphere and belongs to a different model instance. The X coordinate of
-  // each sphere in the world frame is 1, 2, ...
+// Creates a RigidBodyTree. The tree has X rigid bodies. The visualizations of
+// the rigid bodies span all possible visualization types. Each ....
+unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
   auto tree = make_unique<RigidBodyTree>();
-  for (int i = 0; i < kNumBodies; ++i) {
-    // Instantiates a new body to add to the tree.
+
+  // Adds a RigidBody that looks like a box to the tree.
+  {
     auto body = make_unique<RigidBody>();
-
-    // Sets the body's name and model instance ID.
-    body->set_name("body" + std::to_string(i));
+    body->set_name("box_body");
     body->set_model_instance_id(tree->add_model_instance());
-
-    // The inertia model must be set to prevent RigidBodyTree::compile() from
-    // replacing the body's joint with a FixedJoint.
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
 
-    // Creates a sphere with a radius of 0.54 meters.
-    Sphere sphere_shape(0.54);
+    Eigen::Vector3d box_size(0.5, 0.5, 0.5);
+    Box shape(box_size);
+    Eigen::Vector4d material(0.3, 0.4, 0.5, 1.0);
 
-    // Specifies a color. This will be the color of the sphere.
-    Eigen::Vector4d material;
-    material << 0.3, 0.4, 0.5, 1.0;
-
-    // Sets the sphere as the visual representation of the body.
     DrakeShapes::VisualElement visual_element(
-        sphere_shape, Eigen::Isometry3d::Identity(), material);
+        shape, Eigen::Isometry3d::Identity(), material);
 
     body->AddVisualElement(visual_element);
 
-    // Connects the body to the world using a RPY floating joint.
     Eigen::Isometry3d joint_transform;
     {
       Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
       Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      xyz(0) = i;
+      xyz(0) = 1;
       joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
-        "Joint" + std::to_string(i), joint_transform);
+        "box_joint", joint_transform);
     body->add_joint(&tree->world(), std::move(joint));
 
     tree->bodies.push_back(std::move(body));
   }
+
+  // Adds a RigidBody that looks like a capsule to the tree.
+  {
+    auto body = make_unique<RigidBody>();
+    body->set_name("capsule_body");
+    body->set_model_instance_id(tree->add_model_instance());
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    Capsule shape(0.1, 0.5);
+    Eigen::Vector4d material(0.7, 0.7, 0.7, 1.0);
+
+    DrakeShapes::VisualElement visual_element(
+        shape, Eigen::Isometry3d::Identity(), material);
+
+    body->AddVisualElement(visual_element);
+
+    Eigen::Isometry3d joint_transform;
+    {
+      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+      xyz(0) = 2;
+      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    }
+
+    auto joint = make_unique<RollPitchYawFloatingJoint>(
+        "capsule_joint", joint_transform);
+    body->add_joint(&tree->world(), std::move(joint));
+
+    tree->bodies.push_back(std::move(body));
+  }
+
+  // Adds a RigidBody that looks like a cylinder to the tree.
+  {
+    auto body = make_unique<RigidBody>();
+    body->set_name("cylinder_body");
+    body->set_model_instance_id(tree->add_model_instance());
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    Cylinder shape(0.2, 0.25);
+    Eigen::Vector4d material(0.9, 0.0, 0.7, 1.0);
+
+    DrakeShapes::VisualElement visual_element(
+        shape, Eigen::Isometry3d::Identity(), material);
+
+    body->AddVisualElement(visual_element);
+
+    Eigen::Isometry3d joint_transform;
+    {
+      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+      xyz(0) = -1;
+      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    }
+
+    auto joint = make_unique<RollPitchYawFloatingJoint>(
+        "cylinder_joint", joint_transform);
+    body->add_joint(&tree->world(), std::move(joint));
+
+    tree->bodies.push_back(std::move(body));
+  }
+
+  // Adds a RigidBody that looks like a mesh to the tree. The mesh is specified
+  // by an OBJ file.
+  {
+    auto body = make_unique<RigidBody>();
+    body->set_name("mesh_body");
+    body->set_model_instance_id(tree->add_model_instance());
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    Mesh shape("spherical_cap.obj",
+        drake::GetDrakePath() +
+        "/systems/plants/collision/test/spherical_cap.obj");
+    Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
+
+    DrakeShapes::VisualElement visual_element(
+        shape, Eigen::Isometry3d::Identity(), material);
+
+    body->AddVisualElement(visual_element);
+
+    Eigen::Isometry3d joint_transform;
+    {
+      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+      xyz(1) = -2;
+      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    }
+
+    auto joint = make_unique<RollPitchYawFloatingJoint>(
+        "mesh_joint", joint_transform);
+    body->add_joint(&tree->world(), std::move(joint));
+
+    tree->bodies.push_back(std::move(body));
+  }
+
+  // Adds a RigidBody that looks like a sphere to the tree.
+  {
+    auto body = make_unique<RigidBody>();
+    body->set_name("sphere_body");
+    body->set_model_instance_id(tree->add_model_instance());
+    body->set_mass(1.0);
+    body->set_spatial_inertia(Matrix6<double>::Identity());
+
+    Sphere shape(0.54);  // The sphere has a radius of 0.54 meters.
+    Eigen::Vector4d material(0.8, 0.7, 0.6, 1.0);
+
+    DrakeShapes::VisualElement visual_element(
+        shape, Eigen::Isometry3d::Identity(), material);
+
+    body->AddVisualElement(visual_element);
+
+    Eigen::Isometry3d joint_transform;
+    {
+      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    }
+
+    auto joint = make_unique<RollPitchYawFloatingJoint>(
+        "sphere_joint", joint_transform);
+    body->add_joint(&tree->world(), std::move(joint));
+    tree->bodies.push_back(std::move(body));
+  }
+
   tree->compile();
+
+  return tree;
+}
+
+// Tests the basic functionality of the RigidBodyTreeVisualizerLcm.
+GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
+  // Creates a RigidBodyTree with kNumBodies rigid bodies. Each rigid body is
+  // a sphere and belongs to a different model instance. The X coordinate of
+  // each sphere in the world frame is 1, 2, ...
+  unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
 
   ::lcm::LCM lcm;
 
@@ -226,8 +498,8 @@ GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
-  VerifyLoadMessage(*tree.get(), dut.get_load_message());
-  VerifyDrawMessage(*tree.get(), *context.get(), dut.get_draw_message_bytes());
+  VerifyLoadMessage(dut.get_load_message());
+  VerifyDrawMessage(dut.get_draw_message_bytes());
 }
 
 }  // namespace

@@ -76,6 +76,8 @@ lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
 
       // TODO(liang.fok) Do this through virtual methods without introducing any
       // LCM dependency on the Geometry classes.
+      //
+      // TODO(liang.fok) Add support for the DrakeShapes::MESH_POINTS type.
       switch (visual_element.getShape()) {
         case DrakeShapes::BOX: {
           geometry_data.type = geometry_data.BOX;
