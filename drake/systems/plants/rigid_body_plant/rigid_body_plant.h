@@ -14,6 +14,11 @@
 namespace drake {
 namespace systems {
 
+/// A class containing the results from peforming kinematics on a
+/// RigidBodyPlant.
+template <typename T>
+using KinematicsResults = KinematicsCache<T>;
+
 /// A vector of 3D poses each of which is represented by a quaternion and a
 /// position vector.
 /// The pose of a rigid body is represented as a quaternion for three

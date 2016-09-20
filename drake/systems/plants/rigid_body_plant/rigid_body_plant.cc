@@ -103,11 +103,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
   // TODO(amcastro-tri): add separate output ports for each model_id.
   System<T>::DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling);
-  // Declares a vector valued vector port for each rigid body pose.
-  // A semantically richer vector of type VectorOfPoses is allocated by the
-  // RigidBodyPlant<T>::AllocateOutput method.
-  System<T>::DeclareOutputPort(
-      kVectorValued, 7 * get_num_bodies(), kContinuousSampling);
+  // Declares an abstract valued port for kinematics results.
+  System<T>::DeclareAbstractOutputPort(kInheritedSampling);
   // Declares an output port for metadata.
   System<T>::DeclareAbstractOutputPort(kInheritedSampling);
 }
@@ -198,9 +195,10 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
 
   // Allocates output for the RigidBodyPlant poses (output port 1).
   {
-    auto data = make_unique<VectorOfPoses<T>>(get_num_bodies());
-    auto port = make_unique<OutputPort> (move(data));
-    output->get_mutable_ports()->push_back(move(port));
+    auto kinematics_results =
+        make_unique<Value<KinematicsResults<T>>>(
+            KinematicsResults<T>(tree_->bodies));
+    output->add_port(move(kinematics_results));
   }
 
   // Allocates output for metadata (output port 2).
@@ -241,6 +239,28 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   output_vector->get_mutable_value() =
       context.get_continuous_state().CopyToVector();
 
+  // Evaluates port 1 to have the kinematics results.
+  auto kinematics_results =
+      output->GetMutableData(1)->GetMutableValue<KinematicsResults<T>>();
+
+  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
+  // LeafSystems.
+  auto x = dynamic_cast<const BasicVector<T> &>(
+      context.get_state().continuous_state->get_state()).get_value();
+
+  const int nq = get_num_positions();
+  const int nv = get_num_velocities();
+
+  // TODO(amcastro-tri): we would like to compile here with `auto` instead of
+  // `VectorX<T>`. However it seems we get some sort of block from a block which
+  // is not instantiated in drakeRBM.
+  VectorX<T> q = x.topRows(nq);
+  VectorX<T> v = x.bottomRows(nv);
+
+  kinematics_results.initialize(q, v);
+  tree_->doKinematics(kinematics_results, false);
+
+#if 0
   // Evaluates port 1 to be the poses for each rigid body.
   auto poses_vector =
       dynamic_cast<VectorOfPoses<T>*>(output->GetMutableVectorData(1));
@@ -255,6 +275,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
         Quaternion<T>(
             quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]));
   }
+#endif
 }
 
 template <typename T>
