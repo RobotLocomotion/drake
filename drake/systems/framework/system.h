@@ -300,6 +300,17 @@ class System {
     return;
   }
 
+  void EvalBlah() const {return;}
+
+  T EvalGuard(const Context<T>& context) {
+    //return T(std::numeric_limits<double>::infinity());
+    return T(0);
+  } 
+
+  void PerformReset(const Context<T>* context) {
+    return;
+  }
+
   /// Transforms the velocity (v) in the given Context state to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
@@ -338,14 +349,6 @@ class System {
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
   // and MapAccelerationToConfigurationSecondDerivatives.
 
-  virtual T EvalGuard(const Context<T>& context) {
-    return T(std::numeric_limits<double>::infinity());
-  }
-
-  virtual void PerformReset(const Context<T>* context) {
-    return;
-  }
-  
   virtual void set_name(const std::string& name) { name_ = name; }
   virtual std::string get_name() const { return name_; }
 

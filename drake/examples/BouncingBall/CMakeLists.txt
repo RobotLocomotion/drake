@@ -4,7 +4,7 @@ if(lcm_FOUND)
 
   add_library_with_exports(LIB_NAME drakeBouncingBall SOURCE_FILES
     ball.cc
-    bouncing_ball.cc
+    #bouncing_ball.cc
     )
   target_link_libraries(drakeBouncingBall
     drakeCommon
