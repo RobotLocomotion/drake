@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "drake/examples/BouncingBall/ball-inl.h"
+//#include "drake/examples/BouncingBall/ball-inl.h"
 #include "drake/examples/BouncingBall/bouncing_ball.h"
 
 #include <stdexcept>
@@ -20,28 +20,30 @@ namespace drake {
 namespace bouncingball {
 
 template <typename T>
-BouncingBall<T>::BouncingBall() : Ball<T>::Ball() {
-  this->DeclareOutputPort(systems::kVectorValued, 
-			  2, 
-			  systems::kContinuousSampling);
+BouncingBall<T>::BouncingBall() {}
+
+template <typename T>
+void BouncingBall<T>::EvalBlah(const systems::Context<T>& context,
+			   systems::SystemOutput<T>* output) const {
+  DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 }
-  
+
 template <typename T>
 T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   
   // Evaluate the guard condition.
-  const systems::VectorBase<T>& context_x =
-    context.get_state().continuous_state->get_state();
-  const systems::BasicVector<T>* const x =
-    dynamic_cast<const systems::BasicVector<T>*>(&context_x);
-  DRAKE_ASSERT(x != nullptr);
+  //const systems::VectorBase<T>& context_x =
+  //  context.get_state().continuous_state->get_state();
+  //const systems::BasicVector<T>* const x =
+  //  dynamic_cast<const systems::BasicVector<T>*>(&context_x);
+  //DRAKE_ASSERT(x != nullptr);
 
   // The guard is satisfied (returns a non-positive value) when 
   // the ball's position is less than or equal to zero and its 
   // velocity is non-positive.
-  return std::numeric_limits<double>::max(-1 * (x->GetAtIndex(0)),
-					   x->GetAtIndex(1));
+  //return std::numeric_limits<double>::max(-1 * (x->GetAtIndex(0)),
+  //					   x->GetAtIndex(1));
 }
 
 template <typename T>
