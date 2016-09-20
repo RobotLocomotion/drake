@@ -338,6 +338,14 @@ class System {
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
   // and MapAccelerationToConfigurationSecondDerivatives.
 
+  virtual T EvalGuard(const Context<T>& context) {
+    return T(std::numeric_limits<double>::infinity());
+  }
+
+  virtual void PerformReset(const Context<T>* context) {
+    return;
+  }
+  
   virtual void set_name(const std::string& name) { name_ = name; }
   virtual std::string get_name() const { return name_; }
 
