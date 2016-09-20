@@ -10,8 +10,6 @@
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
 
-#include <lcm/lcm-cpp.hpp>
-
 namespace drake {
 namespace systems {
 namespace {
@@ -114,9 +112,6 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.encode(expected_bytes.data(), 0, byte_count);
 
   EXPECT_EQ(expected_bytes, message_bytes);
-
-  ::lcm::LCM lcm;
-  lcm.publish("DRAKE_FOO", message_bytes.data(), message_bytes.size());
 }
 
 }  // namespace
