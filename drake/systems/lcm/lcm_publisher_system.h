@@ -56,6 +56,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
+  /// Returns the default name for a system that publishes @p channel.
+  static std::string get_name(const std::string& channel);
+
   /**
    * Takes the VectorBase from the input port of the context and publishes
    * it onto an LCM channel.

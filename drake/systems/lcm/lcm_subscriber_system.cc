@@ -36,7 +36,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
 std::string LcmSubscriberSystem::get_name() const {
-  return "LcmSubscriberSystem::" + channel_;
+  return get_name(channel_);
+}
+
+std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+  return "LcmSubscriberSystem::" + channel;
 }
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>&,
