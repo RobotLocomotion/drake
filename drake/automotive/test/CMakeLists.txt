@@ -45,4 +45,10 @@ if(lcm_FOUND)
   target_link_libraries(trajectory_car_test
     ${GTEST_BOTH_LIBRARIES} drakeAutomotive)
   drake_add_test(NAME trajectory_car_test COMMAND trajectory_car_test)
+
+  add_executable(automotive_simulator_test automotive_simulator_test.cc)
+  target_link_libraries(automotive_simulator_test
+    ${GTEST_BOTH_LIBRARIES} drakeAutomotive)
+  drake_add_test(NAME automotive_simulator_test
+    COMMAND automotive_simulator_test)
 endif()
