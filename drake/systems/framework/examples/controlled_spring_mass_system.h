@@ -25,10 +25,10 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   /// position.
   /// @param[in] spring_stiffness The spring constant.
   /// @param[in] mass The value of the mass attached to the spring.
-  /// @param Kp the proportional constant.
-  /// @param Ki the integral constant.
-  /// @param Kd the derivative constant.
-  /// @param target_position the desired target position.
+  /// @param[in] Kp the proportional constant.
+  /// @param[in] Ki the integral constant.
+  /// @param[in] Kd the derivative constant.
+  /// @param[in] target_position the desired target position.
   PidControlledSpringMassSystem(const T& spring_stiffness, const T& mass,
                                 const T& Kp, const T& Ki, const T& Kd,
                                 const T& target_position);

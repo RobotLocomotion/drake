@@ -11,10 +11,10 @@ namespace {
 
 const double kSpring = 300.0;  // N/m
 const double kMass = 2.0;      // kg
-const double Kp = 1.0;  // Controller's proportional constant.
-const double Kd = 1.0;  // Controller's derivative constant.
-const double Ki = 1.0;  // Controller's integral constant.
-const double x_target = 1.0;  // The target position.
+const double kPropotionalConstant = 1.0;  // Controller's proportional constant.
+const double kDerivativeConstant = 1.0;  // Controller's derivative constant.
+const double kIntegralConstant = 1.0;  // Controller's integral constant.
+const double kTargetPosition = 1.0;  // The target position.
 
 // A unit test fixture to evaluate the correct functioning of the
 // PidControlledSpringMassSystem example.
@@ -23,7 +23,9 @@ class SpringMassSystemTest : public ::testing::Test {
   void SetUp() override {
     model_ =
         make_unique<PidControlledSpringMassSystem<double>>(
-            kSpring, kMass, Kp, Ki, Kd, x_target);
+            kSpring, kMass,
+            kPropotionalConstant, kIntegralConstant, kDerivativeConstant,
+            kTargetPosition);
 
     model_context_ = model_->CreateDefaultContext();
     output_ = model_->AllocateOutput(*model_context_);
@@ -44,7 +46,7 @@ class SpringMassSystemTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
-// Tests that the diagram computes the correct sum.
+// Tests the correct output from the model.
 TEST_F(SpringMassSystemTest, EvalOutput) {
   const double x0 = 2.0;
   const double v0 = -1.0;
@@ -55,8 +57,8 @@ TEST_F(SpringMassSystemTest, EvalOutput) {
   ASSERT_EQ(1, output_->get_num_ports());
   model_->EvalOutput(*model_context_, output_.get());
 
-  // Output equals the state of the system. The integral is zero by default as
-  // initialized by SetDefaultState in the fixture.
+  // Output equals the state of the spring-mass plant being controlled which
+  // consists of position, velocity and energy.
   Eigen::Vector3d expected_output(x0, v0, 0.0);
 
   const BasicVector<double>* output = output_->get_vector_data(0);
@@ -95,9 +97,10 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   EXPECT_EQ(v0, plant_xcdot->get_state().GetAtIndex(0));
 
   // Acceleration.
-  const double error = x0 - x_target;
+  const double error = x0 - kTargetPosition;
   const double error_rate = v0;  // target velocity is zero.
-  const double pid_actuation = Kp * error +  Kd * error_rate;
+  const double pid_actuation =
+      kPropotionalConstant * error +  kDerivativeConstant * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
             plant_xcdot->get_state().GetAtIndex(1));
 
