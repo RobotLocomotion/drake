@@ -272,6 +272,8 @@ TEST_F(KukaArmTest, EvalOutput) {
     Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
     // Note that Eigen quaternion elements are not laid out in memory in the
     // same way Drake currently aligns them. See issue #3470.
+    // When solved we will not need to instantiate a temporary Quaternion below
+    // just to perform a comparison.
     Quaterniond quat(
         quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
     Vector3d position = pose.translation();

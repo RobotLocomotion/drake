@@ -69,9 +69,9 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
   const int nq = tree_.number_of_positions();
   const int nv = tree_.number_of_velocities();
 
-  // TODO(amcastro-tri): we would like to compile here with `auto` instead of
+  // TODO(amcastro-tri): We would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
-  // is not instantiated in drakeRBM.
+  // is not explicitly instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
 
@@ -171,14 +171,15 @@ template <typename T>
 std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     const Context<T>& context) const {
   auto output = make_unique<LeafSystemOutput<T>>();
-  // Allocates output for the RigidBodyPlant state (output port 0).
+  // Allocates an output for the RigidBodyPlant state (output port 0).
   {
     auto data = make_unique<BasicVector<T>>(get_num_states());
     auto port = make_unique<OutputPort>(move(data));
     output->get_mutable_ports()->push_back(move(port));
   }
 
-  // Allocates output for the RigidBodyPlant poses (output port 1).
+  // Allocates an output for the RigidBodyPlant kinematics results
+  // (output port 1).
   {
     auto kinematics_results =
         make_unique<Value<KinematicsResults<T>>>(
@@ -207,14 +208,14 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // Evaluates port 0 to be the state of the system.
+  // Evaluates port 0 to output the state of the system.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
       context.get_continuous_state().CopyToVector();
 
-  // Evaluates port 1 to have the kinematics results.
+  // Evaluates port 1 to output the kinematics results.
   auto& kinematics_results =
       output->GetMutableData(1)->
           template GetMutableValue<KinematicsResults<T>>();
