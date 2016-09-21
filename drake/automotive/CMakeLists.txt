@@ -2,7 +2,6 @@ add_subdirectory(gen)
 add_subdirectory(test)
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
-  car_simulation.cc
   curve2.cc
   gen/driving_command.cc
   gen/euler_floating_joint_state.cc
@@ -22,7 +21,6 @@ target_link_libraries(drakeAutomotive
 pods_install_libraries(drakeAutomotive)
 drake_install_headers(
   curve2.h
-  car_simulation.h
   simple_car.h
   simple_car-inl.h
   trajectory_car.h
@@ -39,6 +37,7 @@ if(lcm_FOUND)
 
   add_library_with_exports(LIB_NAME drakeAutomotiveLcm SOURCE_FILES
     automotive_simulator.cc
+    car_simulation.cc
     gen/driving_command_translator.cc
     gen/euler_floating_joint_state_translator.cc
     gen/idm_with_trajectory_agent_state_translator.cc
@@ -51,6 +50,7 @@ if(lcm_FOUND)
   pods_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
     automotive_simulator.h
+    car_simulation.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
   pods_install_pkg_config_file(drake-automotive-lcm
