@@ -33,9 +33,9 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   Element(const Eigen::Isometry3d& T_element_to_link,
           const RigidBody * const body);
 
-  Element( const DrakeShapes::Geometry& geometry,
-                   const Eigen::Isometry3d& T_element_to_link,
-                   const RigidBody * const body );
+  Element(const DrakeShapes::Geometry& geometry,
+          const Eigen::Isometry3d& T_element_to_link,
+          const RigidBody * const body);
 
   virtual ~Element() {}
 
