@@ -24,6 +24,12 @@ ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
 }
 
 template <typename T>
+const SystemPortDescriptor<T>&
+ConstantVectorSource<T>::get_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
 void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
                                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));

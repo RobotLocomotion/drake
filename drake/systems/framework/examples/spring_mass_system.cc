@@ -54,6 +54,20 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
   DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
 }
 
+const SystemPortDescriptor<double>& SpringMassSystem::get_force_port() const {
+  if (system_is_forced_) {
+    return get_input_port(0);
+  } else {
+    throw std::runtime_error(
+        "Attempting to access input force port when this SpringMassSystem was "
+            "instantiated with no input ports.");
+  }
+}
+
+const SystemPortDescriptor<double>& SpringMassSystem::get_output_port() const {
+  return System<double>::get_output_port(0);
+}
+
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
   const double k = spring_constant_N_per_m_, x = get_position(context),
                x0 = 0.,  // TODO(david-german-tri) should be a parameter.

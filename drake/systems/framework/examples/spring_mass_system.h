@@ -80,6 +80,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
 
   // Provide methods specific to this System.
 
+  /// Returns the input port to the externally applied force.
+  const SystemPortDescriptor<double>& get_force_port() const;
+
+  /// Returns the port to output state.
+  const SystemPortDescriptor<double>& get_output_port() const;
+
   /// Returns the spring constant k that was provided at construction, in N/m.
   double get_spring_constant() const { return spring_constant_N_per_m_; }
 

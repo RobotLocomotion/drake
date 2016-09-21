@@ -31,6 +31,9 @@ class Adder : public LeafSystem<T> {
   /// All inputs to this system are directly fed through to its output.
   bool has_any_direct_feedthrough() const override { return true; }
 
+  /// Returns the output port.
+  const SystemPortDescriptor<T>& get_output_port() const;
+
   /// Sums the input ports into the output port. If the input ports are not
   /// of number num_inputs_ or size length_, std::runtime_error will be thrown.
   void EvalOutput(const Context<T>& context,

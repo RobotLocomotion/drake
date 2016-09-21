@@ -41,33 +41,33 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   // and it is left unconnected.
   demux_ = builder.template AddSystem<Demultiplexer>(3);
 
-  builder.Connect(plant_->get_output_port(0),
+  builder.Connect(plant_->get_output_port(),
                   demux_->get_input_port(0));
 
   // Subtracts the target position from the spring position to obtain the error
   // signal.
-  builder.Connect(target_->get_output_port(0),
-                  target_inverter_->get_input_port(0));
-  builder.Connect(target_inverter_->get_output_port(0),
+  builder.Connect(target_->get_output_port(),
+                  target_inverter_->get_input_port());
+  builder.Connect(target_inverter_->get_output_port(),
                   state_minus_target_->get_input_port(0));
   builder.Connect(demux_->get_output_port(0),
                   state_minus_target_->get_input_port(1));
 
   // Connects the input error and rate signals to the PID controller.
-  builder.Connect(state_minus_target_->get_output_port(0),
+  builder.Connect(state_minus_target_->get_output_port(),
                   controller_->get_error_port());
   builder.Connect(demux_->get_output_port(1),
                   controller_->get_error_derivative_port());
 
   // Closes the feedback loop.
-  builder.Connect(controller_->get_output_port(0),
-                  pid_inverter_->get_input_port(0));
-  builder.Connect(pid_inverter_->get_output_port(0),
-                  plant_->get_input_port(0));
+  builder.Connect(controller_->get_control_output_port(),
+                  pid_inverter_->get_input_port());
+  builder.Connect(pid_inverter_->get_output_port(),
+                  plant_->get_force_port());
 
   // The output to this system is the output of the spring-mass system which
   // consists of a vector with position, velocity and energy.
-  builder.ExportOutput(plant_->get_output_port(0));
+  builder.ExportOutput(plant_->get_output_port());
   builder.BuildInto(this);
 }
 

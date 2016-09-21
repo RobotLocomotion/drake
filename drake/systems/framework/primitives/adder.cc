@@ -20,6 +20,11 @@ Adder<T>::Adder(int num_inputs, int length) {
 }
 
 template <typename T>
+const SystemPortDescriptor<T>& Adder<T>::get_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
 void Adder<T>::EvalOutput(const Context<T>& context,
                           SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));

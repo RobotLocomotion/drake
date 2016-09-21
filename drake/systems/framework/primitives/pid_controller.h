@@ -69,6 +69,9 @@ class PidController : public Diagram<T> {
   /// Returns the input port to the time derivative or rate of the error signal.
   const SystemPortDescriptor<T>& get_error_derivative_port() const;
 
+  /// Returns the output port to the control output.
+  const SystemPortDescriptor<T>& get_control_output_port() const;
+
  private:
   Adder<T>* adder_ = nullptr;
   Integrator<T>* integrator_ = nullptr;

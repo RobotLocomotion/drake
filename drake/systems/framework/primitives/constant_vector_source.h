@@ -40,6 +40,9 @@ class ConstantVectorSource : public LeafSystem<T> {
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
+  /// Returns the output port to the constant source.
+  const SystemPortDescriptor<T>& get_output_port() const;
+
  private:
   // TODO(amcastro-tri): move source_value_ to the system's parameters.
   const VectorX<T> source_value_;
