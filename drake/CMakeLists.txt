@@ -179,7 +179,6 @@ if(lcm_FOUND)
   find_package(bot2-core)
 
   add_subdirectory(lcmtypes)
-  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
