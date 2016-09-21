@@ -21,13 +21,13 @@ namespace bouncingball {
 template <typename T>
 Ball<T>::Ball() {
   this->DeclareOutputPort(systems::kVectorValued,
-			  2,
-			  systems::kContinuousSampling);
+                          2,
+                          systems::kContinuousSampling);
 }
 
 template <typename T>
 void Ball<T>::EvalOutput(const systems::Context<T>& context,
-			   systems::SystemOutput<T>* output) const {
+                         systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
@@ -64,10 +64,9 @@ void Ball<T>::EvalTimeDerivatives(
 
   const double g{9.81};  // gravity.
 
-  new_derivatives->SetAtIndex(0,state->GetAtIndex(1));
-  new_derivatives->SetAtIndex(1,T{-g});
-
- }
+  new_derivatives->SetAtIndex(0, state->GetAtIndex(1));
+  new_derivatives->SetAtIndex(1, T{-g});
+}
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>

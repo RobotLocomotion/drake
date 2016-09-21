@@ -54,8 +54,8 @@ TEST_F(BallTest, Output) {
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // New state just propagates through.
-  continuous_state()->SetAtIndex(0,1.0);
-  continuous_state()->SetAtIndex(1,2.0);
+  continuous_state()->SetAtIndex(0, 1.0);
+  continuous_state()->SetAtIndex(1, 2.0);
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->GetAtIndex(0));
   EXPECT_EQ(2.0, result->GetAtIndex(1));
@@ -72,7 +72,6 @@ TEST_F(BallTest, Derivatives) {
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_EQ(-9.81, result->GetAtIndex(1));
-
 }
 
 }  // namespace
