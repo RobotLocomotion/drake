@@ -14,13 +14,13 @@ struct MST {
   explicit MST(const double&) {}
   MST& operator=(const MST&) { return *this; }
 
-  MST operator*(double) const { return *this; }
-  MST operator/(double) const { return *this; }
+  MST operator-() const { return *this; }
 
   MST operator+(const MST&) const { return *this; }
   MST operator-(const MST&) const { return *this; }
-  MST operator+=(const MST&) const { return *this; }
+  MST operator/(const MST&) const { return *this; }
   MST operator*(const MST&) const { return *this; }
+  MST operator+=(const MST&) const { return *this; }
 
   bool operator<(const MST&) const { return true; }
 };
