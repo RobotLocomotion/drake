@@ -26,9 +26,6 @@ Ball<T>::Ball() {
 }
 
 template <typename T>
-  void Ball<T>::EvalBlah() const {return;}
-
-template <typename T>
 void Ball<T>::EvalOutput(const systems::Context<T>& context,
 			   systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
