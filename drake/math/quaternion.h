@@ -177,6 +177,11 @@ Vector4<typename Derived::Scalar> quat2axis(
   }
 }
 
+/**
+ * Compute the rotation matrix from quaternion representation
+ * @param q A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
+ * @return A 3 x 3 rotation matrix
+ */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& q) {
@@ -198,6 +203,12 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
   return M;
 }
 
+/**
+ * Compute the Euler angles from quaternion representation
+ * @param q A 4 x 1 unit length vector @p q=[w;x;y;z]
+ * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2), rpy(1), rpy(0)]
+ * @see rpy2rotmat
+ */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& q) {
