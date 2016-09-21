@@ -12,6 +12,7 @@ template <typename T>
 class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
  public:
   SimpleCarToEulerFloatingJoint() {
+    this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
                            SimpleCarStateIndices::kNumCoordinates,
                            systems::kContinuousSampling);
