@@ -30,6 +30,10 @@ using std::cos;
 namespace drake {
 namespace math {
 namespace {
+Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
+  return Vector4d(q.w(), q.x(), q.y(), q.z());
+}
+
 // Compare the equivalent rotation matrix.
 // Note that we are not comparing the axis-angle directly. This is because the
 // axis-angle has singularities around 0 degree rotation and 180 degree rotation
@@ -52,7 +56,7 @@ bool compareEulerAngles(const Vector3d& euler_angles1,
                         const Vector3d& euler_angles2) {
   auto q1 = eulerToQuaternion(euler_angles1);
   auto q2 = eulerToQuaternion(euler_angles2);
-  return q1.isApprox(q2);
+  return compareQuaternion(eigenQuaterniontoQuat(q1), eigenQuaterniontoQuat(q2));
 }
 
 Vector4d eigenAxisToAxis(const AngleAxisd& a) {
@@ -61,9 +65,7 @@ Vector4d eigenAxisToAxis(const AngleAxisd& a) {
   return ret;
 }
 
-Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
-  return Vector4d(q.w(), q.x(), q.y(), q.z());
-}
+
 
 Matrix3d rotz(double a) {
   Matrix3d ret;
@@ -125,16 +127,22 @@ class RotationConversionTest : public ::testing::Test {
     // Degenerate case, 0 rotation around y axis
     // Degenerate case, 0 rotation around z axis
     // Degenerate case, 0 rotation around a unit axis
-    // Almost degenerate case, small positive rotation
-    // Almost degenerate case, small negative rotation
-    // Degenerate case, 180 rotation around x axis
-    // Degenerate case, 180 rotation around y axis
-    // Degenerate case, 180 rotation around z axis
-    // Degenerare case, 180 rotation around a unit axis
-    // Almost degenerate case, close to 180 rotation around a unit axis
-    // Degenerate case, pitch = pi/2 for x-y'-z'' Euler angle
-    // Almost degenerate case, pitch close to pi/2 for x-y'-z'' Euler angle
-    // Non-degenerate case
+    // Almost degenerate case, small positive rotation around an arbitrary axis
+    // Almost degenerate case, small negative rotation around an arbitrary axis
+    // Differentiation issue at 180 rotation around x axis
+    // Differentiation issue at 180 rotation around y axis
+    // Differentiation issue at 180 rotation around z axis
+    // Differentiation issue at 180 rotation around an arbitrary unit axis
+    // Differentiation issue close to 180 rotation around an arbitrary axis
+    // Singularity issue associated with the second angle = pi/2
+    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // Singularity issue associated with the second angle = -pi/2
+    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // Singularity issue associated with the second angle close to pi/2
+    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // Singularity issue associated with the second angle close to -pi/2
+    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // normal non-degenerate non-singular cases.
 
     // 0 rotation around x axis
     test_orientation_.push_back(AngleAxisd(0, Vector3d::UnitX()));
@@ -179,14 +187,58 @@ class RotationConversionTest : public ::testing::Test {
                   AngleAxisd(M_PI / 4, Vector3d::UnitX()));
     test_orientation_.push_back(a2);
 
-    // pitch close to pi/2
-    AngleAxisd a3(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
-                  AngleAxisd(M_PI / 2 + 1E-6 * M_PI, Vector3d::UnitY()) *
-                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
-    test_orientation_.push_back(a3);
+    // pitch = -pi/2
+    AngleAxisd a4(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
+        AngleAxisd(-M_PI / 2, Vector3d::UnitY()) *
+        AngleAxisd(M_PI / 4, Vector3d::UnitX()));
+    test_orientation_.push_back(a4);
+
+    // pitch close to -pi/2
+    AngleAxisd a5(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
+        AngleAxisd(-M_PI / 2 + 1E-6 * M_PI, Vector3d::UnitY()) *
+        AngleAxisd(M_PI / 4, Vector3d::UnitX()));
+    test_orientation_.push_back(a5);
 
     // non-degenerate case
-    test_orientation_.push_back(AngleAxisd(M_PI / 3, axis));
+
+    // non-degenerate case for angle-axis representation
+    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -M_PI+1E-6, M_PI);
+    for(int i = 0; i < a_x.size(); i++) {
+      for (int j = 0; j < a_y.size(); ++j) {
+        for (int k = 0; k < a_z.size(); ++k) {
+          for (int l = 0; l < a_angle.size(); ++l) {
+            Vector3d a_axis(a_x(i), a_y(j), a_z(k));
+            if(std::abs(a_axis.norm()) > 1E-3) {
+              a_axis.normalize();
+              test_orientation_.push_back(AngleAxisd(a_angle(l), a_axis));
+            }
+          }
+        }
+      }
+    }
+
+    // non-degenerate case for quaternion representation
+    auto q_w = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto q_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto q_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto q_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    for(int i = 0; i< q_w.size(); ++i) {
+      for (int j = 0; j < q_x.size(); ++j) {
+        for (int k = 0; k < q_y.size(); ++k) {
+          for (int l = 0; l < q_z.size(); ++l) {
+            Vector4d q(q_w(i), q_x(j), q_y(k), q_z(l));
+            if(std::abs(q.norm()) > 1E-3) {
+              q.normalize();
+              Quaterniond quat(q(0), q(1), q(2), q(3));
+              test_orientation_.push_back(AngleAxisd(quat));
+            }
+          }
+        }
+      }
+    }
   }
   std::vector<AngleAxisd> test_orientation_;  // test cases
 };
@@ -315,9 +367,9 @@ TEST_F(RotationConversionTest, RotmatQuat) {
   for (const auto& ai : test_orientation_) {
     auto Ri = ai.toRotationMatrix();
     auto quat = rotmat2quat(Ri);
-    auto quat_eigen = Quaterniond(quat(0), quat(1), quat(2), quat(3));
     auto quat_expected_eigen = Quaterniond(Ri);
-    EXPECT_TRUE(quat_eigen.isApprox(quat_expected_eigen));
+    auto quat_expectd = eigenQuaterniontoQuat(quat_expected_eigen);
+    EXPECT_TRUE(compareQuaternion(quat, quat_expectd));
     // rotmat2quat should be the inversion of quat2rotmat
     auto rotmat_expected = quat2rotmat(quat);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
