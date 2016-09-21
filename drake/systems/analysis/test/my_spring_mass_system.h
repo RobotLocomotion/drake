@@ -66,4 +66,4 @@ class MySpringMassSystem : public SpringMassSystem {
 }  // systems
 }  // drake
 
-#endif  //DRAKE_MY_SPRING_MASS_SYSTEM_H
+#endif  // DRAKE_MY_SPRING_MASS_SYSTEM_H
