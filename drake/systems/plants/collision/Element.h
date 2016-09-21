@@ -51,15 +51,27 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Returns true if this element should be checked for collisions
-   * with the other object.  CanCollidesWith should be symmetric: if
-   * A can collide with B, B can collide with A.
+   * with the @p other object.  CanCollideWith is commutative;
+   * A can collide with B implies B can collide with A.
    */
   virtual bool CanCollideWith(const Element *other) const;
 
+  /**
+   * Adds this element to the clique specified by the given clique id.
+   * @param[in] clique_id   The clique to which this element will belong to.
+   */
   void AddToCollisionClique(int clique_id);
 
+  /**
+   * Reports the number of cliques to which this element belongs.
+   * @returns The number of cliques.
+   */
   int number_of_cliques() const;
 
+  /**
+   * Provides access to the set of cliques to which this element belongs.
+   * @return    A reference to the clique set (as an ordered list).
+   */
   const std::vector<int>& collision_cliques() const;
 
   /** Returns a pointer to the const RigidBody to which this CollisionElement

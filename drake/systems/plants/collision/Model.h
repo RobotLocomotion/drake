@@ -35,8 +35,8 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual const Element* FindElement(ElementId id) const;
 
-  /** Get a pointer to a mutable collision element in this model.
-   * @param id an CollisionElementId corresponding to the desired collision
+  /** Gets a pointer to a mutable collision element in this model.
+   * @param[in] id an ElementId corresponding to the desired collision
    * element.
    * @returns a pointer to a mutable collision element corresponding to
    * the given id or nullptr if no such collision element is present in the
