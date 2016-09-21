@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# Run the multi-car demo with its allied apps:
+# Run the automotive demo with its allied apps:
 #
+#  * steering_command_driver.py for interactive input
 #  * drake-visualizer to see things move
 #  * bot-spy to see LCM traffic of state and visualization
+#  * lcm-logger to capture LCM activity to disk
 #
 # To kill all the processes, just kill the script in the console with
 # Control-C.
-#
-# The first command-line argument, if supplied, must be readable as an
-# integer and it sets the number of vehicles to N.  (The default N is
-# 100; minimum N is 1.)
 
 set -e
 
@@ -35,13 +33,15 @@ function bot_spy_that_actually_works {
     java -cp "${CLASSPATH}" lcm.spy.Spy
 }
 
+# TODO(#3231) Use installed prorgam once it works again.
+# $DRAKE_DIST_BUILD/install/bin/lcm-logger &
+$DRAKE_DIST_BUILD/externals/lcm/lcm-logger/lcm-logger &
 # TODO(#3231) Use this shell script once it works again.
 # $DRAKE_DIST_BUILD/install/bin/bot-spy &
 bot_spy_that_actually_works &
 $DRAKE_DIST_BUILD/install/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
-$DRAKE_DIST_BUILD/drake/bin/demo_multi_car $1 &
+$DRAKE_DIST_BUILD/drake/bin/automotive_demo "$@" &
+$mydir/steering_command_driver.py &
 
 wait
-
-# TODO(jwnimmer-tri) Consolidate this script with simple_car_demo.sh.
