@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -14,7 +14,7 @@ namespace solvers {
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
 SolutionResult EqualityConstrainedQPSolver::Solve(
-    OptimizationProblem& prog) const {
+    MathematicalProgram& prog) const {
   // Given a QP with equality constraints, we can use the KKT conditions
   // for the optimal solution to write a linear system that produces
   // our answer.

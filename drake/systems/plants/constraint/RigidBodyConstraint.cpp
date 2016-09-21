@@ -1071,8 +1071,13 @@ void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
     auto axis_err = e_autodiff.value();
     auto daxis_err = e_autodiff.derivatives().transpose().eval();
 
-    MatrixXd daxis_err_dq(1, nq);
-    daxis_err_dq = daxis_err.block(0, 0, 1, 4) * dquat;
+    // Note: don't do:
+    // MatrixXd daxis_err_dq(nq, 1)
+    // daxis_err_dq = daxis_err.block(0, 0, 1, 4) * dquat;
+    // due to http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1283
+    // (no reason you'd want to do this anyway, but it resulted in an issue
+    // while updating Eigen, see #3300.)
+    MatrixXd daxis_err_dq = daxis_err.block(0, 0, 1, 4) * dquat;
 
     auto quat_diff_autodiff_args = initializeAutoDiffTuple(quat, quat_des_);
     auto q_diff_autodiff = quatDiff(get<0>(quat_diff_autodiff_args),
@@ -2291,10 +2296,9 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
       q);
   KinematicsCache<Scalar> cache_with_gradients =
       getRobotPointer()->doKinematics(q);
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<Scalar>>
-      f_ext;
-  auto G_autodiff =
-      getRobotPointer()->dynamicsBiasTerm(cache_with_gradients, f_ext, false);
+  const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
+  auto G_autodiff = getRobotPointer()->dynamicsBiasTerm(
+      cache_with_gradients, no_external_wrenches, false);
   auto G = autoDiffToValueMatrix(G_autodiff);
   auto dG = autoDiffToGradientMatrix(G_autodiff);
 

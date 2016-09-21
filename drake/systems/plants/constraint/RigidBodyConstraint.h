@@ -6,11 +6,9 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <Eigen/StdVector>
 
 #include "drake/drakeRigidBodyConstraint_export.h"
 #include "drake/systems/plants/KinematicsCache.h"
-#include "drake/util/drakeUtil.h"
 
 class RigidBodyTree;
 

@@ -44,7 +44,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
-  SolutionResult Solve(OptimizationProblem& prog) const override;
+  SolutionResult Solve(MathematicalProgram& prog) const override;
 
  private:
   void ClearIndexVectors() const;

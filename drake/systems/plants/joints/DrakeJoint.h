@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/gradient.h"
 #include "drake/drakeJoints_export.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(       \
@@ -47,7 +48,6 @@
 
 class DRAKEJOINTS_EXPORT DrakeJoint {
  public:
-  enum FloatingBaseType { FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2 };
   static const int MAX_NUM_POSITIONS = 7;
   static const int MAX_NUM_VELOCITIES = 6;
   typedef Eigen::AutoDiffScalar<
@@ -76,6 +76,11 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   }
 
   virtual bool isFloating() const { return false; }
+
+  /**
+   * Returns `true` if this joint is a FixedJoint.
+   */
+  bool is_fixed() const { return num_positions == 0; }
 
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 

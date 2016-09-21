@@ -1,0 +1,10 @@
+if(lcm_FOUND)
+  drake_install_headers(
+    driving_command.h
+    driving_command_translator.h
+    euler_floating_joint_state.h
+    euler_floating_joint_state_translator.h
+    simple_car_state.h
+    simple_car_state_translator.h
+    )
+endif()

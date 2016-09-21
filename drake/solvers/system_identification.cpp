@@ -5,7 +5,7 @@
 #include <iostream>  // For LUMPED_SYSTEM_IDENTIFICATION_VERBOSE below.
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -264,7 +264,7 @@ SystemIdentification<T>::EstimateParameters(
   DRAKE_ASSERT(num_data >= num_to_estimate);
 
   // Build up our optimization problem's decision variables.
-  OptimizationProblem problem;
+  MathematicalProgram problem;
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =
@@ -356,10 +356,10 @@ SystemIdentification<T>::LumpedSystemIdentification(
         // sin_cos_maps (eg, `s = sin(x)` vs. `s = cos(y)`).  Note that
         // nesting violations (`s = sin(y), y = cos(z)`) will be caught by
         // the TrigPoly constructor.
-        DRAKE_ABORT_UNLESS(k_v_pair.second.s ==
-                           original_sin_cos_map[k_v_pair.first].s);
-        DRAKE_ABORT_UNLESS(k_v_pair.second.c ==
-                           original_sin_cos_map[k_v_pair.first].c);
+        DRAKE_DEMAND(k_v_pair.second.s ==
+                     original_sin_cos_map[k_v_pair.first].s);
+        DRAKE_DEMAND(k_v_pair.second.c ==
+                     original_sin_cos_map[k_v_pair.first].c);
       } else {
         original_sin_cos_map[k_v_pair.first] = k_v_pair.second;
       }

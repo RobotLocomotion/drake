@@ -1,13 +1,10 @@
-#include "drake/common/drake_path.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Pendulum/Pendulum.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
+
 #include "gtest/gtest.h"
 
-using drake::GetDrakePath;
-using drake::getRandomVector;
-using drake::RigidBodySystem;
+#include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 namespace drake {
 namespace examples {
@@ -16,11 +13,12 @@ namespace {
 
 GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      drake::systems::plants::joints::kFixed));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 1000; ++i) {
     auto x0 = getRandomVector<PendulumState>();
     auto u0 = getRandomVector<PendulumInput>();
 

@@ -5,9 +5,8 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/state_vector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -18,16 +17,16 @@ const int kLength = 9;
 class StateSupervectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    vec1_.reset(new BasicStateVector<int>({0, 1, 2, 3}));
-    vec2_.reset(new BasicStateVector<int>({4, 5}));
-    vec3_.reset(new BasicStateVector<int>({}));
-    vec4_.reset(new BasicStateVector<int>({6, 7, 8}));
-    supervector_ = std::make_unique<StateSupervector<int>>(
-        std::vector<StateVector<int>*>{vec1_.get(), vec2_.get(),
-                                       vec3_.get(), vec4_.get()});
+    vec1_ = BasicVector<int>::Make({0, 1, 2, 3});
+    vec2_ = BasicVector<int>::Make({4, 5});
+    vec3_ = BasicVector<int>::Make({});
+    vec4_ = BasicVector<int>::Make({6, 7, 8});
+    supervector_ =
+        std::make_unique<StateSupervector<int>>(std::vector<VectorBase<int>*>{
+            vec1_.get(), vec2_.get(), vec3_.get(), vec4_.get()});
   }
 
-  std::unique_ptr<StateVector<int>> vec1_, vec2_, vec3_, vec4_;
+  std::unique_ptr<VectorBase<int>> vec1_, vec2_, vec3_, vec4_;
   std::unique_ptr<StateSupervector<int>> supervector_;
 };
 
@@ -64,7 +63,7 @@ TEST_F(StateSupervectorTest, OutOfRange) {
 }
 
 TEST_F(StateSupervectorTest, Empty) {
-  StateSupervector<int> supervector(std::vector<StateVector<int>*>{});
+  StateSupervector<int> supervector(std::vector<VectorBase<int>*>{});
   EXPECT_EQ(0, supervector.size());
 }
 

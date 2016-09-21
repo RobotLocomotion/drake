@@ -5,14 +5,14 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {
 
 bool LinearSystemSolver::available() const { return true; }
 
-SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
+     const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();

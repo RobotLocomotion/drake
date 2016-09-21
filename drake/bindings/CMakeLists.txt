@@ -11,7 +11,10 @@ if(NOT WIN32)
     endif()
     add_subdirectory(matlab/test)
   else()
-    message(WARNING "\n----- IMPORTANT: "
-      "swig_matlab not found; disabling all swig bindings.")
+    message("
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: swig_matlab not found; disabling all swig bindings. ***
+  --------------------------------------------------------------------------------
+    ")
   endif()
 endif()

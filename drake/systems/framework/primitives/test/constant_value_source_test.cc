@@ -32,7 +32,7 @@ class ConstantValueSourceTest : public ::testing::Test {
   }
 
   std::unique_ptr<System<double>> source_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -45,6 +45,8 @@ TEST_F(ConstantValueSourceTest, Output) {
 
   EXPECT_EQ("foo",
             output_->get_port(0).get_abstract_data()->GetValue<std::string>());
+  EXPECT_EQ("foo",
+            output_->get_data(0)->GetValue<std::string>());
 }
 
 // Tests that inputs cannot be set for a ConstantValueSource.

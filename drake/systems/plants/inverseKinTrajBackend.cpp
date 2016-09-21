@@ -11,7 +11,7 @@
 #include <drake/math/autodiff_gradient.h>
 #include <drake/math/gradient.h>
 #include <drake/solvers/constraint.h>
-#include <drake/solvers/optimization.h>
+#include <drake/solvers/mathematical_program.h>
 #include <drake/systems/plants/constraint/RigidBodyConstraint.h>
 #include <drake/systems/plants/ConstraintWrappers.h>
 #include <drake/systems/plants/IKoptions.h>
@@ -26,7 +26,7 @@ using Eigen::VectorXi;
 
 using drake::solvers::DecisionVariableView;
 using drake::solvers::SolutionResult;
-using drake::solvers::OptimizationProblem;
+using drake::solvers::MathematicalProgram;
 
 namespace drake {
 namespace systems {
@@ -374,7 +374,7 @@ void inverseKinTrajBackend(
   IKTrajectoryHelper helper(nq, nT, t, nT, 2,
                             ikoptions, dt.data(), dt_ratio.data());
 
-  OptimizationProblem prog;
+  MathematicalProgram prog;
   SetIKSolverOptions(ikoptions, &prog);
 
   // Create our decision variables.  "q" represents all positions of
@@ -448,7 +448,7 @@ void inverseKinTrajBackend(
   }
 
   // Iterate over all of our constraints, and add them to our
-  // OptimizationProblem.  For single time constraints, we add
+  // MathematicalProgram.  For single time constraints, we add
   // multiple constraints for each timestep when the constraint is
   // valid, using the subset of the "q" decision variable representing
   // the state at that time.

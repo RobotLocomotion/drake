@@ -60,7 +60,7 @@ endif()
 drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
-target_link_libraries(drakeGeometryUtil drakeCommon)
+target_link_libraries(drakeGeometryUtil drakeCommon drakeMath)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
 pods_install_pkg_config_file(drake-geometry-util

@@ -13,7 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -28,10 +28,11 @@ PassThrough<T>::PassThrough(int length) {
 }
 
 template <typename T>
-void PassThrough<T>::EvalOutput(const ContextBase<T>& context,
+void PassThrough<T>::EvalOutput(const Context<T>& context,
                                 SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
+
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
   System<T>::GetMutableOutputVector(output, 0) =

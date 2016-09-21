@@ -61,7 +61,6 @@ drake_install_headers(
   constraint.h
   Function.h
   mathematical_program.h
-  optimization.h
   decision_variable.h
   solution_result.h
   system_identification.h

@@ -1,7 +1,14 @@
 #include "yamlUtil.h"
 // #include <regex>
 
+#include "drake/systems/plants/joints/floating_base_types.h"
+
 using namespace std;
+
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {
@@ -414,15 +421,15 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 
 namespace YAML {
 template <>
-struct convert<DrakeJoint::FloatingBaseType> {
-  static bool decode(const Node& node, DrakeJoint::FloatingBaseType& rhs) {
+struct convert<FloatingBaseType> {
+  static bool decode(const Node& node, FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
-    if (joint_type == "FIXED") {
-      rhs = DrakeJoint::FIXED;
-    } else if (joint_type == "ROLLPITCHYAW") {
-      rhs = DrakeJoint::ROLLPITCHYAW;
-    } else if (joint_type == "QUATERNION") {
-      rhs = DrakeJoint::QUATERNION;
+    if (joint_type == "kFixed") {
+      rhs = kFixed;
+    } else if (joint_type == "kRollPitchYaw") {
+      rhs = kRollPitchYaw;
+    } else if (joint_type == "kQuaternion") {
+      rhs = kQuaternion;
     } else {
       return false;
     }
@@ -445,9 +452,9 @@ struct convert<Attachment> {
     rhs.attach_to_frame = node["frame"].as<std::string>();
     rhs.urdf_filename = node["urdf"].as<std::string>();
     if (node["joint_type"]) {
-      rhs.joint_type = node["joint_type"].as<DrakeJoint::FloatingBaseType>();
+      rhs.joint_type = node["joint_type"].as<FloatingBaseType>();
     } else {
-      rhs.joint_type = DrakeJoint::FIXED;
+      rhs.joint_type = kFixed;
     }
     return true;
   }

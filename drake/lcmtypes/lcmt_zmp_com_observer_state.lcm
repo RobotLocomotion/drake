@@ -1,11 +1,10 @@
 package drake;
 
-struct lcmt_zmp_com_observer_state
-{
+struct lcmt_zmp_com_observer_state {
+  // The timestamp in microseconds.
   int64_t utime;
 
   double com[2];
   double comd[2];
   double ground_plane_height;
 }
-

@@ -1,14 +1,11 @@
 #pragma once
 
-#include <stdint.h>
 #include <memory>
-#include <utility>
 
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
-#include "Geometry.h"
 #include "drake/drakeShapes_export.h"
+#include "drake/systems/plants/shapes/Geometry.h"
 
 namespace DrakeShapes {
 class DRAKESHAPES_EXPORT Element {

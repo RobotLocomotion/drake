@@ -9,7 +9,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -17,7 +16,7 @@ namespace {
 
 GTEST_TEST(testMosek, MosekLinearProgram) {
   // Taken from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-  OptimizationProblem prog;
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4);
   Eigen::Vector4d A;
   A << 3, 1, 5, 1;
@@ -66,7 +65,7 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
 
 GTEST_TEST(testMosek, MosekQuadraticCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
-  OptimizationProblem prog2;
+  MathematicalProgram prog2;
   auto x = prog2.AddContinuousVariables(3);
   // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
@@ -105,7 +104,7 @@ GTEST_TEST(testMosek, MosekQuadraticCost) {
 
 GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
-  OptimizationProblem prog2;
+  MathematicalProgram prog2;
   auto x = prog2.AddContinuousVariables(3);
   // Build the objective matrix and send it to the program.
   Eigen::Matrix3d Q;
@@ -147,7 +146,7 @@ GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
 
 GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   // http://docs.mosek.com/7.1/capi/Semidefinite_optimization.html
-  OptimizationProblem prog3;
+  MathematicalProgram prog3;
   auto x = prog3.AddContinuousVariables(9);
   prog3.SetSolverOption("Mosek", "numbarvar", 6);
   // Build the objective matrix and send it to the program.

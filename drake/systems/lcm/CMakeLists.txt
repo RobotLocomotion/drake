@@ -1,7 +1,8 @@
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem2 SOURCE_FILES
-    lcm_receive_thread.cc
+    lcm_and_vector_base_translator.cc
     lcm_publisher_system.cc
+    lcm_receive_thread.cc
     lcm_subscriber_system.cc
     lcm_translator_dictionary.cc
     translator_between_lcmt_drake_signal.cc)

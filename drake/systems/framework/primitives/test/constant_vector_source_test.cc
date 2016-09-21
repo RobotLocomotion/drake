@@ -32,7 +32,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
 
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};
   std::unique_ptr<System<double>> source_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -50,8 +50,7 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): Solve #3140 so that the next line reads:
   // auto& source_->get_output_vector(context, 0);
   // to directly get an Eigen expression.
-  const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
   EXPECT_TRUE(kConstantVectorSource.isApprox(
       output_vector->get_value(), Eigen::NumTraits<double>::epsilon()));

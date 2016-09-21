@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -9,6 +10,7 @@
 using namespace std;
 using namespace Eigen;
 
+using drake::common::test::MeasureExecutionTime;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 
@@ -58,13 +60,12 @@ void scenario2(
   default_random_engine generator;
   uniform_real_distribution<> uniform(0, 1);
 
-  const eigen_aligned_unordered_map<RigidBody const*,
-                                    drake::TwistVector<Scalar>> f_ext;
+  const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
     model.doKinematics(cache, true);
     auto H = model.massMatrix(cache);
-    auto C = model.dynamicsBiasTerm(cache, f_ext);
+    auto C = model.dynamicsBiasTerm(cache, no_external_wrenches);
     if (uniform(generator) <
         1e-15) {  // print with some probability to avoid optimizing away
       printMatrix<decltype(H)::RowsAtCompileTime,
@@ -125,22 +126,22 @@ void testScenario1(const RigidBodyTree& model) {
 
   cout << "scenario 1:" << endl;
   cout << "no gradients: "
-       << measure<>::execution(scenario1<double>, model, cache_double,
+       << MeasureExecutionTime(scenario1<double>, model, cache_double,
                                qs_double, body_fixed_points) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << "autodiff fixed max size: "
-       << measure<>::execution(scenario1<AutoDiffFixedMaxSize>, model,
+       << MeasureExecutionTime(scenario1<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, qs_autodiff_fixed,
                                body_fixed_points) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << "autodiff dynamic size: "
-       << measure<>::execution(scenario1<AutoDiffDynamicSize>, model,
+       << MeasureExecutionTime(scenario1<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic, qs_autodiff_dynamic,
                                body_fixed_points) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << endl;
 }
 
@@ -188,21 +189,21 @@ void testScenario2(const RigidBodyTree& model) {
 
   cout << "scenario 2:" << endl;
   cout << "no gradients: "
-       << measure<>::execution(scenario2<double>, model, cache_double,
+       << MeasureExecutionTime(scenario2<double>, model, cache_double,
                                states_double) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << "autodiff fixed max size: "
-       << measure<>::execution(scenario2<AutoDiffFixedMaxSize>, model,
+       << MeasureExecutionTime(scenario2<AutoDiffFixedMaxSize>, model,
                                cache_autodiff_fixed, states_autodiff_fixed) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << "autodiff dynamic size: "
-       << measure<>::execution(scenario2<AutoDiffDynamicSize>, model,
+       << MeasureExecutionTime(scenario2<AutoDiffDynamicSize>, model,
                                cache_autodiff_dynamic,
                                states_autodiff_dynamic) /
               static_cast<double>(ntests)
-       << " ms" << endl;
+       << " s" << endl;
   cout << endl;
 }
 

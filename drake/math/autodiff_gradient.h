@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
 

@@ -1,12 +1,13 @@
 package drake;
 
-struct lcmt_force_torque
-{
-    int64_t  timestamp;
-    double   fx;
-    double   fy;
-    double   fz;
-    double   tx;
-    double   ty;
-    double   tz;
+struct lcmt_force_torque {
+  // The timestamp in milliseconds.
+  int64_t  timestamp;
+
+  double   fx;
+  double   fy;
+  double   fz;
+  double   tx;
+  double   ty;
+  double   tz;
 }

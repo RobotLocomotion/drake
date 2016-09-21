@@ -15,7 +15,7 @@ namespace systems {
 namespace lcm {
 
 LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
-  DRAKE_ABORT_UNLESS(lcm);
+  DRAKE_DEMAND(lcm);
   // Spawns a thread that calls this->LoopWithSelect().
   lcm_thread_ = std::thread(&LcmReceiveThread::LoopWithSelect, this);
 }

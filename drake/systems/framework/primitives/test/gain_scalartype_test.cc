@@ -67,9 +67,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   gain->EvalOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
-  const auto& output_vector =
-      dynamic_cast<const BasicVector<T>*>(output->get_vector_data(0))
-          ->get_value();
+  const auto& output_vector = output->get_vector_data(0)->get_value();
 
   // The expected output value is the gain times the input vector.
   VectorX<T> expected = kGain * input_vector;

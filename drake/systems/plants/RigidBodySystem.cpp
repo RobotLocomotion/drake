@@ -5,9 +5,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
@@ -34,6 +35,7 @@ using std::string;
 
 using drake::math::quatRotateVec;
 using drake::parsers::ModelInstanceIdTable;
+using drake::systems::plants::joints::FloatingBaseType;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -85,7 +87,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
   using namespace Eigen;
-  eigen_aligned_unordered_map<const RigidBody*, Matrix<double, 6, 1>> f_ext;
 
   // todo: make kinematics cache once and re-use it (but have to make one per
   // type)
@@ -101,13 +102,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // happily, this clunkier version seems fast enough for now
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
-  drake::solvers::OptimizationProblem prog;
+  drake::solvers::MathematicalProgram prog;
   auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  VectorXd C = tree->dynamicsBiasTerm(kinsol, f_ext);
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  VectorXd C = tree->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
   // loop through rigid body force elements
@@ -126,7 +128,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // apply joint limit forces
   {
     for (auto const& b : tree->bodies) {
-      if (!b->hasParent()) continue;
+      if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       if (joint.getNumPositions() == 1 &&
           joint.getNumVelocities() ==
@@ -292,7 +294,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
-    drake::solvers::OptimizationProblem prog;
+    drake::solvers::MathematicalProgram prog;
     std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 
@@ -875,7 +877,7 @@ void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
     const string& urdf_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the RigidBodyTree.
@@ -895,7 +897,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the URDF to the rigid body tree.
@@ -920,7 +922,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
     const string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
@@ -945,7 +947,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
     const string& sdf_string,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Adds the robot to the rigid body tree.
@@ -970,7 +972,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromSdfString(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();
@@ -997,7 +999,7 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromFile(
 
 ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
     const std::string& string_description,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
 
   // Parse the string using an XML parser.

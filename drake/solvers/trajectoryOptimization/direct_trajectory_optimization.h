@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeTrajectoryOptimization_export.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 namespace drake {
@@ -50,14 +50,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Adds an integrated cost to all time steps.
    *
    * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
+   * MathematicalProgram::AddCost().
    */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddRunningCostFunc(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
     AddRunningCost(c);
     return c;
   }
@@ -118,14 +118,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a cost to the initial state.
    *
    * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
+   * MathematicalProgram::AddCost().
   */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddInitialCostFunc(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
     AddInitialCost(c);
     return c;
   }
@@ -143,14 +143,14 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
    * Add a cost to the final state and total time.
    *
    * @param f A callable which meets the requirments of
-   * OptimizationProblem::AddCost().
+   * MathematicalProgram::AddCost().
    */
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddFinalCostFunc(F&& f) {
-    auto c = OptimizationProblem::MakeCost(std::forward<F>(f));
+    auto c = MathematicalProgram::MakeCost(std::forward<F>(f));
     AddFinalCost(c);
     return c;
   }
@@ -240,7 +240,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
-  OptimizationProblem* opt_problem() { return &opt_problem_; }
+  MathematicalProgram* opt_problem() { return &opt_problem_; }
   const DecisionVariableView& h_vars() const { return h_vars_; }
   const DecisionVariableView& u_vars() const { return u_vars_; }
   const DecisionVariableView& x_vars() const { return x_vars_; }
@@ -268,7 +268,7 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DirectTrajectoryOptimization {
   const int num_states_;
   const int N_;  // Number of time samples
 
-  OptimizationProblem opt_problem_;
+  MathematicalProgram opt_problem_;
   DecisionVariableView h_vars_;  // Time deltas between each
                                  // input/state sample.
   DecisionVariableView u_vars_;

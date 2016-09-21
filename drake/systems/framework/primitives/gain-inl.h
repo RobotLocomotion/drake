@@ -13,7 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,12 @@ Gain<T>::Gain(const T& k, int length) : gain_(k) {
 }
 
 template <typename T>
-void Gain<T>::EvalOutput(const ContextBase<T>& context,
+const T& Gain<T>::get_gain() const {
+  return gain_;
+}
+
+template <typename T>
+void Gain<T>::EvalOutput(const Context<T>& context,
                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));

@@ -4,11 +4,11 @@
 #include <set>
 #include <vector>
 #include <Eigen/Dense>
-#include <Eigen/StdVector>
 
+#include "drake/common/eigen_stl_types.h"
+#include "drake/drakeControlUtil_export.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/drakeControlUtil_export.h"
 
 const int m_surface_tangents =
     2;  // number of faces in the friction cone approx
@@ -20,8 +20,7 @@ typedef Eigen::Matrix<double, 7, 1> Vector7d;
 
 typedef struct _support_state_element {
   int body_idx;
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
-      contact_pts;
+  drake::eigen_aligned_std_vector<Eigen::Vector3d> contact_pts;
   bool support_logic_map[4];
   Eigen::Vector4d support_surface;  // 4-vector describing a support surface:
                                     // [v; b] such that v' * [x;y;z] + b == 0
@@ -42,20 +41,15 @@ DRAKECONTROLUTIL_EXPORT bool isSupportElementActive(
 DRAKECONTROLUTIL_EXPORT Eigen::Matrix<bool, Eigen::Dynamic, 1>
 getActiveSupportMask(
     RigidBodyTree *r, Eigen::VectorXd q, Eigen::VectorXd qd,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &
         contact_force_detected,
     double contact_threshold);
 
-DRAKECONTROLUTIL_EXPORT std::vector<
-    SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
+DRAKECONTROLUTIL_EXPORT drake::eigen_aligned_std_vector<SupportStateElement>
 getActiveSupports(
     const RigidBodyTree &r, const Eigen::VectorXd &q, const Eigen::VectorXd &qd,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &
         contact_force_detected,
     double contact_threshold);
@@ -76,8 +70,7 @@ DRAKECONTROLUTIL_EXPORT void angleDiff(
     Eigen::MatrixBase<DerivedPhi2> const &phi2, Eigen::MatrixBase<DerivedD> &d);
 
 DRAKECONTROLUTIL_EXPORT bool inSupport(
-    const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>> &supports,
+    const drake::eigen_aligned_std_vector<SupportStateElement>& supports,
     int body_idx);
 DRAKECONTROLUTIL_EXPORT void surfaceTangents(
     const Eigen::Vector3d &normal,
@@ -89,15 +82,12 @@ DRAKECONTROLUTIL_EXPORT int contactPhi(const RigidBodyTree &r,
 DRAKECONTROLUTIL_EXPORT int contactConstraintsBV(
     const RigidBodyTree &r, const KinematicsCache<double> &cache, int nc,
     std::vector<double> support_mus,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>> &supp,
+    drake::eigen_aligned_std_vector<SupportStateElement>& supp,
     Eigen::MatrixXd &B, Eigen::MatrixXd &JB, Eigen::MatrixXd &Jp,
     Eigen::VectorXd &Jpdotv, Eigen::MatrixXd &normals);
 DRAKECONTROLUTIL_EXPORT Eigen::MatrixXd individualSupportCOPs(
     const RigidBodyTree &r, const KinematicsCache<double> &cache,
-    const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>> &
-        active_supports,
+    const drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     const Eigen::MatrixXd &normals, const Eigen::MatrixXd &B,
     const Eigen::VectorXd &beta);
 DRAKECONTROLUTIL_EXPORT Vector6d bodySpatialMotionPD(

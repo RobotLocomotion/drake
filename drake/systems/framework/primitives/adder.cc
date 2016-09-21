@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -20,12 +20,12 @@ Adder<T>::Adder(int num_inputs, int length) {
 }
 
 template <typename T>
-void Adder<T>::EvalOutput(const ContextBase<T>& context,
+void Adder<T>::EvalOutput(const Context<T>& context,
                           SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  VectorBase<T>* output_vector = output->GetMutableVectorData(0);
+  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
   // Zeroes the output.
   const int n = static_cast<int>(output_vector->get_value().rows());
@@ -34,7 +34,7 @@ void Adder<T>::EvalOutput(const ContextBase<T>& context,
   // Sum each input port into the output, after checking that it has the
   // expected length.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const VectorBase<T>* input_vector = context.get_vector_input(i);
+    const BasicVector<T>* input_vector = context.get_vector_input(i);
     output_vector->get_mutable_value() += input_vector->get_value();
   }
 }

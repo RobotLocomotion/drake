@@ -1,30 +1,30 @@
-add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest OPTIONAL snopt COMMAND CubicPolynomialExample.findFixedPointTest)
-add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
-add_matlab_test(NAME examples/CubicPolynomialExample.sosExample REQUIRES mosek spotless COMMAND CubicPolynomialExample.sosExample)
-add_matlab_test(NAME examples/CubicPolynomialExample.run REQUIRES spotless OPTIONAL mosek sedumi COMMAND CubicPolynomialExample.run)
-add_matlab_test(NAME examples/DoubleIntegrator.runDircol OPTIONAL snopt COMMAND DoubleIntegrator.runDircol)
-add_matlab_test(NAME examples/DoubleIntegrator.runDirtran OPTIONAL snopt COMMAND DoubleIntegrator.runDirtran)
-add_matlab_test(NAME examples/DoubleIntegrator.runConvexDirtran OPTIONAL gurobi COMMAND DoubleIntegrator.runConvexDirtran)
+drake_add_matlab_test(NAME examples/CubicPolynomialExample.findFixedPointTest OPTIONAL snopt COMMAND CubicPolynomialExample.findFixedPointTest)
+drake_add_matlab_test(NAME examples/CubicPolynomialExample.animate COMMAND CubicPolynomialExample.animate)
+drake_add_matlab_test(NAME examples/CubicPolynomialExample.sosExample REQUIRES mosek spotless COMMAND CubicPolynomialExample.sosExample)
+drake_add_matlab_test(NAME examples/CubicPolynomialExample.run REQUIRES spotless OPTIONAL mosek sedumi COMMAND CubicPolynomialExample.run)
+drake_add_matlab_test(NAME examples/DoubleIntegrator.runDircol OPTIONAL snopt COMMAND DoubleIntegrator.runDircol)
+drake_add_matlab_test(NAME examples/DoubleIntegrator.runDirtran OPTIONAL snopt COMMAND DoubleIntegrator.runDirtran)
+drake_add_matlab_test(NAME examples/DoubleIntegrator.runConvexDirtran OPTIONAL gurobi COMMAND DoubleIntegrator.runConvexDirtran)
 
-add_matlab_test(NAME examples/GridWorld.runValueIteration COMMAND GridWorld.runValueIteration)
-add_matlab_test(NAME examples/GridWorld.drawBoard COMMAND GridWorld.drawBoard)
+drake_add_matlab_test(NAME examples/GridWorld.runValueIteration COMMAND GridWorld.runValueIteration)
+drake_add_matlab_test(NAME examples/GridWorld.drawBoard COMMAND GridWorld.drawBoard)
 
-add_matlab_test(NAME examples/LinearGaussianExample.run COMMAND LinearGaussianExample.run)
+drake_add_matlab_test(NAME examples/LinearGaussianExample.run COMMAND LinearGaussianExample.run)
 
-add_matlab_test(NAME examples/SineSys.runTaylor REQUIRES spotless OPTIONAL mosek sedumi COMMAND SineSys.runTaylor)
-add_matlab_test(NAME examples/SineSys.runTrigPolyVectorFields REQUIRES spotless COMMAND SineSys.runTrigPolyVectorFields)
-add_matlab_test(NAME examples/SineSys.run REQUIRES sedumi COMMAND SineSys.run)
+drake_add_matlab_test(NAME examples/SineSys.runTaylor REQUIRES spotless OPTIONAL mosek sedumi COMMAND SineSys.runTaylor)
+drake_add_matlab_test(NAME examples/SineSys.runTrigPolyVectorFields REQUIRES spotless COMMAND SineSys.runTrigPolyVectorFields)
+drake_add_matlab_test(NAME examples/SineSys.run REQUIRES sedumi COMMAND SineSys.run)
 
-add_matlab_test(NAME examples/VanDerPol.runDircol OPTIONAL snopt COMMAND VanDerPol.runDircol)
-add_matlab_test(NAME examples/VanDerPol.phasePortrait COMMAND VanDerPol.phasePortrait)
-add_matlab_test(NAME examples/VanDerPol.run REQUIRES spotless OPTIONAL mosek sedumi COMMAND VanDerPol.run)
+drake_add_matlab_test(NAME examples/VanDerPol.runDircol OPTIONAL snopt COMMAND VanDerPol.runDircol)
+drake_add_matlab_test(NAME examples/VanDerPol.phasePortrait COMMAND VanDerPol.phasePortrait)
+drake_add_matlab_test(NAME examples/VanDerPol.run REQUIRES spotless OPTIONAL mosek sedumi COMMAND VanDerPol.run)
 
-add_matlab_test(NAME examples/commonLyapunovForLinearSystems REQUIRES mosek spotless COMMAND commonLyapunovForLinearSystems)
+drake_add_matlab_test(NAME examples/commonLyapunovForLinearSystems REQUIRES mosek spotless COMMAND commonLyapunovForLinearSystems)
 
-if(LONG_RUNNING_TESTS)
-  add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration PROPERTIES TIMEOUT 1500)
-  add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo PROPERTIES TIMEOUT 1500)
-endif()
+
+drake_add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration SIZE large)
+drake_add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo SIZE large)
+
 
 # recurse into all example subdirectories
 # note: the GLOB workflow is typically not recommended due to the fact that CMake will not be able

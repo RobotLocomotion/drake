@@ -4,6 +4,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/math/random_rotation.h"
+
 using Eigen::Map;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -42,6 +44,6 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   }
 
   Map<Vector3d> rpy(&q[3]);
-  rpy = uniformlyRandomRPY(generator);
+  rpy = drake::math::UniformlyRandomRPY(generator);
   return q;
 }

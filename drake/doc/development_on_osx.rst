@@ -14,7 +14,7 @@ This page contains information that may be useful to people developing in OS X.
 pygame
 ======
 
-`pygame <http://pygame.org>`_ is used by ``drake/examples/Cars/SteeringCommandDriver.py``.
+`pygame <http://pygame.org>`_ is used by ``drake/automotive/steering_command_driver.py``.
 
 Install Mercurial:
 

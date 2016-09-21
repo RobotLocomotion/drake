@@ -435,7 +435,7 @@ std::vector<MSKboundkeye> MosekWrapper::FindMosekBounds(
 }
 
 
-SolutionResult MosekWrapper::Solve(OptimizationProblem &prog) {
+SolutionResult MosekWrapper::Solve(MathematicalProgram &prog) {
   Eigen::MatrixXd linear_cons;
   Eigen::MatrixXd quad_cons;
   std::vector<double> upper_constraint_bounds;

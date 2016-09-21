@@ -11,7 +11,6 @@ extern "C" {
 #include <Eigen/Core>
 
 #include "drake/solvers/solution_result.h"
-#include "drake/solvers/optimization.h"
 #include "drake/solvers/mathematical_program.h"
 
 /** Definitions and program flow taken from
@@ -86,7 +85,7 @@ class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
 
   /** Optimizes variables in given linear constraints, works with either
   of the two previous object declarations.  **/
-  static SolutionResult Solve(OptimizationProblem &prog);
+  static SolutionResult Solve(MathematicalProgram &prog);
 
   std::vector<double> GetSolution() const { return solutions_; }
 

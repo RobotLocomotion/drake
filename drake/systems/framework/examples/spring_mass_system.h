@@ -4,20 +4,20 @@
 #include <string>
 
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/systems/framework/basic_state_and_output_vector.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/state_vector.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
+
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
-    : public BasicStateAndOutputVector<double> {
+    : public BasicVector<double> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -56,8 +56,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 /// @endverbatim
 ///
 /// Units are MKS (meters-kilograms-seconds).
-class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
-    : public LeafSystem<double> {
+/// @ingroup systems
+
+class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
@@ -70,7 +71,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = ContextBase<double>;
+  using MyContext = Context<double>;
   using MyContinuousState = ContinuousState<double>;
   using MyOutput = SystemOutput<double>;
 
@@ -87,12 +88,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
 
   /// Gets the current position of the mass in the given Context.
   double get_position(const MyContext& context) const {
-    return context.get_state().continuous_state->get_state().GetAtIndex(0);
+    return get_state(context).get_position();
   }
 
   /// Gets the current velocity of the mass in the given Context.
   double get_velocity(const MyContext& context) const {
-    return context.get_state().continuous_state->get_state().GetAtIndex(1);
+    return get_state(context).get_velocity();
   }
 
   /// @returns the external driving force to the system.
@@ -100,15 +101,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
     double external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      const VectorBase<double>* input =
-          context.get_vector_input(0);
-      // TODO(amcastro-tri): Add VectorBase::component(int idx) on
-      // VectorBase.
-      // refactor get_vector_input --> get_input_vector?
-      // So that the line below would simply read:
-      // external_force = context.get_input_vector(0).component(0)
-      // and becomes a one liner.
-      external_force = input->get_value().x();
+      external_force = context.get_vector_input(0)->GetAtIndex(0);
     }
     return external_force;
   }
@@ -121,21 +114,18 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
 
   /// Sets the position of the mass in the given Context.
   void set_position(MyContext* context, double position) const {
-    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(0, position);
-    //get_mutable_state(context)->set_position(position);
+    get_mutable_state(context)->set_position(position);
   }
 
   /// Sets the velocity of the mass in the given Context.
   void set_velocity(MyContext* context, double velocity) const {
-    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(1, velocity);
-    //get_mutable_state(context)->set_velocity(velocity);
+    get_mutable_state(context)->set_velocity(velocity);
   }
 
   /// Sets the initial value of the conservative power integral in the given
   /// Context.
   void set_conservative_work(MyContext* context, double energy) const {
-    context->get_mutable_state()->continuous_state->get_mutable_state()->SetAtIndex(2, energy);
-    //get_mutable_state(context)->set_conservative_work(energy);
+    get_mutable_state(context)->set_conservative_work(energy);
   }
 
   /// Returns the force being applied by the spring to the mass in the given
@@ -191,6 +181,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   /// is none in this system.)
   double EvalNonConservativePower(const MyContext& context) const override;
 
+<<<<<<< HEAD
   // Implement base class methods.
   /// Allocates a state and sets initial conditions to zero.
   std::unique_ptr<MyContext> CreateDefaultContext() const override {
@@ -206,14 +197,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem
   /// Allocates no input ports.
   std::unique_ptr<MyContext> CreateDefaultContext() const override;
 
+=======
+  // System<T> overrides
+>>>>>>> controlled_spring_mass
   /// Allocates a single output port of type SpringMassStateVector.
   std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;
-
-  /// Allocates state derivatives of type SpringMassStateVector.
-  std::unique_ptr<MyContinuousState> AllocateTimeDerivatives() const override;
-#endif
-
   void EvalOutput(const MyContext& context, MyOutput* output) const override;
 
   void EvalTimeDerivatives(const MyContext& context,

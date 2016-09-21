@@ -7,26 +7,25 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 /// StateSupervector is a concrete class template that implements
-/// StateVector by concatenating multiple StateVectors, which it
+/// VectorBase by concatenating multiple VectorBases, which it
 /// does not own.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateSupervector : public StateVector<T> {
+class StateSupervector : public VectorBase<T> {
  public:
   /// Constructs a supervector consisting of all the vectors in
   /// subvectors, which must live at least as long as this supervector.
-  explicit StateSupervector(const std::vector<StateVector<T>*>& subvectors)
+  explicit StateSupervector(const std::vector<VectorBase<T>*>& subvectors)
       : vectors_(subvectors) {
     int sum = 0;
-    for (const StateVector<T>* vec : vectors_) {
+    for (const VectorBase<T>* vec : vectors_) {
       sum += vec->size();
       lookup_table_.push_back(sum);
     }
@@ -59,7 +58,7 @@ class StateSupervector : public StateVector<T> {
   //
   // 0 | 1 2 3 | 4 5 6 7 8
   //               ^ index 5
-  std::pair<StateVector<T>*, int> GetSubvectorAndOffset(int index) const {
+  std::pair<VectorBase<T>*, int> GetSubvectorAndOffset(int index) const {
     if (index >= size() || index < 0) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state supervector of size " +
@@ -67,13 +66,13 @@ class StateSupervector : public StateVector<T> {
     }
     // Binary-search the lookup_table_ for the first element that is larger
     // than the specified index.
-    const auto it = std::upper_bound(lookup_table_.begin(),
-                                     lookup_table_.end(), index);
+    const auto it =
+        std::upper_bound(lookup_table_.begin(), lookup_table_.end(), index);
 
     // Use the lookup result to identify the subvector that contains the index.
     const int subvector_id =
         static_cast<int>(std::distance(lookup_table_.begin(), it));
-    StateVector<T>* subvector = vectors_[subvector_id];
+    VectorBase<T>* subvector = vectors_[subvector_id];
 
     // The item at index 0 in vectors_[subvector_id] corresponds to index
     // lookup_table_[subvector_id - 1] in the supervector.
@@ -88,7 +87,7 @@ class StateSupervector : public StateVector<T> {
   StateSupervector& operator=(StateSupervector&& other) = delete;
 
   // An ordered list of all the constituent vectors in this supervector.
-  std::vector<StateVector<T>*> vectors_;
+  std::vector<VectorBase<T>*> vectors_;
 
   // The integer in the lookup_table_ at index N is the sum of the number of
   // state variables in the constituent vectors 0 through N inclusive.
