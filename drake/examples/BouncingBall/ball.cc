@@ -5,8 +5,8 @@
 namespace drake {
 namespace bouncingball {
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT Ball<double>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT Ball<AutoDiffXd>;
+template class DRAKEBOUNCINGBALL_EXPORT Ball<double>;
+template class DRAKEBOUNCINGBALL_EXPORT Ball<AutoDiffXd>;
 
 }  // namespace bouncingball
 }  // namespace drake
