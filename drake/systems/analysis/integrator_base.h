@@ -24,30 +24,20 @@ class IntegratorBase {
   /// Status returned by Step
   /**
    * When a step is successful, it will return an indication of what caused it
-   to stop where it did.
+   to stop where it did. When unsuccessful it will throw an exception so you
+   won't see any return value. When return of control is due ONLY to reaching a
+   report time, (status is ReachedReportTime) the context may return an
+   interpolated value at an earlier time.
 
-     When unsuccessful it will throw an exception so you won't see any return
-   value.
+   Note: we ensure algorithmically that no report time, scheduled time, or
+   final time t can occur *within* an event window, that is, we will never have
+   t_low < t < t_high for any interesting t. Further, t_report, t_scheduled and
+   t_final can coincide with t_high but only t_report can be at t_low. The
+   interior of t_low:t_high is a "no man's land" where we don't understand the
+   solution, so must be avoided.
 
-     When return of control is due ONLY to reaching a report time, (status is
-   ReachedReportTime) the integrator's
-     getState() method may return an interpolated value at an earlier time than
-   its getAdvancedState() method
-     would return. For the other returns, and whenever the report time coincides
-   with the end of an internal step,
-     get_state() and get_advanced_state() will be identical.
-
-     Note: we ensure algorithmically that no report time, scheduled time, or
-   final time t can occur *within* an
-     event window, that is, we will never have t_low < t < t_high for any
-   interesting t. Further, t_report,
-     t_scheduled and t_final can coincide with t_high but only t_report can be
-   at t_low. The interior of
-     t_low:t_high is a "no man's land" where we don't understand the solution,
-   so must be avoided.
-
-     TODO(edrumwri): note that simulation step must always end at an update
-     time but can end after a publish time
+   Note: the simulation step must always end at an update time but can end
+   after a publish time
    */
   enum StepResult {
     kReachedReportTime = 1, /** implication is no discrete update is necessary

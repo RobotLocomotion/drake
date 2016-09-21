@@ -216,7 +216,7 @@ class Simulator {
   /// Gets a pointer to the integrator
   IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
 
-  // TODO (edrumwri): undo initialization?
+  // TODO(edrumwri): undo initialization?
   /// Sets the integrator
   void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
     integrator_ = std::move(integrator);
@@ -239,15 +239,15 @@ class Simulator {
   void ResetSimulatorSettingsInUse() {
     initialization_done_ = false;
 
-    // TODO (edrumwri): create a new integrator when a variable step integrator is
-    // available
+    // TODO(edrumwri): create a new integrator when a variable step integrator
+    // is available
     // integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     // ExplicitEulerIntegrator<T>(system_, context_.get()));
     std::cerr << "ResetSimulatorSettingsInUse() should not be called until a "
                  "variable step integrator is "
               << "implemented" << std::endl;
 
-    // TODO (edrumwri): reset integrator settings
+    // TODO(edrumwri): reset integrator settings
   }
 
   // A pointer to the integrator
@@ -301,7 +301,7 @@ void Simulator<T>::Initialize() {
 
   // create integrator if necessary
   if (!integrator_)
-    // TODO (edrumwri): create a new integrator when a variable step integrator is
+    // TODO(edrumwri): create a new integrator when a variable step integrator is
     // available
     //    integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     //    ExplicitEulerIntegrator<T>(system_, context_.get()));
@@ -329,7 +329,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
-  // TODO (edrumwri):
+  // TODO(edrumwri):
   SampleActions sample_actions;
   bool update_time_hit = false;
   while (context_->get_time() <= final_time) {
