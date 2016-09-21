@@ -188,25 +188,12 @@ class DRAKERBM_EXPORT RigidBody {
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   /**
-   * Adds a collision element to this rigid body by collision element @p id.
-   * This effectively defines the collision geometry of this rigid body. If more
-   * than one collision element is added, the resulting collision geometry is
-   * the union of the individual geometries of each collision element.
+   * Adds the given collision @p element to the body with the given group name.
+   * @param[in] group_name The collision element's group name.
+   * @param[in] element The element to associate with the rigid body.
    */
-  void AddCollisionElement(DrakeCollision::ElementId id);
-
-  /**
-   * Adds a collision element represented by its @p id to the collision group
-   * @p group_name. Collision groups are just a convenient way to group a
-   * collection of collision elements so that they can be referenced by the name
-   * of the group they belong to. There is no implication on whether these
-   * elements can collide between them or not.
-   *
-   * Note that the collision element @p id must have already been passed to
-   * RigidBody::AddCollisionElement().
-   */
-  void AddCollisionElementToGroup(const std::string& group_name,
-      DrakeCollision::ElementId id);
+  void AddCollisionElement(const std::string& group_name,
+                           DrakeCollision::Element* element);
 
   /**
    * @returns A reference to an `std::vector` of collision elements that
@@ -353,13 +340,6 @@ class DRAKERBM_EXPORT RigidBody {
    @param[in] clique_id Collision clique id.
    @see CollisionElement::AddToCollisionClique. **/
   void AddToCollisionClique(int clique_id);
-
-  /** Adds collision element `e` to this rigid body.
-   @param e The collision element being added to this body.
-   **/
-  void AddCollisionElement(DrakeCollision::Element* e) {
-    collision_elements_.push_back(e);
-  }
 
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
