@@ -46,8 +46,8 @@ class IntegratorBase {
      t_low:t_high is a "no man's land" where we don't understand the solution,
    so must be avoided.
 
-     TODO: note that simulation step must always end at an update time but can
-   end after a publish time
+     TODO (edrumwri): note that simulation step must always end at an update
+     time but can end after a publish time
    */
   enum StepResult {
     kReachedReportTime = 1, /** implication is no discrete update is necessary
@@ -55,21 +55,22 @@ class IntegratorBase {
                                gives a time far into the future or witness
                                functions indicate no upcoming event */
     kReachedZeroCrossing =
-        2, /** localized an event; this is the *before* state (interpolated) **/
+    2, /** localized an event; this is the *before* state (interpolated) **/
     kReachedScheduledEvent = 3,
     kTimeHasAdvanced = 4, /** user requested control whenever an internal step
-                             is successful; TODO: possibly take this out (if
-                             integrator should take as big a step as possible
-                             until publish or update occurs) **/
+                             is successful; TODO (edrumwri): possibly take this
+                             out (if integrator should take as big a step as
+                             possible until publish or update occurs) **/
     kReachedStepLimit =
-        5, /** TODO: possibly take this out, took maximum number of steps
+    5, /** TODO (edrumwri): possibly take this out, took maximum number of steps
               without finishing integrating over the interval **/
-    kStartOfContinuousInterval = 7, /** TODO: possibly remove this after
-                                       implementing variable step integration
+    kStartOfContinuousInterval = 7, /** TODO (edrumwri): possibly remove this
+ *                                      after implementing variable step
+ *                                      integration
                                        **/
   };
 
-  IntegratorBase(const System<T>& system, Context<T>* context = nullptr)
+  IntegratorBase(const System<T> &system, Context<T> *context = nullptr)
       : system_(system), context_(context) {
     initialization_done_ = false;
   }
@@ -106,7 +107,7 @@ attempt. For fixed-step integration, all steps will be taken at this step
 size. For variable-step integration this will be treated as a maximum size
 subject to accuracy requirements and event occurrences. You can find out what
 size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  virtual void request_initial_step_size_target(const T& step_size) {
+  virtual void request_initial_step_size_target(const T &step_size) {
     req_initial_step_size_ = step_size;
   }
 
@@ -116,7 +117,7 @@ attempt. For fixed-step integration, all steps will be taken at this step
 size. For variable-step integration this will be treated as a maximum size
 subject to accuracy requirements and event occurrences. You can find out what
 size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  virtual const T& get_initial_step_size_target() const {
+  virtual const T &get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
 
@@ -132,7 +133,7 @@ We recommend that you call `Initialize()` prior to making the first call to
 time you attempt a step, possibly resulting in unexpected error conditions.
 See documentation for `Initialize()` for the error conditions it might
 produce. **/
-  virtual StepResult Step(const T& dt) = 0;
+  virtual StepResult Step(const T &dt) = 0;
 
   /** @name                       Statistics
 These methods track relevant activity of the %Simulator since the last call
@@ -174,37 +175,37 @@ to `Initialize()`. **/
   primarily on the integrator's accuracy prediction (variable step integrators;
   will change as the simulation
    progresses) or using the fixed step for fixed step integrators. **/
-  virtual const T& get_ideal_next_step_size() const {
+  virtual const T &get_ideal_next_step_size() const {
     return ideal_next_step_size_;
   }
 
-  // TODO: add method to query a system for its max step size
+  // TODO (edrumwri): add method to query a system for its max step size
 
   /** Returns a const reference to the internally-maintained Context holding the
 most recent step in the trajectory. This is suitable for publishing or
 extracting information about this trajectory step. **/
-  const Context<T>& get_context() const { return *context_; }
+  const Context<T> &get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for use in updates,
   sampling operations, event handlers, and constraint projection. You can
   also modify this prior to calling Initialize() to set initial conditions. **/
-  Context<T>* get_mutable_context() { return context_; }
+  Context<T> *get_mutable_context() { return context_; }
 
   /** Replace the internally-maintained Context with a different one. The
   current Context is deleted. This is useful for supplying a new set of initial
   conditions. You should invoke Initialize() after replacing the Context. **/
-  void reset_context(Context<T>* context) {
+  void reset_context(Context<T> *context) {
     context_ = context;
     initialization_done_ = false;
   }
 
  protected:
   /// Reference to the system being simulated
-  const System<T>& system_;
+  const System<T> &system_;
 
   /// Pointer to the context
-  Context<T>* context_;  // The trajectory Context.
+  Context<T> *context_;  // The trajectory Context.
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -235,7 +236,7 @@ extracting information about this trajectory step. **/
   }
 
   double target_accuracy_{0.0};      // means "unspecified, use default"
-  T req_initial_step_size_{(T)0.0};  // means "unspecified, use default"
+  T req_initial_step_size_{(T) 0.0};  // means "unspecified, use default"
 
 };  // IntegratorBase
 }  // namespace systems

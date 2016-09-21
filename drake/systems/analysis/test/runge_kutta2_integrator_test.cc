@@ -33,8 +33,7 @@ namespace drake {
           auto context = spring_mass.CreateDefaultContext();
 
           // create the integrator
-          RungeKutta2Integrator<double> integrator(spring_mass, context.get());  // Use default Context.
-
+          RungeKutta2Integrator<double> integrator(spring_mass, context.get());
           integrator.get_mutable_context()->set_time(3.);
           EXPECT_EQ(integrator.get_context().get_time(), 3.);
           EXPECT_EQ(context->get_time(), 3.);
@@ -57,7 +56,7 @@ namespace drake {
           auto context = spring_mass.CreateDefaultContext();
 
           // create the integrator
-          RungeKutta2Integrator<double> integrator(spring_mass, context.get());  // Use default Context.
+          RungeKutta2Integrator<double> integrator(spring_mass, context.get());
 
           // setup the initial position and initial velocity
           const double kInitialPosition = 0.1;
@@ -65,7 +64,8 @@ namespace drake {
           const double kOmega = std::sqrt(kSpring/kMass);
 
           // Set initial condition using the Simulator's internal Context.
-          spring_mass.set_position(integrator.get_mutable_context(), kInitialPosition);
+          spring_mass.set_position(integrator.get_mutable_context(),
+                                   kInitialPosition);
 
           // Take all the defaults.
           integrator.Initialize();
@@ -84,10 +84,12 @@ namespace drake {
           EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
           // get the final position
-          const double kXFinal = context->get_state().continuous_state->get_state().GetAtIndex(0);
+          const double kXFinal = context->get_state().
+              continuous_state->get_state().GetAtIndex(0);
 
           // check the solution
-          EXPECT_NEAR(C1*std::cos(kOmega*t) + C2*std::sin(kOmega*t), kXFinal, 1e-5);
+          double true_sol = C1*std::cos(kOmega*t) + C2*std::sin(kOmega*t);
+          EXPECT_NEAR(true_sol, kXFinal, 1e-5);
       }
 
     }  // namespace
