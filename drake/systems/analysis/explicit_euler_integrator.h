@@ -66,7 +66,6 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
-
 };  // ExplictEulerIntegrator
 
 template <class T>

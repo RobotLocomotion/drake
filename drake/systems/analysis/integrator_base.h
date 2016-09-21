@@ -46,7 +46,7 @@ class IntegratorBase {
      t_low:t_high is a "no man's land" where we don't understand the solution,
    so must be avoided.
 
-     TODO (edrumwri): note that simulation step must always end at an update
+     TODO(edrumwri): note that simulation step must always end at an update
      time but can end after a publish time
    */
   enum StepResult {
@@ -58,19 +58,20 @@ class IntegratorBase {
     2, /** localized an event; this is the *before* state (interpolated) **/
     kReachedScheduledEvent = 3,
     kTimeHasAdvanced = 4, /** user requested control whenever an internal step
-                             is successful; TODO (edrumwri): possibly take this
+                             is successful; TODO(edrumwri): possibly take this
                              out (if integrator should take as big a step as
                              possible until publish or update occurs) **/
     kReachedStepLimit =
-    5, /** TODO (edrumwri): possibly take this out, took maximum number of steps
+    5, /** TODO(edrumwri): possibly take this out, took maximum number of steps
               without finishing integrating over the interval **/
-    kStartOfContinuousInterval = 7, /** TODO (edrumwri): possibly remove this
- *                                      after implementing variable step
- *                                      integration
+    kStartOfContinuousInterval = 7, /** TODO(edrumwri): possibly remove this
+                                       after implementing variable step
+                                       integration
                                        **/
   };
 
-  IntegratorBase(const System<T> &system, Context<T> *context = nullptr)
+  explicit IntegratorBase(const System<T> &system,
+                          Context<T> *context = nullptr)
       : system_(system), context_(context) {
     initialization_done_ = false;
   }
@@ -179,7 +180,7 @@ to `Initialize()`. **/
     return ideal_next_step_size_;
   }
 
-  // TODO (edrumwri): add method to query a system for its max step size
+  // TODO(edrumwri): add method to query a system for its max step size
 
   /** Returns a const reference to the internally-maintained Context holding the
 most recent step in the trajectory. This is suitable for publishing or
@@ -237,7 +238,6 @@ extracting information about this trajectory step. **/
 
   double target_accuracy_{0.0};      // means "unspecified, use default"
   T req_initial_step_size_{(T) 0.0};  // means "unspecified, use default"
-
 };  // IntegratorBase
 }  // namespace systems
 }  // namespace drake

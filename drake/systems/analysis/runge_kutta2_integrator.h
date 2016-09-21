@@ -63,13 +63,12 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   }
 
  private:
-
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
 
   /// The integration step size
   T step_size_{(T) 0.0};
-}; // ExplictEulerIntegrator
+};  // ExplictEulerIntegrator
 
 template<class T>
 typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
@@ -117,7 +116,7 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
 
   return IntegratorBase<T>::kTimeHasAdvanced;
 }
-} // systems
-} // drake
+}  // systems
+}  // drake
 
-#endif //DRAKE_SUPERBUILD_EXPLICIT_EULER_INTEGRATOR_H
+#endif  // DRAKE_SUPERBUILD_EXPLICIT_EULER_INTEGRATOR_H
