@@ -260,21 +260,21 @@ class DRAKERBM_EXPORT RigidBody {
   // calculation.  Maybe it would be better if the name reflected this: e.g.,
   // is_collision_adjacent(), or some such thing.
   /**
-   * Report if this body is considered "adjacent" to the given body.
+   * Reports if this body is considered "adjacent" to the given body.
    *
    * "Adjacency" refers to the idea that the bodies are connected to each other
    * in the rigid body tree by a non-floating joint.
-   * @param other The body to test agasint this body.
-   * @return `true` if the bodies are "adjacent".
+   * @param[in] other The body to test against this body.
+   * @returns `true` if the bodies are "adjacent".
    */
   bool adjacentTo(const RigidBody& other) const;
 
   /**
    * Returns `true` if this body should be checked for collisions
-   * with the other body.  CanCollidesWith should be symmetric: if
-   * A can collide with B, B can collide with A.
+   * with the @p other body.  CanCollideWith should be commutative: A can
+   * collide with B implies B can collide with A.
    * @param other   The body to query against.
-   * @return `true` if collision between this and other should be tested.
+   * @returns `true` if collision between this and other should be tested.
    */
   bool CanCollideWith(const RigidBody &other) const;
 
@@ -350,8 +350,7 @@ class DRAKERBM_EXPORT RigidBody {
 
    This call adds each of the collision elements in this body to the provided
    collision clique.
-   @param[in] clique_id Collision clique id. Collision elements in this clique
-   do not interact.
+   @param[in] clique_id Collision clique id.
    @see CollisionElement::AddToCollisionClique. **/
   void AddToCollisionClique(int clique_id);
 
@@ -429,14 +428,12 @@ class DRAKERBM_EXPORT RigidBody {
 
   typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
   typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
-  typedef typename CollisionElementsVector::const_iterator
-      CollisionElementsConstIterator;
 
-  CollisionElementsIterator CollisionElementsBegin() {
+  CollisionElementsIterator collision_elements_begin() {
     return collision_elements_.begin();
   }
 
-  CollisionElementsIterator CollisionElementsEnd() {
+  CollisionElementsIterator collision_elements_end() {
     return collision_elements_.end();
   }
 
