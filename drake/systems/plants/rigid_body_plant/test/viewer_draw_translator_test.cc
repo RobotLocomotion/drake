@@ -82,7 +82,6 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   std::vector<float> body0_position = {1, 2, 3};
 
-  // TODO(liang.fok): Verify this works on 32-bit machines.
   Vector3<double> body0_rpy = {M_PI, 0, 0};
   Vector4<double> body0_quaternion_eigen = rpy2quat(body0_rpy);
   std::vector<float> body0_quaternion(4);
