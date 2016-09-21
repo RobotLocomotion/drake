@@ -8,8 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
-
-#include "unsupported/Eigen/EulerAngles"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -212,15 +211,7 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& q) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  Eigen::Quaternion<typename Derived::Scalar> q_eigen(q(0), q(1), q(2), q(3));
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> rotmat =
-      q_eigen.toRotationMatrix();
-  auto euler_angles =
-      Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
-          template FromRotation<false, false, false>(rotmat);
-  return drake::Vector3<typename Derived::Scalar>(
-      euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
+ return rotmat2rpy(quat2rotmat(q));
 }
 
 template <typename Derived>

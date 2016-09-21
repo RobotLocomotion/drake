@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -52,12 +53,7 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> axis2rpy(
     const Eigen::MatrixBase<Derived>& a) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  Eigen::AngleAxis<typename Derived::Scalar> a_eigen(a(3),
-                                                     a.template head<3>());
-  auto euler_angles = a_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
-  return drake::Vector3<typename Derived::Scalar>(
-      euler_angles(2), euler_angles(1), euler_angles(0));
+  return rotmat2rpy(axis2rotmat(a));
 }
 
 }  // namespace math
