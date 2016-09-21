@@ -300,10 +300,22 @@ class System {
     return;
   }
 
+  /// Evaluate the guards associated with the system at a particular mode.
+  /// If the guard is non-positive, then the hybrid system is allowed to make a
+  /// transition from the `pre` mode to `post` mode.
+  ///
+  /// @param context The context in which to evaluate the guards.
   virtual T EvalGuard(const Context<T>& context) const {
     return T(std::numeric_limits<double>::infinity());
   }
 
+  /// Triggers a reset mapping that occurs once a discrete mode transition has
+  /// been made. It does so by mutating the context, so that, by default the
+  /// reset mapping is the identity mapping. It is expected that the reset map
+  /// is invoked if and only if the hybrid system has made a transition from the
+  /// `pre` mode to the `post` mode.
+  ///
+  /// @param context The context pointer which we perform the reset mapping.
   virtual void PerformReset(Context<T>* context) const {
     return;
   }
