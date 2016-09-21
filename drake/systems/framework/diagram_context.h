@@ -208,15 +208,6 @@ class DiagramContext : public Context<T> {
     return contexts_[index].get();
   }
 
-  /// Returns a mutable context structure for a given constituent system @p sys,
-  /// or nullptr if @p sys is not a constituent system.
-  Context<T>* GetMutableSubsystemContext(SystemIndex sys) {
-    auto it = contexts_.find(sys);
-    if (it == contexts_.end()) {
-      return nullptr;
-    }
-  }
-
   /// Recursively sets the time on this context and all subcontexts.
   void set_time(const T& time_sec) override {
     Context<T>::set_time(time_sec);

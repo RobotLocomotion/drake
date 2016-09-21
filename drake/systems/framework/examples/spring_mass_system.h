@@ -181,25 +181,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   /// is none in this system.)
   double EvalNonConservativePower(const MyContext& context) const override;
 
-<<<<<<< HEAD
-  // Implement base class methods.
-  /// Allocates a state and sets initial conditions to zero.
-  std::unique_ptr<MyContext> CreateDefaultContext() const override {
-    auto context = LeafSystem<double>::CreateDefaultContext();
-    set_position(context.get(), 0.0);
-    set_velocity(context.get(), 0.0);
-    set_conservative_work(context.get(), 0.0);
-    return context;
-  }
-
-#if 0
-  /// Allocates a state of type SpringMassStateVector.
-  /// Allocates no input ports.
-  std::unique_ptr<MyContext> CreateDefaultContext() const override;
-
-=======
   // System<T> overrides
->>>>>>> controlled_spring_mass
   /// Allocates a single output port of type SpringMassStateVector.
   std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;

@@ -180,7 +180,7 @@ class MyControlledSpringMassSystem :
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MyControlledSpringMassSystem(
       double stiffness, double mass, double kp, double ki, double kd)
-      : PidControlledSpringMassSystem(stiffness, mass, kp, ki, kd),
+      : PidControlledSpringMassSystem(stiffness, mass, kp, ki, kd, 0.0),
         sample_rate_(0.0) {}
 
   int get_publish_count() const { return publish_count_; }
@@ -188,7 +188,7 @@ class MyControlledSpringMassSystem :
 
  private:
   // Publish t q u to standard output.
-  void DoPublish(const ContextBase<double>& context) const override {
+  void DoPublish(const Context<double>& context) const override {
     ++publish_count_;
 
     cout << context.get_time() << " "
@@ -197,7 +197,7 @@ class MyControlledSpringMassSystem :
          << get_conservative_work(context) << endl;
   }
 
-  void DoUpdate(ContextBase<double>* context,
+  void DoUpdate(Context<double>* context,
                 const SampleActions& actions) const override {
     ++update_count_;
   }
@@ -206,7 +206,7 @@ class MyControlledSpringMassSystem :
   // time is exactly at a sample time, we assume the sample has already been
   // done and return the following sample time. That means we don't get a
   // sample at 0 but will get one at the end.
-  void DoCalcNextSampleTime(const ContextBase<double>& context,
+  void DoCalcNextSampleTime(const Context<double>& context,
                             SampleActions* actions) const override {
     if (sample_rate_ <= 0.) {
       actions->time = std::numeric_limits<double>::infinity();

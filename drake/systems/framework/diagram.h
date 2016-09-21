@@ -95,6 +95,16 @@ class Diagram : public System<T> {
 
   ~Diagram() override {}
 
+  /// Returns the list of contained Systems.
+  std::vector<const systems::System<T>*> GetSystems() const {
+    std::vector<const systems::System<T>*> result;
+    result.reserve(registered_systems_.size());
+    for (const auto& system : registered_systems_) {
+      result.push_back(system.get());
+    }
+    return result;
+  }
+
   /// Returns true if any output of the Diagram might have direct-feedthrough
   /// from any input of the Diagram.
   bool has_any_direct_feedthrough() const override {
@@ -229,6 +239,19 @@ class Diagram : public System<T> {
     return diagram_derivatives->get_substate(i);
   }
 
+  /// Returns a constant pointer to the subcontext that corresponds to the
+  /// system @p subsystem.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituent subsystem's the apropriate subcontext. Aborts if
+  /// @p subsystem is not actually a subsystem of this diagram.
+  const Context<T>& GetSubsystemContext(const Context<T>& context,
+                                        const System<T>* subsystem) const {
+    DRAKE_DEMAND(subsystem != nullptr);
+    auto& diagram_context = dynamic_cast<const DiagramContext<T>&>(context);
+    const int i = GetSystemIndexOrAbort(subsystem);
+    return *diagram_context.GetSubsystemContext(i);
+  }
+
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystem's the apropriate subcontext. Aborts if
@@ -260,25 +283,6 @@ class Diagram : public System<T> {
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
-
-  /// Returns a const sub-context that corresponds to the system @p sub_system.
-  /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituyent sub-system's the apropriate sub-context.
-  const Context<T>* GetSubSystemContext(
-      const Context<T>& context, const System<T>* sub_system) const {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
-    return diagram_context->GetSubsystemContext(
-        Diagram<T>::GetSystemIndex(sub_system));
-  }
-
-  /// Returns the sub-context that corresponds to the system @p sub_system.
-  /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituyent sub-system's the apropriate sub-context.
-  Context<T>* GetMutableSubSystemContext(
-      Context<T>* context, const System<T>* sub_system) const {
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
-    return diagram_context->GetMutableSubsystemContext(
-        Diagram<T>::GetSystemIndex(sub_system));
 
   void DoPublish(const Context<T>& context) const override {
     // Freshen all the subsystem inputs to match the provided context.

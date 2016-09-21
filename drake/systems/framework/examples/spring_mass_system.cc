@@ -46,22 +46,12 @@ SpringMassSystem::SpringMassSystem(double spring_constant_N_per_m,
     : spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
-<<<<<<< HEAD
-  System<double>::set_name("SpringMassSystem");
-  // Declare input port for forcing term.
-  if(system_is_forced) {
-    this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-  }
-  // Output port of q, qdot, Energy.
-  this->DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
-=======
   // Declares input port for forcing term.
   if (system_is_forced_)
     DeclareInputPort(kVectorValued, 1, kContinuousSampling);
 
   // Declares output port for q, qdot, Energy.
   DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
->>>>>>> controlled_spring_mass
 }
 
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
@@ -94,8 +84,6 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
   return power_nc;
 }
 
-<<<<<<< HEAD
-=======
 std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
     const Context<double>& context) const {
   std::unique_ptr<LeafSystemOutput<double>> output(
@@ -108,7 +96,6 @@ std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput(
   return std::unique_ptr<SystemOutput<double>>(output.release());
 }
 
->>>>>>> controlled_spring_mass
 std::unique_ptr<ContinuousState<double>>
 SpringMassSystem::AllocateContinuousState() const {
   return std::make_unique<ContinuousState<double>>(
@@ -132,14 +119,10 @@ void SpringMassSystem::EvalTimeDerivatives(
     ContinuousState<double>* derivatives) const {
   DRAKE_ASSERT_VOID(CheckValidContext(context));
 
-<<<<<<< HEAD
-  auto state_vec = this->CopyContinuousStateVector(context);
-=======
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
 
   SpringMassStateVector* derivative_vector = get_mutable_state(derivatives);
->>>>>>> controlled_spring_mass
 
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());
