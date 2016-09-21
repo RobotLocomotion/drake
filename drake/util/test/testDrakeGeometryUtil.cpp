@@ -136,19 +136,6 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   }
 }
 
-GTEST_TEST(DrakeGeometryUtilTest, NormalizeVec) {
-  const int ntests = 1;
-  const int x_rows = 4;
-
-  for (int testnr = 0; testnr < ntests; testnr++) {
-    auto x = Matrix<double, x_rows, 1>::Random().eval();
-    Matrix<double, x_rows, 1> x_norm;
-    Matrix<double, x_rows, x_rows> dx_norm;
-    Matrix<double, x_rows * x_rows, x_rows> ddx_norm;
-    normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
-  }
-}
-
 GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
   auto a = (drake::TwistVector<double>::Random()).eval();
   auto b = (drake::SquareTwistMatrix<double>::Identity()).eval();

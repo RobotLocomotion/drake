@@ -3,30 +3,23 @@
 #include <cmath>
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/EulerAngles>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/quaternion.h"
 
 namespace drake {
 namespace math {
-
-template <typename Derived>
-Vector4<typename Derived::Scalar> rotmat2axis(
-    const Eigen::MatrixBase<Derived>& R) {
-  using std::acos;
-  using std::sin;
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-
-  typename Derived::Scalar theta = acos((R.trace() - 1.0) / 2.0);
-  Eigen::Vector4d a;
-  if (theta > std::numeric_limits<typename Derived::Scalar>::epsilon()) {
-    a << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1), theta;
-    a.head<3>() *= 1.0 / (2.0 * sin(theta));
-  } else {
-    a << 1.0, 0.0, 0.0, 0.0;
-  }
-  return a;
-}
-
+/** Computes one of the quaternion from a rotation matrix.
+ * The implementation is adapted from
+ * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ * Notice that there are two quaternions corresponding to the same rotation,
+ * namely @p q and @p -q represent the same rotation.
+ * @param M A 3 x 3 rotation matrix.
+ * @return a 4 x 1 unit length vector, the quaternion corresponding to the
+ * rotation matrix
+ */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2quat(
     const Eigen::MatrixBase<Derived>& M) {
@@ -87,19 +80,88 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   return q;
 }
 
+/** Computes the angle axis representation from a rotation matrix. Since our
+ * ::rotmat2quat and ::quat2axis are both numerical stable (they handle all the
+ * corner cases, and avoid calling acos), we will call these two transform
+ * functions directly.
+ * @param R  the 3 x 3 rotation matrix
+ * @return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
+ * axis [x;y;z] has unit length, the angle satisfies -PI < angle <= PI
+ */
+template <typename Derived>
+Vector4<typename Derived::Scalar> rotmat2axis(
+    const Eigen::MatrixBase<Derived>& R) {
+  return (quat2axis(rotmat2quat(R)));
+}
+
+/**
+ * Compute the Euler angles from rotation matrix
+ * @param R A 3 x 3 rotation matrix
+ * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2), rpy(1), rpy(0)]
+ * @see rpy2rotmat
+ */
 template <typename Derived>
 Vector3<typename Derived::Scalar> rotmat2rpy(
     const Eigen::MatrixBase<Derived>& R) {
-  using std::atan2;
-  using std::pow;
-  using std::sqrt;
+  // TO-DO(daihongkai@gmail.com) uncomment this block when the Eigen bug
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1301
+  // is fixed. Currently Eigen's EulerAngles does not guarantee the range of
+  // the second angle covers PI.
+  /*
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
-  Vector3<typename Derived::Scalar> rpy;
-  rpy << atan2(R(2, 1), R(2, 2)),
-      atan2(-R(2, 0), sqrt(pow(R(2, 1), 2.0) + pow(R(2, 2), 2.0))),
-      atan2(R(1, 0), R(0, 0));
-  return rpy;
+  auto euler_angles =
+      Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
+          template FromRotation<false, false, false>(R);
+  return drake::Vector3<typename Derived::Scalar>(
+      euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
+  */
+
+  // This implementation is adapted from simbody
+  // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
+  using Scalar = typename Eigen::internal::traits<Derived>::Scalar;
+
+  int i = 2;
+  int j = 1;
+  int k = 0;
+
+
+  // Calculate theta2 using lots of information in the rotation matrix
+  Scalar Rsum = std::sqrt((R(i,i)*R(i,i) + R(i,j)*R(i,j) + R(j,k)*R(j,k) + R(k,k) * R(k,k))/2);
+
+  // Rsum = abs(cos(theta2)) is inherently positive
+  Scalar theta2 = std::atan2(R(i,k), Rsum);
+  Scalar theta1, theta3;
+
+  // There is a singularity when cos(theta2) == 0
+  if(Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
+    theta1 = std::atan2(-R(j,k), R(k,k));
+    theta3 = std::atan2(-R(i,j), R(i,i));
+  }
+  else if(R(i,k) > 0) {
+    // spos = 2*sin(theta1 + plusMinus*theta3)
+    Scalar spos = R(j,i) + R(k,j);
+    // cpos = 2*cos(theta1 + plusMinus*theta3)
+    Scalar cpos = R(j,j) -R(k,i);
+    Scalar theta1PlusMinusTheta3 = std::atan2(spos, cpos);
+    theta1 = theta1PlusMinusTheta3; // Arbitrary split
+    theta3 = 0;                     // Arbitrary split
+  }
+  else {
+    // sneg = 2*sin(theta1+minusPlus*theta3)
+    Scalar sneg = R(k,j) - R(j,i);
+    // cneg = 2*cos(theta1+minusPlus*theta3)
+    Scalar cneg = R(j,j) + R(k,i);
+    Scalar theta1MinusPlusTheta3 = std::atan2(sneg, cneg);
+    theta1 = theta1MinusPlusTheta3; // Arbitrary split
+    theta3 = 0;                     // Arbitrary split
+  }
+
+  // Return values have the following ranges
+  // -pi   <  theta1 <= pi
+  // -pi/2 <= theta2 <= pi/2
+  // -pi   <  theta3 <= pi
+  return drake::Vector3<Scalar>(theta3, theta2, theta1);
 }
 
 template <typename Derived>
