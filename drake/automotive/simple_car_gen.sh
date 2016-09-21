@@ -24,6 +24,7 @@ gen "driving command" steering_angle throttle brake
 gen "euler floating joint state" x y z roll pitch yaw
 gen "idm with trajectory agent state" x_e v_e x_a v_a a_a
 gen "simple car state" x y heading velocity
+gen "simple car config" wheelbase track max_abs_steering_angle max_velocity max_acceleration velocity_lookahead_time velocity_kp
 
 $CLANG_FORMAT --style=file -i \
   $mydir/gen/driving_command.h \
