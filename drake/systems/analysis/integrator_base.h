@@ -40,24 +40,27 @@ class IntegratorBase {
    after a publish time
    */
   enum StepResult {
-    kReachedReportTime = 1, /** implication is no discrete update is necessary
-                               (which may be b/c System::CalcNextUpdateTime(.)
-                               gives a time far into the future or witness
-                               functions indicate no upcoming event */
-    kReachedZeroCrossing =
-    2, /** localized an event; this is the *before* state (interpolated) **/
+    /**
+     * implication is no discrete update is necessary (which may be b/c
+     * System::CalcNextUpdateTime(.) gives a time far into the future or
+     * witness functions indicate no upcoming event.
+     */
+    kReachedReportTime = 1,
+    /** localized an event; this is the *before* state (interpolated) **/
+    kReachedZeroCrossing = 2,
     kReachedScheduledEvent = 3,
-    kTimeHasAdvanced = 4, /** user requested control whenever an internal step
-                             is successful; TODO(edrumwri): possibly take this
-                             out (if integrator should take as big a step as
-                             possible until publish or update occurs) **/
-    kReachedStepLimit =
-    5, /** TODO(edrumwri): possibly take this out, took maximum number of steps
-              without finishing integrating over the interval **/
-    kStartOfContinuousInterval = 7, /** TODO(edrumwri): possibly remove this
-                                       after implementing variable step
-                                       integration
-                                       **/
+    /**
+     * user requested control whenever an internal step is successful;
+     * TODO(edrumwri): possibly take this out (if integrator should take as big
+     * a step as possible until publish or update occurs)
+     */
+    kTimeHasAdvanced = 4,
+    /** TODO(edrumwri): possibly take this out, took maximum number of steps
+        without finishing integrating over the interval **/
+    kReachedStepLimit = 5,
+    /** TODO(edrumwri): possibly remove this after implementing variable step
+     * integration **/
+    kStartOfContinuousInterval = 7,
   };
 
   explicit IntegratorBase(const System<T> &system,

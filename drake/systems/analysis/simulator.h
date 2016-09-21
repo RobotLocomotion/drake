@@ -301,8 +301,8 @@ void Simulator<T>::Initialize() {
 
   // create integrator if necessary
   if (!integrator_)
-    // TODO(edrumwri): create a new integrator when a variable step integrator is
-    // available
+    // TODO(edrumwri): create a new integrator when a variable step integrator
+    // is available
     //    integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     //    ExplicitEulerIntegrator<T>(system_, context_.get()));
     throw std::runtime_error("No integrator set");
