@@ -20,8 +20,8 @@ namespace bouncingball {
 
 template <typename T>
 Ball<T>::Ball() {
-  this->DeclareOutputPort(systems::kVectorValued, 
-			  2, 
+  this->DeclareOutputPort(systems::kVectorValued,
+			  2,
 			  systems::kContinuousSampling);
 }
 
@@ -62,7 +62,7 @@ void Ball<T>::EvalTimeDerivatives(
     dynamic_cast<systems::BasicVector<T>*>(derivatives_state);
   DRAKE_ASSERT(new_derivatives != nullptr);
 
-  const double g{9.81};  // max acceleration.
+  const double g{9.81};  // gravity.
 
   new_derivatives->SetAtIndex(0,state->GetAtIndex(1));
   new_derivatives->SetAtIndex(1,T{-g});
@@ -72,7 +72,8 @@ void Ball<T>::EvalTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 Ball<T>::AllocateContinuousState() const {
-  std::unique_ptr<systems::BasicVector<T>> state(new systems::BasicVector<T>(2));
+  std::unique_ptr<systems::BasicVector<T>>
+    state(new systems::BasicVector<T>(2));
   state->get_mutable_value() << 10, 0;   // initial state values.
   return std::make_unique<systems::ContinuousState<T>>(std::move(state));
 }
