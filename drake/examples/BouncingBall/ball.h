@@ -25,8 +25,6 @@ class Ball : public systems::LeafSystem<T> {
   /// Constructs a Ball system.
   Ball();
 
-  void EvalBlah() const override;
-
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
