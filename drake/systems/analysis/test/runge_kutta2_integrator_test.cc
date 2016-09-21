@@ -14,15 +14,16 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   // create the spring-mass system
   MySpringMassSystem spring_mass(1., 1., 0.);
 
+  // setup integration step
+  const double DT  = 1e-3;
+
   // create the integrator
-  RungeKutta2Integrator<double> integrator(spring_mass);
+  RungeKutta2Integrator<double> integrator(spring_mass, DT);
 
   // set the accuracy
-  integrator.set_accuracy(1e-6);
-  integrator.request_initial_step_size_target(1e-8);
+  integrator.request_initial_step_size_target(DT);
 
-  EXPECT_EQ(integrator.get_target_accuracy(), 1e-6);
-  EXPECT_EQ(integrator.get_initial_step_size_target(), 1e-8);
+  EXPECT_EQ(integrator.get_initial_step_size_target(), DT);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -32,8 +33,11 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   // create a context
   auto context = spring_mass.CreateDefaultContext();
 
+  // setup integration step
+  const double DT  = 1e-3;
+
   // create the integrator
-  RungeKutta2Integrator<double> integrator(spring_mass, context.get());
+  RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);
@@ -56,7 +60,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // create the integrator
-  RungeKutta2Integrator<double> integrator(spring_mass, context.get());
+  const double DT = 0.00078125;
+  RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
 
   // setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
@@ -75,7 +80,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C2 = kInitialVelocity / kOmega;
 
   // Integrate for 1 second.
-  const double DT = 0.00078125;
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::fabs(t - T_FINAL) > DT; t += DT)

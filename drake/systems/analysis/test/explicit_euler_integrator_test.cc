@@ -13,29 +13,34 @@ namespace {
 GTEST_TEST(IntegratorTest, MiscAPI) {
   MySpringMassSystem spring_mass(1., 1., 0.);
 
+  // setup the integration step size
+  const double DT = 1e-3;
+
   // create a context
   auto context = spring_mass.CreateDefaultContext();
 
   // create the integrator
-  ExplicitEulerIntegrator<double> integrator(spring_mass, context.get());
+  ExplicitEulerIntegrator<double> integrator(spring_mass, DT, context.get());
 
   // set the accuracy
-  integrator.request_initial_step_size_target(1e-8);
+  integrator.request_initial_step_size_target(DT);
 
-  EXPECT_EQ(integrator.get_target_accuracy(), 1e-6);
-  EXPECT_EQ(integrator.get_initial_step_size_target(), 1e-8);
+  EXPECT_EQ(integrator.get_initial_step_size_target(), DT);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // create the mass spring system
   MySpringMassSystem spring_mass(1., 1., 0.);
 
+  // setup the integration step size
+  const double DT = 1e-3;
+
   // create a context
   auto context = spring_mass.CreateDefaultContext();
 
   // create the integrator
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, context.get());  // Use default Context.
+      spring_mass, DT, context.get());  // Use default Context.
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
@@ -59,9 +64,12 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // create a context
   auto context = spring_mass.CreateDefaultContext();
 
+  // setup the integration size
+  const double DT = 1e-3;
+
   // create the integrator
   ExplicitEulerIntegrator<double> integrator(
-      spring_mass, context.get());  // Use default Context.
+      spring_mass, DT, context.get());  // Use default Context.
 
   // setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
@@ -79,7 +87,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C2 = kInitialVelocity / kOmega;
 
   // Integrate for 1 second.
-  const double DT = 1e-6;
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::fabs(t - T_FINAL) > DT; t += DT) integrator.Step(DT);
