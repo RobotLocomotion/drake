@@ -40,7 +40,7 @@ std::string LcmSubscriberSystem::get_name() const {
 }
 
 std::string LcmSubscriberSystem::get_name(const std::string& channel) {
-  return "LcmSubscriberSystem::" + channel;
+  return "LcmSubscriberSystem(" + channel + ")";
 }
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>&,
