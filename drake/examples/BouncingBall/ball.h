@@ -26,7 +26,7 @@ class Ball : public systems::LeafSystem<T> {
   Ball();
 
   void EvalOutput(const systems::Context<T>& context,
-		  systems::SystemOutput<T>* output) const override;
+                  systems::SystemOutput<T>* output) const override;
 
   void EvalTimeDerivatives(
       const systems::Context<T>& context,
