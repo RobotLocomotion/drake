@@ -14,7 +14,7 @@ set(sources
   primitives/constant_vector_source.cc
   primitives/demultiplexer.cc
   primitives/gain.cc
-  primitives/integrator.cc
+        primitives/integrator_base.cc
   primitives/pass_through.cc
   primitives/pid_controller.cc
   state.cc

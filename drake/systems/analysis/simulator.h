@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemAnalysis_export.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -14,9 +16,6 @@ namespace systems {
 
 /** Used to specify a particular choice of integration method.
 Currently the default is 2nd order Runge Kutta (explicit trapezoid rule). **/
-// TODO(sherm1) Replace with a more elaborate Integrator class and a much
-// wider assortment of integrators.
-enum class IntegratorType { UseDefault, ExplicitEuler, RungeKutta2 };
 
 /** A forward dynamics solver for hybrid dynamic systems represented by
 `System<T>` objects. Starting with an initial Context for a given System,
@@ -84,7 +83,6 @@ class Simulator {
   `std::logic_error` if the combination of options doesn't make sense, and
   `std::runtime_error` if it is unable to find a constraint-satisfying
   initial condition. **/
-  // TODO(sherm1) Actually deal with constraints.
   void Initialize();
 
   /** Advance the System's trajectory until `final_time` is reached or some
@@ -101,22 +99,6 @@ class Simulator {
   produce. **/
   // TODO(sherm1) Publish() should be called at publishing sample times.
   void StepTo(const T& final_time);
-
-  /** @name                    Simulator Settings
-  These methods provide access to settings that affect the behavior of the
-  %Simulator. Individual integrators may have additional settings. **/
-  /**@{**/
-  /** Specify that a particular type of integrator be used for the continuous
-  portions of the simulation. Otherwise a default integrator is chosen for
-  you. **/
-  void set_integrator_type(IntegratorType integrator) {
-    req_integrator_ = integrator;
-  }
-
-  /** Report the type of integrator actually being used. **/
-  IntegratorType get_integrator_type_in_use() const {
-    return integrator_in_use_;
-  }
 
   /** Request that the integrator attempt to achieve a particular accuracy for
   the continuous portions of the simulation. Otherwise a default accuracy is
@@ -135,11 +117,12 @@ class Simulator {
     Sherman, et al. Procedia IUTAM 2:241-261 (2011), section 3.3.
     http://dx.doi.org/10.1016/j.piutam.2011.04.023
   </pre> **/
-  // TODO(sherm1) Ignored at the moment.
-  void set_accuracy(double accuracy) { req_accuracy_ = accuracy; }
+  void set_accuracy(double accuracy) { integrator_->set_accuracy(accuracy); }
 
   /** Report the accuracy setting actually being used. **/
-  double get_accuracy_in_use() const { return accuracy_in_use_; }
+  double get_target_accuracy() const {
+    return integrator_->get_target_accuracy();
+  }
 
   /** Request that the first attempted integration step have a particular size.
   Otherwise the integrator will estimate a suitable size for the initial step
@@ -147,13 +130,13 @@ class Simulator {
   size. For variable-step integration this will be treated as a maximum size
   subject to accuracy requirements and event occurrences. You can find out what
   size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  void request_initial_step_size_attempt(double step_size) {
-    req_initial_step_size_attempt_ = step_size;
+  void request_initial_step_size_target(double step_size) {
+    integrator_->request_initial_step_size_target(step_size);
   }
 
   /** Report the step size we will attempt for an initial step. **/
-  double get_initial_step_size_attempt_in_use() const {
-    return initial_step_size_attempt_in_use_;
+  const T& get_initial_step_size_target() const {
+    return integrator_->get_initial_step_size_target();
   }
   /**@}**/
 
@@ -173,14 +156,16 @@ class Simulator {
   conditions. You should invoke Initialize() after replacing the Context. **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
+    if (integrator_) integrator_->reset_context(context_.get());
     initialization_done_ = false;
   }
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. **/
   std::unique_ptr<Context<T>> release_context() {
-    return std::move(context_);
+    if (integrator_) integrator_->reset_context(NULL);
     initialization_done_ = false;
+    return std::move(context_);
   }
 
   /** @name                       Statistics
@@ -190,58 +175,83 @@ class Simulator {
   /** Forget accumulated statistics. These are reset to the values they have
   post construction or immediately after `Initialize()`. **/
   void ResetStatistics() {
-    actual_initial_step_size_taken_ = nan();
-    smallest_step_size_taken_ = nan();
-    largest_step_size_taken_ = nan();
+    integrator_->ResetStatistics();
     num_steps_taken_ = 0;
-    num_samples_taken_ = 0;
+    num_updates_ = 0;
   }
 
   /** What what the actual size of the successful first step? **/
   T get_actual_initial_step_size_taken() const {
-    return actual_initial_step_size_taken_;
+    return integrator_->get_actual_initial_step_size_taken();
   }
 
   /** What was the size of the smallest step taken since the last Initialize()
   call? **/
-  T get_smallest_step_size_taken() const { return smallest_step_size_taken_; }
+  T get_smallest_step_size_taken() const {
+    return integrator_->get_smallest_step_size_taken();
+  }
 
   /** What was the size of the largest step taken since the last Initialize()
   call? **/
-  T get_largest_step_size_taken() const { return largest_step_size_taken_; }
+  T get_largest_step_size_taken() const {
+    return integrator_->get_largest_step_size_taken();
+  }
 
   /** How many integration steps have been taken since the last Initialize()
   call? **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** How many discrete sample events have been processed since the last
+  /** How many discrete update events have been processed since the last
   Initialize() call? **/
-  int64_t get_num_samples_taken() const { return num_samples_taken_; }
+  int64_t get_num_updates() const { return num_updates_; }
   /**@}**/
 
   /** Return the step size the simulator would like to take next, based
   primarily on the integrator's accuracy prediction. For variable
   step integrators this will change as the simulation progresses. **/
-  T get_ideal_next_step_size() const { return ideal_next_step_size_; }
+  T get_ideal_next_step_size() const {
+    return integrator_->get_ideal_next_step_size();
+  }
+
+  /// Gets a pointer to the integrator
+  IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
+
+  // TODO: undo initialization?
+  /// Sets the integrator
+  void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
+    integrator_ = std::move(integrator);
+  }
 
  private:
+  Simulator(const Simulator& s) = delete;
+  Simulator& operator=(const Simulator& s) = delete;
+
   // Return a proposed end time for this step, and whether we picked that time
   // because we hit the next sample time.
   static std::pair<T, bool> ProposeStepEndTime(const T& step_start_time,
                                                const T& ideal_step_size,
-                                               const T& next_sample_time,
+                                               const T& next_update_time,
                                                const T& final_time);
 
   // Put "in use" settings back to their default values and reset runtime
   // variables. These will be modified afterwards in accordance with caller's
   // requests.
   void ResetSimulatorSettingsInUse() {
-    integrator_in_use_ = kDefaultIntegrator;
-    accuracy_in_use_ = kDefaultAccuracy;
-    initial_step_size_attempt_in_use_ = kDefaultInitialStepSizeAttempt;
-    ideal_next_step_size_ = initial_step_size_attempt_in_use_;
     initialization_done_ = false;
+
+    // TODO: create a new integrator when a variable step integrator is
+    // available
+    // integrator_ = std::unique_ptr<IntegratorBase<T>>(new
+    // ExplicitEulerIntegrator<T>(system_, context_.get()));
+    std::cerr << "ResetSimulatorSettingsInUse() should not be called until a "
+                 "variable step integrator is "
+              << "implemented" << std::endl;
+
+    // TODO: reset integrator settings
   }
+
+  // A pointer to the integrator
+  std::unique_ptr<IntegratorBase<T>> integrator_;
 
   // TODO(sherm1) This a workaround for an apparent bug in clang 3.8 in which
   // defining this as a static constexpr member kNaN failed to instantiate
@@ -252,41 +262,18 @@ class Simulator {
   }
 
   static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
-  static constexpr IntegratorType kDefaultIntegrator =
-      IntegratorType::RungeKutta2;
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
 
-  const System<T>& system_;                  // Just a reference; not owned.
+  const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
-  // TODO(sherm1) These are pre-allocated temporaries for use by Integrators;
-  // move them to the Integrator classes when those exist. The actual number
-  // needed varies for different integrators.
-  std::unique_ptr<ContinuousState<T>> derivs0_;
-  std::unique_ptr<ContinuousState<T>> derivs1_;
+  int64_t num_updates_{
+      0};  // the number of updates since the last call to Initialize()
+  int64_t num_steps_taken_{0};  // the number of integration steps since the
+                                // last call to Initialize()
 
-  // These are the caller's requests, if any.
-  IntegratorType req_integrator_{IntegratorType::UseDefault};
-  double req_accuracy_{0};                   // means "unspecified, use default"
-  double req_initial_step_size_attempt_{0};  // means "unspecified, use default"
-
-  // Simulation settings.
-  IntegratorType integrator_in_use_{kDefaultIntegrator};
-  double accuracy_in_use_{kDefaultAccuracy};
-  double initial_step_size_attempt_in_use_{kDefaultInitialStepSizeAttempt};
-
-  // Runtime variables.
-  // This is set at the end of each step to guide the next one.
-  T ideal_next_step_size_{initial_step_size_attempt_in_use_};
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
-
-  // Statistics.
-  T actual_initial_step_size_taken_{nan()};
-  T smallest_step_size_taken_{nan()};
-  T largest_step_size_taken_{nan()};
-  int64_t num_steps_taken_{0};
-  int64_t num_samples_taken_{0};
 };
 
 // No need for user code to instantiate these; they are in the library.
@@ -300,18 +287,11 @@ extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<double>;
 extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
 #endif
 
-// TODO(sherm1) Move these implementations to an -inl.h file.
-
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
   if (!context_) context_ = system_.CreateDefaultContext();
-
-  // TODO(sherm1) Allocate temporaries in concrete integrators instead once
-  // there are more of them.
-  derivs0_ = system_.AllocateTimeDerivatives();
-  derivs1_ = system_.AllocateTimeDerivatives();
 }
 
 template <typename T>
@@ -319,53 +299,49 @@ void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
+  // create integrator if necessary
+  if (!integrator_)
+    // TODO: create a new integrator when a variable step integrator is
+    // available
+    //    integrator_ = std::unique_ptr<IntegratorBase<T>>(new
+    //    ExplicitEulerIntegrator<T>(system_, context_.get()));
+    throw std::runtime_error("No integrator set");
+
   // Restore default values.
   ResetStatistics();
   ResetSimulatorSettingsInUse();
 
-  // Override the default settings if the user has spoken.
-  if (req_integrator_ != IntegratorType::UseDefault)
-    integrator_in_use_ = req_integrator_;
-  if (req_accuracy_ > 0) accuracy_in_use_ = req_accuracy_;
-  if (req_initial_step_size_attempt_ > 0)
-    initial_step_size_attempt_in_use_ = req_initial_step_size_attempt_;
-
   // Initialize runtime variables.
-  ideal_next_step_size_ = initial_step_size_attempt_in_use_;
   initialization_done_ = true;
 }
 
+/**
+ * The simulation loop is as follows:
+ * 1. perform necessary discrete updates (incl. computing DAE constraints)
+ * 2. publish
+ * 3. integrate the smooth system (the ODE, or ODE part of the DAE)
+ * 4. post-step stabilization for DAEs (if desired)
+ * @param final_time
+ */
 template <typename T>
 void Simulator<T>::StepTo(const T& final_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
-  // Find the continuous state xc within the Context, just once.
-  VectorBase<T>* xc =
-      context_->get_mutable_state()->continuous_state->get_mutable_state();
-
-  // TODO(sherm1) Invoke selected integrator.
+  // TODO:
   SampleActions sample_actions;
-  bool sample_time_hit = false;
+  bool update_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
 
     // First make any necessary discrete updates.
-    if (sample_time_hit) {
+    if (update_time_hit) {
       system_.Update(context_.get(), sample_actions);
-      ++num_samples_taken_;
+      ++num_updates_;
     }
 
-    // Now we can calculate start-of-step time derivatives.
-
-    // TODO(sherm1) This should be calculating into the cache so that
-    // Publish() doesn't have to recalculate if it wants to output
-    // derivatives.
-    system_.EvalTimeDerivatives(*context_, derivs0_.get());
-
-    // The Context now contains the trajectory value at start-of-step.
     // Allow System a chance to produce some output.
     // TODO(sherm1) This should be called only at Publish sample times.
     system_.Publish(*context_);
@@ -374,60 +350,33 @@ void Simulator<T>::StepTo(const T& final_time) {
     if (step_start_time == final_time) break;
 
     // How far can we go before we have to take a sampling break?
-    const T next_sample_time =
+    const T next_update_time =
         system_.CalcNextSampleTime(*context_, &sample_actions);
-    DRAKE_ASSERT(next_sample_time >= step_start_time);
+    DRAKE_ASSERT(next_update_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had
     // to stop there due to hitting the next sample time.
     T step_end_time;
-    std::tie(step_end_time, sample_time_hit) = ProposeStepEndTime(
-        step_start_time, ideal_next_step_size_, next_sample_time, final_time);
+    std::tie(step_end_time, update_time_hit) = ProposeStepEndTime(
+        step_start_time, integrator_->get_ideal_next_step_size(),
+        next_update_time, final_time);
 
-    // Attempt to take a step of the proposed size.
-    if (step_end_time > step_start_time) {
-      const T h = step_end_time - step_start_time;
+    // integrate here
+    typename IntegratorBase<T>::StepResult result =
+        integrator_->Step(step_end_time - step_start_time);
+    if (result != result)
+      std::cerr << "error!" << std::endl;
+    else
+      ++num_steps_taken_;
 
-      // First stage is an explicit Euler step:
-      // xc(t+h) = xc(t) + h * xcdot(t, xc(t), xd(t+), u(t))
-      const auto& xcdot0 = derivs0_->get_state();
-      xc->PlusEqScaled(h, xcdot0);  // xc += h * xcdot0
-      context_->set_time(step_end_time);
-
-      // If we're using Explicit Euler, we're done.
-
-      // For RK2, we need another stage. We want
-      //    xc(t+h) = xc(t) + (h/2) * (xcdot0 + xcdot1)
-      //            = [xc(t) + h * xcdot0] + (h/2) * (xcdot1 - xcdot0)
-      if (get_integrator_type_in_use() == IntegratorType::RungeKutta2) {
-        system_.EvalTimeDerivatives(*context_, derivs1_.get());
-        const auto& xcdot1 = derivs1_->get_state();
-        // TODO(sherm1) Use better operators when available.
-        xc->PlusEqScaled(h / 2, xcdot1);
-        xc->PlusEqScaled(-h / 2, xcdot0);
-      }
-
-      // TODO(sherm1) Constraint projection goes here.
-
-      // TODO(sherm1) Accuracy control goes here.
-
-      // We successfully took a step -- collect statistics.
-      if (++num_steps_taken_ == 1) {  // The first step.
-        actual_initial_step_size_taken_ = h;
-        smallest_step_size_taken_ = h;
-        largest_step_size_taken_ = h;
-      } else {  // Not the first step.
-        if (h < smallest_step_size_taken_) smallest_step_size_taken_ = h;
-        if (h > largest_step_size_taken_) largest_step_size_taken_ = h;
-      }
-    }
+    // TODO(sherm1) Constraint projection goes here.
   }
 }
 
 template <typename T>
 std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
                                                     const T& ideal_step_size,
-                                                    const T& next_sample_time,
+                                                    const T& next_update_time,
                                                     const T& final_time) {
   static constexpr double kMaxStretch = 0.01;  // Allow 1% step size stretch.
 
@@ -440,18 +389,17 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
 
   // The step may be limited or stretched either by final time or sample
   // time, whichever comes sooner.
-  bool sample_time_hit = false;
-  if (next_sample_time <= final_time) {
-    if (next_sample_time <= step_stretch_time) {
-      step_end_time = next_sample_time;
-      sample_time_hit = true;
+  bool update_time_hit = false;
+  if (next_update_time <= final_time) {
+    if (next_update_time <= step_stretch_time) {
+      step_end_time = next_update_time;
+      update_time_hit = true;
     }
-  } else {  // final_time < next_sample_time.
-    if (final_time <= step_stretch_time)
-      step_end_time = final_time;
+  } else {  // final_time < next_update_time.
+    if (final_time <= step_stretch_time) step_end_time = final_time;
   }
 
-  return std::make_pair(step_end_time, sample_time_hit);
+  return std::make_pair(step_end_time, update_time_hit);
 }
 
 }  // namespace systems

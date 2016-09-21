@@ -4,90 +4,57 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/analysis/test/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
 namespace {
 
-class MySpringMassSystem : public SpringMassSystem {
- public:
-  // Pass through to SpringMassSystem, except add sample rate in samples/s.
-  MySpringMassSystem(double stiffness, double mass, double sample_rate)
-      : SpringMassSystem(stiffness, mass, false /*no input force*/),
-        sample_rate_(sample_rate) {}
-
-  int get_publish_count() const { return publish_count_; }
-  int get_update_count() const { return update_count_; }
-
- private:
-  // Publish t q u to standard output.
-  void DoPublish(const Context<double>& context) const override {
-    ++publish_count_;
-  }
-
-  void DoUpdate(Context<double>* context,
-                const SampleActions& actions) const override {
-    ++update_count_;
-  }
-
-  // Force a sample at the next multiple of the sample rate. If the current
-  // time is exactly at a sample time, we assume the sample has already been
-  // done and return the following sample time. That means we don't get a
-  // sample at 0 but will get one at the end.
-  void DoCalcNextSampleTime(const Context<double>& context,
-                            SampleActions* actions) const override {
-    if (sample_rate_ <= 0.) {
-      actions->time = std::numeric_limits<double>::infinity();
-      return;
-    }
-
-    // For reliable behavior, convert floating point times into integer
-    // sample counts. We want the ceiling unless it is the same as the floor.
-    const int prev =
-        static_cast<int>(std::floor(context.get_time() * sample_rate_));
-    const int next =
-        static_cast<int>(std::ceil(context.get_time() * sample_rate_));
-    const int which = next == prev ? next + 1 : next;
-
-    // Convert the next sample count back to a time to return.
-    const double next_sample = which / sample_rate_;
-    actions->time = next_sample;
-  }
-
-  double sample_rate_{0.};  // Default is "don't sample".
-
-  mutable int publish_count_{0};
-  mutable int update_count_{0};
-};
-
 GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  simulator.set_integrator_type(IntegratorType::ExplicitEuler);
-  simulator.set_accuracy(1e-6);
-  simulator.request_initial_step_size_attempt(1e-8);
+  // set the integrator default step size
+  const double DT = 1e-3;
 
+  // create a context
+  auto context = spring_mass.CreateDefaultContext();
+
+  // create the integrator
+  std::unique_ptr<IntegratorBase<double>> integrator(
+      new ExplicitEulerIntegrator<double>(
+          spring_mass, DT, context.get()));  // Use default Context.
+  simulator.reset_integrator(integrator);
+
+  // initialize the simulator first
   simulator.Initialize();
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::ExplicitEuler);
-  EXPECT_EQ(simulator.get_accuracy_in_use(), 1e-6);
-  EXPECT_EQ(simulator.get_initial_step_size_attempt_in_use(), 1e-8);
 
-  EXPECT_EQ(simulator.get_ideal_next_step_size(), 1e-8);
+  EXPECT_EQ(simulator.get_ideal_next_step_size(), DT);
 }
 
 GTEST_TEST(SimulatorTest, ContextAccess) {
   MySpringMassSystem spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
+  // set the integrator default step size
+  const double DT = 1e-3;
+
+  // get the context
+  auto context = simulator.get_mutable_context();
+
+  // create the integrator
+  std::unique_ptr<IntegratorBase<double>> integrator(
+      new ExplicitEulerIntegrator<double>(spring_mass, DT,
+                                          context));  // Use default Context.
+  simulator.reset_integrator(integrator);
+
+  // initialize the simulator first
+  simulator.Initialize();
+
   simulator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(simulator.get_context().get_time(), 3.);
-
-  auto context = simulator.release_context();
+  simulator.release_context();
   EXPECT_TRUE(simulator.get_mutable_context() == nullptr);
-  EXPECT_EQ(context->get_time(), 3.);
 }
 
 // Try a purely continuous system with no sampling.
@@ -95,26 +62,33 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
+  // set the integrator default step size
+  const double DT = 1e-3;
+
   MySpringMassSystem spring_mass(kSpring, kMass, 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  // Take all the defaults.
-  simulator.Initialize();
+  // get the context
+  auto context = simulator.get_mutable_context();
 
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::RungeKutta2);
+  // create the integrator and initialize it
+  std::unique_ptr<IntegratorBase<double>> integrator(
+      new ExplicitEulerIntegrator<double>(spring_mass, DT, context));
+  integrator->Initialize();
+
+  // set the integrator and initialize the simulator
+  simulator.reset_integrator(integrator);
+  simulator.Initialize();
 
   // Simulate for 1 second.
   simulator.StepTo(1.);
 
-  const auto& context = simulator.get_context();
-  EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
-
+  EXPECT_EQ(context->get_time(), 1.);  // Should be exact.
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_samples_taken(), 0);
+  EXPECT_EQ(simulator.get_num_updates(), 0);
   EXPECT_LE(simulator.get_smallest_step_size_taken(),
             simulator.get_largest_step_size_taken());
 
@@ -133,24 +107,33 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
-  MySpringMassSystem spring_mass(kSpring, kMass, 30.);
+  // set the integrator default step size
+  const double DT = 1e-3;
 
+  // create the mass spring system and the simulator
+  MySpringMassSystem spring_mass(kSpring, kMass, 30.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // get the context
+  auto context = simulator.get_mutable_context();
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  simulator.request_initial_step_size_attempt(1e-3);
-  simulator.set_integrator_type(IntegratorType::RungeKutta2);
+  // create the integrator and initialize it
+  std::unique_ptr<IntegratorBase<double>> integrator(
+      new ExplicitEulerIntegrator<double>(spring_mass, DT, context));
+  integrator->Initialize();
+
+  // set the integrator and initialize the simulator
+  simulator.reset_integrator(integrator);
   simulator.Initialize();
 
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::RungeKutta2);
-
+  // simulate up to one second
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_samples_taken(), 30);
+  EXPECT_EQ(simulator.get_num_updates(), 30);
   EXPECT_LE(simulator.get_smallest_step_size_taken(),
             simulator.get_largest_step_size_taken());
 
