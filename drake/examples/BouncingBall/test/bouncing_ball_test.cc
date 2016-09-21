@@ -19,8 +19,8 @@ class BouncingBallTest : public ::testing::Test {
   }
 
   systems::BasicVector<double>* continuous_state() {
-    auto result = dynamic_cast<systems::BasicVector<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+    auto result = dynamic_cast<systems::BasicVector<double>*>
+      (context_->get_mutable_state()->continuous_state->get_mutable_state());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -64,8 +64,8 @@ TEST_F(BouncingBallTest, Output) {
 TEST_F(BouncingBallTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const systems::BasicVector<double>* const result =
-    dynamic_cast<const systems::BasicVector<double>*>(
-          derivatives_->get_mutable_state());
+    dynamic_cast<const systems::BasicVector<double>*>
+    (derivatives_->get_mutable_state());
   ASSERT_NE(nullptr, result);
 
   // Evaluate initial derivatives.
@@ -100,7 +100,7 @@ TEST_F(BouncingBallTest, Reset) {
       dynamic_cast<
     const systems::BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, result);
-  
+
   // Trigger a reset at the initial state.
   dut_->PerformReset(context_.get());
   dut_->EvalOutput(*context_, output_.get());
@@ -114,7 +114,6 @@ TEST_F(BouncingBallTest, Reset) {
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_NEAR(4.56, result->GetAtIndex(1), 1e-14);
-
 }
 
 }  // namespace

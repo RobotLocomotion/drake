@@ -48,7 +48,7 @@ TEST_F(BallTest, Output) {
     const systems::BasicVector<double>*>(output_->get_vector_data(0));
   ASSERT_NE(nullptr, result);
 
-  // Starting state and output is all zeros.
+  // Initial state and output.
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(10.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
@@ -68,7 +68,7 @@ TEST_F(BallTest, Derivatives) {
           derivatives_->get_mutable_state());
   ASSERT_NE(nullptr, result);
 
-  // Starting derivatives are almost all zeros, except for ego car velocity.
+  // Evaluate time derivatives.
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_EQ(-9.81, result->GetAtIndex(1));
