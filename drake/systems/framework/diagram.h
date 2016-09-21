@@ -95,6 +95,16 @@ class Diagram : public System<T> {
 
   ~Diagram() override {}
 
+  /// Returns the list of contained Systems.
+  std::vector<const systems::System<T>*> GetSystems() const {
+    std::vector<const systems::System<T>*> result;
+    result.reserve(registered_systems_.size());
+    for (const auto& system : registered_systems_) {
+      result.push_back(system.get());
+    }
+    return result;
+  }
+
   /// Returns true if any output of the Diagram might have direct-feedthrough
   /// from any input of the Diagram.
   bool has_any_direct_feedthrough() const override {
