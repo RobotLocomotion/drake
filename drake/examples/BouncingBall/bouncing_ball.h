@@ -30,7 +30,7 @@ class BouncingBall : public Ball<T> {
   void PerformReset(systems::Context<T>* context) const override;
 
  private:
-  //const T r = 1;  // radius of ball (unused)
+  const T r = 1;  // radius of ball
   const T cor = 0.8;  // coefficient of restitution
 };
 
