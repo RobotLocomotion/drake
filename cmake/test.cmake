@@ -96,8 +96,8 @@ endfunction()
 # Arguments:
 #   NAME
 #     Set the name of the executable and the test. The name may not contain
-#     spaces or quotes. The C++ source code for the executable must be completely
-#     contained in a single file named <name>.cc.
+#     spaces or quotes. The C++ source code for the executable must be
+#     completely contained in a single file named <name>.cc.
 #   CONFIGURATIONS
 #     Restrict execution of the test to only the named configurations.
 #   SIZE
@@ -106,9 +106,10 @@ endfunction()
 #     the test will be set to small. The LABEL test property will be set to the
 #     size of the test.
 #   WORKING_DIRECTORY
-#     Set the WORKING_DIRECTORY test property on the test to specify the working
-#     directory in which to execute the test. If not specified, the test will be
-#     run with the working directory set to CMAKE_CURRENT_BINARY_DIR.
+#     Set the WORKING_DIRECTORY test property on the test to specify the
+#     working directory in which to execute the test. If not specified, the
+#     test will be run with the working directory set to
+#     CMAKE_CURRENT_BINARY_DIR.
 #   EXCLUDE_FROM_ALL
 #     Set the EXCLUDE_FROM_ALL target property on the executable to exclude the
 #     executable from the default build target.
