@@ -55,7 +55,7 @@
 	ignore = untracked
 [submodule "externals/sedumi"]
 	path = externals/sedumi
-	url = git@github.com:RobotLocomotion/sedumi.git
+	url = git@github.com:drake-jenkins-bot/sedumi.git
 [submodule "externals/avl"]
 	path = externals/avl
 	url = https://github.com/RobotLocomotion/avl.git
