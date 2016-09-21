@@ -162,7 +162,7 @@ TRANSLATOR_HH_PREAMBLE = """
 // See %(generator)s.
 
 #include "drake/automotive/gen/%(snake)s.h"
-#include "drake/drakeAutomotive_export.h"
+#include "drake/drakeAutomotiveLcm_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
@@ -175,7 +175,7 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKEAUTOMOTIVE_EXPORT %(camel)sTranslator
+class DRAKEAUTOMOTIVELCM_EXPORT %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
