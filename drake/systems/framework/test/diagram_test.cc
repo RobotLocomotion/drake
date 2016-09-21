@@ -63,6 +63,8 @@ class ExampleDiagram : public Diagram<double> {
   }
 
   Adder<double>* adder0() { return adder0_; }
+  Adder<double>* adder1() { return adder1_; }
+  Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
 
@@ -501,6 +503,19 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   FeedbackDiagram diagram;
   auto context = diagram.CreateDefaultContext();
   EXPECT_NO_THROW(context.reset());
+}
+
+// Test for GetSystems.
+GTEST_TEST(DiagramBuilderTest, GetSystems) {
+  auto diagram = std::make_unique<ExampleDiagram>(2);
+  EXPECT_EQ((std::vector<const System<double>*>{
+        diagram->adder0(),
+        diagram->adder1(),
+        diagram->adder2(),
+        diagram->integrator0(),
+        diagram->integrator1(),
+      }),
+    diagram->GetSystems());
 }
 
 }  // namespace

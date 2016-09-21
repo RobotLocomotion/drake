@@ -36,7 +36,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
 std::string LcmSubscriberSystem::get_name() const {
-  return "LcmSubscriberSystem::" + channel_;
+  return get_name(channel_);
+}
+
+std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+  return "LcmSubscriberSystem::" + channel;
 }
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>&,
@@ -52,6 +56,13 @@ void LcmSubscriberSystem::EvalOutput(const Context<double>&,
 void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   received_message_ = message_bytes;
+}
+
+void LcmSubscriberSystem::SetMessage(
+    double time, const BasicVector<double>& message_vector) {
+  std::vector<uint8_t> message_bytes;
+  translator_.Serialize(time, message_vector, &message_bytes);
+  SetMessage(message_bytes);
 }
 
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(

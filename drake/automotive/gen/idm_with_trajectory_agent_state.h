@@ -10,7 +10,6 @@
 
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
 namespace automotive {
@@ -53,43 +52,7 @@ class IdmWithTrajectoryAgentState : public systems::BasicVector<T> {
   const T a_a() const { return this->GetAtIndex(K::kAA); }
   void set_a_a(const T& a_a) { this->SetAtIndex(K::kAA, a_a); }
   //@}
-
-  /// @name Implement the LCMVector concept
-  //@{
-  typedef drake::lcmt_idm_with_trajectory_agent_state_t LCMMessageType;
-  static std::string channel() { return "IDM_WITH_TRAJECTORY_AGENT_STATE"; }
-  //@}
 };
-
-template <typename ScalarType>
-bool encode(const double& t,
-            const IdmWithTrajectoryAgentState<ScalarType>& wrap,
-            // NOLINTNEXTLINE(runtime/references)
-            drake::lcmt_idm_with_trajectory_agent_state_t& msg) {
-  // The timestamp in milliseconds.
-  msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.x_e = wrap.x_e();
-  msg.v_e = wrap.v_e();
-  msg.x_a = wrap.x_a();
-  msg.v_a = wrap.v_a();
-  msg.a_a = wrap.a_a();
-  return true;
-}
-
-template <typename ScalarType>
-bool decode(const drake::lcmt_idm_with_trajectory_agent_state_t& msg,
-            // NOLINTNEXTLINE(runtime/references)
-            double& t,
-            // NOLINTNEXTLINE(runtime/references)
-            IdmWithTrajectoryAgentState<ScalarType>& wrap) {
-  t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.set_x_e(msg.x_e);
-  wrap.set_v_e(msg.v_e);
-  wrap.set_x_a(msg.x_a);
-  wrap.set_v_a(msg.v_a);
-  wrap.set_a_a(msg.a_a);
-  return true;
-}
 
 }  // namespace automotive
 }  // namespace drake
