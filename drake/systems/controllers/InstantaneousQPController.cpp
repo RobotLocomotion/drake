@@ -99,8 +99,13 @@ void InstantaneousQPController::loadConfigurationFromYAML(
     const std::string& control_config_filename) {
   YAML::Node control_config = YAML::LoadFile(control_config_filename);
   std::ofstream debug_file(control_config_filename + ".debug.yaml");
-  param_sets = loadAllParamSets(control_config["qp_controller_params"], *robot,
-                                debug_file);
+  // Important note: assigning the result of loadAllParamSets to a local
+  // variable before assigning to the param_sets field is to make it so that the
+  // copy assignment operator is used instead of the move assignment operator.
+  // See #2165 for details.
+  auto param_sets_local = loadAllParamSets(
+      control_config["qp_controller_params"], *robot, debug_file);
+  param_sets = param_sets_local;
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"],
                                    *robot);
 }
@@ -276,13 +281,12 @@ VectorXd InstantaneousQPController::velocityReference(
   return qd_ref;
 }
 
-std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
+drake::eigen_aligned_std_vector<SupportStateElement>
 InstantaneousQPController::loadAvailableSupports(
     const drake::lcmt_qp_controller_input& qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> available_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -382,11 +386,11 @@ double averageContactPointHeight(
   return average_contact_point_height;
 }
 
-Vector2d computeCoP(const RigidBodyTree& robot,
-                    const KinematicsCache<double>& cache,
-                    const std::map<Side, ForceTorqueMeasurement>&
-                        foot_force_torque_measurements,
-                    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
+Vector2d computeCoP(
+    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+        foot_force_torque_measurements,
+    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
   std::vector<ForceTorqueMeasurement> force_torque_measurements;
   for (auto it = foot_force_torque_measurements.begin();
        it != foot_force_torque_measurements.end(); ++it) {
@@ -401,10 +405,10 @@ Vector2d computeCoP(const RigidBodyTree& robot,
 
 void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
     const QPControllerParams& params,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>& active_supports,
-    int num_contact_points, const std::map<Side, ForceTorqueMeasurement>&
-                                foot_force_torque_measurements,
+    drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
+    int num_contact_points,
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+        foot_force_torque_measurements,
     double dt, Vector3d& xcom, Vector3d& xcomdot) {
   /*
    * Derivation:
@@ -584,8 +588,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
 const QPControllerParams& InstantaneousQPController::FindParams(
     const std::string& param_set_name) {
   // look up the param set by name
-  std::map<std::string, QPControllerParams>::iterator it;
-  it = param_sets.find(param_set_name);
+  auto it = param_sets.find(param_set_name);
   if (it == param_sets.end()) {
     std::cout
         << "Got a param set I don't recognize! Using standing params instead";
@@ -606,7 +609,7 @@ int InstantaneousQPController::setupAndSolveQP(
     const drake::lcmt_qp_controller_input& qp_input,
     const DrakeRobotState& robot_state,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_detected,
-    const std::map<Side, ForceTorqueMeasurement>&
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
     QPControllerOutput& qp_output, QPControllerDebugData* debug) {
   // The primary solve loop for our controller. This constructs and solves a
@@ -646,8 +649,7 @@ int InstantaneousQPController::setupAndSolveQP(
   std::vector<SupportStateElement,
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports =
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports =
       getActiveSupports(*robot, robot_state.q, robot_state.qd,
                         available_supports, contact_detected,
                         params.contact_threshold);
