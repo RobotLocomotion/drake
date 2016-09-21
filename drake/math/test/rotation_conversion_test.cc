@@ -34,6 +34,9 @@ Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
+bool check_rpy_range(const Vector3d &rpy) {
+  return rpy(0) <= M_PI && rpy(0) > -M_PI && rpy(1) <= M_PI/2 && rpy(1) > -M_PI/2 && rpy(2) <= M_PI && rpy(2) > -M_PI;
+}
 // Compare the equivalent rotation matrix.
 // Note that we are not comparing the axis-angle directly. This is because the
 // axis-angle has singularities around 0 degree rotation and 180 degree rotation
@@ -286,18 +289,14 @@ TEST_F(RotationConversionTest, AxisRotmat) {
 }
 
 TEST_F(RotationConversionTest, AxisRPY) {
-  // Compute the rpy from Eigen geometry module, comapres the result with
-  // axis2rpy
   for (const auto ai_eigen : test_orientation_) {
-    auto euler_expected = ai_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
     auto ai = eigenAxisToAxis(ai_eigen);
     auto rpy = axis2rpy(ai);
-    Vector3d euler(rpy(2), rpy(1), rpy(0));
-    EXPECT_TRUE(compareEulerAngles(euler, euler_expected));
     // axis2rpy should be the inversion of rpy2axis
     auto a_expected = rpy2axis(rpy);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
+    EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
 
@@ -335,18 +334,14 @@ TEST_F(RotationConversionTest, QuatRotmat) {
 }
 
 TEST_F(RotationConversionTest, QuatRPY) {
-  // Compute the roll pitch yaw angle using Eigen geometry module, compare the
-  // result with quat2rpy
   for (const auto& ai : test_orientation_) {
     Quaterniond qi_eigen(ai);
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
-    auto ea_eigen = qi_eigen.toRotationMatrix().eulerAngles(2, 1, 0);
     auto rpy = quat2rpy(qi);
-    Vector3d ea(rpy(2), rpy(1), rpy(0));
-    EXPECT_TRUE(compareEulerAngles(ea, ea_eigen));
     // quat2rpy should be the inversion of rpy2quat
     auto quat_expected = rpy2quat(rpy);
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
+    EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
 
@@ -392,18 +387,13 @@ TEST_F(RotationConversionTest, RotmatAxis) {
 }
 
 TEST_F(RotationConversionTest, RotmatRPY) {
-  // Compute roll pitch yaw using Eigen geometry module, compare the result with
-  // rotmat2rpy
   for (const auto& ai : test_orientation_) {
     auto Ri = ai.toRotationMatrix();
-    auto ea_expected = Ri.eulerAngles(2, 1, 0);
-    Vector3d rpy_expected(ea_expected(2), ea_expected(1), ea_expected(0));
     auto rpy = rotmat2rpy(Ri);
-    Vector3d ea(rpy(2), rpy(1), rpy(0));
-    EXPECT_TRUE(compareEulerAngles(ea, ea_expected));
     // rotmat2rpy should be the inversion of rpy2rotmat
     auto rotmat_expected = rpy2rotmat(rpy);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
+    EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
 TEST_F(RotationConversionTest, RPYRotmat) {
