@@ -28,7 +28,7 @@ Element::Element(const Element& other)
       // Issue #2662 tracks the resolution of these problems.
       id(reinterpret_cast<ElementId>(this)),
       is_static_(other.is_static_), body_(other.body_),
-      collision_cliques_(other.collision_cliques_){}
+      collision_cliques_(other.collision_cliques_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
@@ -47,8 +47,8 @@ bool Element::CanCollideWith(const Element *other) const {
 
 void Element::AddToCollisionClique(int clique_id) {
   // Order(N) insertion.
-  // Member CollisionElement::collision_cliques_ is sorted so that checking if two
-  // collision elements belong to a same group can be performed in order N.
+  // Member CollisionElement::collision_cliques_ is sorted so that checking if
+  // two collision elements belong to a same group can be performed in order N.
   // See CollisionElement::CanCollideWith
   auto it = std::lower_bound(collision_cliques_.begin(),
                              collision_cliques_.end(), clique_id);
