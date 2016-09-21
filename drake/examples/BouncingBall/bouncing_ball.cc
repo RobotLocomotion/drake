@@ -1,6 +1,7 @@
 #include "drake/examples/BouncingBall/bouncing_ball-inl.h"
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/drakeBouncingBall_export.h"
 
 namespace drake {
 namespace bouncingball {
