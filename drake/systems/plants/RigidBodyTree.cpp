@@ -410,9 +410,8 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model_->addElement(element);
   if (id != 0) {
-    body.AddCollisionElement(id);
-    body.AddCollisionElementToGroup(group_name, id);
-    body.AddCollisionElement(collision_model_->FindMutableElement(id));
+    body.AddCollisionElement(group_name,
+                             collision_model_->FindMutableElement(id));
   }
   return id;
 }

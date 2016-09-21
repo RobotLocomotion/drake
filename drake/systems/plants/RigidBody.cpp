@@ -93,13 +93,12 @@ const DrakeShapes::VectorOfVisualElements& RigidBody::get_visual_elements()
   return visual_elements_;
 }
 
-void RigidBody::AddCollisionElement(DrakeCollision::ElementId id) {
+void RigidBody::AddCollisionElement(const std::string& group_name,
+                                         DrakeCollision::Element* element) {
+  DrakeCollision::ElementId id = element->getId();
   collision_element_ids_.push_back(id);
-}
-
-void RigidBody::AddCollisionElementToGroup(const std::string& group_name,
-    DrakeCollision::ElementId id) {
   collision_element_groups_[group_name].push_back(id);
+  collision_elements_.push_back(element);
 }
 
 const std::vector<DrakeCollision::ElementId>&
