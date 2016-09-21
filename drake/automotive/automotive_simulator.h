@@ -2,8 +2,10 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/automotive/curve2.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
+#include "drake/automotive/trajectory_car.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -38,9 +40,19 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   void AddSimpleCar();
 
+  /// Adds a TrajectoryCar system to this simulation, including its
+  /// EulerFloatingJoint output.
+  /// @pre Start() has NOT been called.
+  void AddTrajectoryCar(
+      const Curve2<double>& curve, double speed, double start_time);
+
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
   void AddPublisher(const SimpleCar<T>& system, int vehicle_number);
+
+  /// Adds an LCM publisher for the given @p system.
+  /// @pre Start() has NOT been called.
+  void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
 
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
@@ -50,8 +62,6 @@ class AutomotiveSimulator {
   /// Take ownership of the given @p system.
   /// @pre Start() has NOT been called.
   void AddSystem(std::unique_ptr<systems::System<T>> system);
-
-  // TODO(jwnimmer-tri) Add a method to create a trajectory car system.
 
   /// Returns the System whose name matches @p name.  Throws an exception if no
   /// such system has been added, or multiple such systems have been added.
