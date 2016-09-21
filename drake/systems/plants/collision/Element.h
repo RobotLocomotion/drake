@@ -30,6 +30,13 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
 
+  Element(const Eigen::Isometry3d& T_element_to_link,
+          const RigidBody * const body);
+
+  Element( const DrakeShapes::Geometry& geometry,
+                   const Eigen::Isometry3d& T_element_to_link,
+                   const RigidBody * const body );
+
   virtual ~Element() {}
 
   virtual Element* clone() const;
