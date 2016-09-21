@@ -44,6 +44,8 @@ endfunction()
 #                  [WORKING_DIRECTORY <directory>])
 #
 # Arguments:
+#   NAME
+#     Set the name of the test. The test name may not contain spaces or quotes.
 #   COMMAND
 #     Specify the test command-line. If <command> specifies an executable
 #     target, it will automatically be replaced by the location of the
@@ -82,6 +84,63 @@ endfunction()
 
 
 #------------------------------------------------------------------------------
+# Add an executable linked to the gtest and gtest-main libraries and add a test
+# using the executable to the drake project to be run by ctest.
+#
+#   drake_add_cc_test(<name>)
+#
+#   drake_add_cc_test(NAME <name> [CONFIGURATIONS <configuration>...]
+#                    [SIZE <small | medium | large | enormous>]
+#                    [WORKING_DIRECTORY <directory>] [EXCLUDE_FROM_ALL])
+#
+# Arguments:
+#   NAME
+#     Set the name of the executable and the test. The name may not contain
+#     spaces or quotes. The C++ source code for the executable must be completely
+#     contained in a single file named <name>.cc.
+#   CONFIGURATIONS
+#     Restrict execution of the test to only the named configurations.
+#   SIZE
+#     Set the size of the test. Test sizes are primarily defined by the number
+#     of seconds to allow for the test execution. If not specified, the size of
+#     the test will be set to small. The LABEL test property will be set to the
+#     size of the test.
+#   WORKING_DIRECTORY
+#     Set the WORKING_DIRECTORY test property on the test to specify the working
+#     directory in which to execute the test. If not specified, the test will be
+#     run with the working directory set to CMAKE_CURRENT_BINARY_DIR.
+#   EXCLUDE_FROM_ALL
+#     Set the EXCLUDE_FROM_ALL target property on the executable to exclude the
+#     executable from the default build target.
+#------------------------------------------------------------------------------
+function(drake_add_cc_test)
+  # Parse optional keyword arguments.
+  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
+
+  # Set name from first and only (non-keyword) argument in short signature.
+  if(NOT _EXCLUDE_FROM_ALL AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
+    set(_NAME ${ARGV0})
+  endif()
+
+  # Add the executable and link with gtest and gtest-main.  
+  if(_EXCLUDE_FROM_ALL)
+    set(_exclude_from_all EXCLUDE_FROM_ALL)
+  endif()
+  add_executable(${_NAME} ${_NAME}.cc ${_exclude_from_all})
+  target_include_directories(${_NAME} PRIVATE ${GTEST_INCLUDE_DIRS})
+  target_link_libraries(${_NAME} ${GTEST_BOTH_LIBRARIES})
+
+  # Add the test to the project.
+  drake_add_test(
+    NAME ${_NAME}
+    COMMAND ${_NAME}
+    CONFIGURATIONS ${_CONFIGURATIONS}
+    SIZE ${_SIZE}
+    WORKING_DIRECTORY ${_WORKING_DIRECTORY})
+endfunction()
+
+
+#------------------------------------------------------------------------------
 # Add a MATLAB test to the drake project to be run by ctest.
 #
 #   drake_add_matlab_test(NAME <name> COMMAND <matlab_string_to_evaluate>
@@ -92,6 +151,8 @@ endfunction()
 #                         [WORKING_DIRECTORY <directory>])
 #
 # Arguments:
+#   NAME
+#     Set the name of the test. The test name may not contain spaces or quotes.
 #   COMMAND
 #     Specify the MATLAB string to evaluate.
 #  CONFIGURATIONS
