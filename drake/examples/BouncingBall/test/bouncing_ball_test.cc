@@ -54,8 +54,8 @@ TEST_F(BouncingBallTest, Output) {
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // New state just propagates through.
-  continuous_state()->SetAtIndex(0,1.0);
-  continuous_state()->SetAtIndex(1,2.0);
+  continuous_state()->SetAtIndex(0, 1.0);
+  continuous_state()->SetAtIndex(1, 2.0);
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->GetAtIndex(0));
   EXPECT_EQ(2.0, result->GetAtIndex(1));
@@ -79,18 +79,18 @@ TEST_F(BouncingBallTest, Guard) {
   EXPECT_EQ(10.0, dut_->EvalGuard(*context_));
 
   // Evaluate at another state, where the guard should be positive.
-  continuous_state()->SetAtIndex(0,1.7);
-  continuous_state()->SetAtIndex(1,2.3);
+  continuous_state()->SetAtIndex(0, 1.7);
+  continuous_state()->SetAtIndex(1, 2.3);
   EXPECT_EQ(2.3, dut_->EvalGuard(*context_));
 
   // Evaluate at yet another state, where the guard should be positive.
-  continuous_state()->SetAtIndex(0,1.7);
-  continuous_state()->SetAtIndex(1,-2.0);
+  continuous_state()->SetAtIndex(0, 1.7);
+  continuous_state()->SetAtIndex(1, -2.0);
   EXPECT_EQ(1.7, dut_->EvalGuard(*context_));
 
   // Evaluate at the moment of impact, where the guard should be non-positive.
-  continuous_state()->SetAtIndex(0,0.0);
-  continuous_state()->SetAtIndex(1,-3.7);
+  continuous_state()->SetAtIndex(0, 0.0);
+  continuous_state()->SetAtIndex(1, -3.7);
   EXPECT_EQ(0.0, dut_->EvalGuard(*context_));
 }
 
@@ -108,8 +108,8 @@ TEST_F(BouncingBallTest, Reset) {
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // Trigger a reset at the moment of impact.
-  continuous_state()->SetAtIndex(0,0.0);
-  continuous_state()->SetAtIndex(1,-5.7);
+  continuous_state()->SetAtIndex(0, 0.0);
+  continuous_state()->SetAtIndex(1, -5.7);
   dut_->PerformReset(context_.get());
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
