@@ -268,7 +268,7 @@ void RigidBodyTree::CreateCollisionCliques() {
   for (auto& body : bodies) {
     // No point in adding a body-derived clique if the body has only a single
     // collision element.
-    if ( body->get_collision_element_ids().size() > 1) {
+    if (body->get_collision_element_ids().size() > 1) {
       body->AddToCollisionClique(ncol_groups++);
     }
   }
