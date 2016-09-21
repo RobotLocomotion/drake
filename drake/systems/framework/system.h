@@ -300,14 +300,11 @@ class System {
     return;
   }
 
-  void EvalBlah() const {return;}
+  virtual T EvalGuard(const Context<T>& context) const {
+    return T(std::numeric_limits<double>::infinity());
+  }
 
-  T EvalGuard(const Context<T>& context) {
-    //return T(std::numeric_limits<double>::infinity());
-    return T(0);
-  } 
-
-  void PerformReset(const Context<T>* context) {
+  virtual void PerformReset(Context<T>* context) const {
     return;
   }
 
