@@ -1,17 +1,7 @@
-#include <iostream>
 #include <memory>
 
-#include "drake/automotive/car_simulation.h"
-#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
-#include "drake/automotive/gen/simple_car_state_translator.h"
-#include "drake/automotive/simple_car_to_euler_floating_joint.h"
-#include "drake/automotive/trajectory_car.h"
-#include "drake/common/text_logging.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/automotive/create_trajectory_params.h"
+#include "drake/automotive/automotive_simulator.h"
 
 namespace drake {
 namespace automotive {
@@ -27,41 +17,20 @@ int do_main(int argc, const char* argv[]) {
     }
   }
 
-  // Objects shared across systems.
-  auto lcm = std::make_unique<lcm::LCM>();
-  const SimpleCarStateTranslator simple_car_state_translator;
-  const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
 
   // Add all of the desired cars.
-  systems::DiagramBuilder<double> builder;
   for (int i = 0; i < num_cars; ++i) {
-    const std::string suffix("_" + std::to_string(i));
-    auto trajectory_car = builder.AddSystem(CreateTrajectoryCarSystem(i));
-    auto coord_transform = builder.AddSystem<SimpleCarToEulerFloatingJoint>();
-    auto simple_car_state_publisher =
-        builder.AddSystem<systems::lcm::LcmPublisherSystem>(
-            "SIMPLE_CAR_STATE" + suffix,
-            simple_car_state_translator, lcm.get());
-    auto euler_floating_joint_state_publisher =
-        builder.AddSystem<systems::lcm::LcmPublisherSystem>(
-            "FLOATING_JOINT_STATE" + suffix,
-            euler_floating_joint_state_translator, lcm.get());
-
-    builder.Connect(*trajectory_car, *simple_car_state_publisher);
-    builder.Connect(*trajectory_car, *coord_transform);
-    builder.Connect(*coord_transform, *euler_floating_joint_state_publisher);
+    const auto& params = CreateTrajectoryParams(i);
+    simulator->AddTrajectoryCar(
+        std::get<0>(params),
+        std::get<1>(params),
+        std::get<2>(params));
   }
-  auto diagram = builder.Build();
 
-  auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
-      lcm.get());
-
-  auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
-  simulator->Initialize();
+  simulator->Start();
   while (true) {
-    const double time = simulator->get_context().get_time();
-    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-    simulator->StepTo(time + 0.01);
+    simulator->StepBy(0.01);
   }
 
   return 0;

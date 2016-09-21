@@ -42,7 +42,7 @@ std::string LcmPublisherSystem::get_name() const {
 }
 
 std::string LcmPublisherSystem::get_name(const std::string& channel) {
-  return "LcmPublisherSystem::" + channel;
+  return "LcmPublisherSystem(" + channel + ")";
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {

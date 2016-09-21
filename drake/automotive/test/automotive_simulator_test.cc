@@ -60,6 +60,31 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_EQ(&simulator->GetDiagramSystemByName(joint_state_name), &state_pub);
 }
 
+// Cover AddTrajectoryCar (and thus AddPublisher).
+GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
+  typedef Curve2<double> Curve2d;
+  typedef Curve2d::Point2 Point2d;
+  const std::vector<Point2d> waypoints{
+    {0.0, 0.0},
+    {100.0, 0.0},
+  };
+  const Curve2d curve{waypoints};
+
+  // Set up a basic simulation with just some TrajectoryCars.
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  simulator->AddTrajectoryCar(curve, 1.0, 0.0);
+  simulator->AddTrajectoryCar(curve, 1.0, 10.0);
+
+  // Run for a while.
+  simulator->Start();
+  for (int i = 0; i < 100; ++i) {
+    simulator->StepBy(0.01);
+  }
+
+  // No aborts is good enough.
+  EXPECT_TRUE(true);
+}
+
 }  // namespace
 }  // namespace automotive
 }  // namespace drake
