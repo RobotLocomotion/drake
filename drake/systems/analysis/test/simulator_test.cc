@@ -10,11 +10,11 @@ namespace drake {
 namespace systems {
 namespace {
 
-class MySpringMassSystem : public SpringMassSystem {
+class MySpringMassSystem : public SpringMassSystem<double> {
  public:
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MySpringMassSystem(double stiffness, double mass, double sample_rate)
-      : SpringMassSystem(stiffness, mass, false /*no input force*/),
+      : SpringMassSystem<double>(stiffness, mass, false /*no input force*/),
         sample_rate_(sample_rate) {}
 
   int get_publish_count() const { return publish_count_; }
