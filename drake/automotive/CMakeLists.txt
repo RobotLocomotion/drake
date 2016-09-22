@@ -63,8 +63,8 @@ if(lcm_FOUND)
     VERSION 0.0.1)
 
   add_dependencies(drakeAutomotiveLcm drake_lcmtypes_hpp)
-  add_executable(simple_car_demo simple_car_demo.cc)
-  target_link_libraries(simple_car_demo drakeAutomotiveLcm)
+  add_executable(automotive_demo automotive_demo.cc)
+  target_link_libraries(automotive_demo drakeAutomotiveLcm)
 
   add_executable(car_sim_lcm car_sim_lcm.cc)
   add_dependencies(car_sim_lcm drake_lcmtypes_hpp)
@@ -77,7 +77,4 @@ if(lcm_FOUND)
   target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem)
 
   drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
-
-  add_executable(demo_multi_car demo_multi_car.cc)
-  target_link_libraries(demo_multi_car drakeAutomotiveLcm)
 endif()
