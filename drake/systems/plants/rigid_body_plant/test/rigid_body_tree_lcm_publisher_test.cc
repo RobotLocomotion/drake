@@ -1,5 +1,5 @@
 // NOLINT(whitespace/line_length)
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 #include <memory>
 #include <vector>
@@ -457,11 +457,11 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
   return tree;
 }
 
-// Tests the basic functionality of the RigidBodyTreeVisualizerLcm.
-GTEST_TEST(RigidBodyTreeVisualizerLcmTests, BasicTest) {
+// Tests the basic functionality of the RigidBodyTreeLcmPublisher.
+GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
   ::lcm::LCM lcm;
-  RigidBodyTreeVisualizerLcm dut(*tree, &lcm);
+  RigidBodyTreeLcmPublisher dut(*tree, &lcm);
 
   EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
 

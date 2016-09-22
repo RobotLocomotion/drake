@@ -1,6 +1,6 @@
 set(source_files
     rigid_body_plant.cc
-    rigid_body_tree_visualizer_lcm.cc
+    rigid_body_tree_lcm_publisher.cc
     viewer_draw_translator.cc)
 
 add_library_with_exports(LIB_NAME drakeRigidBodyPlant
@@ -14,7 +14,7 @@ target_link_libraries(drakeRigidBodyPlant
 
 drake_install_headers(
     rigid_body_plant.h
-    rigid_body_tree_visualizer_lcm.h
+    rigid_body_tree_lcm_publisher.h
     viewer_draw_translator.h)
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rbs

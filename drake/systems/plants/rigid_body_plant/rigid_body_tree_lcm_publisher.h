@@ -37,14 +37,14 @@ namespace systems {
  *
  * @ingroup systems
  */
-class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
     : public LeafSystem<double> {
  public:
   /**
    * A constructor that prepares for the transmission of `lcmt_viewer_load_robot`
    * and `lcmt_viewer_draw` messages, but does not actually publish anything.
    * LCM message publications occur each time
-   * RigidBodyTreeVisualizerLcm::Publish() is called.
+   * RigidBodyTreeLcmPublisher::Publish() is called.
    *
    * @param[in] tree A reference to the rigid body tree that should be
    * visualized by Drake Visualizer. This reference must remain valid for the
@@ -53,7 +53,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    */
-  RigidBodyTreeVisualizerLcm(const RigidBodyTree& tree, ::lcm::LCM* lcm);
+  RigidBodyTreeLcmPublisher(const RigidBodyTree& tree, ::lcm::LCM* lcm);
 
   void EvalOutput(const systems::Context<double>& context,
                   systems::SystemOutput<double>* output) const override {}

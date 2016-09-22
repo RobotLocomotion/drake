@@ -1,15 +1,14 @@
-// NOLINT(whitespace/line_length)
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_visualizer_lcm.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 namespace drake {
 namespace systems {
 
 namespace {
-// Defines the index of the port that the RigidBodyTreeVisualizerLcm uses.
+// Defines the index of the port that the RigidBodyTreeLcmPublisher uses.
 const int kPortIndex = 0;
 }  // namespace
 
-RigidBodyTreeVisualizerLcm::RigidBodyTreeVisualizerLcm(
+RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
     const RigidBodyTree& tree, ::lcm::LCM* lcm) :
     lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
@@ -20,16 +19,16 @@ RigidBodyTreeVisualizerLcm::RigidBodyTreeVisualizerLcm(
 }
 
 const lcmt_viewer_load_robot&
-RigidBodyTreeVisualizerLcm::get_load_message() const {
+RigidBodyTreeLcmPublisher::get_load_message() const {
   return load_message_;
 }
 
 const std::vector<uint8_t>&
-RigidBodyTreeVisualizerLcm::get_draw_message_bytes() const {
+RigidBodyTreeLcmPublisher::get_draw_message_bytes() const {
   return draw_message_bytes_;
 }
 
-void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
+void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
     const {
   // TODO(liang.fok): Replace the following code once System 2.0's API allows
   // systems to declare that they need a certain action to be performed at
@@ -55,12 +54,12 @@ void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
       draw_message_bytes_.size());
 }
 
-void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
+void RigidBodyTreeLcmPublisher::PublishLoadRobot() const {
   lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT", &load_message_);
   sent_load_robot_ = true;
 }
 
-lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::CreateLoadMessage(
+lcmt_viewer_load_robot RigidBodyTreeLcmPublisher::CreateLoadMessage(
     const RigidBodyTree& tree) {
   lcmt_viewer_load_robot load_message;
   load_message.num_links = tree.bodies.size();
