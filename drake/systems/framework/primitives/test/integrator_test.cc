@@ -41,7 +41,7 @@ class IntegratorTest : public ::testing::Test {
   }
 
   ContinuousState<double>* continuous_state() {
-    return context_->get_mutable_state()->continuous_state.get();
+    return context_->get_mutable_continuous_state();
   }
 
   std::unique_ptr<System<double>> integrator_;

@@ -161,7 +161,8 @@ class System {
 
   // Returns a copy of the continuous state vector into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
-    return context.get_state().continuous_state->get_state().CopyToVector();
+    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
+    return context.get_continuous_state()->get_state().CopyToVector();
   }
 
   /// Returns a default context, initialized with the correct

@@ -122,15 +122,15 @@ class LeafContext : public Context<T> {
     LeafContext<T>* context = new LeafContext<T>();
 
     // Make a deep copy of the state using BasicVector::Clone().
-    if (this->get_state().continuous_state != nullptr) {
-      const ContinuousState<T>& xc = *this->get_state().continuous_state;
+    if (this->get_continuous_state() != nullptr) {
+      const ContinuousState<T>& xc = *this->get_continuous_state();
       const int num_q = xc.get_generalized_position().size();
       const int num_v = xc.get_generalized_velocity().size();
       const int num_z = xc.get_misc_continuous_state().size();
       const BasicVector<T>& xc_vector =
           dynamic_cast<const BasicVector<T>&>(xc.get_state());
-      context->get_mutable_state()->continuous_state.reset(
-          new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
+      context->set_continuous_state(std::make_unique<ContinuousState<T>>(
+          xc_vector.Clone(), num_q, num_v, num_z));
     }
 
     // Make deep copies of the inputs into FreestandingInputPorts.

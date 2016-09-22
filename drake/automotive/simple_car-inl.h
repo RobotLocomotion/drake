@@ -58,7 +58,7 @@ void SimpleCar<T>::EvalOutput(const systems::Context<T>& context,
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
-      context.get_state().continuous_state->get_state();
+      context.get_continuous_state()->get_state();
   const SimpleCarState<T>* const state =
       dynamic_cast<const SimpleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state);
@@ -85,7 +85,7 @@ void SimpleCar<T>::EvalTimeDerivatives(
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
-      context.get_state().continuous_state->get_state();
+      context.get_continuous_state()->get_state();
   const SimpleCarState<T>* const state =
       dynamic_cast<const SimpleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state);

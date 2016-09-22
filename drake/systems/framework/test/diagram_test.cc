@@ -108,7 +108,7 @@ class DiagramTest : public ::testing::Test {
   ContinuousState<double>* GetMutableContinuousState(
       const System<double>* system) {
     return diagram_->GetMutableSubsystemState(context_.get(), system)
-        ->continuous_state.get();
+        ->get_mutable_continuous_state();
   }
 
   // Asserts that output_ is what it should be for the default values
@@ -318,19 +318,23 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
-    integrator0_x->continuous_state->get_mutable_state()->SetAtIndex(0, 3);
+    integrator0_x->get_mutable_continuous_state()->get_mutable_state()
+        ->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
-    integrator1_x->continuous_state->get_mutable_state()->SetAtIndex(0, 9);
+    integrator1_x->get_mutable_continuous_state()->get_mutable_state()
+        ->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
-    integrator2_x->continuous_state->get_mutable_state()->SetAtIndex(0, 27);
+    integrator2_x->get_mutable_continuous_state()->get_mutable_state()
+        ->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
-    integrator3_x->continuous_state->get_mutable_state()->SetAtIndex(0, 81);
+    integrator3_x->get_mutable_continuous_state()->get_mutable_state()
+        ->SetAtIndex(0, 81);
   }
 
   const int kLength = 1;

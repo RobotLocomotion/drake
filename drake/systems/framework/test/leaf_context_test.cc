@@ -41,11 +41,10 @@ class LeafContextTest : public ::testing::Test {
     auto state = std::make_unique<BasicVector<double>>(kStateSize);
     state->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
 
-    context_.get_mutable_state()->continuous_state.reset(
-        new ContinuousState<double>(
-            std::move(state),
-            kGeneralizedPositionSize, kGeneralizedVelocitySize,
-            kMiscContinuousStateSize));
+    context_.set_continuous_state(std::make_unique<ContinuousState<double>>(
+        std::move(state),
+        kGeneralizedPositionSize, kGeneralizedVelocitySize,
+        kMiscContinuousStateSize));
   }
 
   std::unique_ptr<AbstractValue> PackValue(int value) {
@@ -138,8 +137,7 @@ TEST_F(LeafContextTest, Clone) {
   }
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc =
-      clone->get_mutable_state()->continuous_state.get();
+  ContinuousState<double>* xc = clone->get_mutable_continuous_state();
   VectorX<double> contents = xc->get_state().CopyToVector();
   VectorX<double> expected(kStateSize);
   expected << 1.0, 2.0, 3.0, 5.0, 8.0;
@@ -166,8 +164,7 @@ TEST_F(LeafContextTest, Clone) {
   // Verify that changes to the cloned state do not affect the original state.
   xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, xc_data->GetAtIndex(3));
-  EXPECT_EQ(5.0,
-            context_.get_state().continuous_state->get_state().GetAtIndex(3));
+  EXPECT_EQ(5.0, context_.get_continuous_state()->get_state().GetAtIndex(3));
 }
 
 }  // namespace systems

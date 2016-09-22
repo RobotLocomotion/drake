@@ -44,7 +44,7 @@ class DiagramContextTest : public ::testing::Test {
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
-    ContinuousState<double>* xc = context_->get_state().continuous_state.get();
+    ContinuousState<double>* xc = context_->get_mutable_continuous_state();
     xc->get_mutable_state()->SetAtIndex(0, 42.0);
     xc->get_mutable_state()->SetAtIndex(1, 43.0);
   }
@@ -100,7 +100,7 @@ TEST_F(DiagramContextTest, Time) {
 // Tests that state variables appear in the diagram context, and write
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
-  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
+  ContinuousState<double>* xc = context_->get_mutable_continuous_state();
   EXPECT_EQ(2, xc->get_state().size());
   EXPECT_EQ(0, xc->get_generalized_position().size());
   EXPECT_EQ(0, xc->get_generalized_velocity().size());
@@ -108,9 +108,9 @@ TEST_F(DiagramContextTest, State) {
 
   // Changes to the diagram state write through to constituent system states.
   ContinuousState<double>* integrator0_xc =
-      context_->GetSubsystemContext(2)->get_state().continuous_state.get();
+      context_->GetMutableSubsystemContext(2)->get_mutable_continuous_state();
   ContinuousState<double>* integrator1_xc =
-      context_->GetSubsystemContext(3)->get_state().continuous_state.get();
+      context_->GetMutableSubsystemContext(3)->get_mutable_continuous_state();
   EXPECT_EQ(42.0, integrator0_xc->get_state().GetAtIndex(0));
   EXPECT_EQ(43.0, integrator1_xc->get_state().GetAtIndex(0));
 
@@ -155,7 +155,7 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
+  const ContinuousState<double>* xc = context_->get_continuous_state();
 
   EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
   EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));

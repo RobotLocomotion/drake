@@ -173,9 +173,10 @@ class DiagramContext : public Context<T> {
   void MakeState() {
     std::vector<ContinuousState<T>*> substates;
     for (auto& context : contexts_) {
-      substates.push_back(context->get_mutable_state()->continuous_state.get());
+      substates.push_back(context->get_mutable_continuous_state());
     }
-    state_.continuous_state.reset(new DiagramContinuousState<T>(substates));
+    this->set_continuous_state(
+        std::make_unique<DiagramContinuousState<T>>(substates));
   }
 
   /// Returns the output structure for a given constituent system at @p index.

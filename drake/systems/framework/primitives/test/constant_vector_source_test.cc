@@ -64,7 +64,7 @@ TEST_F(ConstantVectorSourceTest, ShouldNotBePossibleToConnectInputs) {
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(ConstantVectorSourceTest, ConstantVectorSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace
