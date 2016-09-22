@@ -5,7 +5,6 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "drake/drakeLCMUtil_export.h"
-#include "lcmtypes/bot_core/pose_t.hpp"
 #include "lcmtypes/bot_core/position_3d_t.hpp"
 #include "lcmtypes/bot_core/quaternion_t.hpp"
 #include "lcmtypes/bot_core/twist_t.hpp"
