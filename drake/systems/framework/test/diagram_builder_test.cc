@@ -19,7 +19,7 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   // Connect the output port to the input port.
-  builder.Connect(adder->get_output_port(0), adder->get_input_port(0));
+  builder.Connect(adder->get_output_port(), adder->get_input_port(0));
   EXPECT_THROW(builder.Build(), std::logic_error);
 }
 
@@ -73,7 +73,7 @@ GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   Adder<double> adder(1 /* inputs */, 1 /* size */);
   EXPECT_THROW(builder.Connect(adder, adder), std::exception);
   EXPECT_THROW(builder.ExportInput(adder.get_input_port(0)), std::exception);
-  EXPECT_THROW(builder.ExportOutput(adder.get_output_port(0)), std::exception);
+  EXPECT_THROW(builder.ExportOutput(adder.get_output_port()), std::exception);
 }
 
 // Helper class that has one input port, and no output ports.
