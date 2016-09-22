@@ -110,7 +110,7 @@ drake_add_external(bertini CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
-drake_add_external(meshconverters PUBLIC)
+drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
 drake_add_external(octomap PUBLIC)
 drake_add_external(sedumi)
@@ -167,7 +167,7 @@ else()
   drake_add_external(gflags PUBLIC CMAKE
     CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
 endif()
-  
+
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
   CMAKE_ARGS
