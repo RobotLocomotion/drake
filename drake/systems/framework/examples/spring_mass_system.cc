@@ -29,23 +29,27 @@ SpringMassStateVector<T>::~SpringMassStateVector() {}
 // ContinuousState.
 template <typename T>
 const T& SpringMassStateVector<T>::get_position() const {
-  return GetAtIndex(0);
+  return this->GetAtIndex(0);
 }
 template <typename T>
 const T& SpringMassStateVector<T>::get_velocity() const {
-  return GetAtIndex(1);
+  return this->GetAtIndex(1);
 }
 template <typename T>
 const T& SpringMassStateVector<T>::get_conservative_work() const {
-  return GetAtIndex(2);
+  return this->GetAtIndex(2);
 }
 template <typename T>
-void SpringMassStateVector<T>::set_position(const T& q) { SetAtIndex(0, q); }
+void SpringMassStateVector<T>::set_position(const T& q) {
+  this->SetAtIndex(0, q);
+}
 template <typename T>
-void SpringMassStateVector<T>::set_velocity(const T& v) { SetAtIndex(1, v); }
+void SpringMassStateVector<T>::set_velocity(const T& v) {
+  this->SetAtIndex(1, v);
+}
 template <typename T>
 void SpringMassStateVector<T>::set_conservative_work(const T& work) {
-  SetAtIndex(2, work);
+  this->SetAtIndex(2, work);
 }
 
 template <typename T>
@@ -63,16 +67,16 @@ SpringMassSystem<T>::SpringMassSystem(const T& spring_constant_N_per_m,
       system_is_forced_(system_is_forced) {
   // Declares input port for forcing term.
   if (system_is_forced_)
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+    this->DeclareInputPort(kVectorValued, 1, kContinuousSampling);
 
   // Declares output port for q, qdot, Energy.
-  DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, 3, kContinuousSampling);
 }
 
 template <typename T>
 const SystemPortDescriptor<T>& SpringMassSystem<T>::get_force_port() const {
   if (system_is_forced_) {
-    return get_input_port(0);
+    return this->get_input_port(0);
   } else {
     throw std::runtime_error(
         "Attempting to access input force port when this SpringMassSystem was "
@@ -105,7 +109,7 @@ const T& SpringMassSystem<T>::EvalPotentialEnergy(
 template <typename T>
 const T& SpringMassSystem<T>::EvalKineticEnergy(
     const MyContext& context) const {
-  const const T& m = mass_kg_, v = get_velocity(context), ke = m * v * v / 2;
+  const T& m = mass_kg_, v = get_velocity(context), ke = m * v * v / 2;
   return ke;
 }
 
@@ -129,7 +133,7 @@ std::unique_ptr<SystemOutput<T>> SpringMassSystem<T>::AllocateOutput(
   std::unique_ptr<LeafSystemOutput<T>> output(
       new LeafSystemOutput<T>);
   {
-    std::unique_ptr<BasicVector<T>> data(new SpringMassStateVector());
+    std::unique_ptr<BasicVector<T>> data(new SpringMassStateVector<T>());
     std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
     output->get_mutable_ports()->push_back(std::move(port));
   }
@@ -140,7 +144,7 @@ template <typename T>
 std::unique_ptr<ContinuousState<T>>
 SpringMassSystem<T>::AllocateContinuousState() const {
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<SpringMassStateVector>(),
+      std::make_unique<SpringMassStateVector<T>>(),
       1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
 
@@ -149,8 +153,8 @@ template <typename T>
 void SpringMassSystem<T>::EvalOutput(const Context<T>& context,
                                   SystemOutput<T>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state = get_state(context);
-  SpringMassStateVector* output_vector = get_mutable_output(output);
+  const SpringMassStateVector<T>& state = get_state(context);
+  SpringMassStateVector<T>* output_vector = get_mutable_output(output);
   output_vector->set_position(state.get_position());
   output_vector->set_velocity(state.get_velocity());
 }
@@ -163,9 +167,9 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(CheckValidContext(context));
 
   // TODO(david-german-tri): Cache the output of this function.
-  const SpringMassStateVector& state = get_state(context);
+  const SpringMassStateVector<T>& state = get_state(context);
 
-  SpringMassStateVector* derivative_vector = get_mutable_state(derivatives);
+  SpringMassStateVector<T>* derivative_vector = get_mutable_state(derivatives);
 
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());
@@ -175,7 +179,7 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
-  const const T& force_applied_to_body =
+  const T& force_applied_to_body =
       EvalSpringForce(context) + external_force;
   derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 

@@ -68,7 +68,7 @@ class SpringMassSystemTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<SpringMassSystem> system_;
+  std::unique_ptr<SpringMassSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;

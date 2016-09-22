@@ -200,7 +200,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   const T& EvalNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides
-  /// Allocates a single output port of type SpringMassStateVector.
+  /// Allocates a single output port of type SpringMassStateVector<T>.
   std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;
   void EvalOutput(const MyContext& context, MyOutput* output) const override;
@@ -217,30 +217,31 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   // TODO(david-german-tri): Add a cast that is dynamic_cast in Debug mode,
   // and static_cast in Release mode.
 
-  static const SpringMassStateVector& get_state(
+  static const SpringMassStateVector<T>& get_state(
       const MyContinuousState& cstate) {
-    return dynamic_cast<const SpringMassStateVector&>(cstate.get_state());
+    return dynamic_cast<const SpringMassStateVector<T>&>(cstate.get_state());
   }
 
-  static SpringMassStateVector* get_mutable_state(MyContinuousState* cstate) {
-    return dynamic_cast<SpringMassStateVector*>(cstate->get_mutable_state());
+  static SpringMassStateVector<T>* get_mutable_state(
+      MyContinuousState* cstate) {
+    return dynamic_cast<SpringMassStateVector<T>*>(cstate->get_mutable_state());
   }
 
-  static const SpringMassStateVector& get_output(const MyOutput& output) {
-    return dynamic_cast<const SpringMassStateVector&>(
+  static const SpringMassStateVector<T>& get_output(const MyOutput& output) {
+    return dynamic_cast<const SpringMassStateVector<T>&>(
         *output.get_vector_data(0));
   }
 
-  static SpringMassStateVector* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<SpringMassStateVector*>(
+  static SpringMassStateVector<T>* get_mutable_output(MyOutput* output) {
+    return dynamic_cast<SpringMassStateVector<T>*>(
         output->GetMutableVectorData(0));
   }
 
-  static const SpringMassStateVector& get_state(const MyContext& context) {
+  static const SpringMassStateVector<T>& get_state(const MyContext& context) {
     return get_state(*context.get_state().continuous_state);
   }
 
-  static SpringMassStateVector* get_mutable_state(MyContext* context) {
+  static SpringMassStateVector<T>* get_mutable_state(MyContext* context) {
     return get_mutable_state(
         context->get_mutable_state()->continuous_state.get());
   }
