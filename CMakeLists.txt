@@ -118,7 +118,7 @@ drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(yalmip PUBLIC)
+drake_add_external(yalmip PUBLIC CMAKE)
 
 # avl
 # The Ninja generator does not support Fortran.
