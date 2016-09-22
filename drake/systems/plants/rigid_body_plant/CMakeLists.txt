@@ -1,19 +1,20 @@
 set(source_files
-    rigid_body_plant.cc
-    viewer_draw_translator.cc)
+    rigid_body_plant.cc)
 
 # The following variables are necessary to conditionally include
 # RigidBodyTreeLcmPublisher in libdrakeRigidBodyPlant.so if LCM exists.
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
-      rigid_body_tree_lcm_publisher.h)
+      rigid_body_tree_lcm_publisher.h
+      viewer_draw_translator.h)
 endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
-      rigid_body_tree_lcm_publisher.cc)
+      rigid_body_tree_lcm_publisher.cc
+      viewer_draw_translator.cc)
 endif()
 
 set(lcm_dependent_link_libraries)
@@ -34,8 +35,7 @@ target_link_libraries(drakeRigidBodyPlant
 
 drake_install_headers(
     ${lcm_dependent_header_files}
-    rigid_body_plant.h
-    viewer_draw_translator.h)
+    rigid_body_plant.h)
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rbs
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
