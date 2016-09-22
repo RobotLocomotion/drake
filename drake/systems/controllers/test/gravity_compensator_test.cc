@@ -79,8 +79,9 @@ TEST_F(GravityCompensatorTest, VectorThroughGainSystem) {
 
   // Robot state vector (positions and velocities)
   Eigen::VectorXd robot_state = Eigen::VectorXd::Zero(14, 1);
+  Eigen::VectorXd robot_position = robot_state.topRows(7);
 
-  input0_->get_mutable_value() << robot_state;
+  input0_->get_mutable_value() << robot_position;
 
   // Hook input of the expected size.
   context_->SetInputPort(0, MakeInput(std::move(input0_)));
