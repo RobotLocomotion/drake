@@ -62,4 +62,26 @@ pods_install_pkg_config_file(drake-zmp-util
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(test)
+
+# System 2 controllers
+set(system2_sources
+    gravity_compensator.cc)
+set(system2_installed_headers
+    gravity_compensator.h)
+add_library_with_exports(LIB_NAME drakeSystem2Controllers
+    SOURCE_FILES ${system2_sources} ${system2_installed_headers})
+add_dependencies(drakeSystem2Controllers drakeRBM)
+target_link_libraries(drakeSystem2Controllers
+    drakeSystemFramework
+    drakeCommon
+    drakeRBM)
+
+drake_install_headers(${system2_installed_headers})
+
+pods_install_libraries(drakeSystem2Controllers)
+pods_install_pkg_config_file(drake-system2-controllers
+    LIBS -ldrakeSystem2Controllers -ldrakeSystemFramework -ldrakeRBM
+    REQUIRES
+    VERSION 0.0.1)
+#add_subdirectory(test)
+

@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/gravity_compensator.h"
+#include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+
 
 #include <unsupported/Eigen/AutoDiff>
 
@@ -59,9 +60,11 @@ class GravityCompensatorTest : public ::testing::Test {
     tree_ = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
     drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-    drake::systems::plants::joints::kFixed, nullptr /* weld to frame */, tree_.get());
+        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+        tree_.get());
 
-    gravity_compensator_ = make_unique<GravityCompensator<double>>(*move(tree_).get());
+    gravity_compensator_ = make_unique<GravityCompensator<double>>(*move(
+        tree_).get());
     context_ = gravity_compensator_->CreateDefaultContext();
     output_ = gravity_compensator_->AllocateOutput(*context_);
     input0_ = make_unique<BasicVector<double>>(7 /* length */);
