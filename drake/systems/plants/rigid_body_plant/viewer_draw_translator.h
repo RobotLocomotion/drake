@@ -15,7 +15,7 @@ namespace systems {
 /**
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`. It translates between a VectorBase<double> that
- * contains the generalized state of a RigidBodyTree, and a
+ * contains the state vector of a RigidBodyTree, and a
  * `drake::lcmt_viewer_draw` message.
  */
 class DRAKERIGIDBODYPLANT_EXPORT ViewerDrawTranslator
@@ -23,7 +23,7 @@ class DRAKERIGIDBODYPLANT_EXPORT ViewerDrawTranslator
  public:
   /**
    * A constructor that sets the expected sizes of both the LCM message and
-   * VectorBase vector to be the size of the generalized state of @p tree,
+   * VectorBase vector to be the size of the state vector of @p tree,
    * which is the sum of the number of position and velocity states in @p tree.
    *
    * @param[in] tree A reference to the RigidBodyTree with which to obtain the
@@ -33,8 +33,8 @@ class DRAKERIGIDBODYPLANT_EXPORT ViewerDrawTranslator
   explicit ViewerDrawTranslator(const RigidBodyTree& tree);
 
   /**
-   * <b>This method must not be called.</b> It is not implemented an will abort
-   * if called.
+   * <b>This method must not be called.</b> It is not implemented and will abort
+   * if called. The method <i>could</i> be implement should the need arise.
    */
   void Deserialize(
       const void* lcm_message_bytes, int lcm_message_length,
@@ -46,7 +46,7 @@ class DRAKERIGIDBODYPLANT_EXPORT ViewerDrawTranslator
 
  private:
   // The RigidBodyTree with which the poses of each RigidBody can be
-  // determined given the generalized state of the RigidBodyTree.
+  // determined given the state vector of the RigidBodyTree.
   const RigidBodyTree& tree_;
 
   // A partially initialized LCM draw message. This is used by

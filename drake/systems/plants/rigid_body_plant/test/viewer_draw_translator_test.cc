@@ -46,8 +46,8 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   tree->compile();
 
   // Creates an `LcmtViewerDrawTranslator` object using the `RigidBodyTree` that
-  // was just created. The name "dut" stands for "Device Under Test".
-  ViewerDrawTranslator dut(*tree);
+  // was just created. This is the "device under test."
+  ViewerDrawTranslator viewer_draw_translator(*tree);
 
   // Instantiates a generalized state vector containing all zeros. This is
   // selected to make the resulting quaternion values be easily specified.
@@ -66,7 +66,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // a byte array for a `drake::lcmt_viewer_draw` message.
   double time = 0;
   std::vector<uint8_t> message_bytes;
-  dut.Serialize(time, generalized_state, &message_bytes);
+  viewer_draw_translator.Serialize(time, generalized_state, &message_bytes);
   EXPECT_GT(message_bytes.size(), 0);
 
   // Verifies that the serialized message is correct. This entails:

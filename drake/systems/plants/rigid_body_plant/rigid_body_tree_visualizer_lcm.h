@@ -14,11 +14,14 @@
 namespace drake {
 namespace systems {
 
+// TODO(liang.fok) Update the class's description once System 2.0 allows systems
+// to declare that they need a certain action to be performed at simulation time
+// t_0.
 /**
  * This is a Drake System 2.0 block that communicates with the Drake Visualizer
- * via LCM messages. It does this in two phases: initialization, which runs once
- * at startup, and run-time, which runs every simulation cycle for the duration
- * of the simulation.
+ * via LCM messages. It does this in two phases: initialization, which runs when
+ * `DoPublish()` is called with `Context::get_time()` equal to zero, and
+ * run-time, which runs every time `doPublish()` is called.
  *
  * During initialization, this system block analyzes the RigidBodyTree and tells
  * Drake Visualizer what it will be visualizing. For example, these include the
@@ -38,7 +41,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
     : public LeafSystem<double> {
  public:
   /**
-   * A constructor that prepares for the tranmission of `lcmt_viewer_load_robot`
+   * A constructor that prepares for the transmission of `lcmt_viewer_load_robot`
    * and `lcmt_viewer_draw` messages, but does not actually publish anything.
    * LCM message publications occur each time
    * RigidBodyTreeVisualizerLcm::Publish() is called.
@@ -73,8 +76,11 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
   void DoPublish(const systems::Context<double>& context) const override;
 
  private:
-  // Returns a particially-initialized lcmt_viewer_load_robot message.
-  static lcmt_viewer_load_robot InitializeLoadMessage(
+  // Returns a partially-initialized lcmt_viewer_load_robot message. After this
+  // method is called, all dynamically-sized member variables are correctly
+  // sized, and the names and model instance IDs of the rigid bodies are set
+  // within load_message_.
+  static lcmt_viewer_load_robot CreateLoadMessage(
       const RigidBodyTree& tree);
 
   // Publishes a lcmt_viewer_load_robot message containing a description
@@ -96,6 +102,9 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeVisualizerLcm
   // vector to a lcmt_viewer_draw message.
   const ViewerDrawTranslator draw_message_translator_;
 
+  // TODO(liang.fok) Remove this once this class is updated to support LCM mock
+  // interfaces and dependency injection. See #3546.
+  //
   // Using 'mutable' here is OK since it's only used for unit test checking.
   mutable std::vector<uint8_t> draw_message_bytes_;
 };

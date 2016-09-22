@@ -11,10 +11,11 @@ const int kPortIndex = 0;
 
 RigidBodyTreeVisualizerLcm::RigidBodyTreeVisualizerLcm(
     const RigidBodyTree& tree, ::lcm::LCM* lcm) :
-    lcm_(lcm), load_message_(InitializeLoadMessage(tree)),
+    lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
   set_name("rigid_body_tree_visualizer_lcm");
-  int vector_size = tree.number_of_positions() + tree.number_of_velocities();
+  const int vector_size =
+      tree.number_of_positions() + tree.number_of_velocities();
   DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
 }
 
@@ -30,6 +31,10 @@ RigidBodyTreeVisualizerLcm::get_draw_message_bytes() const {
 
 void RigidBodyTreeVisualizerLcm::DoPublish(const Context<double>& context)
     const {
+  // TODO(liang.fok): Replace the following code once System 2.0's API allows
+  // systems to declare that they need a certain action to be performed at
+  // simulation time t_0.
+  //
   // Before any draw commands, we need to send the load_robot message.
   if (context.get_time() == 0.0) {
     PublishLoadRobot();
@@ -55,7 +60,7 @@ void RigidBodyTreeVisualizerLcm::PublishLoadRobot() const {
   sent_load_robot_ = true;
 }
 
-lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::InitializeLoadMessage(
+lcmt_viewer_load_robot RigidBodyTreeVisualizerLcm::CreateLoadMessage(
     const RigidBodyTree& tree) {
   lcmt_viewer_load_robot load_message;
   load_message.num_links = tree.bodies.size();

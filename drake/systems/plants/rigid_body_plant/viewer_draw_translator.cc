@@ -33,9 +33,10 @@ ViewerDrawTranslator::ViewerDrawTranslator(
 void ViewerDrawTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
     VectorBase<double>* vector_base) const {
-  DRAKE_ABORT_MSG("Unable to convert from a drake::lcmt_viewer_draw message to "
-                  "a VectorBase object that contains the RigidBodyTree's "
-                  "generalized state.");
+  DRAKE_ABORT_MSG(
+    "The translator that converts from a drake::lcmt_viewer_draw message to "
+    "a VectorBase object that contains the RigidBodyTree's state vector has not"
+    "been implemented yet.");
 }
 
 void ViewerDrawTranslator::Serialize(double time,
