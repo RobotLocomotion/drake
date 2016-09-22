@@ -114,8 +114,8 @@ const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant() const {
 
 template class
 DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<double>;
-//template class
-//DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<AutoDiffXd>;
+template class
+DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
