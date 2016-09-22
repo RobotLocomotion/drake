@@ -18,8 +18,8 @@ middleware.
 To run the Drake Visualizer, open a terminal and execute the following commands:
 
 ```
-$ cd [drake-distro]/drake/automotive
-$ ../../../build/install/bin/drake-visualizer
+$ cd drake-distro/drake/automotive
+$ ../../build/install/bin/drake-visualizer
 ```
 
 The Drake Visualizer window should appear.
@@ -47,7 +47,7 @@ $ apt-get install python-pygame
 Then execute:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py
 ```
 
@@ -64,13 +64,13 @@ will be added that integrates both LCM-based components and ROS-based components
 To start the simulation, open a new terminal and execute the following:
 
 ```
-$ cd [drake-distro]/drake/automotive
-$ ../../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
+$ cd drake-distro/drake/automotive
+$ ../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 ### Simulation Using Drake + LCM + ROS
 
-*Coming Soon!*
+See: https://github.com/liangfok/drake/tree/feature/multi_car_sim_2/ros/drake_cars_examples
 
 Additional Simulation Notes
 ---------------------------
@@ -94,7 +94,7 @@ If you are unable to run the Steering Command Driver, you can generate simple
 throttle and steering commands using the command line:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
@@ -102,7 +102,7 @@ where the values in square brackets should be replaced with desired values.
 For example:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 

@@ -77,7 +77,7 @@ class MessagePublisher {
 
 void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
                     LcmSubscriberSystem* dut) {
-  EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
+  EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
   // Instantiates a publisher of lcmt_drake_signal messages on the LCM network.
   // network.

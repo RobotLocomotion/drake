@@ -3,24 +3,23 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/automotive/lcm_vector_gen.py.
 
-#include "drake/automotive/gen/euler_floating_joint_state.h"
+#include "drake/automotive/gen/simple_car_config.h"
 #include "drake/drakeAutomotiveLcm_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
+#include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
 namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
- * EulerFloatingJointState type.
+ * SimpleCarConfig type.
  */
-class DRAKEAUTOMOTIVELCM_EXPORT EulerFloatingJointStateTranslator
+class DRAKEAUTOMOTIVELCM_EXPORT SimpleCarConfigTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
-  EulerFloatingJointStateTranslator()
-      : LcmAndVectorBaseTranslator(
-            EulerFloatingJointStateIndices::kNumCoordinates) {}
+  SimpleCarConfigTranslator()
+      : LcmAndVectorBaseTranslator(SimpleCarConfigIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

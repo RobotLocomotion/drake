@@ -7,6 +7,7 @@
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
+#include "drake/automotive/trajectory_car.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeAutomotive_export.h"
@@ -57,7 +58,35 @@ void AutomotiveSimulator<T>::AddSimpleCar() {
 }
 
 template <typename T>
+void AutomotiveSimulator<T>::AddTrajectoryCar(
+    const Curve2<double>& curve, double speed, double start_time) {
+  DRAKE_DEMAND(!started_);
+  const int vehicle_number = allocate_vehicle_number();
+
+  auto trajectory_car = builder_->template AddSystem<TrajectoryCar<T>>(
+      curve, speed, start_time);
+  auto coord_transform =
+      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
+
+  builder_->Connect(*trajectory_car, *coord_transform);
+  AddPublisher(*trajectory_car, vehicle_number);
+  AddPublisher(*coord_transform, vehicle_number);
+}
+
+template <typename T>
 void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
+                                          int vehicle_number) {
+  DRAKE_DEMAND(!started_);
+  static const SimpleCarStateTranslator translator;
+  auto publisher =
+      builder_->template AddSystem<systems::lcm::LcmPublisherSystem>(
+          std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE",
+          translator, lcm_.get());
+  builder_->Connect(system, *publisher);
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!started_);
   static const SimpleCarStateTranslator translator;
