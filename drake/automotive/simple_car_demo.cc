@@ -2,17 +2,9 @@
 
 #include <memory>
 
-#include "drake/automotive/gen/driving_command_translator.h"
-#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
-#include "drake/automotive/gen/simple_car_state_translator.h"
-#include "drake/automotive/simple_car_to_euler_floating_joint.h"
+#include "drake/automotive/automotive_simulator.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/text_logging.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 
@@ -27,12 +19,11 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
  public:
   explicit BotVisualizerHack(::lcm::LCM* lcm)
       : lcm_(lcm) {
+    this->set_name("BotVisualizerHack");
     this->DeclareInputPort(systems::kVectorValued,
                            EulerFloatingJointStateIndices::kNumCoordinates,
                            systems::kContinuousSampling);
   }
-
-  std::string get_name() const override { return "bot_visualizer_hack"; }
 
   void EvalOutput(const systems::Context<double>& context,
                   systems::SystemOutput<double>* output) const override {}
@@ -111,48 +102,18 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 };
 
 int do_main(int argc, const char* argv[]) {
-  auto lcm = std::make_unique<lcm::LCM>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  simulator->AddSimpleCar();
+  simulator->AddSystem(std::make_unique<BotVisualizerHack<double>>(
+      simulator->get_lcm()));
+  auto joint_system_name = SimpleCarToEulerFloatingJoint<double>().get_name();
+  simulator->get_builder()->Connect(
+      simulator->GetBuilderSystemByName(joint_system_name),
+      simulator->GetBuilderSystemByName("BotVisualizerHack"));
+  simulator->Start();
 
-  const DrivingCommandTranslator driving_command_translator;
-  auto command_subscriber = std::make_unique<systems::lcm::LcmSubscriberSystem>(
-      "DRIVING_COMMAND", driving_command_translator, lcm.get());
-
-  auto simple_car = std::make_unique<SimpleCar<double>>();
-  auto coord_transform =
-      std::make_unique<SimpleCarToEulerFloatingJoint<double>>();
-
-  const SimpleCarStateTranslator simple_car_state_translator;
-  auto simple_car_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
-          "SIMPLE_CAR_STATE", simple_car_state_translator, lcm.get());
-
-  const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
-  auto euler_floating_joint_state_publisher =
-      std::make_unique<systems::lcm::LcmPublisherSystem>(
-          "FLOATING_JOINT_STATE", euler_floating_joint_state_translator,
-          lcm.get());
-
-  auto bot_visualizer_hack = std::make_unique<BotVisualizerHack<double>>(
-      lcm.get());
-
-  auto builder = std::make_unique<systems::DiagramBuilder<double>>();
-  builder->Connect(*command_subscriber, *simple_car);
-  builder->Connect(*simple_car, *simple_car_state_publisher);
-  builder->Connect(*simple_car, *coord_transform);
-  builder->Connect(*coord_transform, *bot_visualizer_hack);
-  builder->Connect(*coord_transform, *euler_floating_joint_state_publisher);
-
-  auto diagram = builder->Build();
-
-  auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
-      lcm.get());
-
-  auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
-  simulator->Initialize();
   while (true) {
-    const double time = simulator->get_context().get_time();
-    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-    simulator->StepTo(time + 0.01);
+    simulator->StepBy(0.01);
   }
 
   return 0;

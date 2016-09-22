@@ -178,6 +178,7 @@ find_package(lcm)
 if(lcm_FOUND)
   add_subdirectory(lcmtypes)
   include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
+  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes) #TODO(#3351)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
@@ -241,7 +242,10 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/bsd/GetFullPath)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
-add_subdirectory(automotive)
+if(NOT WIN32)
+  # This subdirectory does not support windows.
+  add_subdirectory(automotive)
+endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)

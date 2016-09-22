@@ -244,8 +244,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(xc, desired_state);
 
   ASSERT_EQ(1, output_->get_num_ports());
-  const BasicVector<double>* output_port =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_port = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_port);
 
   kuka_system_->EvalOutput(*context_, output_.get());

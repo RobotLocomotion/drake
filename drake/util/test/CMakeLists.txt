@@ -20,7 +20,7 @@ endif()
 
 if(lcm_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
-target_link_libraries(testLCMUtil drakeLCMUtil ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(testLCMUtil drakeLCMUtil drakeMath ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testLCMUtil COMMAND testLCMUtil)
 endif()
 

@@ -14,7 +14,7 @@ DRAKEIK_EXPORT void inverseKin(
     const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom,
     const int num_constraints,
-    RigidBodyConstraint **const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     MatrixBase<DerivedC>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint) {
@@ -27,7 +27,7 @@ DRAKEIK_EXPORT void inverseKin(
 template DRAKEIK_EXPORT void inverseKin(
     RigidBodyTree *model, const MatrixBase<VectorXd>& q_seed,
     const MatrixBase<VectorXd>& q_nom, const int num_constraints,
-    RigidBodyConstraint **const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     MatrixBase<VectorXd>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
@@ -35,7 +35,7 @@ template DRAKEIK_EXPORT void inverseKin(
 template DRAKEIK_EXPORT void inverseKin(
     RigidBodyTree *model, const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
-    RigidBodyConstraint **const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     MatrixBase<Map<VectorXd>>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
@@ -46,13 +46,12 @@ IKResults inverseKinSimple(
     const std::vector<RigidBodyConstraint *>& constraint_array,
     const IKoptions& ikoptions) {
   auto results = IKResults();
-  results.q_sol.resize(q_nom.size());
+  results.q_sol.push_back(Eigen::VectorXd(q_nom.size()));
+  results.info.resize(1, 0);
   int num_constraints = static_cast<int>(constraint_array.size());
-  RigidBodyConstraint **const constraint_array_ptr =
-      (RigidBodyConstraint * *const)constraint_array.data();
   inverseKin<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd>(
-      model, q_seed, q_nom, num_constraints, constraint_array_ptr, ikoptions,
-      &results.q_sol, &results.info, &results.infeasible_constraints);
+      model, q_seed, q_nom, num_constraints, constraint_array.data(), ikoptions,
+      &results.q_sol[0], &results.info[0], &results.infeasible_constraints);
 
   return results;
 }

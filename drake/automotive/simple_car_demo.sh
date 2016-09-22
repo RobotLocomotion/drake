@@ -33,7 +33,9 @@ function bot_spy_that_actually_works {
     java -cp "${CLASSPATH}" lcm.spy.Spy
 }
 
-$DRAKE_DIST_BUILD/install/bin/lcm-logger &
+# TODO(#3231) Use installed prorgam once it works again.
+# $DRAKE_DIST_BUILD/install/bin/lcm-logger &
+$DRAKE_DIST_BUILD/externals/lcm/lcm-logger/lcm-logger &
 # TODO(#3231) Use this shell script once it works again.
 # $DRAKE_DIST_BUILD/install/bin/bot-spy &
 bot_spy_that_actually_works &
