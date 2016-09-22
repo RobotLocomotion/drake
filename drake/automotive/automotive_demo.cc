@@ -34,6 +34,10 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 
  protected:
   void DoPublish(const systems::Context<double>& context) const override {
+    // TODO(liang.fok): Replace the following code once System 2.0's API allows
+    // systems to declare that they need a certain action to be performed at
+    // simulation time t_0.
+    //
     // Before any draw commands, we need to send the load_robot message.
     if (context.get_time() == 0.0) {
       PublishLoadRobot();
