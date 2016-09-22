@@ -9,34 +9,44 @@ namespace {
 constexpr int kStateSize = 3;  // position, velocity, power integral
 }  // namespace
 
-SpringMassStateVector::SpringMassStateVector(double initial_position,
-                                             double initial_velocity)
-    : BasicVector<double>(kStateSize) {
+template <typename T>
+SpringMassStateVector<T>::SpringMassStateVector(const T& initial_position,
+                                                const T& initial_velocity)
+    : BasicVector<T>(kStateSize) {
   set_position(initial_position);
   set_velocity(initial_velocity);
   set_conservative_work(0);
 }
 
-SpringMassStateVector::SpringMassStateVector()
+template <typename T>
+SpringMassStateVector<T>::SpringMassStateVector()
     : SpringMassStateVector(0.0, 0.0) {}
 
-SpringMassStateVector::~SpringMassStateVector() {}
+template <typename T>
+SpringMassStateVector<T>::~SpringMassStateVector() {}
 
 // Order matters: Position (q) precedes velocity (v) precedes misc. (z) in
 // ContinuousState.
-double SpringMassStateVector::get_position() const { return GetAtIndex(0); }
-double SpringMassStateVector::get_velocity() const { return GetAtIndex(1); }
-double SpringMassStateVector::get_conservative_work() const {
+template <typename T>
+const T& SpringMassStateVector<T>::get_position() const { return GetAtIndex(0); }
+template <typename T>
+const T& SpringMassStateVector<T>::get_velocity() const { return GetAtIndex(1); }
+template <typename T>
+const T& SpringMassStateVector<T>::get_conservative_work() const {
   return GetAtIndex(2);
 }
-void SpringMassStateVector::set_position(double q) { SetAtIndex(0, q); }
-void SpringMassStateVector::set_velocity(double v) { SetAtIndex(1, v); }
-void SpringMassStateVector::set_conservative_work(double work) {
+template <typename T>
+void SpringMassStateVector<T>::set_position(const T& q) { SetAtIndex(0, q); }
+template <typename T>
+void SpringMassStateVector<T>::set_velocity(const T& v) { SetAtIndex(1, v); }
+template <typename T>
+void SpringMassStateVector<T>::set_conservative_work(const T& work) {
   SetAtIndex(2, work);
 }
 
-SpringMassStateVector* SpringMassStateVector::DoClone() const {
-  auto state = new SpringMassStateVector(get_position(), get_velocity());
+template <typename T>
+SpringMassStateVector<T>* SpringMassStateVector<T>::DoClone() const {
+  auto state = new SpringMassStateVector<T>(get_position(), get_velocity());
   state->set_conservative_work(get_conservative_work());
   return state;
 }

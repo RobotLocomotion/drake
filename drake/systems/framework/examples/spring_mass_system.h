@@ -15,38 +15,44 @@ namespace systems {
 
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
-
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
+template <typename T>
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
-    : public BasicVector<double> {
+    : public BasicVector<T> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
-  SpringMassStateVector(double initial_position, double initial_velocity);
+  SpringMassStateVector(const T& initial_position, const T& initial_velocity);
   /// Creates a state with position and velocity set to zero.
   SpringMassStateVector();
   ~SpringMassStateVector() override;
 
   /// Returns the position of the mass in meters, where zero is the point
   /// where the spring exerts no force.
-  double get_position() const;
+  const T& get_position() const;
 
   /// Sets the position of the mass in meters.
-  void set_position(double q);
+  void set_position(const T& q);
 
   /// Returns the velocity of the mass in meters per second.
-  double get_velocity() const;
+  const T& get_velocity() const;
 
   /// Sets the velocity of the mass in meters per second.
-  void set_velocity(double v);
+  void set_velocity(const T& v);
 
   /// Returns the integral of conservative power, in watts.
-  double get_conservative_work() const;
+  const T& get_conservative_work() const;
 
   /// Initialize the conservative work integral to a given value.
-  void set_conservative_work(double e);
+  void set_conservative_work(const T& e);
 
  private:
-  SpringMassStateVector* DoClone() const override;
+  SpringMassStateVector<T>* DoClone() const override;
 };
 
 /// A model of a one-dimensional spring-mass system.
