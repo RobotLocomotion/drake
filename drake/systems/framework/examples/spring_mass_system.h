@@ -17,7 +17,7 @@ namespace systems {
 /// position and velocity of the mass, in meters and meters/s.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
-/// - double
+/// - const T&
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
@@ -60,11 +60,17 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 /// @verbatim
 /// |-----\/\/ k /\/\----( m )  +x
 /// @endverbatim
-///
 /// Units are MKS (meters-kilograms-seconds).
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - const T&
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
+///
 /// @ingroup systems
-
-class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
+template <typename T>
+class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.
@@ -74,12 +80,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.
-  SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
+  SpringMassSystem(const T& spring_constant_N_per_m, const T& mass_kg,
                    bool system_is_forced = false);
 
-  using MyContext = Context<double>;
-  using MyContinuousState = ContinuousState<double>;
-  using MyOutput = SystemOutput<double>;
+  using MyContext = Context<T>;
+  using MyContinuousState = ContinuousState<T>;
+  using MyOutput = SystemOutput<T>;
 
   /// The input force to this system is not direct feedthrough.
   bool has_any_direct_feedthrough() const override { return false; }
@@ -87,30 +93,30 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
-  const SystemPortDescriptor<double>& get_force_port() const;
+  const SystemPortDescriptor<T>& get_force_port() const;
 
   /// Returns the port to output state.
-  const SystemPortDescriptor<double>& get_output_port() const;
+  const SystemPortDescriptor<T>& get_output_port() const;
 
   /// Returns the spring constant k that was provided at construction, in N/m.
-  double get_spring_constant() const { return spring_constant_N_per_m_; }
+  const T& get_spring_constant() const { return spring_constant_N_per_m_; }
 
   /// Returns the mass m that was provided at construction, in kg.
-  double get_mass() const { return mass_kg_; }
+  const T& get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
-  double get_position(const MyContext& context) const {
+  const T& get_position(const MyContext& context) const {
     return get_state(context).get_position();
   }
 
   /// Gets the current velocity of the mass in the given Context.
-  double get_velocity(const MyContext& context) const {
+  const T& get_velocity(const MyContext& context) const {
     return get_state(context).get_velocity();
   }
 
   /// @returns the external driving force to the system.
-  double get_input_force(const MyContext& context) const {
-    double external_force = 0;
+  const T& get_input_force(const MyContext& context) const {
+    const T& external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
       external_force = context.get_vector_input(0)->GetAtIndex(0);
@@ -120,23 +126,23 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
 
   /// Gets the current value of the conservative power integral in the given
   /// Context.
-  double get_conservative_work(const MyContext& context) const {
+  const T& get_conservative_work(const MyContext& context) const {
     return get_state(context).get_conservative_work();
   }
 
   /// Sets the position of the mass in the given Context.
-  void set_position(MyContext* context, double position) const {
+  void set_position(MyContext* context, const T& position) const {
     get_mutable_state(context)->set_position(position);
   }
 
   /// Sets the velocity of the mass in the given Context.
-  void set_velocity(MyContext* context, double velocity) const {
+  void set_velocity(MyContext* context, const T& velocity) const {
     get_mutable_state(context)->set_velocity(velocity);
   }
 
   /// Sets the initial value of the conservative power integral in the given
   /// Context.
-  void set_conservative_work(MyContext* context, double energy) const {
+  void set_conservative_work(MyContext* context, const T& energy) const {
     get_mutable_state(context)->set_conservative_work(energy);
   }
 
@@ -144,7 +150,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   /// Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   /// opposite force -f to the world attachment point at the other end. The
   /// force is in newtons N (kg-m/s^2).
-  double EvalSpringForce(const MyContext& context) const;
+  const T& EvalSpringForce(const MyContext& context) const;
 
   /// Returns the potential energy currently stored in the spring in the given
   /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
@@ -156,7 +162,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   ///            = -f v.
   /// @endverbatim
   /// Energy is in joules J (N-m).
-  double EvalPotentialEnergy(const MyContext& context) const override;
+  const T& EvalPotentialEnergy(const MyContext& context) const override;
 
   /// Returns the current kinetic energy of the moving mass in the given
   /// Context. This is `ke = m v^2 / 2` for this system. The rate of change of
@@ -170,7 +176,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   /// @endverbatim
   /// (assuming the only force is due to the spring). Energy is in joules.
   /// @see EvalSpringForce(), EvalPotentialEnergy()
-  double EvalKineticEnergy(const MyContext& context) const override;
+  const T& EvalKineticEnergy(const MyContext& context) const override;
 
   /// Returns the rate at which mechanical energy is being converted from
   /// potential energy in the spring to kinetic energy of the mass by this
@@ -182,7 +188,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
   /// @endverbatim
   /// This quantity is positive when the spring is accelerating the mass and
   /// negative when the spring is decelerating the mass.
-  double EvalConservativePower(const MyContext& context) const override;
+  const T& EvalConservativePower(const MyContext& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
@@ -191,7 +197,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
-  double EvalNonConservativePower(const MyContext& context) const override;
+  const T& EvalNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides
   /// Allocates a single output port of type SpringMassStateVector.
@@ -204,7 +210,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
 
  protected:
   // LeafSystem<T> override
-  std::unique_ptr<ContinuousState<double>>
+  std::unique_ptr<ContinuousState<T>>
   AllocateContinuousState() const override;
 
  private:
@@ -239,8 +245,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<double> {
         context->get_mutable_state()->continuous_state.get());
   }
 
-  const double spring_constant_N_per_m_{};
-  const double mass_kg_{};
+  const T spring_constant_N_per_m_{};
+  const T mass_kg_{};
   const bool system_is_forced_{false};
 };
 
