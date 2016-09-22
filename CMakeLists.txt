@@ -106,7 +106,7 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(bertini)
+drake_add_external(bertini CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
