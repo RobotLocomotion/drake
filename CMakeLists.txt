@@ -193,19 +193,14 @@ drake_add_external(ipopt PUBLIC
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # nlopt
-drake_add_external(nlopt PUBLIC
-  PATCH_COMMAND ./autogen.sh --no-configure
-  CONFIGURE_COMMAND ./configure
-    --without-matlab
-    --without-python
-    --without-octave
-    --without-guile
-    --enable-maintainer-mode
-    --enable-shared
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --exec-prefix=${CMAKE_INSTALL_PREFIX}
-    --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+drake_add_external(nlopt PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_PYTHON=OFF
+    -DBUILD_OCTAVE=OFF
+    -DBUILD_MATLAB=OFF
+    -DBUILD_GUILE=OFF
+    -DUSE_SWIG=OFF)
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
