@@ -1,6 +1,9 @@
 #include "./gravity_compensator.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/KinematicsCache.h"
+
+//#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
@@ -12,10 +15,10 @@ GravityCompensator<T>::GravityCompensator(
     const RigidBodyTree& rigid_body_tree) :
     mdb_world_(rigid_body_tree) {
 
-  int num_of_states  = mdb_world_.number_of_positions() +
-      mdb_world_.number_of_velocities();
-  this->DeclareInputPort(kVectorValued, num_of_states, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, num_of_states, kContinuousSampling);
+  int num_of_inputs  = mdb_world_.number_of_positions();
+
+  this->DeclareInputPort(kVectorValued, num_of_inputs, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, num_of_inputs, kContinuousSampling);
 }
 
 template <typename T>
@@ -25,11 +28,10 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   Eigen::VectorXd x = System<T>::get_input_vector(context, 0);
-  int number_of_positions = mdb_world_.number_of_positions();
+  //int number_of_positions = mdb_world_.number_of_positions();
   int number_of_velocities = mdb_world_.number_of_velocities();
   KinematicsCache<double> cache =
-      mdb_world_.doKinematics(x.head(number_of_positions),
-                                    x.tail(number_of_velocities));
+      mdb_world_.doKinematics(x, Eigen::VectorXd::Zero(number_of_velocities));
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   f_ext.clear();
@@ -43,7 +45,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
 }
 
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT GravityCompensator<double>;
+template class GravityCompensator<double>;
 // TODO(naveenoid) : get the AutoDiff working as in the line below.
 //template class DRAKESYSTEMFRAMEWORK_EXPORT GravityCompensator<AutoDiffXd>;
 
