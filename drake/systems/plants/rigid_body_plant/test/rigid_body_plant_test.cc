@@ -55,7 +55,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   EXPECT_EQ(rigid_body_sys.get_output_size(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree& tree = rigid_body_sys.get_multibody_world();
+  const RigidBodyTree& tree = rigid_body_sys.get_rigid_body_tree();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -212,7 +212,7 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 // RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
 // system.
 TEST_F(KukaArmTest, EvalOutput) {
-  auto& world = kuka_system_->get_multibody_world();
+  auto& tree = kuka_system_->get_rigid_body_tree();
 
   // Checks that the number of input and output ports in the system and context
   // are consistent.
@@ -265,10 +265,10 @@ TEST_F(KukaArmTest, EvalOutput) {
 
   VectorXd q = xc.topRows(kNumPositions_);
   VectorXd v = xc.bottomRows(kNumVelocities_);
-  auto cache = world.doKinematics(q, v);
+  auto cache = tree.doKinematics(q, v);
 
   for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
-    Isometry3d pose = world.relativeTransform(cache, 0, ibody);
+    Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
     Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
     // Note that Eigen quaternion elements are not laid out in memory in the
     // same way Drake currently aligns them. See issue #3470.

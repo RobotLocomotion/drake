@@ -20,9 +20,6 @@ template <typename T> class RigidBodyPlant;
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class KinematicsResults {
-  // RigidBodyPlant is the only class allowed to update KinematicsResults
-  // through UpdateFromContext().
-  friend class RigidBodyPlant<T>;
  public:
   /// Returns the number of bodies in the kinematics results.
   int get_num_bodies() const;
@@ -42,13 +39,22 @@ class KinematicsResults {
   Vector3<T> get_body_position(int body_index) const;
 
  private:
+  // RigidBodyPlant is the only class allowed to update KinematicsResults
+  // through UpdateFromContext().
+  // TODO(amcastro-tri): when KinematicsResults can reference entries in the
+  // cache this friendship and the method UpdateFromContext() won't be needed.
+  friend class RigidBodyPlant<T>;
+
   // Only RigidBodyPlant can construct a KinematicsResults from the underlying
   // RigidBodyTree.
+  // An alias to @tree is maintained so that the tree's lifetime must exceed
+  // this object's lifetime.
   explicit KinematicsResults(const RigidBodyTree& tree);
 
-  // Private method used to update KinematicsResults from a context provided by
-  // RigidBodyPlant. RigidBodyPlant has access to this method since it is a
-  // friend.
+  // Updates KinematicsResults from a context provided by RigidBodyPlant.
+  // Only RigidBodyPlant has access to this method since it is a friend.
+  // TODO(amcastro-tri): when KinematicsResults can reference entries in the
+  // cache this method won't be needed.
   void UpdateFromContext(const Context<T>& context);
 
   const RigidBodyTree& tree_;
@@ -68,12 +74,12 @@ class KinematicsResults {
 /// does not apply these limits. The gear box factor effectively is a
 /// multiplier on the input actuation to the RigidBodyPlant.
 ///
-/// The state of a %RigidBodyPlant consists of a vector containing the
-/// generalized positions of the system followed by the generalized velocities.
+/// The %RigidBodyPlant's state consists of a vector containing the generalized
+/// positions followed by the generalized velocities of the system.
 ///
 /// <B>%System output</B>:
 /// - Port 0: The state of the system in a vector valued port.
-/// - Port 1: A KinematicsResults class allowing to access the results from
+/// - Port 1: A KinematicsResults class allowing access to the results from
 /// kinematics computations for each RigidBody.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
@@ -120,7 +126,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
-  const RigidBodyTree& get_multibody_world() const;
+  const RigidBodyTree& get_rigid_body_tree() const;
 
   /// Returns the number of bodies in the world.
   int get_num_bodies() const;
@@ -170,8 +176,8 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
-  /// Allocates an output port for the RigidBodyPlant state and an output port
-  /// for the rigid body poses of type VectorOfPoses<T>.
+  /// Allocates two output ports, one for the RigidBodyPlant state and one for
+  /// KinematicsResults.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override;
 
@@ -217,6 +223,8 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   T friction_coefficient_{0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
+  int state_output_port_id_;
+  int kinematics_output_port_id_;
 };
 
 }  // namespace systems

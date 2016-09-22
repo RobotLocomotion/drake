@@ -88,10 +88,11 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
       kVectorValued, get_num_actuators(), kContinuousSampling);
   // The output to the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
-  System<T>::DeclareOutputPort(
-      kVectorValued, get_num_states(), kContinuousSampling);
+  state_output_port_id_ = this->DeclareOutputPort(
+      kVectorValued, get_num_states(), kContinuousSampling).get_index();
   // Declares an abstract valued port for kinematics results.
-  System<T>::DeclareAbstractOutputPort(kInheritedSampling);
+  kinematics_output_port_id_ =
+      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
 }
 
 template <typename T>
@@ -103,7 +104,7 @@ bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
+const RigidBodyTree& RigidBodyPlant<T>::get_rigid_body_tree() const {
   return *tree_.get();
 }
 
@@ -208,16 +209,17 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // Evaluates port 0 to output the state of the system.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+  // Evaluates the state output port.
+  BasicVector<T>* output_vector = output->GetMutableVectorData(
+      state_output_port_id_);
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
       context.get_continuous_state().CopyToVector();
 
-  // Evaluates port 1 to output the kinematics results.
+  // Evaluates the output port for kinematics results.
   auto& kinematics_results =
-      output->GetMutableData(1)->
+      output->GetMutableData(kinematics_output_port_id_)->
           template GetMutableValue<KinematicsResults<T>>();
   kinematics_results.UpdateFromContext(context);
 }
