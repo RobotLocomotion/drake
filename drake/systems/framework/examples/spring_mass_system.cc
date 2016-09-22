@@ -28,15 +28,15 @@ SpringMassStateVector<T>::~SpringMassStateVector() {}
 // Order matters: Position (q) precedes velocity (v) precedes misc. (z) in
 // ContinuousState.
 template <typename T>
-const T& SpringMassStateVector<T>::get_position() const {
+T SpringMassStateVector<T>::get_position() const {
   return this->GetAtIndex(0);
 }
 template <typename T>
-const T& SpringMassStateVector<T>::get_velocity() const {
+T SpringMassStateVector<T>::get_velocity() const {
   return this->GetAtIndex(1);
 }
 template <typename T>
-const T& SpringMassStateVector<T>::get_conservative_work() const {
+T SpringMassStateVector<T>::get_conservative_work() const {
   return this->GetAtIndex(2);
 }
 template <typename T>
@@ -90,16 +90,15 @@ const SystemPortDescriptor<T>& SpringMassSystem<T>::get_output_port() const {
 }
 
 template <typename T>
-const T& SpringMassSystem<T>::EvalSpringForce(const MyContext& context) const {
-  const T& k = spring_constant_N_per_m_, x = get_position(context),
-          x0 = 0.,  // TODO(david-german-tri) should be a parameter.
-     stretch = x - x0, f = -k * stretch;
+T SpringMassSystem<T>::EvalSpringForce(const MyContext& context) const {
+  const T& k = spring_constant_N_per_m_, x = get_position(context);
+  T x0 = 0;  // TODO(david-german-tri) should be a parameter.
+  T stretch = x - x0, f = -k * stretch;
   return f;
 }
 
 template <typename T>
-const T& SpringMassSystem<T>::EvalPotentialEnergy(
-    const MyContext& context) const {
+T SpringMassSystem<T>::EvalPotentialEnergy(const MyContext& context) const {
   const T& k = spring_constant_N_per_m_, x = get_position(context),
           x0 = 0.,  // TODO(david-german-tri) should be a parameter.
      stretch = x - x0, pe = k * stretch * stretch / 2;
@@ -107,22 +106,20 @@ const T& SpringMassSystem<T>::EvalPotentialEnergy(
 }
 
 template <typename T>
-const T& SpringMassSystem<T>::EvalKineticEnergy(
-    const MyContext& context) const {
+T SpringMassSystem<T>::EvalKineticEnergy(const MyContext& context) const {
   const T& m = mass_kg_, v = get_velocity(context), ke = m * v * v / 2;
   return ke;
 }
 
 template <typename T>
-const T& SpringMassSystem<T>::EvalConservativePower(
-    const MyContext& context) const {
-  DRAKE_ASSERT_VOID(CheckValidContext(context));
+T SpringMassSystem<T>::EvalConservativePower(const MyContext& context) const {
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const T& power_c = EvalSpringForce(context) * get_velocity(context);
   return power_c;
 }
 
 template <typename T>
-const T& SpringMassSystem<T>::EvalNonConservativePower(const MyContext&) const {
+T SpringMassSystem<T>::EvalNonConservativePower(const MyContext&) const {
   const T& power_nc = 0.;
   return power_nc;
 }
@@ -164,7 +161,7 @@ template <typename T>
 void SpringMassSystem<T>::EvalTimeDerivatives(
     const Context<T>& context,
     ContinuousState<T>* derivatives) const {
-  DRAKE_ASSERT_VOID(CheckValidContext(context));
+  DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector<T>& state = get_state(context);
@@ -174,13 +171,12 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   // The derivative of position is velocity.
   derivative_vector->set_position(state.get_velocity());
 
-  const T& external_force = get_input_force(context);
+  const T external_force = get_input_force(context);
 
   // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
-  const T& force_applied_to_body =
-      EvalSpringForce(context) + external_force;
+  const T force_applied_to_body = EvalSpringForce(context) + external_force;
   derivative_vector->set_velocity(force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
@@ -188,6 +184,10 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   // the mass over time.
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
+
+template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<double>;
+//template class
+//DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

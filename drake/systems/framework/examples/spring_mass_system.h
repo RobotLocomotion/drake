@@ -34,19 +34,19 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
 
   /// Returns the position of the mass in meters, where zero is the point
   /// where the spring exerts no force.
-  const T& get_position() const;
+  T get_position() const;
 
   /// Sets the position of the mass in meters.
   void set_position(const T& q);
 
   /// Returns the velocity of the mass in meters per second.
-  const T& get_velocity() const;
+  T get_velocity() const;
 
   /// Sets the velocity of the mass in meters per second.
   void set_velocity(const T& v);
 
   /// Returns the integral of conservative power, in watts.
-  const T& get_conservative_work() const;
+  T get_conservative_work() const;
 
   /// Initialize the conservative work integral to a given value.
   void set_conservative_work(const T& e);
@@ -105,18 +105,18 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   const T& get_mass() const { return mass_kg_; }
 
   /// Gets the current position of the mass in the given Context.
-  const T& get_position(const MyContext& context) const {
+  T get_position(const MyContext& context) const {
     return get_state(context).get_position();
   }
 
   /// Gets the current velocity of the mass in the given Context.
-  const T& get_velocity(const MyContext& context) const {
+  T get_velocity(const MyContext& context) const {
     return get_state(context).get_velocity();
   }
 
   /// @returns the external driving force to the system.
-  const T& get_input_force(const MyContext& context) const {
-    const T& external_force = 0;
+  T get_input_force(const MyContext& context) const {
+    T external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
       external_force = context.get_vector_input(0)->GetAtIndex(0);
@@ -126,7 +126,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
 
   /// Gets the current value of the conservative power integral in the given
   /// Context.
-  const T& get_conservative_work(const MyContext& context) const {
+  T get_conservative_work(const MyContext& context) const {
     return get_state(context).get_conservative_work();
   }
 
@@ -150,7 +150,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   /// Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   /// opposite force -f to the world attachment point at the other end. The
   /// force is in newtons N (kg-m/s^2).
-  const T& EvalSpringForce(const MyContext& context) const;
+  T EvalSpringForce(const MyContext& context) const;
 
   /// Returns the potential energy currently stored in the spring in the given
   /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
@@ -162,7 +162,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   ///            = -f v.
   /// @endverbatim
   /// Energy is in joules J (N-m).
-  const T& EvalPotentialEnergy(const MyContext& context) const override;
+  T EvalPotentialEnergy(const MyContext& context) const override;
 
   /// Returns the current kinetic energy of the moving mass in the given
   /// Context. This is `ke = m v^2 / 2` for this system. The rate of change of
@@ -176,7 +176,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// (assuming the only force is due to the spring). Energy is in joules.
   /// @see EvalSpringForce(), EvalPotentialEnergy()
-  const T& EvalKineticEnergy(const MyContext& context) const override;
+  T EvalKineticEnergy(const MyContext& context) const override;
 
   /// Returns the rate at which mechanical energy is being converted from
   /// potential energy in the spring to kinetic energy of the mass by this
@@ -188,7 +188,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   /// @endverbatim
   /// This quantity is positive when the spring is accelerating the mass and
   /// negative when the spring is decelerating the mass.
-  const T& EvalConservativePower(const MyContext& context) const override;
+  T EvalConservativePower(const MyContext& context) const override;
 
   // TODO(sherm1) Currently this is a conservative system so there is no power
   // generated or consumed. Add some kind of dissipation and/or actuation to
@@ -197,7 +197,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
 
   /// Returns power that doesn't involve the conservative spring element. (There
   /// is none in this system.)
-  const T& EvalNonConservativePower(const MyContext& context) const override;
+  T EvalNonConservativePower(const MyContext& context) const override;
 
   // System<T> overrides
   /// Allocates a single output port of type SpringMassStateVector<T>.

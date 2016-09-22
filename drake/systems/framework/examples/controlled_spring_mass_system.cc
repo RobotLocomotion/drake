@@ -107,6 +107,11 @@ void PidControlledSpringMassSystem<T>::set_velocity(
   plant_->set_velocity(plant_context, velocity);
 }
 
+template <typename T>
+const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant() const {
+  return *plant_;
+}
+
 template class
 DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<double>;
 //template class

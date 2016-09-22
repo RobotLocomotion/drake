@@ -42,7 +42,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   void set_velocity(Context<T>* context, const T& position) const;
 
   /// Returns the SpringMassSystem plant of the model.
-  const SpringMassSystem& get_plant() const { return *plant_; }
+  const SpringMassSystem<T>& get_plant() const;
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
@@ -54,7 +54,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
  private:
   // These are references into the Diagram; no ownership implied.
-  SpringMassSystem* plant_;
+  SpringMassSystem<T>* plant_;
   PidController<T>* controller_;
   Demultiplexer<T>* demux_;
   Gain<T>* pid_inverter_;
