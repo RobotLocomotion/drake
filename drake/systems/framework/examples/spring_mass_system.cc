@@ -1,5 +1,6 @@
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -186,8 +187,7 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<double>;
-//template class
-//DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<AutoDiffXd>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

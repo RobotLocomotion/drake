@@ -1,5 +1,7 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 
+#include "drake/common/eigen_autodiff_types.h"
+
 namespace drake {
 namespace systems {
 
@@ -29,6 +31,7 @@ void Demultiplexer<T>::EvalOutput(const Context<T>& context,
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

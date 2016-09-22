@@ -11,8 +11,18 @@ namespace systems {
 /// mathematically equivalent to a Gain system with its gain equal to one.
 /// However this system incurs no computational cost.
 /// The input to this system directly feeds through to its output.
-/// A detailed usage discussion of this system for a PID controller can be found
-/// at https://github.com/RobotLocomotion/drake/pull/3132.
+/// This system is used for instance in PidController which is a Diagram
+/// composed of simple framework primitives. In this case a PassThrough is used
+/// to connect the exported input of the Diagram to the inputs of the Gain
+/// systems for the proportioanal and integral constants of the controller. This
+/// is necessary in order to provide an output port to which the internal Gain
+/// subsystems can get connected to. In this case the
+/// PassThrough is effectively creating an output port that feeds through the
+/// input to the Diagram and that can now be connected to the inputs of the
+/// inner subsystems to the Diagram.
+/// A detailed discussion of the PidController can be found at
+/// https://github.com/RobotLocomotion/drake/pull/3132.
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
@@ -20,9 +30,9 @@ namespace systems {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in libdrakeSystemFramework.
-// TODO(amcastro-tri): cross reference PidController when implemented.
 /// @ingroup systems
 
 template <typename T>

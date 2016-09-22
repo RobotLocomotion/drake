@@ -1,5 +1,6 @@
 #include "drake/systems/framework/primitives/pid_controller.h"
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -95,6 +96,7 @@ void PidController<T>::set_integral_value(
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT PidController<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT PidController<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

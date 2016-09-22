@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -46,6 +47,7 @@ void Adder<T>::EvalOutput(const Context<T>& context,
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

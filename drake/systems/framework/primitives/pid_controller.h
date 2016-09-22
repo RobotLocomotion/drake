@@ -23,8 +23,14 @@ namespace systems {
 /// of the error signal when the derivative constant is non-zero.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 /// @ingroup systems
-
 template <typename T>
 class PidController : public Diagram<T> {
  public:
