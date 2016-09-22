@@ -3,6 +3,7 @@ set(sources
   basic_vector.cc
   cache.cc
   context.cc
+  continuous_state.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
@@ -41,6 +42,7 @@ set(installed_headers
   basic_vector.h
   cache.h
   context.h
+  continuous_state.h
   diagram.h
   diagram_builder.h
   diagram_context.h

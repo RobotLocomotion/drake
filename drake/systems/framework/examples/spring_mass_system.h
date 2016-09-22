@@ -223,12 +223,11 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public System<double> {
   }
 
   static const SpringMassStateVector& get_state(const MyContext& context) {
-    return get_state(*context.get_state().continuous_state);
+    return get_state(*context.get_continuous_state());
   }
 
   static SpringMassStateVector* get_mutable_state(MyContext* context) {
-    return get_mutable_state(
-        context->get_mutable_state()->continuous_state.get());
+    return get_mutable_state(context->get_mutable_continuous_state());
   }
 
   const double spring_constant_N_per_m_{};
