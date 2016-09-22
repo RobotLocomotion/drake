@@ -18,7 +18,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel),
       translator_(translator) {
-  DRAKE_ABORT_UNLESS(lcm);
+  DRAKE_DEMAND(lcm);
   // Initializes the communication layer.
   ::lcm::Subscription* sub =
       lcm->subscribe(channel_, &LcmSubscriberSystem::HandleMessage, this);
@@ -36,7 +36,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
 std::string LcmSubscriberSystem::get_name() const {
-  return "LcmSubscriberSystem::" + channel_;
+  return get_name(channel_);
+}
+
+std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+  return "LcmSubscriberSystem(" + channel + ")";
 }
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>&,
@@ -44,7 +48,7 @@ void LcmSubscriberSystem::EvalOutput(const Context<double>&,
   VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   if (!received_message_.empty()) {
-    translator_.TranslateLcmToVectorBase(
+    translator_.Deserialize(
         received_message_.data(), received_message_.size(), output_vector);
   }
 }
@@ -54,9 +58,16 @@ void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
   received_message_ = message_bytes;
 }
 
+void LcmSubscriberSystem::SetMessage(
+    double time, const BasicVector<double>& message_vector) {
+  std::vector<uint8_t> message_bytes;
+  translator_.Serialize(time, message_vector, &message_bytes);
+  SetMessage(message_bytes);
+}
+
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
-  DRAKE_ABORT_UNLESS(descriptor.get_index() == 0);
+  DRAKE_DEMAND(descriptor.get_index() == 0);
   auto result = translator_.AllocateOutputVector();
   if (result) {
     return result;

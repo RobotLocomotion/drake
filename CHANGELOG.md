@@ -16,7 +16,7 @@ Unreleased: changes on master, not yet released
 [//]: # "New functionality or APIs."
 ### Added
 
- - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_ABORT_UNLESS` macros to replace
+ - [#2602][] Added `DRAKE_ASSERT` and `DRAKE_DEMAND` macros to replace
  built-in `assert()` macro.
  - [#2621][] Added `DRAKE_DEPRECATED` macro for portable deprecation.
 

@@ -155,6 +155,15 @@ endfunction()
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
+  # Disable finding out-of-tree packages in the registry.
+  # This doesn't exactly make find_package hermetic, but it's a useful step
+  # in that direction.
+  set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
+  set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
+
+  # Ensure that find_package() searches in the install directory first.
+  list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
+
   drake_setup_compiler()
   drake_setup_matlab()
   drake_setup_java()

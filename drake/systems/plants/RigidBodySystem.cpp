@@ -87,7 +87,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
   using namespace Eigen;
-  eigen_aligned_unordered_map<const RigidBody*, Matrix<double, 6, 1>> f_ext;
 
   // todo: make kinematics cache once and re-use it (but have to make one per
   // type)
@@ -109,7 +108,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  VectorXd C = tree->dynamicsBiasTerm(kinsol, f_ext);
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  VectorXd C = tree->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
   // loop through rigid body force elements
@@ -128,7 +128,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // apply joint limit forces
   {
     for (auto const& b : tree->bodies) {
-      if (!b->has_mobilizer_joint()) continue;
+      if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       if (joint.getNumPositions() == 1 &&
           joint.getNumVelocities() ==

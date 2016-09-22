@@ -31,12 +31,15 @@ p = p.addSymbolicConstraints([implies(region(1), A1  * x <= b1), ...
                               sum(region) == 1]);
 
 % solve the model
-[p, solvertime] = p.solve();
-fprintf(1, 'symbolic problem overhead: %fs\n', toc(t0) - solvertime);
-
-
-% and get the result
-xstar = p.vars.x.value
+[p_solved, solvertime] = p.compareSolvers();
+xstar = cell(length(p_solved),1);
+for i = 1:length(p_solved)
+fprintf(1, 'With %s, symbolic problem overhead: %fs\n', p_solved{i}.solver, toc(t0) - solvertime(i));
+if(i>1)
+  valuecheck(p_solved{i}.x_sol,p_solved{1}.x_sol,1e-5);
+end
+xstar{i} = p_solved{i}.vars.x.value;
+end
 
 figure(1);
 clf
@@ -46,7 +49,7 @@ patch(pts1(1,k), pts1(2,k), 'k', 'FaceAlpha', 0.2)
 k = convhull(pts2(1,:), pts2(2,:));
 patch(pts2(1,k), pts2(2,k), 'k', 'FaceAlpha', 0.2)
 plot(xgoal(1), xgoal(2), 'ro', 'MarkerSize', 12);
-plot(xstar(1), xstar(2), 'g*', 'MarkerSize', 10);
+plot(xstar{1}(1), xstar{1}(2), 'g*', 'MarkerSize', 10);
 
 % However, the setup time for symbolic optimizations in Yalmip can get very long, 
 % and often requires more time than is needed to solve the resulting model. We 
@@ -97,11 +100,11 @@ Aeq(1, p.vars.region.i) = 1;
 beq = 1;
 p = p.addLinearConstraints([], [], Aeq, beq);
 
-[p, solvertime] = p.solve();
-fprintf(1, 'non-symbolic problem overhead: %fs\n', toc(t1) - solvertime);
-xstar_non_symb = p.vars.x.value
-valuecheck(xstar_non_symb, xstar);
-
+[p_solved, solvertime] = p.compareSolvers();
+for i = 1:length(p_solved)
+  fprintf(1, 'With %s, non-symbolic problem overhead: %fs\n', p_solved{i}.solver, toc(t1) - solvertime(i));
+  valuecheck(p_solved{i}.vars.x.value,xstar{i},1e-6);
+end
 
 % However, compiling constraints and objectives down to raw matrix manipulation
 % is difficult and error-prone, so the MixedIntegerConvexProgram makes it easy
@@ -126,9 +129,10 @@ region = p.vars.region.symb;
 p = p.addSymbolicConstraints([implies(region(1), A1  * x <= b1), ...
                               implies(region(2), A2 * x <= b2),...
                               sum(region) == 1]);
-[p, solvertime] = p.solve();
-xstar_mixed = p.vars.x.value
-valuecheck(xstar_mixed, xstar);
+[p_solved, solvertime] = p.compareSolvers();
+for i = 1:length(p_solved)
+  valuecheck(p_solved{i}.vars.x.value, xstar{i},1e-6);
+end
 
 
 

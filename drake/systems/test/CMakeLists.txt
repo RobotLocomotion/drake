@@ -10,14 +10,6 @@ add_executable(feedback_system_test feedback_system_test.cc)
 target_link_libraries(feedback_system_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME feedback_system_test COMMAND feedback_system_test)
 
-add_executable(n_ary_state_test n_ary_state_test.cc)
-target_link_libraries(n_ary_state_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME n_ary_state_test COMMAND n_ary_state_test)
-
-add_executable(n_ary_system_test n_ary_system_test.cc)
-target_link_libraries(n_ary_system_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME n_ary_system_test COMMAND n_ary_system_test)
-
 add_executable(simulation_termination_test simulation_termination_test.cc)
 target_link_libraries(simulation_termination_test drakeCommon ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME simulation_termination_test COMMAND simulation_termination_test)

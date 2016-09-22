@@ -72,7 +72,7 @@ class MessageSubscriber {
 
 void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
                    LcmPublisherSystem* dut) {
-  EXPECT_EQ(dut->get_name(), "LcmPublisherSystem::" + channel_name);
+  EXPECT_EQ(dut->get_name(), "LcmPublisherSystem(" + channel_name + ")");
 
   // Instantiates a receiver of lcmt_drake_signal messages.
   MessageSubscriber subscriber(channel_name, lcm);
@@ -93,8 +93,8 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
     Eigen::VectorBlock<VectorX<double>> vector_value =
         vec->get_mutable_value();
 
-    for (int ii = 0; ii < kDim; ++ii) {
-      vector_value[ii] = ii;
+    for (int i = 0; i < kDim; ++i) {
+      vector_value[i] = i;
     }
   }
 
@@ -106,6 +106,11 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
       new FreestandingInputPort(std::move(vec)));
 
   context->SetInputPort(kPortNumber, std::move(input_port));
+
+  // Sets the timestamp within the context. This timestamp should be transmitted
+  // by the LCM message.
+  const double time = 1.41421356;
+  context->set_time(time);
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -139,20 +144,21 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
     if (received_message.dim == kDim) {
       bool values_match = true;
 
-      for (int ii = 0; ii < kDim && values_match; ++ii) {
-        if (received_message.val[ii] != ii) values_match = false;
+      if (received_message.timestamp != static_cast<int64_t>(time * 1000))
+        values_match = false;
+
+      for (int i = 0; i < kDim && values_match; ++i) {
+        if (received_message.val[i] != i) values_match = false;
       }
 
       // At this point, if values_match is true, the received message contains
-      // the expected values, which implies that LcmPublisherSystem successfully
-      // published the VectorBase as a drake::lcmt_drake_signal message.
+      // the expected timestamp and values, which implies that
+      // LcmPublisherSystem successfully published the VectorBase as a
+      // drake::lcmt_drake_signal message.
       //
-      // We cannot check whether the following member variables of
-      // drake::lcmt_drake_signal message was successfully transferred because
-      // BasicVector does not save this information:
-      //
-      //   1. coord
-      //   2. timestamp
+      // We cannot check whether drake::lcmt_drake_signal::coord was
+      // successfully transferred because drake::systems::BasicVector does not
+      // hold this information.
       //
       // Thus, we must conclude that the experiment succeeded.
       if (values_match) done = true;
@@ -164,7 +170,7 @@ void TestPublisher(::lcm::LCM* lcm, const std::string& channel_name,
   EXPECT_TRUE(done);
 }
 
-// Tests the functionality of LcmPublisherSystem.
+// Tests LcmPublisherSystem using a translator.
 GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   ::lcm::LCM lcm;
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";
@@ -181,7 +187,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   TestPublisher(&lcm, channel_name, &dut);
 }
 
-// Tests the functionality of LcmPublisherSystem using a dictionary
+// Tests LcmPublisherSystem using a dictionary that contains a translator.
 GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
   ::lcm::LCM lcm;
   std::string channel_name = "drake_system2_lcm_test_publisher_channel_name";

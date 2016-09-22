@@ -76,6 +76,16 @@ class Context {
   /// mutable access is requested for particular blocks of state variables.
   virtual State<T>* get_mutable_state() = 0;
 
+  /// Returns a mutable pointer to the continuous component of the state.
+  ContinuousState<T>* get_mutable_continuous_state() {
+    return get_mutable_state()->continuous_state.get();
+  }
+
+  /// Returns a const reference to the continuous component of the state.
+  const ContinuousState<T>& get_continuous_state() const {
+    return *get_state().continuous_state;
+  }
+
   /// Returns a deep copy of this Context. The clone's input ports will
   /// hold deep copies of the data that appears on this context's input ports
   /// at the time the clone is created.

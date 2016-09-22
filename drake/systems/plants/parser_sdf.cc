@@ -31,8 +31,21 @@ namespace parsers {
 namespace sdf {
 namespace {
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using std::allocate_shared;
+using std::cerr;
+using std::endl;
+using std::max;
+using std::move;
+using std::numeric_limits;
+using std::pair;
+using std::runtime_error;
+using std::string;
+using std::unique_ptr;
 
 using tinyxml2::XMLElement;
 using tinyxml2::XMLDocument;
@@ -507,7 +520,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
       transform_parent_to_model.inverse() * transform_to_model;
 
-  if (child->has_mobilizer_joint()) {
+  if (child->has_parent_body()) {
     // ... then implement it as a loop joint.
 
     // Gets the loop point in the joint's reference frame. Since the SDF
@@ -667,8 +680,8 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
                 ModelInstanceIdTable* model_instance_id_table) {
   // Aborts if any of the output parameter pointers are invalid.
-  DRAKE_ABORT_UNLESS(tree);
-  DRAKE_ABORT_UNLESS(node);
+  DRAKE_DEMAND(tree);
+  DRAKE_DEMAND(node);
 
   // The pose_map is needed because SDF specifies almost everything in the
   // model's coordinate frame.
@@ -813,7 +826,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const FloatingBaseType floating_base_type,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
   return AddModelInstancesFromSdfFile(filename, floating_base_type,
       nullptr /* weld_to_frame */, tree);
 }
@@ -824,7 +837,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
 
   PackageMap package_map;
 
@@ -852,7 +865,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
   // Ensures the output parameter pointers are valid.
-  DRAKE_ABORT_UNLESS(tree);
+  DRAKE_DEMAND(tree);
 
   PackageMap package_map;
 

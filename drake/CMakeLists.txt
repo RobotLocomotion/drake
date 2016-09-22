@@ -178,6 +178,7 @@ find_package(lcm)
 if(lcm_FOUND)
   add_subdirectory(lcmtypes)
   include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
+  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes) #TODO(#3351)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
@@ -219,24 +220,8 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-pods_find_pkg_config(eigen3 3.2.92)
-
-if(eigen3_FOUND)
-  pods_use_pkg_config_includes(eigen3)
-else()
-  # then use the traditional approach to finding Eigen3
-  find_package(Eigen3 3.2.92)
-  if(EIGEN3_FOUND)
-    set(eigen3_FOUND 1)
-    include_directories(${EIGEN3_INCLUDE_DIR})
-  else()
-    message(FATAL_ERROR "
-  --------------------------------------------------------------------------------
-    *** IMPORTANT: REQUIRED dependency Eigen 3 not found. ***
-  --------------------------------------------------------------------------------
-    ")
-  endif()
-endif()
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 pods_find_pkg_config(spdlog)
 if(spdlog_FOUND)
@@ -257,6 +242,10 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/bsd/GetFullPath)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
+if(NOT WIN32)
+  # This subdirectory does not support windows.
+  add_subdirectory(automotive)
+endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)

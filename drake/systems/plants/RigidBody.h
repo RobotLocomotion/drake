@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+
+#include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
@@ -112,18 +112,18 @@ class DRAKERBM_EXPORT RigidBody {
   const RigidBody* get_parent() const;
 
   /**
-   * Returns whether this rigid body has a mobilizer joint. A mobilizer joint
-   * is an inboard joint (i.e., it is closer to the root of the RigidBodyTree
-   * than this RigidBody). In other words, the mobilizer joint forms a kinematic
-   * path from this RigidBody to the root of the RigidBodyTree. Thus, by
-   * definition, all RigidBody objects should have an inboard joint except for
-   * the RigidBodyTree's root, which is the world.
+   * Returns whether this RigidBody has a "parent", which is a RigidBody that is
+   * connected to this RigidBody via a DrakeJoint and is closer to the root of
+   * the RigidBodyTree relative to this RigidBody. In other words, the parent
+   * RigidBody is part of a kinematic path from this RigidBody to the root of
+   * the RigidBodyTree. Thus, by definition, all RigidBody objects should have a
+   * parent RigidBody except for the RigidBodyTree's root, which is the world.
    */
-  bool has_mobilizer_joint() const;
+  bool has_parent_body() const;
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use has_mobilizer_joint().")
+  DRAKE_DEPRECATED("Please use has_parent_body().")
 #endif
   bool hasParent() const;
 

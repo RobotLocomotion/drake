@@ -64,8 +64,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   // SystemOutput are consistent.
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(1, gain_->get_num_output_ports());
-  const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
   Eigen::Vector3d expected = kGain_ * input_vector;
   EXPECT_EQ(expected, output_vector->get_value());

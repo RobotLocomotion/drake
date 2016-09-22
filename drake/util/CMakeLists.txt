@@ -49,6 +49,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
   add_dependencies(drakeLCMUtil drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
+  target_include_directories(drakeLCMUtil SYSTEM BEFORE PUBLIC ${lcm_headers_dir}) # TODO(#3352)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
   pods_install_pkg_config_file(drake-lcm-util
@@ -60,7 +61,7 @@ endif()
 drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
-target_link_libraries(drakeGeometryUtil drakeCommon)
+target_link_libraries(drakeGeometryUtil drakeCommon drakeMath)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
 pods_install_pkg_config_file(drake-geometry-util

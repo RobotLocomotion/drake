@@ -129,21 +129,23 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     Scalar cy = cos(yaw);
     Scalar sy = sin(yaw);
 
-    motion_subspace_dot_times_v.transpose() << -pitchd * yawd * cp,
-        rolld * yawd * cp * cr - pitchd * yawd * sp * sr - pitchd * rolld * sr,
-        -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr,
-        yd * (yawd * cp * cy - pitchd * sp * sy) -
-            xd * (pitchd * cy * sp + yawd * cp * sy) - pitchd * zd * cp,
-        zd * (rolld * cp * cr - pitchd * sp * sr) +
-            xd * (rolld * (sr * sy + cr * cy * sp) -
-                  yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) -
-            yd * (rolld * (cy * sr - cr * sp * sy) +
-                  yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy),
-        xd * (rolld * (cr * sy - cy * sp * sr) +
-              yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) -
-            zd * (pitchd * cr * sp + rolld * cp * sr) +
-            yd * (yawd * (sr * sy + cr * cy * sp) -
-                  rolld * (cr * cy + sp * sr * sy) + pitchd * cp * cr * sy);
+    motion_subspace_dot_times_v[0] = -pitchd * yawd * cp;
+    motion_subspace_dot_times_v[1] = rolld * yawd * cp * cr - pitchd * yawd *
+      sp * sr - pitchd * rolld * sr;
+    motion_subspace_dot_times_v[2] = -pitchd * rolld * cr - pitchd * yawd *
+      cr * sp - rolld * yawd * cp * sr;
+    motion_subspace_dot_times_v[3] = yd * (yawd * cp * cy - pitchd * sp * sy) -
+      xd * (pitchd * cy * sp + yawd * cp * sy) - pitchd * zd * cp;
+    motion_subspace_dot_times_v[4] = zd * (rolld * cp * cr - pitchd * sp * sr) +
+      xd * (rolld * (sr * sy + cr * cy * sp) -
+        yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) -
+      yd * (rolld * (cy * sr - cr * sp * sy) +
+        yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy);
+    motion_subspace_dot_times_v[5] = xd * (rolld * (cr * sy - cy * sp * sr) +
+      yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) -
+      zd * (pitchd * cr * sp + rolld * cp * sr) +
+      yd * (yawd * (sr * sy + cr * cy * sp) -
+        rolld * (cr * cy + sp * sr * sy) + pitchd * cp * cr * sy);
 
     if (dmotion_subspace_dot_times_vdq) {
       dmotion_subspace_dot_times_vdq->resize(motion_subspace_dot_times_v.rows(),
