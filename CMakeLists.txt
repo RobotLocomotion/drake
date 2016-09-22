@@ -116,7 +116,6 @@ drake_add_external(octomap PUBLIC)
 drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
-drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC CMAKE)
 
@@ -206,6 +205,10 @@ drake_add_external(nlopt PUBLIC
     --exec-prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
+
+# spotless
+drake_add_external(spotless PUBLIC CMAKE
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
