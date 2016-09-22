@@ -47,12 +47,13 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state in which the postion and velocity of
+  /// Sets @p context to a default state in which the position and velocity of
   /// the mass are both zero.
   /// The integral of the controller is also set to zero.
   void SetDefaultState(Context<T>* context) const;
 
  private:
+  // These are references into the Diagram; no ownership implied.
   SpringMassSystem* plant_;
   PidController<T>* controller_;
   Demultiplexer<T>* demux_;

@@ -11,10 +11,10 @@ namespace {
 
 const double kSpring = 300.0;  // N/m
 const double kMass = 2.0;      // kg
-const double kPropotionalConstant = 1.0;  // Controller's proportional constant.
-const double kDerivativeConstant = 1.0;  // Controller's derivative constant.
-const double kIntegralConstant = 1.0;  // Controller's integral constant.
-const double kTargetPosition = 1.0;  // The target position.
+const double kProportionalConstant = 1.0;
+const double kDerivativeConstant = 1.0;
+const double kIntegralConstant = 1.0;
+const double kTargetPosition = 1.0;
 
 // A unit test fixture to evaluate the correct functioning of the
 // PidControlledSpringMassSystem example.
@@ -24,7 +24,7 @@ class SpringMassSystemTest : public ::testing::Test {
     model_ =
         make_unique<PidControlledSpringMassSystem<double>>(
             kSpring, kMass,
-            kPropotionalConstant, kIntegralConstant, kDerivativeConstant,
+            kProportionalConstant, kIntegralConstant, kDerivativeConstant,
             kTargetPosition);
 
     model_context_ = model_->CreateDefaultContext();
@@ -81,8 +81,8 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   model_->EvalTimeDerivatives(*model_context_, derivatives.get());
 
   // The spring-mass plant has a state vector of size 3. One position, one
-  // velocity and one misc state (energy). In addition, the model has an
-  // addition misc state corresponding to the integral of the PID controller.
+  // velocity and one misc state (energy). Moreover, the model has an
+  // additional misc state corresponding to the integral of the PID controller.
   // Therefore the size of the misc state vector is 2.
   ASSERT_EQ(4, derivatives->get_state().size());
   ASSERT_EQ(1, derivatives->get_generalized_position().size());
@@ -100,11 +100,11 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   const double error = x0 - kTargetPosition;
   const double error_rate = v0;  // target velocity is zero.
   const double pid_actuation =
-      kPropotionalConstant * error +  kDerivativeConstant * error_rate;
+      kProportionalConstant * error +  kDerivativeConstant * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
             plant_xcdot->get_state().GetAtIndex(1));
 
-  // Work.
+  // Power.
   EXPECT_EQ(model_->get_plant().EvalConservativePower(*plant_context_),
             plant_xcdot->get_state().GetAtIndex(2));
 }

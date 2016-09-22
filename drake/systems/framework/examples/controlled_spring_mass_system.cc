@@ -1,5 +1,6 @@
 #include "drake/systems/framework/examples/controlled_spring_mass_system.h"
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -108,6 +109,8 @@ void PidControlledSpringMassSystem<T>::set_velocity(
 
 template class
 DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<double>;
+//template class
+//DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
