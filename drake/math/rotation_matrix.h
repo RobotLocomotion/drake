@@ -9,6 +9,9 @@
 
 namespace drake {
 namespace math {
+template <typename Derived>
+Matrix3<typename Derived::Scalar> rpy2rotmat(
+    const Eigen::MatrixBase<Derived>& rpy);
 /** Computes one of the quaternion from a rotation matrix.
  * The implementation is adapted from
  * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
@@ -109,15 +112,15 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1301
   // is fixed. Currently Eigen's EulerAngles does not guarantee the range of
   // the second angle covers PI.
-  /*
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+
+  /*EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
   auto euler_angles =
       Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
           template FromRotation<false, false, false>(R);
   return drake::Vector3<typename Derived::Scalar>(
       euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
-  */
+*/
 
   // This implementation is adapted from simbody
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
@@ -130,43 +133,74 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   int j = 1;
   int k = 0;
 
+  Scalar plusMinus = -1;
+  Scalar minusPlus = 1;
 
   // Calculate theta2 using lots of information in the rotation matrix
   Scalar Rsum = sqrt((R(i,i)*R(i,i) + R(i,j)*R(i,j) + R(j,k)*R(j,k) + R(k,k) * R(k,k))/2);
 
   // Rsum = abs(cos(theta2)) is inherently positive
-  Scalar theta2 = atan2(R(i,k), Rsum);
+  Scalar theta2 = atan2(plusMinus*R(i,k), Rsum);
   Scalar theta1, theta3;
 
   // There is a singularity when cos(theta2) == 0
   if(Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
-    theta1 = atan2(-R(j,k), R(k,k));
-    theta3 = atan2(-R(i,j), R(i,i));
+    theta1 = atan2(minusPlus * R(j,k), R(k,k));
+    theta3 = atan2(minusPlus * R(i,j), R(i,i));
   }
-  else if(R(i,k) > 0) {
+  else if(plusMinus * R(i,k) > 0) {
     // spos = 2*sin(theta1 + plusMinus*theta3)
-    Scalar spos = R(j,i) + R(k,j);
+    Scalar spos = R(j,i) + plusMinus * R(k,j);
     // cpos = 2*cos(theta1 + plusMinus*theta3)
-    Scalar cpos = R(j,j) -R(k,i);
+    Scalar cpos = R(j,j) + minusPlus * R(k,i);
     Scalar theta1PlusMinusTheta3 = atan2(spos, cpos);
     theta1 = theta1PlusMinusTheta3; // Arbitrary split
     theta3 = 0;                     // Arbitrary split
   }
   else {
     // sneg = 2*sin(theta1+minusPlus*theta3)
-    Scalar sneg = R(k,j) - R(j,i);
+    Scalar sneg = plusMinus*(R(k,j) + minusPlus * R(j,i));
     // cneg = 2*cos(theta1+minusPlus*theta3)
-    Scalar cneg = R(j,j) + R(k,i);
+    Scalar cneg = R(j,j) + plusMinus * R(k,i);
     Scalar theta1MinusPlusTheta3 = atan2(sneg, cneg);
     theta1 = theta1MinusPlusTheta3; // Arbitrary split
     theta3 = 0;                     // Arbitrary split
   }
 
+  // Switch order on return due to Drake's convention of SpaceXYZ theta123
+  // (which is equivalent to BodyZYX theta321).
+  drake::Vector3<Scalar> theta321( theta3, theta2, theta1 );
+
+  drake::Matrix3<Scalar> rotmat = rpy2rotmat(theta321);
+  rotmat.isApprox( R );
+
+  if(Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
+    theta1 = atan2(minusPlus * R(j,k), R(k,k));
+    theta3 = atan2(minusPlus * R(i,j), R(i,i));
+  }
+  else if(plusMinus * R(i,k) > 0) {
+    // spos = 2*sin(theta1 + plusMinus*theta3)
+    Scalar spos = R(j,i) + plusMinus * R(k,j);
+    // cpos = 2*cos(theta1 + plusMinus*theta3)
+    Scalar cpos = R(j,j) + minusPlus * R(k,i);
+    Scalar theta1PlusMinusTheta3 = atan2(spos, cpos);
+    theta1 = theta1PlusMinusTheta3; // Arbitrary split
+    theta3 = 0;                     // Arbitrary split
+  }
+  else {
+    // sneg = 2*sin(theta1+minusPlus*theta3)
+    Scalar sneg = plusMinus*(R(k,j) + minusPlus * R(j,i));
+    // cneg = 2*cos(theta1+minusPlus*theta3)
+    Scalar cneg = R(j,j) + plusMinus * R(k,i);
+    Scalar theta1MinusPlusTheta3 = atan2(sneg, cneg);
+    theta1 = theta1MinusPlusTheta3; // Arbitrary split
+    theta3 = 0;                     // Arbitrary split
+  }
   // Return values have the following ranges
-  // -pi   <  theta1 <= pi
+  // -pi   <= theta1 <= pi
   // -pi/2 <= theta2 <= pi/2
-  // -pi   <  theta3 <= pi
-  return drake::Vector3<Scalar>(theta3, theta2, theta1);
+  // -pi   <= theta3 <= pi
+  return theta321;
 }
 
 template <typename Derived>
