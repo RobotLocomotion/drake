@@ -16,11 +16,15 @@ namespace systems {
 /// The state of a one-dimensional spring-mass system, consisting of the
 /// position and velocity of the mass, in meters and meters/s.
 ///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
 /// Instantiated templates for the following kinds of T's are provided:
-/// - const T&
+/// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+/// @ingroup systems
 template <typename T>
 class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector
     : public BasicVector<T> {

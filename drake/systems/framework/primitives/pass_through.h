@@ -16,10 +16,9 @@ namespace systems {
 /// to connect the exported input of the Diagram to the inputs of the Gain
 /// systems for the proportioanal and integral constants of the controller. This
 /// is necessary in order to provide an output port to which the internal Gain
-/// subsystems can get connected to. In this case the
-/// PassThrough is effectively creating an output port that feeds through the
-/// input to the Diagram and that can now be connected to the inputs of the
-/// inner subsystems to the Diagram.
+/// subsystems can get connected to. In this case the PassThrough is effectively
+/// creating an output port that feeds through the input to the Diagram and that
+/// can now be connected to the inputs of the inner subsystems to the Diagram.
 /// A detailed discussion of the PidController can be found at
 /// https://github.com/RobotLocomotion/drake/pull/3132.
 ///

@@ -16,6 +16,15 @@ namespace systems {
 /// A model of a one-dimensional spring-mass system controlled to achieve a
 /// given target position using a PID controller.
 /// @see SpringMassSystem, PidController.
+///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 /// @ingroup systems
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
