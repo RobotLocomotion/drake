@@ -167,6 +167,10 @@ void AutomotiveSimulator<T>::Start() {
   std::unique_ptr<systems::IntegratorBase<double>> integrator(
       new systems::ExplicitEulerIntegrator<double>(*diagram_, DT,
                                           simulator_->get_mutable_context()));
+  integrator->Initialize();
+
+  // set the integrator
+  simulator_->reset_integrator(integrator);
 
   simulator_->Initialize();
 
