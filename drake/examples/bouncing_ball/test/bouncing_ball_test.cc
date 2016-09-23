@@ -11,6 +11,7 @@ namespace {
 class BouncingBallTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    dut_ = std::make_unique<BouncingBall<double>>();
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -20,9 +21,7 @@ class BouncingBallTest : public ::testing::Test {
     return context_->get_mutable_state()->continuous_state->get_mutable_state();
   }
 
-  BouncingBall<double>* dut = new BouncingBall<double>();
-  std::unique_ptr<BouncingBall<double>> dut_ =
-    std::unique_ptr<BouncingBall<double>>(dut);  //< The device under test.
+  std::unique_ptr<BouncingBall<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
