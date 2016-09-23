@@ -6,8 +6,8 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 
 DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
