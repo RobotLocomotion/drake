@@ -142,11 +142,15 @@ to `Initialize()`. **/
 
   /** What was the size of the smallest step taken since the last Initialize()
   call? **/
-  const T& get_smallest_step_size_taken() const { return smallest_step_size_taken_; }
+  const T& get_smallest_step_size_taken() const {
+    return smallest_step_size_taken_;
+  }
 
   /** What was the size of the largest step taken since the last Initialize()
   call? **/
-  const T& get_largest_step_size_taken() const { return largest_step_size_taken_; }
+  const T& get_largest_step_size_taken() const {
+    return largest_step_size_taken_;
+  }
 
   /** How many integration steps have been taken since the last Initialize()
   call? **/
@@ -161,7 +165,7 @@ to `Initialize()`. **/
   primarily on the integrator's accuracy prediction (variable step integrators;
   will change as the simulation
    progresses) or using the fixed step for fixed step integrators. **/
-  virtual const T &get_ideal_next_step_size() const {
+  virtual const T& get_ideal_next_step_size() const {
     return ideal_next_step_size_;
   }
 
@@ -174,22 +178,22 @@ extracting information about this trajectory step. **/
   most recent step in the trajectory. This is suitable for use in updates,
   sampling operations, event handlers, and constraint projection. You can
   also modify this prior to calling Initialize() to set initial conditions. **/
-  Context<T> *get_mutable_context() { return context_; }
+  Context<T>* get_mutable_context() { return context_; }
 
   /** Replace the internally-maintained Context with a different one. The
   current Context is deleted. This is useful for supplying a new set of initial
   conditions. You should invoke Initialize() after replacing the Context. **/
-  void reset_context(Context<T> *context) {
+  void reset_context(Context<T>* context) {
     context_ = context;
     initialization_done_ = false;
   }
 
  protected:
   /// Reference to the system being simulated
-  const System<T> &system_;
+  const System<T>& system_;
 
   /// Pointer to the context
-  Context<T> *context_;  // The trajectory Context.
+  Context<T>* context_;  // The trajectory Context.
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -222,8 +226,8 @@ extracting information about this trajectory step. **/
   }
 
   double target_accuracy_{0.0};      // means "unspecified, use default"
-  T req_initial_step_size_{(T) 0.0};  // means "unspecified, use default"
-};  // IntegratorBase
+  T req_initial_step_size_{(T)0.0};  // means "unspecified, use default"
+};                                   // IntegratorBase
 }  // namespace systems
 }  // namespace drake
 #endif  // DRAKE_SUPERBUILD_INTEGRATOR_H
