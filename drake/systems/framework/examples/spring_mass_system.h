@@ -203,7 +203,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   /// is none in this system.)
   T EvalNonConservativePower(const MyContext& context) const override;
 
-  // System<T> overrides
+  // System<T> overrides.
   /// Allocates a single output port of type SpringMassStateVector<T>.
   std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;
@@ -213,7 +213,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
                            MyContinuousState* derivatives) const override;
 
  protected:
-  // LeafSystem<T> override
+  // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>>
   AllocateContinuousState() const override;
 

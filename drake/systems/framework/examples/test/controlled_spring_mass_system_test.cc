@@ -81,9 +81,9 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   model_->EvalTimeDerivatives(*model_context_, derivatives.get());
 
   // The spring-mass plant has a state vector of size 3. One position, one
-  // velocity and one misc state (energy). Moreover, the model has an
-  // additional misc state corresponding to the integral of the PID controller.
-  // Therefore the size of the misc state vector is 2.
+  // velocity and one miscellaneous state (energy). Moreover, the model has an
+  // additional miscellaneous state corresponding to the integral of the PID
+  // controller.Therefore the size of the misc state vector is 2.
   ASSERT_EQ(4, derivatives->get_state().size());
   ASSERT_EQ(1, derivatives->get_generalized_position().size());
   ASSERT_EQ(1, derivatives->get_generalized_velocity().size());

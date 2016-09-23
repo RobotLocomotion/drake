@@ -35,10 +35,10 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   state_minus_target_ = builder.template
       AddSystem<Adder>(2 /* num inputs */, 1 /* size */);
 
-  // A demux is used to split the output from the spring-mass system into two
-  // ports. One port with the mass position and another port with the mass
-  // velocity so that they can be connected to the controller.
-  // The third output from the demultiplexer is the spring-mass system energy
+  // A demultiplexer is used to split the output from the spring-mass system
+  // into three ports. One port with the mass position and another port with the
+  // mass velocity so that they can be connected to the controller.
+  // The third output from the demultiplexer is the spring-mass system's energy
   // and it is left unconnected.
   demux_ = builder.template AddSystem<Demultiplexer>(3);
 

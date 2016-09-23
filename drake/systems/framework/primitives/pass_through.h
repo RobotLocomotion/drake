@@ -11,14 +11,14 @@ namespace systems {
 /// mathematically equivalent to a Gain system with its gain equal to one.
 /// However this system incurs no computational cost.
 /// The input to this system directly feeds through to its output.
-/// This system is used for instance in PidController which is a Diagram
+/// This system is used, for instance, in PidController which is a Diagram
 /// composed of simple framework primitives. In this case a PassThrough is used
 /// to connect the exported input of the Diagram to the inputs of the Gain
 /// systems for the proportioanal and integral constants of the controller. This
-/// is necessary in order to provide an output port to which the internal Gain
-/// subsystems can get connected to. In this case the PassThrough is effectively
-/// creating an output port that feeds through the input to the Diagram and that
-/// can now be connected to the inputs of the inner subsystems to the Diagram.
+/// is necessary to provide an output port to which the internal Gain subsystems
+/// connect. In this case the PassThrough is effectively creating an output port
+/// that feeds through the input to the Diagram and that can now be connected to
+/// the inputs of the inner subsystems to the Diagram.
 /// A detailed discussion of the PidController can be found at
 /// https://github.com/RobotLocomotion/drake/pull/3132.
 ///
