@@ -9,9 +9,6 @@
 
 namespace drake {
 namespace math {
-template <typename Derived>
-Matrix3<typename Derived::Scalar> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy);
 /** Computes one of the quaternion from a rotation matrix.
  * The implementation is adapted from
  * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
@@ -167,40 +164,14 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
     theta3 = 0;                     // Arbitrary split
   }
 
-  // Switch order on return due to Drake's convention of SpaceXYZ theta123
-  // (which is equivalent to BodyZYX theta321).
-  drake::Vector3<Scalar> theta321( theta3, theta2, theta1 );
-
-  drake::Matrix3<Scalar> rotmat = rpy2rotmat(theta321);
-  rotmat.isApprox( R );
-
-  if(Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
-    theta1 = atan2(minusPlus * R(j,k), R(k,k));
-    theta3 = atan2(minusPlus * R(i,j), R(i,i));
-  }
-  else if(plusMinus * R(i,k) > 0) {
-    // spos = 2*sin(theta1 + plusMinus*theta3)
-    Scalar spos = R(j,i) + plusMinus * R(k,j);
-    // cpos = 2*cos(theta1 + plusMinus*theta3)
-    Scalar cpos = R(j,j) + minusPlus * R(k,i);
-    Scalar theta1PlusMinusTheta3 = atan2(spos, cpos);
-    theta1 = theta1PlusMinusTheta3; // Arbitrary split
-    theta3 = 0;                     // Arbitrary split
-  }
-  else {
-    // sneg = 2*sin(theta1+minusPlus*theta3)
-    Scalar sneg = plusMinus*(R(k,j) + minusPlus * R(j,i));
-    // cneg = 2*cos(theta1+minusPlus*theta3)
-    Scalar cneg = R(j,j) + plusMinus * R(k,i);
-    Scalar theta1MinusPlusTheta3 = atan2(sneg, cneg);
-    theta1 = theta1MinusPlusTheta3; // Arbitrary split
-    theta3 = 0;                     // Arbitrary split
-  }
   // Return values have the following ranges
   // -pi   <= theta1 <= pi
   // -pi/2 <= theta2 <= pi/2
   // -pi   <= theta3 <= pi
-  return theta321;
+
+  // Switch order on return due to Drake's convention of SpaceXYZ theta123
+  // (which is equivalent to BodyZYX theta321).
+  return drake::Vector3<Scalar>( theta3, theta2, theta1 );
 }
 
 template <typename Derived>
