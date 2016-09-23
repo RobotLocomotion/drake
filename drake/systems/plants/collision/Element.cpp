@@ -56,7 +56,7 @@ void Element::AddToCollisionClique(int clique_id) {
     collision_cliques_.insert(it, clique_id);
 }
 
-int Element::number_of_cliques() const {
+int Element::get_num_cliques() const {
   return collision_cliques_.size();
 }
 
