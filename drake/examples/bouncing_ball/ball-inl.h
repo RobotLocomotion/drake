@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "drake/examples/BouncingBall/ball.h"
+#include "drake/examples/bouncing_ball/ball.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"

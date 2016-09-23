@@ -1,4 +1,4 @@
-#include "drake/examples/BouncingBall/ball.h"
+#include "drake/examples/bouncing_ball/ball.h"
 
 #include <memory>
 
@@ -18,7 +18,8 @@ class BallTest : public ::testing::Test {
   }
 
   systems::VectorBase<double>* continuous_state() {
-    auto result = context_->get_mutable_state()->continuous_state->get_mutable_state();
+    auto result =
+      context_->get_mutable_state()->continuous_state->get_mutable_state();
     return result;
   }
 
