@@ -63,8 +63,8 @@ class IntegratorBase {
     kStartOfContinuousInterval = 7,
   };
 
-  explicit IntegratorBase(const System<T> &system,
-                          Context<T> *context = nullptr)
+  explicit IntegratorBase(const System<T>& system,
+                          Context<T>* context = nullptr)
       : system_(system), context_(context) {
     initialization_done_ = false;
   }
@@ -101,7 +101,7 @@ attempt. For fixed-step integration, all steps will be taken at this step
 size. For variable-step integration this will be treated as a maximum size
 subject to accuracy requirements and event occurrences. You can find out what
 size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  virtual void request_initial_step_size_target(const T &step_size) {
+  virtual void request_initial_step_size_target(const T& step_size) {
     req_initial_step_size_ = step_size;
   }
 
@@ -111,23 +111,15 @@ attempt. For fixed-step integration, all steps will be taken at this step
 size. For variable-step integration this will be treated as a maximum size
 subject to accuracy requirements and event occurrences. You can find out what
 size *actually* worked with `get_actual_initial_step_size_taken()`. **/
-  virtual const T &get_initial_step_size_target() const {
+  virtual const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
 
-  /** Advance the System's trajectory until `final_time` is reached or some
-other termination condition occurs. The System's `Publish()` method is called
-at the start of each step. A variety of `std::runtime_error` conditions are
-possible here, as well as error conditions that may be thrown by the System
-when it is asked to perform computations. Be sure to enclose your simulation
-in a `try-catch` block and display the `what()` message.
-
-We recommend that you call `Initialize()` prior to making the first call to
-`StepTo()`. However, if you don't it will be called for you the first
-time you attempt a step, possibly resulting in unexpected error conditions.
-See documentation for `Initialize()` for the error conditions it might
-produce. **/
-  virtual StepResult Step(const T &dt) = 0;
+  /** Advance the System's trajectory by at most dt. Initialize() must
+   * be called before making any calls to Step(), or an exception will
+   * be thrown.
+   **/
+  virtual StepResult Step(const T& dt) = 0;
 
   /** @name                       Statistics
 These methods track relevant activity of the %Simulator since the last call
@@ -144,17 +136,17 @@ to `Initialize()`. **/
   }
 
   /** What what the actual size of the successful first step? **/
-  T get_actual_initial_step_size_taken() const {
+  const T& get_actual_initial_step_size_taken() const {
     return actual_initial_step_size_taken_;
   }
 
   /** What was the size of the smallest step taken since the last Initialize()
   call? **/
-  T get_smallest_step_size_taken() const { return smallest_step_size_taken_; }
+  const T& get_smallest_step_size_taken() const { return smallest_step_size_taken_; }
 
   /** What was the size of the largest step taken since the last Initialize()
   call? **/
-  T get_largest_step_size_taken() const { return largest_step_size_taken_; }
+  const T& get_largest_step_size_taken() const { return largest_step_size_taken_; }
 
   /** How many integration steps have been taken since the last Initialize()
   call? **/
@@ -173,12 +165,10 @@ to `Initialize()`. **/
     return ideal_next_step_size_;
   }
 
-  // TODO(edrumwri): add method to query a system for its max step size
-
   /** Returns a const reference to the internally-maintained Context holding the
 most recent step in the trajectory. This is suitable for publishing or
 extracting information about this trajectory step. **/
-  const Context<T> &get_context() const { return *context_; }
+  const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for use in updates,
@@ -216,9 +206,11 @@ extracting information about this trajectory step. **/
   /// Variable for indicating when an integrator has been initialized
   bool initialization_done_{false};
 
-  void EvaluateWitnessFunctions();
+  /// TODO(edrumwri): flesh this out later
+  void EvaluateWitnessFunctions() {}
 
-  bool CheckWitnessFunctions();
+  /// TODO(edrumwri): flesh this out later
+  bool CheckWitnessFunctions() { throw std::runtime_error("Not implemented"); }
 
  private:
   // This a workaround for an apparent bug in clang 3.8 in which
