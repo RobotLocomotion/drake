@@ -70,7 +70,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    * Reports the number of cliques to which this element belongs.
    * @returns The number of cliques.
    */
-  int number_of_cliques() const;
+  int get_num_cliques() const;
 
   /**
    * Provides access to the set of cliques to which this element belongs.

@@ -206,7 +206,7 @@ GTEST_TEST(ModelTest, CollisionCliques) {
   element_1.AddToCollisionClique(23);
 
   // Cliques cannot be repeated. Therefore expect 5 cliques instead of 7.
-  ASSERT_EQ(5, element_1.number_of_cliques());
+  ASSERT_EQ(5, element_1.get_num_cliques());
   // Checks the correctness of the entire set.
   EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
             element_1.collision_cliques());
@@ -219,7 +219,7 @@ GTEST_TEST(ModelTest, CollisionCliques) {
   element_2.AddToCollisionClique(11);
 
   // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
-  ASSERT_EQ(3, element_2.number_of_cliques());
+  ASSERT_EQ(3, element_2.get_num_cliques());
   // Checks the correctness of the entire set.
   EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
 
@@ -231,7 +231,7 @@ GTEST_TEST(ModelTest, CollisionCliques) {
   element_3.AddToCollisionClique(1);
 
   // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
-  ASSERT_EQ(3, element_3.number_of_cliques());
+  ASSERT_EQ(3, element_3.get_num_cliques());
   // Checks the correctness of the entire set.
   EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_cliques());
 
