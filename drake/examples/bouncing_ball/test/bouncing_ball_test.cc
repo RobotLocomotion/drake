@@ -66,7 +66,6 @@ TEST_F(BouncingBallTest, Reset) {
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_NEAR(-5.7 * -1 * dut_->GetRestitutionCoef(),
               result->GetAtIndex(1), 1e-14);
-
 }
 
 }  // namespace
