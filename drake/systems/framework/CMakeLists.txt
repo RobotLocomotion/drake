@@ -22,6 +22,7 @@ set(sources
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/pid_controller.cc
+  primitives/time_varying_polynomial_source.cc
   state.cc
   state_subvector.cc
   state_supervector.cc
@@ -69,13 +70,13 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeSystemFramework drakeCommon)
+target_link_libraries(drakeSystemFramework drakeCommon drakeTrajectories)
 
 drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemFramework)
 pods_install_pkg_config_file(drake-system-framework
-  LIBS -ldrakeSystemFramework -ldrakeCommon
+  LIBS -ldrakeSystemFramework -ldrakeCommon -ldrakeTrajectories
   REQUIRES
   VERSION 0.0.1)
 
