@@ -112,7 +112,6 @@ drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
-drake_add_external(octomap PUBLIC)
 drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
@@ -206,6 +205,10 @@ drake_add_external(nlopt PUBLIC
     --exec-prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
   INSTALL_COMMAND ${MAKE_COMMAND} install)
+
+# octomap
+drake_add_external(octomap PUBLIC CMAKE
+  SOURCE_SUBDIR octomap)
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
