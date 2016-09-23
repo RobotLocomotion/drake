@@ -25,10 +25,8 @@ GTEST_TEST(ParameterizedTypeMapTest, TestBasics) {
   auto vec_double = Vector3<double>(2., 3., 4.);
   map.emplace<double>(vec_double);
 
-  ASSERT_TRUE(CompareMatrices(*map.get<int>(), vec_int, 0,
-                              MatrixCompareType::absolute));
-  ASSERT_TRUE(CompareMatrices(*map.get<double>(), vec_double, 0.0,
-                              MatrixCompareType::absolute));
+  ASSERT_EQ(*map.get<int>(), vec_int);
+  ASSERT_EQ(*map.get<double>(), vec_double);
 
   ASSERT_TRUE(map.has_key<int>());
   ASSERT_TRUE(map.has_key<double>());
@@ -91,7 +89,7 @@ using remove_const_and_reference =
 GTEST_TEST(ParameterizedTypeMapTest, TestIntendedUseCase) {
   int n = 10;
 
-  VectorX<int> vec = VectorX<int>::Constant(n, 3);
+  VectorX<float> vec = VectorX<float>::LinSpaced(n, 0, n - 1);
   ParameterizedTypeMap<VectorX> map;
 
   auto fun = [&](const auto& x) {
@@ -103,22 +101,22 @@ GTEST_TEST(ParameterizedTypeMapTest, TestIntendedUseCase) {
     return vec_of_correct_type * x;
   };
 
-  int x_int_1 = 2;
-  ASSERT_TRUE(CompareMatrices(fun(x_int_1), vec * x_int_1, 0.,
+  float x_float_1(2);
+  ASSERT_TRUE(CompareMatrices(fun(x_float_1), vec * x_float_1, 0.,
                               MatrixCompareType::absolute));
 
   double x_double_1 = 3.;
   ASSERT_TRUE(CompareMatrices(fun(x_double_1), vec.cast<double>() * x_double_1,
                               1e-12, MatrixCompareType::absolute));
 
-  int x_int_2 = 5;
-  VectorX<int> expected_int_2 = vec * x_int_2;
+  float x_float_2(5);
+  VectorX<float> expected_float_2 = vec * x_float_2;
 
   double x_double_2 = 15.;
   VectorX<double> expected_double_2 = vec.cast<double>() * x_double_2;
 
   Eigen::internal::set_is_malloc_allowed(false);
-  ASSERT_TRUE(CompareMatrices(fun(x_int_2), expected_int_2, 0.,
+  ASSERT_TRUE(CompareMatrices(fun(x_float_2), expected_float_2, 0.,
                               MatrixCompareType::absolute));
   ASSERT_TRUE(CompareMatrices(fun(x_double_2), expected_double_2, 0.,
                               MatrixCompareType::absolute));
