@@ -11,10 +11,10 @@ namespace {
 
 const double kSpring = 300.0;  // N/m
 const double kMass = 2.0;      // kg
-const double kProportionalConstant = 1.0;
-const double kDerivativeConstant = 1.0;
-const double kIntegralConstant = 1.0;
-const double kTargetPosition = 1.0;
+const double kProportionalConstant = 1.0;  // N/m
+const double kDerivativeConstant = 1.0;  // N*s/m
+const double kIntegralConstant = 1.0;  // N/(m*s)
+const double kTargetPosition = 1.0;  // m
 
 // A unit test fixture to evaluate the correct functioning of the
 // PidControlledSpringMassSystem example.
