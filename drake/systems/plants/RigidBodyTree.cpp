@@ -263,23 +263,23 @@ void RigidBodyTree::compile(void) {
 }
 
 void RigidBodyTree::CreateCollisionCliques() {
-  int ncol_groups = 0;
+  int ncol_cliques = 0;
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
-    // No point in adding a body-derived clique if the body has only a single
-    // collision element.
-    if (body->get_collision_element_ids().size() > 1) {
-      body->AddToCollisionClique(ncol_groups++);
-    }
+    ncol_cliques = body->SetSelfCollisionClique(ncol_cliques);
   }
 
   // 2) For collision elements in different bodies
+  // This is an O(N^2) loop -- but only happens at initialization.
+  //
+  // If this proves to be too expensive, walking the tree would be O(N)
+  // and still capture all of the adjacency.
   for (size_t i = 0; i < bodies.size(); ++i)
     for (size_t j = i + 1; j < bodies.size(); ++j)
       if (!bodies[i]->CanCollideWith(*bodies[j])) {
-        bodies[i]->AddToCollisionClique(ncol_groups);
-        bodies[j]->AddToCollisionClique(ncol_groups);
-        ++ncol_groups;
+        bodies[i]->AddCollisionElementsToClique(ncol_cliques);
+        bodies[j]->AddCollisionElementsToClique(ncol_cliques);
+        ++ncol_cliques;
       }
 }
 
