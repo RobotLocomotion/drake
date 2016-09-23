@@ -39,7 +39,8 @@ if(lcm_FOUND)
     drakeLCMSystem)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
-  if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
+  find_package(NLOPT)
+  if(ipopt_FOUND OR NLOPT_FOUND OR snopt_c_FOUND)
     drake_add_test(NAME pendulum_run_swing_up
       COMMAND pendulum_run_swing_up --non-realtime)
   endif()

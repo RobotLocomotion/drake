@@ -7,7 +7,6 @@
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/system1_vector.h"
-#include "drake/automotive/trajectory_car.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
@@ -129,15 +128,6 @@ std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
-
-/**
- * Creates a TrajectoryCar system with a fixed trajectory.
- * The details of the trajectory are not documented / promised by this API.
- *
- * @param index Selects which pre-programmed trajectory to use.
- */
-DRAKEAUTOMOTIVE_EXPORT
-std::unique_ptr<TrajectoryCar<double>> CreateTrajectoryCarSystem(int index);
 
 /**
  * Returns the default simulation options for car simulations. The default

@@ -1,21 +1,16 @@
-#include "drake/automotive/simple_car.h"
-
+#include <iostream>
 #include <memory>
 
-#include "drake/automotive/gen/driving_command_translator.h"
-#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
-#include "drake/automotive/gen/simple_car_state_translator.h"
-#include "drake/automotive/simple_car_to_euler_floating_joint.h"
-#include "drake/common/drake_path.h"
-#include "drake/common/text_logging.h"
+#include <gflags/gflags.h>
+
+#include "drake/automotive/automotive_simulator.h"
+#include "drake/automotive/create_trajectory_params.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+
+DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
+DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
 
 namespace drake {
 namespace automotive {
@@ -28,18 +23,21 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
  public:
   explicit BotVisualizerHack(::lcm::LCM* lcm)
       : lcm_(lcm) {
+    this->set_name("BotVisualizerHack");
     this->DeclareInputPort(systems::kVectorValued,
                            EulerFloatingJointStateIndices::kNumCoordinates,
                            systems::kContinuousSampling);
   }
-
-  std::string get_name() const override { return "bot_visualizer_hack"; }
 
   void EvalOutput(const systems::Context<double>& context,
                   systems::SystemOutput<double>* output) const override {}
 
  protected:
   void DoPublish(const systems::Context<double>& context) const override {
+    // TODO(liang.fok): Replace the following code once System 2.0's API allows
+    // systems to declare that they need a certain action to be performed at
+    // simulation time t_0.
+    //
     // Before any draw commands, we need to send the load_robot message.
     if (context.get_time() == 0.0) {
       PublishLoadRobot();
@@ -111,48 +109,39 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
   mutable bool sent_load_robot_{false};
 };
 
-int do_main(int argc, const char* argv[]) {
-  auto lcm = std::make_unique<lcm::LCM>();
+int do_main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  systems::DiagramBuilder<double> builder;
-  const DrivingCommandTranslator driving_command_translator;
-  auto command_subscriber =
-      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "DRIVING_COMMAND", driving_command_translator, lcm.get());
+  // TODO(jwnimmer-tri) Allow for multiple simple cars.
+  if (FLAGS_num_simple_car > 1) {
+    std::cerr << "ERROR: Only one simple car is supported (for now)."
+              << std::endl;
+    return 1;
+  }
 
-  auto simple_car = builder.AddSystem<SimpleCar>();
-  auto coord_transform = builder.AddSystem<SimpleCarToEulerFloatingJoint>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  for (int i = 0; i < FLAGS_num_simple_car; ++i) {
+    simulator->AddSimpleCar();
+  }
+  simulator->AddSystem(std::make_unique<BotVisualizerHack<double>>(
+      simulator->get_lcm()));
+  auto joint_system_name = SimpleCarToEulerFloatingJoint<double>().get_name();
+  simulator->get_builder()->Connect(
+      simulator->GetBuilderSystemByName(joint_system_name),
+      simulator->GetBuilderSystemByName("BotVisualizerHack"));
 
-  const SimpleCarStateTranslator simple_car_state_translator;
-  auto simple_car_state_publisher =
-      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "SIMPLE_CAR_STATE", simple_car_state_translator, lcm.get());
+  for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
+    const auto& params = CreateTrajectoryParams(i);
+    simulator->AddTrajectoryCar(
+        std::get<0>(params),
+        std::get<1>(params),
+        std::get<2>(params));
+  }
 
-  const EulerFloatingJointStateTranslator euler_floating_joint_state_translator;
-  auto euler_floating_joint_state_publisher =
-      builder.AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "FLOATING_JOINT_STATE", euler_floating_joint_state_translator,
-          lcm.get());
+  simulator->Start();
 
-  auto bot_visualizer_hack = builder.AddSystem<BotVisualizerHack>(lcm.get());
-
-  builder.Connect(*command_subscriber, *simple_car);
-  builder.Connect(*simple_car, *simple_car_state_publisher);
-  builder.Connect(*simple_car, *coord_transform);
-  builder.Connect(*coord_transform, *bot_visualizer_hack);
-  builder.Connect(*coord_transform, *euler_floating_joint_state_publisher);
-
-  auto diagram = builder.Build();
-
-  auto lcm_receive_thread = std::make_unique<systems::lcm::LcmReceiveThread>(
-      lcm.get());
-
-  auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
-  simulator->Initialize();
   while (true) {
-    const double time = simulator->get_context().get_time();
-    SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-    simulator->StepTo(time + 0.01);
+    simulator->StepBy(0.01);
   }
 
   return 0;
@@ -162,6 +151,6 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace automotive
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
   return drake::automotive::do_main(argc, argv);
 }

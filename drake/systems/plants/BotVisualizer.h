@@ -1,3 +1,5 @@
+// TODO(liang.fok) Delete this class once all System 1.0-based demos that use
+// it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
 #include <lcm/lcm-cpp.hpp>

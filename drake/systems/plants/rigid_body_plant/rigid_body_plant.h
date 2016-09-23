@@ -171,8 +171,8 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
-  T penetration_damping_{0};
-  T friction_coefficient_{0};
+  T penetration_damping_{penetration_stiffness_ / 10.0};
+  T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
   int state_output_port_id_;
