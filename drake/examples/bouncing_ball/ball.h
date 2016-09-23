@@ -7,7 +7,6 @@
 namespace drake {
 namespace bouncingball {
 
-
 /// Dynamical system representation of the one-dimensional equations of
 /// motion for a ball in flight, dropped with an initial position (height)
 /// and velocity.
