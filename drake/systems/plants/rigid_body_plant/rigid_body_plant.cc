@@ -24,11 +24,12 @@ namespace systems {
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
     tree_(move(tree)) {
-  // The input to the system is the generalized forces on the actuators.
-  // TODO(amcastro-tri): add separate input ports for each model_id.
+  // The input to this system is the generalized forces commanded on the
+  // actuators.
+  // TODO(amcastro-tri): add separate input ports for each model_instance_id.
   System<T>::DeclareInputPort(
       kVectorValued, get_num_actuators(), kContinuousSampling);
-  // The output to the system is the state vector.
+  // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
   state_output_port_id_ = this->DeclareOutputPort(
       kVectorValued, get_num_states(), kContinuousSampling).get_index();
@@ -159,7 +160,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   output_vector->get_mutable_value() =
       context.get_continuous_state().CopyToVector();
 
-  // Evaluates the output port for kinematics results.
+  // Evaluates the kinematics results output port.
   auto& kinematics_results =
       output->GetMutableData(kinematics_output_port_id_)->
           template GetMutableValue<KinematicsResults<T>>();

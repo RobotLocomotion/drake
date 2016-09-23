@@ -30,7 +30,7 @@ namespace systems {
 /// positions followed by the generalized velocities of the system.
 ///
 /// <B>%System output</B>:
-/// - Port 0: The state of the system in a vector valued port.
+/// - Port 0: The state vector of the system in a vector valued port.
 /// - Port 1: A KinematicsResults class allowing access to the results from
 /// kinematics computations for each RigidBody.
 ///
