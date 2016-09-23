@@ -106,11 +106,11 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(bertini)
+drake_add_external(bertini CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gloptipoly)
+drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
-drake_add_external(meshconverters PUBLIC)
+drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
 drake_add_external(octomap PUBLIC)
 drake_add_external(sedumi)
@@ -118,7 +118,7 @@ drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
-drake_add_external(yalmip PUBLIC)
+drake_add_external(yalmip PUBLIC CMAKE)
 
 # avl
 # The Ninja generator does not support Fortran.
@@ -167,7 +167,7 @@ else()
   drake_add_external(gflags PUBLIC CMAKE
     CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
 endif()
-  
+
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
   CMAKE_ARGS

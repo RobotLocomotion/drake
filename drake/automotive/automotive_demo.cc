@@ -1,12 +1,16 @@
-#include "drake/automotive/simple_car.h"
-
+#include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/automotive/automotive_simulator.h"
-#include "drake/common/drake_path.h"
+#include "drake/automotive/create_trajectory_params.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+
+DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
+DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
 
 namespace drake {
 namespace automotive {
@@ -30,6 +34,10 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 
  protected:
   void DoPublish(const systems::Context<double>& context) const override {
+    // TODO(liang.fok): Replace the following code once System 2.0's API allows
+    // systems to declare that they need a certain action to be performed at
+    // simulation time t_0.
+    //
     // Before any draw commands, we need to send the load_robot message.
     if (context.get_time() == 0.0) {
       PublishLoadRobot();
@@ -101,15 +109,35 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
   mutable bool sent_load_robot_{false};
 };
 
-int do_main(int argc, const char* argv[]) {
+int do_main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  // TODO(jwnimmer-tri) Allow for multiple simple cars.
+  if (FLAGS_num_simple_car > 1) {
+    std::cerr << "ERROR: Only one simple car is supported (for now)."
+              << std::endl;
+    return 1;
+  }
+
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
-  simulator->AddSimpleCar();
+  for (int i = 0; i < FLAGS_num_simple_car; ++i) {
+    simulator->AddSimpleCar();
+  }
   simulator->AddSystem(std::make_unique<BotVisualizerHack<double>>(
       simulator->get_lcm()));
   auto joint_system_name = SimpleCarToEulerFloatingJoint<double>().get_name();
   simulator->get_builder()->Connect(
       simulator->GetBuilderSystemByName(joint_system_name),
       simulator->GetBuilderSystemByName("BotVisualizerHack"));
+
+  for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
+    const auto& params = CreateTrajectoryParams(i);
+    simulator->AddTrajectoryCar(
+        std::get<0>(params),
+        std::get<1>(params),
+        std::get<2>(params));
+  }
+
   simulator->Start();
 
   while (true) {
@@ -123,6 +151,6 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace automotive
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
   return drake::automotive::do_main(argc, argv);
 }
