@@ -28,7 +28,6 @@ class BouncingBall : public Ball<T> {
   /// Constructs a BouncingBall system capturing the idealized hybrid dynamics
   /// of a ball dropped from a height and striking the ground.
   BouncingBall();
-  virtual ~BouncingBall() {};
 
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
   /// the system API, pending further discussions.

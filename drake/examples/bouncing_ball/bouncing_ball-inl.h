@@ -29,7 +29,6 @@ T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
   // the ball's position is less than or equal to zero and its
   // velocity is non-positive.
   return std::max(state.GetAtIndex(0), state.GetAtIndex(1));
-  //return std::max(this->radius_ , this->radius_);
 }
 
 template <typename T>

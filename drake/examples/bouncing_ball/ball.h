@@ -29,9 +29,8 @@ class Ball : public systems::LeafSystem<T> {
   /// motion for a ball in flight, dropped with an initial position (height)
   /// and velocity.
   Ball();
-  virtual ~Ball() {};
 
-  virtual void EvalOutput(const systems::Context<T>& context,
+  void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
   void EvalTimeDerivatives(
