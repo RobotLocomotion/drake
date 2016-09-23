@@ -1,5 +1,7 @@
 /// @file
 /// Tests that rotation conversion functions are inverses.
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 #include <cmath>
 #include <iostream>
@@ -32,6 +34,8 @@ using std::numeric_limits;
 namespace drake {
 namespace math {
 namespace {
+int count1 = 0;
+int count2 = 0;
 Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
@@ -134,127 +138,10 @@ class RotationConversionTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    setupRPYTestCases();
-    setupAngleAxisTestCases();
+    //setupRPYTestCases();
+    //setupAngleAxisTestCases();
     setupQuaternionTestCases();
     setupRotationMatrixTestCases();
-    // We will test the following cases
-    // Degenerate case, 0 rotation around x axis
-    // Degenerate case, 0 rotation around y axis
-    // Degenerate case, 0 rotation around z axis
-    // Degenerate case, 0 rotation around a unit axis
-    // Almost degenerate case, small positive rotation around an arbitrary axis
-    // Almost degenerate case, small negative rotation around an arbitrary axis
-    // Differentiation issue at 180 rotation around x axis
-    // Differentiation issue at 180 rotation around y axis
-    // Differentiation issue at 180 rotation around z axis
-    // Differentiation issue at 180 rotation around an arbitrary unit axis
-    // Differentiation issue close to 180 rotation around an arbitrary axis
-    // Singularity issue associated with the second angle = pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
-    // Singularity issue associated with the second angle = -pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
-    // Singularity issue associated with the second angle close to pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
-    // Singularity issue associated with the second angle close to -pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
-    // normal non-degenerate non-singular cases.
-
-    /*// 0 rotation around x axis
-    test_orientation_.push_back(AngleAxisd(0, Vector3d::UnitX()));
-
-    // 0 rotation around y axis
-    test_orientation_.push_back(AngleAxisd(0, Vector3d::UnitY()));
-
-    // 0 rotation around z axis
-    test_orientation_.push_back(AngleAxisd(0, Vector3d::UnitZ()));
-
-    // 0 rotation around a unit axis
-    Vector3d axis(0.5 * sqrt(2), 0.4 * sqrt(2), 0.3 * sqrt(2));
-    test_orientation_.push_back(AngleAxisd(0, axis));
-
-    // small positive rotation
-    test_orientation_.push_back(AngleAxisd(1E-6, axis));
-
-    // small negative rotation
-    test_orientation_.push_back(AngleAxisd(-1E-6, axis));
-
-    // 180 rotation around x axis
-    test_orientation_.push_back(AngleAxisd(M_PI, Vector3d::UnitX()));
-
-    // 180 rotation around y axis
-    test_orientation_.push_back(AngleAxisd(M_PI, Vector3d::UnitY()));
-
-    // 180 rotation around z axis
-    test_orientation_.push_back(AngleAxisd(M_PI, Vector3d::UnitZ()));
-
-    // close to 180 rotation around a unit axis
-    test_orientation_.push_back(AngleAxisd((1 - 1E-6) * M_PI, axis));
-
-    // pitch = pi/2
-    AngleAxisd a1(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
-                  AngleAxisd(M_PI / 2, Vector3d::UnitY()) *
-                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
-    test_orientation_.push_back(a1);
-
-    // pitch close to pi/2
-    AngleAxisd a2(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
-                  AngleAxisd(M_PI / 2 - 1E-6 * M_PI, Vector3d::UnitY()) *
-                  AngleAxisd(M_PI / 4, Vector3d::UnitX()));
-    test_orientation_.push_back(a2);
-
-    // pitch = -pi/2
-    AngleAxisd a4(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
-        AngleAxisd(-M_PI / 2, Vector3d::UnitY()) *
-        AngleAxisd(M_PI / 4, Vector3d::UnitX()));
-    test_orientation_.push_back(a4);
-
-    // pitch close to -pi/2
-    AngleAxisd a5(AngleAxisd(M_PI / 3, Vector3d::UnitZ()) *
-        AngleAxisd(-M_PI / 2 + 1E-6 * M_PI, Vector3d::UnitY()) *
-        AngleAxisd(M_PI / 4, Vector3d::UnitX()));
-    test_orientation_.push_back(a5);*/
-
-    // non-degenerate case
-
-    /*// non-degenerate case for angle-axis representation
-    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -M_PI+1E-6, M_PI);
-    for(int i = 0; i < a_x.size(); i++) {
-      for (int j = 0; j < a_y.size(); ++j) {
-        for (int k = 0; k < a_z.size(); ++k) {
-          for (int l = 0; l < a_angle.size(); ++l) {
-            Vector3d a_axis(a_x(i), a_y(j), a_z(k));
-            if(std::abs(a_axis.norm()) > 1E-3) {
-              a_axis.normalize();
-              test_orientation_.push_back(AngleAxisd(a_angle(l), a_axis));
-            }
-          }
-        }
-      }
-    }*/
-
-    /*// non-degenerate case for quaternion representation
-    auto q_w = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto q_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto q_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto q_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    for(int i = 0; i< q_w.size(); ++i) {
-      for (int j = 0; j < q_x.size(); ++j) {
-        for (int k = 0; k < q_y.size(); ++k) {
-          for (int l = 0; l < q_z.size(); ++l) {
-            Vector4d q(q_w(i), q_x(j), q_y(k), q_z(l));
-            if(std::abs(q.norm()) > 1E-3) {
-              q.normalize();
-              Quaterniond quat(q(0), q(1), q(2), q(3));
-              test_orientation_.push_back(AngleAxisd(quat));
-            }
-          }
-        }
-      }
-    }*/
   }
 
   void setupRPYTestCases() {
@@ -273,29 +160,29 @@ class RotationConversionTest : public ::testing::Test {
     // pitch = -pi/2
     rpy_test_cases_.push_back(Vector3d(M_PI/4, -M_PI/2, M_PI/3));
 
-    // pitch = (0.5-eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, (0.5 - numeric_limits<double>::epsilon())*M_PI, M_PI/3));
+    // pitch = 0.5*pi-eps
+    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - numeric_limits<double>::epsilon(), M_PI/3));
 
-    // pitch = (0.5-1.5*eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, (0.5 - 1.5*numeric_limits<double>::epsilon())*M_PI, M_PI/3));
+    // pitch = 0.5*pi-1.5*eps
+    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - 1.5*numeric_limits<double>::epsilon(), M_PI/3));
 
-    // pitch = (0.5-2*eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, (0.5 - 2*numeric_limits<double>::epsilon())*M_PI, M_PI/3));
+    // pitch = 0.5*pi-2*eps
+    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - 2*numeric_limits<double>::epsilon(), M_PI/3));
 
-    // pitch = (0.5 - 1E-10)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.8, (0.5 - 1E-10)*M_PI, 0.9*M_PI));
+    // pitch = 0.5*pi - 1E-10
+    rpy_test_cases_.push_back(Vector3d(M_PI*0.8, 0.5*M_PI - 1E-10, 0.9*M_PI));
 
-    // pitch = (-0.5+eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.9, (-0.5 + numeric_limits<double>::epsilon())*M_PI, M_PI*0.3));
+    // pitch = -0.5*pi+eps
+    rpy_test_cases_.push_back(Vector3d(M_PI*-0.9, -0.5*M_PI + numeric_limits<double>::epsilon(), M_PI*0.3));
 
-    // pitch = (-0.5+1.5*eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.6, (-0.5 + 1.5*numeric_limits<double>::epsilon())*M_PI, M_PI*0.3));
+    // pitch = -0.5*pi+1.5*eps
+    rpy_test_cases_.push_back(Vector3d(M_PI*-0.6, -0.5*M_PI + 1.5*numeric_limits<double>::epsilon(), M_PI*0.3));
 
-    // pitch = (-0.5+2*eps)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.5, (-0.5 + 2*numeric_limits<double>::epsilon())*M_PI, M_PI*0.4));
+    // pitch = -0.5*pi+2*eps
+    rpy_test_cases_.push_back(Vector3d(M_PI*-0.5, -0.5*M_PI + 2*numeric_limits<double>::epsilon(), M_PI*0.4));
 
-    // pitch = (-0.5 + 1E-10)*pi
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.9, (-0.5 + 1E-10)*M_PI, 0.8*M_PI));
+    // pitch = -0.5*pi + 1E-10
+    rpy_test_cases_.push_back(Vector3d(M_PI*0.9, -0.5*M_PI+1E-10, 0.8*M_PI));
 
     // non-singular cases
     auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
@@ -427,6 +314,7 @@ class RotationConversionTest : public ::testing::Test {
             if(q.norm() > 1E-3) {
               q.normalize();
               quaternion_test_cases_.push_back(Quaterniond(q(0), q(1), q(2), q(3)));
+              count1++;
             }
           }
         }
@@ -442,7 +330,7 @@ class RotationConversionTest : public ::testing::Test {
       rotation_matrix_test_cases_.push_back(ai.toRotationMatrix());
     }
     for(auto const &qi:quaternion_test_cases_) {
-      rotation_matrix_test_cases_.push_back(qi.toRotationMatrix());
+      rotation_matrix_test_cases_.push_back(quat2rotmat(eigenQuaterniontoQuat(qi)));
     }
   }
   std::vector<Vector3d> rpy_test_cases_;
@@ -452,7 +340,7 @@ class RotationConversionTest : public ::testing::Test {
   std::vector<AngleAxisd> test_orientation_;  // test cases
 };
 
-TEST_F(RotationConversionTest, AxisQuat) {
+/*TEST_F(RotationConversionTest, AxisQuat) {
   for (const auto& ai_eigen : angle_axis_test_cases_) {
     // Compute the quaternion using Eigen geometry module, compare the result
     // with axis2quat
@@ -584,17 +472,28 @@ TEST_F(RotationConversionTest, RotmatAxis) {
     auto rotmat_expected = axis2rotmat(a);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
-}
+}*/
 
 TEST_F(RotationConversionTest, RotmatRPY) {
   for (const auto& Ri : rotation_matrix_test_cases_) {
     auto rpy = rotmat2rpy(Ri);
     // rotmat2rpy should be the inversion of rpy2rotmat
     auto rotmat_expected = rpy2rotmat(rpy);
-    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
+    if(!Ri.isApprox(rotmat_expected, 1E-10)) {
+      std::cout<<"Ri:"<<std::endl<<Ri<<std::endl;
+      std::cout<<"rpy"<<std::endl<<rpy<<std::endl;
+      std::cout<<"rotmat_expected-Ri"<<std::endl<<rotmat_expected-Ri<<std::endl;
+      std::cout<<"Ri*Ri':"<<std::endl<<Ri*Ri.transpose()<<std::endl;
+      std::cout<<"rotmat2quat(Ri)"<<std::endl<<rotmat2quat(Ri)<<std::endl;
+      std::cout<<"count"<<count2<<std::endl;
+      rotmat2rpy(Ri);
+    }
+    EXPECT_TRUE(Ri.isApprox(rotmat_expected, 1E-10));
     EXPECT_TRUE(check_rpy_range(rpy));
+    count2++;
   }
 }
+/*
 TEST_F(RotationConversionTest, RPYRotmat) {
   // Compute the rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
   // then compare the result with rpy2rotmat
@@ -626,6 +525,7 @@ TEST_F(RotationConversionTest, RPYAxis) {
     // rpy2axis should be the inversion of axis2rpy
     Vector3d rpy_expected = axis2rpy(a);
     if(!compareRollPitchYaw(rpyi, rpy_expected)) {
+      std::cout<<(rpyi(1)+M_PI/2)<<" "<<(rpyi(1)-M_PI/2)<<std::endl;
       auto Ri = rpy2rotmat(rpyi);
       auto rpyi_inverse = rotmat2rpy(Ri);
       if(!compareRollPitchYaw(rpyi, rpyi_inverse)) {
@@ -654,7 +554,7 @@ TEST_F(RotationConversionTest, RPYQuat) {
     auto rpy_expected = quat2rpy(quat);
     EXPECT_TRUE(compareRollPitchYaw(rpyi, rpy_expected));
   }
-}
+}*/
 /*
 TEST_F(RotationConversionTest, DRPYRotmat) {
   Vector3d rpy = rotmat2rpy(R_);
