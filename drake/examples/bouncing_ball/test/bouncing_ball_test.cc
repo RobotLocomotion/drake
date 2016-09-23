@@ -11,38 +11,22 @@ namespace {
 class BouncingBallTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    if (dut == nullptr) { throw std::bad_cast(); }
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
   systems::VectorBase<double>* continuous_state() {
-    auto result =
-      context_->get_mutable_state()->continuous_state->get_mutable_state();
-    return result;
+    return context_->get_mutable_state()->continuous_state->get_mutable_state();
   }
 
-  // TODO(jadecastro): remove this dynamic_cast hack once EvalGuard is added
-  // to the system API.
-  BouncingBall<double>* dut =
-    dynamic_cast<BouncingBall<double>*>(new BouncingBall<double>());
+  BouncingBall<double>* dut = new BouncingBall<double>();
   std::unique_ptr<BouncingBall<double>> dut_ =
     std::unique_ptr<BouncingBall<double>>(dut);  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
-
-TEST_F(BouncingBallTest, Topology) {
-  ASSERT_EQ(0, dut_->get_num_input_ports());
-
-  ASSERT_EQ(1, dut_->get_num_output_ports());
-  const auto& output_descriptor = dut_->get_output_ports().at(0);
-  EXPECT_EQ(systems::kVectorValued, output_descriptor.get_data_type());
-  EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
-  EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
-}
 
 TEST_F(BouncingBallTest, Guard) {
   // Evaluate the guard at the initial state.
@@ -80,7 +64,9 @@ TEST_F(BouncingBallTest, Reset) {
   dut_->PerformReset(context_.get());
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
-  EXPECT_NEAR(4.56, result->GetAtIndex(1), 1e-14);
+  EXPECT_NEAR(-5.7 * -1 * dut_->GetRestitutionCoef(),
+              result->GetAtIndex(1), 1e-14);
+
 }
 
 }  // namespace
