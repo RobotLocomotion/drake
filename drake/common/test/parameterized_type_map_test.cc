@@ -43,7 +43,8 @@ class DestructorTestType {
   DestructorTestType(T value, bool& destructed_flag)
       : value_(value), destructed_flag_(destructed_flag) {
     destructed_flag_ = false;
-  };
+  }
+
   ~DestructorTestType() { destructed_flag_ = true; }
 
   const T& get_value() const { return value_; }
