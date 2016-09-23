@@ -56,6 +56,9 @@ class DestructorTestType {
 
 }  // parameterized_type_map_test
 
+/*
+ * Ensure that values get destructed properly.
+ */
 GTEST_TEST(ParameterizedTypeMapTest, TestLifeTime) {
   using parameterized_type_map_test::DestructorTestType;
 
