@@ -45,11 +45,11 @@ bool check_rpy_range(const Vector3d &rpy) {
 // So two axis-angles that are slightly different when the angle is close to 0,
 // their equivalent rotation matrices are almost the same
 bool compareAngleAxis(const AngleAxisd& a1, const AngleAxisd& a2) {
-  return a1.toRotationMatrix().isApprox(a2.toRotationMatrix(), 1E-10);
+  return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
 bool compareQuaternion(const Vector4d& q1, const Vector4d& q2) {
-  return q1.isApprox(q2,1E-10) | q1.isApprox(-q2, 1E-10);
+  return q1.isApprox(q2) | q1.isApprox(-q2);
 }
 Quaterniond eulerToQuaternion(const Vector3d euler) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''
@@ -298,9 +298,9 @@ class RotationConversionTest : public ::testing::Test {
     rpy_test_cases_.push_back(Vector3d(M_PI*0.9, (-0.5 + 1E-10)*M_PI, 0.8*M_PI));
 
     // non-singular cases
-    auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -0.49*M_PI, 0.49*M_PI);
-    auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -M_PI, M_PI);
+    auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
+    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.49*M_PI, 0.49*M_PI);
+    auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
     for(int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
         for (int k = 0; k < yaw.size(); ++k) {
@@ -395,10 +395,10 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase((-1+1E-10)*M_PI, axis);
 
     // non-singularity cases
-    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -0.95*M_PI, 0.95*M_PI);
+    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.95*M_PI, 0.95*M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
         for (int k = 0; k < a_z.size(); ++k) {
@@ -415,10 +415,10 @@ class RotationConversionTest : public ::testing::Test {
   }
 
   void setupQuaternionTestCases() {
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 10, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
@@ -591,7 +591,7 @@ TEST_F(RotationConversionTest, RotmatRPY) {
     auto rpy = rotmat2rpy(Ri);
     // rotmat2rpy should be the inversion of rpy2rotmat
     auto rotmat_expected = rpy2rotmat(rpy);
-    EXPECT_TRUE(Ri.isApprox(rotmat_expected, 1E-10));
+    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
