@@ -12,7 +12,8 @@ if(lcm_FOUND)
     drakeRBSystem
     drakeShapes
     drakeCommon
-    drakeLCMSystem)
+    drakeLCMSystem
+    drakeLCMTypes)
   pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
           iiwa_simulation.h)
@@ -20,8 +21,6 @@ if(lcm_FOUND)
           LIBS -ldrakeKukaIiwaArm
           REQUIRES
           VERSION 0.0.1)
-  add_dependencies(drakeKukaIiwaArm
-    drake_lcmtypes_hpp)
 
   add_executable(kuka_lcm_visualizer kuka_lcm_visualizer.cc)
   target_link_libraries(kuka_lcm_visualizer

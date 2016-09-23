@@ -14,7 +14,7 @@
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 namespace automotive {

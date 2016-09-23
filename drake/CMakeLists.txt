@@ -176,9 +176,9 @@ target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 # set up and build lcm types
 find_package(lcm)
 if(lcm_FOUND)
+  find_package(bot2-core)
+
   add_subdirectory(lcmtypes)
-  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
-  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes) #TODO(#3351)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
