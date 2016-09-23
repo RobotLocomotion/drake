@@ -14,24 +14,40 @@ namespace bouncingball {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
-///
 /// To use other specific scalar types see bouncing_ball-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Inputs: no inputs.
+/// States: vertical position and velocity, respectively, in units of m and m/s.
+/// Outputs: vertical position and velocity, respectivelt, in units of m and
+/// m/s.
 template <typename T>
 class BouncingBall : public Ball<T> {
  public:
-  /// Constructs a BouncingBall system.
+  /// Constructs a BouncingBall system capturing the idealized hybrid dynamics
+  /// of a ball dropped from a height and striking the ground.
   BouncingBall();
+  virtual ~BouncingBall() {};
 
-  T EvalGuard(const systems::Context<T>& context) const override;
+  /// TODO(jadecastro): This is a prototype implementation to be overridden from
+  /// the system API, pending further discussions.
+  ///
+  /// Evaluate the guard function  associated with the system at a particular
+  /// mode. If the EvalGuard returns a non-positive value, then the hybrid
+  /// system is allowed to make a transition from the `pre` mode to `post` mode.
+  T EvalGuard(const systems::Context<T>& context) const;
 
-  void PerformReset(systems::Context<T>* context) const override;
+  /// TODO(jadecastro): This is a prototype implementation to be overridden from
+  /// the system API, pending further discussions.
+  ///
+  /// Performs a reset mapping that occurs once a discrete mode if and only if a
+  /// mode transition (discrete jump) has been made. It does so by mutating the
+  /// context, so that, by default the reset mapping is the identity mapping.
+  void PerformReset(systems::Context<T>* context) const;
 
  private:
-  const T r = 1;  // radius of ball
-  const T cor = 0.8;  // coefficient of restitution
+  const double restitution_coef_ = 0.8;  // coefficient of restitution
 };
 
 }  // namespace bouncingball

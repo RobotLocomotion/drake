@@ -7,13 +7,9 @@
 
 #include "drake/examples/BouncingBall/ball.h"
 
-#include <stdexcept>
-#include <string>
-
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace bouncingball {
@@ -47,41 +43,27 @@ void Ball<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
   // Obtain the state.
-  const systems::VectorBase<T>& context_state =
+  const systems::VectorBase<T>& state =
       context.get_state().continuous_state->get_state();
-  const systems::BasicVector<T>* const state =
-    dynamic_cast<const systems::BasicVector<T>*>(&context_state);
-  DRAKE_ASSERT(state != nullptr);
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::VectorBase<T>* const derivatives_state =
+  systems::VectorBase<T>* const new_derivatives =
       derivatives->get_mutable_state();
-  DRAKE_ASSERT(derivatives_state != nullptr);
-  systems::BasicVector<T>* const new_derivatives =
-    dynamic_cast<systems::BasicVector<T>*>(derivatives_state);
   DRAKE_ASSERT(new_derivatives != nullptr);
 
   const double g{9.81};  // gravity.
 
-  new_derivatives->SetAtIndex(0, state->GetAtIndex(1));
+  new_derivatives->SetAtIndex(0, state.GetAtIndex(1));
   new_derivatives->SetAtIndex(1, T{-g});
 }
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 Ball<T>::AllocateContinuousState() const {
-  std::unique_ptr<systems::BasicVector<T>>
-    state(new systems::BasicVector<T>(2));
+  auto state = std::make_unique<systems::BasicVector<T>>(2);
   state->get_mutable_value() << 10, 0;   // initial state values.
   return std::make_unique<systems::ContinuousState<T>>(std::move(state));
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>>
-Ball<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  return std::make_unique<systems::BasicVector<T>>(2);
 }
 
 }  // namespace bouncingball
