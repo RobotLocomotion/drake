@@ -188,6 +188,21 @@ class DRAKERBM_EXPORT RigidBody {
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   /**
+   * Sets the rigid body's self-collision logic.
+   *
+   * Given the next available clique id, the body will do whatever work is
+   * necessary to prevent self collision.  If no work is necessary, none will be
+   * done.
+   *
+   * The return value will be the next available clique.  If the input clique
+   * is not consumed, the input value will be returned.
+   *
+   * @param[in] clique_id  The next available clique id to use.
+   * @returns The next available clique id.
+   */
+  int SetSelfCollisionClique(int clique_id);
+
+  /**
    * Adds the given collision @p element to the body with the given group name.
    * @param[in] group_name The collision element's group name.
    * @param[in] element The element to associate with the rigid body.
@@ -260,7 +275,7 @@ class DRAKERBM_EXPORT RigidBody {
    * Returns `true` if this body should be checked for collisions
    * with the @p other body.  CanCollideWith should be commutative: A can
    * collide with B implies B can collide with A.
-   * @param other   The body to query against.
+   * @param[in] other   The body to query against.
    * @returns `true` if collision between this and other should be tested.
    */
   bool CanCollideWith(const RigidBody &other) const;
@@ -339,7 +354,7 @@ class DRAKERBM_EXPORT RigidBody {
    collision clique.
    @param[in] clique_id Collision clique id.
    @see CollisionElement::AddToCollisionClique. **/
-  void AddToCollisionClique(int clique_id);
+  void AddCollisionElementsToClique(int clique_id);
 
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);

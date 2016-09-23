@@ -190,7 +190,7 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
 GTEST_TEST(ModelTest, CollisionCliques) {
   Element element_1, element_2, element_3;
 
-  // Adds element 1 to its own set of groups.
+  // Adds element 1 to its own set of cliques.
   element_1.AddToCollisionClique(2);
   element_1.AddToCollisionClique(23);
   element_1.AddToCollisionClique(11);

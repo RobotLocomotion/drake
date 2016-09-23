@@ -51,14 +51,18 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Returns true if this element should be checked for collisions
-   * with the @p other object.  CanCollideWith is commutative;
+   * with the @p other object.  CanCollideWith() is commutative;
    * A can collide with B implies B can collide with A.
    */
   virtual bool CanCollideWith(const Element *other) const;
 
   /**
    * Adds this element to the clique specified by the given clique id.
-   * @param[in] clique_id   The clique to which this element will belong to.
+   *
+   * The clique may be a previously existing clique or a new clique. If the
+   * element already belongs to the clique, there will be no change.
+   *
+   * @param[in] clique_id The clique to which this element will belong to.
    */
   void AddToCollisionClique(int clique_id);
 
@@ -70,7 +74,8 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Provides access to the set of cliques to which this element belongs.
-   * @return    A reference to the clique set (as an ordered list).
+   * @returns A reference to the clique set (as an montonically increasing
+   * ordered list).
    */
   const std::vector<int>& collision_cliques() const;
 
@@ -95,21 +100,23 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   bool is_static_{false};
   const RigidBody* body_{};
 
-  // Collision cliques are defined as a group of collision elements that do not
+  // Collision cliques are defined as a set of collision elements that do not
   // collide.
   // Collision cliques in Drake are represented simply by an integer.
   // A collision element can belong to more than one clique.
+  //
   // Conceptually it would seem like std::set is the right fit for
-  // CollisionElement::collision_cliques_. However, std::set is really good for
+  // Element::collision_cliques_. However, std::set is really good for
   // dynamically adding elements to a set that needs to change.
   // Once you are done adding elements to your set, access time is poor when
   // compared to a simple std::vector (nothing faster than scanning a vector of
   // adjacent entries in memory).
   // Here adding elements to the cliques vector only happens during problem
   // setup by the user or from a URDF/SDF file. What we really want is that once
-  // this vector is setup, we can query it very fast during simulation.
-  // This is done in CollisionElement::CanCollideWith which to be Order(N)
+  // this vector is setup, we can query it very quickly during simulation.
+  // This is done in Element::CanCollideWith() which to be Order(N)
   // requires the entries in CollisionElement::collision_cliques_ to be sorted.
+  // By arbitrary convention, the ordering is monotonically increasing.
   std::vector<int> collision_cliques_;
 
  public:
