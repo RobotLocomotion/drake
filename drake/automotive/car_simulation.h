@@ -27,7 +27,7 @@ class DRAKEAUTOMOTIVE_EXPORT DrivingCommand1 :
  public:
   DrivingCommand1() {}
 
-  DrivingCommand1(const System1Vector<DrivingCommand<T>, T>& other) :
+  explicit DrivingCommand1(const System1Vector<DrivingCommand<T>, T>& other) :
       System1Vector<DrivingCommand<T>, T>(other) {
   }
 
