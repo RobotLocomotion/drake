@@ -25,9 +25,9 @@ GTEST_TEST(ParameterizedTypeMapTest, TestBasics) {
   auto vec_double = Vector3<double>(2., 3., 4.);
   map.emplace<double>(vec_double);
 
-  ASSERT_TRUE(
-      CompareMatrices(*map.at<int>(), vec_int, 0, MatrixCompareType::absolute));
-  ASSERT_TRUE(CompareMatrices(*map.at<double>(), vec_double, 0.0,
+  ASSERT_TRUE(CompareMatrices(*map.get<int>(), vec_int, 0,
+                              MatrixCompareType::absolute));
+  ASSERT_TRUE(CompareMatrices(*map.get<double>(), vec_double, 0.0,
                               MatrixCompareType::absolute));
 
   ASSERT_TRUE(map.has_key<int>());
@@ -72,10 +72,10 @@ GTEST_TEST(ParameterizedTypeMapTest, TestLifeTime) {
     map.emplace<double>(double_value, double_destructed);
 
     ASSERT_FALSE(bool_destructed);
-    ASSERT_EQ(bool_value, map.at<bool>()->get_value());
+    ASSERT_EQ(bool_value, map.get<bool>()->get_value());
 
     ASSERT_FALSE(double_destructed);
-    ASSERT_EQ(double_value, map.at<double>()->get_value());
+    ASSERT_EQ(double_value, map.get<double>()->get_value());
   }
   ASSERT_TRUE(bool_destructed);
   ASSERT_TRUE(double_destructed);
@@ -96,7 +96,7 @@ GTEST_TEST(ParameterizedTypeMapTest, TestIntendedUseCase) {
     if (!map.has_key<Scalar>()) {
       map.emplace<Scalar>(vec.cast<Scalar>());
     }
-    const auto& vec_of_correct_type = *map.at<Scalar>();
+    const auto& vec_of_correct_type = *map.get<Scalar>();
     return vec_of_correct_type * x;
   };
 

@@ -115,7 +115,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
     if (!cache_map.has_key<Scalar>()) {
       cache_map.emplace<Scalar>(tree_rpy_->bodies);
     }
-    auto& kinematics_cache_coriolis = *cache_map.at<Scalar>();
+    auto& kinematics_cache_coriolis = *cache_map.get<Scalar>();
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 

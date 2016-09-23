@@ -22,7 +22,7 @@ class ParameterizedTypeMap {
   }
 
   template <class Key>
-  std::shared_ptr<ValueType<Key>> at() {
+  std::shared_ptr<ValueType<Key>> get() {
     return std::static_pointer_cast<ValueType<Key>>(map_.at(typeid(Key)));
   }
 
