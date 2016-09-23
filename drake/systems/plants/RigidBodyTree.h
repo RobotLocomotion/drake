@@ -57,7 +57,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  *
  * The starting index of the joint's generalized velocity vector in the
  * RigidBodyTree's generalized state vector can be computed as
- * follows: RigidBodyTree::number_of_positions() +
+ * follows: RigidBodyTree::get_num_positions() +
  * RigidBody::get_velocity_start_index().
  *
  * Note that the velocity index starts at the beginning of the velocity state
@@ -140,12 +140,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * this method.
    */
   // This method is not thread safe!
-  int add_model_instance() { return number_of_model_instances_++; }
+  int add_model_instance();
 
   /**
    * Returns the number of model instances in the tree.
    */
-  int get_number_of_model_instances() { return number_of_model_instances_; }
+  int get_num_model_instances();
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_model_instances().")
+#endif
+  int get_number_of_model_instances();
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -311,7 +316,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::vector<int> FindAncestorBodies(int body_index) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies() instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies().")
 #endif
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
@@ -686,7 +691,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
  * instead.
  */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
 #endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
@@ -696,7 +701,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Obtains a vector of indexes of the bodies that are directly attached to the
    * world via any type of joint.  This method has a time complexity of `O(N)`
    * where `N` is the number of bodies in the tree, which can be determined by
-   * calling RigidBodyTree::get_number_of_bodies().
+   * calling RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
 
@@ -728,7 +733,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * be bodies that belong to model instance ID @p model_instance_id. This
    * method has a time complexity of `O(N)` where `N` is the number of bodies
    * in the tree, which can be determined by calling
-   * RigidBodyTree::get_number_of_bodies().
+   * RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindChildrenOfBody(int parent_body_index,
       int model_instance_id = -1) const;
@@ -738,7 +743,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * `FindBodyIndex(...)` instead.
    */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex() instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
@@ -766,7 +771,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int model_instance_id = -1) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use FindChildBodyOfJoint() instead.")
+  DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 
@@ -795,7 +800,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int model_instance_id = -1) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use FindIndexOfChildBodyOfJoint() instead.")
+  DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
 #endif
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
@@ -814,7 +819,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
-   * by calling RigidBodyTree::get_number_of_bodies(). Note that the body at
+   * by calling RigidBodyTree::get_num_bodies(). Note that the body at
    * index 0 represents the world.
    */
   const RigidBody& get_body(int body_index) const;
@@ -823,6 +828,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Returns the number of bodies in this tree. This includes the one body that
    * represents the world.
    */
+  int get_num_bodies() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_bodies().")
+#endif
   int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
@@ -927,13 +937,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
-  int number_of_positions() const { return num_positions_; }
+  int get_num_positions() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
+  int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
-  int number_of_velocities() const { return num_velocities_; }
+  int get_num_velocities() const;
+
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
+  int number_of_velocities() const;
 
  public:
   static const std::set<int> default_model_instance_id_set;
@@ -961,16 +982,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
-  // The number of position states in this rigid body tree.
+  // The number of generalized position states in this rigid body tree.
   int num_positions_{};
 
-  // The number of velocity states in this rigid body tree.
+  // The number of generalized velocity states in this rigid body tree.
   int num_velocities_{};
 
   // The number of model instances in this rigid body tree.
-  int number_of_model_instances_{};
+  int num_model_instances_{};
 
-  // helper functions for contactConstraints
+  // Helper functions for contactConstraints.
   template <typename Scalar>
   void accumulateContactJacobian(
       const KinematicsCache<Scalar>& cache, const int bodyInd,
@@ -981,8 +1002,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
-  // Reorder body list to make sure parents are before children in
-  // the list RigidBodyTree::bodies.
+  // Reorder body list to ensure parents are before children in the list
+  // RigidBodyTree::bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();

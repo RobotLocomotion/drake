@@ -200,7 +200,7 @@ class DrakeRosTfPublisher {
     // The following code extracts the position values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree_->number_of_positions());
+    auto q = uvec.head(rigid_body_tree_->get_num_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
     // Publishes the transform for each rigid body in the rigid body tree.

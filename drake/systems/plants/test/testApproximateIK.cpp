@@ -26,7 +26,7 @@ int main() {
       new RigidBodyConstraint* [num_constraints];
   constraint_array[0] = com_kc;
   IKoptions ikoptions(model);
-  VectorXd q_sol(model->number_of_positions());
+  VectorXd q_sol(model->get_num_positions());
   int info;
   approximateIK(model, q0, q0, num_constraints, constraint_array,
                 ikoptions, &q_sol, &info);

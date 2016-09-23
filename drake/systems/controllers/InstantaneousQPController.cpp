@@ -30,7 +30,7 @@ using namespace Eigen;
 void InstantaneousQPController::initialize() {
   body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
 
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   int nu = static_cast<int>(robot->actuators.size());
 
   umin.resize(nu);
@@ -84,9 +84,9 @@ void InstantaneousQPController::initialize() {
 
   controller_state.t_prev = 0;
   controller_state.vref_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_velocities());
+      Eigen::VectorXd::Zero(robot->get_num_velocities());
   controller_state.q_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_positions());
+      Eigen::VectorXd::Zero(robot->get_num_positions());
   controller_state.foot_contact_prev[0] = false;
   controller_state.foot_contact_prev[1] = false;
   controller_state.num_active_contact_pts = 0;
@@ -153,11 +153,11 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   // accelerations and reference posture
   PIDOutput out;
   double dt = 0;
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   DRAKE_ASSERT(q.size() == nq);
-  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qd.size() == robot->get_num_velocities());
   DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
-  if (nq != robot->number_of_velocities()) {
+  if (nq != robot->get_num_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
   }
@@ -204,7 +204,7 @@ VectorXd InstantaneousQPController::velocityReference(
     const VRefIntegratorParams& params) {
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
-  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->get_num_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -629,7 +629,7 @@ int InstantaneousQPController::setupAndSolveQP(
   const QPControllerParams& params = FindParams(qp_input.param_set_name);
 
   int nu = robot->B.cols();
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
 
   // zmp_data
   Map<const Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input.zmp_data.A[0][0]);
@@ -1030,17 +1030,17 @@ int InstantaneousQPController::setupAndSolveQP(
       Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
       // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
     }
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = Jb;
     bin.segment(constraint_start_index, 6) =
         -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = -Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = -Jb;
     bin.segment(constraint_start_index, 6) =
         Jbdotv - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
 
-  for (int i = 0; i < n_ineq; i++) {
+  for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
     if (std::isinf(double(bin(i)))) {
       Ain.row(i) = 0 * Ain.row(i);

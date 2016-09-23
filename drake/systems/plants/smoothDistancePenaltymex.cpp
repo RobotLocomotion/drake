@@ -34,7 +34,7 @@ void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
   MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
 
   int num_pts = static_cast<int>(xA.cols());
-  ddist_dq = MatrixXd::Zero(num_pts, robot->number_of_positions());
+  ddist_dq = MatrixXd::Zero(num_pts, robot->get_num_positions());
 
   // Scale distance
   int nd = static_cast<int>(dist.size());
@@ -105,7 +105,7 @@ void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
       // END_DEBUG
       ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) +=
           normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() *
-          J_k.block(3 * l, 0, 3, robot->number_of_positions());
+          J_k.block(3 * l, 0, 3, robot->get_num_positions());
     }
     for (; l < numA + numB; ++l) {
       // DEBUG
@@ -114,7 +114,7 @@ void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
       // END_DEBUG
       ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)) +=
           -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)).transpose() *
-          J_k.block(3 * l, 0, 3, robot->number_of_positions());
+          J_k.block(3 * l, 0, 3, robot->get_num_positions());
     }
   }
   MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());

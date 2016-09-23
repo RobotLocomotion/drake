@@ -37,7 +37,7 @@ GTEST_TEST(testIK, atlasIK) {
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.number_of_positions());
+  VectorXd q_sol(model.get_num_positions());
   q_sol.setZero();
   int info = 0;
   std::vector<std::string> infeasible_constraint;
@@ -97,7 +97,7 @@ GTEST_TEST(testIK, iiwaIK) {
   constraint_array.push_back(&pc);
   IKoptions ikoptions(&model);
 
-  VectorXd q_sol(model.number_of_positions());
+  VectorXd q_sol(model.get_num_positions());
   q_sol.setZero();
   int info = 0;
   std::vector<std::string> infeasible_constraint;

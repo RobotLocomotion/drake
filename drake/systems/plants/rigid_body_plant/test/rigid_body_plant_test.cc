@@ -91,10 +91,10 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   tree->compile();
 
   // Verifies the correct number of DOF's.
-  EXPECT_EQ(tree->get_number_of_bodies(), 2);
-  EXPECT_EQ(tree->number_of_positions(), kNumPositions);
+  EXPECT_EQ(tree->get_num_bodies(), 2);
+  EXPECT_EQ(tree->get_num_positions(), kNumPositions);
   // There are two bodies: the "world" and "free_body".
-  EXPECT_EQ(tree->number_of_velocities(), kNumVelocities);
+  EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
   RigidBodyPlant<double> plant(move(tree));
@@ -297,15 +297,15 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // For rbs1:
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(rbs1->getNumStates());
-  x0.head(rbs1->number_of_positions()) =
+  x0.head(rbs1->get_num_positions()) =
       rbs1->getRigidBodyTree()->getZeroConfiguration();
 
   // Some non-zero velocities.
-  x0.tail(rbs1->number_of_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
+  x0.tail(rbs1->get_num_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
 
-  Eigen::VectorXd arbitrary_angles(rbs1->number_of_positions());
+  Eigen::VectorXd arbitrary_angles(rbs1->get_num_positions());
   arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(rbs1->number_of_positions()) += arbitrary_angles;
+  x0.head(rbs1->get_num_positions()) += arbitrary_angles;
 
   // For rbs2:
   // Zeroes the state.
@@ -342,8 +342,8 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Performs the comparison.
   //////////////////////////////////////////////////////////////////////////////
-  EXPECT_TRUE(rbs1->number_of_positions() == rbs2->get_num_positions());
-  EXPECT_TRUE(rbs1->number_of_velocities() == rbs2->get_num_velocities());
+  EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
+  EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
   EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
 }
 

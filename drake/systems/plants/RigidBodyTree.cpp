@@ -2002,7 +2002,7 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
   DRAKE_DEMAND(parent_body_index >= 0 &&
-                     parent_body_index < get_number_of_bodies());
+                     parent_body_index < get_num_bodies());
 
   // Obtains a reference to the parent body.
   const RigidBody& parent_body = get_body(parent_body_index);
@@ -2107,12 +2107,17 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 
 const RigidBody& RigidBodyTree::get_body(int body_index) const {
   DRAKE_DEMAND(body_index >= 0 &&
-                     body_index < get_number_of_bodies());
+                     body_index < get_num_bodies());
   return *bodies[body_index].get();
 }
 
-int RigidBodyTree::get_number_of_bodies() const {
+int RigidBodyTree::get_num_bodies() const {
   return static_cast<int>(bodies.size());
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+int RigidBodyTree::get_number_of_bodies() const {
+  return get_num_bodies();
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -2261,6 +2266,25 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   bodies.push_back(std::move(body));
 }
 
+
+int RigidBodyTree::get_num_positions() const {
+  return num_positions_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::number_of_positions() const {
+  return get_num_positions();
+}
+
+int RigidBodyTree::get_num_velocities() const {
+  return num_velocities_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::number_of_velocities() const {
+  return get_num_velocities();
+}
+
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
@@ -2311,6 +2335,20 @@ void RigidBodyTree::addRobotFromSDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);
+}
+
+
+int RigidBodyTree::add_model_instance() {
+  return num_model_instances_++;
+}
+
+int RigidBodyTree::get_num_model_instances() {
+  return num_model_instances_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::get_number_of_model_instances() {
+  return get_num_model_instances();
 }
 
 // Explicit template instantiations for massMatrix.

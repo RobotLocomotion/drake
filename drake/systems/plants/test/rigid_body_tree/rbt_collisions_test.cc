@@ -80,8 +80,8 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // successfully pass.
   tolerance_ = 4.0*Eigen::NumTraits<double>::epsilon();
 
-  int nq = tree_.number_of_positions();
-  int nv = tree_.number_of_velocities();
+  int nq = tree_.get_num_positions();
+  int nv = tree_.get_num_velocities();
   int num_states = nq + nv;
   VectorXd x = VectorXd::Zero(num_states);
   x.head(nq) = tree_.getZeroConfiguration();

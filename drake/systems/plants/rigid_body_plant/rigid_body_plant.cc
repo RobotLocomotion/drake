@@ -48,12 +48,12 @@ const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
 
 template <typename T>
 int RigidBodyPlant<T>::get_num_positions() const {
-  return tree_->number_of_positions();
+  return tree_->get_num_positions();
 }
 
 template <typename T>
 int RigidBodyPlant<T>::get_num_velocities() const {
-  return tree_->number_of_velocities();
+  return tree_->get_num_velocities();
 }
 
 template <typename T>

@@ -34,7 +34,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int n_breaks = static_cast<int>(mxGetNumberOfElements(prhs[2]));
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr, mxGetPrSafe(prhs[2]), sizeof(double) * n_breaks);
-  int nq = cnst->getRobotPointer()->number_of_positions();
+  int nq = cnst->getRobotPointer()->get_num_positions();
   Eigen::MatrixXd q(nq, n_breaks);
   if (mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks) {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs",

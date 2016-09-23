@@ -86,7 +86,7 @@ void doKinematicsTemp(const RigidBodyTree& model,
                       const MatrixBase<DerivedV>& v, bool compute_JdotV) {
   // temporary solution. Explicit doKinematics calls will not be necessary in
   // the near future.
-  if (v.size() == 0 && model.number_of_velocities() != 0)
+  if (v.size() == 0 && model.get_num_velocities() != 0)
     cache.initialize(q);
   else
     cache.initialize(q, v);
