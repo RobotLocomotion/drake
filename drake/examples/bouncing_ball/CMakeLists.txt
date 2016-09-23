@@ -18,5 +18,5 @@ pods_install_pkg_config_file(drake-bouncing-ball
   REQUIRES
   VERSION 0.0.1)
 
-add_matlab_test(NAME examples/BouncingBall/BallPlant2D.run
+add_matlab_test(NAME examples/bouncing_ball/BallPlant2D.run
   COMMAND BallPlant2D.run)
