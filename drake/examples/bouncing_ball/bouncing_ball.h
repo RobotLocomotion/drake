@@ -7,6 +7,9 @@
 namespace drake {
 namespace bouncingball {
 
+/// Dynamical representation of the idealized hybrid dynamics
+/// of a ball dropping from a height and bouncing on a surface.
+///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
@@ -18,6 +21,8 @@ namespace bouncingball {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
+/// They are already available to link against in drakeBouncingBall.
+///
 /// Inputs: no inputs.
 /// States: vertical position and velocity, respectively, in units of m and m/s.
 /// Outputs: vertical position and velocity, respectivelt, in units of m and
@@ -25,8 +30,7 @@ namespace bouncingball {
 template <typename T>
 class BouncingBall : public Ball<T> {
  public:
-  /// Constructs a BouncingBall system capturing the idealized hybrid dynamics
-  /// of a ball dropped from a height and striking the ground.
+  /// Constructor for the BouncingBall system.
   BouncingBall();
 
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
@@ -44,6 +48,9 @@ class BouncingBall : public Ball<T> {
   /// mode transition (discrete jump) has been made. It does so by mutating the
   /// context, so that, by default the reset mapping is the identity mapping.
   void PerformReset(systems::Context<T>* context) const;
+
+  /// Getter for the model coefficient.
+  double GetRestitutionCoef() const { return restitution_coef_; }
 
  private:
   const double restitution_coef_ = 0.8;  // coefficient of restitution

@@ -42,9 +42,10 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
   // Perform the reset: map the position to itself and negate the
   // velocity and attenuate by the coefficient of restitution.
+  auto state = context->get_mutable_state()->
+    continuous_state->get_mutable_state();
   result->SetAtIndex(1,
-     -1.0 * this->restitution_coef_ * context->get_mutable_state()->
-     continuous_state->get_mutable_state()->GetAtIndex(1));
+     -1.0 * this->restitution_coef_ * state->GetAtIndex(1));
 }
 
 }  // namespace bouncingball

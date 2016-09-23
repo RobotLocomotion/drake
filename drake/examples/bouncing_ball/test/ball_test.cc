@@ -18,9 +18,7 @@ class BallTest : public ::testing::Test {
   }
 
   systems::VectorBase<double>* continuous_state() {
-    auto result =
-      context_->get_mutable_state()->continuous_state->get_mutable_state();
-    return result;
+    return context_->get_mutable_state()->continuous_state->get_mutable_state();
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
@@ -65,7 +63,7 @@ TEST_F(BallTest, Derivatives) {
   EXPECT_EQ(0.0, result->GetAtIndex(0));
   EXPECT_EQ(-9.81, result->GetAtIndex(1));
 
-  // Test at non-zero velocity
+  // Test at non-zero velocity.
   continuous_state()->SetAtIndex(1, 5.3);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(5.3, result->GetAtIndex(0));
