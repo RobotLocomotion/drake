@@ -65,7 +65,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // setup the integration size
-  const double DT = 1e-3;
+  const double DT = 1e-6;
 
   // create the integrator
   ExplicitEulerIntegrator<double> integrator(

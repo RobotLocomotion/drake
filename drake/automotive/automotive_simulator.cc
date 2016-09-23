@@ -17,6 +17,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
 
 namespace drake {
 namespace automotive {
@@ -156,6 +157,16 @@ void AutomotiveSimulator<T>::Start() {
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
   lcm_receive_thread_ =
       std::make_unique<systems::lcm::LcmReceiveThread>(lcm_.get());
+
+  // setup the step size
+  // TODO(edrumwri): replace this integrator with variable step version
+  // when available
+  const T DT = (T) 1e-3;
+
+  // create the integrator and initialize it
+  std::unique_ptr<systems::IntegratorBase<double>> integrator(
+      new systems::ExplicitEulerIntegrator<double>(*diagram_, DT,
+                                          simulator_->get_mutable_context()));
 
   simulator_->Initialize();
 
