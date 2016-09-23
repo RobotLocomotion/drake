@@ -14,18 +14,24 @@ namespace bouncingball {
 /// - double
 /// - AutoDiffXd
 ///
-/// They are already available to link against in drakeSystemFramework.
-///
 /// To use other specific scalar types see ball-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Inputs: no inputs.
+/// States: vertical position and velocity, respectively, in units of m and m/s.
+/// Outputs: vertical position and velocity, respectivelt, in units of m and
+/// m/s.
 template <typename T>
 class Ball : public systems::LeafSystem<T> {
  public:
-  /// Constructs a Ball system.
+  /// Constructs a Ball system that captures the one-dimensional equations of
+  /// motion for a ball in flight, dropped with an initial position (height)
+  /// and velocity.
   Ball();
+  virtual ~Ball() {};
 
-  void EvalOutput(const systems::Context<T>& context,
+  virtual void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
   void EvalTimeDerivatives(
@@ -35,8 +41,6 @@ class Ball : public systems::LeafSystem<T> {
  protected:
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
     const override;
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const override;
 };
 
 }  // namespace bouncingball
