@@ -11,6 +11,10 @@
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
+// TODO(liang.fok) Remove this line after System 1.0-based systems are removed.
+// See #3553.
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+
 namespace drake {
 namespace automotive {
 
@@ -49,6 +53,14 @@ class DrivingCommand : public systems::BasicVector<T> {
   }
   const T brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
+  //@}
+
+  // TODO(liang.fok) Remove the following once System 1.0-based systems are
+  // removed. See #3553.
+  /// @name Implement the LCMVector concept
+  //@{
+  typedef drake::lcmt_driving_command_t LCMMessageType;
+  static std::string channel() { return "DRIVING_COMMAND"; }
   //@}
 };
 
