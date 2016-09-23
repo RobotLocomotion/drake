@@ -71,19 +71,23 @@ class Context {
   }
 
   virtual const State<T>& get_state() const = 0;
-
-  /// Returns writable access to the State. No cache invalidation occurs until
-  /// mutable access is requested for particular blocks of state variables.
   virtual State<T>* get_mutable_state() = 0;
 
-  /// Returns a mutable pointer to the continuous component of the state.
-  ContinuousState<T>* get_mutable_continuous_state() {
-    return get_mutable_state()->continuous_state.get();
+  /// Sets the continuous state to @p xc, deleting whatever was there before.
+  void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
+    get_mutable_state()->set_continuous_state(std::move(xc));
   }
 
-  /// Returns a const reference to the continuous component of the state.
-  const ContinuousState<T>& get_continuous_state() const {
-    return *get_state().continuous_state;
+  /// Returns a mutable pointer to the continuous component of the state,
+  /// or nullptr if there is no continuous state.
+  ContinuousState<T>* get_mutable_continuous_state() {
+    return get_mutable_state()->get_mutable_continuous_state();
+  }
+
+  /// Returns a const pointer to the continuous component of the state,
+  /// or nullptr if there is no continuous state.
+  const ContinuousState<T>* get_continuous_state() const {
+    return get_state().get_continuous_state();
   }
 
   /// Returns a deep copy of this Context. The clone's input ports will
@@ -113,3 +117,4 @@ class Context {
 
 }  // namespace systems
 }  // namespace drake
+

@@ -78,7 +78,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 
 // Tests that Adder allocates no state variables in the context_.
 TEST_F(AdderTest, AdderIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 // Asserts that adders are systems with direct feedthrough inputs.

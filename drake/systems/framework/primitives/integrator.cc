@@ -25,12 +25,11 @@ void Integrator<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
-  auto state_vector =
-      context->get_mutable_state()->continuous_state->get_mutable_state();
+  VectorBase<T>* state_vector =
+      context->get_mutable_continuous_state()->get_mutable_state();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_state()->SetFromVector(value);
+  state_vector->SetFromVector(value);
 }
 
 // TODO(amcastro-tri): we should be able to express that initial conditions

@@ -30,8 +30,7 @@ class LeafSystem : public System<T> {
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
-    context->get_mutable_state()->continuous_state =
-        std::move(this->AllocateContinuousState());
+    context->set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
     ReserveDiscreteState(context.get());
     return std::unique_ptr<Context<T>>(context.release());
