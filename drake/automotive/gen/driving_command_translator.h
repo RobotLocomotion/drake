@@ -6,7 +6,7 @@
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/drakeAutomotiveLcm_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 namespace automotive {
