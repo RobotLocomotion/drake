@@ -19,7 +19,7 @@
 namespace drake {
 namespace automotive {
 
-/// Compatibility typedef for System 1 code.
+/// Compatibility class for System 1 code.
 // TODO(jwnimmer-tri) Remove me.
 template <typename T>
 class DRAKEAUTOMOTIVE_EXPORT DrivingCommand1 :
