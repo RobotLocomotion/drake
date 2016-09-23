@@ -1,6 +1,5 @@
 #include "drake/examples/BouncingBall/ball.h"
 
-#include <cmath>
 #include <memory>
 
 #include "gtest/gtest.h"
@@ -18,10 +17,8 @@ class BallTest : public ::testing::Test {
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
-  systems::BasicVector<double>* continuous_state() {
-    auto result = dynamic_cast<systems::BasicVector<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
-    if (result == nullptr) { throw std::bad_cast(); }
+  systems::VectorBase<double>* continuous_state() {
+    auto result = context_->get_mutable_state()->continuous_state->get_mutable_state();
     return result;
   }
 
@@ -43,10 +40,7 @@ TEST_F(BallTest, Topology) {
 
 TEST_F(BallTest, Output) {
   // Grab a pointer to where the EvalOutput results end up.
-  const systems::BasicVector<double>* const result =
-      dynamic_cast<
-    const systems::BasicVector<double>*>(output_->get_vector_data(0));
-  ASSERT_NE(nullptr, result);
+  const auto result = output_->get_vector_data(0);
 
   // Initial state and output.
   dut_->EvalOutput(*context_, output_.get());
@@ -63,14 +57,17 @@ TEST_F(BallTest, Output) {
 
 TEST_F(BallTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results end up.
-  const systems::BasicVector<double>* const result =
-    dynamic_cast<const systems::BasicVector<double>*>(
-          derivatives_->get_mutable_state());
-  ASSERT_NE(nullptr, result);
+  const auto result = derivatives_->get_mutable_state();
 
   // Evaluate time derivatives.
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->GetAtIndex(0));
+  EXPECT_EQ(-9.81, result->GetAtIndex(1));
+
+  // Test at non-zero velocity
+  continuous_state()->SetAtIndex(1, 5.3);
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(5.3, result->GetAtIndex(0));
   EXPECT_EQ(-9.81, result->GetAtIndex(1));
 }
 

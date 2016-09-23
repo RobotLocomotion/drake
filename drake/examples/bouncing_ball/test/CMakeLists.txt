@@ -1,18 +1,5 @@
-if(lcm_FOUND)
-  add_executable(ball_test
-	ball_test.cc
-      )
-  target_link_libraries(ball_test
-    ${GTEST_BOTH_LIBRARIES} drakeBouncingBall)
-  drake_add_test(NAME ball_test
-    COMMAND ball_test)
+drake_add_cc_test(ball_test)
+target_link_libraries(ball_test drakeBouncingBall)
 
-  add_executable(bouncing_ball_test
-	bouncing_ball_test.cc
-      )
-  target_link_libraries(bouncing_ball_test
-    ${GTEST_BOTH_LIBRARIES} drakeBouncingBall)
-  drake_add_test(NAME bouncing_ball_test
-    COMMAND bouncing_ball_test)
-
-endif()
+drake_add_cc_test(bouncing_ball_test)
+target_link_libraries(bouncing_ball_test drakeBouncingBall)
