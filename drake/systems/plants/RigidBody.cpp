@@ -256,7 +256,7 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
 }
 
 int RigidBody::SetSelfCollisionClique(int clique_id) {
-  if (collision_elements_.size() > 1 ) {
+  if (collision_elements_.size() > 1) {
     AddCollisionElementsToClique(clique_id++);
   }
   return clique_id;
