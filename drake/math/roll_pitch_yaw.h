@@ -30,7 +30,7 @@ Vector4<typename Derived::Scalar> rpy2quat(
       c(0) * s(1) * c(2) + s(0) * c(1) * s(2),
       c(0) * c(1) * s(2) - s(0) * s(1) * c(2);
 
-  //q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
+  q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
   return q;
 }
 

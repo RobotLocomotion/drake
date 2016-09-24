@@ -191,13 +191,23 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
   auto y = q_normalized(2);
   auto z = q_normalized(3);
 
+  auto ww = w * w;
+  auto xx = x * x;
+  auto yy = y * y;
+  auto zz = z * z;
+  auto wx = w * x;
+  auto wy = w * y;
+  auto wz = w * z;
+  auto xy = x * y;
+  auto xz = x * z;
+  auto yz = y * z;
   Matrix3<typename Derived::Scalar> M;
-  M.row(0) << w * w + x * x - y * y - z * z, 2.0 * x * y - 2.0 * w * z,
-      2.0 * x * z + 2.0 * w * y;
-  M.row(1) << 2.0 * x * y + 2.0 * w * z, w * w + y * y - x * x - z * z,
-      2.0 * y * z - 2.0 * w * x;
-  M.row(2) << 2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x,
-      w * w + z * z - x * x - y * y;
+  M.row(0) << ww + xx - yy - zz, 2.0 * xy - 2.0 * wz,
+      2.0 * xz + 2.0 * wy;
+  M.row(1) << 2.0 * xy + 2.0 * wz, ww + yy - xx - zz,
+      2.0 * yz - 2.0 * wx;
+  M.row(2) << 2.0 * xz - 2.0 * wy, 2.0 * yz + 2.0 * wx,
+      ww + zz - xx - yy;
 
   return M;
 }

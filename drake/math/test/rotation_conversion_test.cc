@@ -138,8 +138,8 @@ class RotationConversionTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    //setupRPYTestCases();
-    //setupAngleAxisTestCases();
+    setupRPYTestCases();
+    setupAngleAxisTestCases();
     setupQuaternionTestCases();
     setupRotationMatrixTestCases();
   }
@@ -330,14 +330,15 @@ class RotationConversionTest : public ::testing::Test {
       rotation_matrix_test_cases_.push_back(ai.toRotationMatrix());
     }
     for(auto const &qi:quaternion_test_cases_) {
-      rotation_matrix_test_cases_.push_back(quat2rotmat(eigenQuaterniontoQuat(qi)));
+      auto q = eigenQuaterniontoQuat((qi));
+      auto R = quat2rotmat(q);
+      rotation_matrix_test_cases_.push_back(R);
     }
   }
   std::vector<Vector3d> rpy_test_cases_;
   std::vector<AngleAxisd> angle_axis_test_cases_;
   std::vector<Quaterniond> quaternion_test_cases_;
   std::vector<Matrix3d> rotation_matrix_test_cases_;
-  std::vector<AngleAxisd> test_orientation_;  // test cases
 };
 
 /*TEST_F(RotationConversionTest, AxisQuat) {
@@ -380,7 +381,7 @@ TEST_F(RotationConversionTest, AxisRotmat) {
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
   }
-}
+}*/
 
 TEST_F(RotationConversionTest, AxisRPY) {
   for (const auto ai_eigen : angle_axis_test_cases_) {
@@ -390,10 +391,17 @@ TEST_F(RotationConversionTest, AxisRPY) {
     auto a_expected = rpy2axis(rpy);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
+    if(!compareAngleAxis(ai_eigen, a_eigen_expected)) {
+      std::cout<<"rpy:"<<std::endl<<rpy<<std::endl;
+      auto a2 = rotmat2axis(rpy2rotmat(rpy));
+      std::cout<<"a2-ai"<<std::endl<<a2-ai<<std::endl;
+      std::cout<<"a_expected-ai"<<std::endl<<a_expected-ai<<std::endl;
+      axis2rpy(ai);
+    }
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
-
+/*
 TEST_F(RotationConversionTest, QuatAxis) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
     // Compute the angle-axis representation using Eigen geometry module,
@@ -472,7 +480,7 @@ TEST_F(RotationConversionTest, RotmatAxis) {
     auto rotmat_expected = axis2rotmat(a);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
-}*/
+}
 
 TEST_F(RotationConversionTest, RotmatRPY) {
   for (const auto& Ri : rotation_matrix_test_cases_) {
@@ -493,7 +501,7 @@ TEST_F(RotationConversionTest, RotmatRPY) {
     count2++;
   }
 }
-/*
+
 TEST_F(RotationConversionTest, RPYRotmat) {
   // Compute the rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
   // then compare the result with rpy2rotmat
