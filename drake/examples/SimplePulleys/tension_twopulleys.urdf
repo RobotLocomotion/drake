@@ -64,7 +64,7 @@
 
   <link name="load">
     <inertial>
-      <mass value="0.5"/>
+      <mass value="2"/>
       <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
     </inertial>
     <visual>

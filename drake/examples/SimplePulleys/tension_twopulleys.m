@@ -9,7 +9,7 @@ v.ylim = [-.2 6.2];
 
 x0 = Point(getStateFrame(r));
 x0.load_x = 0;
-x0.load_z = 4;
+x0.load_z = 3.999;
 %x0.tensioner_angle = pi/2;
 %x0.load_zdot = -4;
 
