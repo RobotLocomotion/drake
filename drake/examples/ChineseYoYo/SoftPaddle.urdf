@@ -3,9 +3,20 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SoftPaddle">
 
-  <link name="base">
+  <parameter name="PadX" value="2" lb="0" />
+  <parameter name="PadZ" value="0" lb="0" />
+  
+  <parameter name="LoadX" value="0" lb="0" />
+  <parameter name="LoadY" value="1" lb="0" />
+  <parameter name="LoadZ" value="0" lb="0" />
 
-   <!-- <visual>
+  <parameter name="PulLeftX" value="-5" lb="-5" />
+  <parameter name="PulLeftZ" value="3.25" lb="0" />
+  <parameter name="PulRighX" value="1" lb="0" />
+  <parameter name="PulRighZ" value="2.5" lb="0" />
+
+  <link name="base">
+  <!--  <visual>
       <origin xyz="0 0 3"/>
       <geometry>
         <box size="9 1.7 6"/>
@@ -22,9 +33,30 @@
       <material>
         <color rgba="1 .5 .5 0"/>
       </material>
-      <origin xyz="-3 1 3.25" rpy="1.57 0 0"/>
+      <origin xyz="$PulLeftX 1 $PulLeftZ" rpy="1.57 0 0"/>
       <geometry>
         <cylinder radius="0.25" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material>
+        <color rgba=".5 .5 .5 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <geometry>
+        <cylinder radius="0.35" length=".2"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-2 0 3"/>
+      <geometry>
+        <box size="6 0.5 0.25"/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0 0 1.5"/>
+      <geometry>
+        <box size="0.5 0.5 3"/>
       </geometry>
     </visual>
   </link>
@@ -56,7 +88,7 @@
 
   <link name="load">
     <inertial>
-      <mass value="2"/>
+      <mass value="1.5"/>
       <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
     </inertial>
     <visual>
@@ -65,7 +97,7 @@
       </material>
       <origin xyz="0 0 0" rpy="1.57 0 0"/>
       <geometry>
-        <cylinder radius="1" length=".2"/>
+        <cylinder radius="0.5" length=".2"/>
       </geometry>
     </visual>
 
@@ -84,13 +116,13 @@
   <joint name="paddle_angle" type="continuous">
     <parent link="base" />
     <child link="paddle" />
-    <origin xyz="0 0 0" />
+    <origin xyz="$PadX 0 $PadZ" />
     <axis xyz="0 1 0" />
     <dynamics damping="0.1" />
   </joint>
 
   <joint name="tensioner_angle" type="revolute">
-    <origin xyz="3.0 1.0 2.5"/>
+    <origin xyz="$PulRighX 1.0 $PulRighZ"/>
     <axis xyz="0 1 0"/>
     <parent link="paddle"/>
     <child link="tensioner"/>
@@ -99,7 +131,7 @@
   
   <link name="load_x" />
   <joint name="load_x" type="prismatic">
-    <origin xyz="0 1 0"/>
+    <origin xyz="0 $LoadY 0"/>
     <axis xyz="1 0 0"/>
     <parent link="base"/>
     <child link="load_x"/>
@@ -133,9 +165,9 @@
 
 <!--  <cable min_length="8" max_length="8"> --> <!-- good for if I take out the final pulley -->
   <cable min_length="10" max_length="10"> 
-    <terminator link="paddle" xyz="-3 1 3" />
-    <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="1"/>
-    <pulley link="paddle" xyz="3 1 2.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
+    <terminator link="paddle" xyz="-5 1 3" />
+    <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="0.5"/>
+    <pulley link="paddle" xyz="1 1 2.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
     <terminator link="tensioner" xyz=".51 0 0"/>
   </cable>
 

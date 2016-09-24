@@ -9,7 +9,7 @@ v.ylim = [-.2 6.2];
 
 x0 = Point(getStateFrame(r));
 x0.load_x = 0;
-x0.load_z = 3.999;
+x0.load_z = 3.4999;
 x0.tensioner_angle = pi/2;
 x0.load_zdot = -2.5;
 
@@ -33,7 +33,7 @@ end
 
 v.drawWrapper(0,x0(1:numQ));
 
-ytraj = simulate(r,[0 8],x0);
+ytraj = simulate(r,[0 13],x0);
 if(0)
 ts = ytraj.getBreaks();
 for i=1:numel(ts)
