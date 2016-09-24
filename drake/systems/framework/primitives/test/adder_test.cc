@@ -19,11 +19,11 @@ namespace {
 class AdderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
+    adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
     output_ = adder_->AllocateOutput(*context_);
-    input0_.reset(new BasicVector<double>(3 /* length */));
-    input1_.reset(new BasicVector<double>(3 /* length */));
+    input0_.reset(new BasicVector<double>(3 /* size */));
+    input1_.reset(new BasicVector<double>(3 /* size */));
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(

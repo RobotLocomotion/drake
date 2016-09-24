@@ -30,18 +30,18 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 /// integrator2_: C              -> output 2
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int length) {
+  explicit ExampleDiagram(int size) {
     DiagramBuilder<double> builder;
 
-    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder0_->set_name("adder0");
-    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder1_->set_name("adder1");
-    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
 
-    integrator0_ = builder.AddSystem<Integrator<double>>(length);
-    integrator1_ = builder.AddSystem<Integrator<double>>(length);
+    integrator0_ = builder.AddSystem<Integrator<double>>(size);
+    integrator1_ = builder.AddSystem<Integrator<double>>(size);
 
     builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
@@ -80,7 +80,7 @@ class ExampleDiagram : public Diagram<double> {
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    diagram_ = std::make_unique<ExampleDiagram>(kLength);
+    diagram_ = std::make_unique<ExampleDiagram>(kSize);
     diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     context_ = diagram_->CreateDefaultContext();
@@ -153,7 +153,7 @@ class DiagramTest : public ::testing::Test {
   Integrator<double>* integrator0() { return diagram_->integrator0(); }
   Integrator<double>* integrator1() { return diagram_->integrator1(); }
 
-  const int kLength = 3;
+  const int kSize = 3;
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
@@ -167,19 +167,19 @@ class DiagramTest : public ::testing::Test {
 
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
-  ASSERT_EQ(kLength, diagram_->get_num_input_ports());
+  ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (const auto& descriptor : diagram_->get_input_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
-    EXPECT_EQ(kLength, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.get_size());
     EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
-  ASSERT_EQ(kLength, diagram_->get_num_output_ports());
+  ASSERT_EQ(kSize, diagram_->get_num_output_ports());
   for (const auto& descriptor : diagram_->get_output_ports()) {
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
-    EXPECT_EQ(kLength, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.get_size());
   }
 
   // The adder output ports have inherited sampling.
@@ -197,7 +197,7 @@ TEST_F(DiagramTest, EvalOutput) {
   AttachInputs();
   diagram_->EvalOutput(*context_, output_.get());
 
-  ASSERT_EQ(kLength, output_->get_num_ports());
+  ASSERT_EQ(kSize, output_->get_num_ports());
   ExpectDefaultOutputs();
 }
 
@@ -244,7 +244,7 @@ TEST_F(DiagramTest, Clone) {
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
-  auto next_input_0 = std::make_unique<BasicVector<double>>(kLength);
+  auto next_input_0 = std::make_unique<BasicVector<double>>(kSize);
   next_input_0->get_mutable_value() << 3, 6, 9;
   clone->SetInputPort(0, MakeInput(std::move(next_input_0)));
 
@@ -286,8 +286,8 @@ class DiagramOfDiagramsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     DiagramBuilder<double> builder;
-    subdiagram0_ = builder.AddSystem<ExampleDiagram>(kLength);
-    subdiagram1_ = builder.AddSystem<ExampleDiagram>(kLength);
+    subdiagram0_ = builder.AddSystem<ExampleDiagram>(kSize);
+    subdiagram1_ = builder.AddSystem<ExampleDiagram>(kSize);
 
     // Hook up the two diagrams in portwise series.
     for (int i = 0; i < 3; i++) {
@@ -337,7 +337,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
         ->SetAtIndex(0, 81);
   }
 
-  const int kLength = 1;
+  const int kSize = 1;
 
   std::unique_ptr<Diagram<double>> diagram_ = nullptr;
   ExampleDiagram* subdiagram0_ = nullptr;
@@ -375,7 +375,7 @@ class AddConstantDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
-    adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* length */);
+    adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
 
     builder.Connect(constant_->get_output_port(0), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
@@ -395,7 +395,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  auto vec = std::make_unique<BasicVector<double>>(1 /* length */);
+  auto vec = std::make_unique<BasicVector<double>>(1 /* size */);
   vec->get_mutable_value() << 12.0;
   context->SetInputPort(0, MakeInput(std::move(vec)));
 
@@ -472,13 +472,13 @@ class FeedbackDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     DiagramBuilder<double> integrator_builder;
-    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* length */);
+    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
     integrator_builder.ExportInput(integrator_->get_input_port(0));
     integrator_builder.ExportOutput(integrator_->get_output_port(0));
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
-    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
+    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* size */);
     gain_builder.ExportInput(gain_->get_input_port(0));
     gain_builder.ExportOutput(gain_->get_output_port(0));
     gain_diagram_ = builder.AddSystem(gain_builder.Build());

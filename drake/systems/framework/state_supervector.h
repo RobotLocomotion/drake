@@ -91,7 +91,7 @@ class StateSupervector : public VectorBase<T> {
 
   // The integer in the lookup_table_ at index N is the sum of the number of
   // state variables in the constituent vectors 0 through N inclusive.
-  // For example, if the lengths of the constituent vectors are [1, 3, 5],
+  // For example, if the sizes of the constituent vectors are [1, 3, 5],
   // the lookup table is [1, 4, 9].
   std::vector<int> lookup_table_;
 };

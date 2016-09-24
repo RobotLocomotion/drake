@@ -23,7 +23,7 @@ class ConstantValueSourceTest : public ::testing::Test {
     source_ = make_unique<ConstantValueSource<double>>(std::move(value));
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(
