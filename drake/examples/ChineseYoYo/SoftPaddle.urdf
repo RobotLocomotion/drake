@@ -3,17 +3,17 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SoftPaddle">
 
-  <parameter name="PadX" value="2" lb="0" />
-  <parameter name="PadZ" value="2" lb="0" />
+  <parameter name="PadX" value="-3" lb="0" />
+  <parameter name="PadZ" value="3" lb="0" />
   
   <parameter name="LoadX" value="0" lb="0" />
   <parameter name="LoadY" value="1" lb="0" />
   <parameter name="LoadZ" value="0" lb="0" />
 
-  <parameter name="PulLeftX" value="-5" lb="-5" />
-  <parameter name="PulLeftZ" value="1.25" lb="0" />
-  <parameter name="PulRighX" value="1" lb="0" />
-  <parameter name="PulRighZ" value="0.5" lb="0" />
+  <parameter name="PulLeftX" value="0" lb="-5" />
+  <parameter name="PulLeftZ" value="0.25" lb="0" />
+  <parameter name="PulRighX" value="6" lb="0" />
+  <parameter name="PulRighZ" value="-0.5" lb="0" />
 
   <link name="base">
   <!--  <visual>
@@ -44,21 +44,21 @@
       </material>
       <origin xyz="0 0 0" rpy="1.57 0 0"/>
       <geometry>
-        <cylinder radius="0.35" length=".2"/>
+        <cylinder radius="0.45" length=".2"/>
       </geometry>
     </visual>
     <visual>
-      <origin xyz="-2 0 1"/>
+      <origin xyz="3 0 0"/>
       <geometry>
-        <box size="6 0.5 0.25"/>
+        <box size=" 0.5 0.25"/>
       </geometry>
     </visual>
-    <visual>
-      <origin xyz="0 0 0.5"/>
+   <!-- <visual>
+      <origin xyz="0 0 0"/>
       <geometry>
-        <box size="0.5 0.5 1"/>
+        <box size="0.5 0.5 0.5"/>
       </geometry>
-    </visual>
+    </visual> -->
   </link>
 
   <link name="tensioner">
@@ -146,13 +146,13 @@
   </joint>
 
   <force_element name="paddle_spring">
-    <torsional_spring rest_angle="0" stiffness="1000">
+    <torsional_spring rest_angle="0" stiffness="5000">
       <joint name="paddle_angle"/>
     </torsional_spring>
   </force_element>
 
   <force_element name="tensioner_spring">
-    <torsional_spring rest_angle="0" stiffness="40">
+    <torsional_spring rest_angle="0" stiffness="80">
       <joint name="tensioner_angle"/>
     </torsional_spring>
   </force_element>
@@ -165,9 +165,9 @@
 
 <!--  <cable min_length="8" max_length="8"> --> <!-- good for if I take out the final pulley -->
   <cable min_length="10" max_length="10"> 
-    <terminator link="paddle" xyz="-5 1 1" />
+    <terminator link="paddle" xyz="0 1 0" />
     <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="0.5"/>
-    <pulley link="paddle" xyz="1 1 0.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
+    <pulley link="paddle" xyz="6 1 -0.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
     <terminator link="tensioner" xyz=".51 0 0"/>
   </cable>
 
