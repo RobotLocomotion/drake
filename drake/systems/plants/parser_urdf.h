@@ -48,7 +48,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     int model_instance_id);
 
 /**
- * Reads a URDF model specified by @p urdf_string and adds one instance of it to
+ * Reads a URDF model specified by @p urdf_string and adds an instance of it to
  * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
  * joint. When this joint is at its zero position, the model instance's frame is
  * coincident with the world's coordinate frame.
@@ -65,11 +65,11 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfRpyWorldCoincident(
+ModelInstanceIdTable AddUrdfStringRpyToWorld(
     const std::string& urdf_string, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfRpyWorldCoincident().")
+  DRAKE_DEPRECATED("Please use AddUrdfStringRpyToWorld().")
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
@@ -77,7 +77,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     RigidBodyTree* tree);
 
 /**
- * Reads a URDF model specified by @p urdf_string and adds one instance of it to
+ * Reads a URDF model specified by @p urdf_string and adds an instance of it to
  * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
  * joint. When this joint is at its zero position, the model instance's frame is
  * coincident with the world's coordinate frame.
@@ -99,12 +99,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfRpyWorldCoincidentWithRosPackages(
+ModelInstanceIdTable AddUrdfStringRpyToWorldRos(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfRpyWorldCoincidentWithRosPackages().")
+  DRAKE_DEPRECATED("Please use AddUrdfStringRpyToWorldRos().")
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
@@ -112,10 +112,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 /**
- * Reads a single model from a URDF specification and adds a single instance of
- * it to @p tree. The model instance is connected to the world via
- * a joint of type @p floating_base_type. The model instance's frame is equal
- * to the world's coordinate frame.
+ * Reads a URDF model specified by @p urdf_string and adds an instance of it to
+ * @p tree. The model instance is connected to the existing @p tree via a joint
+ * of type @p floating_base_type. The body to which this joint attaches and
+ * the transform between this body and the model instance's frame when this
+ * joint is in its zero position is determined by @p weld_to_frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -136,6 +137,17 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
+ModelInstanceIdTable AddUrdfString(
+    const std::string& urdf_string,
+    const std::string& root_dir,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use AddUrdfString().")
+#endif
+DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     const std::string& root_dir,
@@ -144,8 +156,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     RigidBodyTree* tree);
 
 /**
- * Reads a single model from a URDF specification and adds a single instance of
- * it to @p tree.
+ * Reads a URDF model specified by @p urdf_string and adds an instance of it to
+ * @p tree. The model instance is connected to the existing @p tree via a joint
+ * of type @p floating_base_type. The body to which this joint attaches and
+ * the transform between this body and the model instance's frame when this
+ * joint is in its zero position is determined by @p weld_to_frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -171,6 +186,18 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
+DRAKERBM_EXPORT
+ModelInstanceIdTable AddUrdfStringRos(
+    const std::string& urdf_string,
+    PackageMap& package_map,
+    const std::string& root_dir,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use AddUrdfStringRos().")
+#endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,

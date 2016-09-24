@@ -1073,55 +1073,67 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
 }  // namespace
 
 
-ModelInstanceIdTable AddUrdfRpyWorldCoincident(
+ModelInstanceIdTable AddUrdfStringRpyToWorld(
     const string& urdf_string, RigidBodyTree* tree) {
   PackageMap map;
-  return AddUrdfRpyWorldCoincidentWithRosPackages(urdf_string, map, tree);
+  return AddUrdfStringRpyToWorldRos(urdf_string, map, tree);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string, RigidBodyTree* tree) {
-  return AddUrdfRpyWorldCoincident(urdf_string, tree);
+  return AddUrdfStringRpyToWorld(urdf_string, tree);
 }
 
-ModelInstanceIdTable AddUrdfRpyWorldCoincidentWithRosPackages(
+ModelInstanceIdTable AddUrdfStringRpyToWorldRos(
     const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
   const string root_dir = ".";
-  return AddModelInstanceFromUrdfString( urdf_string, package_map, root_dir,
-      kRollPitchYaw, nullptr /* weld_to_frame */, tree);
-}
-
-// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
-  return AddUrdfRpyWorldCoincidentWithRosPackages(urdf_string, package_map,
-      tree);
-}
-
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string,
-    const string& root_dir,
-    const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
-  PackageMap package_map;
-  return AddModelInstanceFromUrdfString(
-      urdf_string, package_map, root_dir, floating_base_type,
+  return AddUrdfStringRos( urdf_string, package_map, root_dir, kRollPitchYaw,
       nullptr /* weld_to_frame */, tree);
 }
 
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string,
-    PackageMap& package_map,
-    const string& root_dir,
+    const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
+  return AddUrdfStringRpyToWorldRos(urdf_string, package_map,
+      tree);
+}
+
+ModelInstanceIdTable AddUrdfString(
+    const string& urdf_string, const string& root_dir,
     const FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
+  PackageMap package_map;
+  return AddUrdfStringRos(urdf_string, package_map, root_dir,
+      floating_base_type, nullptr /* weld_to_frame */, tree);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string, const string& root_dir,
+    const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
+  return AddUrdfString(urdf_string, root_dir, floating_base_type,
+      nullptr /* weld_to_frame */, tree);
+}
+
+ModelInstanceIdTable AddUrdfStringRos(
+    const string& urdf_string, PackageMap& package_map, const string& root_dir,
+    const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
   return ParseUrdf(&xml_doc, package_map, root_dir, kRollPitchYaw,
       weld_to_frame, tree);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string, PackageMap& package_map, const string& root_dir,
+    const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
+  return AddUrdfStringRos(urdf_string, package_map, root_dir,
+      floating_base_type, weld_to_frame, tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
