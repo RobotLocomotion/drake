@@ -16,7 +16,7 @@ except ImportError:
 
 from drake_paths import add_module_search_paths
 
-add_module_search_paths()  # so we can find lcm stuff.
+add_module_search_paths()  # So we can find lcm stuff.
 
 import lcm
 
