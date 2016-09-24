@@ -124,12 +124,9 @@ The following notes are for Ubuntu Linux and OS X users.
 This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
-TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
-fails.  Fix and test the demo script on OS X.
-
 Run:
 ```
-$ drake-distro/drake/automotive/automotive_demo.sh
+$ drake-distro/drake/automotive/automotive_demo.py
 ```
 
 Ensure that the (very small) `pygame` window has focus, then use your
