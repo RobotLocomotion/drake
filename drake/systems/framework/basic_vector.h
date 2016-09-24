@@ -93,7 +93,7 @@ class BasicVector : public VectorBase<T> {
   void ScaleAndAddToVector(const T& scale,
                            Eigen::Ref<VectorX<T>> vec) const override {
     if (vec.rows() != size()) {
-      throw std::out_of_range("Addends must be the same length.");
+      throw std::out_of_range("Addends must be the same size.");
     }
     vec += scale * values_;
   }

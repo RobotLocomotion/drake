@@ -294,7 +294,7 @@ class System {
   ///
   /// @param context The context in which to evaluate the derivatives.
   ///
-  /// @param derivatives The output vector. Will be the same length as the
+  /// @param derivatives The output vector. Will be the same size as the
   ///                    state vector Context.state.continuous_state.
   virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {

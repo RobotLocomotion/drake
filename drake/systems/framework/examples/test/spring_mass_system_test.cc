@@ -193,7 +193,7 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   ASSERT_EQ(1, context_->get_num_input_ports());
 
   // Creates a vector holding the data entry to the supplied input force.
-  auto force_vector = make_unique<BasicVector<double>>(1 /* length */);
+  auto force_vector = make_unique<BasicVector<double>>(1 /* size */);
 
   // Sets the input force.
   const double kExternalForce = 1.0;

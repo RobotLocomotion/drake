@@ -19,12 +19,12 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-PassThrough<T>::PassThrough(int length) {
-  // TODO(amcastro-tri): remove the length parameter from the constructor once
-  // #3109 supporting automatic lengths is resolved.
-  this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+PassThrough<T>::PassThrough(int size) {
+  // TODO(amcastro-tri): remove the size parameter from the constructor once
+  // #3109 supporting automatic sizes is resolved.
+  this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
   // TODO(david-german-tri): Provide a way to infer the type.
-  this->DeclareOutputPort(kVectorValued, length, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, size, kInheritedSampling);
 }
 
 template <typename T>
