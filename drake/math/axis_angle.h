@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -37,7 +38,10 @@ Vector4<typename Derived::Scalar> axis2quat(
 template <typename Derived>
 Matrix3<typename Derived::Scalar> axis2rotmat(
     const Eigen::MatrixBase<Derived>& a) {
-  return axisToEigenAngleAxis(a).toRotationMatrix();
+  using Scalar = typename Derived::Scalar;
+  auto axis_skew = VectorToSkewSymmetric(a.template head<3>());
+  return Matrix3<Scalar>::Identity() + axis_skew*sin(a(3)) + axis_skew*axis_skew*(Scalar(1)-cos(a(3)));
+  //return quat2rotmat(axis2quat(a));
 }
 
 template <typename Derived>
