@@ -539,6 +539,7 @@ function model = parseCable(model,robotnum,node,options)
 
   constraint = DrakeFunctionConstraint(min_length,max_length,cable_length_function);
   constraint = setName(constraint,cable_length_function.name);
+  constraint.grad_level = 2; %declare that the second derivative is provided
   model = addPositionEqualityConstraint(model,constraint);
 end
 
