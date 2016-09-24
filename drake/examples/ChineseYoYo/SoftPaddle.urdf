@@ -50,7 +50,7 @@
     <visual>
       <origin xyz="3 0 0"/>
       <geometry>
-        <box size=" 0.5 0.25"/>
+        <box size="6 0.5 0.25"/>
       </geometry>
     </visual>
    <!-- <visual>
