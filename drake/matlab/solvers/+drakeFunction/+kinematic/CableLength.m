@@ -1,4 +1,6 @@
 classdef CableLength < drakeFunction.kinematic.Kinematic
+% Describes a cable wound around pulleys as derived in THEORY OF MACHINES
+% by V.RAVI - see Github Issue #546 for more details.
 
   methods
     function obj = CableLength(rbm,name)
@@ -18,13 +20,28 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
       obj.pulley = horzcat(obj.pulley, p);
     end
     
-    function [length,dlength] = eval(obj,q)
+    % TODO: clean these eval calls up
+    function [length,dlength,ddlength] = eval(obj,q)
+      [length,dlength] = eval_old(obj,q);
+      if nargout >2 
+        [~,ddlength] = geval(@obj.eval_dlength,q,struct('grad_method','numerical'));
+        ddlength = reshape(ddlength,numel(length),[]);
+      end
+    end
+    
+    function dlength = eval_dlength(obj,q)
+      [~,dlength] = eval_old(obj,q);
+      dlength = dlength(:);
+    end
+    
+    function [length,dlength] = eval_old(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
 
       length = 0;
       dlength = 0*q';
-      ddlength = zeros(1,numel(q)^2);
+      ddlength = zeros(1,numel(q)^2); % unused variable
       for i=1:numel(obj.pulley)
+        % compute new positions of each pulley (?)
         if nargout>2
           [pt,dpt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         elseif nargout>1
@@ -34,10 +51,13 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
         end          
         
         length = length + 2*pi*obj.pulley(i).radius*obj.pulley(i).number_of_wraps;
-        
+
+        % for the first pulley, just initialize the pulley location values (last_pt and last_dpt)
+        % then do math on the cable between the current and last pulley
         if i>1
-          vec = pt-last_pt;
-          C = sqrt(vec'*vec);
+          vec = pt-last_pt; % last_pt is the pt from the previous pulley
+          C = sqrt(vec'*vec); % abs distance between the two pulleys
+          %Csq = vec'*vec; %squared distance between the two pulleys
           
           if nargout>1
             dvec = dpt-last_dpt;
@@ -46,26 +66,31 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             if nargout>2
               ddvec = ddpt - last_ddpt;
 % not finished yet:  ddC = dvec'*dvec/C + vec'*ddvec/C - vec'*dvec*dC/C^2;
+%                    ^ expression looks right - shall it be commented out?
             end
           end
           
           r1 = obj.pulley(i-1).radius;
           r2 = obj.pulley(i).radius;
+          % if the pulleys overlap, skip this case
           if (C<r1+r2+eps) % cut me a little slack, eh?
-            continue;  % just skip this one... because the optimizers might actually get here
+            continue;  % TODO: just skip this one... because the optimizers might actually get here
           end
-          if r1>0 || r2>0,            
+          if r1>0 || r2>0 % at least one pulley is a physical object
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
-            if r1>0 && r2>0, % then make sure the axes are aligned
+            if r1>0 && r2>0 % both pulleys are physical objects, so make sure the axes are aligned
               assert(abs(alignment)-1>-1e-8,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
             end
             
             % as described in https://github.com/RobotLocomotion/drake/issues/546
-            cvec = vec/C;
+            cvec = vec/C; % unit vector of line from prev pulley to curr pulley
             
-            if alignment>0 % then it's like an open flat belt drive
+            if alignment>0 % both pulleys rotate in same direction
+              % then it's like an open flat belt drive
+              % https://cloud.githubusercontent.com/assets/6442292/4991473/3dcb877c-6962-11e4-86e5-5229290a3526.png
               s = (r2-r1)/C;  
-              alpha = asin(s); 
+              alpha = asin(s); % contact angle of belt
+              % contact pts of belt to pulley 1 and 2
               pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
               pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
               if nargout>1
@@ -74,7 +99,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 dcvec = dvec/C - vec/C^2*dC;
                 if r1>0
                   dpt1 = last_dpt - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec;
-                else
+                else % it acts as a corner; seems like above expression would still be valid unless negative radii mean something else
                   dpt1 = last_dpt;
                 end
                 if r2>0
@@ -84,9 +109,11 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 end
               end
             
-            else % then it's like a cross flat belt drive
+            else % the pulleys rotate in opposite directions, then it's like a cross flat belt drive
+              % https://cloud.githubusercontent.com/assets/6442292/4991474/3dcc88f2-6962-11e4-952d-8385566e4f6c.png
               s = (r1+r2)/C;
-              alpha = asin(s);
+              alpha = asin(s); % contact angle of belt
+              % contact pts of belt to pulley 1 and 2
               pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha])*cvec;
               pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
 
@@ -108,7 +135,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               
             end
                         
-            vec = pt2-pt1;
+            vec = pt2-pt1; % belt between pulleys (aka length not in contact with pulley)
             C = sqrt(vec'*vec);
             length = length+C;
             
@@ -118,11 +145,11 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               dlength = dlength+dC;
             end
                         
-            if r1>0,
-              %% now add in the arc length between pt1 and last_attachment_pt
+            if r1>0 % now add in the arc length between pt1 and last_attachment_pt (length of pulley-cable contact)
+              % unit vectors pointing from center to belt leaving/entering contact points
               v1 = (pt1-last_pt)/r1; v2 = (last_attachment_pt-last_pt)/r1;
               c = dot(v1,v2); svec = cross(v1,v2); s = sqrt(svec'*svec);
-              theta = atan2(s,c);
+              theta = atan2(s,c); % contact arc angle
               if theta<0, theta=theta+2*pi; end
               length = length+theta*r1;
               
@@ -136,15 +163,15 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             last_attachment_pt = pt2;
               
             if nargout>1, last_attachment_dpt = dpt2; end
-          else
-            length = length+C;
+          else % both pulleys are actually corners used to bend cable in 3D
+            length = length+C; % C is dist between the two bending pts
             last_attachment_pt = pt;
             if nargout>1
               dlength = dlength+dC;
               last_attachment_dpt = dpt;
             end
           end
-        else
+        else % initialize values for the first pulley
           last_attachment_pt = pt;
           if nargout>1
             last_attachment_dpt = dpt;
