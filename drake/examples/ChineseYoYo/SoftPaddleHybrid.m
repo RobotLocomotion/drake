@@ -119,7 +119,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       function mydraw(t,y)
         mode = y(1); y=y(2:end);
-        if mode==1,
+        if mode==1
           v1.drawWrapper(t,y);
         elseif mode==2
           v2.drawWrapper(t,y);
