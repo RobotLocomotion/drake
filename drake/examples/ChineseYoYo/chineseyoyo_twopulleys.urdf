@@ -1,7 +1,7 @@
 ﻿
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="tension_twopulleys">
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="chineseyoyo_twopulleys">
 
   <link name="base">
     <visual>
@@ -137,7 +137,7 @@
     <actuator name="tensioner_angle_left" />
     <joint name="tensioner_angle_left" />
     <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
+  </transmission> 
 
  <transmission type="SimpleTransmission" name="tensioner_trans_right">
     <actuator name="tensioner_angle_right" />

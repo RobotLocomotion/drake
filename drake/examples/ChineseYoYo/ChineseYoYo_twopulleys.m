@@ -7,7 +7,7 @@ classdef ChineseYoYo_twopulleys < HybridDrakeSystem
   
   methods
     function obj = ChineseYoYo_twopulleys
-      in_contact = PlanarRigidBodyManipulator('tension_twopulleys.urdf');
+      in_contact = PlanarRigidBodyManipulator('chineseyoyo_twopulleys.urdf');
       
       % manually remove the ball from the pulley system:
       pulley_constraint = in_contact.position_constraints{1};
@@ -16,7 +16,9 @@ classdef ChineseYoYo_twopulleys < HybridDrakeSystem
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, pulley_constraint.ub, cable_length_fcn);
       no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
       
-      obj = obj@HybridDrakeSystem(1,1+getNumOutputs(in_contact));
+      modeStates = 1; %number of discrete state variables, here only one mode variable
+      obj = obj@HybridDrakeSystem(getNumInputs(in_contact),...
+        getNumOutputs(in_contact) + modeStates);
       obj = setInputFrame(obj,getInputFrame(in_contact));
       
       % construct an output frame which has the mode number as the first
