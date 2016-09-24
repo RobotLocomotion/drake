@@ -1072,21 +1072,31 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
 
 }  // namespace
 
-ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string,
-    RigidBodyTree* tree) {
-  PackageMap package_map;
-  return AddModelInstanceFromUrdfString(urdf_string, package_map, tree);
+
+ModelInstanceIdTable AddUrdfRpyWorldCoincident(
+    const string& urdf_string, RigidBodyTree* tree) {
+  PackageMap map;
+  return AddUrdfRpyWorldCoincidentWithRosPackages(urdf_string, map, tree);
 }
 
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string,
-    PackageMap& package_map,
-    RigidBodyTree* tree) {
+    const string& urdf_string, RigidBodyTree* tree) {
+  return AddUrdfRpyWorldCoincident(urdf_string, tree);
+}
+
+ModelInstanceIdTable AddUrdfRpyWorldCoincidentWithRosPackages(
+    const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
   const string root_dir = ".";
-  return AddModelInstanceFromUrdfString(
-      urdf_string, package_map, root_dir, kRollPitchYaw,
-      nullptr /*weld_to_frame*/, tree);
+  return AddModelInstanceFromUrdfString( urdf_string, package_map, root_dir,
+      kRollPitchYaw, nullptr /* weld_to_frame */, tree);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
+  return AddUrdfRpyWorldCoincidentWithRosPackages(urdf_string, package_map,
+      tree);
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfString(

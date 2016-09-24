@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -47,10 +48,10 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     int model_instance_id);
 
 /**
- * Reads a single model from a URDF specification and adds a single instance of
- * it to @p tree. The model instance is connected to the world via
- * a joint of type `kRollPitchYaw`. The model instance's frame
- * is equal to the world's coordinate frame.
+ * Reads a URDF model specified by @p urdf_string and adds one instance of it to
+ * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
+ * joint. When this joint is at its zero position, the model instance's frame is
+ * coincident with the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -61,19 +62,25 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * This parameter must not be `nullptr`.
  *
  * @return A table mapping the names of the models whose instances were just
- * added to the `RigidBodyTree` to their instance IDs, which are unique within
- * the `RigidBodyTree`.
+ * added to @p tree to their instance IDs, which are unique within @p tree.
  */
+DRAKERBM_EXPORT
+ModelInstanceIdTable AddUrdfRpyWorldCoincident(
+    const std::string& urdf_string, RigidBodyTree* tree);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use AddUrdfRpyWorldCoincident().")
+#endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
 
 /**
- * Reads a single model from a URDF specification and adds a single instance of
- * it to @p tree. The model instance is connected to the world via
- * a joint of type `kRollPitchYaw`. The model instance's frame is
- * equal to the world's coordinate frame.
+ * Reads a URDF model specified by @p urdf_string and adds one instance of it to
+ * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
+ * joint. When this joint is at its zero position, the model instance's frame is
+ * coincident with the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -92,10 +99,17 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
+ModelInstanceIdTable AddUrdfRpyWorldCoincidentWithRosPackages(
+    const std::string& urdf_string,
+    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use AddUrdfRpyWorldCoincidentWithRosPackages().")
+#endif
+DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
-    std::map<std::string, std::string>& package_map,
-    RigidBodyTree* tree);
+    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
