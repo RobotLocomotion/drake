@@ -12,9 +12,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int length) {
-  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+Integrator<T>::Integrator(int size) {
+  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
 }
 
 template <typename T>
@@ -43,12 +43,12 @@ bool Integrator<T>::has_any_direct_feedthrough() const {
 template <typename T>
 std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
     const {
-  // The integrator's state is first-order; its state vector length is the
-  // same as the input (and output) vector length.
-  const int length = System<T>::get_output_port(0).get_size();
-  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == length);
+  // The integrator's state is first-order; its state vector size is the
+  // same as the input (and output) vector size.
+  const int size = System<T>::get_output_port(0).get_size();
+  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == size);
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicVector<T>>(length));
+      std::make_unique<BasicVector<T>>(size));
 }
 
 template <typename T>

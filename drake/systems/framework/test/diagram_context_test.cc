@@ -24,13 +24,13 @@ constexpr double kTime = 12.0;
 class DiagramContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder0_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
+    adder0_.reset(new Adder<double>(2 /* inputs */, 1 /* size */));
     adder0_->set_name("adder0");
-    adder1_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
+    adder1_.reset(new Adder<double>(2 /* inputs */, 1 /* size */));
     adder1_->set_name("adder1");
 
-    integrator0_.reset(new Integrator<double>(1 /* length */));
-    integrator1_.reset(new Integrator<double>(1 /* length */));
+    integrator0_.reset(new Integrator<double>(1 /* size */));
+    integrator1_.reset(new Integrator<double>(1 /* size */));
 
     context_.reset(new DiagramContext<double>(kNumSystems));
     context_->set_time(kTime);
@@ -56,9 +56,9 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    auto vec0 = std::make_unique<BasicVector<double>>(1 /* length */);
+    auto vec0 = std::make_unique<BasicVector<double>>(1 /* size */);
     vec0->get_mutable_value() << 128;
-    auto vec1 = std::make_unique<BasicVector<double>>(1 /* length */);
+    auto vec1 = std::make_unique<BasicVector<double>>(1 /* size */);
     vec1->get_mutable_value() << 256;
 
     context_->SetInputPort(

@@ -19,11 +19,11 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Gain<T>::Gain(const T& k, int length) : gain_(k) {
-  // TODO(amcastro-tri): remove the length parameter from the constructor once
-  // #3109 supporting automatic lengths is resolved.
-  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+Gain<T>::Gain(const T& k, int size) : gain_(k) {
+  // TODO(amcastro-tri): remove the size parameter from the constructor once
+  // #3109 supporting automatic sizes is resolved.
+  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
 }
 
 template <typename T>

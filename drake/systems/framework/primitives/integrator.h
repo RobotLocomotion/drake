@@ -24,8 +24,9 @@ namespace systems {
 template <typename T>
 class Integrator : public LeafSystem<T> {
  public:
-  /// @param length is the size of the input port.
-  explicit Integrator(int length);
+  /// Constructs an %Integrator system.
+  /// @param size number of elements in the signal to be processed.
+  explicit Integrator(int size);
   ~Integrator() override;
 
   /// Sets the value of the integral modifying the state in the context.
