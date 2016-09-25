@@ -9,9 +9,12 @@ v.ylim = [-.2 6.2];
 
 x0 = Point(getStateFrame(r));
 x0.load_x = 0;
-x0.load_z = 3.4999;
+x0.load_z = 3.9999;
 x0.tensioner_angle = pi/2;
 x0.load_zdot = -2.5;
+manip = r.getManipulator;
+cable_length_fcn = manip.position_constraints{1}.fcn;
+cable_length_fcn.pulley(:); %check for the number of pulleys
 
 numQ =r.getNumStates/2;
 

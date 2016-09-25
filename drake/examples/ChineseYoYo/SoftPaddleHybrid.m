@@ -3,35 +3,28 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   properties
     in_contact
     no_contact
+    contact_height = 4;
   end
   
   methods
     function obj = SoftPaddleHybrid
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
-      %in_contact = TimeSteppingRigidBodyManipulator('tension.urdf',.01,struct('twoD',true));
-      isTSRBM = isa(in_contact,'TimeSteppingRigidBodyManipulator');
       
-        
       % manually remove the ball from the pulley system:
-      if(isTSRBM)
-        ic_manip = in_contact.getManipulator();
-      else
-        ic_manip = in_contact;
-      end
-      pulley_constraint = ic_manip.position_constraints{1};
+      pulley_constraint = in_contact.position_constraints{1};
       cable_length_fcn = pulley_constraint.fcn;
-      cable_length_fcn.pulley(2)=[];
-      pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, pulley_constraint.ub, cable_length_fcn);
-      nc_manip = ic_manip.updatePositionEqualityConstraint(1,pulley_constraint);
-      if(isTSRBM)
-        no_contact = in_contact;
-        no_contact.setManipulator(nc_manip);
-      else
-        no_contact = nc_manip;
-      end
+      
+      cable_length_fcn.pulley = cable_length_fcn.pulley([1 3 4]);
+      pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
+        pulley_constraint.ub, cable_length_fcn);
+      no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
+      pulley_constraint = no_contact.position_constraints{1};
+      cable_length_fcn = pulley_constraint.fcn;
       
       
-      obj = obj@HybridDrakeSystem(1,1+getNumOutputs(in_contact));
+      modeStates = 1; %number of discrete state variables, here only one mode variable
+      obj = obj@HybridDrakeSystem(getNumInputs(in_contact),...
+        getNumOutputs(in_contact) + modeStates);
       obj = setInputFrame(obj,getInputFrame(in_contact));
       
       % construct an output frame which has the mode number as the first
@@ -42,7 +35,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       nmy = getNumOutputs(no_contact);
       tf = AffineTransform(getOutputFrame(no_contact),getOutputFrame(obj),[zeros(1,nmy);eye(nmy)],[1;zeros(nmy,1)]);
       obj = addMode(obj,cascade(no_contact,tf));
-      tf = AffineTransform(getOutputFrame(no_contact),getOutputFrame(obj),[zeros(1,nmy);eye(nmy)],[2;zeros(nmy,1)]);
+      tf = AffineTransform(getOutputFrame(in_contact),getOutputFrame(obj),[zeros(1,nmy);eye(nmy)],[2;zeros(nmy,1)]);
       obj = addMode(obj,cascade(in_contact,tf));
       
       obj = addTransition(obj,1,@collisionGuard,@collisionDynamics,false,true,2);
@@ -55,17 +48,17 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
     
     function [g,dg] = collisionGuard(obj,t,x,u)
       % detect when the ball makes contact with the string
-      % currently implemented as: z position of the ball <= 4
+      % currently implemented as: z position of the ball <= 3.5
       % todo: generalize this using line segements of the cable constraint?
-      g = x(3) - 4;  % x(3) = load_z
+      g = x(4)- obj.contact_height;  % x(4) = load_z
       dg = [0,0,0,1,0,0,0];
     end
     
     function [g,dg] = aerialGuard(obj,t,x,u)
       % detect when the ball leaves the string
-      % currently implemented as: z position of the ball > 4
+      % currently implemented as: z position of the ball > 3.5
       % todo: generalize this
-      g = 4 - x(3);
+      g = obj.contact_height - x(4);
       dg = -[0,0,0,1,0,0,0];
     end
     
@@ -103,7 +96,8 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % barf
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
-      x0.load_x = -0.25;  % was 1
+      %x0.
+      x0.load_x = +0.25;  % was 1
 %       x0.load_x = -0.0585;
       x0.load_z = 4.5;
       x0 = double(x0);
@@ -138,6 +132,19 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   end
   
   methods (Static)
+    
+    function runFreeFall()
+      r = SoftPaddleHybrid();
+      freefall = r.no_contact;
+      
+      v = freefall.constructVisualizer();
+      
+      x0 = getInitialState(r);
+      v.drawWrapper(0,x0(2:end));
+      [ytraj,xtraj] = simulate(freefall,[0 1],x0(2:end));
+      v.playback(ytraj,struct('slider',true));
+    end
+    
     function runPassive()
       r = SoftPaddleHybrid();
       v = r.constructVisualizer();
