@@ -34,7 +34,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
 %       dlength = dlength(:);
 %     end
     
-    function [length,dlength,ddlength] = eval(obj,q)
+    function [length,dlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
 
       length = 0;
@@ -65,8 +65,8 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             
             if nargout>2
               ddvec = ddpt - last_ddpt;
-              ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,9,[]))/C - (vec'*dvec)'/C^2*dC;
-%               ddC = (dvec'*dvec + vec'*ddvec)/C - vec'*dvec*dC/(C^2);
+% not finished yet:  ddC = dvec'*dvec/C + vec'*ddvec/C - vec'*dvec*dC/C^2;
+%                    ^ expression looks right - shall it be commented out?
             end
           end
           
@@ -95,26 +95,17 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
               if nargout>1
                 ds = -(r2-r1)/C^2*dC;
-                dds = 2/C^3*(r2-r1)*dC'*dC - (r2-r1)/C^2*ddC;
                 dalpha = 1/sqrt(1-s^2)*ds;
-                ddalpha = s/(1-s^2)^(3/2)*ds^2 + dds/sqrt(1-s^2);
                 dcvec = dvec/C - vec/C^2*dC;
-                ddcvec = ddvec/C - 2*reshape([dvec*dC(1); dvec*dC(2); dvec*dC(3)],3,[]) + 2*vec/C^3*dC^2 - v/C^2*ddC;
                 if r1>0
                   dpt1 = last_dpt - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec;
-                  ddpt1 = last_ddpt + r1*ddaxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha^2 - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*ddalpha - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec*dalpha - ...
-                      r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*ddcvec;
                 else % it acts as a corner; seems like above expression would still be valid unless negative radii mean something else
                   dpt1 = last_dpt;
-                  ddpt1 = last_ddpt;
                 end
                 if r2>0
                   dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
-                  ddpt2 = ddpt + r2*ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha^2 - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*ddalpha - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*dcvec*dalpha - ...
-                      r2*daxis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*ddcvec;
                 else
                   dpt2 = dpt;
-                  ddpt2 = ddpt;
                 end
               end
             
@@ -128,26 +119,17 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
 
               if nargout>1
                 ds = -(r1+r2)/C^2*dC;
-                dds = 2/C^3*(r1+r2)*dC'*dC - (r1+r2)/C^2*ddC;
                 dalpha = 1/sqrt(1-s^2)*ds;
-                ddalpha = s/(1-s^2)^(3/2)*ds'*ds + dds/sqrt(1-s^2);
                 dcvec = dvec/C - vec/C^2*dC;
-                ddcvec = ddvec/C - 1/C^2*kron(dvec,dC) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
                 if r1>0
                   dpt1 = last_dpt + r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2+alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha])*dcvec;
-                  ddpt1 = last_ddpt + r1*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec*dalpha, ddalpha) + ...
-                      r1*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2+alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]),dalpha'), reshape(ddvec,9,[])), 3, []);
                 else
                   dpt1 = last_dpt;
-                  ddpt1 = last_ddpt;
                 end
                 if r2>0
                   dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
-                  ddpt2 = ddpt - r2*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha, ddalpha) + ...
-                      r2*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]),dalpha'), reshape(ddvec,9,[])), 3, []);
                 else
                   dpt2 = dpt;
-                  ddpt2 = ddpt;
                 end
               end
               
@@ -159,11 +141,8 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             
             if nargout>1
               dvec = dpt2 - dpt1;
-              ddvec = ddpt2 - ddpt1;
               dC = vec'*dvec/(C+eps);
-              ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,9,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;
               dlength = dlength+dC;
-              ddlength = ddlength + reshape(ddC, 1, []);
             end
                         
             if r1>0 % now add in the arc length between pt1 and last_attachment_pt (length of pulley-cable contact)
@@ -176,45 +155,32 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;
                 dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2,dv1,dv2); ds = svec'*dsvec/max(s,eps);
-                ddc = matGradMultMat(v2',dv1,dv2',reshape(ddv1,9,[])) + matGradMultMat(v1',dv2,dv1',reshape(ddv2,9,[])); 
-                ddsvec = ddcross(v1,v2,dv1,dv2,ddv1,ddv2);
-                dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec',reshape(ddsvec,9,[]))/max(s,eps);
                 dtheta = -s*dc + c*ds;
-                ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
                 dlength = dlength + dtheta*r1;
-                ddlength = ddlength + reshape(ddtheta,1,[])*r1;
               end
             end
             last_attachment_pt = pt2;
               
-            if nargout>1
-                last_attachment_dpt = dpt2; 
-                last_attachment_ddpt = ddpt2; 
-            end
+            if nargout>1, last_attachment_dpt = dpt2; end
           else % both pulleys are actually corners used to bend cable in 3D
             length = length+C; % C is dist between the two bending pts
             last_attachment_pt = pt;
             if nargout>1
               dlength = dlength+dC;
-              ddlength = ddlength + ddC;
               last_attachment_dpt = dpt;
-              last_attachment_ddpt = ddpt;
             end
           end
         else % initialize values for the first pulley
           last_attachment_pt = pt;
           if nargout>1
             last_attachment_dpt = dpt;
-            last_attachment_ddpt = ddpt;
           end
         end
         
         last_pt = pt; 
         if nargout>1
           last_dpt = dpt;
-          last_ddpt = ddpt;
         end
       end
       
