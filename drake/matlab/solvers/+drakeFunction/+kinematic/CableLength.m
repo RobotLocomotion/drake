@@ -22,7 +22,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     
     function [length,dlength,ddlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
-
+      dims = obj.getNumInputs;
       length = 0;
       dlength = 0*q';
       ddlength = zeros(1,numel(q)^2); % unused variable
@@ -51,7 +51,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             
             if nargout>2
               ddvec = ddpt - last_ddpt;
-              ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,9,[]))/C - (vec'*dvec)'/C^2*dC;
+              ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/C - (vec'*dvec)'/C^2*dC;
 %               ddC = (dvec'*dvec + vec'*ddvec)/C - vec'*dvec*dC/(C^2);
             end
           end
@@ -143,13 +143,13 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                   ddcvec = ddvec/C - 1/C^2*kron(dvec,dC) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
                   if r1>0
                     ddpt1 = last_ddpt + r1*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec*dalpha, ddalpha) + ...
-                      r1*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2+alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]),dalpha'), reshape(ddcvec,9,[])), 3, []);
+                      r1*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2+alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]),dalpha'), reshape(ddcvec,3*dims,[])), 3, []);
                   else
                     ddpt1 = last_ddpt;
                   end
                   if r2>0
                     ddpt2 = ddpt - r2*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha, ddalpha) + ...
-                      r2*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]),dalpha'), reshape(ddcvec,9,[])), 3, []);
+                      r2*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]),dalpha'), reshape(ddcvec,3*dims,[])), 3, []);
                   else
                     ddpt2 = ddpt;
                   end
@@ -169,7 +169,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               dlength = dlength+dC;
               if nargout>2
                 ddvec = ddpt2 - ddpt1;
-                ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,9,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;
+                ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,3*dims,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;
                 ddlength = ddlength + reshape(ddC, 1, []);
               end
             end
@@ -189,9 +189,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 dlength = dlength + dtheta*r1;
                 if nargout>2
                   ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;
-                  ddc = matGradMultMat(v2',dv1,dv2',reshape(ddv1,9,[])) + matGradMultMat(v1',dv2,dv1',reshape(ddv2,9,[])); 
+                  ddc = matGradMultMat(v2',dv1,dv2',reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1',reshape(ddv2,3*dims,[])); 
                   ddsvec = ddcross(v1,v2,dv1,dv2,ddv1,ddv2);
-                  dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec',reshape(ddsvec,9,[]))/max(s,eps);
+                  dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec',reshape(ddsvec,3*dims,[]))/max(s,eps);
                   ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
                   ddlength = ddlength + reshape(ddtheta,1,[])*r1;
                 end
