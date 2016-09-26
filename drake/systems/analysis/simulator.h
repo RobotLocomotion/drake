@@ -330,7 +330,7 @@ void Simulator<T>::StepTo(const T& final_time) {
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
   // TODO(edrumwri):
-  SampleActions sample_actions;
+  UpdateActions update_actions;
   bool update_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
@@ -338,7 +338,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // First make any necessary discrete updates.
     if (update_time_hit) {
-      system_.Update(context_.get(), sample_actions);
+      system_.Update(context_.get(), update_actions);
       ++num_updates_;
     }
 
@@ -351,7 +351,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // How far can we go before we have to take a sampling break?
     const T next_update_time =
-        system_.CalcNextSampleTime(*context_, &sample_actions);
+        system_.CalcNextUpdateTime(*context_, &update_actions);
     DRAKE_ASSERT(next_update_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had

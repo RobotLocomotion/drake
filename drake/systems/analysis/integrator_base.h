@@ -23,12 +23,13 @@ class IntegratorBase {
  public:
   /// Status returned by Step
   /**
-   * When a step is successful, it will return an indication of what caused it
+   When a step is successful, it will return an indication of what caused it
    to stop where it did. When unsuccessful it will throw an exception so you
    won't see any return value. When return of control is due ONLY to reaching a
    report time, (status is ReachedReportTime) the context may return an
    interpolated value at an earlier time.
 
+   TODO(edrumwri): comments below in preparation of upcoming functionality
    Note: we ensure algorithmically that no report time, scheduled time, or
    final time t can occur *within* an event window, that is, we will never have
    t_low < t < t_high for any interesting t. Further, t_report, t_scheduled and
@@ -41,9 +42,9 @@ class IntegratorBase {
    */
   enum StepResult {
     /**
-     * implication is no discrete update is necessary (which may be b/c
-     * System::CalcNextUpdateTime(.) gives a time far into the future or
-     * witness functions indicate no upcoming event.
+     * The implication is that no discrete update is necessary (which may be
+     * because System::CalcNextUpdateTime(.) gives a time far into the future or
+     * because witness functions indicate no upcoming event.
      */
     kReachedReportTime = 1,
     /** localized an event; this is the *before* state (interpolated) **/
@@ -63,6 +64,13 @@ class IntegratorBase {
     kStartOfContinuousInterval = 7,
   };
 
+  /**
+   * @param system a reference to the system to be integrated
+   * @param context a pointer to a writeable context. The integrator will
+   *                advance the system state using this context. The integrator
+   *                must not outlive the context.
+   * @return
+   */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
       : system_(system), context_(context) {
@@ -87,7 +95,7 @@ class IntegratorBase {
   http://dx.doi.org/10.1016/j.piutam.2011.04.023
   </pre>
   **/
-  virtual void set_accuracy(double accuracy) { target_accuracy_ = accuracy; }
+  virtual void set_target_accuracy(double accuracy) { target_accuracy_ = accuracy; }
 
   /// Gets the target accuracy
   virtual double get_target_accuracy() const { return target_accuracy_; }
@@ -101,6 +109,10 @@ attempt. For fixed-step integration, all steps will be taken at this step
 size. For variable-step integration this will be treated as a maximum size
 subject to accuracy requirements and event occurrences. You can find out what
 size *actually* worked with `get_actual_initial_step_size_taken()`. **/
+  // Note that this function is virtual b/c so that
+  // fixed step integrators exhibit the user-expected behavior without having to
+  // keep track of two variable settings (step size and requested initial step
+  // size)
   virtual void request_initial_step_size_target(const T& step_size) {
     req_initial_step_size_ = step_size;
   }

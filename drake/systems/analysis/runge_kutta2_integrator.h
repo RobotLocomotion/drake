@@ -27,7 +27,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   virtual typename IntegratorBase<T>::StepResult Step(const T& dt);
 
   /// No accuracy setting for RK2 integrator
-  virtual void set_accuracy(double accuracy) {
+  virtual void set_target_accuracy(double accuracy) {
     throw std::runtime_error("Accuracy setting not available"
                                  " for RungeKutta2"
                                  " integrator");

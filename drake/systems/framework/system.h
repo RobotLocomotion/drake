@@ -35,7 +35,7 @@ namespace systems {
 /// This information is returned along with the next update/sample/event time
 /// and is provided back to the System when that time is reached to ensure that
 /// the correct sampling actions are taken.
-struct SampleActions {
+struct UpdateActions {
   /// When the next discrete action is required.
   double time{std::numeric_limits<double>::quiet_NaN()};
   // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is
@@ -210,7 +210,7 @@ class System {
   // reference to only the part that is allowed to change. This will likely
   // require splitting into several APIs since different sample/update/event
   // actions permit different modifications.
-  void Update(Context<T>* context, const SampleActions& actions) const {
+  void Update(Context<T>* context, const UpdateActions& actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(*context));
     DoUpdate(context, actions);
   }
@@ -218,13 +218,13 @@ class System {
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
-  /// ought to be in the given SampleActions object, which must not be null.
+  /// ought to be in the given UpdateActions object, which must not be null.
   /// Upon reaching that time, the Simulator invokes either a publication
   /// action (with a const Context) or an update action (with a mutable
-  /// Context). The SampleAction object is retained and returned to the System
+  /// Context). The UpdateAction object is retained and returned to the System
   /// when it is time to take the action.
-  double CalcNextSampleTime(const Context<T>& context,
-                            SampleActions* actions) const {
+  double CalcNextUpdateTime(const Context<T>& context,
+                            UpdateActions* actions) const {
     // TODO(sherm1) Validate context (at least in Debug).
     DRAKE_ASSERT(actions != nullptr);
     DoCalcNextSampleTime(context, actions);
@@ -425,7 +425,7 @@ class System {
   /// sampling, or execution of event handlers that may make arbitrary changes
   /// to the Context.
   virtual void DoUpdate(Context<T>* context,
-                        const SampleActions& actions) const {}
+                        const UpdateActions& actions) const {}
 
   /// Implement this method if your System has any discrete actions which must
   /// interrupt the continuous simulation. You may assume that the context
@@ -433,7 +433,7 @@ class System {
   /// The default implemention returns with `actions` having a next sample
   /// time of Infinity and no actions to take.
   virtual void DoCalcNextSampleTime(const Context<T>& context,
-                                    SampleActions* actions) const {
+                                    UpdateActions* actions) const {
     actions->time = std::numeric_limits<double>::infinity();
   }
 
