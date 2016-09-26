@@ -30,14 +30,13 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
                               const RigidBody& body,
                               const Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
-  MatrixXd Jg =
-      r.geometricJacobian(cache, 0, body.get_body_index(), 0, true,
-          &v_or_q_indices);
+  MatrixXd Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0, true,
+                                    &v_or_q_indices);
   MatrixXd J(6, r.get_num_velocities());
   J.setZero();
 
-  Vector3d points = r.transformPoints(cache, local_offset,
-      body.get_body_index(), 0);
+  Vector3d points =
+      r.transformPoints(cache, local_offset, body.get_body_index(), 0);
 
   int col = 0;
   for (auto it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {

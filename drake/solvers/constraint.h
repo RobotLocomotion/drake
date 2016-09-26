@@ -64,13 +64,28 @@ class Constraint {
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
 
+  template <typename Derived> void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
+    set_bounds(new_lb, upper_bound_);
+  }
+
+  template <typename Derived> void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
+    set_bounds(lower_bound_, new_ub);
+  }
+
+  inline void set_description(const std::string& description) { description_ = description; }
+  inline const std::string& get_description() const { return description_; }
+
  protected:
-  void set_bounds(const Eigen::VectorXd& lower_bound,
-                  const Eigen::VectorXd& upper_bound) {
-    DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
+  template <typename DerivedL, typename DerivedU> void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
+                  const Eigen::MatrixBase<DerivedU>& upper_bound) {
+    if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 || upper_bound.cols() != 1)
+      throw std::runtime_error("New constraints have invalid dimensions.");
+
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
   }
+
+  std::string description_;
 
  private:
   Eigen::VectorXd lower_bound_;
@@ -110,6 +125,26 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
+
+  /**
+   * @brief Updates the quadratic and linear term of the constraint. The new
+   * matrices need to have the same dimension as before.
+   * @param new_Q new quadratic term
+   * @param new_b new linear term
+   */
+  template <typename DerivedQ, typename DerivedB>
+    void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& new_Q,
+      const Eigen::MatrixBase<DerivedB>& new_b) {
+    if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
+        new_b.cols() != 1)
+      throw std::runtime_error("New constraints have invalid dimensions");
+
+    if (new_b.rows() != b_.rows())
+      throw std::runtime_error("Can't change the number of decision variables");
+
+    Q_ = new_Q;
+    b_ = new_b;
+  }
 
  private:
   Eigen::MatrixXd Q_;
@@ -254,6 +289,27 @@ class LinearConstraint : public Constraint {
     return A_;
   }
 
+  /* UpdateConstraint
+   * @brief Updates the linear term, upper and lower bounds in the lienar constraint.
+   * Note that the size of constraints (number of rows) can change, but the number of varibles (number of cols) cannot.
+   * @param new_A new linear term
+   * @param new_lb new lower bound
+   * @param new_up new upper bound
+   */
+  template <typename DerivedA, typename DerivedL, typename DerivedU> void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
+      const Eigen::MatrixBase<DerivedL>& new_lb,
+      const Eigen::MatrixBase<DerivedU>& new_ub) {
+    if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
+        new_lb.cols() != 1 || new_ub.cols() != 1)
+      throw std::runtime_error("New constraints have invalid dimensions");
+
+    if (new_A.cols() != A_.cols())
+      throw std::runtime_error("Can't change the number of decision variables");
+
+    A_ = new_A;
+    set_bounds(new_lb, new_ub);
+  }
+
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 };
@@ -270,7 +326,7 @@ class LinearEqualityConstraint : public LinearConstraint {
 
   ~LinearEqualityConstraint() override {}
 
-  /* updateConstraint
+  /*
    * @brief change the parameters of the constraint (A and b), but not the
    *variable associations
    *
@@ -280,12 +336,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   template <typename DerivedA, typename DerivedB>
   void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                         const Eigen::MatrixBase<DerivedB>& beq) {
-    DRAKE_ASSERT(Aeq.rows() == beq.rows());
-    if (Aeq.cols() != A_.cols())
-      throw std::runtime_error("Can't change the number of decision variables");
-    A_.resize(Aeq.rows(), Eigen::NoChange);
-    A_ = Aeq;
-    set_bounds(beq, beq);
+    LinearConstraint::UpdateConstraint(Aeq, beq, beq);
   }
 };
 
