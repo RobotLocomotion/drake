@@ -52,6 +52,7 @@ libvtk5-qt4-dev
 libwww-perl
 libxmu-dev
 make
+mesa-utils
 ninja-build
 perl
 pkg-config
@@ -66,6 +67,7 @@ subversion
 swig
 unzip
 valgrind
+xvfb
 
 EOF
     )
