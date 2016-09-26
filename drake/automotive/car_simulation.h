@@ -19,10 +19,24 @@
 namespace drake {
 namespace automotive {
 
-/// Compatibility typedef for System 1 code.
+/// Compatibility class for System 1 code.
 // TODO(jwnimmer-tri) Remove me.
 template <typename T>
-using DrivingCommand1 = class System1Vector<DrivingCommand<T>, T>;
+class DRAKEAUTOMOTIVE_EXPORT DrivingCommand1 :
+    public System1Vector<DrivingCommand<T>, T> {
+ public:
+  DrivingCommand1() {}
+
+  explicit DrivingCommand1(const System1Vector<DrivingCommand<T>, T>& other) :
+      System1Vector<DrivingCommand<T>, T>(other) {
+  }
+
+  /// @name Implements the LCMVector concept.
+  //@{
+  typedef drake::lcmt_driving_command_t LCMMessageType;
+  static std::string channel() { return "DRIVING_COMMAND"; }
+  //@}
+};
 
 /**
  * Prints the usage instructions to std::cout.
