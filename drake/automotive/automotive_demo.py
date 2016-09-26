@@ -193,31 +193,32 @@ def main():
         subprocess.call([demo_path, "--help"])
         sys.exit(1)
 
-    # TODO(#3231) Use installed program once it works again.
-    # the_launcher.launch([os.path.join(_DRAKE_INSTALL_BIN, "lcm-logger")])
-    the_launcher.launch(
-        [os.path.join(DRAKE_DIST_BUILD_DIR,
-                      "externals", "lcm", "lcm-logger", "lcm-logger")])
-
-    # TODO(#3231) Use this shell script once it works again.
-    # the_launcher.launch(os.path.join(_DRAKE_INSTALL_BIN, "bot-spy")
-    bot_spy_that_actually_works()
-
-    if args.launch_visualizer:
-        the_launcher.launch(
-            [os.path.join(DRAKE_INSTALL_BIN_DIR, "drake-visualizer")])
-
-        # Await a message on the DRAKE_VIEWER_STATUS channel indicating that
-        # drake-visualizer is ready. This ensures that the demo app's
-        # LOAD_ROBOT message will be seen and processed.
-        wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
-
-    the_launcher.launch([demo_path] + tail)
-    the_launcher.launch(
-        [os.path.join(_THIS_DIR, "steering_command_driver.py")])
-
     try:
+        # TODO(#3231) Use installed program once it works again.
+        # the_launcher.launch([os.path.join(_DRAKE_INSTALL_BIN, "lcm-logger")])
+        the_launcher.launch(
+            [os.path.join(DRAKE_DIST_BUILD_DIR,
+                          "externals", "lcm", "lcm-logger", "lcm-logger")])
+
+        # TODO(#3231) Use this shell script once it works again.
+        # the_launcher.launch(os.path.join(_DRAKE_INSTALL_BIN, "bot-spy")
+        bot_spy_that_actually_works()
+
+        if args.launch_visualizer:
+            the_launcher.launch(
+                [os.path.join(DRAKE_INSTALL_BIN_DIR, "drake-visualizer")])
+
+            # Await a message on the DRAKE_VIEWER_STATUS channel indicating
+            # that drake-visualizer is ready. This ensures that the demo app's
+            # LOAD_ROBOT message will be seen and processed.
+            wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
+
+        the_launcher.launch([demo_path] + tail)
+        the_launcher.launch(
+            [os.path.join(_THIS_DIR, "steering_command_driver.py")])
+
         the_launcher.wait(args.duration)
+
     finally:
         the_launcher.kill()
 
