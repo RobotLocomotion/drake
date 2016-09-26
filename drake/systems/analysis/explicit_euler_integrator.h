@@ -16,7 +16,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
   virtual ~ExplicitEulerIntegrator() {}
 
   ExplicitEulerIntegrator(const System<T>& system, double step_size,
-                          Context<T>* context = NULL)
+                          Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     step_size_ = step_size;
     derivs_ = IntegratorBase<T>::system_.AllocateTimeDerivatives();

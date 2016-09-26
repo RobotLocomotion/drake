@@ -17,7 +17,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   virtual ~RungeKutta2Integrator() {}
 
   RungeKutta2Integrator(const System<T>& system, double step_size,
-                        Context<T>* context = NULL) :
+                        Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {
     step_size_ = step_size;
     derivs0_ = IntegratorBase<T>::system_.AllocateTimeDerivatives();

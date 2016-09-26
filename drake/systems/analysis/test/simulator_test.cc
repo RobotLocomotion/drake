@@ -11,7 +11,7 @@ namespace systems {
 namespace {
 
 GTEST_TEST(SimulatorTest, MiscAPI) {
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // set the integrator default step size
@@ -33,7 +33,7 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
 }
 
 GTEST_TEST(SimulatorTest, ContextAccess) {
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // set the integrator default step size
@@ -65,7 +65,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // set the integrator default step size
   const double DT = 1e-3;
 
-  MySpringMassSystem spring_mass(kSpring, kMass, 0.);
+  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal Context.
@@ -111,7 +111,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double DT = 1e-3;
 
   // create the mass spring system and the simulator
-  MySpringMassSystem spring_mass(kSpring, kMass, 30.);
+  MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // get the context

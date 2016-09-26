@@ -11,7 +11,7 @@ namespace systems {
 namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // setup the integration step size
   const double DT = 1e-3;
@@ -30,7 +30,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // create the mass spring system
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // setup the integration step size
   const double DT = 1e-3;
@@ -59,7 +59,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kMass = 2.0;      // kg
 
   // create the spring-mass system
-  MySpringMassSystem spring_mass(kSpring, kMass, 0.);
+  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
 
   // create a context
   auto context = spring_mass.CreateDefaultContext();

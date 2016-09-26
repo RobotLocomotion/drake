@@ -9,13 +9,11 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
-
-/** Used to specify a particular choice of integration method.
-Currently the default is 2nd order Runge Kutta (explicit trapezoid rule). **/
 
 /** A forward dynamics solver for hybrid dynamic systems represented by
 `System<T>` objects. Starting with an initial Context for a given System,
@@ -164,7 +162,7 @@ class Simulator {
   /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. **/
   std::unique_ptr<Context<T>> release_context() {
-    if (integrator_) integrator_->reset_context(NULL);
+    if (integrator_) integrator_->reset_context(nullptr);
     initialization_done_ = false;
     return std::move(context_);
   }
@@ -215,10 +213,11 @@ class Simulator {
   }
 
   /// Gets a pointer to the integrator
-  IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
+  IntegratorBase<T>* get_mutable_integrator() const {
+    return integrator_.get(); }
 
-  // TODO(edrumwri): undo initialization?
-  /// Sets the integrator
+  // TODO(edrumwri): Undo initialization?
+  /// Resets the integrator
   void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
     integrator_ = std::move(integrator);
   }
@@ -240,15 +239,15 @@ class Simulator {
   void ResetSimulatorSettingsInUse() {
     initialization_done_ = false;
 
-    // TODO(edrumwri): create a new integrator when a variable step integrator
-    // is available
+    // TODO(edrumwri): Create a new integrator when a variable step integrator
+    // is available.
     // integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     // ExplicitEulerIntegrator<T>(system_, context_.get()));
-    std::cerr << "ResetSimulatorSettingsInUse() should not be called until a "
-                 "variable step integrator is "
-              << "implemented" << std::endl;
+    std::string message = "ResetSimulatorSettingsInUse() should not be \
+        called until a variable step integrator is implemented";
+    drake::log()->error(message);
 
-    // TODO(edrumwri): reset integrator settings
+    // TODO(edrumwri): Reset integrator settings.
   }
 
   // A pointer to the integrator
@@ -302,8 +301,8 @@ void Simulator<T>::Initialize() {
 
   // create integrator if necessary
   if (!integrator_)
-    // TODO(edrumwri): create a new integrator when a variable step integrator
-    // is available
+    // TODO(edrumwri): Create a new integrator when a variable step integrator
+    // is available.
     //    integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     //    ExplicitEulerIntegrator<T>(system_, context_.get()));
     throw std::runtime_error("No integrator set");
@@ -363,7 +362,7 @@ void Simulator<T>::StepTo(const T& final_time) {
         step_start_time, integrator_->get_ideal_next_step_size(),
         next_update_time, final_time);
 
-    // TODO(edrumwri): use the step result when event finding incorporated
+    // TODO(edrumwri): Use the step result when event finding incorporated.
     integrator_->Step(step_end_time - step_start_time);
     ++num_steps_taken_;
 

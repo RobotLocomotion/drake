@@ -2,20 +2,19 @@
 // Created by drum on 9/20/16.
 //
 
-#ifndef DRAKE_MY_SPRING_MASS_SYSTEM_H
-#define DRAKE_MY_SPRING_MASS_SYSTEM_H
+#pragma once
 
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
 namespace drake {
 namespace systems {
-namespace {
 
-class MySpringMassSystem : public SpringMassSystem {
+template <class T>
+class MySpringMassSystem : public SpringMassSystem<T> {
  public:
   // Pass through to SpringMassSystem, except add update rate
   MySpringMassSystem(double stiffness, double mass, double update_rate)
-      : SpringMassSystem(stiffness, mass, false /*no input force*/),
+      : SpringMassSystem<T>(stiffness, mass, false /*no input force*/),
         update_rate_(update_rate) {}
 
   int get_publish_count() const { return publish_count_; }
@@ -62,8 +61,6 @@ class MySpringMassSystem : public SpringMassSystem {
   mutable int publish_count_{0};
   mutable int update_count_{0};
 };  // MySpringMassSystem
-}  // (blank)
 }  // systems
 }  // drake
 
-#endif  // DRAKE_MY_SPRING_MASS_SYSTEM_H
