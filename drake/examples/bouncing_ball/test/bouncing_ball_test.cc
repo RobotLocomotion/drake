@@ -31,17 +31,20 @@ TEST_F(BouncingBallTest, Guard) {
   // Evaluate the guard at the initial state.
   EXPECT_EQ(10.0, dut_->EvalGuard(*context_));
 
-  // Evaluate at a state where the ball is rising (the guard is positive).
+  // Evaluate at a state where the ball is rising.
+  // The guard should be positive, meaning a mode transition cannot be made.
   continuous_state()->SetAtIndex(0, 1.7);
   continuous_state()->SetAtIndex(1, 2.3);
   EXPECT_EQ(2.3, dut_->EvalGuard(*context_));
 
-  // Evaluate at a state where the ball is falling (the guard is positive).
+  // Evaluate at a state where the ball is falling.
+  // The guard should be positive, meaning a mode transition cannot be made.
   continuous_state()->SetAtIndex(0, 1.7);
   continuous_state()->SetAtIndex(1, -2.0);
   EXPECT_EQ(1.7, dut_->EvalGuard(*context_));
 
-  // Evaluate at the moment of impact, where the guard is non-positive.
+  // Evaluate at the moment of impact, where the ball is falling.
+  // The guard is non-positive, so a mode transition is possible.
   continuous_state()->SetAtIndex(0, 0.0);
   continuous_state()->SetAtIndex(1, -3.7);
   EXPECT_EQ(0.0, dut_->EvalGuard(*context_));
