@@ -1016,14 +1016,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // collide. These are determined according to the policy provided by
   // RigidBody::CanCollideWith.
   //
-  // Collision cliques provide a very general way to specify which collision
-  // elements should (or should not) be checked for collisions.
-  // This particular method provides a default heuristics to create cliques for
-  // RigidBodyTree which are in accordance to the policy implemented by
-  // RigidBody::CanCollideWith.
-  // If this heuristics needs to be changed/updated this can be done by either:
-  // 1. Overwriting this method.
-  // 2. Implementing a new policy in RigidBody::CanCollideWith.
+  // Collision cliques provide a simple mechanism to omit pairs of collision
+  // elements from collision tests. The collision element pair (A, B) will not
+  // be tested for collision if A and B belong to the same clique.
+  // This particular method implements a default heuristics to create cliques
+  // for a RigidBodyTree which are in accordance to the policy implemented by
+  // RigidBody::CanCollideWith().
   //
   // @see RigidBody::CanCollideWith.
   void CreateCollisionCliques();

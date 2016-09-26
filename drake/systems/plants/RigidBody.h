@@ -265,7 +265,14 @@ class DRAKERBM_EXPORT RigidBody {
    * Reports if this body is considered "adjacent" to the given body.
    *
    * "Adjacency" refers to the idea that the bodies are connected to each other
-   * in the rigid body tree by a non-floating joint.
+   * in the rigid body tree by a non-floating joint. By this definition,
+   * a rigid body is *not* adjacent to itself.
+   *
+   * In the degenerate case where one rigid body is a parent of the other, but
+   * with no joint assigned, the rigid bodies will be considered adjacent.
+   * Conversely, the degenerate case where a joint is assigned, but the parent
+   * relationship is not set, the rigid bodies will *not* be considered
+   * adjacent.
    * @param[in] other The body to test against this body.
    * @returns `true` if the bodies are "adjacent".
    */
@@ -278,7 +285,7 @@ class DRAKERBM_EXPORT RigidBody {
    * @param[in] other   The body to query against.
    * @returns `true` if collision between this and other should be tested.
    */
-  bool CanCollideWith(const RigidBody &other) const;
+  bool CanCollideWith(const RigidBody& other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
