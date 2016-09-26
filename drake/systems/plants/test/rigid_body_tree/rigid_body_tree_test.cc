@@ -313,7 +313,7 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   std::vector<const RigidBody*> four_dof_robot_bodies =
       tree->FindModelInstanceBodies(four_dof_model_instance_id);
 
-  // Verifies the lengths of the vectors of rigid bodies are correct.
+  // Verifies the sizes of the vectors of rigid bodies are correct.
   EXPECT_EQ(two_dof_robot_bodies.size(), 3u);
   EXPECT_EQ(three_dof_robot_bodies.size(), 4u);
   EXPECT_EQ(four_dof_robot_bodies.size(), 5u);

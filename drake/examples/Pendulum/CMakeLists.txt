@@ -3,14 +3,13 @@ if(lcm_FOUND)
     pendulum_swing_up.cc
     )
   target_link_libraries(drakePendulum drakeDynamicConstraint
-    drakeTrajectoryOptimization)
+    drakeTrajectoryOptimization drakeLCMTypes)
   pods_install_libraries(drakePendulum)
   drake_install_headers(Pendulum.h pendulum_swing_up.h)
   pods_install_pkg_config_file(drake-pendulum
     LIBS -ldrakePendulum
     REQUIRES
     VERSION 0.0.1)
-  add_dependencies(drakePendulum drake_lcmtypes_hpp)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics

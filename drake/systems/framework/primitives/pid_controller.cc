@@ -10,19 +10,19 @@ namespace systems {
 
 template <typename T>
 PidController<T>::PidController(
-    const T& Kp, const T& Ki, const T& Kd, int length) : Diagram<T>() {
+    const T& Kp, const T& Ki, const T& Kd, int size) : Diagram<T>() {
   DRAKE_ASSERT(Kp >= 0);
   DRAKE_ASSERT(Ki >= 0);
   DRAKE_ASSERT(Kd >= 0);
-  DRAKE_ASSERT(length > 0);
+  DRAKE_ASSERT(size > 0);
 
   DiagramBuilder<T> builder;
-  pass_through_ = builder.AddSystem(make_unique<PassThrough<T>>(length));
-  proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp, length));
-  integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki, length));
-  derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd, length));
-  integrator_ = builder.AddSystem(make_unique<Integrator<T>>(length));
-  adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, length));
+  pass_through_ = builder.AddSystem(make_unique<PassThrough<T>>(size));
+  proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp, size));
+  integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki, size));
+  derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd, size));
+  integrator_ = builder.AddSystem(make_unique<Integrator<T>>(size));
+  adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, size));
 
   // Input 0 connects to the proportional and integral components.
   builder.ExportInput(pass_through_->get_input_port(0));
@@ -75,8 +75,8 @@ PidController<T>::get_error_derivative_port() const {
 
 template <typename T>
 void PidController<T>::SetDefaultState(Context<T>* context) const {
-  const int length = Diagram<T>::get_input_port(0).get_size();
-  set_integral_value(context, VectorX<T>::Zero(length));
+  const int size = Diagram<T>::get_input_port(0).get_size();
+  set_integral_value(context, VectorX<T>::Zero(size));
 }
 
 template <typename T>

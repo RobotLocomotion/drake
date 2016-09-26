@@ -174,11 +174,11 @@ class KukaArmTest : public ::testing::Test {
 // size in the context.
 TEST_F(KukaArmTest, StateHasTheRightSizes) {
   const VectorBase<double>& xc =
-      context_->get_state().continuous_state->get_generalized_position();
+      context_->get_continuous_state()->get_generalized_position();
   const VectorBase<double>& vc =
-      context_->get_state().continuous_state->get_generalized_velocity();
+      context_->get_continuous_state()->get_generalized_velocity();
   const VectorBase<double>& zc =
-      context_->get_state().continuous_state->get_misc_continuous_state();
+      context_->get_continuous_state()->get_misc_continuous_state();
 
   EXPECT_EQ(kNumPositions_, xc.size());
   EXPECT_EQ(kNumVelocities_, vc.size());
@@ -201,7 +201,7 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
-  VectorXd xc = context_->get_continuous_state().CopyToVector();
+  VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(kNumStates_, xc.size());
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
@@ -245,7 +245,7 @@ TEST_F(KukaArmTest, EvalOutput) {
   }
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
-  VectorXd xc = context_->get_continuous_state().CopyToVector();
+  VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
   ASSERT_EQ(2, output_->get_num_ports());
@@ -342,7 +342,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
 
   // Sets the state to a non-zero value matching the configuration for rbs1.
   rbs2->set_state_vector(context.get(), x0);
-  VectorXd xc = context->get_continuous_state().CopyToVector();
+  VectorXd xc = context->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, x0);
 
   //////////////////////////////////////////////////////////////////////////////

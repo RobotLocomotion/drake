@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/drake/lcmt_drake_signal.hpp"
+#include "drake/lcmt_drake_signal.hpp"
 
 #include "drake/drakeLCMSystem_export.h"
 #include "drake/systems/Simulation.h"

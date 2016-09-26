@@ -26,7 +26,6 @@ DependentInputPort::~DependentInputPort() {
 void DependentInputPort::Disconnect() {
   output_port_ = nullptr;
 }
-
 FreestandingInputPort::FreestandingInputPort(
     std::unique_ptr<AbstractValue> data)
     : output_port_(std::move(data)) {
