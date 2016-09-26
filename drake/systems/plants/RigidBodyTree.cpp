@@ -263,10 +263,12 @@ void RigidBodyTree::compile(void) {
 }
 
 void RigidBodyTree::CreateCollisionCliques() {
-  int ncol_cliques = 0;
+  int clique_id = get_next_clique_id();
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
-    ncol_cliques = body->SetSelfCollisionClique(ncol_cliques);
+    if ( body->SetSelfCollisionClique(clique_id)) {
+      clique_id = get_next_clique_id();
+    }
   }
 
   // 2) For collision elements in different bodies
@@ -274,13 +276,15 @@ void RigidBodyTree::CreateCollisionCliques() {
   //
   // If this proves to be too expensive, walking the tree would be O(N)
   // and still capture all of the adjacency.
-  for (size_t i = 0; i < bodies.size(); ++i)
-    for (size_t j = i + 1; j < bodies.size(); ++j)
+  for (size_t i = 0; i < bodies.size(); ++i) {
+    for (size_t j = i + 1; j < bodies.size(); ++j) {
       if (!bodies[i]->CanCollideWith(*bodies[j])) {
-        bodies[i]->AddCollisionElementsToClique(ncol_cliques);
-        bodies[j]->AddCollisionElementsToClique(ncol_cliques);
-        ++ncol_cliques;
+        bodies[i]->AddCollisionElementsToClique(clique_id);
+        bodies[j]->AddCollisionElementsToClique(clique_id);
+        clique_id = get_next_clique_id();
       }
+    }
+  }
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {

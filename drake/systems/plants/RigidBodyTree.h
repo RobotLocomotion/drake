@@ -142,6 +142,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // This method is not thread safe!
   int add_model_instance();
 
+  // This method is not thread safe
+  int get_next_clique_id() { return next_available_clique_++; }
+
   /**
    * Returns the number of model instances in the tree.
    */
@@ -1046,4 +1049,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
   bool initialized_{false};
+
+  int next_available_clique_ = 0;
 };

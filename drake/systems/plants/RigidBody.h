@@ -190,17 +190,12 @@ class DRAKERBM_EXPORT RigidBody {
   /**
    * Sets the rigid body's self-collision logic.
    *
-   * Given the next available clique id, the body will do whatever work is
-   * necessary to prevent self collision.  If no work is necessary, none will be
-   * done.
-   *
-   * The return value will be the next available clique.  If the input clique
-   * is not consumed, the input value will be returned.
-   *
-   * @param[in] clique_id  The next available clique id to use.
-   * @returns The next available clique id.
+   * The body may or may not require a self-collision clique. If not, the
+   * provided clique id will remain unused.
+   * @param[in] clique_id  An available clique id.
+   * @returns true if the clique id was used.
    */
-  int SetSelfCollisionClique(int clique_id);
+  bool SetSelfCollisionClique(int clique_id);
 
   /**
    * Adds the given collision @p element to the body with the given group name.
