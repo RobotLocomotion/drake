@@ -22,7 +22,6 @@ class TimeVaryingPolynomialSourceTest : public ::testing::Test {
   TimeVaryingPolynomialSourceTest()
       : kppTraj(Eigen::MatrixXd::Constant(2, 2, 1.5)) {}
   void SetUp() override {
-    //    PiecewisePolynomial<double>& pp_traj
     source_ = make_unique<TimeVaryingPolynomialSource<double>>(kppTraj);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
@@ -53,9 +52,7 @@ TEST_F(TimeVaryingPolynomialSourceTest, OutputTest) {
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
 
-  PiecewisePolynomial<double> test_pp(Eigen::MatrixXd::Constant(2, 2, 1.5));
-
-  Eigen::VectorXd pp_value = test_pp.value(kTestTime);
+  Eigen::VectorXd pp_value = kppTraj.value(kTestTime);
   EXPECT_EQ(pp_value, output_vector->get_value());
 }
 
