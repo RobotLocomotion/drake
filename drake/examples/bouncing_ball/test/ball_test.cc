@@ -18,7 +18,7 @@ class BallTest : public ::testing::Test {
   }
 
   systems::VectorBase<double>* continuous_state() {
-    return context_->get_mutable_state()->continuous_state->get_mutable_state();
+    return context_->get_mutable_continuous_state()->get_mutable_state();
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.

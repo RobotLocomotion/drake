@@ -23,7 +23,7 @@ T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
 
   // Evaluate the guard function.
   const systems::VectorBase<T>& state =
-    context.get_state().continuous_state->get_state();
+    context.get_continuous_state()->get_state();
 
   // The guard is satisfied (returns a non-positive value) when
   // the ball's position is less than or equal to zero and its
@@ -38,12 +38,11 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
 
   // Define a pointer to the continuous state in the context.
   const auto result =
-    context->get_mutable_state()->continuous_state->get_mutable_state();
+    context->get_mutable_continuous_state()->get_mutable_state();
 
   // Perform the reset: map the position to itself and negate the
   // velocity and attenuate by the coefficient of restitution.
-  auto state = context->get_mutable_state()->
-    continuous_state->get_mutable_state();
+  auto state = context->get_mutable_continuous_state()->get_mutable_state();
   result->SetAtIndex(1,
      -1.0 * this->restitution_coef_ * state->GetAtIndex(1));
 }
