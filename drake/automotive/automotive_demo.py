@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""Launch automotive simulator(s) with its allied apps:
+"""Launch the `automotive_demo` simulation with the following supporting
+applications:
 
  * steering_command_driver.py for interactive input
  * drake-visualizer to see things move
