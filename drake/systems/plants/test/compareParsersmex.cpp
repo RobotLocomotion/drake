@@ -56,10 +56,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // identical)
   MatrixXd P =
       MatrixXd::Zero(cpp_model->get_num_positions(),
-                     matlab_model->get_num_positions());  // projection from
-                                                            // the coordinates
-                                                            // of matlab_model
-                                                            // to cpp_model
+                     matlab_model->get_num_positions());  // The projection from
+                                                          // the coordinates of
+                                                          // the matlab_model
+                                                          // to the cpp_model.
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
     if (cpp_model->bodies[i]->has_parent_body() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {

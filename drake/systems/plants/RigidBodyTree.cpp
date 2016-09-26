@@ -2116,6 +2116,9 @@ int RigidBodyTree::get_num_bodies() const {
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_bodies().")
+#endif
 int RigidBodyTree::get_number_of_bodies() const {
   return get_num_bodies();
 }
