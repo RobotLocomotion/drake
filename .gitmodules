@@ -30,7 +30,7 @@
 	url = https://github.com/OctoMap/octomap.git
 [submodule "externals/snopt"]
 	path = externals/snopt
-	url = git@github.com:RobotLocomotion/snopt.git
+	url = git@github.com:jamiesnape/snopt.git
 [submodule "externals/gurobi"]
 	path = externals/gurobi
 	url = https://github.com/RobotLocomotion/gurobi.git
