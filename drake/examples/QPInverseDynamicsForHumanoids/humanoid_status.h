@@ -73,6 +73,8 @@ class HumanoidStatus {
   /// Offset from the foot frame to force torque sensor in the foot frame.
   static const Vector3d kFootToSensorOffset;
 
+  // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
+  // Valkyrie, and they should be specified in some separate config file.
   explicit HumanoidStatus(const RigidBodyTree& robot_in)
       : robot_(robot_in),
         cache_(robot_.bodies),
@@ -89,6 +91,13 @@ class HumanoidStatus {
                            kFootToSensorOffset),
             BodyOfInterest("rightFootSensor", *robot_.FindBody("rightFoot"),
                            kFootToSensorOffset)} {
+    time_ = 0;
+
+    position_.resize(robot_.number_of_positions());
+    velocity_.resize(robot_.number_of_velocities());
+    joint_torque_.resize(robot_.actuators.size());
+    nominal_position_ = robot_.getZeroConfiguration();
+
     // Build map
     body_name_to_id_ = std::unordered_map<std::string, int>();
     for (auto it = robot_.bodies.begin(); it != robot_.bodies.end(); ++it) {
@@ -100,14 +109,45 @@ class HumanoidStatus {
       joint_name_to_position_index_[robot_.getPositionName(i)] = i;
     }
     for (size_t i = 0; i < robot_.actuators.size(); i++) {
-      actuator_name_to_id_[robot_.actuators[i].name_] = i;
+      actuator_name_to_actuator_index_[robot_.actuators[i].name_] = i;
     }
 
-    time_ = time0_ = 0;
+    // TODO(siyuan.feng@tri.global): these are hard coded for Valkyrie, and they
+    // should be included in the model file or loaded from a separate config
+    // file.
+    nominal_position_[joint_name_to_position_index().at("rightHipRoll")] = 0.01;
+    nominal_position_[joint_name_to_position_index().at("rightHipPitch")] =
+        -0.5432;
+    nominal_position_[joint_name_to_position_index().at("rightKneePitch")] =
+        1.2195;
+    nominal_position_[joint_name_to_position_index().at("rightAnklePitch")] =
+        -0.7070;
+    nominal_position_[joint_name_to_position_index().at("rightAnkleRoll")] =
+        -0.0069;
 
-    position_.resize(robot_.get_num_positions());
-    velocity_.resize(robot_.get_num_velocities());
-    joint_torque_.resize(robot_.actuators.size());
+    nominal_position_[joint_name_to_position_index().at("leftHipRoll")] = -0.01;
+    nominal_position_[joint_name_to_position_index().at("leftHipPitch")] =
+        -0.5432;
+    nominal_position_[joint_name_to_position_index().at("leftKneePitch")] =
+        1.2195;
+    nominal_position_[joint_name_to_position_index().at("leftAnklePitch")] =
+        -0.7070;
+    nominal_position_[joint_name_to_position_index().at("leftAnkleRoll")] =
+        0.0069;
+
+    nominal_position_[joint_name_to_position_index().at("rightShoulderRoll")] =
+        1;
+    nominal_position_[joint_name_to_position_index().at("rightShoulderYaw")] =
+        0.5;
+    nominal_position_[joint_name_to_position_index().at("rightElbowPitch")] =
+        M_PI / 2.;
+
+    nominal_position_[joint_name_to_position_index().at("leftShoulderRoll")] =
+        -1;
+    nominal_position_[joint_name_to_position_index().at("leftShoulderYaw")] =
+        0.5;
+    nominal_position_[joint_name_to_position_index().at("leftElbowPitch")] =
+        -M_PI / 2.;
   }
 
   HumanoidStatus& operator=(const HumanoidStatus& other) {
@@ -148,7 +188,7 @@ class HumanoidStatus {
   /**
    * Returns a nominal q.
    */
-  Eigen::VectorXd GetNominalPosition() const;
+  Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
 
   inline const RigidBodyTree& robot() const { return robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
@@ -161,7 +201,7 @@ class HumanoidStatus {
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
-    return actuator_name_to_id_;
+    return actuator_name_to_actuator_index_;
   }
 
   inline double time() const { return time_; }
@@ -227,14 +267,18 @@ class HumanoidStatus {
   const RigidBodyTree& robot_;
   KinematicsCache<double> cache_;
 
+  /// Nominal position for the robot.
+  /// TODO(siyuan.feng@tri.global): should read this from the model file
+  /// eventually
+  VectorXd nominal_position_;
+
   /// Maps body name to its index
   std::unordered_map<std::string, int> body_name_to_id_;
   /// Maps joint name to its index
   std::unordered_map<std::string, int> joint_name_to_position_index_;
   /// Maps actuator name to its index
-  std::unordered_map<std::string, int> actuator_name_to_id_;
+  std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
 
-  double time0_;
   double time_;
 
   // Pos and Vel include 6 dof for the floating base.

@@ -111,7 +111,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   // Resize and zero temporary matrices.
   ResizeQP(rs, input.supports());
-  SetZero();
+  SetTempMatricesToZero();
 
   ////////////////////////////////////////////////////////////////////
   // The equations of motion look like:

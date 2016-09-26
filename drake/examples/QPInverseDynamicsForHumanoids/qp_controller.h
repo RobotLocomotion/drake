@@ -107,6 +107,10 @@ class SupportElement {
   Eigen::MatrixXd ComputeBasisMatrix(const RigidBodyTree& robot,
                                      const KinematicsCache<double>& cache,
                                      int num_basis_per_contact_pt) const {
+    if (num_basis_per_contact_pt < 3)
+      throw std::runtime_error(
+          "Number of basis per contact point must be >= 3.");
+
     Eigen::MatrixXd basis(3 * contact_points_.size(),
                           num_basis_per_contact_pt * contact_points_.size());
     Eigen::Matrix3d body_rot =
@@ -151,13 +155,13 @@ class SupportElement {
    */
   Eigen::MatrixXd ComputeJacobianAtContactPoints(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
-    Eigen::MatrixXd JJ(3 * contact_points_.size(),
-                       robot.number_of_velocities());
-    for (size_t i = 0; i < contact_points_.size(); i++)
-      JJ.block(3 * i, 0, 3, robot.number_of_velocities()) =
+    Eigen::MatrixXd J(3 * contact_points_.size(), robot.number_of_velocities());
+    for (size_t i = 0; i < contact_points_.size(); i++) {
+      J.block(3 * i, 0, 3, robot.number_of_velocities()) =
           GetTaskSpaceJacobian(robot, cache, body_, contact_points_[i])
               .bottomRows(3);
-    return JJ;
+    }
+    return J;
   }
 
   /**
@@ -171,10 +175,11 @@ class SupportElement {
   Eigen::VectorXd ComputeJacobianDotTimesVAtContactPoints(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
     Eigen::VectorXd Jdv(3 * contact_points_.size());
-    for (size_t i = 0; i < contact_points_.size(); i++)
+    for (size_t i = 0; i < contact_points_.size(); i++) {
       Jdv.segment<3>(3 * i) =
           GetTaskSpaceJacobianDotTimesV(robot, cache, body_, contact_points_[i])
               .bottomRows(3);
+    }
     return Jdv;
   }
 
@@ -486,7 +491,7 @@ class QPController {
    * Zeros out the temporary matrices.
    * Only necessary for those that are updated by block operations.
    */
-  void SetZero() {
+  void SetTempMatricesToZero() {
     basis_to_force_matrix_.setZero();
     torque_linear_.setZero();
     dynamics_linear_.setZero();

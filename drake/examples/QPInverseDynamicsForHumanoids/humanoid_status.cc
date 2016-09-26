@@ -1,36 +1,11 @@
 #include "humanoid_status.h"
 #include <iostream>
 
+// TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
+// should be included in the model file or loaded from a separate config file.
 const Vector3d HumanoidStatus::kFootToContactOffset = Vector3d(0, 0, -0.09);
 const Vector3d HumanoidStatus::kFootToSensorOffset =
     Vector3d(0.0215646, 0.0, -0.051054);
-
-Eigen::VectorXd HumanoidStatus::GetNominalPosition() const {
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(position_.size());
-
-  q.segment<6>(0).setZero();
-  q[joint_name_to_position_index().at("rightHipRoll")] = 0.01;
-  q[joint_name_to_position_index().at("rightHipPitch")] = -0.5432;
-  q[joint_name_to_position_index().at("rightKneePitch")] = 1.2195;
-  q[joint_name_to_position_index().at("rightAnklePitch")] = -0.7070;
-  q[joint_name_to_position_index().at("rightAnkleRoll")] = -0.0069;
-
-  q[joint_name_to_position_index().at("leftHipRoll")] = -0.01;
-  q[joint_name_to_position_index().at("leftHipPitch")] = -0.5432;
-  q[joint_name_to_position_index().at("leftKneePitch")] = 1.2195;
-  q[joint_name_to_position_index().at("leftAnklePitch")] = -0.7070;
-  q[joint_name_to_position_index().at("leftAnkleRoll")] = 0.0069;
-
-  q[joint_name_to_position_index().at("rightShoulderRoll")] = 1;
-  q[joint_name_to_position_index().at("rightShoulderYaw")] = 0.5;
-  q[joint_name_to_position_index().at("rightElbowPitch")] = M_PI / 2.;
-
-  q[joint_name_to_position_index().at("leftShoulderRoll")] = -1;
-  q[joint_name_to_position_index().at("leftShoulderYaw")] = 0.5;
-  q[joint_name_to_position_index().at("leftElbowPitch")] = -M_PI / 2.;
-
-  return q;
-}
 
 void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
                             const Ref<const VectorXd>& v,
