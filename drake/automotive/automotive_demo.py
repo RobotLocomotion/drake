@@ -180,6 +180,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--duration", type=float, default=float('Inf'),
                         help="demo run duration in seconds")
+    parser.add_argument("--visualizer", action='store_true',
+                        dest='launch_visualizer',
+                        default=True, help="launch drake-visualizer (default)")
+    parser.add_argument("--no-visualizer", action='store_false',
+                        dest='launch_visualizer',
+                        default=True, help="don't launch drake-visualizer")
     args, tail = parser.parse_known_args()
 
     if '--help' in tail:
@@ -197,13 +203,14 @@ def main():
     # the_launcher.launch(os.path.join(_DRAKE_INSTALL_BIN, "bot-spy")
     bot_spy_that_actually_works()
 
-    the_launcher.launch(
-        [os.path.join(DRAKE_INSTALL_BIN_DIR, "drake-visualizer")])
+    if args.launch_visualizer:
+        the_launcher.launch(
+            [os.path.join(DRAKE_INSTALL_BIN_DIR, "drake-visualizer")])
 
-    # Await a message on the DRAKE_VIEWER_STATUS channel indicating that
-    # drake-visualizer is ready. This ensures that the demo app's LOAD_ROBOT
-    # message will be seen and processed.
-    wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
+        # Await a message on the DRAKE_VIEWER_STATUS channel indicating that
+        # drake-visualizer is ready. This ensures that the demo app's
+        # LOAD_ROBOT message will be seen and processed.
+        wait_for_lcm_message_on_channel('DRAKE_VIEWER_STATUS')
 
     the_launcher.launch([demo_path] + tail)
     the_launcher.launch(
