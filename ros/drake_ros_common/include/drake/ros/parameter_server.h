@@ -16,8 +16,8 @@ namespace ros {
  * @param[in] parameter_name The name of the parameter to obtain from the ROS
  * parameter server.
  *
- * @param[in] max_wait_time The maximum amount of time to wait for the parameter
- * to become available before aborting.
+ * @param[in] max_wait_time The maximum amount of wall clock time to wait for
+ * the parameter to become available before aborting.
  *
  * @return This method returns true if the parameter comes into existence prior
  * to @p max_wait_time and false otherwise.
@@ -39,8 +39,8 @@ bool WaitForParameter(const std::string& parameter_name,
  *
  * @param[in] parameter_name The name of the parameter to obtain.
  *
- * @param[in] max_wait_time The maximum time to wait for the parameter to
- * become available on the ROS parameter server.
+ * @param[in] max_wait_time The maximum wall clock time to wait for the
+ * parameter to become available on the ROS parameter server.
  *
  * @returns The value of the parameter.
  *
@@ -76,8 +76,8 @@ T GetRosParameterOrThrow(const std::string& parameter_name,
  * @param[in] default_value The value that is returned if the parameter does not
  * exist after waiting @p max_wait_time.
  *
- * @param[in] max_wait_time The maximum time to wait for the parameter to
- * become available on the ROS parameter server.
+ * @param[in] max_wait_time The maximum wall clock time to wait for the
+ * parameter to become available on the ROS parameter server.
  *
  * @returns The value of the parameter, or @p default_value if there was any
  * problem obtaining the parameter.
