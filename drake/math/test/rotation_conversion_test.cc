@@ -420,7 +420,7 @@ TEST_F(RotationConversionTest, QuatAxis) {
     auto quat_expected = axis2quat(a);
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
-}
+}*/
 
 TEST_F(RotationConversionTest, QuatRotmat) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
@@ -436,7 +436,7 @@ TEST_F(RotationConversionTest, QuatRotmat) {
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
 }
-
+/*
 TEST_F(RotationConversionTest, QuatRPY) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
@@ -557,14 +557,19 @@ TEST_F(RotationConversionTest, RPYQuat) {
     // rpy2quat should be the inversion of quat2rpy
     auto rpy_expected = quat2rpy(quat);
     if(!compareRollPitchYaw(rpyi, rpy_expected)) {
+      auto R = rpy2rotmat(rpyi);
+      std::cout<<"quat2rotmat(rotmat2quat(R))-R"<<std::endl<<quat2rotmat(rotmat2quat(R))-R<<std::endl;
       std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
       std::cout<<"rpy_expected"<<std::endl<<rpy_expected<<std::endl;
       std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
       std::cout<<"rotmat2rpy(rpy2rotmat(rpyi))-rpyi"<<std::endl<<rotmat2rpy(rpy2rotmat(rpyi))-rpyi<<std::endl;
-      std::cout<<"rotmat2quat(rpy2rotmat(rpyi))'-quat:"<<std::endl<<rotmat2quat(rpy2rotmat(rpyi))-quat<<std::endl;
-      std::cout<<"rpy2rotmat(rpyi)-quat2rotmat(quat)"<<std::endl<<rpy2rotmat(rpyi)-quat2rotmat(quat)<<std::endl;
-      std::cout<<"rotmat2quat(quat2rotmat(quat))'-quat:"<<std::endl<<rotmat2quat(quat2rotmat(quat))-quat<<std::endl;
+      std::cout<<"rotmat2quat(rpy2rotmat(rpyi))'-rpy2quat(rpyi):"<<std::endl<<rotmat2quat(rpy2rotmat(rpyi))-rpy2quat(rpyi)<<std::endl;
+      std::cout<<"rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))"<<std::endl<<rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))<<std::endl;
+      std::cout<<"rotmat2quat(quat2rotmat(quat))'-rpy2quat(rpyi):"<<std::endl<<rotmat2quat(quat2rotmat(quat))-rpy2quat(rpyi)<<std::endl;
       std::cout<<"rotmat2rpy(quat2rotmat(quat))-rpyi"<<std::endl<<rotmat2rpy(quat2rotmat(quat)) - rpyi<<std::endl;
+      std::cout<<"quat2rotmat(rotmat2quat(rpy2rotmat(rpy)))-rpy2rotmat(rpy)"<<std::endl<<quat2rotmat(rotmat2quat(rpy2rotmat(rpyi)))-rpy2rotmat(rpyi)<<std::endl;
+      std::cout<<"rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpy))))-rpyi"<<std::endl<<rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpyi))))-rpyi<<std::endl;
+      std::cout<<std::endl<<std::endl;
       rpy2quat(rpyi);
       quat2rpy(quat);
     }
