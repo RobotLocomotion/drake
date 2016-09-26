@@ -327,7 +327,7 @@ class RotationConversionTest : public ::testing::Test {
       rotation_matrix_test_cases_.push_back(rpy2rotmat(rpyi));
     }
     for(auto const &ai:angle_axis_test_cases_) {
-      rotation_matrix_test_cases_.push_back(ai.toRotationMatrix());
+      rotation_matrix_test_cases_.push_back(axis2rotmat(eigenAxisToAxis(ai)));
     }
     for(auto const &qi:quaternion_test_cases_) {
       auto q = eigenQuaterniontoQuat((qi));
@@ -381,11 +381,12 @@ TEST_F(RotationConversionTest, AxisRotmat) {
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
   }
-}*/
+}
 
 TEST_F(RotationConversionTest, AxisRPY) {
   for (const auto ai_eigen : angle_axis_test_cases_) {
     auto ai = eigenAxisToAxis(ai_eigen);
+    //ai.head<3>().normalize();
     auto rpy = axis2rpy(ai);
     // axis2rpy should be the inversion of rpy2axis
     auto a_expected = rpy2axis(rpy);
@@ -395,13 +396,16 @@ TEST_F(RotationConversionTest, AxisRPY) {
       std::cout<<"rpy:"<<std::endl<<rpy<<std::endl;
       auto a2 = rotmat2axis(rpy2rotmat(rpy));
       std::cout<<"a2-ai"<<std::endl<<a2-ai<<std::endl;
+      std::cout<<"a2-a_expected"<<std::endl<<a2-a_expected<<std::endl;
       std::cout<<"a_expected-ai"<<std::endl<<a_expected-ai<<std::endl;
+      std::cout<<"axis2rpy(a2) - rpy"<<std::endl<<axis2rpy(a2)-rpy<<std::endl;
       axis2rpy(ai);
+      std::cout<<std::endl;
     }
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
-/*
+
 TEST_F(RotationConversionTest, QuatAxis) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
     // Compute the angle-axis representation using Eigen geometry module,
@@ -533,21 +537,13 @@ TEST_F(RotationConversionTest, RPYAxis) {
     // rpy2axis should be the inversion of axis2rpy
     Vector3d rpy_expected = axis2rpy(a);
     if(!compareRollPitchYaw(rpyi, rpy_expected)) {
-      std::cout<<(rpyi(1)+M_PI/2)<<" "<<(rpyi(1)-M_PI/2)<<std::endl;
-      auto Ri = rpy2rotmat(rpyi);
-      auto rpyi_inverse = rotmat2rpy(Ri);
-      if(!compareRollPitchYaw(rpyi, rpyi_inverse)) {
-        EXPECT_TRUE(false);
-      }
-      auto R_expected = rpy2rotmat(rpy_expected);
-      auto rpy_inverse = rotmat2rpy(R_expected);
-      if(!compareRollPitchYaw(rpy_expected, rpy_inverse)) {
-        EXPECT_TRUE(false);
-      }
+      std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
+      std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
+      axis2rpy(a);
     }
     EXPECT_TRUE(compareRollPitchYaw(rpyi, rpy_expected));
   }
-}
+}*/
 
 TEST_F(RotationConversionTest, RPYQuat) {
   // Compute the quaternion representation using Eigen's geometry model,
@@ -560,9 +556,16 @@ TEST_F(RotationConversionTest, RPYQuat) {
     compareQuaternion(quat, quat_expected);
     // rpy2quat should be the inversion of quat2rpy
     auto rpy_expected = quat2rpy(quat);
+    if(!compareRollPitchYaw(rpyi, rpy_expected)) {
+      std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
+      std::cout<<"rpy_expected"<<std::endl<<rpy_expected<<std::endl;
+      std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
+      rpy2quat(rpyi);
+      quat2rpy(quat);
+    }
     EXPECT_TRUE(compareRollPitchYaw(rpyi, rpy_expected));
   }
-}*/
+}
 /*
 TEST_F(RotationConversionTest, DRPYRotmat) {
   Vector3d rpy = rotmat2rpy(R_);
