@@ -30,7 +30,8 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrThrowDouble) {
   EXPECT_NO_THROW(value = GetRosParameterOrThrow<double>("int_parameter_name"));
   EXPECT_EQ(1729.0, value);
 
-  // Verifies an exception is thrown if the parameter's type is incorrect.
+  // Verifies an exception is thrown if the parameter's type is not convertible
+  // into a `double`.
   EXPECT_THROW(
       GetRosParameterOrThrow<double>("string_parameter_name"),
       std::runtime_error);
@@ -50,7 +51,8 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrThrowString) {
       GetRosParameterOrThrow<std::string>("bad_parameter", short_timeout),
       std::runtime_error);
 
-  // Verifies an exception is thrown if the parameter's type is incorrect.
+  // Verifies an exception is thrown if the parameter's type is not convertible
+  // into a `std::string`.
   EXPECT_THROW(
       GetRosParameterOrThrow<std::string>("double_parameter_name"),
       std::runtime_error);
@@ -77,7 +79,8 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrThrowInt) {
   EXPECT_NO_THROW(value = GetRosParameterOrThrow<int>("double_parameter_name"));
   EXPECT_EQ(3, value);
 
-  // Verifies an exception is thrown if the parameter's type is not compatible.
+  // Verifies an exception is thrown if the parameter's type is not convertible
+  // into an `int`.
   EXPECT_THROW(
       GetRosParameterOrThrow<int>("string_parameter_name"), std::runtime_error);
 }
@@ -98,7 +101,8 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrThrowBool) {
   EXPECT_TRUE(true_value);
   EXPECT_FALSE(false_value);
 
-  // Verifies an exception is thrown if the parameter's type is incorrect.
+  // Verifies an exception is thrown if the parameter's type is not convertible
+  // into a `bool`.
   EXPECT_THROW(GetRosParameterOrThrow<bool>("double_parameter_name"),
       std::runtime_error);
 }
@@ -128,7 +132,7 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrDefaultDouble) {
   EXPECT_EQ(1729.0, value);
 
   // Verifies the default value is returned if the parameter's type is not
-  // convertable into a double.
+  // convertable into a `double`.
   value = 0;
   EXPECT_NO_THROW(value =
       GetRosParameterOrDefault<double>("string_parameter_name", default_value));
@@ -155,7 +159,7 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrDefaultString) {
   EXPECT_EQ(default_value, value);
 
   // Verifies the default value is returned if the parameter's type is not
-  // convertable into a string.
+  // convertable into a `string`.
   value = "";
   EXPECT_NO_THROW(value =
       GetRosParameterOrDefault<std::string>("double_parameter_name",
@@ -188,7 +192,7 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrDefaultInt) {
   EXPECT_EQ(3, value);
 
   // Verifies the default value is returned when the parameter is a type that
-  // cannot be converted into an int.
+  // is not convertible into an `int`.
   value = 0;
   EXPECT_NO_THROW(value =
       GetRosParameterOrDefault<int>("string_parameter_name", default_value));
@@ -220,7 +224,7 @@ GTEST_TEST(DrakeRosParameterServerTest, TestGetOrDefaultBool) {
   EXPECT_EQ(default_value, value);
 
   // Verifies the default value is returned when the parameter's type is
-  // incompatible with a bool.
+  // not convertible into a `bool`.
   value = false;
   EXPECT_NO_THROW(value =
       GetRosParameterOrDefault<bool>("double_parameter_name", default_value));

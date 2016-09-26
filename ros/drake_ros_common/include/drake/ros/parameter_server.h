@@ -12,17 +12,30 @@ namespace ros {
  * Note that this method calls `ros::Time::now()` and thus requires that either
  * a node handle be created  or `ros::start()` be called prior to this method
  * being called.
+ *
+ * @param[in] parameter_name The name of the parameter to obtain from the ROS
+ * parameter server.
+ *
+ * @param[in] max_wait_time The maximum amount of time to wait for the parameter
+ * to become available before aborting.
+ *
+ * @return This method returns true if the parameter comes into existence prior
+ * to @p max_wait_time and false otherwise.
  */
-void WaitForParameter(const std::string& parameter_name,
+bool WaitForParameter(const std::string& parameter_name,
     double max_wait_time = 1.0);
 
 /**
  * Returns a parameter from the ROS parameter server. Throws a
  *`std::runtime_error` exception if the parameter is not found after
- * @p max_wait_time or is not the correct type.
+ * @p max_wait_time or if the parameter exists but is not a type that can be
+ * converted into `T`.
  *
- * @tparam T The parameter type. Valid types are available here:
- * http://wiki.ros.org/Parameter%20Server#Parameter_Types.
+ * @tparam T The parameter type. A full list of types supported by ROS are
+ * available here: http://wiki.ros.org/Parameter%20Server#Parameter_Types.
+ * Currently this method only has test coverage for the following types:
+ * `double`, `int`, `bool`, and `std::string`. Notably, the following types
+ * are not tested yet: iso8601 dates, lists, and base64-encoded binary data.
  *
  * @param[in] parameter_name The name of the parameter to obtain.
  *
@@ -52,8 +65,11 @@ T GetRosParameterOrThrow(const std::string& parameter_name,
  * if the parameter does not exist after @p max_wait_time or if the parameter
  * exists but is not a type that can be converted into `T`.
  *
- * @tparam T The parameter type. Valid types are available here:
- * http://wiki.ros.org/Parameter%20Server#Parameter_Types.
+ * @tparam T The parameter type. A full list of types supported by ROS are
+ * available here: http://wiki.ros.org/Parameter%20Server#Parameter_Types.
+ * Currently this method only has test coverage for the following types:
+ * `double`, `int`, `bool`, and `std::string`. Notably, the following types
+ * are not tested yet: iso8601 dates, lists, and base64-encoded binary data.
  *
  * @param[in] parameter_name The name of the parameter to obtain.
  *
