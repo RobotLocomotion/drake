@@ -66,6 +66,7 @@ subversion
 swig
 unzip
 valgrind
+xvfb
 
 EOF
     )
