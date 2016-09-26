@@ -30,8 +30,6 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# prepend module path so we can override FindMatlab.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
