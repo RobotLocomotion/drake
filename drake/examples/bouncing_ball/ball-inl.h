@@ -63,7 +63,10 @@ std::unique_ptr<systems::ContinuousState<T>>
 Ball<T>::AllocateContinuousState() const {
   auto state = std::make_unique<systems::BasicVector<T>>(2);
   state->get_mutable_value() << 10, 0;   // initial state values.
-  return std::make_unique<systems::ContinuousState<T>>(std::move(state));
+  return std::make_unique<systems::ContinuousState<T>>(std::move(state),
+                                                       1,  // num_q
+                                                       1,  // num_v
+                                                       0);  // num_z
 }
 
 }  // namespace bouncing_ball

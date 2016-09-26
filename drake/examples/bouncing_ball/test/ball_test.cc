@@ -21,6 +21,14 @@ class BallTest : public ::testing::Test {
     return context_->get_mutable_continuous_state()->get_mutable_state();
   }
 
+  const systems::VectorBase<double>& generalized_position() {
+    return context_->get_continuous_state()->get_generalized_position();
+  }
+
+  const systems::VectorBase<double>& generalized_velocity() {
+    return context_->get_continuous_state()->get_generalized_velocity();
+  }
+
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
@@ -68,6 +76,12 @@ TEST_F(BallTest, Derivatives) {
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(5.3, result->GetAtIndex(0));
   EXPECT_EQ(-9.81, result->GetAtIndex(1));
+}
+
+TEST_F(BallTest, Accessors) {
+  // Evaluate accessors specific to the second-order system.
+  EXPECT_EQ(10.0, generalized_position().GetAtIndex(0));
+  EXPECT_EQ(0, generalized_velocity().GetAtIndex(0));
 }
 
 }  // namespace
