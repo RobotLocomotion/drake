@@ -5,7 +5,7 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace bouncingball {
+namespace bouncing_ball {
 
 /// Dynamical system representation of the one-dimensional equations of
 /// motion for a ball in flight, dropped with an initial position (height)
@@ -25,9 +25,10 @@ namespace bouncingball {
 /// They are already available to link against in drakeBouncingBall.
 ///
 /// Inputs: no inputs.
-/// States: vertical position and velocity, respectively, in units of m and m/s.
-/// Outputs: vertical position and velocity, respectively, in units of m and
-/// m/s.
+/// States: vertical position (state index 0) and velocity (state index 1) in
+/// units of m and m/s, respectively.
+/// Outputs: vertical position (state index 0) and velocity (state index 1) in
+/// units of m and m/s, respectively.
 template <typename T>
 class Ball : public systems::LeafSystem<T> {
  public:
@@ -46,5 +47,5 @@ class Ball : public systems::LeafSystem<T> {
     const override;
 };
 
-}  // namespace bouncingball
+}  // namespace bouncing_ball
 }  // namespace drake

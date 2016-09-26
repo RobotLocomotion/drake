@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace bouncingball {
+namespace bouncing_ball {
 namespace {
 
 class BallTest : public ::testing::Test {
@@ -38,7 +38,7 @@ TEST_F(BallTest, Topology) {
 }
 
 TEST_F(BallTest, Output) {
-  // Grab a pointer to where the EvalOutput results end up.
+  // Grab a pointer to where the EvalOutput results will be saved.
   const auto result = output_->get_vector_data(0);
 
   // Initial state and output.
@@ -55,7 +55,7 @@ TEST_F(BallTest, Output) {
 }
 
 TEST_F(BallTest, Derivatives) {
-  // Grab a pointer to where the EvalTimeDerivatives results end up.
+  // Grab a pointer to where the EvalTimeDerivatives results will be saved.
   const auto result = derivatives_->get_mutable_state();
 
   // Evaluate time derivatives.
@@ -71,5 +71,5 @@ TEST_F(BallTest, Derivatives) {
 }
 
 }  // namespace
-}  // namespace bouncingball
+}  // namespace bouncing_ball
 }  // namespace drake
