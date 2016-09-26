@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace bouncingball {
+namespace bouncing_ball {
 namespace {
 
 class BouncingBallTest : public ::testing::Test {
@@ -31,33 +31,33 @@ TEST_F(BouncingBallTest, Guard) {
   // Evaluate the guard at the initial state.
   EXPECT_EQ(10.0, dut_->EvalGuard(*context_));
 
-  // Evaluate at another state, where the guard should be positive.
+  // Evaluate at a state where the ball is rising (the guard is positive).
   continuous_state()->SetAtIndex(0, 1.7);
   continuous_state()->SetAtIndex(1, 2.3);
   EXPECT_EQ(2.3, dut_->EvalGuard(*context_));
 
-  // Evaluate at yet another state, where the guard should be positive.
+  // Evaluate at a state where the ball is falling (the guard is positive).
   continuous_state()->SetAtIndex(0, 1.7);
   continuous_state()->SetAtIndex(1, -2.0);
   EXPECT_EQ(1.7, dut_->EvalGuard(*context_));
 
-  // Evaluate at the moment of impact, where the guard should be non-positive.
+  // Evaluate at the moment of impact, where the guard is non-positive.
   continuous_state()->SetAtIndex(0, 0.0);
   continuous_state()->SetAtIndex(1, -3.7);
   EXPECT_EQ(0.0, dut_->EvalGuard(*context_));
 }
 
 TEST_F(BouncingBallTest, Reset) {
-  // Grab a pointer to where the context results end up.
+  // Grab a pointer to where the context results will be saved.
   const auto result = output_->get_vector_data(0);
 
-  // Trigger a reset at the initial state.
+  // Perform a reset at the initial state.
   dut_->PerformReset(context_.get());
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(10.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
-  // Trigger a reset at the moment of impact.
+  // Perform a reset at the moment of impact.
   continuous_state()->SetAtIndex(0, 0.0);
   continuous_state()->SetAtIndex(1, -5.7);
   dut_->PerformReset(context_.get());
@@ -68,5 +68,5 @@ TEST_F(BouncingBallTest, Reset) {
 }
 
 }  // namespace
-}  // namespace bouncingball
+}  // namespace bouncing_ball
 }  // namespace drake
