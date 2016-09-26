@@ -5,7 +5,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_iiwa_status.hpp"
 
 namespace drake {
 namespace examples {

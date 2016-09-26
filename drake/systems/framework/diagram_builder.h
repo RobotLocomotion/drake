@@ -268,8 +268,12 @@ class DiagramBuilder {
     if (registered_systems_.size() == 0) {
       throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
     }
-    return typename Diagram<T>::Blueprint{
-        input_port_ids_, output_port_ids_, dependency_graph_, SortSystems()};
+    typename Diagram<T>::Blueprint blueprint;
+    blueprint.input_port_ids = input_port_ids_;
+    blueprint.output_port_ids = output_port_ids_;
+    blueprint.dependency_graph = dependency_graph_;
+    blueprint.sorted_systems = SortSystems();
+    return blueprint;
   }
 
   // DiagramBuilder objects are neither copyable nor moveable.

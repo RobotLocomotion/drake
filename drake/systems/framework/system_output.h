@@ -27,8 +27,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPort(std::unique_ptr<V<T>> vec)
-      : data_(new VectorValue<T>(std::move(vec))) {
-  }
+      : data_(new VectorValue<T>(std::move(vec))) {}
 
   /// Constructs an abstract-valued OutputPort.
   /// Takes ownership of @p data.

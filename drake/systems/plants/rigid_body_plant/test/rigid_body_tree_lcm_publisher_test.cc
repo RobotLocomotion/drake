@@ -1,4 +1,3 @@
-// NOLINT(whitespace/line_length)
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 #include <memory>

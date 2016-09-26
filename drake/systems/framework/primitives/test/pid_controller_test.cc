@@ -32,12 +32,12 @@ class PidControllerTest : public ::testing::Test {
     derivatives_ = controller_.AllocateTimeDerivatives();
 
     // Error signal input port.
-    auto vec0 = std::make_unique<BasicVector<double>>(port_length_);
+    auto vec0 = std::make_unique<BasicVector<double>>(port_size_);
     vec0->get_mutable_value() << error_signal_;
     context_->SetInputPort(0, MakeInput(std::move(vec0)));
 
     // Error signal rate input port.
-    auto vec1 = std::make_unique<BasicVector<double>>(port_length_);
+    auto vec1 = std::make_unique<BasicVector<double>>(port_size_);
     vec1->get_mutable_value() << error_rate_signal_;
     context_->SetInputPort(1, MakeInput(std::move(vec1)));
   }
@@ -45,8 +45,8 @@ class PidControllerTest : public ::testing::Test {
   const double kp_{2.0};
   const double ki_{3.0};
   const double kd_{1.0};
-  const int port_length_{3};
-  PidController<double> controller_{kp_, ki_, kd_, port_length_};
+  const int port_size_{3};
+  PidController<double> controller_{kp_, ki_, kd_, port_size_};
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -77,7 +77,7 @@ TEST_F(PidControllerTest, EvalOutput) {
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
-  VectorX<double> integral_value(port_length_);
+  VectorX<double> integral_value(port_size_);
   integral_value << 3.0, 2.0, 1.0;
   controller_.set_integral_value(context_.get(), integral_value);
   controller_.EvalOutput(*context_, output_.get());

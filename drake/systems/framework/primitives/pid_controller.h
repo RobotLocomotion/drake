@@ -28,14 +28,12 @@ namespace systems {
 template <typename T>
 class PidController : public Diagram<T> {
  public:
-  /// Constructs a PID controller with proportional constant @p Kp,
-  /// integral constant @p Ki and derivative constant @p Kd.
-  /// Input/output ports are limited to have size @p length.
+  /// Constructs a %PidController system.
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
-  /// @param length is the size of the signal to be processed.
-  PidController(const T& Kp, const T& Ki, const T& Kd, int length);
+  /// @param size number of elements in the signal to be processed.
+  PidController(const T& Kp, const T& Ki, const T& Kd, int size);
 
   ~PidController() override {}
 

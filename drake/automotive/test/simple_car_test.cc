@@ -30,7 +30,7 @@ class SimpleCarTest : public ::testing::Test {
 
   SimpleCarState<double>* continuous_state() {
     auto result = dynamic_cast<SimpleCarState<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state()->get_mutable_state());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }

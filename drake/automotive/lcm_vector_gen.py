@@ -161,7 +161,7 @@ TRANSLATOR_HH_PREAMBLE = """
 #include "drake/automotive/gen/%(snake)s.h"
 #include "drake/drakeAutomotiveLcm_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
+#include "drake/lcmt_%(snake)s_t.hpp"
 
 namespace drake {
 namespace automotive {

@@ -5,14 +5,14 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "drake/drakeLCMUtil_export.h"
-#include "lcmtypes/bot_core/position_3d_t.hpp"
-#include "lcmtypes/bot_core/quaternion_t.hpp"
-#include "lcmtypes/bot_core/twist_t.hpp"
-#include "lcmtypes/bot_core/vector_3d_t.hpp"
-#include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "bot_core/position_3d_t.hpp"
+#include "bot_core/quaternion_t.hpp"
+#include "bot_core/twist_t.hpp"
+#include "bot_core/vector_3d_t.hpp"
+#include "drake/lcmt_piecewise_polynomial.hpp"
+#include "drake/lcmt_polynomial.hpp"
+#include "drake/lcmt_polynomial_matrix.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 DRAKELCMUTIL_EXPORT void EncodeVector3d(
     const Eigen::Ref<const Eigen::Vector3d>& vec, bot_core::vector_3d_t& msg);

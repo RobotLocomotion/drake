@@ -42,7 +42,8 @@ void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
-  const VectorBase<double>* input_vector = context.get_vector_input(kPortIndex);
+  const BasicVector<double>* input_vector = EvalVectorInput(context,
+                                                            kPortIndex);
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.

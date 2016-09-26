@@ -343,7 +343,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc =
-      context_->get_mutable_state()->continuous_state->get_mutable_state();
+      context_->get_mutable_continuous_state()->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.
   SampleActions sample_actions;

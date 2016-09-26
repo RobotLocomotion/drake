@@ -6,7 +6,7 @@
 #include "drake/automotive/gen/idm_with_trajectory_agent_state.h"
 #include "drake/drakeAutomotiveLcm_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
+#include "drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
 namespace automotive {

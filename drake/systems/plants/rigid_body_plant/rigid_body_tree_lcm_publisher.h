@@ -8,8 +8,8 @@
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 namespace systems {

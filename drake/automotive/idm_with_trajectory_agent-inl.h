@@ -42,7 +42,7 @@ void IdmWithTrajectoryAgent<T>::EvalOutput(
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
-      context.get_state().continuous_state->get_state().CopyToVector();
+      context.get_continuous_state()->get_state().CopyToVector();
 }
 
 template <typename T>
@@ -53,7 +53,7 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
-      context.get_state().continuous_state->get_state();
+      context.get_continuous_state()->get_state();
   const IdmWithTrajectoryAgentState<T>* const state =
       dynamic_cast<const IdmWithTrajectoryAgentState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
