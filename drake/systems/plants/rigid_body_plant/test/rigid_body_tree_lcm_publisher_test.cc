@@ -272,8 +272,10 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   }
 
   // Ensures both messages have the same length.
-  EXPECT_EQ(expected_message.getEncodedSize(), message_bytes.size());
+  using size_type = std::vector<uint8_t>::size_type;
   int byte_count = expected_message.getEncodedSize();
+  EXPECT_EQ(static_cast<size_type>(byte_count),
+            message_bytes.size());
 
   // Serializes the expected message.
   std::vector<uint8_t> expected_message_bytes(byte_count);

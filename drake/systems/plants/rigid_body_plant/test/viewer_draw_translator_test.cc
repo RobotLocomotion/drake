@@ -67,7 +67,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   double time = 0;
   std::vector<uint8_t> message_bytes;
   viewer_draw_translator.Serialize(time, generalized_state, &message_bytes);
-  EXPECT_GT(message_bytes.size(), 0);
+  EXPECT_GT(message_bytes.size(), 0u);
 
   // Verifies that the serialized message is correct. This entails:
   //     (1) manually creating a the correct `drake::lcmt_viewer_draw`
@@ -106,8 +106,10 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.quaternion.push_back(body0_quaternion);
   expected_message.quaternion.push_back(zero_quaternion);
 
+  using size_type = std::vector<uint8_t>::size_type;
   const int byte_count = expected_message.getEncodedSize();
-  EXPECT_EQ(byte_count, message_bytes.size());
+  EXPECT_EQ(static_cast<size_type>(byte_count),
+            message_bytes.size());
 
   std::vector<uint8_t> expected_bytes(byte_count);
   expected_message.encode(expected_bytes.data(), 0, byte_count);
