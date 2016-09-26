@@ -298,12 +298,15 @@ Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
 
+  // TODO(edrumwri): remove default step size
+  const double DT = 1e-3;
+
   // create a context if necessary
   if (!context_) context_ = system_.CreateDefaultContext();
 
   // create a default integrator
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
-      new RungeKuttaIntegrator2<T>(system_, context_.get()));
+      new RungeKutta2Integrator<T>(system_, DT, context_.get()));
 }
 
 template <typename T>

@@ -1,10 +1,8 @@
 #include "drake/systems/analysis/simulator.h"
-
 #include <cmath>
-
 #include "gtest/gtest.h"
-
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
 
 namespace drake {
 namespace systems {
