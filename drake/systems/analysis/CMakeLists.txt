@@ -6,10 +6,10 @@ set(sources
 # Headers that should be installed with Drake so that they
 # are available elsewhere via #include.
 set(installed_headers
-        integrator_base.h
-        explicit_euler_integrator.h
-        runge_kutta2_integrator.h
-  simulator.h
+    integrator_base.h
+    explicit_euler_integrator.h
+    runge_kutta2_integrator.h
+    simulator.h
 )
 
 # Headers that are needed by code here but should not

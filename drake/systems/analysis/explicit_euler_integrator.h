@@ -24,7 +24,10 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
   virtual typename IntegratorBase<T>::StepResult Step(const T& dt);
 
-  /// No accuracy setting for explicit Euler integrator
+  /**
+   * No accuracy setting for RK2 integrator.
+   * @param accuracy unused
+   */
   virtual void set_target_accuracy(double accuracy) {
     throw std::runtime_error(
         "Accuracy setting not available"
@@ -32,7 +35,9 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
             " integrator");
   }
 
-  /// Gets the target accuracy
+  /**
+   * No accuracy setting for Euler integrator.
+   */
   virtual double get_target_accuracy() const {
     throw std::runtime_error(
         "Accuracy setting not available"
@@ -40,13 +45,20 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
             " integrator");
   }
 
-  /// Gets the fixed step size
+  /**
+   *   Gets the fixed step size.
+   */
   virtual const T& get_ideal_next_step_size() const { return step_size_; }
 
-  /// Sets the fixed step size
+  /**
+   *   Sets the fixed step size
+   *   @param step_size the fixed step size
+   */
   void set_fixed_step_size(const T& step_size) { step_size_ = step_size; }
 
-  /// Gets the fixed step size
+  /**
+   *   Gets the fixed step size.
+   */
   const T& get_fixed_step_size() const { return step_size_; }
 
   /** Request that the first attempted integration step have a particular size.

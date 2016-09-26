@@ -14,14 +14,14 @@
 namespace drake {
 namespace systems {
 
-/// An abstract class for an integrator for ODEs and DAEs
+// An abstract class for an integrator for ODEs and DAEs
 /**
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  */
 template <class T>
 class IntegratorBase {
  public:
-  /// Status returned by Step
+  // Status returned by Step()
   /**
    When a step is successful, it will return an indication of what caused it
    to stop where it did. When unsuccessful it will throw an exception so you
@@ -99,10 +99,14 @@ class IntegratorBase {
     target_accuracy_ = accuracy;
   }
 
-  /// Gets the target accuracy
+  /**
+   *   Gets the target accuracy.
+   */
   virtual double get_target_accuracy() const { return target_accuracy_; }
 
-  /// Integrator must be initialized before used
+  /**
+   *   Integrator must be initialized before being used.
+   */
   virtual void Initialize() { initialization_done_ = true; }
 
   /** Request that the first attempted integration step have a particular size.
@@ -203,10 +207,10 @@ extracting information about this trajectory step. **/
   }
 
  protected:
-  /// Reference to the system being simulated
+  // Reference to the system being simulated
   const System<T>& system_;
 
-  /// Pointer to the context
+  // Pointer to the context
   Context<T>* context_;  // The trajectory Context.
 
   // Runtime variables.
@@ -221,13 +225,13 @@ extracting information about this trajectory step. **/
   int64_t num_steps_taken_{0};
   int64_t num_samples_taken_{0};
 
-  /// Variable for indicating when an integrator has been initialized
+  // Variable for indicating when an integrator has been initialized
   bool initialization_done_{false};
 
-  /// TODO(edrumwri): flesh this out later
+  // TODO(edrumwri): flesh this out later
   void EvaluateWitnessFunctions() {}
 
-  /// TODO(edrumwri): flesh this out later
+  // TODO(edrumwri): flesh this out later
   bool CheckWitnessFunctions() { throw std::runtime_error("Not implemented"); }
 
  private:

@@ -212,12 +212,16 @@ class Simulator {
     return integrator_->get_ideal_next_step_size();
   }
 
-  /// Gets a pointer to the integrator
+  /**
+   *   Gets a pointer to the integrator.
+   */
   IntegratorBase<T>* get_mutable_integrator() const {
     return integrator_.get(); }
 
   // TODO(edrumwri): Undo initialization?
-  /// Resets the integrator
+  /**
+   *   Resets the integrator.
+   */
   void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
     integrator_ = std::move(integrator);
   }
