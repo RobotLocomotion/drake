@@ -19,6 +19,7 @@ set(sources
   primitives/demultiplexer.cc
   primitives/gain.cc
   primitives/integrator.cc
+  primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/pid_controller.cc
   state.cc
