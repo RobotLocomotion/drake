@@ -79,7 +79,8 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
   // Find the continuous state xc within the Context, just once.
   auto& context = IntegratorBase<T>::context_;
   VectorBase<T>* xc =
-      context->get_mutable_state()->get_mutable_continuous_state()->get_mutable_state();
+      context->get_mutable_state()->get_mutable_continuous_state()->
+          get_mutable_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
