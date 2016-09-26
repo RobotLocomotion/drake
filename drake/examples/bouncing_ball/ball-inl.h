@@ -33,7 +33,7 @@ void Ball<T>::EvalOutput(const systems::Context<T>& context,
   DRAKE_ASSERT(output_vector != nullptr);
 
   output_vector->get_mutable_value() =
-      context.get_state().continuous_state->get_state().CopyToVector();
+      context.get_continuous_state()->get_state().CopyToVector();
 }
 
 template <typename T>
@@ -44,7 +44,7 @@ void Ball<T>::EvalTimeDerivatives(
 
   // Obtain the state.
   const systems::VectorBase<T>& state =
-      context.get_state().continuous_state->get_state();
+      context.get_continuous_state()->get_state();
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
