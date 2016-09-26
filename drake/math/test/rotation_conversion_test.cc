@@ -560,6 +560,11 @@ TEST_F(RotationConversionTest, RPYQuat) {
       std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
       std::cout<<"rpy_expected"<<std::endl<<rpy_expected<<std::endl;
       std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
+      std::cout<<"rotmat2rpy(rpy2rotmat(rpyi))-rpyi"<<std::endl<<rotmat2rpy(rpy2rotmat(rpyi))-rpyi<<std::endl;
+      std::cout<<"rotmat2quat(rpy2rotmat(rpyi))'-quat:"<<std::endl<<rotmat2quat(rpy2rotmat(rpyi))-quat<<std::endl;
+      std::cout<<"rpy2rotmat(rpyi)-quat2rotmat(quat)"<<std::endl<<rpy2rotmat(rpyi)-quat2rotmat(quat)<<std::endl;
+      std::cout<<"rotmat2quat(quat2rotmat(quat))'-quat:"<<std::endl<<rotmat2quat(quat2rotmat(quat))-quat<<std::endl;
+      std::cout<<"rotmat2rpy(quat2rotmat(quat))-rpyi"<<std::endl<<rotmat2rpy(quat2rotmat(quat)) - rpyi<<std::endl;
       rpy2quat(rpyi);
       quat2rpy(quat);
     }
