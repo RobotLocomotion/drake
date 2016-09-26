@@ -12,7 +12,7 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
-namespace bouncingball {
+namespace bouncing_ball {
 
 template <typename T>
 Ball<T>::Ball() {
@@ -66,5 +66,5 @@ Ball<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(std::move(state));
 }
 
-}  // namespace bouncingball
+}  // namespace bouncing_ball
 }  // namespace drake

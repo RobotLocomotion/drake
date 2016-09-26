@@ -11,7 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
-namespace bouncingball {
+namespace bouncing_ball {
 
 template <typename T>
 BouncingBall<T>::BouncingBall() {
@@ -21,7 +21,7 @@ template <typename T>
 T BouncingBall<T>::EvalGuard(const systems::Context<T>& context) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
-  // Evaluate the guard condition.
+  // Evaluate the guard function.
   const systems::VectorBase<T>& state =
     context.get_state().continuous_state->get_state();
 
@@ -36,7 +36,7 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(*context));
 
-  // Define a pointer for the continuous state in the context.
+  // Define a pointer to the continuous state in the context.
   const auto result =
     context->get_mutable_state()->continuous_state->get_mutable_state();
 
@@ -48,5 +48,5 @@ void BouncingBall<T>::PerformReset(systems::Context<T>* context) const {
      -1.0 * this->restitution_coef_ * state->GetAtIndex(1));
 }
 
-}  // namespace bouncingball
+}  // namespace bouncing_ball
 }  // namespace drake
