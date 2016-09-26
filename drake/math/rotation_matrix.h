@@ -10,8 +10,8 @@
 namespace drake {
 namespace math {
 /** Computes one of the quaternion from a rotation matrix.
- * The implementation is adapted from
- * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ * This implementation is adapted from simbody
+ * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
  * Notice that there are two quaternions corresponding to the same rotation,
  * namely @p q and @p -q represent the same rotation.
  * @param M A 3 x 3 rotation matrix.
@@ -24,6 +24,39 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
   typedef typename Derived::Scalar Scalar;
+
+  Vector4<Scalar> q;
+
+  // Check if the trace is larger than any diagonal
+  Scalar tr = M.trace();
+  if(tr >= M(0,0) && tr >= M(1,1) && tr >= M(2,2)) {
+    q(0) = 1 + tr;
+    q(1) = M(2, 1) - M(1, 2);
+    q(2) = M(0, 2) - M(2, 0);
+    q(3) = M(1, 0) - M(0, 1);
+  }
+  else if(M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+    q(0) = M(2, 1) - M(1, 2);
+    q(1) = Scalar(1) - (tr - 2*M(0, 0));
+    q(2) = M(0, 1) + M(1, 0);
+    q(3) = M(0, 2) + M(2, 0);
+  }
+  else if(M(1, 1) >= M(2, 2)) {
+    q(0) = M(0, 2) - M(2, 0);
+    q(1) = M(0, 1) + M(1, 0);
+    q(2) = Scalar(1) - (tr - 2*M(1, 1));
+    q(3) = M(1, 2) + M(2, 1);
+  }
+  else {
+    q(0) = M(1, 0) - M(0, 1);
+    q(1) = M(0, 2) + M(2, 0);
+    q(2) = M(1, 2) + M(2, 1);
+    q(3) = 1 - (tr - 2*M(2, 2));
+  }
+  Scalar scale = q.norm();
+  q /= scale;
+  return q;
+  /*
   Eigen::Matrix<Scalar, 4, 3> A;
   A.row(0) << 1.0, 1.0, 1.0;
   A.row(1) << 1.0, -1.0, -1.0;
@@ -76,6 +109,7 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   Vector4<Scalar> q;
   q << w, x, y, z;
   return q;
+   */
 }
 
 /** Computes the angle axis representation from a rotation matrix. Since our
