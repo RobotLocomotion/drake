@@ -243,8 +243,9 @@ class Simulator {
     // is available.
     // integrator_ = std::unique_ptr<IntegratorBase<T>>(new
     // ExplicitEulerIntegrator<T>(system_, context_.get()));
-    std::string message = "ResetSimulatorSettingsInUse() should not be \
-        called until a variable step integrator is implemented";
+    std::string message = "ResetSimulatorSettingsInUse() should not be "
+                          "called until a variable step integrator is "
+                          "implemented";
     drake::log()->error(message);
 
     // TODO(edrumwri): Reset integrator settings.
