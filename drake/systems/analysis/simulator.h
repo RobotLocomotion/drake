@@ -228,8 +228,11 @@ class Simulator {
   // TODO(edrumwri): Undo initialization upon integrator reset?
   /**
    *   Resets the integrator.
+   *   @param integrator a non-NULL pointer to an integrator
    */
   void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
+    if (!integrator)
+      throw std::runtime_error("Integrator is null");
     integrator_ = std::move(integrator);
   }
 
