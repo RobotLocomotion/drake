@@ -50,10 +50,12 @@ Clarifications
   * Only use Doxygen comments (``///`` or ``/** */``) on published APIs (public
     or protected classes and methods).  Code with private access or declared in
     ``.cc`` files should not use the Doxygen format.
-  * Doxygen *must* render correctly and *should* be as easy to read and as
-    informative as possible when viewed directly in the code. This typically
-    precludes embedding LaTeX into Doxygen comment blocks and using "``@p foo``"
-    to denote a reference to parameter ``foo``.
+  * If you decide to use Doxygen formatting hints, then those *must* render
+    correctly. See
+    `PR #3584 <https://github.com/RobotLocomotion/drake/pull/3584>`_.
+  * Prefer Doxygen comment blocks that are as informative as possible.
+  * Prefer Doxygen comment blocks that are readable in both a rendered and
+    un-rendered state.
 
 * Embrace templates/C++14 when it makes the code more correct (more clear or
   more readable also implies more correct).  Minimize template requirements on
