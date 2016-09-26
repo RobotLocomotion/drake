@@ -1,12 +1,13 @@
 # This directory contains black-box regression tests that operate on the
 # installed outputs of the Drake build.
 
-# Xvfb is a virtual framebuffer for Linux. We use it if no native display is
-# available. On other supported platforms (Windows and OS X), a native display
-# is always available.
+# Xvfb is a virtual framebuffer for Linux; we use it here because a display is
+# not always available, and to prevent window appearing on-screen during the
+# test.  On other supported platforms (Windows and OS X), a native display is
+# always available, and always used.
 find_program(xvfb-run xvfb-run)
 
-if(APPLE OR WIN32 OR DEFINED ENV{DISPLAY})
+if(APPLE OR WIN32)
   set(hasDisplay TRUE)
 else()
   set(hasDisplay FALSE)
@@ -26,6 +27,8 @@ if(WITH_DIRECTOR)
              COMMAND xvfb-run -s "-screen 0 1024x768x24"
              ${visualizerStartupTestCommand}
              SIZE medium)
+  else()
+    message(STATUS "visualizer_startup_test is disabled (xvfb-run is absent)")
   endif()
 endif()
 
