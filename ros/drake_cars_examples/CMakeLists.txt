@@ -32,7 +32,7 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 add_executable(single_car_in_stata_garage src/single_car_in_stata_garage.cc)
 target_link_libraries(single_car_in_stata_garage
   ${catkin_LIBRARIES}
-  drakeAutomotive
+  drakeAutomotiveLcm
   drakeCommon
   drakeRBM
   drakeRBSystem

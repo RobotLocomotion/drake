@@ -123,7 +123,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
     T external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      external_force = context.get_vector_input(0)->GetAtIndex(0);
+      external_force = this->EvalVectorInput(context, 0)->GetAtIndex(0);
     }
     return external_force;
   }
@@ -242,12 +242,11 @@ class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem : public LeafSystem<T> {
   }
 
   static const SpringMassStateVector<T>& get_state(const MyContext& context) {
-    return get_state(*context.get_state().continuous_state);
+    return get_state(*context.get_continuous_state());
   }
 
   static SpringMassStateVector<T>* get_mutable_state(MyContext* context) {
-    return get_mutable_state(
-        context->get_mutable_state()->continuous_state.get());
+    return get_mutable_state(context->get_mutable_continuous_state());
   }
 
   const T spring_constant_N_per_m_{};

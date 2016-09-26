@@ -38,6 +38,9 @@ classdef MixedIntegerConvexProgram
     % a symbolic objective term constructed in yalmip
     symbolic_objective = 0;
 
+    x_sol % The solution of all variables
+    
+    solver % either 'gurobi' or 'mosek'. @default is 'gurobi'
   end
 
   properties (SetAccess = protected)
@@ -61,10 +64,10 @@ classdef MixedIntegerConvexProgram
         checkDependency('yalmip');
         obj.symbolic_constraints = lmi();
       end
-
-      checkDependency('gurobi');
       
       obj.has_symbolic = has_symbolic;
+      
+      obj = obj.setSolver('default');
     end
 
     function obj = addVariable(obj, name, type_, size_, lb, ub, start_)
@@ -278,7 +281,11 @@ classdef MixedIntegerConvexProgram
       if obj.has_symbolic
         [obj, solvertime, objval] = obj.solveYalmip();
       else
-        [obj, solvertime, objval] = obj.solveGurobi();
+        if(strcmp(obj.solver,'gurobi'))
+          [obj, solvertime, objval] = obj.solveGurobi();
+        elseif(strcmp(obj.solver,'mosek'))
+          [obj, solvertime, objval] = obj.solveMosek();
+        end
       end
     end
 
@@ -334,6 +341,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = extractResult(obj, x)
+      obj.x_sol = x;
       var_names = fieldnames(obj.vars);
       % Extract the solution
       for j = 1:length(var_names)
@@ -350,12 +358,11 @@ classdef MixedIntegerConvexProgram
     end
 
     function [obj, solvertime, objval] = solveYalmip(obj, params)
-      checkDependency('gurobi');
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
 
       if nargin < 2 || isempty(params)
-        params = sdpsettings('solver', 'gurobi', 'verbose', 0);
+        params = sdpsettings('solver', obj.solver, 'verbose', 0);
       end
 
       % Now add in any constraints or objectives which were declared non-symbolically
@@ -392,6 +399,115 @@ classdef MixedIntegerConvexProgram
       objval = double(objective);
       solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
+    end
+    
+    function [obj,solvertime,objval] = solveMosek(obj)
+      checkDependency('mosek');
+      prob = obj.getMosekModel();
+      params = struct();
+      start_time = clock();
+      [return_code,result] = mosekopt('minimize',prob,params);
+      end_time = clock();
+      solvertime = etime(end_time,start_time);
+      if(isfield(prob,'ints') && ~isempty(prob.ints))
+        if(~strcmp(result.sol.int.prosta,'PRIMAL_FEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:INFEASIBLE','The mixed-integer problem is not feasible');
+        end
+        obj = obj.extractResult(result.sol.int.xx);
+        objval = result.sol.int.pobjval;
+      else
+        if(strcmp(result.sol.itr.prosta,'PRIMAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:PrimalInfeasible','The problem is primal infeasible');
+        elseif(strcmp(result.sol.itr.prosta,'DUAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:DualInfeasible','The problem is dual infeasible');
+        elseif(strcmp(result.sol.itr.prosta,'PRIMAL_AND_DUAL_INFEASIBLE'))
+          error('Drake:MixedIntegerConvexProgram:PrimalDualInfeasible','The problem is primal and dual infeasible');
+        elseif(strcmp(result.sol.itr.prosta,'UNKNOWN'))
+          warning('Drake:MixedIntegerConvexProgram:Unknown','The problem solution status is unknown');
+        else
+          error('Drake:MixedIntegerConvexProgram:UnsupportedResponse', 'The response from Mosek is not supported');
+        end
+        obj = obj.extractResult(result.sol.itr.xx);
+        objval = result.sol.itr.pobjval;
+      end
+    end
+    
+    function prob = getMosekModel(obj)
+      prob.c = obj.c;
+      [prob.qosubi,prob.qosubj,prob.qoval] = find(2*obj.Q);
+      % Mosek only requires specifying the lower triangular part of the
+      % Q matrix. Q(prob.qosubi,prob.qosubj) are the non-zero entries in
+      % the lower triangular part of Q. lower_idx finds out the entries in
+      % the lower triangular part.
+      lower_idx = prob.qosubi >= prob.qosubj;
+      prob.qosubi = prob.qosubi(lower_idx);
+      prob.qosubj = prob.qosubj(lower_idx);
+      prob.qoval = prob.qoval(lower_idx);
+      prob.a = sparse([obj.A;obj.Aeq]);
+      prob.blc = [-inf(size(obj.b));obj.beq];
+      prob.buc = [obj.b;obj.beq];
+      var_names = fieldnames(obj.vars);
+      prob.blx = zeros(obj.nv,1);
+      prob.bux = zeros(obj.nv,1);
+      integer_idx = [];
+      prob.blx = -inf(obj.nv,1);
+      prob.bux = inf(obj.nv,1);
+      for j = 1:length(var_names)
+        name = var_names{j};
+        i = reshape(obj.vars.(name).i,[],1);
+        prob.blx(i) = obj.vars.(name).lb(:);
+        prob.bux(i) = obj.vars.(name).ub(:);
+        if(obj.vars.(name).type == 'B' || obj.vars.(name).type == 'I')
+          integer_idx = [integer_idx reshape(obj.vars.(name).i,1,[])];
+        end
+      end
+      if(~isempty(integer_idx))
+        prob.ints.sub = integer_idx;
+      end
+      if(~isempty(obj.cones))
+        [r,res] = mosekopt('symbcon');
+        prob.cones.type = res.symbcon.MSK_CT_QUAD*ones(1,length(obj.cones));
+        prob.cones.sub = vertcat(obj.cones.index)';
+        prob.cones.subptr = cumsum(cellfun(@(x) length(x),{obj.cones.index}));
+        prob.cones.subptr = [1 prob.cones.subptr(1:end-1)+1];
+      end
+    end
+    
+    function obj = setSolver(obj,solver)
+      if(strcmpi(solver,'gurobi'))
+        checkDependency('gurobi');
+      elseif(strcmpi(solver,'mosek'))
+        checkDependency('mosek');
+      elseif(strcmpi(solver,'default'))
+        if(checkDependency('gurobi'))
+          solver = 'gurobi';
+        elseif(checkDependency('mosek'))
+          solver = 'mosek';
+        else
+          error('Drake:MixedIntegerConvexProgram:UnsupportedSolver','Supported solvers are not available. Install Gurobi or Mosek');
+        end
+      else
+        error('Drake:MixedIntegerConvexProgram:UnsupportedSolver','Solver not supported yet');
+      end
+      obj.solver = solver;
+    end
+    
+    function [solved_prob, solver_time, obj_val] = compareSolvers(obj)
+      solvers = {};
+      if(checkDependency('gurobi'))
+        solvers = [solvers,{'gurobi'}];
+      end
+      if(checkDependency('mosek'))
+        solvers = [solvers,{'mosek'}];
+      end
+      num_solvers = length(solvers);
+      solved_prob = cell(num_solvers,1);
+      solver_time = zeros(num_solvers,1);
+      obj_val = zeros(num_solvers,1);
+      for i = 1:num_solvers
+        solved_prob{i} = obj.setSolver(solvers{i});
+        [solved_prob{i},solver_time(i),obj_val(i)] = solved_prob{i}.solve();
+      end
     end
   end
 end

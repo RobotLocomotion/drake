@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "drake/drake_rbp_export.h"
+#include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -65,7 +65,7 @@ namespace systems {
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.
@@ -160,8 +160,8 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
-  T penetration_damping_{0};
-  T friction_coefficient_{0};
+  T penetration_damping_{penetration_stiffness_ / 10.0};
+  T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
 };

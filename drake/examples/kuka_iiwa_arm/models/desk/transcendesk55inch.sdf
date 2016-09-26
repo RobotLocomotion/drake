@@ -24,12 +24,12 @@
         TODO(Lucy-tri): Compute a more accurate spatial inertia of this table.
         -->
         <inertia>
-          <ixx>9.825</ixx>
+          <ixx>4.33</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
           <iyy>8.325</iyy>
           <iyz>0</iyz>
-          <izz>11.3</izz>
+          <izz>5.8</izz>
         </inertia>
       </inertial>
       <self_collide>0</self_collide>

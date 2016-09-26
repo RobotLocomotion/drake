@@ -13,11 +13,11 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Adder<T>::Adder(int num_inputs, int length) {
+Adder<T>::Adder(int num_inputs, int size) {
   for (int i = 0; i < num_inputs; i++) {
-    this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+    this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
   }
-  this->DeclareOutputPort(kVectorValued, length, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, size, kInheritedSampling);
 }
 
 template <typename T>
@@ -38,9 +38,9 @@ void Adder<T>::EvalOutput(const Context<T>& context,
   output_vector->get_mutable_value() = VectorX<T>::Zero(n);
 
   // Sum each input port into the output, after checking that it has the
-  // expected length.
+  // expected size.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const BasicVector<T>* input_vector = context.get_vector_input(i);
+    const BasicVector<T>* input_vector = this->EvalVectorInput(context, i);
     output_vector->get_mutable_value() += input_vector->get_value();
   }
 }

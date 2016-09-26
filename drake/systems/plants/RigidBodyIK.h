@@ -10,17 +10,6 @@
 
 class RigidBodyTree;
 
-class IKResults {
- public:
-  Eigen::VectorXd q_sol;
-  int info;
-  std::vector<std::string> infeasible_constraints;
-
-  const Eigen::VectorXd &getQSol() const { return q_sol; }
-
-  IKResults(){}
-};
-
 /**
  * inverseKin solves the inverse kinematics problem
  * min_q (q-q_nom)'*Q*(q-q_nom)
@@ -61,15 +50,29 @@ class IKResults {
  * @param ikoptions    The options to set parameters of IK problem.
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKin(RigidBodyTree* model,
-                               const Eigen::MatrixBase<DerivedA>& q_seed,
-                               const Eigen::MatrixBase<DerivedB>& q_nom,
-                               const int num_constraints,
-                               RigidBodyConstraint** const constraint_array,
-                               const IKoptions& ikoptions,
-                               Eigen::MatrixBase<DerivedC>* q_sol, int* info,
-                               std::vector<std::string>* infeasible_constraint);
+DRAKEIK_EXPORT void inverseKin(
+    RigidBodyTree* model,
+    const Eigen::MatrixBase<DerivedA>& q_seed,
+    const Eigen::MatrixBase<DerivedB>& q_nom,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
+    const IKoptions& ikoptions,
+    Eigen::MatrixBase<DerivedC>* q_sol, int* info,
+    std::vector<std::string>* infeasible_constraint);
 
+/**
+ * Return type for simplified versions of IK functions.
+ */
+struct IKResults {
+  std::vector<Eigen::VectorXd> q_sol;
+  std::vector<int> info;
+  std::vector<std::string> infeasible_constraints;
+};
+
+/**
+ * Simplified (non-template) version of inverseKin.  Useful for
+ * generating bindings to non-C++ languages.
+ */
 DRAKEIK_EXPORT IKResults inverseKinSimple(
     RigidBodyTree* model, const Eigen::VectorXd& q_seed,
     const Eigen::VectorXd& q_nom,
@@ -93,14 +96,15 @@ DRAKEIK_EXPORT IKResults inverseKinSimple(
  * @param ikoptions  Same as in inverseKin
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void approximateIK(RigidBodyTree* model,
-                                  const Eigen::MatrixBase<DerivedA>& q_seed,
-                                  const Eigen::MatrixBase<DerivedB>& q_nom,
-                                  const int num_constraints,
-                                  RigidBodyConstraint** const constraint_array,
-                                  const IKoptions& ikoptions,
-                                  Eigen::MatrixBase<DerivedC>* q_sol,
-                                  int* info);
+DRAKEIK_EXPORT void approximateIK(
+    RigidBodyTree* model,
+    const Eigen::MatrixBase<DerivedA>& q_seed,
+    const Eigen::MatrixBase<DerivedB>& q_nom,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
+    const IKoptions& ikoptions,
+    Eigen::MatrixBase<DerivedC>* q_sol,
+    int* info);
 
 /**
  * inverseKinPointwise   solves inverse kinematics problem at each t[i]
@@ -126,17 +130,29 @@ DRAKEIK_EXPORT void approximateIK(RigidBodyTree* model,
  * the seed for t[i]. If the solver fails to find a posture at t[i-1], then
  * q_seed.col(i) would be used as the seed for t[i]
  *                    if ikoptions.sequentialSeedFlag = false, then
-  * q_seed.col(i) would always be used as the seed at t[i]
+ * q_seed.col(i) would always be used as the seed at t[i]
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKEIK_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedC>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
+
+/**
+ * Simplified (non-template) version of inverseKinPointwise.  Useful
+ * for generating bindings to non-C++ languages.
+ */
+DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
+    RigidBodyTree* model,
+    const Eigen::VectorXd& t,
+    const Eigen::MatrixXd& q_seed,
+    const Eigen::MatrixXd& q_nom,
+    const std::vector<RigidBodyConstraint*>& constraint_array,
+    const IKoptions& ikoptions);
 
 /**
  * inverseKinTraj  solves the inverse kinematics problem at all time together.
@@ -174,8 +190,22 @@ DRAKEIK_EXPORT void inverseKinTraj(
     const Eigen::MatrixBase<DerivedA>& qdot0_seed,
     const Eigen::MatrixBase<DerivedB>& q_seed,
     const Eigen::MatrixBase<DerivedC>& q_nom, const int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedD>* q_sol, Eigen::MatrixBase<DerivedE>* qdot_sol,
     Eigen::MatrixBase<DerivedF>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
+
+// TODO(sam.creasey) This version is missing qdot_sol and qddot_sol in
+// the results.
+/**
+ * Simplified (non-template) version of inverseKinTraj.  Useful
+ * for generating bindings to non-C++ languages.
+ */
+DRAKEIK_EXPORT IKResults inverseKinTrajSimple(
+    RigidBodyTree* model,
+    const Eigen::VectorXd& t,
+    const Eigen::MatrixXd& q_seed,
+    const Eigen::MatrixXd& q_nom,
+    const std::vector<RigidBodyConstraint*>& constraint_array,
+    const IKoptions& ikoptions);
