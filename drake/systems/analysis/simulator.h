@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemAnalysis_export.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/common/text_logging.h"
@@ -155,14 +155,14 @@ class Simulator {
   conditions. You should invoke Initialize() after replacing the Context. **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
-    if (integrator_) integrator_->reset_context(context_.get());
+    integrator_->reset_context(context_.get());
     initialization_done_ = false;
   }
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. **/
   std::unique_ptr<Context<T>> release_context() {
-    if (integrator_) integrator_->reset_context(nullptr);
+    integrator_->reset_context(nullptr);
     initialization_done_ = false;
     return std::move(context_);
   }
@@ -212,13 +212,20 @@ class Simulator {
     return integrator_->get_ideal_next_step_size();
   }
 
+
   /**
-   *   Gets a pointer to the integrator.
+   *   Gets a pointer to the mutable integrator.
    */
-  IntegratorBase<T>* get_mutable_integrator() const {
+  const IntegratorBase<T>* get_integrator() const {
     return integrator_.get(); }
 
-  // TODO(edrumwri): Undo initialization?
+  /**
+   *   Gets a pointer to the mutable integrator.
+   */
+  IntegratorBase<T>* get_mutable_integrator() {
+    return integrator_.get(); }
+
+  // TODO(edrumwri): Undo initialization upon integrator reset?
   /**
    *   Resets the integrator.
    */
@@ -231,7 +238,7 @@ class Simulator {
   Simulator& operator=(const Simulator& s) = delete;
 
   // Return a proposed end time for this step, and whether we picked that time
-  // because we hit the next sample time.
+  // because we hit the next update time.
   static std::pair<T, bool> ProposeStepEndTime(const T& step_start_time,
                                                const T& ideal_step_size,
                                                const T& next_update_time,
@@ -245,12 +252,6 @@ class Simulator {
 
     // TODO(edrumwri): Create a new integrator when a variable step integrator
     // is available.
-    // integrator_ = std::unique_ptr<IntegratorBase<T>>(new
-    // ExplicitEulerIntegrator<T>(system_, context_.get()));
-    std::string message = "ResetSimulatorSettingsInUse() should not be "
-                          "called until a variable step integrator is "
-                          "implemented";
-    drake::log()->error(message);
 
     // TODO(edrumwri): Reset integrator settings.
   }
@@ -296,21 +297,19 @@ template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
+
+  // create a context if necessary
   if (!context_) context_ = system_.CreateDefaultContext();
+
+  // create a default integrator
+  integrator_ = std::unique_ptr<IntegratorBase<T>>(
+      new RungeKuttaIntegrator2<T>(system_, context_.get()));
 }
 
 template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
-
-  // create integrator if necessary
-  if (!integrator_)
-    // TODO(edrumwri): Create a new integrator when a variable step integrator
-    // is available.
-    //    integrator_ = std::unique_ptr<IntegratorBase<T>>(new
-    //    ExplicitEulerIntegrator<T>(system_, context_.get()));
-    throw std::runtime_error("No integrator set");
 
   // Restore default values.
   ResetStatistics();
@@ -361,7 +360,7 @@ void Simulator<T>::StepTo(const T& final_time) {
     DRAKE_ASSERT(next_update_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had
-    // to stop there due to hitting the next sample time.
+    // to stop there due to hitting the next update time.
     T step_end_time;
     std::tie(step_end_time, update_time_hit) = ProposeStepEndTime(
         step_start_time, integrator_->get_ideal_next_step_size(),
