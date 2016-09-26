@@ -6,6 +6,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
+#include "drake/systems/framework/context.h"
 
 #include "gtest/gtest.h"
 
@@ -66,7 +67,7 @@ TEST_F(TimeVaryingPolynomialSourceTest, ShouldNotBePossibleToConnectInputs) {
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(TimeVaryingPolynomialSourceTest, ConstantVectorSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace
