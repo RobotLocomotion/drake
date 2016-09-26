@@ -112,11 +112,9 @@ drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
-drake_add_external(octomap PUBLIC)
 drake_add_external(sedumi)
 drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
-drake_add_external(spotless PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC CMAKE)
 
@@ -193,19 +191,22 @@ drake_add_external(ipopt PUBLIC
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # nlopt
-drake_add_external(nlopt PUBLIC
-  PATCH_COMMAND ./autogen.sh --no-configure
-  CONFIGURE_COMMAND ./configure
-    --without-matlab
-    --without-python
-    --without-octave
-    --without-guile
-    --enable-maintainer-mode
-    --enable-shared
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --exec-prefix=${CMAKE_INSTALL_PREFIX}
-    --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+drake_add_external(nlopt PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_PYTHON=OFF
+    -DBUILD_OCTAVE=OFF
+    -DBUILD_MATLAB=OFF
+    -DBUILD_GUILE=OFF
+    -DUSE_SWIG=OFF)
+
+# spotless
+drake_add_external(spotless PUBLIC CMAKE
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+
+# octomap
+drake_add_external(octomap PUBLIC CMAKE
+  SOURCE_SUBDIR octomap)
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC

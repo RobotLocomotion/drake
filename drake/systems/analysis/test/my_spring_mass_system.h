@@ -13,10 +13,10 @@ namespace {
 
 class MySpringMassSystem : public SpringMassSystem {
  public:
-  // Pass through to SpringMassSystem, except add sample rate
-  MySpringMassSystem(double stiffness, double mass, double sample_rate)
+  // Pass through to SpringMassSystem, except add update rate
+  MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem(stiffness, mass, false /*no input force*/),
-        sample_rate_(sample_rate) {}
+        update_rate_(update_rate) {}
 
   int get_publish_count() const { return publish_count_; }
 
@@ -29,17 +29,17 @@ class MySpringMassSystem : public SpringMassSystem {
   }
 
   void DoUpdate(Context<double> *context,
-                const SampleActions &actions) const override {
+                const UpdateActions &actions) const override {
     ++update_count_;
   }
 
-  // Force a sample at the next multiple of the sample rate. If current
-  // time is exactly at a sample time, we assume the sample has been
-  // done and return the following sample time. That means we don't get a
+  // Force a update at the next multiple of the sample rate. If current
+  // time is exactly at a update time, we assume the update has been
+  // done and return the following update time. That means we don't get a
   // sample at 0 but will get one at the end.
-  void DoCalcNextSampleTime(const Context<double> &context,
-                            SampleActions *actions) const override {
-    if (sample_rate_ <= 0.) {
+  void DoCalcNextUpdateTime(const Context<double> &context,
+                            UpdateActions *actions) const override {
+    if (update_rate_ <= 0.) {
       actions->time = std::numeric_limits<double>::infinity();
       return;
     }
@@ -47,17 +47,17 @@ class MySpringMassSystem : public SpringMassSystem {
     // For reliable behavior, convert floating point times into integer
     // sample counts. We want the ceiling unless same as the floor.
     const int prev =
-        static_cast<int>(std::floor(context.get_time() * sample_rate_));
+        static_cast<int>(std::floor(context.get_time() * update_rate_));
     const int next =
-        static_cast<int>(std::ceil(context.get_time() * sample_rate_));
+        static_cast<int>(std::ceil(context.get_time() * update_rate_));
     const int which = next == prev ? next + 1 : next;
 
-    // Convert the next sample count back to a time to return.
-    const double next_sample = which / sample_rate_;
-    actions->time = next_sample;
+    // Convert the next update count back to a time to return.
+    const double next_update = which / update_rate_;
+    actions->time = next_update;
   }
 
-  double sample_rate_{0.};  // Default is "don't sample".
+  double update_rate_{0.};  // Default is "don't update".
 
   mutable int publish_count_{0};
   mutable int update_count_{0};

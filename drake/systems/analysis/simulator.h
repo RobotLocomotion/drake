@@ -117,7 +117,8 @@ class Simulator {
     Sherman, et al. Procedia IUTAM 2:241-261 (2011), section 3.3.
     http://dx.doi.org/10.1016/j.piutam.2011.04.023
   </pre> **/
-  void set_accuracy(double accuracy) { integrator_->set_accuracy(accuracy); }
+  void set_target_accuracy(double accuracy) {
+    integrator_->set_target_accuracy(accuracy); }
 
   /** Report the accuracy setting actually being used. **/
   double get_target_accuracy() const {
@@ -329,9 +330,10 @@ void Simulator<T>::StepTo(const T& final_time) {
 
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
-  // TODO(edrumwri):
   UpdateActions update_actions;
   bool update_time_hit = false;
+
+  // integrate until desired interval has completed
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
@@ -361,13 +363,9 @@ void Simulator<T>::StepTo(const T& final_time) {
         step_start_time, integrator_->get_ideal_next_step_size(),
         next_update_time, final_time);
 
-    // integrate here
-    typename IntegratorBase<T>::StepResult result =
-        integrator_->Step(step_end_time - step_start_time);
-    if (result != result)
-      std::cerr << "error!" << std::endl;
-    else
-      ++num_steps_taken_;
+    // TODO(edrumwri): use the step result when event finding incorporated
+    integrator_->Step(step_end_time - step_start_time);
+    ++num_steps_taken_;
 
     // TODO(sherm1) Constraint projection goes here.
   }

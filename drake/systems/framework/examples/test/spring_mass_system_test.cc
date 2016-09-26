@@ -46,7 +46,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state()->get_mutable_state());
     output_ = dynamic_cast<const SpringMassStateVector*>(
         system_output_->get_vector_data(0));
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
@@ -134,10 +134,8 @@ TEST_F(SpringMassSystemTest, Output) {
 // Tests that second-order structure is exposed in the state.
 TEST_F(SpringMassSystemTest, SecondOrderStructure) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
-  // TODO(amcastro-tri): add method Context::get_mutable_continuous_state();
-  // To minimize user's typing.
   ContinuousState<double>* continuous_state =
-      context_->get_mutable_state()->continuous_state.get();
+      context_->get_mutable_continuous_state();
   ASSERT_EQ(1, continuous_state->get_generalized_position().size());
   ASSERT_EQ(1, continuous_state->get_generalized_velocity().size());
   ASSERT_EQ(1, continuous_state->get_misc_continuous_state().size());
@@ -152,7 +150,7 @@ TEST_F(SpringMassSystemTest, SecondOrderStructure) {
 TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
   ContinuousState<double>* continuous_state =
-      context_->get_mutable_state()->continuous_state.get();
+      context_->get_mutable_continuous_state();
 
   // Slice just the configuration derivatives out of the derivative
   // vector.
@@ -195,7 +193,7 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   ASSERT_EQ(1, context_->get_num_input_ports());
 
   // Creates a vector holding the data entry to the supplied input force.
-  auto force_vector = make_unique<BasicVector<double>>(1 /* length */);
+  auto force_vector = make_unique<BasicVector<double>>(1 /* size */);
 
   // Sets the input force.
   const double kExternalForce = 1.0;
@@ -265,7 +263,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
 
   auto temp_context = context.Clone();
   auto x =
-      temp_context->get_mutable_state()->continuous_state->get_mutable_state();
+      temp_context->get_mutable_continuous_state()->get_mutable_state();
 
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateTimeDerivatives();
@@ -287,7 +285,7 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
   VectorBase<double>* xc =
-      context.get_mutable_state()->continuous_state->get_mutable_state();
+      context.get_mutable_continuous_state()->get_mutable_state();
   const auto& dxc = derivs.get_state();
   xc->PlusEqScaled(h, dxc);  // xc += h*dxc
   context.set_time(t + h);
@@ -301,27 +299,22 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
                            ContinuousState<double>& derivs,  // in/out
                            Context<double>& context) {
   const double t = context.get_time();
+  ContinuousState<double>* xc = context.get_mutable_continuous_state();
 
   // Invalidate z-dependent quantities.
-  VectorBase<double>* xz =
-      context.get_mutable_state()
-          ->continuous_state->get_mutable_misc_continuous_state();
+  VectorBase<double>* xz = xc->get_mutable_misc_continuous_state();
   const auto& dxz = derivs.get_misc_continuous_state();
   xz->PlusEqScaled(h, dxz);  // xz += h*dxz
 
   // Invalidate v-dependent quantities.
-  VectorBase<double>* xv =
-      context.get_mutable_state()
-          ->continuous_state->get_mutable_generalized_velocity();
+  VectorBase<double>* xv = xc->get_mutable_generalized_velocity();
   const auto& dxv = derivs.get_generalized_velocity();
   xv->PlusEqScaled(h, dxv);  // xv += h*dxv
 
   context.set_time(t + h);
 
   // Invalidate q-dependent quantities.
-  VectorBase<double>* xq =
-      context.get_mutable_state()
-          ->continuous_state->get_mutable_generalized_position();
+  VectorBase<double>* xq = xc->get_mutable_generalized_position();
   auto dxq = derivs.get_mutable_generalized_position();
   system.MapVelocityToConfigurationDerivatives(context, *xv,
                                                dxq);  // qdot = N(q)*v
@@ -339,10 +332,10 @@ void StepImplicitEuler(double h, const System<double>& system,
                        ContinuousState<double>& derivs,  // in/out
                        Context<double>& context) {
   const double t = context.get_time();
+  ContinuousState<double>* xc = context.get_mutable_continuous_state();
 
   // Invalidate all xc-dependent quantities.
-  VectorBase<double>* x1 =
-      context.get_mutable_state()->continuous_state->get_mutable_state();
+  VectorBase<double>* x1 = xc->get_mutable_state();
 
   const auto vx0 = x1->CopyToVector();
   const auto& dx0 = derivs.get_state();

@@ -31,7 +31,11 @@ function(drake_setup_matlab)
   # matlab support if the matlab executable is in the user's PATH.
   find_program(MATLAB_EXECUTABLE matlab)
 
-  # TODO find_package(Matlab) and ensure no conflicts with mex_setup
+  # Determine the MATLAB root.
+  get_filename_component(MATLAB_ROOT_DIR "${MATLAB_EXECUTABLE}" DIRECTORY)
+  get_filename_component(MATLAB_ROOT_DIR "${MATLAB_ROOT_DIR}" DIRECTORY CACHE)
+
+  # TODO find_package(Matlab) and delete mex_setup
 endfunction()
 
 #------------------------------------------------------------------------------

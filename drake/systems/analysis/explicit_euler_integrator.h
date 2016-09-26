@@ -76,7 +76,7 @@ typename IntegratorBase<T>::StepResult ExplicitEulerIntegrator<T>::Step(
 
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc = IntegratorBase<T>::context_->get_mutable_state()
-      ->continuous_state->get_mutable_state();
+      ->get_mutable_continuous_state()->get_mutable_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.

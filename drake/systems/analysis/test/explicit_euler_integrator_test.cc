@@ -95,7 +95,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // get the final position
   const double kXFinal =
-      context->get_state().continuous_state->get_state().GetAtIndex(0);
+      context->get_state().get_continuous_state()->get_state().GetAtIndex(0);
 
   // check the solution
   EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,

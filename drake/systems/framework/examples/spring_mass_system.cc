@@ -84,9 +84,9 @@ std::unique_ptr<Context<double>>
 SpringMassSystem::CreateDefaultContext() const {
   std::unique_ptr<LeafContext<double>> context(new LeafContext<double>);
   std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
-  context->get_mutable_state()->continuous_state.reset(
-      new ContinuousState<double>(std::move(state), 1 /* size of q */,
-                                  1 /* size of v */, 1 /* size of z */));
+  const int num_q = 1, num_v = 1, num_z = 1;
+  context->set_continuous_state(std::make_unique<ContinuousState<double>>(
+      std::move(state), num_q, num_v, num_z));
   context->SetNumInputPorts(this->get_num_input_ports());
   return std::unique_ptr<Context<double>>(context.release());
 }
