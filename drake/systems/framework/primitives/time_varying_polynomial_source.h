@@ -26,8 +26,7 @@ class TimeVaryingPolynomialSource : public LeafSystem<T> {
  public:
   /// Constructs a system with a vector output that is time-varying and equals
   /// the value of the piecewise polynomial evaluated at a each time.
-  /// supplied
-  /// @param pp_traj PiecewisePolynomial used by the system. so that the output
+  /// @param pp_traj PiecewisePolynomial used by the system. So, the output
   /// is `y = pp_traj(t)` at all times.
   explicit TimeVaryingPolynomialSource(
       const PiecewisePolynomial<double>& pp_traj);
@@ -38,7 +37,7 @@ class TimeVaryingPolynomialSource : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const PiecewisePolynomial<double>& pp_traj_;
+  const PiecewisePolynomial<double> kPpTraj;
 };
 
 }  // namespace systems
