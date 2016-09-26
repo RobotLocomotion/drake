@@ -45,11 +45,11 @@ class ExampleDiagram : public Diagram<double> {
     integrator1_ = builder.AddSystem<Integrator<double>>(size);
     integrator1_->set_name("integrator1");
 
-    builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
-    builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
-    builder.Connect(adder1_->get_output_port(0), adder2_->get_input_port(1));
+    builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
+    builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
+    builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
-    builder.Connect(adder0_->get_output_port(0),
+    builder.Connect(adder0_->get_output_port(),
                     integrator0_->get_input_port(0));
     builder.Connect(integrator0_->get_output_port(0),
                     integrator1_->get_input_port(0));
@@ -57,8 +57,8 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1));
     builder.ExportInput(adder1_->get_input_port(1));
-    builder.ExportOutput(adder1_->get_output_port(0));
-    builder.ExportOutput(adder2_->get_output_port(0));
+    builder.ExportOutput(adder1_->get_output_port());
+    builder.ExportOutput(adder2_->get_output_port());
     builder.ExportOutput(integrator1_->get_output_port(0));
 
     builder.BuildInto(this);
@@ -390,9 +390,9 @@ class AddConstantDiagram : public Diagram<double> {
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
     adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
 
-    builder.Connect(constant_->get_output_port(0), adder_->get_input_port(1));
+    builder.Connect(constant_->get_output_port(), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
-    builder.ExportOutput(adder_->get_output_port(0));
+    builder.ExportOutput(adder_->get_output_port());
     builder.BuildInto(this);
   }
 
@@ -453,7 +453,7 @@ class PublishNumberDiagram : public Diagram<double> {
     publisher_ = builder.AddSystem<PublishingSystem>(
         [this](double v) { this->set(v); });
 
-    builder.Connect(constant_->get_output_port(0),
+    builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
     builder.BuildInto(this);
   }
@@ -491,9 +491,9 @@ class FeedbackDiagram : public Diagram<double> {
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
-    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* size */);
-    gain_builder.ExportInput(gain_->get_input_port(0));
-    gain_builder.ExportOutput(gain_->get_output_port(0));
+    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
+    gain_builder.ExportInput(gain_->get_input_port());
+    gain_builder.ExportOutput(gain_->get_output_port());
     gain_diagram_ = builder.AddSystem(gain_builder.Build());
 
     builder.Connect(*integrator_diagram_, *gain_diagram_);
