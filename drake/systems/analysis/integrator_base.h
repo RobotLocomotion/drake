@@ -95,7 +95,9 @@ class IntegratorBase {
   http://dx.doi.org/10.1016/j.piutam.2011.04.023
   </pre>
   **/
-  virtual void set_target_accuracy(double accuracy) { target_accuracy_ = accuracy; }
+  virtual void set_target_accuracy(double accuracy) {
+    target_accuracy_ = accuracy;
+  }
 
   /// Gets the target accuracy
   virtual double get_target_accuracy() const { return target_accuracy_; }
