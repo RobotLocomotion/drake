@@ -74,7 +74,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Provides access to the set of cliques to which this element belongs.
-   * @returns A reference to the clique set (as an montonically increasing
+   * @returns A reference to the clique set (as a montonically increasing
    * ordered list).
    */
   const std::vector<int>& collision_cliques() const;

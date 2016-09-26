@@ -8,7 +8,6 @@ using namespace Eigen;
 using namespace std;
 using drake::SortedVectorsHaveIntersection;
 
-
 namespace DrakeCollision {
 Element::Element(const Isometry3d& T_element_to_local)
     : DrakeShapes::Element(T_element_to_local) {
@@ -47,9 +46,11 @@ bool Element::CanCollideWith(const Element *other) const {
 
 void Element::AddToCollisionClique(int clique_id) {
   // Order(N) insertion.
-  // Member CollisionElement::collision_cliques_ is sorted so that checking if
-  // two collision elements belong to a same group can be performed in order N.
-  // See CollisionElement::CanCollideWith
+  // Member Element::collision_cliques_ is a sorted vector so that checking if
+  // two collision elements belong to a same group can be performed
+  // efficiently in order N.
+  // See Element::CanCollideWith() and Element::collision_cliques_ for
+  // explanation.
   auto it = std::lower_bound(collision_cliques_.begin(),
                              collision_cliques_.end(), clique_id);
   if (it == collision_cliques_.end() || clique_id < *it)
