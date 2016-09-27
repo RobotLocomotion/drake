@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -32,7 +30,7 @@ namespace bouncing_ball {
 template <typename T>
 class Ball : public systems::LeafSystem<T> {
  public:
-  /// Constructor for the Ball system.
+  // Constructor for the Ball system.
   Ball();
 
   void EvalOutput(const systems::Context<T>& context,

@@ -1,11 +1,7 @@
 add_subdirectory(test)
 
 add_library_with_exports(LIB_NAME drakeBouncingBall SOURCE_FILES
-  ball-inl.h
-  ball.h
   ball.cc
-  bouncing_ball-inl.h
-  bouncing_ball.h
   bouncing_ball.cc
   )
 target_link_libraries(drakeBouncingBall
@@ -13,6 +9,12 @@ target_link_libraries(drakeBouncingBall
   drakeSystemFramework
   )
 pods_install_libraries(drakeBouncingBall)
+drake_install_headers(
+  bouncing_ball-inl.h
+  bouncing_ball.h
+  ball-inl.h
+  ball.h
+  )
 pods_install_pkg_config_file(drake-bouncing-ball
   LIBS -ldrakeBouncingBall
   REQUIRES

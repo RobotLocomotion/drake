@@ -1,4 +1,4 @@
-#include "drake/examples/bouncing_ball/ball.h"
+#include "drake/examples/bouncing_ball/bouncing_ball.h"
 
 #include <memory>
 
