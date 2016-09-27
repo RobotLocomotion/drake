@@ -1,5 +1,6 @@
 #include "drake/systems/framework/primitives/pid_controller.h"
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -27,17 +28,17 @@ PidController<T>::PidController(
   // Input 0 connects to the proportional and integral components.
   builder.ExportInput(pass_through_->get_input_port(0));
   // Input 1 connects directly to the derivative component.
-  builder.ExportInput(derivative_gain_->get_input_port(0));
+  builder.ExportInput(derivative_gain_->get_input_port());
   builder.Connect(*pass_through_, *proportional_gain_);
   builder.Connect(*pass_through_, *integrator_);
   builder.Connect(*integrator_, *integral_gain_);
-  builder.Connect(proportional_gain_->get_output_port(0),
+  builder.Connect(proportional_gain_->get_output_port(),
                   adder_->get_input_port(0));
-  builder.Connect(integral_gain_->get_output_port(0),
+  builder.Connect(integral_gain_->get_output_port(),
                   adder_->get_input_port(1));
-  builder.Connect(derivative_gain_->get_output_port(0),
+  builder.Connect(derivative_gain_->get_output_port(),
                   adder_->get_input_port(2));
-  builder.ExportOutput(adder_->get_output_port(0));
+  builder.ExportOutput(adder_->get_output_port());
   builder.BuildInto(this);
 }
 
@@ -73,6 +74,13 @@ PidController<T>::get_error_derivative_port() const {
   return Diagram<T>::get_input_port(1);
 }
 
+
+template <typename T>
+const SystemPortDescriptor<T>&
+PidController<T>::get_control_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
 template <typename T>
 void PidController<T>::SetDefaultState(Context<T>* context) const {
   const int size = Diagram<T>::get_input_port(0).get_size();
@@ -88,6 +96,7 @@ void PidController<T>::set_integral_value(
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT PidController<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT PidController<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
