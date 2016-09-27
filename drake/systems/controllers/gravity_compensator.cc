@@ -9,10 +9,11 @@ namespace systems {
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree& rigid_body_tree)
     : rigid_body_tree_(rigid_body_tree) {
-  int num_of_inputs = rigid_body_tree_.number_of_positions();
 
-  this->DeclareInputPort(kVectorValued, num_of_inputs, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, num_of_inputs, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, rigid_body_tree_.number_of_positions(),
+                         kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, rigid_body_tree_.actuators.size(),
+                          kContinuousSampling);
 }
 
 template <typename T>
