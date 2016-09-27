@@ -145,12 +145,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns the number of model instances in the tree.
    */
-  int get_num_model_instances();
+  int get_num_model_instances() const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
 #endif
-  int get_number_of_model_instances();
+  int get_number_of_model_instances() const;
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 

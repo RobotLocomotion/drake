@@ -2345,12 +2345,12 @@ int RigidBodyTree::add_model_instance() {
   return num_model_instances_++;
 }
 
-int RigidBodyTree::get_num_model_instances() {
+int RigidBodyTree::get_num_model_instances() const {
   return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int RigidBodyTree::get_number_of_model_instances() {
+int RigidBodyTree::get_number_of_model_instances() const {
   return get_num_model_instances();
 }
 
