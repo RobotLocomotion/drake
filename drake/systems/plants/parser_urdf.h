@@ -65,11 +65,11 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfStringRpyToWorld(
+ModelInstanceIdTable AddUrdfStringRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfStringRpyToWorld().")
+  DRAKE_DEPRECATED("Please use AddUrdfStringRpyJointToWorld().")
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
@@ -80,7 +80,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
  * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
  * joint. When this joint is at its zero position, the model instance's frame is
- * coincident with the world's coordinate frame.
+ * coincident with the world's coordinate frame. This method has parameter
+ * @p package_map that contains a mapping from ROS package names to their
+ * paths on the local file system. This mapping is used to find resources like
+ * mesh files that are referenced within the URDF. This method may be called
+ * from within the context of a [ROS node](http://wiki.ros.org/Nodes) or a
+ * regular non-ROS application.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -99,12 +104,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfStringRpyToWorldRos(
+ModelInstanceIdTable AddUrdfStringRpyJointToWorldRos(
     const std::string& urdf_string,
     std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfStringRpyToWorldRos().")
+  DRAKE_DEPRECATED("Please use AddUrdfStringRpyJointToWorldRos().")
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
@@ -160,7 +165,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * @p tree. The model instance is connected to the existing @p tree via a joint
  * of type @p floating_base_type. The body to which this joint attaches and
  * the transform between this body and the model instance's frame when this
- * joint is in its zero position is determined by @p weld_to_frame.
+ * joint is in its zero position is determined by @p weld_to_frame. This method
+ * has parameter @p package_map that contains a mapping from ROS package names
+ * to their paths on the local file system. This mapping is used to find
+ * resources like mesh files that are referenced within the URDF. This method
+ * may be called from within the context of a
+ * [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).

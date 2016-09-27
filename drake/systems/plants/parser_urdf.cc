@@ -1073,19 +1073,19 @@ ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
 }  // namespace
 
 
-ModelInstanceIdTable AddUrdfStringRpyToWorld(
+ModelInstanceIdTable AddUrdfStringRpyJointToWorld(
     const string& urdf_string, RigidBodyTree* tree) {
   PackageMap map;
-  return AddUrdfStringRpyToWorldRos(urdf_string, map, tree);
+  return AddUrdfStringRpyJointToWorldRos(urdf_string, map, tree);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string, RigidBodyTree* tree) {
-  return AddUrdfStringRpyToWorld(urdf_string, tree);
+  return AddUrdfStringRpyJointToWorld(urdf_string, tree);
 }
 
-ModelInstanceIdTable AddUrdfStringRpyToWorldRos(
+ModelInstanceIdTable AddUrdfStringRpyJointToWorldRos(
     const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
   const string root_dir = ".";
   return AddUrdfStringRos( urdf_string, package_map, root_dir, kRollPitchYaw,
@@ -1095,7 +1095,7 @@ ModelInstanceIdTable AddUrdfStringRpyToWorldRos(
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const string& urdf_string, PackageMap& package_map, RigidBodyTree* tree) {
-  return AddUrdfStringRpyToWorldRos(urdf_string, package_map,
+  return AddUrdfStringRpyJointToWorldRos(urdf_string, package_map,
       tree);
 }
 
