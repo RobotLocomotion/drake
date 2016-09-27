@@ -6,6 +6,9 @@
   <param name="bool_parameter_name_true" type="bool" value="true" />
   <param name="bool_parameter_name_false" type="bool" value="false" />
 
+  <param name="int_zero" type="int" value="0" />
+  <param name="double_zero" type="double" value="0" />
+
   <test pkg="drake_ros_common_test" test-name="parameter_server_test"
         type="parameter_server_test" />
 </launch>
