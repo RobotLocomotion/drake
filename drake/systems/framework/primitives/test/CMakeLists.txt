@@ -36,3 +36,6 @@ drake_add_test(NAME pid_controller_test COMMAND pid_controller_test)
 add_executable(demultiplexer_test demultiplexer_test.cc)
 target_link_libraries(demultiplexer_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME demultiplexer_test COMMAND demultiplexer_test)
+
+drake_add_cc_test(multiplexer_test)
+target_link_libraries(multiplexer_test drakeSystemFramework)
