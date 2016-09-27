@@ -56,60 +56,6 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   Scalar scale = q.norm();
   q /= scale;
   return q;
-  /*
-  Eigen::Matrix<Scalar, 4, 3> A;
-  A.row(0) << 1.0, 1.0, 1.0;
-  A.row(1) << 1.0, -1.0, -1.0;
-  A.row(2) << -1.0, 1.0, -1.0;
-  A.row(3) << -1.0, -1.0, 1.0;
-  Vector4<Scalar> B = A * M.diagonal();
-  Eigen::Index ind, max_col;
-  Scalar val = B.maxCoeff(&ind, &max_col);
-
-  Scalar w, x, y, z;
-  switch (ind) {
-    case 0: {
-      // val = trace(M)
-      w = sqrt(1.0 + val) / 2.0;
-      Scalar w4 = w * 4.0;
-      x = (M(2, 1) - M(1, 2)) / w4;
-      y = (M(0, 2) - M(2, 0)) / w4;
-      z = (M(1, 0) - M(0, 1)) / w4;
-      break;
-    }
-    case 1: {
-      // val = M(1, 1) - M(2, 2) - M(3, 3)
-      Scalar s = 2.0 * sqrt(1.0 + val);
-      w = (M(2, 1) - M(1, 2)) / s;
-      x = 0.25 * s;
-      y = (M(0, 1) + M(1, 0)) / s;
-      z = (M(0, 2) + M(2, 0)) / s;
-      break;
-    }
-    case 2: {
-      //  % val = M(2, 2) - M(1, 1) - M(3, 3)
-      Scalar s = 2.0 * (sqrt(1.0 + val));
-      w = (M(0, 2) - M(2, 0)) / s;
-      x = (M(0, 1) + M(1, 0)) / s;
-      y = 0.25 * s;
-      z = (M(1, 2) + M(2, 1)) / s;
-      break;
-    }
-    default: {
-      // val = M(3, 3) - M(2, 2) - M(1, 1)
-      Scalar s = 2.0 * (sqrt(1.0 + val));
-      w = (M(1, 0) - M(0, 1)) / s;
-      x = (M(0, 2) + M(2, 0)) / s;
-      y = (M(1, 2) + M(2, 1)) / s;
-      z = 0.25 * s;
-      break;
-    }
-  }
-
-  Vector4<Scalar> q;
-  q << w, x, y, z;
-  return q;
-   */
 }
 
 /** Computes the angle axis representation from a rotation matrix. Since our
