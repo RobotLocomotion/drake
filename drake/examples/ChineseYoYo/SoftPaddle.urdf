@@ -133,11 +133,11 @@
     <dynamics damping="0"/>
   </joint>
 
-  <force_element name="paddle_spring">
+<!--<force_element name="paddle_spring">
     <torsional_spring rest_angle="0" stiffness="5000">
       <joint name="paddle_angle"/>
     </torsional_spring>
-  </force_element>
+  </force_element> -->
 
   <force_element name="tensioner_spring">
     <torsional_spring rest_angle="0" stiffness="80">

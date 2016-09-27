@@ -20,9 +20,14 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       cable_length_fcn.pulley = cable_length_fcn.pulley([1 3 4]);
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
         pulley_constraint.ub, cable_length_fcn);
+      
+            
+      pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
+      pulley_constraint.grad_level = 2; %declare that the second derivative is provided
+      pulley_constraint.grad_method = 'user';
+      
+      
       no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
-%       pulley_constraint = no_contact.position_constraints{1};
-%       cable_length_fcn = pulley_constraint.fcn;
       
       
       modeStates = 1; %number of discrete state variables, here only one mode variable

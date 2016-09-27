@@ -21,17 +21,28 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     end
     
     function [length,dlength,ddlength] = eval(obj,q)
+      
       kinsol = obj.rbm.doKinematics(q,nargout>2);
-      dims = obj.getNumInputs;
+      
+      %dims = obj.getNumInputs;
+      dims = 3;
+      
+      %TODO: Make this generic:
       length = 0;
-      dlength = 0*q';
-      ddlength = zeros(1,numel(q)^2); % unused variable
+%       dlength = 0*q';
+%       ddlength = zeros(1,numel(q)^2);
+      dlength = zeros(1,3); %TODO: make generic
+      ddlength = zeros(1,9); %TODO: make generic
+      
       for i=1:numel(obj.pulley)
         % compute new positions of each pulley (?)
         if nargout>2
           [pt,dpt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+          dpt = dpt(:,2:4); %TODO: make generic
+          ddpt = [ddpt(:,6:8), ddpt(:,10:12), ddpt(:,14:16)]; %TODO: make generic
         elseif nargout>1
           [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+          dpt = dpt(:,2:4); %TODO: make generic
         else
           pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         end          
@@ -158,7 +169,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                       dRda = daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
                       d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
                       dRdq = kron(dRda, -dalpha);
-                      dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)];
+                      dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)]; % TODO: make this generic
                     ddpt2 = ddpt - r2*reshape(matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*-dalpha, ddalpha) + ...
                       r2*matGradMultMat(R,dcvec, dRdq, reshape(ddcvec,3*dims,[])), 3, []);   % should be correct
                   else
@@ -247,7 +258,8 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
           end
         end
       end
-      
+      dlength = [0 dlength]; %TODO: mage generic
+      ddlength = [zeros(1,4), 0, ddlength(1:3), 0, ddlength(4:6), 0, ddlength(7:9)]; %TODO: mage generic
     end
     
     function [vertex,edge] = getSegments(obj,q)
