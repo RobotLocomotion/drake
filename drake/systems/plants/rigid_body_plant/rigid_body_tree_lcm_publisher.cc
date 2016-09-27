@@ -14,7 +14,7 @@ RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
     draw_message_translator_(tree) {
   set_name("rigid_body_tree_visualizer_lcm");
   const int vector_size =
-      tree.number_of_positions() + tree.number_of_velocities();
+      tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
 }
 

@@ -53,7 +53,7 @@ const RigidBodyTree& RigidBodyPlant<T>::get_rigid_body_tree() const {
 
 template <typename T>
 int RigidBodyPlant<T>::get_num_bodies() const {
-  return tree_->get_number_of_bodies();
+  return tree_->get_num_bodies();
 }
 
 template <typename T>
