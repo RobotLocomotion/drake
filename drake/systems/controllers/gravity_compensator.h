@@ -34,7 +34,7 @@ class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const RigidBodyTree& mdb_world_;
+  const RigidBodyTree& rigid_body_tree_;
 };
 
 }  // namespace systems
