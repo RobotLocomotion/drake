@@ -14,7 +14,8 @@
 namespace drake {
 namespace math {
 template <typename Derived>
-Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(const Eigen::MatrixBase<Derived> &a) {
+Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
+    const Eigen::MatrixBase<Derived>& a) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return Eigen::AngleAxis<typename Derived::Scalar>(a(3), a.template head<3>());
 }
@@ -40,8 +41,9 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
     const Eigen::MatrixBase<Derived>& a) {
   using Scalar = typename Derived::Scalar;
   auto axis_skew = VectorToSkewSymmetric(a.template head<3>());
-  return Matrix3<Scalar>::Identity() + axis_skew*sin(a(3)) + axis_skew*axis_skew*(Scalar(1)-cos(a(3)));
-  //return quat2rotmat(axis2quat(a));
+  return Matrix3<Scalar>::Identity() + axis_skew * sin(a(3)) +
+         axis_skew * axis_skew * (Scalar(1) - cos(a(3)));
+  // return quat2rotmat(axis2quat(a));
 }
 
 template <typename Derived>

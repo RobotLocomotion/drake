@@ -202,12 +202,9 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
   auto xz = x * z;
   auto yz = y * z;
   Matrix3<typename Derived::Scalar> M;
-  M.row(0) << ww + xx - yy - zz, 2.0 * xy - 2.0 * wz,
-      2.0 * xz + 2.0 * wy;
-  M.row(1) << 2.0 * xy + 2.0 * wz, ww + yy - xx - zz,
-      2.0 * yz - 2.0 * wx;
-  M.row(2) << 2.0 * xz - 2.0 * wy, 2.0 * yz + 2.0 * wx,
-      ww + zz - xx - yy;
+  M.row(0) << ww + xx - yy - zz, 2.0 * xy - 2.0 * wz, 2.0 * xz + 2.0 * wy;
+  M.row(1) << 2.0 * xy + 2.0 * wz, ww + yy - xx - zz, 2.0 * yz - 2.0 * wx;
+  M.row(2) << 2.0 * xz - 2.0 * wy, 2.0 * yz + 2.0 * wx, ww + zz - xx - yy;
 
   return M;
 }
@@ -215,13 +212,14 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 /**
  * Compute the Euler angles from quaternion representation
  * @param q A 4 x 1 unit length vector @p q=[w;x;y;z]
- * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2), rpy(1), rpy(0)]
+ * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
+ * rpy(1), rpy(0)]
  * @see rpy2rotmat
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& q) {
- return rotmat2rpy(quat2rotmat(q));
+  return rotmat2rpy(quat2rotmat(q));
 }
 
 template <typename Derived>

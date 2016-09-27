@@ -38,8 +38,9 @@ Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
-bool check_rpy_range(const Vector3d &rpy) {
-  return rpy(0) <= M_PI && rpy(0) >= -M_PI && rpy(1) <= M_PI/2 && rpy(1) >= -M_PI/2 && rpy(2) <= M_PI && rpy(2) >= -M_PI;
+bool check_rpy_range(const Vector3d& rpy) {
+  return rpy(0) <= M_PI && rpy(0) >= -M_PI && rpy(1) <= M_PI / 2 &&
+         rpy(1) >= -M_PI / 2 && rpy(2) <= M_PI && rpy(2) >= -M_PI;
 }
 // Compare the equivalent rotation matrix.
 // Note that we are not comparing the axis-angle directly. This is because the
@@ -50,31 +51,35 @@ bool compareAngleAxis(const AngleAxisd& a1, const AngleAxisd& a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
-bool compareQuaternion(const Vector4d& q1, const Vector4d& q2, double precision = 1E-12) {
+bool compareQuaternion(const Vector4d& q1, const Vector4d& q2,
+                       double precision = 1E-12) {
   return q1.isApprox(q2, precision) | q1.isApprox(-q2, precision);
 }
 Quaterniond eulerToQuaternion(const Vector3d euler) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''
   return AngleAxisd(euler(0), Vector3d::UnitZ()) *
-      AngleAxisd(euler(1), Vector3d::UnitY()) *
-      AngleAxisd(euler(2), Vector3d::UnitX());
+         AngleAxisd(euler(1), Vector3d::UnitY()) *
+         AngleAxisd(euler(2), Vector3d::UnitX());
 }
 
 bool compareEulerAngles(const Vector3d& euler_angles1,
-                        const Vector3d& euler_angles2, double precision = 1E-12) {
+                        const Vector3d& euler_angles2,
+                        double precision = 1E-12) {
   auto q1 = eulerToQuaternion(euler_angles1);
   auto q2 = eulerToQuaternion(euler_angles2);
-  return compareQuaternion(eigenQuaterniontoQuat(q1), eigenQuaterniontoQuat(q2), precision);
+  return compareQuaternion(eigenQuaterniontoQuat(q1), eigenQuaterniontoQuat(q2),
+                           precision);
 }
 
-bool compareRollPitchYaw(const Vector3d &rpy1, const Vector3d &rpy2) {
+bool compareRollPitchYaw(const Vector3d& rpy1, const Vector3d& rpy2) {
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
   // When pitch is close to PI/2 or -PI/2, the derivative of rotation matrix
   // w.r.t Euler angle is very big, so relax the tolerance to accomodate the
   // numeric error.
   double precision = 1E-12;
-  if(std::abs(rpy1(1) - M_PI/2) < 1E-5 || std::abs(rpy1(1) + M_PI/2) < 1E-5) {
+  if (std::abs(rpy1(1) - M_PI / 2) < 1E-5 ||
+      std::abs(rpy1(1) + M_PI / 2) < 1E-5) {
     precision = 1E-7;
   }
   return compareEulerAngles(euler_angles1, euler_angles2, precision);
@@ -86,29 +91,21 @@ Vector4d eigenAxisToAxis(const AngleAxisd& a) {
   return ret;
 }
 
-
-
 Matrix3d rotz(double a) {
   Matrix3d ret;
-  ret << cos(a), -sin(a), 0,
-      sin(a), cos(a) , 0,
-      0     , 0      , 1;
+  ret << cos(a), -sin(a), 0, sin(a), cos(a), 0, 0, 0, 1;
   return ret;
 }
 
 Matrix3d roty(double b) {
   Matrix3d ret;
-  ret << cos(b) , 0, sin(b),
-      0      , 1, 0      ,
-      -sin(b), 0, cos(b);
+  ret << cos(b), 0, sin(b), 0, 1, 0, -sin(b), 0, cos(b);
   return ret;
 }
 
 Matrix3d rotx(double c) {
   Matrix3d ret;
-  ret << 1, 0,      0,
-      0, cos(c), -sin(c),
-      0, sin(c), cos(c);
+  ret << 1, 0, 0, 0, cos(c), -sin(c), 0, sin(c), cos(c);
   return ret;
 }
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
@@ -160,40 +157,54 @@ class RotationConversionTest : public ::testing::Test {
     // in Euler Body-fixed z-y'-x'' rotation sequence
 
     // pitch = pi/2
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, M_PI/2, M_PI/3));
+    rpy_test_cases_.push_back(Vector3d(M_PI / 4, M_PI / 2, M_PI / 3));
 
     // pitch = -pi/2
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, -M_PI/2, M_PI/3));
+    rpy_test_cases_.push_back(Vector3d(M_PI / 4, -M_PI / 2, M_PI / 3));
 
     // pitch = 0.5*pi-eps
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - numeric_limits<double>::epsilon(), M_PI/3));
+    rpy_test_cases_.push_back(Vector3d(
+        M_PI / 4, 0.5 * M_PI - numeric_limits<double>::epsilon(), M_PI / 3));
 
     // pitch = 0.5*pi-1.5*eps
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - 1.5*numeric_limits<double>::epsilon(), M_PI/3));
+    rpy_test_cases_.push_back(
+        Vector3d(M_PI / 4, 0.5 * M_PI - 1.5 * numeric_limits<double>::epsilon(),
+                 M_PI / 3));
 
     // pitch = 0.5*pi-2*eps
-    rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - 2*numeric_limits<double>::epsilon(), M_PI/3));
+    rpy_test_cases_.push_back(
+        Vector3d(M_PI / 4, 0.5 * M_PI - 2 * numeric_limits<double>::epsilon(),
+                 M_PI / 3));
 
     // pitch = 0.5*pi - 1E-6
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.8, 0.5*M_PI - 1E-6, 0.9*M_PI));
+    rpy_test_cases_.push_back(
+        Vector3d(M_PI * 0.8, 0.5 * M_PI - 1E-6, 0.9 * M_PI));
 
     // pitch = -0.5*pi+eps
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.9, -0.5*M_PI + numeric_limits<double>::epsilon(), M_PI*0.3));
+    rpy_test_cases_.push_back(
+        Vector3d(M_PI * -0.9, -0.5 * M_PI + numeric_limits<double>::epsilon(),
+                 M_PI * 0.3));
 
     // pitch = -0.5*pi+1.5*eps
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.6, -0.5*M_PI + 1.5*numeric_limits<double>::epsilon(), M_PI*0.3));
+    rpy_test_cases_.push_back(Vector3d(
+        M_PI * -0.6, -0.5 * M_PI + 1.5 * numeric_limits<double>::epsilon(),
+        M_PI * 0.3));
 
     // pitch = -0.5*pi+2*eps
-    rpy_test_cases_.push_back(Vector3d(M_PI*-0.5, -0.5*M_PI + 2*numeric_limits<double>::epsilon(), M_PI*0.4));
+    rpy_test_cases_.push_back(Vector3d(
+        M_PI * -0.5, -0.5 * M_PI + 2 * numeric_limits<double>::epsilon(),
+        M_PI * 0.4));
 
     // pitch = -0.5*pi + 1E-6
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.9, -0.5*M_PI+1E-6, 0.8*M_PI));
+    rpy_test_cases_.push_back(
+        Vector3d(M_PI * 0.9, -0.5 * M_PI + 1E-6, 0.8 * M_PI));
 
     // non-singular cases
     auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.49*M_PI, 0.49*M_PI);
+    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.49 * M_PI,
+                                            0.49 * M_PI);
     auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
-    for(int i = 0; i < roll.size(); ++i) {
+    for (int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
         for (int k = 0; k < yaw.size(); ++k) {
           rpy_test_cases_.push_back(Vector3d(roll(i), pitch(j), yaw(j)));
@@ -202,7 +213,7 @@ class RotationConversionTest : public ::testing::Test {
     }
   }
 
-  void addAngleAxisTestCase(double angle, const Vector3d &axis) {
+  void addAngleAxisTestCase(double angle, const Vector3d& axis) {
     angle_axis_test_cases_.push_back(AngleAxisd(angle, axis));
   }
   void setupAngleAxisTestCases() {
@@ -218,7 +229,6 @@ class RotationConversionTest : public ::testing::Test {
     // Differentiation issue at 180 rotation around an arbitrary unit axis
     // Differentiation issue close to 180 rotation around an arbitrary axis
 
-
     // 0 rotation around x axis
     addAngleAxisTestCase(0, Vector3d::UnitX());
 
@@ -229,7 +239,7 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase(0, Vector3d::UnitZ());
 
     // 0 rotation around an arbitrary axis
-    Vector3d axis(0.5*sqrt(2), 0.4*sqrt(2), 0.3*sqrt(2));
+    Vector3d axis(0.5 * sqrt(2), 0.4 * sqrt(2), 0.3 * sqrt(2));
     addAngleAxisTestCase(0, axis);
 
     // epsilon rotation around an arbitrary axis
@@ -269,33 +279,36 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase(-M_PI, axis);
 
     // (1-epsilon)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((1-numeric_limits<double>::epsilon())*M_PI, axis);
+    addAngleAxisTestCase((1 - numeric_limits<double>::epsilon()) * M_PI, axis);
 
     // (-1+epsilon)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((-1+numeric_limits<double>::epsilon())*M_PI, axis);
+    addAngleAxisTestCase((-1 + numeric_limits<double>::epsilon()) * M_PI, axis);
 
     // (1-2*epsilon)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((1-2*numeric_limits<double>::epsilon())*M_PI, axis);
+    addAngleAxisTestCase((1 - 2 * numeric_limits<double>::epsilon()) * M_PI,
+                         axis);
 
     // (-1+2*epsilon)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((-1+2*numeric_limits<double>::epsilon())*M_PI, axis);
+    addAngleAxisTestCase((-1 + 2 * numeric_limits<double>::epsilon()) * M_PI,
+                         axis);
 
     // (1-1E-10)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((1-1E-10)*M_PI, axis);
+    addAngleAxisTestCase((1 - 1E-10) * M_PI, axis);
 
     // (-1+1E-10)*pi rotation around an arbitrary axis
-    addAngleAxisTestCase((-1+1E-10)*M_PI, axis);
+    addAngleAxisTestCase((-1 + 1E-10) * M_PI, axis);
 
     // non-singularity cases
     auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
     auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
     auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.95*M_PI, 0.95*M_PI);
+    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20,
+                                              -0.95 * M_PI, 0.95 * M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
         for (int k = 0; k < a_z.size(); ++k) {
           Vector3d axis_ijk(a_x(i), a_y(j), a_z(k));
-          if(axis_ijk.norm() > 1E-3) {
+          if (axis_ijk.norm() > 1E-3) {
             axis_ijk.normalize();
             for (int l = 0; l < a_angle.size(); ++l) {
               addAngleAxisTestCase(a_angle(l), axis_ijk);
@@ -316,9 +329,10 @@ class RotationConversionTest : public ::testing::Test {
         for (int k = 0; k < qy.size(); ++k) {
           for (int l = 0; l < qz.size(); ++l) {
             Vector4d q(qw(i), qx(j), qy(k), qz(l));
-            if(q.norm() > 1E-3) {
+            if (q.norm() > 1E-3) {
               q.normalize();
-              quaternion_test_cases_.push_back(Quaterniond(q(0), q(1), q(2), q(3)));
+              quaternion_test_cases_.push_back(
+                  Quaterniond(q(0), q(1), q(2), q(3)));
             }
           }
         }
@@ -327,13 +341,13 @@ class RotationConversionTest : public ::testing::Test {
   }
 
   void setupRotationMatrixTestCases() {
-    for(auto const &rpyi:rpy_test_cases_) {
+    for (auto const& rpyi : rpy_test_cases_) {
       rotation_matrix_test_cases_.push_back(rpy2rotmat(rpyi));
     }
-    for(auto const &ai:angle_axis_test_cases_) {
+    for (auto const& ai : angle_axis_test_cases_) {
       rotation_matrix_test_cases_.push_back(axis2rotmat(eigenAxisToAxis(ai)));
     }
-    for(auto const &qi:quaternion_test_cases_) {
+    for (auto const& qi : quaternion_test_cases_) {
       auto q = eigenQuaterniontoQuat((qi));
       auto R = quat2rotmat(q);
       rotation_matrix_test_cases_.push_back(R);
@@ -369,7 +383,7 @@ TEST_F(RotationConversionTest, AxisRotmat) {
     auto ai = eigenAxisToAxis(ai_eigen);
     auto axis_skew = VectorToSkewSymmetric(ai.head<3>());
     auto rotmat_expected = Matrix3d::Identity() + std::sin(ai(3)) * axis_skew +
-        (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
+                           (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
     auto rotmat = axis2rotmat(ai);
     EXPECT_TRUE(CompareMatrices(rotmat, rotmat_expected, 1E-10,
                                 MatrixCompareType::absolute));
@@ -390,21 +404,22 @@ TEST_F(RotationConversionTest, AxisRotmat) {
 TEST_F(RotationConversionTest, AxisRPY) {
   for (const auto ai_eigen : angle_axis_test_cases_) {
     auto ai = eigenAxisToAxis(ai_eigen);
-    //ai.head<3>().normalize();
+    // ai.head<3>().normalize();
     auto rpy = axis2rpy(ai);
     // axis2rpy should be the inversion of rpy2axis
     auto a_expected = rpy2axis(rpy);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
-    if(!compareAngleAxis(ai_eigen, a_eigen_expected)) {
-      std::cout<<"rpy:"<<std::endl<<rpy<<std::endl;
+    if (!compareAngleAxis(ai_eigen, a_eigen_expected)) {
+      std::cout << "rpy:" << std::endl << rpy << std::endl;
       auto a2 = rotmat2axis(rpy2rotmat(rpy));
-      std::cout<<"a2-ai"<<std::endl<<a2-ai<<std::endl;
-      std::cout<<"a2-a_expected"<<std::endl<<a2-a_expected<<std::endl;
-      std::cout<<"a_expected-ai"<<std::endl<<a_expected-ai<<std::endl;
-      std::cout<<"axis2rpy(a2) - rpy"<<std::endl<<axis2rpy(a2)-rpy<<std::endl;
+      std::cout << "a2-ai" << std::endl << a2 - ai << std::endl;
+      std::cout << "a2-a_expected" << std::endl << a2 - a_expected << std::endl;
+      std::cout << "a_expected-ai" << std::endl << a_expected - ai << std::endl;
+      std::cout << "axis2rpy(a2) - rpy" << std::endl
+                << axis2rpy(a2) - rpy << std::endl;
       axis2rpy(ai);
-      std::cout<<std::endl;
+      std::cout << std::endl;
     }
     EXPECT_TRUE(check_rpy_range(rpy));
   }
@@ -505,8 +520,8 @@ TEST_F(RotationConversionTest, RPYRotmat) {
   // then compare the result with rpy2rotmat
   for (const auto& rpyi : rpy_test_cases_) {
     auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
-        Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
-        Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
+                             Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
+                             Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     auto rotmat = rpy2rotmat(rpyi);
     EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(),
                                 1E-10, MatrixCompareType::absolute));
@@ -521,8 +536,8 @@ TEST_F(RotationConversionTest, RPYAxis) {
   // compare the result with rpy2axis
   for (const auto& rpyi : rpy_test_cases_) {
     auto rotation_expected = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
-        Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
-        Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
+                             Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
+                             Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     auto a_eigen_expected = Eigen::AngleAxis<double>(rotation_expected);
     auto a = rpy2axis(rpyi);
     AngleAxisd a_eigen = axisToEigenAngleAxis(a);
@@ -545,20 +560,34 @@ TEST_F(RotationConversionTest, RPYQuat) {
     compareQuaternion(quat, quat_expected);
     // rpy2quat should be the inversion of quat2rpy
     auto rpy_expected = quat2rpy(quat);
-    if(!compareRollPitchYaw(rpyi, rpy_expected)) {
+    if (!compareRollPitchYaw(rpyi, rpy_expected)) {
       auto R = rpy2rotmat(rpyi);
-      std::cout<<"quat2rotmat(rotmat2quat(R))-R"<<std::endl<<quat2rotmat(rotmat2quat(R))-R<<std::endl;
-      std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
-      std::cout<<"rpy_expected"<<std::endl<<rpy_expected<<std::endl;
-      std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
-      std::cout<<"rotmat2rpy(rpy2rotmat(rpyi))-rpyi"<<std::endl<<rotmat2rpy(rpy2rotmat(rpyi))-rpyi<<std::endl;
-      std::cout<<"rotmat2quat(rpy2rotmat(rpyi))'-rpy2quat(rpyi):"<<std::endl<<rotmat2quat(rpy2rotmat(rpyi))-rpy2quat(rpyi)<<std::endl;
-      std::cout<<"rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))"<<std::endl<<rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))<<std::endl;
-      std::cout<<"rotmat2quat(quat2rotmat(quat))'-rpy2quat(rpyi):"<<std::endl<<rotmat2quat(quat2rotmat(quat))-rpy2quat(rpyi)<<std::endl;
-      std::cout<<"rotmat2rpy(quat2rotmat(quat))-rpyi"<<std::endl<<rotmat2rpy(quat2rotmat(quat)) - rpyi<<std::endl;
-      std::cout<<"quat2rotmat(rotmat2quat(rpy2rotmat(rpy)))-rpy2rotmat(rpy)"<<std::endl<<quat2rotmat(rotmat2quat(rpy2rotmat(rpyi)))-rpy2rotmat(rpyi)<<std::endl;
-      std::cout<<"rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpy))))-rpyi"<<std::endl<<rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpyi))))-rpyi<<std::endl;
-      std::cout<<std::endl<<std::endl;
+      std::cout << "quat2rotmat(rotmat2quat(R))-R" << std::endl
+                << quat2rotmat(rotmat2quat(R)) - R << std::endl;
+      std::cout << "rpyi" << std::endl << rpyi << std::endl;
+      std::cout << "rpy_expected" << std::endl << rpy_expected << std::endl;
+      std::cout << "rpyi-rpy_expected" << std::endl
+                << rpyi - rpy_expected << std::endl;
+      std::cout << "rotmat2rpy(rpy2rotmat(rpyi))-rpyi" << std::endl
+                << rotmat2rpy(rpy2rotmat(rpyi)) - rpyi << std::endl;
+      std::cout << "rotmat2quat(rpy2rotmat(rpyi))'-rpy2quat(rpyi):" << std::endl
+                << rotmat2quat(rpy2rotmat(rpyi)) - rpy2quat(rpyi) << std::endl;
+      std::cout << "rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))" << std::endl
+                << rpy2rotmat(rpyi) - quat2rotmat(rpy2quat(rpyi)) << std::endl;
+      std::cout << "rotmat2quat(quat2rotmat(quat))'-rpy2quat(rpyi):"
+                << std::endl
+                << rotmat2quat(quat2rotmat(quat)) - rpy2quat(rpyi) << std::endl;
+      std::cout << "rotmat2rpy(quat2rotmat(quat))-rpyi" << std::endl
+                << rotmat2rpy(quat2rotmat(quat)) - rpyi << std::endl;
+      std::cout << "quat2rotmat(rotmat2quat(rpy2rotmat(rpy)))-rpy2rotmat(rpy)"
+                << std::endl
+                << quat2rotmat(rotmat2quat(rpy2rotmat(rpyi))) - rpy2rotmat(rpyi)
+                << std::endl;
+      std::cout << "rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpy))))-rpyi"
+                << std::endl
+                << rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpyi)))) - rpyi
+                << std::endl;
+      std::cout << std::endl << std::endl;
       rpy2quat(rpyi);
       quat2rpy(quat);
     }
