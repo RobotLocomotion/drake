@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/drakeSystem2Controllers_export.h"
+#include "drake/drakeSystemControllers_export.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
@@ -16,7 +16,7 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class DRAKESYSTEM2CONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
+class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
  public:
   /// Constructs a gravity compensator (corresponding to a RigidBodyTree) with
   /// the dimension of the input and output port equaling the dimension of the
