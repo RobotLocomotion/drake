@@ -8,8 +8,8 @@ namespace systems {
 
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree& rigid_body_tree)
-    : mdb_world_(rigid_body_tree) {
-  int num_of_inputs = mdb_world_.number_of_positions();
+    : rigid_body_tree_(rigid_body_tree) {
+  int num_of_inputs = rigid_body_tree_.number_of_positions();
 
   this->DeclareInputPort(kVectorValued, num_of_inputs, kContinuousSampling);
   this->DeclareOutputPort(kVectorValued, num_of_inputs, kContinuousSampling);
@@ -23,16 +23,16 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
 
   Eigen::VectorXd x = System<T>::CopyContinuousStateVector(context);
 
-  int number_of_velocities = mdb_world_.number_of_velocities();
+  int number_of_velocities = rigid_body_tree_.number_of_velocities();
 
   Eigen::VectorXd vd = Eigen::VectorXd::Zero(number_of_velocities);
 
-  KinematicsCache<double> cache = mdb_world_.doKinematics(x);
+  KinematicsCache<double> cache = rigid_body_tree_.doKinematics(x);
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd G = mdb_world_.inverseDynamics(cache, f_ext, vd, false);
+  Eigen::VectorXd G = rigid_body_tree_.inverseDynamics(cache, f_ext, vd, false);
   System<T>::GetMutableOutputVector(output, 0) = G;
 }
 
