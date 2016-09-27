@@ -34,8 +34,6 @@ using std::numeric_limits;
 namespace drake {
 namespace math {
 namespace {
-int count1 = 0;
-int count2 = 0;
 Vector4d eigenQuaterniontoQuat(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
@@ -52,8 +50,8 @@ bool compareAngleAxis(const AngleAxisd& a1, const AngleAxisd& a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
-bool compareQuaternion(const Vector4d& q1, const Vector4d& q2) {
-  return q1.isApprox(q2) | q1.isApprox(-q2);
+bool compareQuaternion(const Vector4d& q1, const Vector4d& q2, double precision = 1E-12) {
+  return q1.isApprox(q2, precision) | q1.isApprox(-q2, precision);
 }
 Quaterniond eulerToQuaternion(const Vector3d euler) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''
@@ -63,16 +61,23 @@ Quaterniond eulerToQuaternion(const Vector3d euler) {
 }
 
 bool compareEulerAngles(const Vector3d& euler_angles1,
-                        const Vector3d& euler_angles2) {
+                        const Vector3d& euler_angles2, double precision = 1E-12) {
   auto q1 = eulerToQuaternion(euler_angles1);
   auto q2 = eulerToQuaternion(euler_angles2);
-  return compareQuaternion(eigenQuaterniontoQuat(q1), eigenQuaterniontoQuat(q2));
+  return compareQuaternion(eigenQuaterniontoQuat(q1), eigenQuaterniontoQuat(q2), precision);
 }
 
 bool compareRollPitchYaw(const Vector3d &rpy1, const Vector3d &rpy2) {
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
-  return compareEulerAngles(euler_angles1, euler_angles2);
+  // When pitch is close to PI/2 or -PI/2, the derivative of rotation matrix
+  // w.r.t Euler angle is very big, so relax the tolerance to accomodate the
+  // numeric error.
+  double precision = 1E-12;
+  if(std::abs(rpy1(1) - M_PI/2) < 1E-5 || std::abs(rpy1(1) + M_PI/2) < 1E-5) {
+    precision = 1E-7;
+  }
+  return compareEulerAngles(euler_angles1, euler_angles2, precision);
 }
 
 Vector4d eigenAxisToAxis(const AngleAxisd& a) {
@@ -169,8 +174,8 @@ class RotationConversionTest : public ::testing::Test {
     // pitch = 0.5*pi-2*eps
     rpy_test_cases_.push_back(Vector3d(M_PI/4, 0.5*M_PI - 2*numeric_limits<double>::epsilon(), M_PI/3));
 
-    // pitch = 0.5*pi - 1E-10
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.8, 0.5*M_PI - 1E-10, 0.9*M_PI));
+    // pitch = 0.5*pi - 1E-6
+    rpy_test_cases_.push_back(Vector3d(M_PI*0.8, 0.5*M_PI - 1E-6, 0.9*M_PI));
 
     // pitch = -0.5*pi+eps
     rpy_test_cases_.push_back(Vector3d(M_PI*-0.9, -0.5*M_PI + numeric_limits<double>::epsilon(), M_PI*0.3));
@@ -181,8 +186,8 @@ class RotationConversionTest : public ::testing::Test {
     // pitch = -0.5*pi+2*eps
     rpy_test_cases_.push_back(Vector3d(M_PI*-0.5, -0.5*M_PI + 2*numeric_limits<double>::epsilon(), M_PI*0.4));
 
-    // pitch = -0.5*pi + 1E-10
-    rpy_test_cases_.push_back(Vector3d(M_PI*0.9, -0.5*M_PI+1E-10, 0.8*M_PI));
+    // pitch = -0.5*pi + 1E-6
+    rpy_test_cases_.push_back(Vector3d(M_PI*0.9, -0.5*M_PI+1E-6, 0.8*M_PI));
 
     // non-singular cases
     auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -M_PI, M_PI);
@@ -314,7 +319,6 @@ class RotationConversionTest : public ::testing::Test {
             if(q.norm() > 1E-3) {
               q.normalize();
               quaternion_test_cases_.push_back(Quaterniond(q(0), q(1), q(2), q(3)));
-              count1++;
             }
           }
         }
@@ -341,7 +345,7 @@ class RotationConversionTest : public ::testing::Test {
   std::vector<Matrix3d> rotation_matrix_test_cases_;
 };
 
-/*TEST_F(RotationConversionTest, AxisQuat) {
+TEST_F(RotationConversionTest, AxisQuat) {
   for (const auto& ai_eigen : angle_axis_test_cases_) {
     // Compute the quaternion using Eigen geometry module, compare the result
     // with axis2quat
@@ -420,7 +424,7 @@ TEST_F(RotationConversionTest, QuatAxis) {
     auto quat_expected = axis2quat(a);
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
-}*/
+}
 
 TEST_F(RotationConversionTest, QuatRotmat) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
@@ -436,7 +440,7 @@ TEST_F(RotationConversionTest, QuatRotmat) {
     EXPECT_TRUE(compareQuaternion(qi, quat_expected));
   }
 }
-/*
+
 TEST_F(RotationConversionTest, QuatRPY) {
   for (const auto& qi_eigen : quaternion_test_cases_) {
     Vector4d qi = eigenQuaterniontoQuat(qi_eigen);
@@ -491,18 +495,8 @@ TEST_F(RotationConversionTest, RotmatRPY) {
     auto rpy = rotmat2rpy(Ri);
     // rotmat2rpy should be the inversion of rpy2rotmat
     auto rotmat_expected = rpy2rotmat(rpy);
-    if(!Ri.isApprox(rotmat_expected, 1E-10)) {
-      std::cout<<"Ri:"<<std::endl<<Ri<<std::endl;
-      std::cout<<"rpy"<<std::endl<<rpy<<std::endl;
-      std::cout<<"rotmat_expected-Ri"<<std::endl<<rotmat_expected-Ri<<std::endl;
-      std::cout<<"Ri*Ri':"<<std::endl<<Ri*Ri.transpose()<<std::endl;
-      std::cout<<"rotmat2quat(Ri)"<<std::endl<<rotmat2quat(Ri)<<std::endl;
-      std::cout<<"count"<<count2<<std::endl;
-      rotmat2rpy(Ri);
-    }
     EXPECT_TRUE(Ri.isApprox(rotmat_expected, 1E-10));
     EXPECT_TRUE(check_rpy_range(rpy));
-    count2++;
   }
 }
 
@@ -536,14 +530,9 @@ TEST_F(RotationConversionTest, RPYAxis) {
 
     // rpy2axis should be the inversion of axis2rpy
     Vector3d rpy_expected = axis2rpy(a);
-    if(!compareRollPitchYaw(rpyi, rpy_expected)) {
-      std::cout<<"rpyi"<<std::endl<<rpyi<<std::endl;
-      std::cout<<"rpyi-rpy_expected"<<std::endl<<rpyi-rpy_expected<<std::endl;
-      axis2rpy(a);
-    }
     EXPECT_TRUE(compareRollPitchYaw(rpyi, rpy_expected));
   }
-}*/
+}
 
 TEST_F(RotationConversionTest, RPYQuat) {
   // Compute the quaternion representation using Eigen's geometry model,
