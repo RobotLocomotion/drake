@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
@@ -29,19 +30,15 @@ void TestLorentzConeEval(const VectorXd &x_test) {
   TaylorVecXd y_taylor;
 
   cnstr.Eval(x_taylor, y_taylor);
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> y_grad(y.size(), x_test.size());
-  for(int i = 0; i < 2; i++) {
-    for(int j = 0; j < 2; j++) {
-      y_grad(i,j) = static_cast<double>(y_taylor(i).derivatives()(j));
-    }
-  }
+  
   Eigen::Matrix<double, 2, Eigen::Dynamic> y_grad_expected(2, x_test.size());
   y_grad_expected.setZero();
   y_grad_expected(0, 0) = 1.0;
   y_grad_expected(1, 0) = 2*x_test(0);
   for(int i = 1;i < x_test.size(); i++) {
-    
+    y_grad_expected(1, i) = -2*x_test(i);
   }
+  EXPECT_TRUE(CompareMatrices(y_grad_expected, drake::math::autoDiffToGradientMatrix(y_taylor), 1E-10, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(testConstraint,testLorentaConeConstraint) {
