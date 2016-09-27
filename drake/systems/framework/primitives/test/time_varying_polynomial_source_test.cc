@@ -11,6 +11,7 @@
 #include "gtest/gtest.h"
 
 using Eigen::Matrix;
+using Eigen::MatrixXd;
 using std::make_unique;
 
 namespace drake {
@@ -19,8 +20,7 @@ namespace {
 
 class TimeVaryingPolynomialSourceTest : public ::testing::Test {
  protected:
-  TimeVaryingPolynomialSourceTest() :
-        kppTraj(Eigen::MatrixXd::Constant(2, 1, 1.5)) {
+  TimeVaryingPolynomialSourceTest() : kppTraj(MatrixXd::Constant(2, 1, 1.5)) {
   }
 
   void SetUp() override {
