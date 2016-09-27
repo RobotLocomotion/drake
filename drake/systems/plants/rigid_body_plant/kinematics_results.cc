@@ -49,7 +49,7 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T> &>(
-      context.get_state().continuous_state->get_state()).get_value();
+      context.get_continuous_state()->get_state()).get_value();
 
   const int nq = tree_.number_of_positions();
   const int nv = tree_.number_of_velocities();
