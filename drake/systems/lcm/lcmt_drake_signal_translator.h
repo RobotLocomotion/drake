@@ -23,7 +23,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmtDrakeSignalTranslator
  public:
   /**
    * A constructor that sets the expected sizes of the LCM message and the
-   * BasicVector. Both the LCM message and BasicVector must be the same size.
+   * VectorBase. Both the LCM message and VectorBase must be the same size.
    *
    * @param[in] size The number of elements in both `VectorBase` and
    * `drake::lcmt_drake_signal`.
