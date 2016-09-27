@@ -8,7 +8,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
-#include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
