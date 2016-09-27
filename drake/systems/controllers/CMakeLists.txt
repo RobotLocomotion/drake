@@ -70,18 +70,17 @@ set(system2_installed_headers
     gravity_compensator.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
-add_dependencies(drakeSystemControllers drakeRBM drakeSystemFramework
-    drakeCommon)
+add_dependencies(drakeSystemControllers drakeCommon drakeRBM drakeSystemFramework)
 target_link_libraries(drakeSystemControllers
+    drakeCommon
     drakeRBM
-    drakeSystemFramework
-    drakeCommon)
+    drakeSystemFramework)
 
 drake_install_headers(${system2_installed_headers})
 
 pods_install_libraries(drakeSystemControllers)
-pods_install_pkg_config_file(drake-system-controllers
-    LIBS -ldrakeSystemControllers -ldrakeSystemFramework -ldrakeRBM
+pods_install_pkg_config_file(drake-system2-controllers
+    LIBS -ldrakeSystem2Controllers -ldrakeSystemFramework -ldrakeRBM
     REQUIRES
     VERSION 0.0.1)
 add_subdirectory(test)
