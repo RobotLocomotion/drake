@@ -51,7 +51,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   // Instantiates a generalized state vector containing all zeros. This is
   // selected to make the resulting quaternion values be easily specified.
-  int num_states = tree->number_of_positions() + tree->number_of_velocities();
+  int num_states = tree->get_num_positions() + tree->get_num_velocities();
   BasicVector<double> generalized_state(num_states);
   generalized_state.set_value(Eigen::VectorXd::Zero(num_states));
 
@@ -92,7 +92,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   lcmt_viewer_draw expected_message;
   expected_message.timestamp = static_cast<int64_t>(time * 1000);
-  expected_message.num_links = tree->get_number_of_bodies();
+  expected_message.num_links = tree->get_num_bodies();
   expected_message.link_name.push_back("world");
   expected_message.link_name.push_back("body0");
   expected_message.link_name.push_back("body1");

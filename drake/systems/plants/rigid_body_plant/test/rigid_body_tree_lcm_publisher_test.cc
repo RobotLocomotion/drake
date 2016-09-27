@@ -476,7 +476,7 @@ GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   EXPECT_EQ(1, context->get_num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
-  int vector_size = tree->number_of_positions() + tree->number_of_velocities();
+  int vector_size = tree->get_num_positions() + tree->get_num_velocities();
   auto input_data = make_unique<BasicVector<double>>(vector_size);
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 
