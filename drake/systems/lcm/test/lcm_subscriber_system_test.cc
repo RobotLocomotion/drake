@@ -8,7 +8,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/lcm/lcm_receive_thread.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/lcmt_drake_signal.hpp"
 
