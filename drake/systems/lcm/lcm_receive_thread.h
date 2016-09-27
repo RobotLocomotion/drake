@@ -2,7 +2,7 @@
 
 #include <atomic>
 #include <thread>
-#include <iostream>
+
 
 #include <lcm/lcm-cpp.hpp>
 
@@ -13,21 +13,22 @@ namespace systems {
 namespace lcm {
 
 /**
- * Implements a thread that is responsible for reciving LCM messages.
+ * Maintains a thread that receives LCM messages and dispatches the messages to
+ * the appropriate message handlers.
  */
 class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
  public:
   /**
-   * The constructor.
+   * A constructor that instantiates the thread.
    *
-   * @param[in] lcm A pointer to the LCM subsystem through which to loop.
-   * This parameter cannot be nullptr. This parameter must remain valid for the
-   * lifetime of this `LcmReceiveThread`.
+   * @param[in] lcm A pointer to the LCM instance through which to access the
+   * LCM network. This parameter cannot be `nullptr` and must remain valid for
+   * the lifetime of this object.
    */
   explicit LcmReceiveThread(::lcm::LCM* lcm);
 
   /**
-   * The destructor. Ensures that the thread used for receiving LCM message is
+   * The destructor that ensures the thread that receives LCM message is
    * stopped.
    */
   ~LcmReceiveThread();
@@ -42,16 +43,14 @@ class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
   void Stop();
 
  private:
-  /**
-   * Loops waiting for LCM messages and dispatches them to the appropriate
-   * subscriber message handlers when they arrive.
-   */
+  // Loops waiting for LCM messages and dispatching them to the appropriate
+  // subscriber message handlers when they arrive.
   void LoopWithSelect();
 
-  // Whether to stop the lcm_thread_.
+  // Whether to stop lcm_thread_.
   std::atomic<bool> stop_{false};
 
-  // A pointer to the LCM subsystem.
+  // A pointer to the LCM instance.
   ::lcm::LCM* const lcm_{nullptr};
 
   // The thread responsible for receiving LCM messages.
