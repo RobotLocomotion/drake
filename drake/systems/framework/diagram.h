@@ -236,7 +236,7 @@ class Diagram : public System<T>,
     return diagram_derivatives->get_substate(i);
   }
 
-  /// Returns a constant pointer to the subcontext that corresponds to the
+  /// Returns a constant reference to the subcontext that corresponds to the
   /// system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
   /// pass their constituent subsystem's the apropriate subcontext. Aborts if
