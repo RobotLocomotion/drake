@@ -1,12 +1,12 @@
 add_subdirectory(test)
 
 add_library_with_exports(LIB_NAME drakeBouncingBall SOURCE_FILES
+  ball.cc
+  bouncing_ball.cc
   ball-inl.h
   ball.h
-  ball.cc
   bouncing_ball-inl.h
   bouncing_ball.h
-  bouncing_ball.cc
   )
 target_link_libraries(drakeBouncingBall
   drakeCommon
