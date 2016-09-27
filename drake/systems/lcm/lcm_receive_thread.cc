@@ -9,6 +9,7 @@
 #endif
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace systems {
@@ -16,7 +17,6 @@ namespace lcm {
 
 LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
   DRAKE_DEMAND(lcm);
-  // Spawns a thread that calls this->LoopWithSelect().
   lcm_thread_ = std::thread(&LcmReceiveThread::LoopWithSelect, this);
 }
 
@@ -44,10 +44,9 @@ bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
   int status = select(lcm_file_descriptor + 1, &fds, 0, 0, &tv);
   int error_code = errno;
   if (status == -1 && error_code != EINTR) {
-    std::cout << "WaitForLcm: select() returned error: " << error_code
-              << std::endl;
+    drake::log()->trace("WaitForLcm: select() returned error: {}", error_code);
   } else if (status == -1 && error_code == EINTR) {
-    std::cout << "WaitForLcm: select() interrupted." << std::endl;
+    drake::log()->trace("WaitForLcm: select() interrupted.");
   }
   return (status > 0 && FD_ISSET(lcm_file_descriptor, &fds));
 }
@@ -63,8 +62,8 @@ void LcmReceiveThread::LoopWithSelect() {
 
     if (lcm_ready) {
       if (lcm_->handle() != 0) {
-        std::cout << "LcmReceiverThread: LoopWithSelect: lcm->handle() "
-                  << "returned non-zero value." << std::endl;
+        drake::log()->trace("LcmReceiverThread::LoopWithSelect: lcm->handle() "
+                            "returned non-zero value.");
         return;
       }
     }
