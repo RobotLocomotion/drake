@@ -19,11 +19,11 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Gain<T>::Gain(const T& k, int length) : gain_(k) {
-  // TODO(amcastro-tri): remove the length parameter from the constructor once
-  // #3109 supporting automatic lengths is resolved.
-  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+Gain<T>::Gain(const T& k, int size) : gain_(k) {
+  // TODO(amcastro-tri): remove the size parameter from the constructor once
+  // #3109 supporting automatic sizes is resolved.
+  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
 }
 
 template <typename T>
@@ -32,12 +32,22 @@ const T& Gain<T>::get_gain() const {
 }
 
 template <typename T>
+const SystemPortDescriptor<T>& Gain<T>::get_input_port() const {
+  return System<T>::get_input_port(0);
+}
+
+template <typename T>
+const SystemPortDescriptor<T>& Gain<T>::get_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
 void Gain<T>::EvalOutput(const Context<T>& context,
                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  auto input_vector = System<T>::get_input_vector(context, 0);
+  auto input_vector = this->EvalEigenVectorInput(context, 0);
   System<T>::GetMutableOutputVector(output, 0) = gain_ * input_vector;
 }
 

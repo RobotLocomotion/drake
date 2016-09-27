@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lcmtypes/drake/lcmt_scope_data.h"
+#include "drake/lcmt_scope_data.h"
 #include <string.h>
 #include <time.h>
 #include <lcm/lcm.h>

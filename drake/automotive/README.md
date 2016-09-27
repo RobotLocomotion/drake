@@ -18,8 +18,8 @@ middleware.
 To run the Drake Visualizer, open a terminal and execute the following commands:
 
 ```
-$ cd [drake-distro]/drake/automotive
-$ ../../../build/install/bin/drake-visualizer
+$ cd drake-distro/drake/automotive
+$ ../../build/install/bin/drake-visualizer
 ```
 
 The Drake Visualizer window should appear.
@@ -47,7 +47,7 @@ $ apt-get install python-pygame
 Then execute:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py
 ```
 
@@ -64,13 +64,13 @@ will be added that integrates both LCM-based components and ROS-based components
 To start the simulation, open a new terminal and execute the following:
 
 ```
-$ cd [drake-distro]/drake/automotive
-$ ../../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
+$ cd drake-distro/drake/automotive
+$ ../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 ### Simulation Using Drake + LCM + ROS
 
-*Coming Soon!*
+See: https://github.com/liangfok/drake/tree/feature/multi_car_sim_2/ros/drake_cars_examples
 
 Additional Simulation Notes
 ---------------------------
@@ -94,7 +94,7 @@ If you are unable to run the Steering Command Driver, you can generate simple
 throttle and steering commands using the command line:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
@@ -102,7 +102,7 @@ where the values in square brackets should be replaced with desired values.
 For example:
 
 ```
-$ cd [drake-distro]/drake/automotive
+$ cd drake-distro/drake/automotive
 $ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 
@@ -124,39 +124,17 @@ The following notes are for Ubuntu Linux and OS X users.
 This is not supported under Windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
 
-TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
-fails.  Fix and test the demo script on OS X.
-
 Run:
 ```
-$ drake-distro/drake/automotive/simple_car_demo.sh
+$ drake-distro/drake/automotive/automotive_demo.py
 ```
 
 Ensure that the (very small) `pygame` window has focus, then use your
 arrow keys and/or joystick to drive around.
 
-Use Ctrl-C in your terminal to stop and close the demo.
-
-Running the trivial multiple car simulator
-------------------------------------------
-
-The following notes are for Ubuntu Linux and OS X users.
-This is not supported under Windows (though you can probably cobble
-together some workarounds by hand if you are motivated).
-
-TODO(jwnimmer-tri) OS X `readlink -f` doesn't work, so the demo script
-fails.  Fix and test the demo script on OS X.
-
-Run:
-```
-$ drake-distro/drake/automotive/run_demo_multi_car.sh [N]
-```
-
-This will start the demo with N cars; if N is not supplied, the
-default is 100 (and the minimum N is 1).  There are no controls.
-
-TODO(jwnimmer-tri) For the moment, the drake-visualizer will not show the cars;
-the multi-body visualizer for System 2.0 is not quite working yet.  You can use
-the bot-spy interface to watch the state evolve over time.
+TODO(jwnimmer-tri) The trajectory car(s) are not visualized yet.  They only
+show up in the bot-spy status.
 
 Use Ctrl-C in your terminal to stop and close the demo.
+
+You can also pass --num_trajectory_car=100 to the script to add more cars.

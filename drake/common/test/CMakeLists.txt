@@ -1,39 +1,25 @@
 # Build tests for Drake common utilities.
 
-add_executable(functional_form_test functional_form_test.cc)
-target_link_libraries(functional_form_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME functional_form_test COMMAND functional_form_test)
+drake_add_cc_test(functional_form_test)
+target_link_libraries(functional_form_test drakeCommon)
 
-add_executable(nice_type_name_test nice_type_name_test.cc)
-target_link_libraries(nice_type_name_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME nice_type_name_test COMMAND nice_type_name_test)
+drake_add_cc_test(nice_type_name_test)
+target_link_libraries(nice_type_name_test drakeCommon)
 
-add_executable(sorted_vectors_have_intersection_test
-        sorted_vectors_have_intersection_test.cc)
-target_link_libraries(sorted_vectors_have_intersection_test
-        drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME sorted_vectors_have_intersection_test
-         COMMAND sorted_vectors_have_intersection_test)
+drake_add_cc_test(sorted_vectors_have_intersection_test)
+target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
-add_executable(trig_poly_test trig_poly_test.cc)
-target_link_libraries(trig_poly_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME trig_poly_test COMMAND trig_poly_test)
+drake_add_cc_test(trig_poly_test)
+target_link_libraries(trig_poly_test drakeCommon)
 
-add_executable(polynomial_test polynomial_test.cc)
-target_link_libraries(polynomial_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME polynomial_test COMMAND polynomial_test)
+drake_add_cc_test(polynomial_test)
+target_link_libraries(polynomial_test drakeCommon)
 
-add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
-target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
+drake_add_cc_test(eigen_matrix_compare_test)
+drake_add_cc_test(eigen_stl_types_test)
 
-add_executable(eigen_stl_types_test eigen_stl_types_test.cc)
-target_link_libraries(eigen_stl_types_test ${GTEST_BOTH_LIBRARIES})
-add_test(NAME eigen_stl_types_test COMMAND eigen_stl_types_test)
-
-add_executable(drake_throw_test drake_throw_test.cc)
-target_link_libraries(drake_throw_test drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME drake_throw_test COMMAND drake_throw_test)
+drake_add_cc_test(drake_throw_test)
+target_link_libraries(drake_throw_test drakeCommon)
 
 # Adds "drake_assert.h" unit testing.
 add_executable(drake_assert_test_default drake_assert_test.cc)

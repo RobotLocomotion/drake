@@ -9,6 +9,7 @@ if(lcm_FOUND)
   add_dependencies(drakeLCMSystem2 drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMSystem2
     drakeSystemFramework
+    drakeLCMTypes
     lcm
     ${CMAKE_THREAD_LIBS_INIT})
   if(WIN32)

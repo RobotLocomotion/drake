@@ -20,7 +20,7 @@ class IdmWithTrajectoryAgentTest : public ::testing::Test {
 
   IdmWithTrajectoryAgentState<double>* continuous_state() {
     auto result = dynamic_cast<IdmWithTrajectoryAgentState<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state()->get_mutable_state());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
