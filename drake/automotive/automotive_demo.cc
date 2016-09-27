@@ -6,8 +6,8 @@
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 
 DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
@@ -34,6 +34,10 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
 
  protected:
   void DoPublish(const systems::Context<double>& context) const override {
+    // TODO(liang.fok): Replace the following code once System 2.0's API allows
+    // systems to declare that they need a certain action to be performed at
+    // simulation time t_0.
+    //
     // Before any draw commands, we need to send the load_robot message.
     if (context.get_time() == 0.0) {
       PublishLoadRobot();
@@ -41,7 +45,7 @@ class BotVisualizerHack : public systems::LeafSystem<T> {
     DRAKE_DEMAND(sent_load_robot_);
 
     const systems::VectorBase<double>* const input_base =
-        context.get_vector_input(0);
+        this->EvalVectorInput(context, 0);
     DRAKE_DEMAND(input_base != nullptr);
     const EulerFloatingJointState<double>* const input =
         dynamic_cast<const EulerFloatingJointState<double>*>(input_base);

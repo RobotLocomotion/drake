@@ -5,7 +5,7 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/drakeQPCommon_export.h"
 #include "drake/solvers/gurobi_qp.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0

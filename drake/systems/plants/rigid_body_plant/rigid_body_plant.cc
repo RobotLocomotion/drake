@@ -80,16 +80,16 @@ template <typename T>
 void RigidBodyPlant<T>::set_position(Context<T>* context,
                                      int position_index, T position) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_generalized_position()->SetAtIndex(position_index, position);
+  context->get_mutable_continuous_state()->get_mutable_generalized_position()
+      ->SetAtIndex(position_index, position);
 }
 
 template <typename T>
 void RigidBodyPlant<T>::set_velocity(Context<T>* context,
                                      int velocity_index, T velocity) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_generalized_velocity()->SetAtIndex(velocity_index, velocity);
+  context->get_mutable_continuous_state()->get_mutable_generalized_velocity()
+      ->SetAtIndex(velocity_index, velocity);
 }
 
 template <typename T>
@@ -97,8 +97,8 @@ void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_state()->continuous_state->
-      get_mutable_state()->SetFromVector(x);
+  context->get_mutable_continuous_state()->get_mutable_state()
+      ->SetFromVector(x);
 }
 
 template <typename T>
@@ -124,7 +124,7 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
-      context.get_continuous_state().CopyToVector();
+      context.get_continuous_state()->CopyToVector();
 }
 
 template <typename T>
@@ -132,7 +132,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
-  const BasicVector<T>* input = context.get_vector_input(0);
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
 
   // The input vector of actuation values.
   auto u = input->get_value();
@@ -140,7 +140,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_state().continuous_state->get_state()).get_value();
+      context.get_continuous_state()->get_state()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
@@ -312,7 +312,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_state().continuous_state->get_state()).get_value();
+      context.get_continuous_state()->get_state()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
