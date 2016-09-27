@@ -19,8 +19,10 @@ namespace {
 
 class TimeVaryingPolynomialSourceTest : public ::testing::Test {
  protected:
-  TimeVaryingPolynomialSourceTest()
-      : kppTraj(Eigen::MatrixXd::Constant(2, 2, 1.5)) {}
+  TimeVaryingPolynomialSourceTest() :
+        kppTraj(Eigen::MatrixXd::Constant(2, 1, 1.5)) {
+  }
+
   void SetUp() override {
     source_ = make_unique<TimeVaryingPolynomialSource<double>>(kppTraj);
     context_ = source_->CreateDefaultContext();

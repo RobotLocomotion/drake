@@ -37,7 +37,7 @@ class TimeVaryingPolynomialSource : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const PiecewisePolynomial<double> kPpTraj;
+  const PiecewisePolynomial<double> pp_traj_;
 };
 
 }  // namespace systems
