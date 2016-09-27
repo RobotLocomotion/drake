@@ -1,7 +1,7 @@
 find_package(Bullet)
 
 if(BULLET_FOUND)
-  add_executable(rbt_collisions_test rbt_collisions_test.cc)
+  add_executable(rbt_collisions_test rbt_collisions_test.cc rigid_body_collision_clique_test.cc)
   target_link_libraries(rbt_collisions_test drakeRBM ${GTEST_BOTH_LIBRARIES})
   drake_add_test(NAME rbt_collisions_test COMMAND rbt_collisions_test)
 endif()
@@ -13,3 +13,7 @@ drake_add_test(NAME rigid_body_tree_test COMMAND rigid_body_tree_test)
 add_executable(rigid_body_tree_inverse_dynamics_test rigid_body_tree_inverse_dynamics_test.cc)
 target_link_libraries(rigid_body_tree_inverse_dynamics_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME rigid_body_tree_inverse_dynamics_test COMMAND rigid_body_tree_inverse_dynamics_test)
+
+add_executable(rigid_body_collision_clique_test rigid_body_collision_clique_test.cc)
+target_link_libraries(rigid_body_collision_clique_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME rigid_body_collision_clique_test COMMAND rigid_body_collision_clique_test)
