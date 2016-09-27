@@ -369,7 +369,7 @@ void inverseKinTrajBackend(
     dt_ratio[j] = dt[j] / dt[j + 1];
   }
 
-  const int nq = model->number_of_positions();
+  const int nq = model->get_num_positions();
 
   IKTrajectoryHelper helper(nq, nT, t, nT, 2,
                             ikoptions, dt.data(), dt_ratio.data());

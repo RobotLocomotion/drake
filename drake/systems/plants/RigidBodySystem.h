@@ -380,12 +380,22 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
+  int get_num_positions() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
   int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
+  int get_num_velocities() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
   int number_of_velocities() const;
 
   /** dynamics

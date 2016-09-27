@@ -72,7 +72,7 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
 // with H(q) the mass matrix, g(q) the gravitational terms, tau the
 // joint torques, and tau_friction(q, qd) the torques due to friction.
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
-  int num_velocities = tree_rpy_->number_of_velocities();
+  int num_velocities = tree_rpy_->get_num_velocities();
 
   std::default_random_engine generator;
   auto q = tree_rpy_->getRandomConfiguration(generator);
@@ -150,8 +150,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
 
   for (RigidBodyTree* tree : trees_) {
     auto q = tree->getRandomConfiguration(generator);
-    auto v = VectorXd::Random(tree->number_of_velocities()).eval();
-    auto vd = VectorXd::Random(tree->number_of_velocities()).eval();
+    auto v = VectorXd::Random(tree->get_num_velocities()).eval();
+    auto vd = VectorXd::Random(tree->get_num_velocities()).eval();
     KinematicsCache<double> kinematics_cache(tree->bodies);
     kinematics_cache.initialize(q, v);
     tree->doKinematics(kinematics_cache);
@@ -170,9 +170,9 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto mass_matrix_from_inverse_dynamics =
         autoDiffToGradientMatrix(jacobian<kChunkSize>(vd_to_mass_matrix, vd));
 
-    ASSERT_EQ(tree->number_of_velocities(),
+    ASSERT_EQ(tree->get_num_velocities(),
               mass_matrix_from_inverse_dynamics.rows());
-    ASSERT_EQ(tree->number_of_velocities(),
+    ASSERT_EQ(tree->get_num_velocities(),
               mass_matrix_from_inverse_dynamics.cols());
 
     EXPECT_TRUE(CompareMatrices(mass_matrix, mass_matrix_from_inverse_dynamics,
@@ -272,8 +272,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   // this joint is the same as the floating joint wrench.
   RigidBodyTree& tree = *tree_quaternion_;
   auto q = tree.getRandomConfiguration(generator);
-  auto v = VectorXd::Random(tree.number_of_velocities()).eval();
-  auto vd = VectorXd::Random(tree.number_of_velocities()).eval();
+  auto v = VectorXd::Random(tree.get_num_velocities()).eval();
+  auto vd = VectorXd::Random(tree.get_num_velocities()).eval();
   RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
 
   KinematicsCache<double> kinematics_cache(tree.bodies);

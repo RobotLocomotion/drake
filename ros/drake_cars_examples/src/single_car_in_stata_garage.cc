@@ -100,7 +100,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Obtains a valid zero configuration for the vehicle.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Defines the start time of the simulation.
   const double kStartTime = 0;
