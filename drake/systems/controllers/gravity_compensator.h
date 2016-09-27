@@ -24,12 +24,12 @@ class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
   /// @param rigid_body_tree_ptr a shared pointer to a RigidBodyTree object
   /// which in turn is externally derived from a RigidBodySystem object to be
   /// controlled.
-  GravityCompensator(const RigidBodyTree& rigid_body_tree);
+  explicit GravityCompensator(const RigidBodyTree& rigid_body_tree);
 
-  /// Sets the output port value to the generalised gravity forces corresponding
-  /// to a joint configuration as specified in the input.
-  /// If number of connected input or output ports differs from one or, the
-  /// input ports are not of size length_, std::runtime_error will be thrown.
+  /// Sets the output port value to the generalised gravity forces
+  /// corresponding to a joint configuration as specified in the input.
+  /// If the number of connected input or output ports differs from one or the
+  /// input ports are not of size length_, a std::runtime_error will be thrown.
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
