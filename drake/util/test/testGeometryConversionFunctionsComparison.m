@@ -9,7 +9,7 @@ nq = 15;
 for i = 1 : 100
   q = rpy2quat(uniformlyRandomNonsingularRPY());
   dq = randn(numel(q), nq);
-  [omega2qd, domega2qd, omega2rpyd, domega2rpyd, ddomega2rpyd, rpyd2omega, drpyd2omega, qd2omega, dqd2omega, dq2R, drpydR, dqdR] = testGeometryConversionFunctionsmex(q, dq);
+  [rpy_mex,omega2qd, domega2qd, omega2rpyd, domega2rpyd, ddomega2rpyd, rpyd2omega, drpyd2omega, qd2omega, dqd2omega, dq2R, drpydR, dqdR] = testGeometryConversionFunctionsmex(q, dq);
   
   rpy = quat2rpy(q);
   [a2q_check, da2q_check] = angularvel2quatdotMatrix(q);
@@ -22,6 +22,7 @@ for i = 1 : 100
   [~, drpydR_check] = rotmat2rpy(R, dR);
   [~, dqdR_check] = rotmat2quat(R, dR);
   
+  valuecheck(rpy, rpy_mex);
   valuecheck(a2q_check, omega2qd);
   valuecheck(da2q_check, domega2qd);
   valuecheck(a2r_check, omega2rpyd);
