@@ -179,7 +179,9 @@ class Simulator {
     num_updates_ = 0;
   }
 
-  /** What what the actual size of the successful first step? **/
+  /** What what the actual size of the successful first step?
+   *  TODO(edrumwri): update this function when discrete updates introduced
+   **/
   T get_actual_initial_step_size_taken() const {
     return integrator_->get_actual_initial_step_size_taken();
   }
@@ -276,10 +278,11 @@ class Simulator {
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
-  int64_t num_updates_{
-      0};  // the number of updates since the last call to Initialize()
-  int64_t num_steps_taken_{0};  // the number of integration steps since the
-                                // last call to Initialize()
+  // the number of updates since the last call to Initialize()
+  int64_t num_updates_{0};
+
+  // the number of integration steps since the last call to Initialize()
+  int64_t num_steps_taken_{0};
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
@@ -327,10 +330,10 @@ void Simulator<T>::Initialize() {
 
 /**
  * The simulation loop is as follows:
- * 1. perform necessary discrete updates (incl. computing DAE constraints)
- * 2. publish
- * 3. integrate the smooth system (the ODE, or ODE part of the DAE)
- * 4. post-step stabilization for DAEs (if desired)
+ * 1. Perform necessary discrete updates.
+ * 2. Publish.
+ * 3. Integrate the smooth system (the ODE or DAE)
+ * 4. Perform post-step stabilization for DAEs (if desired).
  * @param final_time
  */
 template <typename T>
