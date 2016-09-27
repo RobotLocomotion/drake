@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/context.h"
-#include<iostream>
 
 namespace drake {
 namespace systems {
