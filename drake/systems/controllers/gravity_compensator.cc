@@ -3,9 +3,6 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-
 namespace drake {
 namespace systems {
 
