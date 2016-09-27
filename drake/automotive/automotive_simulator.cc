@@ -8,15 +8,33 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
+#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+
+namespace {
+// Iterate over a collection, passing both the index and value to a functor.
+template <typename T>
+void enumerate(const T& container, std::function<void(
+    typename T::difference_type, const typename T::value_type&)> body) {
+  typename T::difference_type index{0};
+  for (auto& element : container) {
+    body(index, element);
+    ++index;
+  }
+}
+}  // namespace
 
 namespace drake {
 namespace automotive {
@@ -39,6 +57,11 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
 }
 
 template <typename T>
+const RigidBodyTree& AutomotiveSimulator<T>::get_rigid_body_tree() {
+  return *rigid_body_tree_;
+}
+
+template <typename T>
 void AutomotiveSimulator<T>::AddSimpleCar() {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
@@ -55,6 +78,12 @@ void AutomotiveSimulator<T>::AddSimpleCar() {
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+
+  const std::string urdf_filename =
+      GetDrakePath() + "/automotive/models/boxcar.urdf";
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      urdf_filename, rigid_body_tree_.get());
+  rigid_body_tree_publisher_inputs_.push_back(coord_transform);
 }
 
 template <typename T>
@@ -71,6 +100,12 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
+
+  const std::string urdf_filename =
+      GetDrakePath() + "/automotive/models/boxcar.urdf";
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      urdf_filename, rigid_body_tree_.get());
+  rigid_body_tree_publisher_inputs_.push_back(coord_transform);
 }
 
 template <typename T>
@@ -151,6 +186,48 @@ const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
 template <typename T>
 void AutomotiveSimulator<T>::Start() {
   DRAKE_DEMAND(!started_);
+
+  if (!rigid_body_tree_publisher_inputs_.empty()) {
+    // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
+    // that output an Euler floating joint state.  We want to mux them together
+    // to feed RigidBodyTreeLcmPublisher.  We stack them up in joint order as
+    // the position input to the publisher, and then also need to feed zeros
+    // for all of the joint velocities.
+    const int num_joints = rigid_body_tree_publisher_inputs_.size();
+    const int num_ports_into_mux = 2 * num_joints;  // For position + velocity.
+    const int num_elements_per_joint =
+        EulerFloatingJointStateIndices::kNumCoordinates;
+
+    // Create and cascade a mux and publisher.
+    auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
+        std::vector<int>(num_ports_into_mux, num_elements_per_joint));
+    auto rigid_body_tree_publisher =
+        builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
+            *rigid_body_tree_, lcm_.get());
+    builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
+
+    // Create a zero-velocity source.
+    auto zero_velocity =
+        builder_->template AddSystem<systems::ConstantVectorSource>(
+            Vector6<T>::Zero().eval());
+
+    // Connect systems that provide joint positions to the mux position inputs.
+    enumerate(
+        rigid_body_tree_publisher_inputs_,
+        [&](int index, const systems::System<T>* system) {
+          builder_->Connect(system->get_output_port(0),
+                            multiplexer->get_input_port(index));
+        });
+
+    // Connect the zero-velocity source to all of the mux velocity inputs.
+    enumerate(
+        rigid_body_tree_publisher_inputs_,
+        [&](int index, const systems::System<T>* system) {
+          builder_->Connect(zero_velocity->get_output_port(),
+                            multiplexer->get_input_port(num_joints + index));
+        });
+  }
+  rigid_body_tree_->compile();
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);

@@ -38,8 +38,17 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   command.set_throttle(1.0);
   command_sub.SetMessage(0.0 /* time */, command);
 
-  // Immediately after starting, we should have not have moved much.
+  // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
+
+  // Confirm that the RigidBodyTree has been appropriately amended.
+  const auto& tree = simulator->get_rigid_body_tree();
+  EXPECT_EQ(1, tree.get_num_model_instances());
+  ASSERT_EQ(2, tree.get_num_bodies());  // (0 is world, 1 is boxcar.)
+  const auto& body = tree.get_body(1);
+  EXPECT_EQ("box_shape", body.get_name());
+
+  // Shortly after starting, we should have not have moved much.
   simulator->StepBy(0.01);
   EulerFloatingJointState<double> joint_value;
   state_pub.GetMessage(&joint_value);
@@ -53,6 +62,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // TODO(jwnimmer-tri) Check the timestamp of the final publication.
   state_pub.GetMessage(&joint_value);
   EXPECT_GT(joint_value.x(), 1.0);
+
+  // TODO(jwnimmer-tri) Confirm that appropriate draw messages are coming out.
+  // Let's wait until we have LCM mocking (#3546) before doing this.
 
   // The subsystem pointers must not change.
   EXPECT_EQ(
@@ -75,11 +87,25 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
   simulator->AddTrajectoryCar(curve, 1.0, 0.0);
   simulator->AddTrajectoryCar(curve, 1.0, 10.0);
 
-  // Run for a while.
+  // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
+
+  // Confirm that the RigidBodyTree has been appropriately amended.
+  const auto& tree = simulator->get_rigid_body_tree();
+  EXPECT_EQ(2, tree.get_num_model_instances());
+  ASSERT_EQ(3, tree.get_num_bodies());  // (0 is world, 1 & 2 are boxcar.)
+  EXPECT_EQ("box_shape", tree.get_body(1).get_name());
+  EXPECT_EQ("box_shape", tree.get_body(2).get_name());
+
+  // Run for a while.
   for (int i = 0; i < 100; ++i) {
     simulator->StepBy(0.01);
   }
+
+  // TODO(jwnimmer-tri) Confirm that appropriate draw messages are coming out.
+  // In particular, ensure that the link values for each body are consistent
+  // with the trajectory car -- that the indices haven't been messed up.
+  // Let's wait until we have LCM mocking (#3546) before doing this.
 
   // No aborts is good enough.
   EXPECT_TRUE(true);
