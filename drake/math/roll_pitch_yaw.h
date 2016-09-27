@@ -30,7 +30,7 @@ Vector4<typename Derived::Scalar> rpy2quat(
       c(0) * s(1) * c(2) + s(0) * c(1) * s(2),
       c(0) * c(1) * s(2) - s(0) * s(1) * c(2);
 
-  //q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
+  // q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
   return q;
 }
 
@@ -48,7 +48,8 @@ Vector4<typename Derived::Scalar> rpy2axis(
   return quat2axis(rpy2quat(rpy));
 }
 
-/** We use an extrinsic rotation about Space-fixed x-y-z axes by angles [rpy(0), rpy(1), rpy(2)].
+/** We use an extrinsic rotation about Space-fixed x-y-z axes by angles [rpy(0),
+ * rpy(1), rpy(2)].
   * Or equivalently, we use an intrinsic
   * rotation about Body-fixed z-y'-x'' axes by angles [rpy(2), rpy(1), rpy(0)].
   * The rotation matrix returned is equivalent to

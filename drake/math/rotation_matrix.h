@@ -29,29 +29,26 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
   // Check if the trace is larger than any diagonal
   Scalar tr = M.trace();
-  if(tr >= M(0,0) && tr >= M(1,1) && tr >= M(2,2)) {
+  if (tr >= M(0, 0) && tr >= M(1, 1) && tr >= M(2, 2)) {
     q(0) = 1 + tr;
     q(1) = M(2, 1) - M(1, 2);
     q(2) = M(0, 2) - M(2, 0);
     q(3) = M(1, 0) - M(0, 1);
-  }
-  else if(M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+  } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
     q(0) = M(2, 1) - M(1, 2);
-    q(1) = Scalar(1) - (tr - 2*M(0, 0));
+    q(1) = Scalar(1) - (tr - 2 * M(0, 0));
     q(2) = M(0, 1) + M(1, 0);
     q(3) = M(0, 2) + M(2, 0);
-  }
-  else if(M(1, 1) >= M(2, 2)) {
+  } else if (M(1, 1) >= M(2, 2)) {
     q(0) = M(0, 2) - M(2, 0);
     q(1) = M(0, 1) + M(1, 0);
-    q(2) = Scalar(1) - (tr - 2*M(1, 1));
+    q(2) = Scalar(1) - (tr - 2 * M(1, 1));
     q(3) = M(1, 2) + M(2, 1);
-  }
-  else {
+  } else {
     q(0) = M(1, 0) - M(0, 1);
     q(1) = M(0, 2) + M(2, 0);
     q(2) = M(1, 2) + M(2, 1);
-    q(3) = 1 - (tr - 2*M(2, 2));
+    q(3) = 1 - (tr - 2 * M(2, 2));
   }
   Scalar scale = q.norm();
   q /= scale;
@@ -79,7 +76,8 @@ Vector4<typename Derived::Scalar> rotmat2axis(
 /**
  * Compute the Euler angles from rotation matrix
  * @param R A 3 x 3 rotation matrix
- * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2), rpy(1), rpy(0)]
+ * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
+ * rpy(1), rpy(0)]
  * @see rpy2rotmat
  */
 template <typename Derived>
@@ -114,34 +112,34 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   Scalar minusPlus = 1;
 
   // Calculate theta2 using lots of information in the rotation matrix
-  Scalar Rsum = sqrt((R(i,i)*R(i,i) + R(i,j)*R(i,j) + R(j,k)*R(j,k) + R(k,k) * R(k,k))/2);
+  Scalar Rsum = sqrt((R(i, i) * R(i, i) + R(i, j) * R(i, j) +
+                      R(j, k) * R(j, k) + R(k, k) * R(k, k)) /
+                     2);
 
   // Rsum = abs(cos(theta2)) is inherently positive
-  Scalar theta2 = atan2(plusMinus*R(i,k), Rsum);
+  Scalar theta2 = atan2(plusMinus * R(i, k), Rsum);
   Scalar theta1, theta3;
 
   // There is a singularity when cos(theta2) == 0
-  if(Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
-    theta1 = atan2(minusPlus * R(j,k), R(k,k));
-    theta3 = atan2(minusPlus * R(i,j), R(i,i));
-  }
-  else if(plusMinus * R(i,k) > 0) {
+  if (Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
+    theta1 = atan2(minusPlus * R(j, k), R(k, k));
+    theta3 = atan2(minusPlus * R(i, j), R(i, i));
+  } else if (plusMinus * R(i, k) > 0) {
     // spos = 2*sin(theta1 + plusMinus*theta3)
-    Scalar spos = R(j,i) + plusMinus * R(k,j);
+    Scalar spos = R(j, i) + plusMinus * R(k, j);
     // cpos = 2*cos(theta1 + plusMinus*theta3)
-    Scalar cpos = R(j,j) + minusPlus * R(k,i);
+    Scalar cpos = R(j, j) + minusPlus * R(k, i);
     Scalar theta1PlusMinusTheta3 = atan2(spos, cpos);
-    theta1 = theta1PlusMinusTheta3; // Arbitrary split
-    theta3 = 0;                     // Arbitrary split
-  }
-  else {
+    theta1 = theta1PlusMinusTheta3;  // Arbitrary split
+    theta3 = 0;                      // Arbitrary split
+  } else {
     // sneg = 2*sin(theta1+minusPlus*theta3)
-    Scalar sneg = plusMinus*(R(k,j) + minusPlus * R(j,i));
+    Scalar sneg = plusMinus * (R(k, j) + minusPlus * R(j, i));
     // cneg = 2*cos(theta1+minusPlus*theta3)
-    Scalar cneg = R(j,j) + plusMinus * R(k,i);
+    Scalar cneg = R(j, j) + plusMinus * R(k, i);
     Scalar theta1MinusPlusTheta3 = atan2(sneg, cneg);
-    theta1 = theta1MinusPlusTheta3; // Arbitrary split
-    theta3 = 0;                     // Arbitrary split
+    theta1 = theta1MinusPlusTheta3;  // Arbitrary split
+    theta3 = 0;                      // Arbitrary split
   }
 
   // Return values have the following ranges
@@ -151,7 +149,7 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
 
   // Switch order on return due to Drake's convention of SpaceXYZ theta123
   // (which is equivalent to BodyZYX theta321).
-  return drake::Vector3<Scalar>( theta3, theta2, theta1 );
+  return drake::Vector3<Scalar>(theta3, theta2, theta1);
 }
 
 template <typename Derived>
