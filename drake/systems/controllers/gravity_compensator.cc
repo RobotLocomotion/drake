@@ -24,7 +24,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  Eigen::VectorXd x = System<T>::get_input_vector(context, 0);
+  Eigen::VectorXd x = System<T>::CopyContinuousStateVector(context);
 
   int number_of_velocities = mdb_world_.number_of_velocities();
 
@@ -39,7 +39,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   System<T>::GetMutableOutputVector(output, 0) = G;
 }
 
-template class DRAKESYSTEM2CONTROLLERS_EXPORT GravityCompensator<double>;
+template class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator<double>;
 // TODO(naveenoid) : get the AutoDiff working as in the line below.
 // template class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator<AutoDiffXd>;
 
