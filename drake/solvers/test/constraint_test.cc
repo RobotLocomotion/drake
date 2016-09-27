@@ -29,7 +29,7 @@ void TestLorentzConeEval(const VectorXd &x_test) {
   TaylorVecXd y_taylor;
 
   cnstr.Eval(x_taylor, y_taylor);
-  Eigen::Matrix<double, y.size(), Eigen::Dynamic> y_grad(y.size(), x_test.size());
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> y_grad(y.size(), x_test.size());
   for(int i = 0; i < 2; i++) {
     for(int j = 0; j < 2; j++) {
       y_grad(i,j) = static_cast<double>(y_taylor(i).derivatives()(j));
