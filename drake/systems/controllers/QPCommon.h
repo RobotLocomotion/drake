@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/eigen_stl_types.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -28,6 +28,8 @@ struct QPControllerState {
   int* cbasis;
   int vbasis_len;
   int cbasis_len;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct PositionIndices {
@@ -166,6 +168,8 @@ struct BodyMotionParams {
     return lhs.Kp.isApprox(rhs.Kp) && lhs.Kd.isApprox(rhs.Kd) &&
            lhs.accel_bounds == rhs.accel_bounds && lhs.weight == rhs.weight;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct HardwareGains {
@@ -238,7 +242,7 @@ struct QPControllerParams {
         center_of_mass_observer_gain(Eigen::Matrix4d::Zero()) {}
 
   WholeBodyParams whole_body;
-  std::vector<BodyMotionParams> body_motion;
+  drake::eigen_aligned_std_vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
   JointSoftLimitParams joint_soft_limits;
   HardwareParams hardware;
@@ -271,6 +275,8 @@ struct QPControllerParams {
             rhs.center_of_mass_observer_gain);
     return is_equal;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
@@ -289,6 +295,8 @@ struct DesiredBodyAcceleration {
   KinematicPath body_path;
   Eigen::Isometry3d T_task_to_world;
   Vector6d weight_multiplier;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct QPControllerOutput {
@@ -299,9 +307,7 @@ struct QPControllerOutput {
 };
 
 struct QPControllerDebugData {
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      active_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports;
   int nc;
   Eigen::MatrixXd normals;
   Eigen::MatrixXd B;
@@ -323,6 +329,8 @@ struct QPControllerDebugData {
   Eigen::MatrixXd Jcom;
   Eigen::VectorXd Jcomdotv;
   Eigen::VectorXd beta;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct PIDOutput {

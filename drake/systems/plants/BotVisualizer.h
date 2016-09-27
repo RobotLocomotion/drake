@@ -1,3 +1,5 @@
+// TODO(liang.fok) Delete this class once all System 1.0-based demos that use
+// it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
 #include <lcm/lcm-cpp.hpp>
@@ -8,8 +10,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 

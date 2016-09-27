@@ -56,6 +56,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
+  /// Returns the default name for a system that publishes @p channel.
+  static std::string get_name(const std::string& channel);
+
   /**
    * Takes the VectorBase from the input port of the context and publishes
    * it onto an LCM channel.
@@ -68,6 +71,18 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
+  /**
+   * Gets the most recently published message bytes; typically only used for
+   * unit testing.
+   */
+  std::vector<uint8_t> GetMessage() const;
+
+  /**
+   * Gets the most recently published message bytes, and converts them to into
+   * vector form using the translator; typically only used for unit testing.
+   */
+  void GetMessage(BasicVector<double>* message_vector) const;
+
  private:
   // The channel on which to publish LCM messages.
   const std::string channel_;
@@ -78,6 +93,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
+
+  // The most recent message bytes; mutable is ok because it only affects the
+  // GetMessage() results, which are not part of the System contract.
+  mutable std::vector<uint8_t> message_bytes_;
 };
 
 }  // namespace lcm

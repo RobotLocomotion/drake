@@ -71,6 +71,11 @@ namespace drake {
 namespace detail {
 // Abort the program with an error message.
 DRAKECOMMON_EXPORT
+#if _MSC_VER
+__declspec(noreturn)
+#else /* gcc or clang --- gcc is ok with [[noreturn]], too; clang is not. */
+__attribute__((noreturn))
+#endif
 void Abort(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
 }  // namespace drake

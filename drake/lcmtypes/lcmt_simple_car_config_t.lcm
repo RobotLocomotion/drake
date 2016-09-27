@@ -1,7 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/automotive/lcm_vector_gen.py.
+
 package drake;
 
 struct lcmt_simple_car_config_t {
-  int64_t instance_id;
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
   double wheelbase;
   double track;
   double max_abs_steering_angle;

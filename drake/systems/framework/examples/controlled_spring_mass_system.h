@@ -16,6 +16,15 @@ namespace systems {
 /// A model of a one-dimensional spring-mass system controlled to achieve a
 /// given target position using a PID controller.
 /// @see SpringMassSystem, PidController.
+///
+/// @tparam T The vector element type, which must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// No other values for T are currently supported.
 /// @ingroup systems
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
@@ -35,11 +44,11 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   ~PidControlledSpringMassSystem() override {}
 
-  double get_position(const Context<T>& context) const;
+  T get_position(const Context<T>& context) const;
 
-  double get_velocity(const Context<T>& context) const;
+  T get_velocity(const Context<T>& context) const;
 
-  double get_conservative_work(const Context<T>& context) const;
+  T get_conservative_work(const Context<T>& context) const;
 
   /// Sets the position of the mass in the given Context.
   void set_position(Context<T>* context, const T& position) const;
@@ -48,18 +57,19 @@ class PidControlledSpringMassSystem : public Diagram<T> {
   void set_velocity(Context<T>* context, const T& position) const;
 
   /// Returns the SpringMassSystem plant of the model.
-  const SpringMassSystem& get_plant() const { return *plant_; }
+  const SpringMassSystem<T>& get_plant() const;
 
   // System<T> overrides
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state in which the postion and velocity of
+  /// Sets @p context to a default state in which the position and velocity of
   /// the mass are both zero.
   /// The integral of the controller is also set to zero.
   void SetDefaultState(Context<T>* context) const;
 
  private:
-  SpringMassSystem* plant_;
+  // These are references into the Diagram; no ownership implied.
+  SpringMassSystem<T>* plant_;
   PidController<T>* controller_;
   Demultiplexer<T>* demux_;
   Gain<T>* pid_inverter_;

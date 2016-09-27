@@ -30,7 +30,7 @@ class SimpleCarTest : public ::testing::Test {
 
   SimpleCarState<double>* continuous_state() {
     auto result = dynamic_cast<SimpleCarState<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state()->get_mutable_state());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -110,7 +110,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 
   // Half throttle yields half of the max acceleration.
   const double max_acceleration =
-      SimpleCarDefaults::kDefaultConfig.max_acceleration;
+      SimpleCar<double>::get_default_config().max_acceleration();
   SetInputValue(0.0, 0.5, 0.0);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(0.0, result->x());
@@ -130,7 +130,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 
   // A non-zero steering_angle turns in the same direction.  We'd like to turn
   // at 0.1 rad/s at a speed of 10m/s, so we want a curvature of 0.01.
-  const double wheelbase = SimpleCarDefaults::kDefaultConfig.wheelbase;
+  const double wheelbase = SimpleCar<double>::get_default_config().wheelbase();
   const double steering_angle = std::atan(0.01 * wheelbase);
   SetInputValue(steering_angle, 0.0, 0.0);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
@@ -151,7 +151,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   EXPECT_NEAR(10.0, result->x(), kTolerance);
   EXPECT_EQ(0.0, result->y());
   EXPECT_EQ(0.0, result->heading());
-  EXPECT_NEAR(-0.5 * SimpleCarDefaults::kDefaultConfig.max_acceleration,
+  EXPECT_NEAR(-0.5 * SimpleCar<double>::get_default_config().max_acceleration(),
               result->velocity(), kTolerance);
 
   // A heading of +90deg points us at +y.

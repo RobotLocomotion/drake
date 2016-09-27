@@ -35,4 +35,5 @@ class DRAKESHAPES_EXPORT VisualElement : public Element {
 // See http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
 // for why this is necessary.
 typedef drake::eigen_aligned_std_vector<VisualElement> VectorOfVisualElements;
-}
+
+}  // namespace DrakeShapes

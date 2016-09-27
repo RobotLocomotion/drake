@@ -31,16 +31,16 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 // Tests the ability to take derivatives of the output with respect to
 // the input. Since `y = u` the derivative in this case is the identity matrix.
 GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
-  // In this unit test with vectors of length three, derivatives will be taken
+  // In this unit test with vectors of size three, derivatives will be taken
   // with respect to the entire input vector. Therefore the Vector3d template
   // argument.
   typedef AutoDiffScalar<Vector3d> T;
 
   // Set a PassThrough system with input and output of size 3.
-  auto buffer = make_unique<PassThrough<T>>(3 /* length */);
+  auto buffer = make_unique<PassThrough<T>>(3 /* size */);
   auto context = buffer->CreateDefaultContext();
   auto output = buffer->AllocateOutput(*context);
-  auto input = make_unique<BasicVector<T>>(3 /* length */);
+  auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
   Vector3<T> input_vector(1.0, 3.14, 2.18);

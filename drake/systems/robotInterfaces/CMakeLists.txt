@@ -22,12 +22,12 @@ endif()
 if(MATLAB_FOUND)
   add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
 
-  pods_find_pkg_config(octomap 1.6.3)
+  find_package(octomap)
 
   if(octomap_FOUND)
     add_mex(octomapWrapper octomapWrapper.cpp)
-    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil)  # note: drakeUtil depends on eigen
-    pods_use_pkg_config_packages(octomapWrapper octomap)
+    target_include_directories(octomapWrapper PRIVATE ${OCTOMAP_INCLUDE_DIRS})
+    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil ${OCTOMAP_LIBRARIES})
   endif()
 
   if(lcm_FOUND AND NOT WIN32)

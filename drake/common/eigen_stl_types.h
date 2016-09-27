@@ -2,14 +2,23 @@
 
 /// @file
 /// This file contains definitions for using Eigen with the STL.
+/// See http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html.
 /// @see eigen_types.h
 
+#include <map>
 #include <unordered_map>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
 namespace drake {
+
+/// A std::map that uses Eigen::aligned_allocator so that the
+/// contained types may be fixed-size Eigen values.
+template <typename Key, typename T>
+using eigen_aligned_std_map =
+    std::map<Key, T, std::less<Key>,
+             Eigen::aligned_allocator<std::pair<Key const, T>>>;
 
 /// A std::unordered_map that uses Eigen::aligned_allocator so that the
 /// contained types may be fixed-size Eigen values.

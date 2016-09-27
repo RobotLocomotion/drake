@@ -19,6 +19,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   # deprecated methods should still be made available through the SWIG-generated
   # APIs until they are actually removed from the original C++ APIs.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+
+  # Swig sometimes emits code which appears to have uninitialized
+  # variables.  Err on the side of swig being correct.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
 endif()
 
 if(PYTHON_EXECUTABLE)

@@ -1,22 +1,13 @@
 #pragma once
 
 #include "drake/automotive/gen/driving_command.h"
+#include "drake/automotive/gen/simple_car_config.h"
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/drakeAutomotive_export.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
 namespace automotive {
-
-/// SimpleCar constants that are not templated on the scalar type in use.
-class DRAKEAUTOMOTIVE_EXPORT SimpleCarDefaults {
- public:
-  static const drake::lcmt_simple_car_config_t kDefaultConfig;
-
- private:
-  SimpleCarDefaults();  // disable
-};
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.
@@ -25,7 +16,7 @@ class DRAKEAUTOMOTIVE_EXPORT SimpleCarDefaults {
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
 /// configuration:
-/// * see lcmt_simple_car_config_t
+/// * see lcmt_SimpleCarConfig_t
 ///
 /// state vector (planar for now):
 /// * position: x, y, heading;
@@ -56,10 +47,10 @@ class DRAKEAUTOMOTIVE_EXPORT SimpleCarDefaults {
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
-  explicit SimpleCar(const drake::lcmt_simple_car_config_t& config =
-                         SimpleCarDefaults::kDefaultConfig);
+  explicit SimpleCar(const SimpleCarConfig<T>& config = get_default_config());
 
-  const drake::lcmt_simple_car_config_t& config() const { return config_; }
+  static SimpleCarConfig<T> get_default_config();
+  const SimpleCarConfig<T>& config() const { return config_; }
 
  public:
   // System<T> overrides
@@ -82,7 +73,7 @@ class SimpleCar : public systems::LeafSystem<T> {
   void DoEvalTimeDerivatives(const SimpleCarState<T>&, const DrivingCommand<T>&,
                              SimpleCarState<T>*) const;
 
-  const drake::lcmt_simple_car_config_t config_;
+  const SimpleCarConfig<T> config_;
 };
 
 }  // namespace automotive

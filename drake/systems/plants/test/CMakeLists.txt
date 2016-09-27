@@ -75,10 +75,9 @@ if(lcm_FOUND)
   target_link_libraries(testMassSpringDamper drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   drake_add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)
 
-  if(BULLET_FOUND)
+  if(BULLET_FOUND AND bot2-core_FOUND)
     add_executable(lidarTest lidarTest.cpp)
-    add_dependencies(lidarTest drake_lcmtypes_hpp)
-    target_link_libraries(lidarTest drakeRBSystem lcm ${GTEST_BOTH_LIBRARIES})
+    target_link_libraries(lidarTest drakeRBSystem drakeLCMTypes lcmtypes_bot2-core-cpp lcm ${GTEST_BOTH_LIBRARIES})
     drake_add_test(NAME lidarTest COMMAND lidarTest)
   endif()
 

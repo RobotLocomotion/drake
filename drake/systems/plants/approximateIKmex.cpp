@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // VectorXd q_nom(nq);
   // memcpy(q_nom.data(), mxGetPrSafe(prhs[2]), sizeof(double)*nq);
   int num_constraints = nrhs - 4;
-  RigidBodyConstraint **constraint_array =
+  RigidBodyConstraint** constraint_array =
       new RigidBodyConstraint *[num_constraints];
   for (int i = 0; i < num_constraints; i++) {
     constraint_array[i] =

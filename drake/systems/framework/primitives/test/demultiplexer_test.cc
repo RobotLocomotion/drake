@@ -29,10 +29,10 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class DemultiplexerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    demux_ = make_unique<Demultiplexer<double>>(3 /* length */);
+    demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
     output_ = demux_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
@@ -74,7 +74,7 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
 
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

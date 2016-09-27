@@ -83,7 +83,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   IKInbetweenConstraint(const RigidBodyTree* model,
                         const IKTrajectoryHelper& helper,
                         int num_constraints,
-                        RigidBodyConstraint** const constraint_array)
+                        const RigidBodyConstraint* const* constraint_array)
       : Constraint(0),  // Update bounds later in constructor.
         model_(model),
         helper_(helper),
@@ -105,14 +105,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       for (int j = 0; j < helper.t_inbetween()[i].size(); j++) {
         double t_j = helper.t_inbetween()[i](j) + t[i];
         for (int k = 0; k < num_constraints; k++) {
-          RigidBodyConstraint* constraint = constraint_array_[k];
+          const RigidBodyConstraint* constraint = constraint_array_[k];
           const int constraint_category = constraint->getCategory();
           if (constraint_category !=
               RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
             continue;
           }
-          SingleTimeKinematicConstraint* stc =
-              static_cast<SingleTimeKinematicConstraint*>(constraint);
+          const SingleTimeKinematicConstraint* stc =
+              static_cast<const SingleTimeKinematicConstraint*>(constraint);
           // Check to see if an inbetween constraint would be active at
           // this timestep.
           const int stc_nc = stc->getNumConstraint(&t_j);
@@ -127,14 +127,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     }
 
     for (int k = 0; k < num_constraints; k++) {
-      RigidBodyConstraint* constraint = constraint_array_[k];
+      const RigidBodyConstraint* constraint = constraint_array_[k];
       const int constraint_category = constraint->getCategory();
       if (constraint_category !=
           RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
         continue;
       }
-      MultipleTimeKinematicConstraint* mtkc =
-          static_cast<MultipleTimeKinematicConstraint*>(constraint);
+      const MultipleTimeKinematicConstraint* mtkc =
+          static_cast<const MultipleTimeKinematicConstraint*>(constraint);
       int mtk_nc = mtkc->getNumConstraint(t, nT);
       if (mtk_nc > 0) {
         VectorXd lb;
@@ -211,15 +211,15 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
         Eigen::Map<VectorXd> qvec(qi, nq);
         KinematicsCache<double> cache = model_->doKinematics(qvec);
         for (int k = 0; k < num_constraints_; k++) {
-          RigidBodyConstraint* constraint = constraint_array_[k];
+          const RigidBodyConstraint* constraint = constraint_array_[k];
           const int constraint_category = constraint->getCategory();
           if (constraint_category !=
               RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
             continue;
           }
 
-          SingleTimeKinematicConstraint* stc =
-              static_cast<SingleTimeKinematicConstraint*>(constraint);
+          const SingleTimeKinematicConstraint* stc =
+              static_cast<const SingleTimeKinematicConstraint*>(constraint);
           if (stc->isTimeValid(&t_j)) {
             int nc = stc->getNumConstraint(&t_j);
             VectorXd c_k(nc);
@@ -258,14 +258,14 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
     // inbetween data, evaluate any multiple time kinematic
     // constraints.
     for (int i = 0; i < num_constraints_; i++) {
-      RigidBodyConstraint* constraint = constraint_array_[i];
+      const RigidBodyConstraint* constraint = constraint_array_[i];
       const int constraint_category = constraint->getCategory();
       if (constraint_category !=
           RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
         continue;
       }
-      MultipleTimeKinematicConstraint* mtkc =
-            static_cast<MultipleTimeKinematicConstraint*>(constraint);
+      const MultipleTimeKinematicConstraint* mtkc =
+            static_cast<const MultipleTimeKinematicConstraint*>(constraint);
       const int nc = mtkc->getNumConstraint(helper_.t_samples().data(),
                                             helper_.t_samples().size());
       VectorXd mtkc_c(nc);
@@ -335,7 +335,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   const RigidBodyTree* model_;
   const IKTrajectoryHelper& helper_;
   const int num_constraints_;
-  RigidBodyConstraint** const constraint_array_;
+  const RigidBodyConstraint* const* constraint_array_;
 };
 
 }
@@ -348,7 +348,7 @@ void inverseKinTrajBackend(
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom,
     int num_constraints,
-    RigidBodyConstraint** const constraint_array,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<DerivedC>* q_sol,
     Eigen::MatrixBase<DerivedD>* qdot_sol,
@@ -453,12 +453,12 @@ void inverseKinTrajBackend(
   // valid, using the subset of the "q" decision variable representing
   // the state at that time.
   for (int i = 0; i < num_constraints; i++) {
-    RigidBodyConstraint* constraint = constraint_array[i];
+    const RigidBodyConstraint* constraint = constraint_array[i];
     const int constraint_category = constraint->getCategory();
     if (constraint_category ==
         RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
-      SingleTimeKinematicConstraint* stc =
-          static_cast<SingleTimeKinematicConstraint*>(constraint);
+      const SingleTimeKinematicConstraint* stc =
+          static_cast<const SingleTimeKinematicConstraint*>(constraint);
       auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
           stc, &kin_helper);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
@@ -467,7 +467,8 @@ void inverseKinTrajBackend(
       }
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
-      PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
+      const PostureConstraint* pc =
+          static_cast<const PostureConstraint*>(constraint);
       for (int t_index = qstart_idx; t_index < nT; t_index++) {
         if (!pc->isTimeValid(&t[t_index])) { continue; }
         VectorXd lb;
@@ -492,8 +493,8 @@ void inverseKinTrajBackend(
     } else if (
         constraint_category ==
         RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
-      MultipleTimeLinearPostureConstraint* mt_lpc =
-          static_cast<MultipleTimeLinearPostureConstraint*>(constraint);
+      const MultipleTimeLinearPostureConstraint* mt_lpc =
+          static_cast<const MultipleTimeLinearPostureConstraint*>(constraint);
       const int num_constraint = mt_lpc->getNumConstraint(t, nT);
       if (num_constraint == 0) { continue; }
 
@@ -540,9 +541,11 @@ void inverseKinTrajBackend(
   qdot_sol->block(0, nT - 1, nq, 1) = qdotf.value();
   MatrixXd q_sol_tmp = *q_sol;
   q_sol_tmp.resize(nq * nT, 1);
-  MatrixXd qdot_sol_tmp = helper.velocity_mat() * q_sol_tmp;
-  qdot_sol_tmp.resize(nq, nT - 2);
-  qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
+  if (nT > 2) {
+    MatrixXd qdot_sol_tmp = helper.velocity_mat() * q_sol_tmp;
+    qdot_sol_tmp.resize(nq, nT - 2);
+    qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
+  }
   MatrixXd qddot_sol_tmp(nq * nT, 1);
   qddot_sol_tmp =
       helper.accel_mat() * q_sol_tmp +
@@ -556,7 +559,8 @@ template void inverseKinTrajBackend(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& q_seed,
     const Eigen::MatrixBase<Eigen::Map<MatrixXd>>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* q_sol,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>* qdot_sol,
@@ -566,7 +570,8 @@ template void inverseKinTrajBackend(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<MatrixXd>& q_seed,
     const Eigen::MatrixBase<MatrixXd>& q_nom,
-    const int num_constraints, RigidBodyConstraint** const constraint_array,
+    const int num_constraints,
+    const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
     Eigen::MatrixBase<MatrixXd>* q_sol,
     Eigen::MatrixBase<MatrixXd>* qdot_sol,

@@ -6,6 +6,11 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/system_input.h"
 
+// Clean up windows junk; see http://stackoverflow.com/questions/4111899/.
+#if defined(WIN32) || defined(WIN64)
+  #undef GetMessage
+#endif
+
 namespace drake {
 namespace systems {
 namespace lcm {
@@ -33,7 +38,11 @@ LcmPublisherSystem::LcmPublisherSystem(
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
 std::string LcmPublisherSystem::get_name() const {
-  return "LcmPublisherSystem::" + channel_;
+  return get_name(channel_);
+}
+
+std::string LcmPublisherSystem::get_name(const std::string& channel) {
+  return "LcmPublisherSystem(" + channel + ")";
 }
 
 void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
@@ -41,14 +50,23 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
 
   // Obtains the input vector.
   const VectorBase<double>* const input_vector =
-      context.get_vector_input(kPortIndex);
+      this->EvalVectorInput(context, kPortIndex);
 
   // Translates the input vector into LCM message bytes.
-  std::vector<uint8_t> lcm_message;
-  translator_.Serialize(context.get_time(), *input_vector, &lcm_message);
+  translator_.Serialize(context.get_time(), *input_vector, &message_bytes_);
 
   // Publishes onto the specified LCM channel.
-  lcm_->publish(channel_, lcm_message.data(), lcm_message.size());
+  lcm_->publish(channel_, message_bytes_.data(), message_bytes_.size());
+}
+
+std::vector<uint8_t> LcmPublisherSystem::GetMessage() const {
+  return message_bytes_;
+}
+
+void LcmPublisherSystem::GetMessage(BasicVector<double>* message_vector) const {
+  // We use GetMessage() here to ensure we stay in sync with its implementation.
+  const std::vector<uint8_t> bytes = GetMessage();
+  translator_.Deserialize(bytes.data(), bytes.size(), message_vector);
 }
 
 }  // namespace lcm

@@ -2,9 +2,10 @@
 
 #include <memory>
 #include "QPCommon.h"
-#include "drake/solvers/gurobi_qp.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/common/eigen_stl_types.h"
 #include "drake/drakeQPCommon_export.h"
+#include "drake/solvers/gurobi_qp.h"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -18,7 +19,8 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
  public:
   InstantaneousQPController(
       std::unique_ptr<RigidBodyTree> robot_in,
-      const std::map<std::string, QPControllerParams>& param_sets_in,
+      const drake::eigen_aligned_std_map<std::string, QPControllerParams>&
+          param_sets_in,
       const RobotPropertyCache& rpc_in)
       : robot(std::move(robot_in)),
         param_sets(param_sets_in),
@@ -51,7 +53,7 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
       const DrakeRobotState& robot_state,
       const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
           contact_detected,
-      const std::map<Side, ForceTorqueMeasurement>&
+      const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
       QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
 
@@ -59,10 +61,12 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   GRBenv* env;
   std::unique_ptr<RigidBodyTree> robot;
-  std::map<std::string, QPControllerParams> param_sets;
+  drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   Eigen::VectorXd umin, umax;
   int use_fast_qp;
@@ -103,17 +107,15 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
       const Eigen::Ref<const Eigen::VectorXd>& qdd, bool foot_contact[2],
       const VRefIntegratorParams& params);
 
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-  loadAvailableSupports(const drake::lcmt_qp_controller_input& qp_input);
+  drake::eigen_aligned_std_vector<SupportStateElement> loadAvailableSupports(
+      const drake::lcmt_qp_controller_input& qp_input);
 
   void estimateCoMBasedOnMeasuredZMP(
       const QPControllerParams& params,
-      std::vector<SupportStateElement,
-                  Eigen::aligned_allocator<SupportStateElement>>&
-          active_supports,
-      int num_contact_points, const std::map<Side, ForceTorqueMeasurement>&
-                                  foot_force_torque_measurements,
+      drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
+      int num_contact_points,
+      const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+          foot_force_torque_measurements,
       double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 
   void initialize();
@@ -125,8 +127,8 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
 };
 
 DRAKEQPCOMMON_EXPORT void applyURDFModifications(
-  std::unique_ptr<RigidBodyTree>& robot,
-  const KinematicModifications& modifications);
+    std::unique_ptr<RigidBodyTree>& robot,
+    const KinematicModifications& modifications);
 DRAKEQPCOMMON_EXPORT void applyURDFModifications(
-  std::unique_ptr<RigidBodyTree>& robot,
-  const std::string& urdf_modifications_filename);
+    std::unique_ptr<RigidBodyTree>& robot,
+    const std::string& urdf_modifications_filename);

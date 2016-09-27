@@ -323,9 +323,10 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config,
   return params;
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(
-    YAML::Node config, const RigidBodyTree& robot) {
-  auto param_sets = std::map<std::string, QPControllerParams>();
+drake::eigen_aligned_std_map<std::string, QPControllerParams>
+loadAllParamSetsFromExpandedConfig(YAML::Node config,
+                                   const RigidBodyTree& robot) {
+  drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   for (auto config_it = config.begin(); config_it != config.end();
        ++config_it) {
     std::cout << "loading param set: " << config_it->first << std::endl;
@@ -336,13 +337,13 @@ std::map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(
   return param_sets;
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSets(
+drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot) {
   config = expandDefaults(config);
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSets(
+drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree& robot,
     std::ofstream& debug_output_file) {
   config = expandDefaults(config);
@@ -383,9 +384,10 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
     ret.position_indices.legs[side] = findPositionIndices(
         robot, joint_group_names["legs"][side_id].as<vector<string>>());
     ret.position_indices.knees[side] =
-        robot.FindChildBodyOfJoint(
-            joint_group_names["knees"][side_id].as<string>())->
-                get_position_start_index();
+        robot
+            .FindChildBodyOfJoint(
+                joint_group_names["knees"][side_id].as<string>())
+            ->get_position_start_index();
     ret.position_indices.ankles[side] = findPositionIndices(
         robot, joint_group_names["ankles"][side_id].as<vector<string>>());
     ret.position_indices.arms[side] = findPositionIndices(
@@ -394,11 +396,11 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
   ret.position_indices.neck = findPositionIndices(
       robot, joint_group_names["neck"].as<vector<string>>());
   ret.position_indices.back_bkz =
-      robot.FindChildBodyOfJoint(joint_group_names["back_bkz"].as<string>())->
-          get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bkz"].as<string>())
+          ->get_position_start_index();
   ret.position_indices.back_bky =
-      robot.FindChildBodyOfJoint(joint_group_names["back_bky"].as<string>())->
-          get_position_start_index();
+      robot.FindChildBodyOfJoint(joint_group_names["back_bky"].as<string>())
+          ->get_position_start_index();
 
   return ret;
 }

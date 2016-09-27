@@ -60,6 +60,9 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   std::string get_name() const override;
 
+  /// Returns the default name for a system that subscribes to @p channel.
+  static std::string get_name(const std::string& channel);
+
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
@@ -76,6 +79,22 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    * recent update wins.
    */
   void SetMessage(std::vector<uint8_t> message_bytes);
+
+  /**
+   * Sets the message vector that will provide the value for `EvalOutput`;
+   * typically only used for unit testing.  The value will come translating the
+   * given @p time and @p message_vector to bytes, which are then stored and
+   * for decoding.
+   *
+   * This class's constructors subscribe to an `LCM` channel that provides the
+   * values for `EvalOutput`.  However, if `LCM` is not providing any message
+   * data (e.g., in a unit test, or if the channel is not being published
+   * during a simulation), this method can be used to provide a value.
+   *
+   * When both `LCM` and `SetMessage` are updating the output value, the most
+   * recent update wins.
+   */
+  void SetMessage(double time, const BasicVector<double>& message_vector);
 
  protected:
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(

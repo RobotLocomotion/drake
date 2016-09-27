@@ -12,6 +12,7 @@ template <typename T>
 class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
  public:
   SimpleCarToEulerFloatingJoint() {
+    this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareInputPort(systems::kVectorValued,
                            SimpleCarStateIndices::kNumCoordinates,
                            systems::kContinuousSampling);
@@ -26,7 +27,7 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
     typedef systems::VectorBase<T> Base;
-    const Base* const input_vector = context.get_vector_input(0);
+    const Base* const input_vector = this->EvalVectorInput(context, 0);
     DRAKE_ASSERT(input_vector != nullptr);
     const SimpleCarState<T>* const input_data =
         dynamic_cast<const SimpleCarState<T>*>(input_vector);

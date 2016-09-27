@@ -78,7 +78,7 @@ class VectorBase {
   virtual void ScaleAndAddToVector(const T& scale,
                                    Eigen::Ref<VectorX<T>> vec) const {
     if (vec.rows() != size()) {
-      throw std::out_of_range("Addends must be the same length.");
+      throw std::out_of_range("Addends must be the same size.");
     }
     for (int i = 0; i < size(); ++i) vec[i] += scale * GetAtIndex(i);
   }
@@ -92,7 +92,7 @@ class VectorBase {
   /// the value and allocates no memory.
   virtual VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
     if (rhs.size() != size()) {
-      throw std::out_of_range("Addends must be the same length.");
+      throw std::out_of_range("Addends must be the same size.");
     }
     for (int i = 0; i < size(); ++i) {
       SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));

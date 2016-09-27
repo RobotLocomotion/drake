@@ -1,3 +1,5 @@
+#include "drake/systems/lcm/lcm_subscriber_system.h"
+
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -6,7 +8,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/lcm/lcm_receive_thread.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -76,7 +77,7 @@ class MessagePublisher {
 
 void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
                     LcmSubscriberSystem* dut) {
-  EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem::" + channel_name);
+  EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
   // Instantiates a publisher of lcmt_drake_signal messages on the LCM network.
   // network.
@@ -281,11 +282,10 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     sample_vector.SetName(i, std::to_string(i) + "_name");
   }
 
-  // Force a message into the dut.
-  double time = 0;
-  std::vector<uint8_t> message_bytes;
-  translator.Serialize(time, sample_vector, &message_bytes);
-  dut.SetMessage(message_bytes);
+  // Set message into the dut.  It is encoded into bytes internally, which lets
+  // us confirm that the full round-trip encode / decode cycle is correct.
+  const double time = 0;
+  dut.SetMessage(time, sample_vector);
 
   // Read back the vector via EvalOutput.
   auto context = dut.CreateDefaultContext();

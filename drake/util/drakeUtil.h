@@ -8,8 +8,9 @@
  */
 
 #include <stdexcept>
-#include <vector>
 #include <utility>
+#include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -41,7 +42,7 @@ inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows,
 // compile time
 template <size_t Rows, size_t Cols, typename Derived>
 void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source,
-                           double(&destination)[Rows][Cols]) {
+                           double (&destination)[Rows][Cols]) {
   if (Rows != source.rows())
     throw std::runtime_error(
         "Number of rows of source doesn't match destination");
@@ -57,28 +58,47 @@ void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source,
 
 // note for if/when we split off all Matlab related stuff into a different file:
 // this function is not Matlab related
-// can only be used when the dimension information of the array is known at
-// compile time
-template <size_t Size, typename Derived>
+/**
+ * Copies the elements of a (row or column) Eigen vector to an array.
+ *
+ * Can only be used when the dimension information of the array is known at
+ * compile time.
+ * Note that the scalar type of @p source need not match the scalar type of @p
+ * destination (@p DestScalar). A static_cast will be performed to convert to
+ * elements of @p source to @p DestScalar.
+ *
+ * @param[in] source Eigen vector source
+ * @param[out] destination std::vector destination
+ */
+template <typename DestScalar, size_t Size, typename Derived>
 void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source,
-                         double(&destination)[Size]) {
+                         DestScalar (&destination)[Size]) {
   if (Size != source.size())
     throw std::runtime_error("Size of source doesn't match destination");
   for (size_t i = 0; i < Size; ++i) {
-    destination[i] = source(i);
+    destination[i] = static_cast<DestScalar>(source(i));
   }
 }
 
 // note for if/when we split off all Matlab related stuff into a different file:
 // this function is not Matlab related
-template <typename Derived>
-void eigenVectorToStdVector(
-    const Eigen::MatrixBase<Derived>& source,
-    std::vector<typename Derived::Scalar>& destination) {
+/**
+ * Copies the elements of a (row or column) Eigen vector to a std::vector.
+ *
+ * Note that the scalar type of @p source need not match the scalar type of @p
+ * destination (@p DestScalar). A static_cast will be performed to convert to
+ * elements of @p source to @p DestScalar.
+ *
+ * @param[in] source Eigen vector source
+ * @param[out] destination std::vector destination
+ */
+template <typename DestScalar, typename Derived>
+void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source,
+                            std::vector<DestScalar>& destination) {
   DRAKE_ASSERT(source.rows() == 1 || source.cols() == 1);
   destination.resize(static_cast<size_t>(source.size()));
   for (Eigen::Index i = 0; i < source.size(); i++) {
-    destination[static_cast<size_t>(i)] = source(i);
+    destination[static_cast<size_t>(i)] = static_cast<DestScalar>(source(i));
   }
 }
 
@@ -132,7 +152,7 @@ void care(Eigen::MatrixBase<DerivedA> const& A,
   LLT<MatrixXd> R_cholesky(R);
 
   MatrixXd H(2 * n, 2 * n);
-  H << A, B* R_cholesky.solve(B.transpose()), Q, -A.transpose();
+  H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
 
   MatrixXd Z = H;
   MatrixXd Z_old;

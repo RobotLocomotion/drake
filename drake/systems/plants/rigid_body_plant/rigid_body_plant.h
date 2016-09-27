@@ -3,15 +3,12 @@
 #include <memory>
 #include <string>
 
-#include "drake/drake_rbp_export.h"
+#include <Eigen/Geometry>
+
+#include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-
-namespace tinyxml2 {
-class XMLElement;
-}
+#include "drake/systems/plants/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
 namespace systems {
@@ -29,8 +26,13 @@ namespace systems {
 /// does not apply these limits. The gear box factor effectively is a
 /// multiplier on the input actuation to the RigidBodyPlant.
 ///
-/// <B>%System output</B>: A %RigidBodyPlant outputs the state of the system in
-/// a vector valued port.
+/// The %RigidBodyPlant's state consists of a vector containing the generalized
+/// positions followed by the generalized velocities of the system.
+///
+/// <B>%System output</B>:
+/// - Port 0: The state vector of the system in a vector valued port.
+/// - Port 1: A KinematicsResults class allowing access to the results from
+/// kinematics computations for each RigidBody.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case
@@ -64,8 +66,9 @@ namespace systems {
 /// where `N(q)` is a transformation matrix only dependent on the positions.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @ingroup systems
 template <typename T>
-class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.
@@ -75,7 +78,10 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
-  const RigidBodyTree& get_multibody_world() const;
+  const RigidBodyTree& get_rigid_body_tree() const;
+
+  /// Returns the number of bodies in the world.
+  int get_num_bodies() const;
 
   /// Returns the number of generalized coordinates of the model.
   int get_num_positions() const;
@@ -122,6 +128,11 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
+  /// Allocates two output ports, one for the RigidBodyPlant state and one for
+  /// KinematicsResults.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override;
+
   bool has_any_direct_feedthrough() const override;
   void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override;
@@ -160,10 +171,12 @@ class DRAKE_RBP_EXPORT RigidBodyPlant : public LeafSystem<T> {
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
-  T penetration_damping_{0};
-  T friction_coefficient_{0};
+  T penetration_damping_{penetration_stiffness_ / 10.0};
+  T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
+  int state_output_port_id_;
+  int kinematics_output_port_id_;
 };
 
 }  // namespace systems
