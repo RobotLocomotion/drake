@@ -18,12 +18,12 @@ int KinematicsResults<T>::get_num_bodies() const {
 
 template<typename T>
 int KinematicsResults<T>::get_num_positions() const {
-  return kinematics_cache_.getNumPositions();
+  return kinematics_cache_.get_num_positions();
 }
 
 template<typename T>
 int KinematicsResults<T>::get_num_velocities() const {
-  return kinematics_cache_.getNumVelocities();
+  return kinematics_cache_.get_num_velocities();
 }
 
 template<typename T>
