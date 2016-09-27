@@ -410,17 +410,6 @@ TEST_F(RotationConversionTest, AxisRPY) {
     auto a_expected = rpy2axis(rpy);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(compareAngleAxis(ai_eigen, a_eigen_expected));
-    if (!compareAngleAxis(ai_eigen, a_eigen_expected)) {
-      std::cout << "rpy:" << std::endl << rpy << std::endl;
-      auto a2 = rotmat2axis(rpy2rotmat(rpy));
-      std::cout << "a2-ai" << std::endl << a2 - ai << std::endl;
-      std::cout << "a2-a_expected" << std::endl << a2 - a_expected << std::endl;
-      std::cout << "a_expected-ai" << std::endl << a_expected - ai << std::endl;
-      std::cout << "axis2rpy(a2) - rpy" << std::endl
-                << axis2rpy(a2) - rpy << std::endl;
-      axis2rpy(ai);
-      std::cout << std::endl;
-    }
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
@@ -560,58 +549,11 @@ TEST_F(RotationConversionTest, RPYQuat) {
     compareQuaternion(quat, quat_expected);
     // rpy2quat should be the inversion of quat2rpy
     auto rpy_expected = quat2rpy(quat);
-    if (!compareRollPitchYaw(rpyi, rpy_expected)) {
-      auto R = rpy2rotmat(rpyi);
-      std::cout << "quat2rotmat(rotmat2quat(R))-R" << std::endl
-                << quat2rotmat(rotmat2quat(R)) - R << std::endl;
-      std::cout << "rpyi" << std::endl << rpyi << std::endl;
-      std::cout << "rpy_expected" << std::endl << rpy_expected << std::endl;
-      std::cout << "rpyi-rpy_expected" << std::endl
-                << rpyi - rpy_expected << std::endl;
-      std::cout << "rotmat2rpy(rpy2rotmat(rpyi))-rpyi" << std::endl
-                << rotmat2rpy(rpy2rotmat(rpyi)) - rpyi << std::endl;
-      std::cout << "rotmat2quat(rpy2rotmat(rpyi))'-rpy2quat(rpyi):" << std::endl
-                << rotmat2quat(rpy2rotmat(rpyi)) - rpy2quat(rpyi) << std::endl;
-      std::cout << "rpy2rotmat(rpyi)-quat2rotmat(rpy2quat(rpyi))" << std::endl
-                << rpy2rotmat(rpyi) - quat2rotmat(rpy2quat(rpyi)) << std::endl;
-      std::cout << "rotmat2quat(quat2rotmat(quat))'-rpy2quat(rpyi):"
-                << std::endl
-                << rotmat2quat(quat2rotmat(quat)) - rpy2quat(rpyi) << std::endl;
-      std::cout << "rotmat2rpy(quat2rotmat(quat))-rpyi" << std::endl
-                << rotmat2rpy(quat2rotmat(quat)) - rpyi << std::endl;
-      std::cout << "quat2rotmat(rotmat2quat(rpy2rotmat(rpy)))-rpy2rotmat(rpy)"
-                << std::endl
-                << quat2rotmat(rotmat2quat(rpy2rotmat(rpyi))) - rpy2rotmat(rpyi)
-                << std::endl;
-      std::cout << "rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpy))))-rpyi"
-                << std::endl
-                << rotmat2rpy(quat2rotmat(rotmat2quat(rpy2rotmat(rpyi)))) - rpyi
-                << std::endl;
-      std::cout << std::endl << std::endl;
-      rpy2quat(rpyi);
-      quat2rpy(quat);
-    }
     EXPECT_TRUE(compareRollPitchYaw(rpyi, rpy_expected));
+    EXPECT_TRUE(compareRollPitchYaw(rpyi, rotmat2rpy(rpy2rotmat(rpyi))));
   }
 }
-/*
-TEST_F(RotationConversionTest, DRPYRotmat) {
-  Vector3d rpy = rotmat2rpy(R_);
-  Matrix3d R = rpy2rotmat(rpy);
-  Matrix<double, 9, 3> dR = drpy2rotmat(rpy);
-  Matrix<double, 9, 3> dR_num = Matrix<double, 9, 3>::Zero();
-  for (int i = 0; i < 3; ++i) {
-    Vector3d err = Vector3d::Zero();
-    err(i) = 1e-7;
-    Vector3d rpyi = rpy + err;
-    Matrix3d Ri = rpy2rotmat(rpyi);
-    Matrix3d Ri_err = (Ri - R) / err(i);
-    for (int j = 0; j < 9; j++) {
-      dR_num(j, i) = Ri_err(j);
-      EXPECT_NEAR(dR(j, i), dR_num(j, i), 1e-3);
-    }
-  }
-}*/
+
 
 }  // namespace
 }  // namespace math

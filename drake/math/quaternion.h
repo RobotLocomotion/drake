@@ -215,6 +215,9 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
  * rpy(1), rpy(0)]
  * @see rpy2rotmat
+ * When the pitch angle is close to PI/2 or -PI/2, this function is not very
+ * accurate. For pitch = PI/2 - 1E-6, the error can be in the order of 1E-7.
+ * The error gets larger when the pitch gets closer to PI/2 or -PI/2.
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
