@@ -61,6 +61,7 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> axis2rpy(
     const Eigen::MatrixBase<Derived>& a) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return rotmat2rpy(axis2rotmat(a));
 }
 
