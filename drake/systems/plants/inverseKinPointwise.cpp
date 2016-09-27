@@ -45,7 +45,7 @@ DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
     const std::vector<RigidBodyConstraint*>& constraint_array,
     const IKoptions& ikoptions) {
 
-  Eigen::MatrixXd q_sol_mat(model->number_of_positions(), t.size());
+  Eigen::MatrixXd q_sol_mat(model->get_num_positions(), t.size());
   q_sol_mat.fill(0);
   IKResults results;
   results.info.resize(t.size(), 0);

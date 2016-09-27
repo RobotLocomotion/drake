@@ -98,11 +98,11 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // Checks that the rigid body system has the correct number of positions.
   // The rigid body system has:
   //   (7 floating DOFs + 2 joint DOFs) * 4 models = 36 positions.
-  EXPECT_EQ(rigid_body_sys->number_of_positions(), 36);
+  EXPECT_EQ(rigid_body_sys->get_num_positions(), 36);
 
   // Checks that the rigid body system has the correct number of velocities.
   // (6 floating DOFs + 2 joint DOFs) * 4 models = 32 velocities.
-  EXPECT_EQ(rigid_body_sys->number_of_velocities(), 32);
+  EXPECT_EQ(rigid_body_sys->get_num_velocities(), 32);
 
   // Obtains a const pointer to the rigid body tree within the rigid body
   // system.

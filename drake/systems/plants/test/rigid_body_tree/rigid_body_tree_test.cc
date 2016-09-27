@@ -220,8 +220,8 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 
   VectorX<double> q;
   VectorX<double> v;
-  q.resize(tree->number_of_positions());
-  v.resize(tree->number_of_velocities());
+  q.resize(tree->get_num_positions());
+  v.resize(tree->get_num_velocities());
   q.setZero();
   v.setZero();
 
@@ -346,7 +346,7 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
 
 // Verifies the correct functionality of RigidBodyTree::FindChildrenOfBody()
 // and RigidBodyTree::FindBaseBodies(). This also tests
-// RigidBodyTree::get_body() and RigidBodyTree::get_number_of_bodies().
+// RigidBodyTree::get_body() and RigidBodyTree::get_num_bodies().
 TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Adds kNumModelInstances instances of a particular URDF model to the tree.
   // Stores the model instance IDs in model_instance_id_list.
@@ -379,7 +379,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 
   // There are three bodies per model instance plus one body for the world.
-  EXPECT_EQ(tree->get_number_of_bodies(), 3 * kNumModelInstances + 1);
+  EXPECT_EQ(tree->get_num_bodies(), 3 * kNumModelInstances + 1);
 
   for (int world_child_index : children_of_world_list) {
     bool found_child_in_base_body_list = false;

@@ -21,7 +21,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
                             Vector3d const& ang_vel) {
   VectorXd x0 = VectorXd::Zero(sys->getNumStates());
   auto const& tree = sys->getRigidBodyTree();
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
   x0.segment<3>(7) = ang_vel;
   auto const& output = sys->output(0, x0, Vector4d::Zero());
   return output.segment<3>(13);

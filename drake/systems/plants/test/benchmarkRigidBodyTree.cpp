@@ -90,8 +90,8 @@ void testScenario1(const RigidBodyTree& model) {
     auto q = model.getRandomConfiguration(generator);
     qs_double.push_back(q);
 
-    MatrixXd grad = MatrixXd::Identity(model.number_of_positions(),
-                                       model.number_of_positions());
+    MatrixXd grad = MatrixXd::Identity(model.get_num_positions(),
+                                       model.get_num_positions());
 
     auto q_autodiff_fixed = q.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, q_autodiff_fixed);
@@ -157,7 +157,7 @@ void testScenario2(const RigidBodyTree& model) {
 
   for (int i = 0; i < ntests; i++) {
     VectorXd q = model.getRandomConfiguration(generator);
-    VectorXd v = VectorXd::Random(model.number_of_velocities());
+    VectorXd v = VectorXd::Random(model.get_num_velocities());
     VectorXd x(q.rows() + v.rows());
     x << q, v;
     states_double.push_back(make_pair(q, v));
@@ -167,18 +167,18 @@ void testScenario2(const RigidBodyTree& model) {
     auto x_autodiff_fixed = x.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_fixed);
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> q_autodiff_fixed =
-        x_autodiff_fixed.topRows(model.number_of_positions());
+        x_autodiff_fixed.topRows(model.get_num_positions());
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> v_autodiff_fixed =
-        x_autodiff_fixed.bottomRows(model.number_of_velocities());
+        x_autodiff_fixed.bottomRows(model.get_num_velocities());
     states_autodiff_fixed.push_back(
         make_pair(q_autodiff_fixed, v_autodiff_fixed));
 
     auto x_autodiff_dynamic = x.cast<AutoDiffDynamicSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_dynamic);
     Matrix<AutoDiffDynamicSize, Dynamic, 1> q_autodiff_dynamic =
-        x_autodiff_dynamic.topRows(model.number_of_positions());
+        x_autodiff_dynamic.topRows(model.get_num_positions());
     Matrix<AutoDiffDynamicSize, Dynamic, 1> v_autodiff_dynamic =
-        x_autodiff_dynamic.bottomRows(model.number_of_velocities());
+        x_autodiff_dynamic.bottomRows(model.get_num_velocities());
     states_autodiff_dynamic.push_back(
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }

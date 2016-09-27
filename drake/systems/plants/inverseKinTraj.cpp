@@ -56,13 +56,13 @@ DRAKEIK_EXPORT IKResults inverseKinTrajSimple(
     const std::vector<RigidBodyConstraint*>& constraint_array,
     const IKoptions& ikoptions) {
 
-  Eigen::MatrixXd q_sol_mat(model->number_of_positions(), t.size());
+  Eigen::MatrixXd q_sol_mat(model->get_num_positions(), t.size());
   q_sol_mat.fill(0);
   IKResults results;
   results.info.resize(1, 0);
 
-  Eigen::MatrixXd qdot_sol_dummy(model->number_of_positions(), t.size());
-  Eigen::MatrixXd qddot_sol_dummy(model->number_of_positions(), t.size());
+  Eigen::MatrixXd qdot_sol_dummy(model->get_num_positions(), t.size());
+  Eigen::MatrixXd qddot_sol_dummy(model->get_num_positions(), t.size());
 
   inverseKinTrajBackend(
       model, t.size(), t.data(), q_seed, q_nom,

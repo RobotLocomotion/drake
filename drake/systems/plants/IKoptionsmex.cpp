@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       char* field = new char[strlen];
       mxGetString(prhs[2], field, strlen);
       string field_str(field);
-      int nq = ikoptions->getRobotPtr()->number_of_positions();
+      int nq = ikoptions->getRobotPtr()->get_num_positions();
       IKoptions* ikoptions_new = new IKoptions(*ikoptions);
       if (field_str == "Q") {
         if (!mxIsNumeric(prhs[3]) || mxGetM(prhs[3]) != nq ||
