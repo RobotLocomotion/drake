@@ -41,7 +41,7 @@ int DoMain(int argc, char* argv[]) {
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Specifies the simulation options.
   drake::SimulationOptions options;
@@ -74,8 +74,8 @@ int DoMain(int argc, char* argv[]) {
   drake::simulate(*sys.get(), kStartTime, duration, x0, options);
 
   auto final_robot_state = robot_state_tap->get_input_vector();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  int num_positions = rigid_body_sys->get_num_positions();
+  int num_velocities = rigid_body_sys->get_num_velocities();
 
   // Ensures the size of the output is correct.
   if (final_robot_state.size() !=
