@@ -3,12 +3,15 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   properties
     in_contact
     no_contact
-    contact_height = 4;
+    radius = 1;
   end
   
   methods
     function obj = SoftPaddleHybrid
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
+      
+      %TODO: Set input frame
+      %obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
       
       % manually remove the ball from the pulley system:
       pulley_constraint = in_contact.position_constraints{1};
@@ -17,14 +20,8 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       cable_length_fcn.pulley = cable_length_fcn.pulley([1 3 4]);
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
         pulley_constraint.ub, cable_length_fcn);
-      
-      
-      pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
-      pulley_constraint.grad_level = 2; %declare that the second derivative is provided
-      pulley_constraint.grad_method = 'user';
-      
       no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
-      %       pulley_constraint = no_contact.position_constraints{1};
+%       pulley_constraint = no_contact.position_constraints{1};
 %       cable_length_fcn = pulley_constraint.fcn;
       
       
@@ -56,16 +53,64 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % detect when the ball makes contact with the string
       % currently implemented as: z position of the ball <= 3.5
       % todo: generalize this using line segements of the cable constraint?
-      g = x(4)- obj.contact_height;  % x(4) = load_z
-      dg = [0,0,0,1,0,0,0];
+      
+      
+      npos=obj.no_contact.num_positions;
+      %obj.rbm.doKinematics(q,nargout>2);
+      kinsol=doKinematics(obj.no_contact, x(1:npos));
+      
+      % transform state into inertial frame
+      pos_disc_global = [x(3);0;x(4)]; %TODO find state to inertial frame a function call
+      
+      paddleId = obj.no_contact.findLinkId('paddle'); % from findLinkId or findFrameInd)
+      %get point from frame
+      [pos_disc_in_paddle_frame] = bodyKin(obj.no_contact,kinsol,paddleId,pos_disc_global);
+      
+      %heightjoint = findPositionIndices(obj.in_contact,'load_z');
+      g = pos_disc_in_paddle_frame(3)-obj.radius; %todo: pick z index generically
+      
+      dxz_paddle_frame = [0,0,1];
+      baseId = obj.no_contact.findLinkId('world+base');
+      options.base_or_frame_id = baseId;
+      dxz = forwardKin(obj.no_contact,kinsol,paddleId,dxz_paddle_frame,options);		
+      
+      dg = Point(getStateFrame(obj));
+      dg.load_x =dxz(1);
+      dg.load_z =dxz(3);
+      
+      dg = double(dg)';
+      
     end
     
     function [g,dg] = aerialGuard(obj,t,x,u)
       % detect when the ball leaves the string
       % currently implemented as: z position of the ball > 3.5
       % todo: generalize this
-      g = obj.contact_height - x(4);
-      dg = -[0,0,0,1,0,0,0];
+
+      npos=obj.in_contact.num_positions;
+      %obj.rbm.doKinematics(q,nargout>2);
+      kinsol=doKinematics(obj.in_contact, x(1:npos));
+      
+      % transform state into inertial frame
+      pos_disc_global = [x(3);0;x(4)]; %TODO find state to inertial frame a function call
+      
+      paddleId = obj.in_contact.findLinkId('paddle'); % from findLinkId or findFrameInd)
+      %get point from frame
+      [pos_disc_in_paddle_frame] = bodyKin(obj.in_contact,kinsol,paddleId,pos_disc_global);
+      
+      %heightjoint = findPositionIndices(obj.in_contact,'load_z');
+      g = - pos_disc_in_paddle_frame(3)+ obj.radius;
+          
+      dxz_paddle_frame = [0,0,-1];
+      baseId = obj.no_contact.findLinkId('world+base');
+      options.base_or_frame_id = baseId;
+      dxz = forwardKin(obj.in_contact,kinsol,paddleId,dxz_paddle_frame,options);		
+      
+      dg = Point(getStateFrame(obj));
+      dg.load_x =dxz(1);
+      dg.load_z =dxz(3);
+      
+      dg = double(dg)';
     end
     
     function [xp,modep,status] = collisionDynamics(obj,mode,t,xm,u)
@@ -103,7 +148,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
       %x0.
-      x0.load_x = +0.25;  % was 1
+      x0.load_x = +0.45;  % was 1
 %       x0.load_x = -0.0585;
       x0.load_z = 4.5;
       x0 = double(x0);
