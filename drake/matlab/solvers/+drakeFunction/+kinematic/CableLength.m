@@ -51,7 +51,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             
             if nargout>2
               ddvec = ddpt - last_ddpt;
-              ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/C - (vec'*dvec)'/C^2*dC;
+              ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/C - (vec'*dvec)'/C^2*dC;    % should be correct
 %               ddC = (dvec'*dvec + vec'*ddvec)/C - vec'*dvec*dC/(C^2);
             end
           end
@@ -138,18 +138,29 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 end
                 
                 if nargout>2
-                  dds = 2/C^3*(r1+r2)*(dC'*dC) - (r1+r2)/C^2*ddC;
-                  ddalpha = s/(1-s^2)^(3/2)*(ds'*ds) + dds/sqrt(1-s^2);
-                  ddcvec = ddvec/C - 1/C^2*kron(dvec,dC) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
+                  dds = 2/C^3*(r1+r2)*(dC'*dC) - (r1+r2)/C^2*ddC;   % should be correct
+                  ddalpha = s/(1-s^2)^(3/2)*(ds'*ds) + dds/sqrt(1-s^2); % should be correct
+%                   ddcvec = ddvec/C - 1/C^2*reshape(kron(dC,dvec),3*dims,[]) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
+                  ddcvec = ddvec/C - 1/C^2*kron(dC,dvec) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []); % should be correct
                   if r1>0
-                    ddpt1 = last_ddpt + r1*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha])*cvec*dalpha, ddalpha) + ...
-                      r1*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2+alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]),dalpha'), reshape(ddcvec,3*dims,[])), 3, []);
+                      R = axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha]);
+                      dRda = daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]);
+                      d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]);
+                      dRdq = kron(dRda, dalpha);
+                      dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)];
+                    ddpt1 = last_ddpt + r1*reshape(matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*dalpha, ddalpha) + ...
+                      r1*matGradMultMat(R,dcvec,dRdq, reshape(ddcvec,3*dims,[])), 3, []);   % should be correct
                   else
                     ddpt1 = last_ddpt;
                   end
                   if r2>0
-                    ddpt2 = ddpt - r2*reshape(matGradMultMat(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec, dalpha, ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha, ddalpha) + ...
-                      r2*matGradMultMat(axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]),dcvec, kron(daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]),dalpha'), reshape(ddcvec,3*dims,[])), 3, []);
+                      R = axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]);
+                      dRda = daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
+                      d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
+                      dRdq = kron(dRda, -dalpha);
+                      dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)];
+                    ddpt2 = ddpt - r2*reshape(matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*-dalpha, ddalpha) + ...
+                      r2*matGradMultMat(R,dcvec, dRdq, reshape(ddcvec,3*dims,[])), 3, []);   % should be correct
                   else
                     ddpt2 = ddpt;
                   end
@@ -169,7 +180,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               dlength = dlength+dC;
               if nargout>2
                 ddvec = ddpt2 - ddpt1;
-                ddC = matGradMultMat(vec',dvec,dvec',reshape(ddvec,3*dims,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;
+                ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;    % should be correct
                 ddlength = ddlength + reshape(ddC, 1, []);
               end
             end
@@ -188,11 +199,12 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
                 if nargout>2
-                  ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;
-                  ddc = matGradMultMat(v2',dv1,dv2',reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1',reshape(ddv2,3*dims,[])); 
-                  ddsvec = ddcross(v1,v2,dv1,dv2,ddv1,ddv2);
-                  dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec',reshape(ddsvec,3*dims,[]))/max(s,eps);
-                  ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
+                  ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;    % should be correct
+                  ddc = matGradMultMat(v2',dv1,dv2',reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1',reshape(ddv2,3*dims,[]));    % should be correct
+                  ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % needs to be done
+                  dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec',reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
+%                   ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
+                  ddtheta = -dc'*ds - s*ddc + ds'*dc + c*dds;   % should be correct
                   ddlength = ddlength + reshape(ddtheta,1,[])*r1;
                 end
               end
