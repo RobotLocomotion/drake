@@ -28,7 +28,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // create the mass spring system
-  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // create a context
   auto context = spring_mass.CreateDefaultContext();
@@ -54,13 +54,13 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kMass = 2.0;      // kg
 
   // create the spring-mass system
-  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  SpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
 
   // create a context
   auto context = spring_mass.CreateDefaultContext();
 
   // create the integrator
-  const double DT = 0.00078125;
+  const double DT = 0.000097656;   // 1.0/1024
   RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
 
   // setup the initial position and initial velocity
@@ -82,8 +82,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Integrate for 1 second.
   const double T_FINAL = 1.0;
   double t;
-  for (t = 0.0; std::fabs(t - T_FINAL) > DT; t += DT)
-    integrator.Step(DT);
+  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
+    integrator.Step(DT, DT);
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 

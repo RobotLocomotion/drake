@@ -24,7 +24,18 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
     derivs_ = system.AllocateTimeDerivatives();
   }
 
-  typename IntegratorBase<T>::StepResult Step(const T& dt) override;
+  typename IntegratorBase<T>::StepResult Step(const T& publish_dt,
+                                              const T& update_dt) override;
+
+  /**
+   * Integrator does not support accuracy estimation.
+   */
+  bool does_support_accuracy_estimation() const override { return false; }
+
+  /**
+   * Integrator does not support error control.
+   */
+  bool does_support_error_control() const override { return false; }
 
   /**
    * No accuracy setting for Euler integrator.
@@ -91,7 +102,11 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
  */
 template <class T>
 typename IntegratorBase<T>::StepResult ExplicitEulerIntegrator<T>::Step(
-    const T& dt) {
+    const T& publish_dt, const T& update_dt) {
+
+  // set dt
+  bool publish_stop = (publish_dt < update_dt);
+  const T& dt = (publish_stop) ? publish_dt : update_dt;
 
   if (dt < 0.0)
     throw std::logic_error("Negative dt.");
@@ -128,7 +143,8 @@ typename IntegratorBase<T>::StepResult ExplicitEulerIntegrator<T>::Step(
       IntegratorBase<T>::set_largest_step_size_taken(dt);
   }
 
-  return IntegratorBase<T>::kTimeHasAdvanced;
+  return (publish_stop) ? IntegratorBase<T>::kReachedPublishTime :
+      IntegratorBase<T>::kReachedUpdateTime;
 }
 }  // systems
 }  // drake

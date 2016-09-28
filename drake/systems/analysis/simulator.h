@@ -235,10 +235,11 @@ class Simulator {
    *   @param integrator a non-NULL pointer to an integrator; an exception
    *          will be thrown if the integrator is null.
    */
-  void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
-    if (!integrator)
-      throw std::logic_error("Integrator is null");
-    integrator_ = std::move(integrator);
+  template <class U, typename... Args>
+  U* reset_integrator(Args&&... args) {
+    integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
+    integrator_->Initialize();
+    return (U*) integrator_.get();
   }
 
  private:
@@ -346,7 +347,8 @@ void Simulator<T>::StepTo(const T& final_time) {
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
   UpdateActions update_actions;
-  bool update_time_hit = false;
+  bool update_hit = false;
+  bool publish_hit = false;
 
   // Integrate until desired interval has completed.
   while (context_->get_time() <= final_time) {
@@ -354,14 +356,14 @@ void Simulator<T>::StepTo(const T& final_time) {
     const T step_start_time = context_->get_time();
 
     // First make any necessary discrete updates.
-    if (update_time_hit) {
+    if (update_hit) {
       system_.Update(context_.get(), update_actions);
       ++num_updates_;
     }
 
     // Allow System a chance to produce some output.
-    // TODO(sherm1) This should be called only at Publish sample times.
-    system_.Publish(*context_);
+    if (publish_hit)
+      system_.Publish(*context_);
 
     // That may have been the final trajectory entry.
     if (step_start_time == final_time) break;
@@ -370,16 +372,35 @@ void Simulator<T>::StepTo(const T& final_time) {
     const T next_update_time =
         system_.CalcNextUpdateTime(*context_, &update_actions);
     DRAKE_ASSERT(next_update_time >= step_start_time);
+    const T next_update_dt = next_update_time - step_start_time;
 
-    // Figure out the largest step we can reasonably take, and whether we had
-    // to stop there due to hitting the next update time.
-    T step_end_time;
-    std::tie(step_end_time, update_time_hit) = ProposeStepEndTime(
-        step_start_time, integrator_->get_ideal_next_step_size(),
-        next_update_time, final_time);
+    // TODO(edrumwri): Get the next publish time when API available.
+    T next_publish_dt = (double) std::numeric_limits<double>::infinity();
 
-    // TODO(edrumwri): Use the step result when event finding incorporated.
-    integrator_->Step(step_end_time - step_start_time);
+    // Attempt to integrate.
+    typename IntegratorBase<T>::StepResult  result = integrator_->Step(
+        next_publish_dt, next_update_dt);
+    switch (result) {
+      case IntegratorBase<T>::kReachedUpdateTime:
+        update_hit = true;
+        publish_hit = false;
+        break;
+
+      case IntegratorBase<T>::kReachedPublishTime:
+        update_hit = false;
+        publish_hit = true;
+        break;
+
+      case IntegratorBase<T>::kTimeHasAdvanced:
+        update_hit = false;
+        // TODO(edrumwri): Check if not publishing after every step, then
+        //                 turn this off if that is the case.
+        publish_hit = true;
+        break;
+
+      default:
+        DRAKE_ABORT_MSG("Unexpected integrator result.");
+    }
     ++num_steps_taken_;
 
     // TODO(sherm1) Constraint projection goes here.

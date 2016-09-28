@@ -9,6 +9,18 @@
 namespace drake {
 namespace systems {
 
+/*
+TODO(edrumwri): comments below in preparation of upcoming functionality
+    Note: we ensure algorithmically that no report time, scheduled time, or
+final time t can occur *within* an event window, that is, we will never have
+    t_low < t < t_high for any interesting t. Further, t_report, t_scheduled and
+    t_final can coincide with t_high but only t_report can be at t_low. The
+    interior of t_low:t_high is a "no man's land" where we don't understand the
+solution, so must be avoided.
+
+TODO(edrumwri): consider taking out kReachedStepLimit
+*/
+
 /**
  * An abstract class for an integrator for ODEs and DAEs.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -27,37 +39,25 @@ class IntegratorBase {
    * Note: the simulation step must always end at an update time but can end
    * after a publish time.
 
-   TODO(edrumwri): comments below in preparation of upcoming functionality
-   Note: we ensure algorithmically that no report time, scheduled time, or
-   final time t can occur *within* an event window, that is, we will never have
-   t_low < t < t_high for any interesting t. Further, t_report, t_scheduled and
-   t_final can coincide with t_high but only t_report can be at t_low. The
-   interior of t_low:t_high is a "no man's land" where we don't understand the
-   solution, so must be avoided.
-
    **/
   enum StepResult {
     /**
-     * The implication is that no discrete update is necessary (which may be
-     * because System::CalcNextUpdateTime(.) gives a time far into the future or
-     * because witness functions indicate no upcoming event.
+     * Indicates a publish time has been reached but not an update time.
      */
     kReachedPublishTime = 1,
     /** localized an event; this is the *before* state (interpolated) **/
     kReachedZeroCrossing = 2,
+    /**
+     * Indicates that integration terminated at an update time/event.
+     */
     kReachedUpdateTime = 3,
     /**
      * user requested control whenever an internal step is successful;
-     * TODO(edrumwri): possibly take this out (if integrator should take as big
-     * a step as possible until publish or update occurs)
      */
     kTimeHasAdvanced = 4,
-    /** TODO(edrumwri): possibly take this out, took maximum number of steps
-        without finishing integrating over the interval **/
+    /** took maximum number of steps without finishing integrating over the
+     * interval **/
     kReachedStepLimit = 5,
-    /** TODO(edrumwri): possibly remove this after implementing variable step
-     * integration **/
-    kStartOfContinuousInterval = 7,
   };
 
   /**
@@ -73,6 +73,19 @@ class IntegratorBase {
       : system_(system), context_(context) {
     initialization_done_ = false;
   }
+
+  /**
+   * Indicates whether an integrator supports accuracy estimation.
+   * Without accuracy estimation, target accuracy will be unused.
+   */
+  virtual bool does_support_accuracy_estimation() const = 0;
+
+  /**
+   * Indicates whether an integrator supports stepping with error control.
+   * Without stepping with error control, initial step size targets will be
+   * unused.
+   */
+  virtual bool does_support_error_control() const = 0;
 
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
@@ -93,6 +106,8 @@ class IntegratorBase {
    * information, see <pre>Sherman, et al. Procedia IUTAM 2:241-261 (2011),
    * Section 3.3.
    * http://dx.doi.org/10.1016/j.piutam.2011.04.023
+   * TODO(edrumwri): complain if integrator with error estimation wants to drop
+   *                 below the minimum step size
    **/
   virtual void set_target_accuracy(double accuracy) {
     target_accuracy_ = accuracy;
@@ -102,6 +117,11 @@ class IntegratorBase {
    *   Gets the target accuracy.
    */
   virtual double get_target_accuracy() const { return target_accuracy_; }
+
+  /**
+   * Gets the accuracy in use by the integrator
+   */
+
 
   /**
    *   Integrator must be initialized before being used.
@@ -132,11 +152,11 @@ class IntegratorBase {
     return req_initial_step_size_;
   }
 
-  /** Advance the System's trajectory by at most dt. Initialize() must
+  /** Advance the System's trajectory by at most update_dt. Initialize() must
    * be called before making any calls to Step(), or an exception will
    * be thrown.
    **/
-  virtual StepResult Step(const T& dt) = 0;
+  virtual StepResult Step(const T& publish_dt, const T& update_dt) = 0;
 
   /** Forget accumulated statistics. These are reset to the values they have
    * post construction or immediately after `Initialize()`.

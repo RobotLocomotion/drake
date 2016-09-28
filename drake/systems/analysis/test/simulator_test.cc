@@ -16,13 +16,11 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
   const double DT = 1e-3;
 
   // create a context
-  auto context = spring_mass.CreateDefaultContext();
+  auto context = simulator.get_mutable_context();
 
   // create the integrator
-  std::unique_ptr<IntegratorBase<double>> integrator(
-      new ExplicitEulerIntegrator<double>(
-          spring_mass, DT, context.get()));  // Use default Context.
-  simulator.reset_integrator(integrator);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
 
   // initialize the simulator first
   simulator.Initialize();
@@ -41,10 +39,8 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   auto context = simulator.get_mutable_context();
 
   // create the integrator
-  std::unique_ptr<IntegratorBase<double>> integrator(
-      new ExplicitEulerIntegrator<double>(spring_mass, DT,
-                                          context));  // Use default Context.
-  simulator.reset_integrator(integrator);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
 
   // initialize the simulator first
   simulator.Initialize();
@@ -72,13 +68,11 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // get the context
   auto context = simulator.get_mutable_context();
 
-  // create the integrator and initialize it
-  std::unique_ptr<IntegratorBase<double>> integrator(
-      new ExplicitEulerIntegrator<double>(spring_mass, DT, context));
-  integrator->Initialize();
+  // create the integrator
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
 
   // set the integrator and initialize the simulator
-  simulator.reset_integrator(integrator);
   simulator.Initialize();
 
   // Simulate for 1 second.
@@ -119,12 +113,11 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
   // create the integrator and initialize it
-  std::unique_ptr<IntegratorBase<double>> integrator(
-      new ExplicitEulerIntegrator<double>(spring_mass, DT, context));
+  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>
+      (spring_mass, DT, context);
   integrator->Initialize();
 
   // set the integrator and initialize the simulator
-  simulator.reset_integrator(integrator);
   simulator.Initialize();
 
   // simulate up to one second
