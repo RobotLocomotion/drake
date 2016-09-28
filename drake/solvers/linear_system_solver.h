@@ -11,7 +11,7 @@ class DRAKEOPTIMIZATION_EXPORT LinearSystemSolver
     : public MathematicalProgramSolverInterface {
  public:
   bool available() const override;
-  SolutionResult Solve(OptimizationProblem& prog) const override;
+  SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 
 }  // namespace solvers

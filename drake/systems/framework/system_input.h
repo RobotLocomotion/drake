@@ -6,9 +6,11 @@
 #include <vector>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -17,7 +19,7 @@ namespace systems {
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
 class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
-    : public OutputPortListenerInterface {
+    : public detail::OutputPortListenerInterface {
  public:
   ~InputPort() override;
 
@@ -26,8 +28,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
   /// that data.
   virtual int64_t get_version() const = 0;
 
+  /// Returns true if this InputPort is not in control of its own data.
+  virtual bool requires_evaluation() const = 0;
+
   /// Returns the data on this port, or nullptr if this port is not connected.
   const AbstractValue* get_abstract_data() const {
+    DRAKE_DEMAND(get_output_port() != nullptr);
     return get_output_port()->get_abstract_data();
   }
 
@@ -36,7 +42,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
   ///
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
-  const VectorBase<T>* get_vector_data() const {
+  const BasicVector<T>* get_vector_data() const {
+    DRAKE_DEMAND(get_output_port() != nullptr);
     return get_output_port()->get_vector_data<T>();
   }
 
@@ -67,16 +74,20 @@ class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
  public:
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
-  explicit DependentInputPort(OutputPort* output_port)
-      : output_port_(output_port) {
-    output_port_->add_dependent(this);
-  }
+  explicit DependentInputPort(OutputPort* output_port);
 
   /// Disconnects from the output port.
   ~DependentInputPort() override;
 
+  /// Sets the output port to nullptr.
+  void Disconnect() override;
+
   /// Returns the value version of the connected output port.
   int64_t get_version() const override { return output_port_->get_version(); }
+
+  /// A DependentInputPort must be evaluated in a Context, because it does not
+  /// control its own data.
+  bool requires_evaluation() const override { return true; }
 
  protected:
   const OutputPort* get_output_port() const override { return output_port_; }
@@ -99,7 +110,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  /// @tparam V The type of @p vec itself. Must implement VectorBase<T>.
+  /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit FreestandingInputPort(std::unique_ptr<V<T>> vec)
       : output_port_(std::move(vec)) {
@@ -124,6 +135,10 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   /// to change whenever GetMutableVectorData is called.
   int64_t get_version() const override { return output_port_.get_version(); }
 
+  /// A FreestandingInputPort does not require evaluation, because it controls
+  /// its own data.
+  bool requires_evaluation() const override { return false; }
+
   /// Returns a pointer to the data inside this InputPort, and updates the
   /// version so that Contexts depending on this InputPort know to invalidate
   /// their caches.
@@ -147,9 +162,13 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   ///
   /// @tparam T The type of the input port. Must be a valid Eigen scalar.
   template <typename T>
-  VectorBase<T>* GetMutableVectorData() {
+  BasicVector<T>* GetMutableVectorData() {
     return output_port_.GetMutableVectorData<T>();
   }
+
+  /// Does nothing. A FreestandingInputPort wraps its own OutputPort, so there
+  /// is no need to handle unexpected destruction of the OutputPort.
+  void Disconnect() override {}
 
  protected:
   const OutputPort* get_output_port() const override { return &output_port_; }

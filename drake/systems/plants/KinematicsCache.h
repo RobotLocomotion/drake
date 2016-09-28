@@ -101,9 +101,9 @@ class KinematicsCache {
     for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
-          body.hasParent() ? body.getJoint().get_num_positions() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
-          body.hasParent() ? body.getJoint().get_num_velocities() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(
                                   num_positions_joint, num_velocities_joint)});
       bodies.push_back(&body);
@@ -176,7 +176,7 @@ class KinematicsCache {
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
         ret.middleCols(ret_col_start, joint.get_num_positions()).noalias() =
@@ -200,7 +200,7 @@ class KinematicsCache {
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
-      if (body.hasParent()) {
+      if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
         ret.middleCols(ret_col_start, joint.get_num_velocities()).noalias() =
@@ -246,7 +246,19 @@ class KinematicsCache {
 
   int get_num_positions() const { return num_positions; }
 
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
+  int getNumPositions() const { return get_num_positions(); }
+
   int get_num_velocities() const { return num_velocities; }
+
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
+  int getNumVelocities() const { return get_num_velocities(); }
 
  private:
   void invalidate() {
@@ -264,7 +276,7 @@ class KinematicsCache {
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-      return body_ptr->hasParent()
+      return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_positions()
                  : result;
     };
@@ -276,7 +288,7 @@ class KinematicsCache {
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-      return body_ptr->hasParent()
+      return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_velocities()
                  : result;
     };

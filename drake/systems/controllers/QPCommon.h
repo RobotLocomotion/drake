@@ -1,12 +1,13 @@
 #pragma once
 
-#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/eigen_stl_types.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/util/drakeUtil.h"
 
@@ -27,6 +28,8 @@ struct QPControllerState {
   int* cbasis;
   int vbasis_len;
   int cbasis_len;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct PositionIndices {
@@ -61,8 +64,8 @@ struct VRefIntegratorParams {
 
 struct IntegratorParams {
   explicit IntegratorParams(const RigidBodyTree& robot)
-      : gains(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        clamps(Eigen::VectorXd::Zero(robot.number_of_positions())),
+      : gains(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        clamps(Eigen::VectorXd::Zero(robot.get_num_positions())),
         eta(0.0) {}
 
   Eigen::VectorXd gains;
@@ -92,15 +95,15 @@ struct Bounds {
 struct JointSoftLimitParams {
   explicit JointSoftLimitParams(const RigidBodyTree& robot)
       : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
-            robot.number_of_positions())),
+            robot.get_num_positions())),
         disable_when_body_in_support(
-            Eigen::VectorXi::Zero(robot.number_of_positions())),
-        lb(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        ub(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        weight(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        k_logistic(Eigen::VectorXd::Zero(robot.number_of_positions())) {}
+            Eigen::VectorXi::Zero(robot.get_num_positions())),
+        lb(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        ub(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        weight(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        k_logistic(Eigen::VectorXd::Zero(robot.get_num_positions())) {}
 
   Eigen::Matrix<bool, Eigen::Dynamic, 1> enabled;
   Eigen::VectorXi disable_when_body_in_support;
@@ -125,12 +128,12 @@ struct JointSoftLimitParams {
 
 struct WholeBodyParams {
   explicit WholeBodyParams(const RigidBodyTree& robot)
-      : Kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        Kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        w_qdd(Eigen::VectorXd::Zero(robot.number_of_velocities())),
+      : Kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        Kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        w_qdd(Eigen::VectorXd::Zero(robot.get_num_velocities())),
         integrator(robot),
-        qdd_bounds(Eigen::VectorXd::Zero(robot.number_of_velocities()),
-                   Eigen::VectorXd::Zero(robot.number_of_velocities())) {}
+        qdd_bounds(Eigen::VectorXd::Zero(robot.get_num_velocities()),
+                   Eigen::VectorXd::Zero(robot.get_num_velocities())) {}
 
   Eigen::VectorXd Kp;
   Eigen::VectorXd Kd;
@@ -165,6 +168,8 @@ struct BodyMotionParams {
     return lhs.Kp.isApprox(rhs.Kp) && lhs.Kd.isApprox(rhs.Kd) &&
            lhs.accel_bounds == rhs.accel_bounds && lhs.weight == rhs.weight;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct HardwareGains {
@@ -237,7 +242,7 @@ struct QPControllerParams {
         center_of_mass_observer_gain(Eigen::Matrix4d::Zero()) {}
 
   WholeBodyParams whole_body;
-  std::vector<BodyMotionParams> body_motion;
+  drake::eigen_aligned_std_vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
   JointSoftLimitParams joint_soft_limits;
   HardwareParams hardware;
@@ -270,6 +275,8 @@ struct QPControllerParams {
             rhs.center_of_mass_observer_gain);
     return is_equal;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
@@ -288,6 +295,8 @@ struct DesiredBodyAcceleration {
   KinematicPath body_path;
   Eigen::Isometry3d T_task_to_world;
   Vector6d weight_multiplier;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct QPControllerOutput {
@@ -298,9 +307,7 @@ struct QPControllerOutput {
 };
 
 struct QPControllerDebugData {
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>>
-      active_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports;
   int nc;
   Eigen::MatrixXd normals;
   Eigen::MatrixXd B;
@@ -322,6 +329,8 @@ struct QPControllerDebugData {
   Eigen::MatrixXd Jcom;
   Eigen::VectorXd Jcomdotv;
   Eigen::VectorXd beta;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct PIDOutput {
@@ -335,11 +344,12 @@ class Attachment {
  public:
   std::string attach_to_frame;
   std::string urdf_filename;
-  DrakeJoint::FloatingBaseType joint_type;
+  drake::systems::plants::joints::FloatingBaseType joint_type;
 
   Attachment(
       const std::string& attach_to_frame_, const std::string& urdf_filename_,
-      const DrakeJoint::FloatingBaseType& joint_type_ = DrakeJoint::FIXED)
+      const drake::systems::plants::joints::FloatingBaseType&
+          joint_type_ = drake::systems::plants::joints::kFixed)
       : attach_to_frame(attach_to_frame_),
         urdf_filename(urdf_filename_),
         joint_type(joint_type_) {

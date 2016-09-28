@@ -4,34 +4,37 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-using Eigen::VectorXd;
-using std::shared_ptr;
-using std::make_shared;
-using drake::GetDrakePath;
-using drake::RigidBodySystem;
-using drake::RigidBodyAccelerometer;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
 
+using std::shared_ptr;
+using std::make_shared;
+
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+
+using drake::GetDrakePath;
+using drake::RigidBodySystem;
+using drake::RigidBodyAccelerometer;
+
 Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys,
                                 Vector3d const& rpy, Vector4d const& u) {
   VectorXd x0 = VectorXd::Zero(sys->getNumStates());
   auto const& tree = sys->getRigidBodyTree();
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
   x0.segment(3, 4) = drake::math::rpy2quat(rpy);
   auto const& system_output = sys->output(0, x0, u);
   return system_output.tail<3>();
 }
 
 GTEST_TEST(testAccelerometer, AllTests) {
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  drake::systems::plants::joints::FloatingBaseType floating_base_type =
+      drake::systems::plants::joints::kQuaternion;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",

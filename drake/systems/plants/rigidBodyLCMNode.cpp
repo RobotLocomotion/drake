@@ -1,13 +1,24 @@
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace drake;
+using std::make_shared;
+using std::shared_ptr;
+using std::string;
+
+using Eigen::Isometry3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kFixed;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 /** @page rigidBodyLCMNode rigidBodyLCMNode Application
  * @ingroup simulation
@@ -24,17 +35,21 @@ every input
 @verbatim
 Usage:  rigidBodyLCMNode [options] full_path_to_urdf_or_sdf_file
   with (case sensitive) options:
-    --base [floating_type]  // can be "FIXED, ROLLPITCHYAW, or QUATERNION"
-(default: QUATERNION)
+    --base [floating_type]  // can be "kFixed, kRollPitchYaw, or kQuaternion"
+(default: kQuaternion)
 @endverbatim
  */
 
 DEFINE_string(base, "QUAT",
               "defines the connection between the root link and the world; "
-              "must be FIXED or RPY or QUAT");
+              "must be kFixed or RPY or QUAT");
 DEFINE_bool(add_flat_terrain, false, "add flat terrain");
 
-int main(int argc, char* argv[]) {
+namespace drake {
+namespace systems {
+namespace plants {
+
+int do_main(int argc, char* argv[]) {
   gflags::SetUsageMessage("[options] full_path_to_urdf_or_sdf_file");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (argc < 2) {
@@ -44,16 +59,16 @@ int main(int argc, char* argv[]) {
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
-  if (FLAGS_base == "FIXED") {
-    floating_base_type = DrakeJoint::FIXED;
+  FloatingBaseType floating_base_type = kQuaternion;
+  if (FLAGS_base == "kFixed") {
+    floating_base_type = kFixed;
   } else if (FLAGS_base == "RPY") {
-    floating_base_type = DrakeJoint::ROLLPITCHYAW;
+    floating_base_type = kRollPitchYaw;
   } else if (FLAGS_base == "QUAT") {
-    floating_base_type = DrakeJoint::QUATERNION;
+    floating_base_type = kQuaternion;
   } else {
     throw std::runtime_error(string("Unknown base type") + FLAGS_base +
-                             "; must be FIXED, RPY, or QUAT");
+                             "; must be kFixed, RPY, or QUAT");
   }
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -61,6 +76,7 @@ int main(int argc, char* argv[]) {
   auto const& tree = rigid_body_sys->getRigidBodyTree();
 
   if (FLAGS_add_flat_terrain) {
+    SPDLOG_TRACE(drake::log(), "adding flat terrain");
     double box_width = 1000;
     double box_depth = 10;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
@@ -95,4 +111,12 @@ int main(int argc, char* argv[]) {
   //  getInitialState(*sys), options);
 
   return 0;
+}
+
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  return drake::systems::plants::do_main(argc, argv);
 }

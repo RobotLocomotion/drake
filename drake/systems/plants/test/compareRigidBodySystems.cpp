@@ -6,27 +6,31 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/util/testUtil.h"
-
-using std::make_shared;
-using drake::RigidBodySystem;
-using Eigen::VectorXd;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
+
+using std::make_shared;
+
+using Eigen::VectorXd;
+
+using drake::RigidBodySystem;
+using drake::systems::plants::joints::kQuaternion;
+
 char* model_file_1 = nullptr;
 char* model_file_2 = nullptr;
 
 GTEST_TEST(CompareRigidBodySystemsTest, TestAll) {
   // Creates a rigid body system using the first model.
   auto r1 = make_shared<RigidBodySystem>();
-  r1->AddModelInstanceFromFile(model_file_1, DrakeJoint::QUATERNION);
+  r1->AddModelInstanceFromFile(model_file_1, kQuaternion);
 
   // Creates a rigid body system using the second model.
   auto r2 = make_shared<RigidBodySystem>();
-  r2->AddModelInstanceFromFile(model_file_2, DrakeJoint::QUATERNION);
+  r2->AddModelInstanceFromFile(model_file_2, kQuaternion);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");

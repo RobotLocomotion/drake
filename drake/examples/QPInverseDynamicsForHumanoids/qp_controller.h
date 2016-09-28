@@ -91,7 +91,7 @@ class QPController {
   /**
    * The current version explicitly uses SNOPT, but it is really solving a
    * quadratic program. It also instantiates
-   * an OptimizationProblem every call. It should call a QP solver and maintain
+   * an MathematicalProgram every call. It should call a QP solver and maintain
    * a persistent "workspace" for the optimization problem in the future.
    *
    * @return 0 if success, < if error.

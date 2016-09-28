@@ -1,9 +1,11 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -12,29 +14,33 @@ template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value)
     : source_value_(source_value) {
-  this->DeclareOutputPort(kVectorValued, source_value.rows(),
-                          kContinuousSampling);
+  const int n = static_cast<int>(source_value.rows());
+  this->DeclareOutputPort(kVectorValued, n, kContinuousSampling);
 }
 
 template <typename T>
-void ConstantVectorSource<T>::EvalOutput(const ContextBase<T>& context,
+ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
+    : source_value_(Vector1<T>::Constant(source_value)) {
+  this->DeclareOutputPort(kVectorValued, 1, kContinuousSampling);
+}
+
+template <typename T>
+const SystemPortDescriptor<T>&
+ConstantVectorSource<T>::get_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
+void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
                                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-
-  // TODO(amcastro-tri): Solve #3140 so that the next line reads:
-  // auto& output_vector = this->get_output_vector(context, 0);
-  // where output_vector will be an Eigen expression.
-  VectorBase<T>* output_vector = output->GetMutableVectorData(0);
-
-  // TODO(amcastro-tri): Solve #3140 so that the Eigen output_vector can be
-  // accessed like so:
-  // auto& output_vector = this->get_mutable_output_vector(context, 0);
-  output_vector->get_mutable_value() = source_value_;
+  System<T>::GetMutableOutputVector(output, 0) = source_value_;
 }
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantVectorSource<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantVectorSource<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

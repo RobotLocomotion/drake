@@ -53,8 +53,7 @@ void angleDiff(MatrixBase<DerivedPhi1> const& phi1,
 }
 
 bool inSupport(
-    const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>>& supports,
+    const drake::eigen_aligned_std_vector<SupportStateElement>& supports,
     int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
   for (size_t i = 0; i < supports.size(); i++) {
@@ -107,11 +106,9 @@ int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
 int contactConstraintsBV(
     const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>& supp,
-    MatrixXd& B, MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv,
-    MatrixXd& normals) {
-  int j, k = 0, nq = r.number_of_positions();
+    drake::eigen_aligned_std_vector<SupportStateElement>& supp, MatrixXd& B,
+    MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv, MatrixXd& normals) {
+  int j, k = 0, nq = r.get_num_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
   JB.resize(nq, nc * 2 * m_surface_tangents);
@@ -123,10 +120,7 @@ int contactConstraintsBV(
   MatrixXd J(3, nq);
   Matrix<double, 3, m_surface_tangents> d;
 
-  for (std::vector<SupportStateElement,
-                   Eigen::aligned_allocator<SupportStateElement>>::iterator
-           iter = supp.begin();
-       iter != supp.end(); iter++) {
+  for (auto iter = supp.begin(); iter != supp.end(); iter++) {
     double mu = support_mus[iter - supp.begin()];
     double norm = sqrt(1 + mu * mu);  // because normals and ds are orthogonal,
                                       // the norm has a simple form
@@ -169,9 +163,7 @@ int contactConstraintsBV(
 
 MatrixXd individualSupportCOPs(
     const RigidBodyTree& r, const KinematicsCache<double>& cache,
-    const std::vector<SupportStateElement,
-                      Eigen::aligned_allocator<SupportStateElement>>&
-        active_supports,
+    const drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta) {
   const int n_basis_vectors_per_contact =
       static_cast<int>(B.cols() / normals.cols());
@@ -253,9 +245,7 @@ bool isSupportElementActive(SupportStateElement* se,
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(
     const RigidBodyTree& r, VectorXd q, VectorXd qd,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>&
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   KinematicsCache<double> cache = r.doKinematics(q, qd);
@@ -303,19 +293,15 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
-getActiveSupports(
+drake::eigen_aligned_std_vector<SupportStateElement> getActiveSupports(
     const RigidBodyTree& r, const VectorXd& q, const VectorXd& qd,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>&
-        available_supports,
+    drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(
       r, q, qd, available_supports, contact_force_detected, contact_threshold);
 
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports;
 
   for (size_t i = 0; i < available_supports.size(); i++) {
     if (active_supp_mask(i)) {

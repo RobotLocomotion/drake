@@ -105,6 +105,23 @@ function(drake_forceupdate PROJECT)
         )
     endif()
   endif()
+
+  # TODO Once we require CMake 3.7, replace calls to drake_forceupdate with
+  # drake_add_submodule_sync_dependency
+  drake_add_submodule_sync_dependency(${PROJECT})
+endfunction()
+
+#------------------------------------------------------------------------------
+# Add a dependency on synchronizing submodules
+#------------------------------------------------------------------------------
+function(drake_add_submodule_sync_dependency PROJECT)
+  if(AUTO_UPDATE_EXTERNALS)
+    foreach(_step_target ${PROJECT} ${PROJECT}-update)
+      if(TARGET ${_step_target})
+        add_dependencies(${_step_target} submodule-sync)
+      endif()
+    endforeach()
+  endif()
 endfunction()
 
 #------------------------------------------------------------------------------
@@ -163,7 +180,7 @@ macro(drake_add_cmake_external PROJECT)
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS 1
     DEPENDS ${_ext_deps}
-    CMAKE_GENERATOR ${CMAKE_GENERATOR}
+    CMAKE_GENERATOR "${_ext_GENERATOR}"
     CMAKE_ARGS
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
@@ -232,6 +249,7 @@ endmacro()
 #   SOURCE_SUBDIR <dir> - Specify SOURCE_SUBDIR for external
 #   SOURCE_DIR <dir> - Override default SOURCE_DIR for external
 #   BINARY_DIR <dir> - Override default BINARY_DIR for external
+#   GENERATOR <gen> - Override default CMAKE_GENERATOR for external
 #
 #   PATCH_COMMAND <args...>
 #   CONFIGURE_COMMAND <args...>
@@ -263,6 +281,7 @@ function(drake_add_external PROJECT)
     SOURCE_SUBDIR
     SOURCE_DIR
     BINARY_DIR
+    GENERATOR
   )
   set(_ext_mv_args
     CMAKE_ARGS
@@ -272,6 +291,10 @@ function(drake_add_external PROJECT)
   )
   cmake_parse_arguments(_ext
     "${_ext_flags}" "${_ext_sv_args}" "${_ext_mv_args}" ${ARGN})
+
+  if(NOT _ext_GENERATOR)
+    set(_ext_GENERATOR "${CMAKE_GENERATOR}")
+  endif()
 
   string(TOUPPER WITH_${PROJECT} _ext_project_option)
   if(_ext_ALWAYS)
@@ -364,21 +387,14 @@ function(drake_add_external PROJECT)
 
     # Add external to download dependencies
     add_dependencies(download-all ${PROJECT}-update)
-  endif()
-
-  if(AUTO_UPDATE_EXTERNALS AND CMAKE_GENERATOR STREQUAL "Ninja")
+  elseif(CMAKE_GENERATOR STREQUAL "Ninja" AND CMAKE_VERSION VERSION_LESS 3.7)
     # Due to a quirk of how the CMake Ninja generator computes dependencies,
     # all targets that contain a submodule update command, or depend on a
     # target that does, need to depend on the submodule-sync target, or the
     # direct dependency will be lost.
     #
-    # TODO(bradking) This is expected to be fixed in CMake 3.7; add a version
-    # check when that is confirmed.
-    foreach(_step_target ${PROJECT} ${PROJECT}-update)
-      if(TARGET ${_step_target})
-        add_dependencies(${_step_target} submodule-sync)
-      endif()
-    endforeach()
+    # TODO remove when we require CMake 3.7
+    drake_add_submodule_sync_dependency(${PROJECT})
   endif()
 
   # Add extra per-project targets

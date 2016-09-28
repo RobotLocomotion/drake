@@ -1,4 +1,4 @@
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
 
 #include "qp_controller.h"
@@ -6,7 +6,7 @@
 using namespace drake::solvers;
 
 // TODO(siyuan.feng@tri.global): some version of this should go to
-// optimization.h
+// mathematical_program.h
 static VectorXd VariableList2VectorXd(VariableList const& vlist) {
   size_t dim = 0;
   for (auto var : vlist) {
@@ -66,12 +66,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //
   // We are assuming two foot contacts in this example.
   int num_contacts = 2;
-  int num_vd = rs.robot().number_of_velocities();
+  int num_vd = rs.robot().get_num_velocities();
   int num_wrench = 6 * num_contacts;
   int num_torque = num_vd - 6;
   int num_variable = num_vd + num_wrench;
 
-  OptimizationProblem prog;
+  MathematicalProgram prog;
   const DecisionVariableView vd = prog.AddContinuousVariables(num_vd, "vd");
   const DecisionVariableView lambda =
       prog.AddContinuousVariables(num_wrench, "lambda");
@@ -379,9 +379,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 }
 
 void InitQPInput(const RigidBodyTree& r, QPInput* input) {
-  input->vd_d.resize(r.number_of_velocities());
-  input->coord_names.resize(r.number_of_velocities());
-  for (int i = 0; i < r.number_of_velocities(); i++) {
+  input->vd_d.resize(r.get_num_velocities());
+  input->coord_names.resize(r.get_num_velocities());
+  for (int i = 0; i < r.get_num_velocities(); i++) {
     // strip out the "dot" part from name
     input->coord_names[i] =
         r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
@@ -389,9 +389,9 @@ void InitQPInput(const RigidBodyTree& r, QPInput* input) {
 }
 
 void InitQPOutput(const RigidBodyTree& r, QPOutput* output) {
-  output->vd.resize(r.number_of_velocities());
-  output->coord_names.resize(r.number_of_velocities());
-  for (int i = 0; i < r.number_of_velocities(); i++) {
+  output->vd.resize(r.get_num_velocities());
+  output->coord_names.resize(r.get_num_velocities());
+  for (int i = 0; i < r.get_num_velocities(); i++) {
     // strip out the "dot" part from name
     output->coord_names[i] =
         r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);

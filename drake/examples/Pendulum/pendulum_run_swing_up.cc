@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
   auto visualizer = std::make_shared<drake::BotVisualizer<PendulumState>>(
       lcm, drake::GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
   auto robot_state_tap =
       std::make_shared<drake::RobotStateTap<PendulumState>>();
 

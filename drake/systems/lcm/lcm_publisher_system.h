@@ -3,8 +3,8 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/system.h"
+#include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
@@ -15,7 +15,7 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
    * A constructor.
@@ -56,25 +56,32 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
 
   std::string get_name() const override;
 
-  /**
-   * The default context for this system is one that has one input port and
-   * no state.
-   */
-  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override;
-
-  /**
-   * The output contains zero ports.
-   */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const ContextBase<double>& context) const override;
+  /// Returns the default name for a system that publishes @p channel.
+  static std::string get_name(const std::string& channel);
 
   /**
    * Takes the VectorBase from the input port of the context and publishes
-   * it onto an LCM channel. Note that the output is ignored since this system
-   * does not output anything.
+   * it onto an LCM channel.
    */
-  void EvalOutput(const ContextBase<double>& context,
-                  SystemOutput<double>* output) const override;
+  void DoPublish(const Context<double>& context) const override;
+
+  /**
+   * This System has no output ports so EvalOutput() does nothing.
+   */
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  /**
+   * Gets the most recently published message bytes; typically only used for
+   * unit testing.
+   */
+  std::vector<uint8_t> GetMessage() const;
+
+  /**
+   * Gets the most recently published message bytes, and converts them to into
+   * vector form using the translator; typically only used for unit testing.
+   */
+  void GetMessage(BasicVector<double>* message_vector) const;
 
  private:
   // The channel on which to publish LCM messages.
@@ -86,6 +93,10 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public System<double> {
 
   // A pointer to the LCM subsystem.
   ::lcm::LCM* lcm_;
+
+  // The most recent message bytes; mutable is ok because it only affects the
+  // GetMessage() results, which are not part of the System contract.
+  mutable std::vector<uint8_t> message_bytes_;
 };
 
 }  // namespace lcm

@@ -1,20 +1,31 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
+#include <cstdint>
+#include <vector>
+
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/system_input.h"
+
+// Clean up windows junk; see http://stackoverflow.com/questions/4111899/.
+#if defined(WIN32) || defined(WIN64)
+  #undef GetMessage
+#endif
 
 namespace drake {
 namespace systems {
 namespace lcm {
 
 namespace {
-const int kNumInputPorts = 1;
 const int kPortIndex = 0;
 }  // namespace
 
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
-    : channel_(channel), translator_(translator), lcm_(lcm) {}
+    const std::string& channel, const LcmAndVectorBaseTranslator& translator,
+    ::lcm::LCM* lcm)
+    : channel_(channel), translator_(translator), lcm_(lcm) {
+  DeclareInputPort(kVectorValued, translator_.get_vector_size(),
+                   kContinuousSampling);
+}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
@@ -27,34 +38,35 @@ LcmPublisherSystem::LcmPublisherSystem(
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
 std::string LcmPublisherSystem::get_name() const {
-  return "LcmPublisherSystem::" + channel_;
+  return get_name(channel_);
 }
 
-std::unique_ptr<ContextBase<double>> LcmPublisherSystem::CreateDefaultContext()
-    const {
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(kNumInputPorts);
-  return std::unique_ptr<ContextBase<double>>(context.release());
+std::string LcmPublisherSystem::get_name(const std::string& channel) {
+  return "LcmPublisherSystem(" + channel + ")";
 }
 
-std::unique_ptr<SystemOutput<double>> LcmPublisherSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  std::unique_ptr<SystemOutput<double>> output(new LeafSystemOutput<double>);
-  return output;
-}
+void LcmPublisherSystem::DoPublish(const Context<double>& context) const {
+  SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
 
-// TODO(liang.fok) Move the LCM message publishing logic into another method
-// that's more appropriate once it is defined by System. See:
-// https://github.com/RobotLocomotion/drake/issues/2836.
-void LcmPublisherSystem::EvalOutput(const ContextBase<double>& context,
-                                    SystemOutput<double>* output) const {
   // Obtains the input vector.
-  const VectorBase<double>* input_vector =
-      context.get_vector_input(kPortIndex);
+  const VectorBase<double>* const input_vector =
+      this->EvalVectorInput(context, kPortIndex);
 
-  // Translates the input vector into an LCM message and publishes it onto the
-  // specified LCM channel.
-  translator_.PublishVectorBaseToLCM(*input_vector, channel_, lcm_);
+  // Translates the input vector into LCM message bytes.
+  translator_.Serialize(context.get_time(), *input_vector, &message_bytes_);
+
+  // Publishes onto the specified LCM channel.
+  lcm_->publish(channel_, message_bytes_.data(), message_bytes_.size());
+}
+
+std::vector<uint8_t> LcmPublisherSystem::GetMessage() const {
+  return message_bytes_;
+}
+
+void LcmPublisherSystem::GetMessage(BasicVector<double>* message_vector) const {
+  // We use GetMessage() here to ensure we stay in sync with its implementation.
+  const std::vector<uint8_t> bytes = GetMessage();
+  translator_.Deserialize(bytes.data(), bytes.size(), message_vector);
 }
 
 }  // namespace lcm

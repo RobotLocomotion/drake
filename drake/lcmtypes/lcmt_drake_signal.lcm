@@ -1,15 +1,18 @@
-
-// a basic vector of doubles which can represent any signal passed 
-// around in drake
-
 package drake;
 
-struct lcmt_drake_signal
-{
-	int32_t dim;        // number of elements in the signal
-	double val[dim];    
-  string coord[dim];  // a name for each element in the signal
-  // NOTE: the channel name will represent the name of the overall signal
+// This LCM message contains a basic vector of doubles that can represent any
+// signal passed around in Drake. Note that the channel name on which this
+// message is sent will represent the name of the overall signal.
+struct lcmt_drake_signal {
+  // The number of elements in the signal.
+  int32_t dim;
 
- 	int64_t timestamp;
+  // The value of each element in the signal.
+  double val[dim];
+
+  // The name of each element in the signal.
+  string coord[dim];
+
+  // The timestamp in milliseconds.
+  int64_t timestamp;
 }

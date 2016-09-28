@@ -4,9 +4,6 @@
 [submodule "drake/doc/textbook"]
 	path = drake/doc/textbook
 	url = https://github.com/RussTedrake/underactuated.git
-[submodule "externals/eigen"]
-	path = externals/eigen
-	url = https://github.com/RobotLocomotion/eigen-pod.git
 [submodule "externals/googletest"]
 	path = externals/googletest
 	url = https://github.com/google/googletest.git
@@ -22,9 +19,6 @@
 [submodule "externals/libbot"]
 	path = externals/libbot
 	url = https://github.com/RobotLocomotion/libbot.git
-[submodule "externals/bullet"]
-	path = externals/bullet
-	url = https://github.com/RobotLocomotion/bullet-pod.git
 [submodule "externals/spotless"]
 	path = externals/spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
@@ -36,7 +30,7 @@
 	url = https://github.com/mitdrc/signal-scope.git
 [submodule "externals/octomap"]
 	path = externals/octomap
-	url = https://github.com/RobotLocomotion/octomap-pod.git
+	url = https://github.com/OctoMap/octomap.git
 [submodule "externals/snopt"]
 	path = externals/snopt
 	url = git@github.com:RobotLocomotion/snopt.git
@@ -76,7 +70,7 @@
 	url = https://github.com/rdeits/swigmake.git
 [submodule "externals/swig_matlab"]
 	path = externals/swig_matlab
-	url = https://github.com/rdeits/swig-matlab-pod.git
+	url = https://github.com/jaeandersson/swig.git
 [submodule "externals/yaml_cpp"]
 	path = externals/yaml_cpp
 	url = https://github.com/jbeder/yaml-cpp.git
@@ -99,3 +93,13 @@
 [submodule "externals/gflags"]
 	path = externals/gflags
 	url = https://github.com/gflags/gflags.git
+[submodule "externals/dreal"]
+	path = externals/dreal
+	url = https://github.com/dreal/dreal3.git
+	ignore = untracked
+[submodule "externals/bullet"]
+	path = externals/bullet
+	url = https://github.com/RobotLocomotion/bullet3.git
+[submodule "externals/eigen"]
+	path = externals/eigen
+	url = https://github.com/RobotLocomotion/eigen-mirror.git

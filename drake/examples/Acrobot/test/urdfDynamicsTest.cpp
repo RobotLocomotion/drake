@@ -1,12 +1,10 @@
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/Acrobot.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "gtest/gtest.h"
-
-using drake::RigidBodySystem;
-using drake::getRandomVector;
-using drake::GetDrakePath;
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
@@ -24,11 +22,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
+      "/examples/Acrobot/Acrobot.urdf", systems::plants::joints::kFixed);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
+      "/examples/Acrobot/Acrobot.sdf", systems::plants::joints::kFixed);
 
   // for debugging:
   /*
@@ -56,11 +54,13 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
     x0_rb.bottomRows(2));
     cout << "H_sdf = " << r_sdf.getRigidBodyTree()->massMatrix(kinsol_sdf) <<
     endl;
-    eigen_aligned_unordered_map<const RigidBody *, Matrix<double, 6, 1> > f_ext;
+    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
     cout << "C_urdf = " <<
-    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_urdf, f_ext) << endl;
+    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(
+        kinsol_urdf, no_external_wrenches) << endl;
     cout << "C_sdf = " <<
-    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_sdf, f_ext) << endl;
+    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(
+        kinsol_sdf, no_external_wrenches) << endl;
     */
 
     auto xdot = toEigen(r.dynamics(0.0, x0, u0));

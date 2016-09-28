@@ -60,8 +60,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                       "the first argument should be the ptr");
   memcpy(&pdata, mxGetData(prhs[0]), sizeof(pdata));
 
-  int nq = pdata->r->number_of_positions();
-  int nv = pdata->r->number_of_velocities();
+  int nq = pdata->r->get_num_positions();
+  int nv = pdata->r->get_num_velocities();
 
   int narg = 1;
   double* q = mxGetPr(prhs[narg++]);
@@ -88,8 +88,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
-  vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
-      active_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports;
   set<int> contact_bodies;  // redundant, clean up later
   int num_active_contact_pts = 0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
@@ -159,9 +158,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                                    mxREAL);
     pr = mxGetPr(plhs[0]);
     int i = 0;
-    for (vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>::iterator iter =
-             active_supports.begin();
+    for (auto iter = active_supports.begin();
          iter != active_supports.end(); iter++) {
       pr[i++] = (double)(iter->body_idx + 1);
     }

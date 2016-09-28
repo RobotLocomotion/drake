@@ -6,6 +6,7 @@
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
@@ -48,7 +49,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via
- * a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame
+ * a joint of type `kRollPitchYaw`. The model instance's frame
  * is equal to the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
@@ -71,7 +72,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via
- * a joint of type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is
+ * a joint of type `kRollPitchYaw`. The model instance's frame is
  * equal to the world's coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
@@ -124,7 +125,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     const std::string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
@@ -161,14 +162,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     PackageMap& package_map,
     const std::string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
+ * type `kRollPitchYaw`. The model instance's frame is equal to the
  * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -189,7 +190,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `DrakeJoint::ROLLPITCHYAW`. The model's frame is equal to the world's
+ * type `kRollPitchYaw`. The model's frame is equal to the world's
  * coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -209,13 +210,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree. The model instance is connected to the world via a joint of
- * type `DrakeJoint::ROLLPITCHYAW` joint. The model instance's frame is equal
+ * type `kRollPitchYaw` joint. The model instance's frame is equal
  * to the world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -238,14 +239,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
  * it to @p tree.  The model instance is connected to the world via a joint of
- * type `DrakeJoint::ROLLPITCHYAW`. The model instance's frame is equal to the
+ * type `kRollPitchYaw`. The model instance's frame is equal to the
  * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
@@ -272,7 +273,7 @@ DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& package_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);
 

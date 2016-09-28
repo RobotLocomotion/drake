@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/gradient.h"
 #include "drake/drakeJoints_export.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \
                                                                              \
@@ -57,16 +58,6 @@
  */
 class DRAKEJOINTS_EXPORT DrakeJoint {
  public:
-  /**
-   * Defines the various types of floating bases.
-   */
-  enum FloatingBaseType {
-    FIXED = 0,
-    ROLLPITCHYAW = 1,
-    QUATERNION = 2,
-    PLANAR = 3
-  };
-
   /**
    * Defines the maximum number of position states a joint can have.
    */
@@ -208,6 +199,11 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   DRAKE_DEPRECATED("Please use is_floating().")
 #endif
   virtual bool isFloating() const { return is_floating(); }
+
+  /**
+   * Returns `true` if this joint is a FixedJoint.
+   */
+  bool is_fixed() const { return num_positions == 0; }
 
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 

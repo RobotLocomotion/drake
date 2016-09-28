@@ -32,16 +32,16 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class GainTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    gain_ = make_unique<Gain<double>>(kGain_ /* gain */, 3 /* length */);
+    gain_ = make_unique<Gain<double>>(kGain_ /* gain */, 3 /* size */);
     context_ = gain_->CreateDefaultContext();
     output_ = gain_->AllocateOutput(*context_);
-    input0_ = make_unique<BasicVector<double>>(3 /* length */);
-    input1_ = make_unique<BasicVector<double>>(3 /* length */);
+    input0_ = make_unique<BasicVector<double>>(3 /* size */);
+    input1_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   const double kGain_{2.0};
   std::unique_ptr<System<double>> gain_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input0_;
   std::unique_ptr<BasicVector<double>> input1_;
@@ -64,8 +64,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   // SystemOutput are consistent.
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(1, gain_->get_num_output_ports());
-  const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
   Eigen::Vector3d expected = kGain_ * input_vector;
   EXPECT_EQ(expected, output_vector->get_value());
@@ -73,7 +72,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
 
 // Tests that Gain allocates no state variables in the context_.
 TEST_F(GainTest, GainIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

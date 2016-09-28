@@ -7,40 +7,27 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
-/// OutputPortListenerInterface is an interface that consumers of an output
-/// port must satisfy to receive notifications when the value on that output
-/// port's version number is incremented.
-///
-/// This interface is a Drake-internal detail. Users should not implement it.
-/// TODO(david-german-tri): Consider moving to its own file.
-class DRAKESYSTEMFRAMEWORK_EXPORT OutputPortListenerInterface {
- public:
-  virtual ~OutputPortListenerInterface();
-
-  /// Invalidates any data that depends on the OutputPort. Called whenever
-  /// the OutputPort's version number is incremented.
-  virtual void Invalidate() = 0;
-};
-
 /// The OutputPort represents a data output from a System. Other Systems
-/// may depend on the OutputPort.
+/// may depend on the OutputPort. When an OutputPort is deleted, it will
+/// automatically notify the listeners that depend on it to disconnect,
+/// meaning those ports will resolve to nullptr.
 class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
  public:
   /// Constructs a vector-valued OutputPort.
   /// Takes ownership of @p vec.
   ///
   /// @tparam T The type of the vector data. Must be a valid Eigen scalar.
-  /// @tparam V The type of @p vec itself. Must implement VectorBase<T>.
+  /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPort(std::unique_ptr<V<T>> vec)
-      : data_(new VectorValue<T>(std::move(vec))) {
-  }
+      : data_(new VectorValue<T>(std::move(vec))) {}
 
   /// Constructs an abstract-valued OutputPort.
   /// Takes ownership of @p data.
@@ -63,8 +50,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   /// Returns the vector of data in this output port. Throws std::bad_cast
   /// if this is not a vector-valued port.
   template <typename T>
-  const VectorBase<T>* get_vector_data() const {
-    return data_->GetValue<VectorBase<T>*>();
+  const BasicVector<T>* get_vector_data() const {
+    return data_->GetValue<BasicVector<T>*>();
   }
 
   /// Returns a positive and monotonically increasing number that is guaranteed
@@ -73,12 +60,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
 
   /// Registers @p dependent to receive invalidation notifications whenever this
   /// port's version number is incremented.
-  void add_dependent(OutputPortListenerInterface* dependent) {
+  void add_dependent(detail::OutputPortListenerInterface* dependent) {
     dependents_.insert(dependent);
   }
 
   /// Unregisters @p dependent from invalidation notifications.
-  void remove_dependent(OutputPortListenerInterface* dependent) {
+  void remove_dependent(detail::OutputPortListenerInterface* dependent) {
     dependents_.erase(dependent);
   }
 
@@ -100,9 +87,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
   template <typename T>
-  VectorBase<T>* GetMutableVectorData() {
+  BasicVector<T>* GetMutableVectorData() {
     InvalidateAndIncrement();
-    return data_->GetValue<VectorBase<T>*>();
+    return data_->GetValue<BasicVector<T>*>();
   }
 
   /// Returns a clone of this OutputPort containing a clone of the data, but
@@ -123,7 +110,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
 
   // The list of consumers that should be notified when the value on this
   // output port changes.
-  std::set<OutputPortListenerInterface*> dependents_;
+  std::set<detail::OutputPortListenerInterface*> dependents_;
 
   int64_t version_ = 0;
 };
@@ -148,12 +135,12 @@ class SystemOutput {
   /// Returns the abstract value in the port at @p index.
   const AbstractValue* get_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
-    return get_port(index).get_data();
+    return get_port(index).get_abstract_data();
   }
 
   /// Returns the vector value in the port at @p index. Throws std::bad_cast if
   /// the port is not vector-valued.
-  const VectorBase<T>* get_vector_data(int index) const {
+  const BasicVector<T>* get_vector_data(int index) const {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
     return get_port(index).template get_vector_data<T>();
   }
@@ -175,7 +162,7 @@ class SystemOutput {
   /// GetMutableVectorData was called.
   ///
   /// Throws std::bad_cast if this is not a vector-valued port.
-  VectorBase<T>* GetMutableVectorData(int index) {
+  BasicVector<T>* GetMutableVectorData(int index) {
     DRAKE_ASSERT(index >= 0 && index < get_num_ports());
     return get_mutable_port(index)->template GetMutableVectorData<T>();
   }
@@ -196,10 +183,12 @@ struct LeafSystemOutput : public SystemOutput<T> {
   int get_num_ports() const override { return static_cast<int>(ports_.size()); }
 
   OutputPort* get_mutable_port(int index) override {
+    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return ports_[index].get();
   }
 
   const OutputPort& get_port(int index) const override {
+    DRAKE_DEMAND(index >= 0 && index < get_num_ports());
     return *ports_[index];
   }
 

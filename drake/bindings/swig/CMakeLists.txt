@@ -13,17 +13,16 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY
 # SWIG output code makes expansive use of variable shadowing.
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY
   COMPILE_OPTIONS ${CXX_FLAGS_NO_ERROR_SHADOW})
-# SWIG output code "may" use a variable uninitialized (not really, but due to
-# bad annotation of mexErrMsgIdAndTxt, the compiler can't know that); see also
-# https://github.com/jaeandersson/swig/pull/73
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY
-  COMPILE_OPTIONS ${CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Suppresses warnings due to the existence of deprecated methods. These
   # deprecated methods should still be made available through the SWIG-generated
   # APIs until they are actually removed from the original C++ APIs.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+
+  # Swig sometimes emits code which appears to have uninitialized
+  # variables.  Err on the side of swig being correct.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
 endif()
 
 if(PYTHON_EXECUTABLE)

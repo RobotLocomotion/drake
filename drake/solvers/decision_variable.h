@@ -15,7 +15,7 @@ namespace solvers {
 /**
  * DecisionVariable
  * @brief Provides storage for a decision variable inside an
- * OptimizationProblem.
+ * MathematicalProgram.
  */
 class DecisionVariable {
  public:
@@ -104,7 +104,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 
   /** covers()
    * @brief returns true iff the given @p index of the enclosing
-   * OptimizationProblem is included in this VariableView.*/
+   * MathematicalProgram is included in this VariableView.*/
   bool covers(size_t var_index) const {
     return (var_index >= index()) && (var_index < (index() + size_));
   }

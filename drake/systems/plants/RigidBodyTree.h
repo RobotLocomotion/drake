@@ -1,30 +1,28 @@
 #pragma once
 
+#include <set>
+
 #include <Eigen/Dense>
 #include <Eigen/LU>
-#include <Eigen/StdVector>
-#include <set>
-#include <stdexcept>
-#include <unordered_map>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
+#include "drake/systems/plants/rigid_body_collision_element.h"
+#include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -32,6 +30,41 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
+/**
+ * Maintains a vector of RigidBody objects that are arranged into a kinematic
+ * tree via DrakeJoint objects. It provides various utility methods for
+ * computing kinematic and dynamics properties of the RigidBodyTree.
+ *
+ * The internal organization of a RigidBodyTree's generalized state vector is as
+ * follows:
+ *
+ * <pre>
+ * [model instance 1's generalized coordinate vector]
+ * [model instance 2's generalized coordinate vector]
+ * ...
+ * [model instance 1's generalized velocity vector]
+ * [model instance 2's generalized velocity vector]
+ * ...
+ * </pre>
+ *
+ * Each RigidBody maintains for its joint that connects to its parent the
+ * indices of the joint's generalized coordinate vector and generalized velocity
+ * vector in the RigidBodyTree's generalized state vector.
+ *
+ * The starting index of the joint's generalized coordinate vector in the
+ * RigidBodyTree's generalized state vector can be obtained by executing
+ * RigidBody::get_position_start_index().
+ *
+ * The starting index of the joint's generalized velocity vector in the
+ * RigidBodyTree's generalized state vector can be computed as
+ * follows: RigidBodyTree::get_num_positions() +
+ * RigidBody::get_velocity_start_index().
+ *
+ * Note that the velocity index starts at the beginning of the velocity state
+ * variables and not at the beginning of the full state of the RigidBodyTree.
+ * This is why the total number of positions needs to be added to the velocity
+ * index to get its index in the RigidBodyTree's full state vector.
+ */
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
   /**
@@ -46,9 +79,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   static const int kWorldBodyIndex;
 
-  RigidBodyTree(const std::string& urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type =
-                    DrakeJoint::ROLLPITCHYAW);
+  RigidBodyTree(
+      const std::string& urdf_filename,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
@@ -57,8 +91,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -68,8 +102,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -77,8 +111,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -87,16 +121,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const drake::systems::plants::joints::FloatingBaseType
+          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION,
+                       const drake::systems::plants::joints::FloatingBaseType
+                           floating_base_type =
+                               drake::systems::plants::joints::kQuaternion,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -105,12 +140,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * this method.
    */
   // This method is not thread safe!
-  int add_model_instance() { return number_of_model_instances_++; }
+  int add_model_instance();
 
   /**
    * Returns the number of model instances in the tree.
    */
-  int get_number_of_model_instances() { return number_of_model_instances_; }
+  int get_num_model_instances();
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_model_instances().")
+#endif
+  int get_number_of_model_instances();
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -307,7 +347,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::vector<int> FindAncestorBodies(int body_index) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies() instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies().")
 #endif
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
@@ -330,6 +370,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(
       KinematicsCache<Scalar>& cache) const;
 
+#ifndef SWIG
+  /// Convenience alias for rigid body to external wrench map, for use with
+  /// inverseDynamics and dynamicsBiasTerm.
+  template <typename Scalar>
+  using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
+    RigidBody const*, drake::WrenchVector<Scalar>>;
+#endif
+
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
   *equations
   *  \f[
@@ -343,8 +391,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const drake::eigen_aligned_std_unordered_map<
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -366,7 +414,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   *
   * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
   * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
-  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param external_wrenches external wrenches exerted upon bodies
+  * (\f$ f_\text{ext} \f$). Expressed in body frame.
   * \param vd \f$ \dot{v} \f$
   * \param include_velocity_terms whether to include velocity-dependent terms in
   *\f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is
@@ -376,8 +425,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
-      const eigen_aligned_unordered_map<RigidBody const*,
-                                        drake::TwistVector<Scalar>>& f_ext,
+      const drake::eigen_aligned_std_unordered_map<
+          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -673,7 +722,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
  * instead.
  */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
 #endif
   RigidBody* findLink(const std::string& link_name,
                       const std::string& model_name = "",
@@ -683,7 +732,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Obtains a vector of indexes of the bodies that are directly attached to the
    * world via any type of joint.  This method has a time complexity of `O(N)`
    * where `N` is the number of bodies in the tree, which can be determined by
-   * calling RigidBodyTree::get_number_of_bodies().
+   * calling RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
 
@@ -715,7 +764,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * be bodies that belong to model instance ID @p model_instance_id. This
    * method has a time complexity of `O(N)` where `N` is the number of bodies
    * in the tree, which can be determined by calling
-   * RigidBodyTree::get_number_of_bodies().
+   * RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindChildrenOfBody(int parent_body_index,
       int model_instance_id = -1) const;
@@ -725,7 +774,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * `FindBodyIndex(...)` instead.
    */
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex() instead.")
+  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
@@ -753,7 +802,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int model_instance_id = -1) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use FindChildBodyOfJoint() instead.")
+  DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
 
@@ -782,7 +831,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int model_instance_id = -1) const;
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Pleasse use FindIndexOfChildBodyOfJoint() instead.")
+  DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
 #endif
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
@@ -801,7 +850,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
-   * by calling RigidBodyTree::get_number_of_bodies(). Note that the body at
+   * by calling RigidBodyTree::get_num_bodies(). Note that the body at
    * index 0 represents the world.
    */
   const RigidBody& get_body(int body_index) const;
@@ -810,6 +859,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * Returns the number of bodies in this tree. This includes the one body that
    * represents the world.
    */
+  int get_num_bodies() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_bodies().")
+#endif
   int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
@@ -899,31 +953,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
-   * Adds one floating joint to each link specified in the list of link indicies
-   * that does not already have a parent. Typically, the list of link indices is
-   * created while calling add_rigid_body(). The purpose of the floating joint
-   * is to connect the links and of their child branches to the rigid body tree.
-   *
-   * @param floating_base_type The floating joint's type.
-   * @param link_indices A list of link indexes to check. A floating joint is
-   * added to any link in this list that does not have a parent joint.
-   * @param weld_to_frame The frame to which the floating joint should attach
-   * the parent-less non-world links. This parameter may be nullptr, in which
-   * case the link is welded to the world with zero offset.
-   * @param pose_map A mapping where the key is the link's name and the value
-   * is the transform from the frame of the link to the frame of the model
-   * to which the link belongs.
-   * @return The number of floating joint added to this rigid body tree.
-   * @throws A std::runtime_error if the floating_base_type is unrecognized or
-   * zero floating joints were added to the model.
-   */
-  int AddFloatingJoint(
-      DrakeJoint::FloatingBaseType floating_base_type,
-      const std::vector<int>& link_indices,
-      const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
-      const PoseMap* pose_map = nullptr);
-
-  /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
@@ -939,13 +968,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
-  int number_of_positions() const { return num_positions_; }
+  int get_num_positions() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
+  int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
-  int number_of_velocities() const { return num_velocities_; }
+  int get_num_velocities() const;
+
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
+  int number_of_velocities() const;
 
  public:
   static const std::set<int> default_model_instance_id_set;
@@ -973,16 +1013,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
-  // The number of position states in this rigid body tree.
+  // The number of generalized position states in this rigid body tree.
   int num_positions_{};
 
-  // The number of velocity states in this rigid body tree.
+  // The number of generalized velocity states in this rigid body tree.
   int num_velocities_{};
 
   // The number of model instances in this rigid body tree.
-  int number_of_model_instances_{};
+  int num_model_instances_{};
 
-  // helper functions for contactConstraints
+  // Helper functions for contactConstraints.
   template <typename Scalar>
   void accumulateContactJacobian(
       const KinematicsCache<Scalar>& cache, const int bodyInd,
@@ -993,8 +1033,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
-  // Reorder body list to make sure parents are before children in
-  // the list RigidBodyTree::bodies.
+  // Reorder body list to ensure parents are before children in the list
+  // RigidBodyTree::bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();

@@ -86,7 +86,7 @@ void doKinematicsTemp(const RigidBodyTree& model,
                       const MatrixBase<DerivedV>& v, bool compute_JdotV) {
   // temporary solution. Explicit doKinematics calls will not be necessary in
   // the near future.
-  if (v.size() == 0 && model.number_of_velocities() != 0)
+  if (v.size() == 0 && model.get_num_velocities() != 0)
     cache.initialize(q);
   else
     cache.initialize(q, v);
@@ -327,16 +327,15 @@ Matrix<Scalar, Dynamic, 1> dynamicsBiasTermTemp(
     const MatrixBase<DerivedF>& f_ext_value) {
   // temporary solution.
 
-  eigen_aligned_unordered_map<const RigidBody*, Matrix<Scalar, 6, 1>> f_ext;
-
+  RigidBodyTree::BodyToWrenchMap<Scalar> external_wrenches;
   if (f_ext_value.size() > 0) {
     DRAKE_ASSERT(f_ext_value.cols() == model.bodies.size());
     for (Eigen::Index i = 0; i < f_ext_value.cols(); i++) {
-      f_ext.insert({model.bodies[i].get(), f_ext_value.col(i)});
+      external_wrenches.insert({model.bodies[i].get(), f_ext_value.col(i)});
     }
   }
 
-  return model.dynamicsBiasTerm(cache, f_ext);
+  return model.dynamicsBiasTerm(cache, external_wrenches);
 }
 
 void dynamicsBiasTermmex(int nlhs, mxArray* plhs[], int nrhs,

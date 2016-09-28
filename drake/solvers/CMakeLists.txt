@@ -24,11 +24,17 @@ if (ipopt_FOUND)
 else()
   list(APPEND optimization_files no_ipopt.cc)
 endif(ipopt_FOUND)
-pods_find_pkg_config(nlopt)
-if(nlopt_FOUND)
+find_package(NLOPT)
+if(NLOPT_FOUND)
   list(APPEND optimization_files nlopt_solver.cc)
 else()
   list(APPEND optimization_files no_nlopt.cc)
+endif()
+pods_find_pkg_config(dreal)
+if(dreal_FOUND)
+  list(APPEND optimization_files dreal_solver.cc)
+else()
+  list(APPEND optimization_files no_dreal.cc)
 endif()
 pods_find_pkg_config(snopt_c)
 if(snopt_c_FOUND)
@@ -55,7 +61,6 @@ drake_install_headers(
   constraint.h
   Function.h
   mathematical_program.h
-  optimization.h
   decision_variable.h
   solution_result.h
   system_identification.h
@@ -85,8 +90,11 @@ if(ipopt_FOUND)
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif()
 endif()
-if(nlopt_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization nlopt)
+if(NLOPT_FOUND)
+  target_link_libraries(drakeOptimization nlopt)
+endif()
+if(dreal_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization dreal)
 endif()
 if(snopt_c_FOUND)
   pods_use_pkg_config_packages(drakeOptimization snopt_c)

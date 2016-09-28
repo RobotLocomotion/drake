@@ -13,9 +13,8 @@
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/lcmUtil.h"
-#include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "drake/lcmt_zmp_com_observer_state.hpp"
 
 const double REG = 1e-8;
 
@@ -31,7 +30,7 @@ using namespace Eigen;
 void InstantaneousQPController::initialize() {
   body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
 
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   int nu = static_cast<int>(robot->actuators.size());
 
   umin.resize(nu);
@@ -85,9 +84,9 @@ void InstantaneousQPController::initialize() {
 
   controller_state.t_prev = 0;
   controller_state.vref_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_velocities());
+      Eigen::VectorXd::Zero(robot->get_num_velocities());
   controller_state.q_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_positions());
+      Eigen::VectorXd::Zero(robot->get_num_positions());
   controller_state.foot_contact_prev[0] = false;
   controller_state.foot_contact_prev[1] = false;
   controller_state.num_active_contact_pts = 0;
@@ -100,8 +99,13 @@ void InstantaneousQPController::loadConfigurationFromYAML(
     const std::string& control_config_filename) {
   YAML::Node control_config = YAML::LoadFile(control_config_filename);
   std::ofstream debug_file(control_config_filename + ".debug.yaml");
-  param_sets = loadAllParamSets(control_config["qp_controller_params"], *robot,
-                                debug_file);
+  // Important note: assigning the result of loadAllParamSets to a local
+  // variable before assigning to the param_sets field is to make it so that the
+  // copy assignment operator is used instead of the move assignment operator.
+  // See #2165 for details.
+  auto param_sets_local = loadAllParamSets(
+      control_config["qp_controller_params"], *robot, debug_file);
+  param_sets = param_sets_local;
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"],
                                    *robot);
 }
@@ -149,11 +153,11 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   // accelerations and reference posture
   PIDOutput out;
   double dt = 0;
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   DRAKE_ASSERT(q.size() == nq);
-  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qd.size() == robot->get_num_velocities());
   DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
-  if (nq != robot->number_of_velocities()) {
+  if (nq != robot->get_num_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
   }
@@ -200,7 +204,7 @@ VectorXd InstantaneousQPController::velocityReference(
     const VRefIntegratorParams& params) {
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
-  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->get_num_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -277,13 +281,12 @@ VectorXd InstantaneousQPController::velocityReference(
   return qd_ref;
 }
 
-std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
+drake::eigen_aligned_std_vector<SupportStateElement>
 InstantaneousQPController::loadAvailableSupports(
     const drake::lcmt_qp_controller_input& qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> available_supports;
+  drake::eigen_aligned_std_vector<SupportStateElement> available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -383,11 +386,11 @@ double averageContactPointHeight(
   return average_contact_point_height;
 }
 
-Vector2d computeCoP(const RigidBodyTree& robot,
-                    const KinematicsCache<double>& cache,
-                    const std::map<Side, ForceTorqueMeasurement>&
-                        foot_force_torque_measurements,
-                    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
+Vector2d computeCoP(
+    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+        foot_force_torque_measurements,
+    Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
   std::vector<ForceTorqueMeasurement> force_torque_measurements;
   for (auto it = foot_force_torque_measurements.begin();
        it != foot_force_torque_measurements.end(); ++it) {
@@ -402,10 +405,10 @@ Vector2d computeCoP(const RigidBodyTree& robot,
 
 void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
     const QPControllerParams& params,
-    std::vector<SupportStateElement,
-                Eigen::aligned_allocator<SupportStateElement>>& active_supports,
-    int num_contact_points, const std::map<Side, ForceTorqueMeasurement>&
-                                foot_force_torque_measurements,
+    drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
+    int num_contact_points,
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
+        foot_force_torque_measurements,
     double dt, Vector3d& xcom, Vector3d& xcomdot) {
   /*
    * Derivation:
@@ -585,8 +588,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
 const QPControllerParams& InstantaneousQPController::FindParams(
     const std::string& param_set_name) {
   // look up the param set by name
-  std::map<std::string, QPControllerParams>::iterator it;
-  it = param_sets.find(param_set_name);
+  auto it = param_sets.find(param_set_name);
   if (it == param_sets.end()) {
     std::cout
         << "Got a param set I don't recognize! Using standing params instead";
@@ -607,7 +609,7 @@ int InstantaneousQPController::setupAndSolveQP(
     const drake::lcmt_qp_controller_input& qp_input,
     const DrakeRobotState& robot_state,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_detected,
-    const std::map<Side, ForceTorqueMeasurement>&
+    const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
     QPControllerOutput& qp_output, QPControllerDebugData* debug) {
   // The primary solve loop for our controller. This constructs and solves a
@@ -627,7 +629,7 @@ int InstantaneousQPController::setupAndSolveQP(
   const QPControllerParams& params = FindParams(qp_input.param_set_name);
 
   int nu = robot->B.cols();
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
 
   // zmp_data
   Map<const Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input.zmp_data.A[0][0]);
@@ -647,8 +649,7 @@ int InstantaneousQPController::setupAndSolveQP(
   std::vector<SupportStateElement,
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports =
+  drake::eigen_aligned_std_vector<SupportStateElement> active_supports =
       getActiveSupports(*robot, robot_state.q, robot_state.qd,
                         available_supports, contact_detected,
                         params.contact_threshold);
@@ -792,19 +793,18 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
+  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i =
-        Map<const drake::TwistVector<double>>(body_wrench_data.wrench);
-    f_ext.insert({robot->bodies[body_id].get(), f_ext_i});
+        Map<const drake::WrenchVector<double>>(body_wrench_data.wrench);
+    external_wrenches.insert({robot->bodies[body_id].get(), f_ext_i});
   }
 
   H = robot->massMatrix(cache);
-  C = robot->dynamicsBiasTerm(cache, f_ext);
+  C = robot->dynamicsBiasTerm(cache, external_wrenches);
 
   H_float = H.topRows(6);
   H_act = H.bottomRows(nu);
@@ -1030,17 +1030,17 @@ int InstantaneousQPController::setupAndSolveQP(
       Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
       // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
     }
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = Jb;
     bin.segment(constraint_start_index, 6) =
         -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = -Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = -Jb;
     bin.segment(constraint_start_index, 6) =
         Jbdotv - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
 
-  for (int i = 0; i < n_ineq; i++) {
+  for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
     if (std::isinf(double(bin(i)))) {
       Ain.row(i) = 0 * Ain.row(i);

@@ -11,22 +11,38 @@ namespace systems {
 /// mathematically equivalent to a Gain system with its gain equal to one.
 /// However this system incurs no computational cost.
 /// The input to this system directly feeds through to its output.
-/// A detailed usage discussion of this system for a PID controller can be found
-/// at https://github.com/RobotLocomotion/drake/pull/3132.
+/// This system is used, for instance, in PidController which is a Diagram
+/// composed of simple framework primitives. In this case a PassThrough is used
+/// to connect the exported input of the Diagram to the inputs of the Gain
+/// systems for the proportioanal and integral constants of the controller. This
+/// is necessary to provide an output port to which the internal Gain subsystems
+/// connect. In this case the PassThrough is effectively creating an output port
+/// that feeds through the input to the Diagram and that can now be connected to
+/// the inputs of the inner subsystems to the Diagram.
+/// A detailed discussion of the PidController can be found at
+/// https://github.com/RobotLocomotion/drake/pull/3132.
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
-// TODO(amcastro-tri): cross reference PidController when implemented.
+///
+/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
+/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in libdrakeSystemFramework.
+/// @ingroup systems
+
 template <typename T>
 class PassThrough : public LeafSystem<T> {
  public:
-  /// Constructs a pass thorough system (`y = u`) with input/output ports of
-  /// size @p. length.
-  /// @param length is the size of the signal to be processed.
-  explicit PassThrough(int length);
+  /// Constructs a pass thorough system (`y = u`).
+  /// @param size number of elements in the signal to be processed.
+  explicit PassThrough(int size);
 
   /// Sets the output port to equal the input port.
-  /// If the number of connected input or output ports is not one or the
-  /// input ports are not of size length_, `std::runtime_error` will be thrown.
-  void EvalOutput(const ContextBase<T>& context,
+  void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 };
 

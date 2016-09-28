@@ -758,8 +758,16 @@ struct NumTraits<drake::FunctionalForm> {
     MulCost = 1
   };
 
+  template<bool Vectorized>
+  struct Div {
+    enum {
+      Cost = 1
+    };
+  };
+
   typedef drake::FunctionalForm Real;
   typedef drake::FunctionalForm Nested;
+  typedef drake::FunctionalForm Literal;
 
   static inline Real dummy_precision() { return drake::FunctionalForm(); }
 };

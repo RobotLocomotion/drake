@@ -9,7 +9,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/autodiff.h"
-#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -48,8 +47,8 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
 double EvaluateCosts(const std::vector<double>& x,
                      std::vector<double>& grad,
                      void* f_data) {
-  const OptimizationProblem* prog =
-      reinterpret_cast<const OptimizationProblem*>(f_data);
+  const MathematicalProgram* prog =
+      reinterpret_cast<const MathematicalProgram*>(f_data);
 
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
@@ -289,7 +288,7 @@ bool NloptSolver::available() const {
   return true;
 }
 
-SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
+SolutionResult NloptSolver::Solve(MathematicalProgram &prog) const {
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.

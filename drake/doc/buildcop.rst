@@ -10,9 +10,9 @@ Overview
 --------
 
 The Drake build cop monitors `post-merge <https://drake-
-jenkins.csail.mit.edu/view/Continuous/>`_ and `nightly <https://drake-
-jenkins.csail.mit.edu/view/Nightly/>`_ continuous integration failures in the
-RobotLocomotion/drake GitHub repo.
+jenkins.csail.mit.edu/view/Continuous/>`_ and `nightly production
+<https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_ continuous
+integration failures in the RobotLocomotion/drake GitHub repo.
 
 The build cop will rotate on a weekly basis, initially through members of the
 Kitware team, but may extend to include members of the TRI team in future. The

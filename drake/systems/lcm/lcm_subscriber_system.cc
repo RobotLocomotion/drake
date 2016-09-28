@@ -3,7 +3,8 @@
 #include <iostream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/basic_state_vector.h"
+#include "drake/common/text_logging.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -16,13 +17,14 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator, ::lcm::LCM* lcm)
     : channel_(channel),
-      translator_(translator),
-      basic_vector_(translator_.get_vector_size()) {
-  DRAKE_ABORT_UNLESS(lcm);
+      translator_(translator) {
+  DRAKE_DEMAND(lcm);
   // Initializes the communication layer.
   ::lcm::Subscription* sub =
       lcm->subscribe(channel_, &LcmSubscriberSystem::HandleMessage, this);
   sub->setQueueCapacity(1);
+  DeclareOutputPort(kVectorValued, translator_.get_vector_size(),
+      kContinuousSampling);
 }
 
 LcmSubscriberSystem::LcmSubscriberSystem(
@@ -34,52 +36,56 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
 std::string LcmSubscriberSystem::get_name() const {
-  return "LcmSubscriberSystem::" + channel_;
+  return get_name(channel_);
 }
 
-std::unique_ptr<ContextBase<double>> LcmSubscriberSystem::CreateDefaultContext()
-    const {
-  // Creates a new context for this system and sets the number of input ports
-  // to be zero. It leaves the context's state uninitialized since this system
-  // does not use it.
-  std::unique_ptr<Context<double>> context(new Context<double>());
-  context->SetNumInputPorts(0);
-
-  // Returns this system's context.
-  return std::unique_ptr<ContextBase<double>>(context.release());
+std::string LcmSubscriberSystem::get_name(const std::string& channel) {
+  return "LcmSubscriberSystem(" + channel + ")";
 }
 
-std::unique_ptr<SystemOutput<double>> LcmSubscriberSystem::AllocateOutput(
-    const ContextBase<double>& context) const {
-  // Instantiates a BasicVector object and stores it in a managed pointer.
-  std::unique_ptr<BasicVector<double>> data(
-      new BasicVector<double>(translator_.get_vector_size()));
-
-  // Instantiates an OutputPort with the above BasicVector as the data type.
-  std::unique_ptr<OutputPort> port(new OutputPort(std::move(data)));
-
-  // Stores the above-defined OutputPort in this system output.
-  auto output = std::make_unique<LeafSystemOutput<double>>();
-  output->get_mutable_ports()->push_back(std::move(port));
-
-  // Returns this system's output.
-  return std::unique_ptr<SystemOutput<double>>(output.release());
-}
-
-void LcmSubscriberSystem::EvalOutput(const ContextBase<double>& context,
+void LcmSubscriberSystem::EvalOutput(const Context<double>&,
                                      SystemOutput<double>* output) const {
-  BasicVector<double>& output_vector =
-      dynamic_cast<BasicVector<double>&>(*output->GetMutableVectorData(0));
+  VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  if (!received_message_.empty()) {
+    translator_.Deserialize(
+        received_message_.data(), received_message_.size(), output_vector);
+  }
+}
 
-  std::lock_guard<std::mutex> lock(data_mutex_);
-  output_vector.set_value(basic_vector_.get_value());
+void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  received_message_ = message_bytes;
+}
+
+void LcmSubscriberSystem::SetMessage(
+    double time, const BasicVector<double>& message_vector) {
+  std::vector<uint8_t> message_bytes;
+  translator_.Serialize(time, message_vector, &message_bytes);
+  SetMessage(message_bytes);
+}
+
+std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
+    const SystemPortDescriptor<double>& descriptor) const {
+  DRAKE_DEMAND(descriptor.get_index() == 0);
+  auto result = translator_.AllocateOutputVector();
+  if (result) {
+    return result;
+  }
+  return LeafSystem<double>::AllocateOutputVector(descriptor);
 }
 
 void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
                                         const std::string& channel) {
+  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);
+
   if (channel == channel_) {
-    std::lock_guard<std::mutex> lock(data_mutex_);
-    translator_.TranslateLcmToVectorBase(rbuf, &basic_vector_);
+    const uint8_t* const rbuf_begin =
+        reinterpret_cast<const uint8_t*>(rbuf->data);
+    const uint8_t* const rbuf_end = rbuf_begin + rbuf->data_size;
+    std::lock_guard<std::mutex> lock(received_message_mutex_);
+    received_message_.clear();
+    received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
   } else {
     std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
               << "message for channel \"" << channel

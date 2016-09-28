@@ -12,7 +12,7 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/zmpUtil.h"
@@ -140,7 +140,7 @@ struct QPLocomotionPlanSettings {
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
          ++body_it) {
       RigidBody& body = **body_it;
-      if (body.hasParent()) {
+      if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {

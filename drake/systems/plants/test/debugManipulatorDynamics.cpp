@@ -14,7 +14,7 @@ int main() {
 
   default_random_engine generator;
   VectorXd q = model.getRandomConfiguration(generator);
-  VectorXd v = VectorXd::Random(model.number_of_velocities());
+  VectorXd v = VectorXd::Random(model.get_num_velocities());
   KinematicsCache<double> cache = model.doKinematics(q, v);
 
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();
@@ -26,16 +26,15 @@ int main() {
   auto M = model.massMatrix<double>(cache);
   cout << M << endl << endl;
 
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
-  drake::TwistVector<double> f_ext_r_foot;
+  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
+  drake::WrenchVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();
-  f_ext.insert({model.FindBody("r_foot"), f_ext_r_foot});
+  external_wrenches.insert({model.FindBody("r_foot"), f_ext_r_foot});
 
-  VectorXd vd(model.number_of_velocities());
+  VectorXd vd(model.get_num_velocities());
   vd.setRandom();
 
-  auto C = model.inverseDynamics(cache, f_ext, vd);
+  auto C = model.inverseDynamics(cache, external_wrenches, vd);
   cout << C << endl << endl;
   return 0;
 }

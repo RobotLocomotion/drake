@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 
-#include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/automotive/car_simulation.h"
+#include "drake/automotive/gen/driving_command.h"
 #include "drake/ros/systems/ros_tf_publisher.h"
 #include "drake/ros/systems/ros_vehicle_system.h"
 #include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
@@ -22,13 +22,13 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace ros {
-namespace cars {
+namespace automotive {
 namespace {
 
-using drake::examples::cars::CreateRigidBodySystem;
-using drake::examples::cars::CreateVehicleSystem;
-using drake::examples::cars::GetCarSimulationDefaultOptions;
-using drake::examples::cars::ParseDuration;
+using drake::automotive::CreateRigidBodySystem;
+using drake::automotive::CreateVehicleSystem;
+using drake::automotive::GetCarSimulationDefaultOptions;
+using drake::automotive::ParseDuration;
 
 using drake::ros::systems::DrakeRosTfPublisher;
 using drake::ros::systems::run_ros_vehicle_sim;
@@ -100,7 +100,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Obtains a valid zero configuration for the vehicle.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Defines the start time of the simulation.
   const double kStartTime = 0;
@@ -112,10 +112,10 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace cars
+}  // namespace automotive
 }  // namespace ros
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::cars::do_main(argc, argv);
+  return drake::ros::automotive::do_main(argc, argv);
 }
