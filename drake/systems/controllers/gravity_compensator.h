@@ -9,21 +9,21 @@
 namespace drake {
 namespace systems {
 
-/// A gravity compensator block with input as the state of a RigidBody System
-/// `[q, qdot]` and output `y = G(q)`, where, for a given RigidBodyTree, G(q)
-/// is a vector of generalised gravity forces corresponding to a given joint
-/// configuration q.
+/// A gravity compensator block with input as the partial state of a
+/// `RigidBodyPlant` `[q]` and output `y = G(q)`, where, for a given
+/// `RigidBodyTree`, `G(q)` is a vector of generalised gravity forces
+/// corresponding to a given joint configuration `q`.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
  public:
-  /// Constructs a gravity compensator (corresponding to a RigidBodyTree) with
-  /// the dimension of the input and output port equaling the dimension of the
-  /// Degrees of Freedom of the RigidBodyTree (positions of a RigidBodySystem)
-  /// @param rigid_body_tree_ptr a shared pointer to a RigidBodyTree object
-  /// which in turn is externally derived from a RigidBodySystem object to be
-  /// controlled.
+  /// Constructs a gravity compensator (corresponding to a `RigidBodyTree`)
+  /// with the dimension of the input and output port equaling the dimension
+  /// of the Degrees of Freedom of the `RigidBodyTree` (positions of a
+  /// `RigidBodyPlant`)
+  /// @param rigid_body_tree_ a constant reference to a `RigidBodyTree` object
+  /// corresponding to the `RigidBodyPlant` that is to be controlled.
   explicit GravityCompensator(const RigidBodyTree& rigid_body_tree);
 
   /// Sets the output port value to the generalised gravity forces
