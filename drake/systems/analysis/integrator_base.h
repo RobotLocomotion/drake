@@ -311,7 +311,6 @@ class IntegratorBase {
   // the next one.
   T ideal_next_step_size_{nan()};  // indicates that the value is uninitialized
 
-  // TODO(edrumwri): update to T?
   // the accuracy being used
   T accuracy_in_use_{nan()};
 
