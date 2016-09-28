@@ -12,7 +12,7 @@ void QPController::ResizeQP(
     const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
   // Figure out dimensions
   int num_contact_body = all_supports.size();
-  int num_vd = robot.number_of_velocities();
+  int num_vd = robot.get_num_velocities();
   int num_basis = 0;
   int num_point_force = 0;
   for (size_t i = 0; i < all_supports.size(); i++) {
@@ -105,7 +105,7 @@ void QPController::ResizeQP(
 
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput* output) {
-  if (!input.is_valid(rs.robot().number_of_velocities())) {
+  if (!input.is_valid(rs.robot().get_num_velocities())) {
     std::cerr << "input is invalid\n";
     return -1;
   }
@@ -391,7 +391,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
   DRAKE_ASSERT((net_wrench - Ld).isZero(EPSILON));
 
-  if (!output->is_valid(rs.robot().number_of_velocities(),
+  if (!output->is_valid(rs.robot().get_num_velocities(),
                         rs.robot().actuators.size())) {
     std::cerr << "output is invalid\n";
     return -1;

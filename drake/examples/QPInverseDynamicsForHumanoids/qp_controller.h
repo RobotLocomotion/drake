@@ -228,9 +228,9 @@ class ContactInformation {
    */
   MatrixXd ComputeJacobianAtContactPoints(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
-    MatrixXd J(3 * contact_points_.size(), robot.number_of_velocities());
+    MatrixXd J(3 * contact_points_.size(), robot.get_num_velocities());
     for (size_t i = 0; i < contact_points_.size(); i++) {
-      J.block(3 * i, 0, 3, robot.number_of_velocities()) =
+      J.block(3 * i, 0, 3, robot.get_num_velocities()) =
           GetTaskSpaceJacobian(robot, cache, body_, contact_points_[i])
               .bottomRows(3);
     }
@@ -416,13 +416,13 @@ class QPInput {
 
  public:
   explicit QPInput(const RigidBodyTree& r) {
-    coord_names_.resize(r.number_of_velocities());
-    for (int i = 0; i < r.number_of_velocities(); i++) {
+    coord_names_.resize(r.get_num_velocities());
+    for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
           r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
     }
-    desired_vd_.resize(r.number_of_velocities());
+    desired_vd_.resize(r.get_num_velocities());
   }
 
   /*
@@ -530,13 +530,13 @@ class QPOutput {
 
  public:
   explicit QPOutput(const RigidBodyTree& r) {
-    coord_names_.resize(r.number_of_velocities());
-    for (int i = 0; i < r.number_of_velocities(); i++) {
+    coord_names_.resize(r.get_num_velocities());
+    for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
           r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
     }
-    vd_.resize(r.number_of_velocities());
+    vd_.resize(r.get_num_velocities());
     joint_torque_.resize(r.actuators.size());
   }
 

@@ -98,8 +98,8 @@ class HumanoidStatus {
                            kFootToSensorPositionOffset)} {
     time_ = 0;
 
-    position_.resize(robot_.number_of_positions());
-    velocity_.resize(robot_.number_of_velocities());
+    position_.resize(robot_.get_num_positions());
+    velocity_.resize(robot_.get_num_velocities());
     joint_torque_.resize(robot_.actuators.size());
     nominal_position_ = robot_.getZeroConfiguration();
 
