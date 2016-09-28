@@ -24,6 +24,10 @@ TODO(edrumwri): consider taking out kReachedStepLimit
 /**
  * An abstract class for an integrator for ODEs and DAEs.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Fixed step integrators derived from this class should accept a maximum
+ * step size argument in the constructor to signal to remind the user to
+ * select this fixed step size.
  */
 template <class T>
 class IntegratorBase {
