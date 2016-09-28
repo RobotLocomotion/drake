@@ -222,7 +222,7 @@ void RigidBodyTree::compile(void) {
   B.resize(num_velocities_, actuators.size());
   B = MatrixXd::Zero(num_velocities_, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ++ia) {
-    for (int i = 0; i < actuators[ia].body_->getJoint().getNumVelocities();
+    for (int i = 0; i < actuators[ia].body_->getJoint().get_num_velocities();
         ++i) {
       B(actuators[ia].body_->get_velocity_start_index() + i, ia) =
           actuators[ia].reduction_;
@@ -2063,7 +2063,7 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     if (bodies[i]->has_parent_body()) {
       // Obtains the name of the rigid body's parent joint and then converts it
       // to be lower case.
-      std::string current_joint_name = bodies[i]->getJoint().getName();
+      std::string current_joint_name = bodies[i]->getJoint().get_name();
       std::transform(current_joint_name.begin(), current_joint_name.end(),
                      current_joint_name.begin(), ::tolower);
       if (current_joint_name == joint_name_lower) {

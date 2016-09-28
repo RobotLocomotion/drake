@@ -60,13 +60,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                                                           // the coordinates of
                                                           // the matlab_model
                                                           // to the cpp_model.
-  for (int i = 0; i < cpp_model->bodies.size(); i++) {
+  for (int i = 0; i < cpp_model->bodies.size(); ++i) {
     if (cpp_model->bodies[i]->has_parent_body() &&
         cpp_model->bodies[i]->getJoint().get_num_positions() > 0) {
       RigidBody* b = matlab_model->FindChildBodyOfJoint(
           cpp_model->bodies[i]->getJoint().get_name());
       if (b == nullptr) continue;
-      for (int j = 0; j < b->getJoint().get_num_positions(); j++) {
+      for (int j = 0; j < b->getJoint().get_num_positions(); ++j) {
         P(cpp_model->bodies[i]->get_position_start_index() + j,
           b->get_position_start_index() + j) = 1.0;
       }
