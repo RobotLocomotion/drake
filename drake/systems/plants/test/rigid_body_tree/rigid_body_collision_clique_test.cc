@@ -22,76 +22,86 @@ using Eigen::Vector3d;
 
 class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
+  void SetUp() override {
     tree.reset(new RigidBodyTree());
 
-    // Defines four rigid bodies.
-    r1b1 = new RigidBody();
-    r1b1->set_model_name("robot1");
-    r1b1->set_name("body1");
-    c1a = new Element();
-    r1b1->AddCollisionElement("default", c1a);
-    c1b = new Element();
-    r1b1->AddCollisionElement("default", c1b);
-    // assign inertia to avoid the welding code in RigidBodyTree::compile
     drake::SquareTwistMatrix<double> I =
         drake::SquareTwistMatrix<double>::Zero();
     I.block(3, 3, 3, 3) << Matrix3d::Identity();
-    r1b1->set_spatial_inertia(I);
 
-    r2b1 = new RigidBody();
-    r2b1->set_model_name("robot2");
-    r2b1->set_name("body1");
-    c2 = new Element();
-    r2b1->AddCollisionElement("default", c2);
-    r2b1->set_spatial_inertia(I);
+    // This body requires a self-collision clique
+    auto rb_ptr = std::make_unique<RigidBody>();
+    rb_ptr->set_model_name("robot1");
+    rb_ptr->set_name("body1");
+    rb_ptr->set_spatial_inertia(I);
+    c1a_ = std::make_unique<Element>();
+    c1b_ = std::make_unique<Element>();
+    rb_ptr->AddCollisionElement("default", c1a_.get());
+    rb_ptr->AddCollisionElement("default", c1b_.get());
+    tree->add_rigid_body(std::move(rb_ptr));
 
-    r3b1 = new RigidBody();
-    r3b1->set_model_name("robot3");
-    r3b1->set_name("body1");
-    r3b1->set_spatial_inertia(I);
+    // These next bodies will *not* require self-collision clique
+    rb_ptr = std::make_unique<RigidBody>();
+    rb_ptr->set_model_name("robot2");
+    rb_ptr->set_name("body2");
+    rb_ptr->set_spatial_inertia(I);
+    c2_ = std::make_unique<Element>();
+    rb_ptr->AddCollisionElement("default", c2_.get());
+    r1b2_ = rb_ptr.get();
+    tree->add_rigid_body(std::move(rb_ptr));
 
-    tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
-    tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
-    tree->add_rigid_body(std::unique_ptr<RigidBody>(r3b1));
-
-    // add joints
-
-
-    tree->compile();
+    rb_ptr = std::make_unique<RigidBody>();
+    rb_ptr->set_model_name("robot3");
+    rb_ptr->set_name("body3");
+    rb_ptr->set_spatial_inertia(I);
+    r1b3_ = rb_ptr.get();
+    tree->add_rigid_body(std::move(rb_ptr));
   }
 
- public:
+ protected:
   std::unique_ptr<RigidBodyTree> tree;
 
-  RigidBody* r1b1{};
-  RigidBody* r2b1{};
-  RigidBody* r3b1{};
+  // Bodies are owned by the tree. These raw pointers allow post-hoc
+  // manipulation.
+  RigidBody* r1b2_{};
+  RigidBody* r1b3_{};
 
-  Element * c1a{};
-  Element * c1b{};
-  Element * c2{};
+  // The collision elements are owned by the test class, the bodes receive
+  // raw pointers which they do *not* own.
+  std::unique_ptr<Element> c1a_{};
+  std::unique_ptr<Element> c1b_{};
+  std::unique_ptr<Element> c2_{};
 };
 
 // Confirms that only rigid bodies with multiple collision elements get self-
 // collision cliques.
 TEST_F(RigidBodyTreeCollisionCliqueTest, SelfCollisionClique) {
-  EXPECT_EQ(c1a->get_num_cliques(), 1);
-  EXPECT_EQ(c1b->get_num_cliques(), 1);
-  EXPECT_EQ(c2->get_num_cliques(), 0);
+  tree->compile();
+  EXPECT_EQ(c1a_->get_num_cliques(), 1);
+  EXPECT_EQ(c1b_->get_num_cliques(), 1);
+  EXPECT_EQ(c2_->get_num_cliques(), 0);
 }
 
-// Confirms that joints that cannot collide (i.e., RigidBody::CanCollideWith
-// returns false) form a clique.
+// Confirms that rigid bodies that cannot collide (i.e.,
+// RigidBody::CanCollideWith returns false) form a clique.
 TEST_F(RigidBodyTreeCollisionCliqueTest, CantCollideClique) {
+  // Adding a parent relationship and a non-floating joint between bodies
+  // two and three will cause a clique to be assigned to collision element 2.
   Eigen::Isometry3d transform_to_world;
-  std::unique_ptr<DrakeJoint> joint( new FixedJoint("testJoint",
-                                                    transform_to_world));
-  r2b1->set_parent(r3b1);
-  r2b1->setJoint(move(joint));
-  EXPECT_EQ(c1a->get_num_cliques(), 1);
-  EXPECT_EQ(c1b->get_num_cliques(), 1);
-  EXPECT_EQ(c2->get_num_cliques(), 0);
+  std::unique_ptr<DrakeJoint> joint(
+      new FixedJoint("testJoint", transform_to_world));
+  r1b2_->set_parent(r1b3_);
+  r1b2_->setJoint(move(joint));
+
+  tree->compile();
+
+  // Confirm that collision elements on body 1 are *still* only self-collision
+  // cliques, determined by a single clique.
+  EXPECT_EQ(c1a_->get_num_cliques(), 1);
+  EXPECT_EQ(c1b_->get_num_cliques(), 1);
+  // Confirm that collision element two has picked up a clique do to its body's
+  // relationship with body three.
+  EXPECT_EQ(c2_->get_num_cliques(), 1);
 }
 }  // namespace
 }  // namespace plants
