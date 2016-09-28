@@ -42,7 +42,7 @@
 	url = https://github.com/rdeits/mosek-pod.git
 [submodule "externals/iris"]
 	path = externals/iris
-	url = https://github.com/rdeits/iris-distro.git
+	url = https://github.com/jamiesnape/iris-distro.git
 [submodule "externals/yalmip"]
 	path = externals/yalmip
 	url = https://github.com/RobotLocomotion/yalmip.git
