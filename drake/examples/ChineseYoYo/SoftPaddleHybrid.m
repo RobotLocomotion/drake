@@ -168,6 +168,18 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
     
+    function xDes = calcStateInContact(obj,x_load,z_load,paddle_angle)
+      % give a feasible initial state, otherwise the constraint solver will
+      % barf
+      xDes = Point(getStateFrame(obj));
+      xDes.m = 0; % in contact
+      xDes.paddle_angle = paddle_angle;
+      xDes.load_x = x_load; 
+      xDes.load_z = z_load;
+      xDes = double(xDes);
+      xDes(2:end) = resolveConstraints(obj.in_contact,xDes(2:end));
+    end
+    
     function v = constructVisualizer(obj)
       v1 = constructVisualizer(obj.no_contact);
       v2 = constructVisualizer(obj.in_contact);
@@ -208,6 +220,58 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       [ytraj,xtraj] = simulate(freefall,[0 1],x0(2:end));
       v.playback(ytraj,struct('slider',true));
     end
+    function runPassiveWithoutSimulation()
+      %r = SoftPaddleHybrid();
+      %v = r.constructVisualizer();
+      
+      %x0 = getInitialState(r);
+      %v.drawWrapper(0,x0);
+      %skipping simulation step
+      load('sphtraj.mat'); %loading in old simulation
+      v.playback(ytraj,struct('slider',true));
+      tt=getBreaks(xtraj);
+      cl=tt;
+      nq=getNumPositions(r.no_contact);
+      dcl=zeros(length(tt),1,nq);
+      ddcl=zeros(length(tt),1,nq*nq);
+      for i=1:length(tt)
+        x = xtraj.eval(tt(i));
+        %           if i >= length(tt)/20 keyboard; end
+        if (x(1)==1) %flight mode
+          [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.no_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+        else
+          [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+        end
+      end
+      
+      figure(3); clf;
+      subplot(2,1,1); plot(tt,dcl(:,1,4), 'LineWidth', 2);
+      xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+      ylabel('$\dot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+      subplot(2,1,2); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
+      xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+      ylabel('$\ddot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+      
+    end
+    
+    function gradTestCableLength()
+      r = SoftPaddleHybrid();
+      numtest = 1; %change this to test for various points
+      cl=zeros(1,numtest); %init a cable length output
+      nq=getNumPositions(r.no_contact);
+      dcl=zeros(numtest,1,nq);
+      ddcl=zeros(numtest,1,nq*nq);
+      x_load = -2 + (2-(-2)) .*rand(numtest,1); % x position of load within -2 to 2 range (uniform dist)
+      z_load = 2.5 + (3.9 - 2.5) .*rand(numtest,1); % z position of load within 2.5 to 3.9 range (uniform dist)
+      paddle_angle = -pi/4 + (pi/4-(-pi/4)) .*rand(numtest,1); % angle of paddle in range -pi/4 to pi/4 range (uniform dist)
+      %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
+      for i = 1:numtest
+       xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
+       %[cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
+       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+
+      end
+    end
     
     function runPassive()
       r = SoftPaddleHybrid();
@@ -217,6 +281,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       v.drawWrapper(0,x0);
       [ytraj,xtraj] = simulate(r,[0 1],x0);
       v.playback(ytraj,struct('slider',true));
+      save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
       if (1) 
         % energy / cable length plotting 
@@ -225,26 +290,38 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         % the pulley effectively hits a hard-stop.  this is due to the fact
         % that phidot>0 during the in_contact phase.  it's hard to tell if
         % this is numerical artifact or a bad gradient in CableLength.
-        tt=getBreaks(xtraj);E=tt;cable_length=tt;
+        tt=getBreaks(xtraj);
+        E=tt;
+        cl=tt;
         nq=getNumPositions(r.no_contact);
+        dcl=zeros(length(tt),1,nq);
+        ddcl=zeros(length(tt),1,nq*nq);
         for i=1:length(tt)
           x = xtraj.eval(tt(i));
 %           if i >= length(tt)/20 keyboard; end
           [T,U] = energy(r,x);
           E(i)= T+U;
-          if (x(1)==1)
-            cable_length(i)=r.no_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+          if (x(1)==1) %flight mode
+            [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.no_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
           else
-            cable_length(i)=r.in_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+            [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
           end
         end
         figure(1); clf;
         subplot(2,1,1); plot(tt,E, 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
         ylabel('$\mathcal{H}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
-        subplot(2,1,2); plot(tt,cable_length, 'LineWidth', 2);
+        subplot(2,1,2); plot(tt,cl, 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
         ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        
+        figure(3); clf;
+        subplot(2,1,1); plot(tt,dcl(:,1,4), 'LineWidth', 2);
+        xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        ylabel('$\dot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        subplot(2,1,2); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
+        xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        ylabel('$\ddot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         
         t = linspace(xtraj.tspan(1), xtraj.tspan(end), 1001);
         x = eval(xtraj, t);
