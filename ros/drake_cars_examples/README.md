@@ -8,7 +8,7 @@ workspace](http://drake.mit.edu/from_source_ros.html).
 Demo 1: Single Car in MIT Stata Garage
 ======================================
 
-To run this demo, open two termainals. In the first terminal, execute the
+To run this demo, open two terminals. In the first terminal, execute the
 following command to launch Drake and RViz. The simulation runs in
 Drake while RViz serves as the visualizer.
 
@@ -26,8 +26,17 @@ $ rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7 /drake/ackerman
 You can now type arrow keys in your second terminal to issue driving commands to
 the simulated vehicle.
 
+Unit Tests
+----------
+
+To run a unit tests for Demo 1:
+
+```
+$ rostest drake_cars_examples single_car_in_stata_garage_test.test
+```
+
 Tuning Tips
------------
+===========
 
 There are several parameters that impact the stability of the vehicle and
 simulation. These parameters are loaded onto the ROS parameter server and can
