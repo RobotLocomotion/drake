@@ -277,7 +277,7 @@ class DRAKERBM_EXPORT RigidBody {
    * Returns `true` if this body should be checked for collisions
    * with the @p other body.  CanCollideWith should be commutative: A can
    * collide with B implies B can collide with A.
-   * @param[in] other   The body to query against.
+   * @param[in] other The body to query against.
    * @returns `true` if collision between this and other should be tested.
    */
   bool CanCollideWith(const RigidBody& other) const;
