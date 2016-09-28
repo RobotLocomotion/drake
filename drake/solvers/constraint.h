@@ -64,22 +64,30 @@ class Constraint {
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
 
-  template <typename Derived> void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
+  template <typename Derived> void UpdateLowerBound(
+      const Eigen::MatrixBase<Derived>& new_lb) {
     set_bounds(new_lb, upper_bound_);
   }
 
-  template <typename Derived> void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
+  template <typename Derived> void UpdateUpperBound(
+      const Eigen::MatrixBase<Derived>& new_ub) {
     set_bounds(lower_bound_, new_ub);
   }
 
-  inline void set_description(const std::string& description) { description_ = description; }
+  inline void set_description(const std::string& description) {
+    description_ = description;
+  }
   inline const std::string& get_description() const { return description_; }
 
  protected:
-  template <typename DerivedL, typename DerivedU> void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
-                  const Eigen::MatrixBase<DerivedU>& upper_bound) {
-    if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 || upper_bound.cols() != 1)
+  template <typename DerivedL, typename DerivedU> void set_bounds(
+      const Eigen::MatrixBase<DerivedL>& lower_bound,
+      const Eigen::MatrixBase<DerivedU>& upper_bound) {
+    if (lower_bound.rows() != upper_bound.rows() ||
+        lower_bound.cols() != 1 ||
+        upper_bound.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions.");
+    }
 
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
@@ -290,15 +298,18 @@ class LinearConstraint : public Constraint {
   }
 
   /* UpdateConstraint
-   * @brief Updates the linear term, upper and lower bounds in the lienar constraint.
-   * Note that the size of constraints (number of rows) can change, but the number of varibles (number of cols) cannot.
+   * @brief Updates the linear term, upper and lower bounds in the lienar
+   * constraint.
+   * Note that the size of constraints (number of rows) can change, but the
+   * number of varibles (number of cols) cannot.
    * @param new_A new linear term
    * @param new_lb new lower bound
    * @param new_up new upper bound
    */
-  template <typename DerivedA, typename DerivedL, typename DerivedU> void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
-      const Eigen::MatrixBase<DerivedL>& new_lb,
-      const Eigen::MatrixBase<DerivedU>& new_ub) {
+  template <typename DerivedA, typename DerivedL, typename DerivedU>
+    void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
     if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
         new_lb.cols() != 1 || new_ub.cols() != 1)
       throw std::runtime_error("New constraints have invalid dimensions");
