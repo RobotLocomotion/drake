@@ -108,7 +108,7 @@ int contactConstraintsBV(
     std::vector<double> support_mus,
     drake::eigen_aligned_std_vector<SupportStateElement>& supp, MatrixXd& B,
     MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv, MatrixXd& normals) {
-  int j, k = 0, nq = r.number_of_positions();
+  int j, k = 0, nq = r.get_num_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
   JB.resize(nq, nc * 2 * m_surface_tangents);

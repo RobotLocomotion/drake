@@ -22,7 +22,7 @@ Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
                                Vector3d const& rpy) {
   VectorXd x0 = VectorXd::Zero(sys->getNumStates());
   auto const& tree = sys->getRigidBodyTree();
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
   x0.segment(3, 4) = drake::math::rpy2quat(rpy);
   auto const& system_output = sys->output(0, x0, Vector4d::Zero());
   return system_output.tail<3>();

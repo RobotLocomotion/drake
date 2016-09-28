@@ -51,7 +51,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   // Instantiates a generalized state vector containing all zeros. This is
   // selected to make the resulting quaternion values be easily specified.
-  int num_states = tree->number_of_positions() + tree->number_of_velocities();
+  int num_states = tree->get_num_positions() + tree->get_num_velocities();
   BasicVector<double> generalized_state(num_states);
   generalized_state.set_value(Eigen::VectorXd::Zero(num_states));
 
@@ -67,7 +67,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   double time = 0;
   std::vector<uint8_t> message_bytes;
   viewer_draw_translator.Serialize(time, generalized_state, &message_bytes);
-  EXPECT_GT(message_bytes.size(), 0);
+  EXPECT_GT(message_bytes.size(), 0u);
 
   // Verifies that the serialized message is correct. This entails:
   //     (1) manually creating a the correct `drake::lcmt_viewer_draw`
@@ -92,7 +92,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   lcmt_viewer_draw expected_message;
   expected_message.timestamp = static_cast<int64_t>(time * 1000);
-  expected_message.num_links = tree->get_number_of_bodies();
+  expected_message.num_links = tree->get_num_bodies();
   expected_message.link_name.push_back("world");
   expected_message.link_name.push_back("body0");
   expected_message.link_name.push_back("body1");
@@ -107,7 +107,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   expected_message.quaternion.push_back(zero_quaternion);
 
   const int byte_count = expected_message.getEncodedSize();
-  EXPECT_EQ(byte_count, message_bytes.size());
+  EXPECT_EQ(byte_count, static_cast<int>(message_bytes.size()));
 
   std::vector<uint8_t> expected_bytes(byte_count);
   expected_message.encode(expected_bytes.data(), 0, byte_count);

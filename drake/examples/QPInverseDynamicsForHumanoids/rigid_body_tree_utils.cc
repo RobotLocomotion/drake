@@ -33,7 +33,7 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
   MatrixXd Jg =
       r.geometricJacobian(cache, 0, body.get_body_index(), 0, true,
           &v_or_q_indices);
-  MatrixXd J(6, r.number_of_velocities());
+  MatrixXd J(6, r.get_num_velocities());
   J.setZero();
 
   Vector3d points = r.transformPoints(cache, local_offset,

@@ -21,7 +21,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   IKoptions* ikoptions = (IKoptions*)getDrakeMexPointer(prhs[0]);
   // NOLINTNEXTLINE(runtime/int)
   auto robot_address = reinterpret_cast<long long>(ikoptions->getRobotPtr());
-  int nq = ikoptions->getRobotPtr()->number_of_positions();
+  int nq = ikoptions->getRobotPtr()->get_num_positions();
   MatrixXd Q;
   ikoptions->getQ(Q);
   MatrixXd Qv;

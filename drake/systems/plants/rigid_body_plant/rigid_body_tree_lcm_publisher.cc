@@ -14,7 +14,7 @@ RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
     draw_message_translator_(tree) {
   set_name("rigid_body_tree_visualizer_lcm");
   const int vector_size =
-      tree.number_of_positions() + tree.number_of_velocities();
+      tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
 }
 
@@ -42,7 +42,8 @@ void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
-  const VectorBase<double>* input_vector = context.get_vector_input(kPortIndex);
+  const BasicVector<double>* input_vector = EvalVectorInput(context,
+                                                            kPortIndex);
 
   // Translates the input vector into an array of bytes representing an LCM
   // message.

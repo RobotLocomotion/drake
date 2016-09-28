@@ -32,11 +32,11 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class GainTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    gain_ = make_unique<Gain<double>>(kGain_ /* gain */, 3 /* length */);
+    gain_ = make_unique<Gain<double>>(kGain_ /* gain */, 3 /* size */);
     context_ = gain_->CreateDefaultContext();
     output_ = gain_->AllocateOutput(*context_);
-    input0_ = make_unique<BasicVector<double>>(3 /* length */);
-    input1_ = make_unique<BasicVector<double>>(3 /* length */);
+    input0_ = make_unique<BasicVector<double>>(3 /* size */);
+    input1_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   const double kGain_{2.0};
@@ -72,7 +72,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
 
 // Tests that Gain allocates no state variables in the context_.
 TEST_F(GainTest, GainIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

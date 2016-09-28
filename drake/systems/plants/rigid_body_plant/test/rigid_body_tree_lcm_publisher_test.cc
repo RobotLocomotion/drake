@@ -1,4 +1,3 @@
-// NOLINT(whitespace/line_length)
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 #include <memory>
@@ -273,8 +272,8 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
   }
 
   // Ensures both messages have the same length.
-  EXPECT_EQ(expected_message.getEncodedSize(), message_bytes.size());
   int byte_count = expected_message.getEncodedSize();
+  EXPECT_EQ(byte_count, static_cast<int>(message_bytes.size()));
 
   // Serializes the expected message.
   std::vector<uint8_t> expected_message_bytes(byte_count);
@@ -477,7 +476,7 @@ GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   EXPECT_EQ(1, context->get_num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
-  int vector_size = tree->number_of_positions() + tree->number_of_velocities();
+  int vector_size = tree->get_num_positions() + tree->get_num_velocities();
   auto input_data = make_unique<BasicVector<double>>(vector_size);
   input_data->set_value(Eigen::VectorXd::Zero(vector_size));
 

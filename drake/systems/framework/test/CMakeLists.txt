@@ -17,10 +17,10 @@ target_link_libraries(state_supervector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME state_supervector_test COMMAND state_supervector_test)
 
-add_executable(state_test state_test.cc)
-target_link_libraries(state_test drakeSystemFramework
+add_executable(continuous_state_test continuous_state_test.cc)
+target_link_libraries(continuous_state_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME state_test COMMAND state_test)
+drake_add_test(NAME continuous_state_test COMMAND continuous_state_test)
 
 add_executable(system_test system_test.cc)
 target_link_libraries(system_test drakeSystemFramework
