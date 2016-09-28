@@ -91,8 +91,7 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
    * to be unique.
    *
    * @param[in] transform_to_parent_body Defines the configuration of the
-   * joint's fixed frame relative to the frame that belongs to the joint's
-   * parent body.
+   * joint's fixed frame relative to the joint's parent body's frame.
    *
    * @param[in] num_positions The number of position states of the joint.
    *
