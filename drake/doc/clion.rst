@@ -82,10 +82,14 @@ Code formatter settings
 3. Add an entry for clang-format with
 
    * Program: ``clang-format``
-   * Parameters: ``-i $FilePath$``
-   * Working directory : ``$ProjectFileDir$/..``
+   * Parameters (whole file): ``-i $FileName$``
+   * Parameters (current selection only): 
+     ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
+   * Working directory : ``$FileDir$``
 
-Now you can run this (manually) on any file using Tools > External Tools in the drop down menu.
+Choose one or the other of the parameter settings. Now you can run this
+(manually) on any file using Tools > External Tools in the drop down menu. You
+can also add a keyboard shortcut.
 
 You can also set the coding style through the following steps
 
