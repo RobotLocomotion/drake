@@ -75,14 +75,12 @@ class Simulator {
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
-  /** Prepares the %Simulator for a simulation. This requires determining the
-  integrator type, processing the options requested by the caller, and choosing
-  an initial step size to attempt. If the initial Context does not satisfy the
-  System's constraints, an attempt is made to modify the values of the
-  continuous state variables to satisfy the constraints. This method will throw
-  `std::logic_error` if the combination of options doesn't make sense, and
-  `std::runtime_error` if it is unable to find a constraint-satisfying
-  initial condition. **/
+  /** Prepares the %Simulator for a simulation. If the initial Context does not
+   * satisfy the System's constraints, an attempt is made to modify the values
+   * of the continuous state variables to satisfy the constraints. This method
+   * will throw `std::logic_error` if the combination of options doesn't make
+   * sense, and `std::runtime_error` if it is unable to find a
+   * constraint-satisfying initial condition. **/
   void Initialize();
 
   /** Advance the System's trajectory until `final_time` is reached or some
@@ -210,7 +208,6 @@ class Simulator {
   IntegratorBase<T>* get_mutable_integrator() {
     return integrator_.get(); }
 
-  // TODO(edrumwri): Undo initialization upon integrator reset?
   /**
    *   Resets the integrator.
    *   @param integrator a non-NULL pointer to an integrator; an exception
@@ -233,18 +230,6 @@ class Simulator {
                                                const T& ideal_step_size,
                                                const T& next_update_time,
                                                const T& final_time);
-
-  // Put "in use" settings back to their default values and reset runtime
-  // variables. These will be modified afterwards in accordance with caller's
-  // requests.
-  void ResetSimulatorSettingsInUse() {
-    initialization_done_ = false;
-
-    // TODO(edrumwri): Create a new integrator when a variable step integrator
-    // is available.
-
-    // TODO(edrumwri): Reset integrator settings.
-  }
 
   // A pointer to the integrator
   std::unique_ptr<IntegratorBase<T>> integrator_;
@@ -310,7 +295,6 @@ void Simulator<T>::Initialize() {
 
   // Restore default values.
   ResetStatistics();
-  ResetSimulatorSettingsInUse();
 
   // Initialize runtime variables.
   initialization_done_ = true;
