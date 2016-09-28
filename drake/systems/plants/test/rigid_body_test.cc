@@ -4,7 +4,7 @@
 
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
-#include <drake/systems/plants/joints/QuaternionFloatingJoint.h>
+#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 
 namespace drake {
 namespace systems {

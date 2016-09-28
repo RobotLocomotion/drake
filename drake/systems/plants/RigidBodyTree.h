@@ -142,7 +142,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // This method is not thread safe!
   int add_model_instance();
 
-  // This method is not thread safe
+  // This method is not thread safe.
   int get_next_clique_id() { return next_available_clique_++; }
 
   /**

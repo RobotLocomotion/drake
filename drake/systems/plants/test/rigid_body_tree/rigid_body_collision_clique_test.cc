@@ -2,18 +2,14 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_types.h"
-#include <drake/systems/plants/parser_model_instance_id_table.h>
-#include <drake/systems/plants/parser_common.h>
-#include <drake/systems/plants/collision/Element.h>
 #include <drake/systems/plants/joints/FixedJoint.h>
-#include "drake/systems/plants/RigidBodyTree.h"
-
+#include <drake/systems/plants/parser_common.h>
+#include <drake/systems/plants/parser_model_instance_id_table.h>
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace systems {
 namespace plants {
-namespace test {
 namespace {
 
 using drake::parsers::ModelInstanceIdTable;
@@ -98,7 +94,6 @@ TEST_F(RigidBodyTreeCollisionCliqueTest, CantCollideClique) {
   EXPECT_EQ(c2->get_num_cliques(), 0);
 }
 }  // namespace
-}  // namespace test
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake
