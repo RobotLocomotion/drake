@@ -69,8 +69,7 @@ set(private_headers)
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeSystemFramework
-    drakeCommon)
+target_link_libraries(drakeSystemFramework drakeCommon)
 
 drake_install_headers(${installed_headers})
 

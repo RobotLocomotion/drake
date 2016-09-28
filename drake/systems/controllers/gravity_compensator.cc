@@ -9,8 +9,7 @@ namespace systems {
 template <typename T>
 GravityCompensator<T>::GravityCompensator(const RigidBodyTree& rigid_body_tree)
     : rigid_body_tree_(rigid_body_tree) {
-
-  this->DeclareInputPort(kVectorValued, rigid_body_tree_.number_of_positions(),
+  this->DeclareInputPort(kVectorValued, rigid_body_tree.get_num_positions(),
                          kContinuousSampling);
   this->DeclareOutputPort(kVectorValued, rigid_body_tree_.actuators.size(),
                           kContinuousSampling);
@@ -24,21 +23,21 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
 
   Eigen::VectorXd x = System<T>::CopyContinuousStateVector(context);
 
-  int number_of_velocities = rigid_body_tree_.number_of_velocities();
+  int number_of_velocities = rigid_body_tree_.get_num_velocities();
 
   Eigen::VectorXd vd = Eigen::VectorXd::Zero(number_of_velocities);
 
-  KinematicsCache<double> cache = rigid_body_tree_.doKinematics(x);
-  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
+  KinematicsCache<T> cache = rigid_body_tree_.doKinematics(x);
+  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<T>>
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd G = rigid_body_tree_.inverseDynamics(cache, f_ext, vd, false);
+  Eigen::VectorXd G = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext, false);
   System<T>::GetMutableOutputVector(output, 0) = G;
 }
 
 template class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator<double>;
-// TODO(naveenoid) : get the AutoDiff working as in the line below.
+// TODO(naveenoid): Get the AutoDiff working as in the line below.
 // template class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator<AutoDiffXd>;
 
 }  // namespace systems
