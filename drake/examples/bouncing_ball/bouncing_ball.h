@@ -45,12 +45,12 @@ class BouncingBall : public Ball<T> {
   /// TODO(jadecastro): This is a prototype implementation to be overridden from
   /// the system API, pending further discussions.
   ///
-  /// Performs a reset mapping that occurs once a discrete mode if and only if a
-  /// mode transition (discrete jump) has been made. It does so by mutating the
-  /// context so that, by default, the reset mapping is the identity mapping.
+  /// Performs a reset mapping that occurs if and only if a mode transition
+  /// (discrete jump) has been made. It does so by mutating the context so that,
+  /// by default, the reset mapping is the identity mapping.
   void PerformReset(systems::Context<T>* context) const;
 
-  /// Getter for the model coefficient.
+  /// Getter for the coefficient of restitution for this model.
   double GetRestitutionCoef() const { return restitution_coef_; }
 
  private:
