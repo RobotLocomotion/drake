@@ -266,7 +266,7 @@ void RigidBodyTree::CreateCollisionCliques() {
   int clique_id = get_next_clique_id();
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
-    if ( body->SetSelfCollisionClique(clique_id)) {
+    if (body->SetSelfCollisionClique(clique_id)) {
       clique_id = get_next_clique_id();
     }
   }

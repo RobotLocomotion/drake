@@ -57,8 +57,7 @@ GTEST_TEST(RigidBodyTest, TestAdjacency) {
   rigid_body_ptrC->set_parent(rigid_body_ptrD.get());
   std::unique_ptr<DrakeJoint> floating_joint(new QuaternionFloatingJoint(
       "",
-      transform_to_world
-  ));
+      transform_to_world));
   rigid_body_ptrC->setJoint(move(floating_joint));
   EXPECT_FALSE(rigid_body_ptrC->adjacentTo(*rigid_body_ptrD));
   EXPECT_FALSE(rigid_body_ptrD->adjacentTo(*rigid_body_ptrC));
