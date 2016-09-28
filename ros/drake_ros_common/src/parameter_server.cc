@@ -9,7 +9,7 @@ bool WaitForParameter(const std::string& parameter_name, double max_wait_time) {
     ::ros::WallDuration elapsed_time = ::ros::WallTime::now() - begin_time;
     if (elapsed_time.toSec() >= max_wait_time)
       break;
-    ::ros::WallDuration(0.1).sleep(); // Sleeps for 0.1 seconds.
+    ::ros::WallDuration(0.1).sleep();  // Sleeps for 0.1 seconds.
   }
   return ::ros::param::has(parameter_name);
 }
