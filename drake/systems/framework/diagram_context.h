@@ -11,14 +11,14 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/state_supervector.h"
+#include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
 
-/// DiagramContinuousState is a ContinuousState consisting of StateSupervectors
+/// DiagramContinuousState is a ContinuousState consisting of Supervectors
 /// over a set of constituent ContinuousStates.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
@@ -56,7 +56,7 @@ class DiagramContinuousState : public ContinuousState<T> {
   }
 
  private:
-  // Returns a StateSupervector over the x, q, v, or z components of each
+  // Returns a Supervector over the x, q, v, or z components of each
   // substate in @p substates, as indicated by @p selector.
   static std::unique_ptr<VectorBase<T>> Span(
       const std::vector<ContinuousState<T>*>& substates,
@@ -67,7 +67,7 @@ class DiagramContinuousState : public ContinuousState<T> {
         sub_xs.push_back(selector(*substate));
       }
     }
-    return std::make_unique<StateSupervector<T>>(sub_xs);
+    return std::make_unique<Supervector<T>>(sub_xs);
   }
 
   // Returns the entire state vector in @p xc.

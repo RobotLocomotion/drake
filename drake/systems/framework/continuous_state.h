@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/state_subvector.h"
+#include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -23,10 +23,10 @@ class ContinuousState {
   /// structure: All of the state is misc_continuous_state_.
   explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
     state_ = std::move(state);
-    generalized_position_.reset(new StateSubvector<T>(state_.get()));
-    generalized_velocity_.reset(new StateSubvector<T>(state_.get()));
+    generalized_position_.reset(new Subvector<T>(state_.get()));
+    generalized_velocity_.reset(new Subvector<T>(state_.get()));
     misc_continuous_state_.reset(
-        new StateSubvector<T>(state_.get(), 0, state_->size()));
+        new Subvector<T>(state_.get(), 0, state_->size()));
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
@@ -60,11 +60,10 @@ class ContinuousState {
                              " must not exceed number of position variables " +
                              std::to_string(num_q));
     }
-    generalized_position_.reset(new StateSubvector<T>(state_.get(), 0, num_q));
-    generalized_velocity_.reset(
-        new StateSubvector<T>(state_.get(), num_q, num_v));
+    generalized_position_.reset(new Subvector<T>(state_.get(), 0, num_q));
+    generalized_velocity_.reset(new Subvector<T>(state_.get(), num_q, num_v));
     misc_continuous_state_.reset(
-        new StateSubvector<T>(state_.get(), num_q + num_v, num_z));
+        new Subvector<T>(state_.get(), num_q + num_v, num_z));
   }
 
   /// Constructs a continuous state that exposes second-order structure, with
@@ -137,9 +136,7 @@ class ContinuousState {
   }
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
-  VectorX<T> CopyToVector() const {
-    return this->get_state().CopyToVector();
-  }
+  VectorX<T> CopyToVector() const { return this->get_state().CopyToVector(); }
 
   // ContinuousState is not copyable or moveable.
   ContinuousState(const ContinuousState& other) = delete;
@@ -170,4 +167,3 @@ class ContinuousState {
 
 }  // namespace systems
 }  // namespace drake
-
