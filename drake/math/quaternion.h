@@ -149,7 +149,7 @@ Vector4<typename Derived::Scalar> quat2axis(
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   using Scalar = typename Derived::Scalar;
   Scalar sa2 = q.template tail<3>().norm();  // sin(angle/2)*axis
-  Scalar epsilon_scalar = std::numeric_limits<Scalar>::epsilon();
+  Scalar epsilon_scalar = Eigen::NumTraits<Scalar>::epsilon();
 
   Vector4<Scalar> a;
   if (sa2 < epsilon_scalar * epsilon_scalar) {
