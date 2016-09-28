@@ -111,6 +111,7 @@ class IntegratorBase {
    **/
   virtual void set_target_accuracy(double accuracy) {
     target_accuracy_ = accuracy;
+    accuracy_in_use_ = accuracy;
   }
 
   /**
@@ -121,12 +122,41 @@ class IntegratorBase {
   /**
    * Gets the accuracy in use by the integrator
    */
+  virtual double get_accuracy_in_use() const { return accuracy_in_use_; }
 
+  /**
+   * Sets the maximum step size for this integrator
+   */
+  virtual void set_maximum_step_size(const T& max_step_size) {
+    DRAKE_ASSERT(max_step_size >= (double) 0.0);
+    max_step_size_ = max_step_size;
+  }
+
+  /**
+   * Gets the maximum step size for this integrator
+   */
+  virtual const T& get_maximum_step_size() const { return max_step_size_; }
+
+  /**
+   * Sets the minimum step size for this integrator
+   */
+  virtual void set_minimum_step_size(const T& min_step_size) {
+    DRAKE_ASSERT(min_step_size >= (double) 0.0);
+    min_step_size_ = min_step_size;
+  }
+
+  /**
+   * Gets the minimum step size for this integrator
+   */
+  virtual const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
    *   Integrator must be initialized before being used.
    */
-  virtual void Initialize() { initialization_done_ = true; }
+  virtual void Initialize() {
+    DRAKE_ASSERT(context_);
+    initialization_done_ = true;
+  }
 
   /** Request that the first attempted integration step have a particular size.
    * Otherwise the integrator will estimate a suitable size for the initial step
@@ -166,7 +196,6 @@ class IntegratorBase {
     smallest_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
     num_steps_taken_ = 0;
-    num_updates_processed_ = 0;
   }
 
   /** What what the actual size of the successful first step? **/
@@ -192,11 +221,6 @@ class IntegratorBase {
    * Initialize() call?
    **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
-
-  /** How many discrete update events have been processed since the last
-   * Initialize() call?
-   **/
-  int64_t get_num_updates_performed() const { return num_updates_processed_; }
 
   /** Return the step size the simulator would like to take next, based
    * primarily on the integrator's accuracy prediction (variable step
@@ -255,9 +279,21 @@ class IntegratorBase {
   // Sets the number of steps taken.
   void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
-  // Sets the number of updates processed
-  void set_num_updates_prcoessed(int64_t processed) {
-    num_updates_processed_ = processed; }
+  // Updates the integrator statistics
+  void UpdateStatistics(const T& dt) {
+    // handle first step specially
+    if (++num_steps_taken_ == 1) {
+      set_actual_initial_step_size_taken(dt);
+      set_smallest_step_size_taken(dt);
+      set_largest_step_size_taken(dt);
+    } else {
+      if (dt < get_smallest_step_size_taken())
+        set_smallest_step_size_taken(dt);
+      if (dt > get_largest_step_size_taken())
+        set_largest_step_size_taken(dt);
+    }
+  }
+
 
  private:
   // Reference to the system being simulated.
@@ -271,12 +307,21 @@ class IntegratorBase {
   // the next one.
   T ideal_next_step_size_{nan()};  // indicates that the value is uninitialized
 
+  // TODO(edrumwri): update to T?
+  // the accuracy being used
+  double accuracy_in_use_;
+
+  // The maximum step size
+  T max_step_size_{(T) std::numeric_limits<double>::infinity()};
+
+  // The minimum step size
+  T min_step_size_{(T) 0.0};
+
   // Statistics.
   T actual_initial_step_size_taken_{nan()};
   T smallest_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
-  int64_t num_updates_processed_{0};
 
   // Variable for indicating when an integrator has been initialized
   bool initialization_done_{false};

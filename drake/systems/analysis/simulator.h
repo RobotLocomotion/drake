@@ -179,7 +179,14 @@ class Simulator {
     integrator_->ResetStatistics();
     num_steps_taken_ = 0;
     num_updates_ = 0;
+    num_publishes_ = 0;
   }
+
+  /**
+ * Gets the number of publishes made since the last Initialize() or
+ * ResetStatistics() call.
+ */
+  int64_t get_num_publishes() const { return num_publishes_; }
 
   /** What what the actual size of the successful first step?
    *  TODO(edrumwri): update this function when discrete updates introduced
@@ -215,7 +222,6 @@ class Simulator {
   T get_ideal_next_step_size() const {
     return integrator_->get_ideal_next_step_size();
   }
-
 
   /**
    *   Gets a pointer to the mutable integrator.
@@ -282,10 +288,13 @@ class Simulator {
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
-  // the number of updates since the last call to Initialize()
+  // The number of updates since the last call to Initialize().
   int64_t num_updates_{0};
 
-  // the number of integration steps since the last call to Initialize()
+  // The number of publishes since the last call to Initialize().
+  int64_t num_publishes_{0};
+
+  // The number of integration steps since the last call to Initialize().
   int64_t num_steps_taken_{0};
 
   // Set by Initialize() and reset by various traumas.

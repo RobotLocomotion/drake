@@ -61,6 +61,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // create the integrator
   const double DT = 0.000097656;   // 1.0/1024
+  const double INF = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
 
   // setup the initial position and initial velocity
@@ -83,7 +84,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
-    integrator.Step(DT, DT);
+    integrator.Step(INF, INF);
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 

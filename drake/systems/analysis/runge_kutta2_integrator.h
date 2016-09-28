@@ -17,10 +17,10 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
   virtual ~RungeKutta2Integrator() {}
 
-  RungeKutta2Integrator(const System<T>& system, double step_size,
+  RungeKutta2Integrator(const System<T>& system, const T& max_step_size,
                         Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {
-    step_size_ = step_size;
+    IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs0_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
     derivs1_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
   }
@@ -57,49 +57,25 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
                                  " integrator");
   }
 
-  /**
-   *   Gets the fixed step size.
-   */
-  const T& get_ideal_next_step_size() const override { return step_size_; }
-
-  /**
-   *   Sets the fixed step size.
-   */
-  void set_fixed_step_size(const T& step_size) { step_size_ = step_size; }
-
-  /**
-   *   Gets the fixed step size
-   */
-  const T& get_fixed_step_size() const { return step_size_; }
-
-  /** Request that the first attempted integration step have a particular size.
-     All steps will be taken at this step size.
-   **/
-  void request_initial_step_size_target(const T& step_size) override {
-    step_size_ = step_size;
-  }
-
-  /** Get the first integration step target size. Equal to the fixed step size.
-   **/
-  const T& get_initial_step_size_target() const override {
-    return step_size_;
-  }
-
  private:
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
-
-  // The integration step size
-  T step_size_{(T) 0.0};
 };  // ExplictEulerIntegrator
 
 template <class T>
 typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
     const T& publish_dt, const T& update_dt) {
 
+  // sort the times for stopping- sort is stable to preserve preferences for
+  // stopping
+  const int64_t kDTs = 3;  // number of dt values to evaluate
+  const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
+  const T* stop_dts[kDTs] = { &update_dt, &publish_dt,  &max_step_size};
+  std::stable_sort(stop_dts, stop_dts+kDTs,
+                   [](const T* t1, const T* t2) { return *t1 < *t2; });
+
   // set dt
-  bool publish_stop = (publish_dt < update_dt);
-  const T& dt = (publish_stop) ? publish_dt : update_dt;
+  const T& dt = *stop_dts[0];
 
   if (dt < 0.0)
     throw std::logic_error("Negative dt.");
@@ -134,22 +110,20 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
   xc->PlusEqScaled(-dt * 0.5, xcdot0);
 
   // We successfully took a step -- collect statistics.
-  IntegratorBase<T>::set_num_steps_taken(
-      IntegratorBase<T>::get_num_steps_taken()+1);
-  if (IntegratorBase<T>::get_num_steps_taken() == 1) {  // The first step.
-    IntegratorBase<T>::set_actual_initial_step_size_taken(dt);
-    IntegratorBase<T>::set_smallest_step_size_taken(dt);
-    IntegratorBase<T>::set_largest_step_size_taken(dt);
-  } else {  // Not the first step.
-    if (dt < IntegratorBase<T>::get_smallest_step_size_taken())
-      IntegratorBase<T>::set_smallest_step_size_taken(dt);
-    if (dt > IntegratorBase<T>::get_largest_step_size_taken())
-      IntegratorBase<T>::set_largest_step_size_taken(dt);
-  }
+  IntegratorBase<T>::UpdateStatistics(dt);
 
-  return (publish_stop) ? IntegratorBase<T>::kReachedPublishTime :
-         IntegratorBase<T>::kReachedUpdateTime;
-}
+  // return appropriately
+  if (stop_dts[0] == &max_step_size) {
+    return IntegratorBase<T>::kTimeHasAdvanced;
+  } else {
+    if (stop_dts[0] == &publish_dt) {
+      return IntegratorBase<T>::kReachedPublishTime;
+    } else {
+      DRAKE_ASSERT(stop_dts[0] == &update_dt);
+      return IntegratorBase<T>::kReachedUpdateTime;
+    }
+  }
+}  // Step(.)
 }  // systems
 }  // drake
 

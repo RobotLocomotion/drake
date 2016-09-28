@@ -64,8 +64,9 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
-  // Setup the integration size.
+  // Setup the integration size and infinity.
   const double DT = 1e-6;
+  const double INF = std::numeric_limits<double>::infinity();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
@@ -89,7 +90,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Integrate for 1 second.
   const double T_FINAL = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT) integrator.Step(DT, DT);
+  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT) integrator.Step(INF, INF);
 
   EXPECT_NEAR(context->get_time(), t, DT);  // Should be exact.
 
