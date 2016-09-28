@@ -12,6 +12,12 @@
 #include "drake/drakeJoints_export.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
+// TODO(liang.Fok) Figure out and document whether jointTransform() returns X_FM
+// or X_MF. From this method's first call site in RigidBodyTree::doKinematics(),
+// I suspect it returns X_MF because I believe it's being used to compute X_MP.
+//
+// For additional context and variable definitions, see:
+// https://reviewable.io/reviews/RobotLocomotion/drake/3137#-KPAy7Gzc5VtPqgiE6Kg
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \
                                                                              \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(       \
@@ -78,15 +84,15 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
                              // Atlas
 
   /**
-   * This is the base class constructor for use by concrete joints to place and
-   * size the joint.
+   * A constructor for use by concrete joints to define the joint's name, fixed
+   * frame, and number of degrees of freedom.
    *
-   * @param[in] name The joint's name. This can be any string value. It does not
-   * have to be unique.
+   * @param[in] name The joint's name. This can be anything; it does not have
+   * to be unique.
    *
-   * @param[in] transform_to_parent_body Defines the transform for converting
-   * a point defined in the joint's coordinate frame to the same point defined
-   * in the joint's parent body's coordinate frame.
+   * @param[in] transform_to_parent_body Defines the configuration of the
+   * joint's fixed frame relative to the frame that belongs to the joint's
+   * parent body.
    *
    * @param[in] num_positions The number of position states of the joint.
    *
@@ -102,26 +108,17 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform from this joint's parent body's frame to this joint's
-   * frame.
+   * Returns the transform between this joint's fixed frame and the joint's
+   * parent body's frame.
    *
-   * Let `J` be this joint's frame and `B` be this joint's parent body's frame.
-   * Furthermore, let `point_J` be the location of a point measured from `J`'s
-   * origin and expressed in coordinate frame `J`, and `point_B` be the location
-   * of the same point but measured from `B`'s origin and expressed in
-   * coordinate frame `B`.
-   *
-   * The returned value is `T_BJ` where:
+   * Let `J` be this joint's fixed frame and `P` be this joint's parent body's
+   * frame. Furthermore, let `point_J` be a location in frame `J` and
+   * `point_P` be the same location in frame `P`. The returned value is `T_PJ`
+   * where:
    *
    * <pre>
-   * point_B = T_BJ * point_J;
+   * point_P = T_PJ * point_J;
    * </pre>
-   *
-   * Note that when this joint is in its zero position, this joint's child
-   * body's frame is coincident with this joint's frame. Thus,
-   * when this joint is at its zero position, this transform can also be used to
-   * transform a point defined in this joint's child body's frame to this
-   * joint's parent body's frame.
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
 
