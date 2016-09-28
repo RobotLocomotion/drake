@@ -40,8 +40,10 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>ackermann_msgs</build_depend>
   <build_depend>drake</build_depend>
+  <build_depend>drake_ros_common</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>tf</build_depend>
 
@@ -49,11 +51,4 @@
   <run_depend>drake</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
-
-
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <!-- Other tools can request additional information be placed here -->
-
-  </export>
 </package>

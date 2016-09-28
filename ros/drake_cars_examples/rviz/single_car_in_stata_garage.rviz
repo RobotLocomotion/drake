@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /RobotModel1
         - /RobotModel1/Links1
         - /Axes1
         - /LaserScan2
@@ -15,8 +14,9 @@ Panels:
         - /Odometry1
         - /TF1/Frames1
         - /WorldModel1
-      Splitter Ratio: 0.631791
-    Tree Height: 1093
+        - /WorldModel1/Status1
+      Splitter Ratio: 0.64658
+    Tree Height: 905
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -134,7 +134,7 @@ Visualization Manager:
           Value: true
       Name: RobotModel
       Robot Description: robot_description
-      TF Prefix: ""
+      TF Prefix: prius
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -178,8 +178,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 1.42027
-        Min Value: -0.00832754
+        Max Value: 1.42044
+        Min Value: -0.00809033
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -200,7 +200,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.25
       Style: Spheres
-      Topic: /drake/prius_1/lidar/top_laser
+      Topic: /drake/prius/lidar/top_laser
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -208,8 +208,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.510779
-        Min Value: 0.430399
+        Max Value: 0.510609
+        Min Value: 0.431049
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -230,7 +230,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.25
       Style: Flat Squares
-      Topic: /drake/prius_1/lidar/rear_left_laser
+      Topic: /drake/prius/lidar/rear_left_laser
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -238,8 +238,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.502356
-        Min Value: 0.43039
+        Max Value: 0.50296
+        Min Value: 0.431042
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -260,7 +260,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.25
       Style: Flat Squares
-      Topic: /drake/prius_1/lidar/rear_right_laser
+      Topic: /drake/prius/lidar/rear_right_laser
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -273,82 +273,68 @@ Visualization Manager:
       Length: 1
       Name: Odometry
       Position Tolerance: 0.1
-      Topic: /drake/prius_1/odometry
+      Topic: /drake/prius/odometry
       Value: true
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        body:
+        prius/body:
           Value: true
-        chassis_floor:
+        prius/chassis_floor:
           Value: true
-        front_axle:
+        prius/front_axle:
           Value: true
-        front_laser:
+        prius/front_laser:
           Value: true
-        front_lidar:
+        prius/front_lidar_link:
           Value: true
-        front_lidar_link:
+        prius/left_hub:
           Value: true
-        front_top_lidar:
+        prius/left_tie_rod_arm:
           Value: true
-        golfcartdj/base_link:
+        prius/left_wheel:
           Value: true
-        golfcartdj/map:
+        prius/left_wheel_rear:
           Value: true
-        golfcartdj/odom:
+        prius/rear_axle:
           Value: true
-        ground:
+        prius/rear_left_laser:
           Value: true
-        left_hub:
+        prius/rear_left_lidar_link:
           Value: true
-        left_tie_rod_arm:
+        prius/rear_right_laser:
           Value: true
-        left_wheel:
+        prius/rear_right_lidar_link:
           Value: true
-        left_wheel_rear:
+        prius/right_hub:
           Value: true
-        outer_wall:
+        prius/right_pinFrameA:
           Value: true
-        rear_axle:
+        prius/right_pinFrameB:
           Value: true
-        rear_left_laser:
+        prius/right_tie_rod_arm:
           Value: true
-        rear_left_lidar:
+        prius/right_wheel:
           Value: true
-        rear_left_lidar_link:
+        prius/right_wheel_rear:
           Value: true
-        rear_right_laser:
+        prius/tie_rod:
           Value: true
-        rear_right_lidar:
+        prius/top_laser:
           Value: true
-        rear_right_lidar_link:
+        prius/top_lidar_link:
           Value: true
-        right_hub:
+        stata_garage/ground:
           Value: true
-        right_pinFrameA:
+        stata_garage/outer_wall:
           Value: true
-        right_pinFrameB:
+        stata_garage/stairs:
           Value: true
-        right_tie_rod_arm:
+        stata_garage/stairs_groundFrameA:
           Value: true
-        right_wheel:
-          Value: true
-        right_wheel_rear:
-          Value: true
-        stairs:
-          Value: true
-        stairs_groundFrameA:
-          Value: true
-        stairs_groundFrameB:
-          Value: true
-        tie_rod:
-          Value: true
-        top_laser:
-          Value: true
-        top_lidar_link:
+        stata_garage/stairs_groundFrameB:
           Value: true
         world:
           Value: true
@@ -359,57 +345,46 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          chassis_floor:
-            body:
+          prius/chassis_floor:
+            prius/body:
               {}
-            front_axle:
-              left_tie_rod_arm:
-                left_hub:
-                  left_wheel:
+            prius/front_axle:
+              prius/left_tie_rod_arm:
+                prius/left_hub:
+                  prius/left_wheel:
                     {}
-                tie_rod:
-                  right_pinFrameB:
+                prius/tie_rod:
+                  prius/right_pinFrameB:
                     {}
-              right_tie_rod_arm:
-                right_hub:
-                  right_wheel:
+              prius/right_tie_rod_arm:
+                prius/right_hub:
+                  prius/right_wheel:
                     {}
-                right_pinFrameA:
+                prius/right_pinFrameA:
                   {}
-            front_lidar_link:
-              front_laser:
+            prius/front_lidar_link:
+              prius/front_laser:
                 {}
-            rear_axle:
-              left_wheel_rear:
+            prius/rear_axle:
+              prius/left_wheel_rear:
                 {}
-              right_wheel_rear:
+              prius/right_wheel_rear:
                 {}
-            rear_left_lidar_link:
-              rear_left_laser:
+            prius/rear_left_lidar_link:
+              prius/rear_left_laser:
                 {}
-            rear_right_lidar_link:
-              rear_right_laser:
+            prius/rear_right_lidar_link:
+              prius/rear_right_laser:
                 {}
-            top_lidar_link:
-              top_laser:
+            prius/top_lidar_link:
+              prius/top_laser:
                 {}
-          golfcartdj/map:
-            golfcartdj/odom:
-              golfcartdj/base_link:
-                front_lidar:
-                  {}
-                front_top_lidar:
-                  {}
-                rear_left_lidar:
-                  {}
-                rear_right_lidar:
-                  {}
-          ground:
-            outer_wall:
-              stairs_groundFrameB:
+          stata_garage/ground:
+            stata_garage/outer_wall:
+              stata_garage/stairs_groundFrameB:
                 {}
-          stairs:
-            stairs_groundFrameA:
+          stata_garage/stairs:
+            stata_garage/stairs_groundFrameA:
               {}
       Update Interval: 0
       Value: true
@@ -444,7 +419,7 @@ Visualization Manager:
           Show Trail: false
       Name: WorldModel
       Robot Description: world_description
-      TF Prefix: ""
+      TF Prefix: stata_garage
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -492,10 +467,10 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1388
+  Height: 1200
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd000000040000000000000238000004d4fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730100000028000004d4000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000a1e0000004cfc0100000002fb0000000800540069006d0065010000000000000a1e000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000007e0000004d400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000027800000418fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000418000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000582fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002800000582000000b000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000006db0000004cfc0100000002fb0000000800540069006d00650100000000000006db000002f600fffffffb0000000800540069006d006501000000000000045000000000000000000000045d0000041800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -504,6 +479,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 2590
-  X: 220
-  Y: 14
+  Width: 1755
+  X: 55
+  Y: 209

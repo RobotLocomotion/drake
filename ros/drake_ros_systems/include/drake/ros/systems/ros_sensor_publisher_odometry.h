@@ -21,14 +21,29 @@ namespace ros {
 namespace systems {
 
 /**
- * @brief A system that takes the system state as the input and publishes
- * odometry information onto a ROS topic.
+ * Holds the objects and data needed to extract and publish odometry information
+ * of a particular model instance.
+ */
+struct OdometrySensorStruct {
+  // The index of the base body of the model instance that this struct is
+  // representing.
+  int base_body_index;
+
+  // The ROS topic publisher for publishing the LIDAR data.
+  ::ros::Publisher publisher;
+
+  // This holds the model instance's odometry information and is periodically
+  // published.
+  std::unique_ptr<nav_msgs::Odometry> message;
+};
+
+/**
+ * Takes the system state and publishes odometry information onto ROS topics.
  *
- * It publishes a odometry information for each robot within the rigid body
- * system. The odometry messages for each robot are published onto different
- * ROS topics that are distinguished by robot name.
- *
- * @concept{system_concept}
+ * It publishes a odometry information for each model within the rigid body
+ * system that connected to the world via a floating joint. The odometry
+ * messages for each model instance are published onto different
+ * ROS topics that are distinguished by model instance name.
  *
  * The resulting system has no internal state; the publish command is throttled
  * by kMinTransmitPeriod_.
@@ -37,7 +52,7 @@ namespace systems {
  * enables other systems to be cascaded after this system.
  */
 template <template <typename> class RobotStateVector>
-class SensorPublisherOdometry {
+class RosSensorPublisherOdometry {
  private:
   // Specifies that the odometry messages should be transmitted with a minimum
   // period of 0.05 seconds.
@@ -52,13 +67,21 @@ class SensorPublisherOdometry {
   using InputVector = RobotStateVector<ScalarType>;
 
   /**
-   * The constructor.
+   * The constructor that creates one ROS topic, publisher, and message for each
+   * model instance in @p rigid_body_system.
    *
    * @param[in] rigid_body_system The rigid body system whose output contains
    * the odometry information.
+   *
+   * @param[in] model_instance_name_table A mapping from model instance IDs to
+   * model instance names. The instance names are used to name space the ROS
+   * topics on which the `sensor_msgs::JointState` messages are published. This
+   * is necessary since multiple model instances may be simultaneously
+   * simulated.
    */
-  explicit SensorPublisherOdometry(
-      std::shared_ptr<RigidBodySystem> rigid_body_system)
+  explicit RosSensorPublisherOdometry(
+      std::shared_ptr<RigidBodySystem> rigid_body_system,
+      const std::map<int, std::string>& model_instance_name_table)
       : rigid_body_system_(rigid_body_system) {
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;
@@ -69,48 +92,45 @@ class SensorPublisherOdometry {
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
     ::ros::NodeHandle nh;
 
+    const std::shared_ptr<RigidBodyTree>& tree =
+        rigid_body_system->getRigidBodyTree();
+
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
+    const RigidBody& world = tree->world();
 
-    // Creates a ROS topic publisher for each robot in the rigid body system.
-    // A robot is defined by any link that's connected to the world via a
-    // non-fixed joint.
-    for (auto const& rigid_body :
-         rigid_body_system->getRigidBodyTree()->bodies) {
-      // Skips the current rigid body if it does not have the world as the
-      // parent.
-      if (!rigid_body->has_as_parent(world)) continue;
+    // Creates a ROS topic publisher and a message for each model instance in
+    // `model_instance_table`.
+    for (const auto& entry : model_instance_name_table) {
+      // Obtains the current model instance's ID, instance name, and list of
+      // rigid bodies.
+      int model_instance_id = entry.first;
+      std::string model_instance_name = entry.second;
 
-      // Skips the current rigid body if it's not connected to the world via a
-      // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      // Instantiates a ModelStateStruct for the current model instance.
+      std::unique_ptr<OdometrySensorStruct> model_instance_struct(
+          new OdometrySensorStruct());
 
-      // Creates an odometry message and publisher for the current robot if they
-      // have not already been created. Stores them in odometry_publishers_ and
-      // odometry_messages_.
+      const std::string topic_name = model_instance_name + "/odometry";
+      model_instance_struct->publisher =
+          nh.advertise<nav_msgs::Odometry>(topic_name, 1);
 
-      // The key is simply the model name since there should only be one
-      // odometry message and publisher per robot.
-      const std::string& key = rigid_body->get_model_name();
+      model_instance_struct->message.reset(new nav_msgs::Odometry());
+      model_instance_struct->message->header.frame_id =
+          RigidBodyTree::kWorldName;
 
-      if (odometry_messages_.find(key) == odometry_messages_.end()) {
-        const std::string topic_name = "drake/" + key + "/odometry";
-
-        odometry_publishers_.insert(std::pair<std::string, ::ros::Publisher>(
-            key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
-
-        std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
-        message->header.frame_id = RigidBodyTree::kWorldName;
-        message->child_frame_id = rigid_body->get_name();
-
-        odometry_messages_.insert(
-            std::pair<std::string, std::unique_ptr<nav_msgs::Odometry>>(
-                key, std::move(message)));
-      } else {
-        throw std::runtime_error(
-            "ERROR: Rigid Body System contains multiple models named \"" + key +
-            "\".");
+      std::vector<int> base_bodies = tree->FindBaseBodies(model_instance_id);
+      if (base_bodies.size() != 1) {
+        throw std::runtime_error("RosSensorPublisherOdometry: ERROR: model "
+            "instance with ID " + std::to_string(model_instance_id) + " has "
+            "multiple base bodies. Not sure which one to use.");
       }
+
+      model_instance_struct->base_body_index = base_bodies.at(0);
+
+      model_instance_struct->message->child_frame_id = model_instance_name + "/"
+          + tree->get_body(model_instance_struct->base_body_index).get_name();
+
+      model_instance_list_.push_back(std::move(model_instance_struct));
     }
   }
 
@@ -129,63 +149,29 @@ class SensorPublisherOdometry {
 
     previous_send_time_ = current_time;
 
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+    const std::shared_ptr<RigidBodyTree>& tree =
         rigid_body_system_->getRigidBodyTree();
 
     // The input vector u contains the entire system's state. The following
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree->get_num_positions());    // position
-    auto v = uvec.segment(rigid_body_tree->get_num_positions(),  // velocity
-                          rigid_body_tree->get_num_velocities());
-    KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
+    auto q = uvec.head(tree->get_num_positions());    // position
+    auto v = uvec.segment(tree->get_num_positions(),  // velocity
+                          tree->get_num_velocities());
+    KinematicsCache<double> cache = tree->doKinematics(q, v);
 
-    // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_tree->world();
-
-    // Publishes an odometry message for each rigid body that's connected via a
-    // floating (non-fixed) joint to the world.
-    for (auto const& rigid_body : rigid_body_tree->bodies) {
-      // Skips the current rigid body if it does not have the world as the
-      // parent.
-      if (!rigid_body->has_as_parent(world)) continue;
-
-      // Skips the current rigid body if it's not connected to the world via a
-      // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
-
-      // Defines the key that can be used to obtain the publisher and message.
-      // The key is simply the model name since there should only be one
-      // odometry message and publisher per model.
-      const std::string& key = rigid_body->get_model_name();
-
-      // Verifies that a nav_msgs::Odometry message for the current link exists
-      // in the odometry_messages_ map.
-      auto message_in_map = odometry_messages_.find(key);
-      if (message_in_map == odometry_messages_.end()) {
-        throw std::runtime_error(
-            "ERROR: SensorPublisherOdmetry: Unable to find"
-            "odometry message using key " +
-            key);
-      }
-
-      // Verifies that the publisher exists in the odometry_publishers_ map.
-      auto publisher_in_map = odometry_publishers_.find(key);
-      if (publisher_in_map == odometry_publishers_.end()) {
-        throw std::runtime_error(
-            "ERROR: SensorPublisherOdmetry: Unable to find"
-            "odometry publisher using key " +
-            key);
-      }
-
-      nav_msgs::Odometry* message = message_in_map->second.get();
-
+    // Publishes an odometry message for each model instance in
+    // model_instance_list_.
+    for (auto& model_instance_struct : model_instance_list_) {
+      nav_msgs::Odometry* message = model_instance_struct->message.get();
+      const RigidBody& body =
+          tree->get_body(model_instance_struct->base_body_index);
       // Updates the odometry information in the odometry message.
-      auto transform = rigid_body_tree->relativeTransform(
-          cache, rigid_body_tree->FindBodyIndex(
-              rigid_body->get_parent()->get_name()),
-          rigid_body_tree->FindBodyIndex(rigid_body->get_name()));
+      auto transform = tree->relativeTransform(
+          cache,
+          RigidBodyTree::kWorldBodyIndex,
+          model_instance_struct->base_body_index);
       auto translation = transform.translation();
       auto quat = drake::math::rotmat2quat(transform.linear());
 
@@ -200,11 +186,11 @@ class SensorPublisherOdometry {
       message->pose.pose.orientation.z = quat(3);
 
       // Saves the robot's linear and angular velocities in the world.
-      auto twist = rigid_body_tree->relativeTwist(
-          cache, rigid_body_tree->FindBodyIndex(
-              rigid_body->get_parent()->get_name()),
-          rigid_body_tree->FindBodyIndex(rigid_body->get_name()),
-          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldName));
+      auto twist = tree->relativeTwist(
+          cache,
+          RigidBodyTree::kWorldBodyIndex,
+          model_instance_struct->base_body_index,
+          RigidBodyTree::kWorldBodyIndex);
 
       message->twist.twist.linear.x = twist(0);
       message->twist.twist.linear.y = twist(1);
@@ -217,7 +203,7 @@ class SensorPublisherOdometry {
       // Updates the time stamp in the transform message.
       message->header.stamp = current_time;
 
-      publisher_in_map->second.publish(*message);
+      model_instance_struct->publisher.publish(*message);
     }
 
     return u;  // Passes the output through to the next system in the cascade.
@@ -229,22 +215,10 @@ class SensorPublisherOdometry {
  private:
   std::shared_ptr<RigidBodySystem> rigid_body_system_;
 
-  /**
-   * Maintains a set of ROS topic publishers for publishing LIDAR messages.
-   * The key is the name of the sensor. The value is the ROS topic publisher.
-   */
-  std::map<std::string, ::ros::Publisher> odometry_publishers_;
+  // A set of ModelStateStruct structs, one for each model instance.
+  std::vector<std::unique_ptr<OdometrySensorStruct>> model_instance_list_;
 
-  /**
-   * Maintains a set of ROS nav_msgs::Odometry messages for use by the
-   * publishers. This is used to avoid having to allocate a new message
-   * each time one needs to be sent.
-   */
-  std::map<std::string, std::unique_ptr<nav_msgs::Odometry>> odometry_messages_;
-
-  /**
-   * The previous time the LIDAR messages were sent.
-   */
+  // The previous time the odometry messages were sent.
   ::ros::Time previous_send_time_;
 };
 

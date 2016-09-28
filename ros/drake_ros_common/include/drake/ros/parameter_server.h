@@ -16,8 +16,8 @@ namespace ros {
  * @param[in] parameter_name The name of the parameter to obtain from the ROS
  * parameter server.
  *
- * @param[in] max_wait_time The maximum amount of time to wait for the parameter
- * to become available before aborting.
+ * @param[in] max_wait_time The maximum amount of wall clock time to wait for
+ * the parameter to become available before returning.
  *
  * @return This method returns true if the parameter comes into existence prior
  * to @p max_wait_time and false otherwise.
@@ -35,12 +35,12 @@ bool WaitForParameter(const std::string& parameter_name,
  * available here: http://wiki.ros.org/Parameter%20Server#Parameter_Types.
  * Currently this method only has test coverage for the following types:
  * `double`, `int`, `bool`, and `std::string`. Notably, the following types
- * are not tested yet: iso8601 dates, lists, and base64-encoded binary data.
+ * are untested: iso8601 dates, lists, and base64-encoded binary data.
  *
  * @param[in] parameter_name The name of the parameter to obtain.
  *
- * @param[in] max_wait_time The maximum time to wait for the parameter to
- * become available on the ROS parameter server.
+ * @param[in] max_wait_time The maximum wall clock time to wait for the
+ * parameter to become available on the ROS parameter server.
  *
  * @returns The value of the parameter.
  *
@@ -69,15 +69,15 @@ T GetRosParameterOrThrow(const std::string& parameter_name,
  * available here: http://wiki.ros.org/Parameter%20Server#Parameter_Types.
  * Currently this method only has test coverage for the following types:
  * `double`, `int`, `bool`, and `std::string`. Notably, the following types
- * are not tested yet: iso8601 dates, lists, and base64-encoded binary data.
+ * are untested: iso8601 dates, lists, and base64-encoded binary data.
  *
  * @param[in] parameter_name The name of the parameter to obtain.
  *
  * @param[in] default_value The value that is returned if the parameter does not
  * exist after waiting @p max_wait_time.
  *
- * @param[in] max_wait_time The maximum time to wait for the parameter to
- * become available on the ROS parameter server.
+ * @param[in] max_wait_time The maximum wall clock time to wait for the
+ * parameter to become available on the ROS parameter server.
  *
  * @returns The value of the parameter, or @p default_value if there was any
  * problem obtaining the parameter.
