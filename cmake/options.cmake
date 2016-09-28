@@ -5,6 +5,7 @@ include(CMakeDependentOption)
 #
 # Arguments:
 #   <DEFAULT_STATE> - Is the option enabled by default? (`ON` or `OFF`)
+#
 #   DEPENDS <expression>
 #     A list of expressions which must evaluate to true for the component to
 #     be made available. (Otherwise, the component will not be enabled, and the
@@ -14,14 +15,20 @@ include(CMakeDependentOption)
 # the option.
 #------------------------------------------------------------------------------
 function(drake_option NAME DEFAULT_STATE)
+  # "Fix" escaping so cmake_parse_arguments will split properly (note:
+  # cmake_parse_arguments splits twice, so escape two more levels).
   string(REPLACE "\\;" "\\\\\\;" _args "${ARGN}")
+
+  # Parse arguments.
   cmake_parse_arguments(_opt "" "DEPENDS" "" ${_args})
 
+  # Join description snippets.
   foreach(_snippet IN LISTS _opt_UNPARSED_ARGUMENTS)
     set(_description "${_description} ${_snippet}")
   endforeach()
   string(STRIP "${_description}" _description)
 
+  # Create option.
   if(DEFINED _opt_DEPENDS)
     string(REPLACE "\\;" ";" _opt_DEPENDS "${_opt_DEPENDS}")
     cmake_dependent_option(${NAME}
@@ -32,25 +39,57 @@ function(drake_option NAME DEFAULT_STATE)
     option(${NAME} "${_description}" ${DEFAULT_STATE})
   endif()
 
+  # Propagate option value to caller.
   set(${NAME} "${${NAME}}" PARENT_SCOPE)
 endfunction()
 
 #------------------------------------------------------------------------------
-# Add an option whether to use the system or internal version of a (required)
-# dependency.
+# Add an option whether to use the system or internal version of a dependency.
+#
+# Arguments:
+#   OPTIONAL - Dependency is not required.
+#
+#   REQUIRES <package>
+#     Name of package (as passed to `find_package`) that must be found if the
+#     system version is selected.
+#
+#   VERSION <version>
+#     Required version of the system package (passed to `find_package`).
+#
+#   DEPENDS <expression>
+#     A list of expressions which must evaluate to true for the component to
+#     be made available. (Otherwise, the component will not be enabled, and the
+#     option for the component will be hidden.)
+#
+# Extra arguments are combined (with a single space) to form the description of
+# the option.
+#
+# If the component is required, and the system version is not selected, the
+# internal version will be enabled. Otherwise, the user will be given an option
+# (defaulting to ON) if the component should be built.
+#
+# Internally, this sets HAVE_<NAME> to indicate if the external is available,
+# and WITH_<NAME> to indicate if our internal version of the external should be
+# built.
 #------------------------------------------------------------------------------
 function(drake_system_dependency NAME)
+  # "Fix" escaping so cmake_parse_arguments will split properly (note:
+  # cmake_parse_arguments splits twice, so escape two more levels).
   string(REPLACE "\\;" "\\\\\\;" _args "${ARGN}")
+
+  # Parse arguments
   cmake_parse_arguments("_sd"
     "OPTIONAL"
     "REQUIRES;VERSION;DEPENDS"
     ""
     ${_args})
 
+  # Check for required arguments.
   if(NOT DEFINED _sd_REQUIRES)
     message(FATAL_ERROR "drake_system_dependency: REQUIRES must be specified")
   endif()
 
+  # Fix up arguments
   if(NOT _sd_OPTIONAL)
     set(_else "(if OFF, the internal version will be used)")
   endif()
@@ -58,6 +97,7 @@ function(drake_system_dependency NAME)
     set(_sd_DEPENDS DEPENDS "${_sd_DEPENDS}")
   endif()
 
+  # Create option for using system version of external.
   drake_option(USE_SYSTEM_${NAME} OFF
     "${_sd_DEPENDS}"
     "Use the system-provided"
@@ -67,13 +107,17 @@ function(drake_system_dependency NAME)
 
   set(HAVE_${NAME} FALSE PARENT_SCOPE)
 
+  # Handle optional dependencies.
   if(_sd_OPTIONAL)
+    # Set option dependencies so option to build internal version is only shown
+    # if system version is not selected.
     if(NOT DEFINED _sd_DEPENDS)
       set(_sd_DEPENDS DEPENDS "NOT USE_SYSTEM_${NAME}")
     else()
       set(_sd_DEPENDS "${_sd_DEPENDS}\;NOT USE_SYSTEM_${NAME}")
     endif()
 
+    # Add option to build internal version.
     drake_option(WITH_${NAME} ON
       "${_sd_DEPENDS}"
       "${_sd_UNPARSED_ARGUMENTS}")
@@ -89,6 +133,7 @@ function(drake_system_dependency NAME)
     endif()
   endif()
 
+  # If using system version, ensure it is available.
   if(USE_SYSTEM_${NAME})
     find_package(${_sd_REQUIRES} ${_sd_VERSION} REQUIRED)
     set(HAVE_${NAME} TRUE PARENT_SCOPE)
@@ -99,11 +144,13 @@ endfunction()
 # Add an option whether or not to build an optional component.
 #
 # The arguments are the same as drake_option. The option will be named
-# WITH_<NAME>
+# WITH_<NAME>. HAVE_<NAME> will reflect if the external is available.
 #------------------------------------------------------------------------------
 function(drake_optional_external NAME DEFAULT_STATE)
+  # Re-escape ARGN so drake_option will receive ARGN split the same way.
   string(REPLACE "\\;" "\\\\;" _args "${ARGN}")
 
+  # Create option and make corresponding variables available to caller.
   drake_option(WITH_${NAME} ${DEFAULT_STATE} ${_args})
   set(WITH_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
   set(HAVE_${NAME} "${WITH_${NAME}}" PARENT_SCOPE)
