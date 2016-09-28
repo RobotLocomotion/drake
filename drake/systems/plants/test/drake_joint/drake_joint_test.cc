@@ -3,12 +3,13 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_urdf.h"
 
 namespace drake {
 namespace systems {
@@ -29,7 +30,7 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
               "/systems/plants/test/drake_joint/zero_offset_joint.urdf",
-          DrakeJoint::QUATERNION);
+          joints::kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the
   // URDF.
@@ -90,7 +91,7 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
               "/systems/plants/test/drake_joint/non_zero_offset_joint.urdf",
-          DrakeJoint::QUATERNION);
+          joints::kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the
   // URDF.
