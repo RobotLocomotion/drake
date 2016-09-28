@@ -35,6 +35,14 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
                                               const T& update_dt) override;
 
   /**
+   * Integrator does not support an initial step size target.
+   */
+  void request_initial_step_size_target(const T& step_size) override {
+    drake::log()->warn("ExplicitEulerIntegrator does not support step size"
+                           " targets");
+  }
+
+  /**
    * Integrator does not support accuracy estimation.
    */
   bool does_support_accuracy_estimation() const override { return false; }

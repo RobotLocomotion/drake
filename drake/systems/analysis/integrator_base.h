@@ -1,9 +1,12 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
+
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
+
 #include "drake/systems/vector.h"
 
 namespace drake {
@@ -17,8 +20,6 @@ final time t can occur *within* an event window, that is, we will never have
     t_final can coincide with t_high but only t_report can be at t_low. The
     interior of t_low:t_high is a "no man's land" where we don't understand the
 solution, so must be avoided.
-
-TODO(edrumwri): consider taking out kReachedStepLimit
 */
 
 /**

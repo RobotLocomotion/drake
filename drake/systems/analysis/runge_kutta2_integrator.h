@@ -47,6 +47,14 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   bool does_support_error_control() const override { return false; }
 
   /**
+ * Integrator does not support an initial step size target.
+ */
+  void request_initial_step_size_target(const T& step_size) override {
+    drake::log()->warn("RungeKutta2Integrator does not support step size"
+                           " targets");
+  }
+
+  /**
    * No accuracy setting for RK2 integrator.
    * @param accuracy unused
    */
