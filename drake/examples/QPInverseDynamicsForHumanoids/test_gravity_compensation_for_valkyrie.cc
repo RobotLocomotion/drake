@@ -17,17 +17,28 @@ QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // outputs of motion planner or hand-crafted behavior state machines.
   input.mutable_desired_comdd().setZero();
   input.mutable_desired_vd().setZero();
-  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("pelvis")));
-  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e1;
-  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
-  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("torso")));
-  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e1;
-  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("leftFoot")));
-  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e5;
-  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
-  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("rightFoot")));
-  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e5;
-  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
+  DesiredBodyAcceleration pelvdd_d(*robot_status.robot().FindBody("pelvis"));
+  pelvdd_d.mutable_weight() = 1e1;
+  pelvdd_d.mutable_acceleration().setZero();
+
+  DesiredBodyAcceleration torsodd_d(*robot_status.robot().FindBody("torso"));
+  torsodd_d.mutable_weight() = 1e1;
+  torsodd_d.mutable_acceleration().setZero();
+
+  DesiredBodyAcceleration left_footdd_d(
+      *robot_status.robot().FindBody("leftFoot"));
+  left_footdd_d.mutable_weight() = 1e3;
+  left_footdd_d.mutable_acceleration().setZero();
+
+  DesiredBodyAcceleration right_footdd_d(
+      *robot_status.robot().FindBody("rightFoot"));
+  right_footdd_d.mutable_weight() = 1e3;
+  right_footdd_d.mutable_acceleration().setZero();
+
+  input.mutable_desired_body_accelerations().push_back(pelvdd_d);
+  input.mutable_desired_body_accelerations().push_back(torsodd_d);
+  input.mutable_desired_body_accelerations().push_back(left_footdd_d);
+  input.mutable_desired_body_accelerations().push_back(right_footdd_d);
 
   // Weights are set arbitrarily by the control designer, these typically
   // require tuning.
@@ -35,32 +46,29 @@ QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   input.mutable_w_vd() = 1e-1;
   input.mutable_w_basis_reg() = 1e-6;
 
-  // make contact
-  input.mutable_contact_info().push_back(
-      ContactInformation(*robot_status.robot().FindBody("leftFoot"), 4));
-  input.mutable_contact_info(0).mutable_contact_points().push_back(
+  // Make contact points.
+  ContactInformation left_foot_contact(
+      *robot_status.robot().FindBody("leftFoot"), 4);
+  left_foot_contact.mutable_contact_points().push_back(
       Vector3d(0.2, 0.05, -0.09));
-  input.mutable_contact_info(0).mutable_contact_points().push_back(
+  left_foot_contact.mutable_contact_points().push_back(
       Vector3d(0.2, -0.05, -0.09));
-  input.mutable_contact_info(0).mutable_contact_points().push_back(
+  left_foot_contact.mutable_contact_points().push_back(
       Vector3d(-0.05, -0.05, -0.09));
-  input.mutable_contact_info(0).mutable_contact_points().push_back(
+  left_foot_contact.mutable_contact_points().push_back(
       Vector3d(-0.05, 0.05, -0.09));
 
-  input.mutable_contact_info().push_back(
-      ContactInformation(*robot_status.robot().FindBody("rightFoot"), 4));
-  input.mutable_contact_info(1).mutable_contact_points().push_back(
-      Vector3d(0.2, 0.05, -0.09));
-  input.mutable_contact_info(1).mutable_contact_points().push_back(
-      Vector3d(0.2, -0.05, -0.09));
-  input.mutable_contact_info(1).mutable_contact_points().push_back(
-      Vector3d(-0.05, -0.05, -0.09));
-  input.mutable_contact_info(1).mutable_contact_points().push_back(
-      Vector3d(-0.05, 0.05, -0.09));
+  ContactInformation right_foot_contact(
+      *robot_status.robot().FindBody("rightFoot"), 4);
+  right_foot_contact.mutable_contact_points() =
+      left_foot_contact.contact_points();
 
-  // call controller
+  input.mutable_contact_info().push_back(left_foot_contact);
+  input.mutable_contact_info().push_back(right_foot_contact);
+
   std::cout << input << std::endl;
 
+  // Call controller.
   con.Control(robot_status, input, &output);
 
   std::cout << output << std::endl;

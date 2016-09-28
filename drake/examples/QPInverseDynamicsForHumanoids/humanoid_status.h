@@ -71,9 +71,11 @@ class HumanoidStatus {
  public:
   /// Offset from the foot frame to contact position in the foot frame.
   static const Vector3d kFootToContactOffset;
-  /// Position Offset from the foot frame to force torque sensor in the foot frame.
+  /// Position Offset from the foot frame to force torque sensor in the foot
+  /// frame.
   static const Vector3d kFootToSensorPositionOffset;
-  /// Rotation Offset from the foot frame to force torque sensor in the foot frame.
+  /// Rotation Offset from the foot frame to force torque sensor in the foot
+  /// frame.
   static const Matrix3d kFootToSensorRotationOffset;
 
   // TODO(siyuan.feng@tri.global): The names of the links are hard coded for

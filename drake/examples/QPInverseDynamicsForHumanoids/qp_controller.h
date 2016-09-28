@@ -11,8 +11,8 @@
  * This is used to compute target task space acceleration, which is the input
  * to the inverse dynamics controller.
  * The target acceleration is computed by:
- * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + acceleration*,
- * where x is position, xd is velocity, and acceleration is acceleration.
+ * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
+ * where x is pose, xd is velocity, and xdd is acceleration.
  * Variables with superscript * are the set points, and Kp and Kd are the
  * position and velocity gains.
  * The first terms 3 are angular accelerations, and the last 3 are linear
@@ -28,12 +28,19 @@ class CartesianSetPoint {
     Kd_.setZero();
   }
 
-  CartesianSetPoint(const Isometry3d& p_d, const Vector6d& v_d,
-                    const Vector6d& desired_vd, const Vector6d& Kp,
+  /**
+   * @param pose_d Desired pose
+   * @param vel_d Desired velocity
+   * @param acc_d Desired feedforward acceleration
+   * @param Kp Position gain
+   * @param Kd Velocity gain
+   */
+  CartesianSetPoint(const Isometry3d& pose_d, const Vector6d& vel_d,
+                    const Vector6d& acc_d, const Vector6d& Kp,
                     const Vector6d& Kd) {
-    pose_d_ = p_d;
-    vel_d_ = v_d;
-    acc_d_ = desired_vd;
+    pose_d_ = pose_d;
+    vel_d_ = vel_d;
+    acc_d_ = acc_d;
     Kp_ = Kp;
     Kd_ = Kd;
   }
@@ -45,7 +52,7 @@ class CartesianSetPoint {
    * @param vel Measured velocity
    * @return Computed spatial acceleration.
    */
-  Vector6d ComputeAccelerationTarget(const Isometry3d& pose,
+  Vector6d ComputeTargetAcceleration(const Isometry3d& pose,
                                      const Vector6d& vel) const {
     // feedforward acc + velocity feedback
     Vector6d qdd = acc_d_;
@@ -77,7 +84,8 @@ class CartesianSetPoint {
 };
 
 /**
- * This class describes contact related information for each body in contact with the world.
+ * This class describes contact related information for each body in contact
+ * with the world.
  * Each contact body has a set of point contacts. For each contact point,
  * only point contact force can be applied, and the friction cone is
  * approximated by a set of basis vectors.
@@ -98,7 +106,8 @@ class ContactInformation {
   /*
    * @param num_basis_per_contact_point number of basis per contact point
    */
-  ContactInformation(const RigidBody& b, int num) : body_(b), num_basis_per_contact_point_(num) {
+  ContactInformation(const RigidBody& b, int num)
+      : body_(b), num_basis_per_contact_point_(num) {
     normal_ = Vector3d(0, 0, 1);
     mu_ = 1;
     if (num_basis_per_contact_point_ < 3)
@@ -107,7 +116,8 @@ class ContactInformation {
   }
 
   /**
-   * @brief Computes a matrix (Basis) that converts a vector of scalars (Beta) to
+   * @brief Computes a matrix (Basis) that converts a vector of scalars (Beta)
+   * to
    * the stacked point contact forces (F).
    * All the point forces are in the world frame, and are applied at
    * the contact points in the world frame.
@@ -121,7 +131,7 @@ class ContactInformation {
   MatrixXd ComputeBasisMatrix(const RigidBodyTree& robot,
                               const KinematicsCache<double>& cache) const {
     MatrixXd basis(3 * contact_points_.size(),
-                          num_basis_per_contact_point_ * contact_points_.size());
+                   num_basis_per_contact_point_ * contact_points_.size());
     Matrix3d body_rot =
         robot.relativeTransform(cache, 0, body_.get_body_index()).linear();
     basis.setZero();
@@ -155,23 +165,27 @@ class ContactInformation {
   }
 
   /**
-   * @brief Compute the contact points and reference point location in the world frame.
+   * @brief Compute the contact points and reference point location in the world
+   * frame.
    * @param robot Robot model
    * @param cache Stores the kinematics information, needs to be initialized
    * first.
    * @param offset Offset for the reference point expressed in body frame.
-   * @param contact_points Output of the function. Holds the contact point locations.
-   * @param reference_point Output of the function. Holds the reference point location.
+   * @param contact_points Output of the function. Holds the contact point
+   * locations.
+   * @param reference_point Output of the function. Holds the reference point
+   * location.
    */
-  void ComputeContactPointsAndWrenchReferencePoint(const RigidBodyTree& robot,
-                               const KinematicsCache<double>& cache,
-                               const Vector3d& offset,
-                               std::vector<Vector3d> *contact_points,
-                               Vector3d *reference_point) const {
-    *reference_point = robot.transformPoints(cache, offset, body_.get_body_index(), 0);
+  void ComputeContactPointsAndWrenchReferencePoint(
+      const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+      const Vector3d& offset, std::vector<Vector3d>* contact_points,
+      Vector3d* reference_point) const {
+    *reference_point =
+        robot.transformPoints(cache, offset, body_.get_body_index(), 0);
     contact_points->resize(contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); i++) {
-      (*contact_points)[i] = robot.transformPoints(cache, contact_points_[i], body_.get_body_index(), 0);
+      (*contact_points)[i] = robot.transformPoints(cache, contact_points_[i],
+                                                   body_.get_body_index(), 0);
     }
   }
 
@@ -197,7 +211,8 @@ class ContactInformation {
       force_to_wrench.block<3, 3>(3, col_idx).setIdentity();
       // Torque part:
       force_to_wrench.block<3, 3>(0, col_idx) =
-        drake::math::VectorToSkewSymmetric(contact_points[j] - reference_point);
+          drake::math::VectorToSkewSymmetric(contact_points[j] -
+                                             reference_point);
       col_idx += 3;
     }
     return force_to_wrench;
@@ -243,7 +258,9 @@ class ContactInformation {
 
   inline const std::string& name() const { return body_.get_name(); }
   inline int num_contact_points() const { return (int)contact_points_.size(); }
-  inline int num_basis() const { return num_contact_points() * num_basis_per_contact_point_; }
+  inline int num_basis() const {
+    return num_contact_points() * num_basis_per_contact_point_;
+  }
 
   // Getters
   inline double mu() const { return mu_; }
@@ -252,7 +269,9 @@ class ContactInformation {
   }
   inline const Vector3d& normal() const { return normal_; }
   inline const RigidBody& body() const { return body_; }
-  inline int num_basis_per_contact_point() const { return num_basis_per_contact_point_; }
+  inline int num_basis_per_contact_point() const {
+    return num_basis_per_contact_point_;
+  }
 
   // Setters
   inline std::vector<Vector3d>& mutable_contact_points() {
@@ -260,7 +279,9 @@ class ContactInformation {
   }
   inline double& mutable_mu() { return mu_; }
   inline Vector3d& mutable_normal() { return normal_; }
-  inline int& mutable_num_basis_per_contact_point() { return num_basis_per_contact_point_; }
+  inline int& mutable_num_basis_per_contact_point() {
+    return num_basis_per_contact_point_;
+  }
 };
 
 /**
@@ -287,25 +308,39 @@ class ResolvedContact {
   Vector3d reference_point_;
 
  public:
-  ResolvedContact(const RigidBody& body) : body_(body) { ; }
+  explicit ResolvedContact(const RigidBody& body) : body_(body) {}
 
   // Getters
   inline const RigidBody& body() const { return body_; }
   inline const std::string& name() const { return body_.get_name(); }
   inline const VectorXd& basis() const { return basis_; }
-  inline const std::vector<Vector3d>& point_forces() const { return point_forces_; }
-  inline const Vector3d& point_force(size_t i) const { return point_forces_.at(i); }
-  inline const std::vector<Vector3d>& contact_points() const { return contact_points_; }
-  inline const Vector3d& contact_point(size_t i) const { return contact_points_.at(i); }
-  inline const Vector6d& equivalent_wrench() const { return equivalent_wrench_; }
+  inline const std::vector<Vector3d>& point_forces() const {
+    return point_forces_;
+  }
+  inline const Vector3d& point_force(size_t i) const {
+    return point_forces_.at(i);
+  }
+  inline const std::vector<Vector3d>& contact_points() const {
+    return contact_points_;
+  }
+  inline const Vector3d& contact_point(size_t i) const {
+    return contact_points_.at(i);
+  }
+  inline const Vector6d& equivalent_wrench() const {
+    return equivalent_wrench_;
+  }
   inline const Vector3d& reference_point() const { return reference_point_; }
 
   // Setters
   inline VectorXd& mutable_basis() { return basis_; }
   inline std::vector<Vector3d>& mutable_point_forces() { return point_forces_; }
   inline Vector3d& mutable_point_force(size_t i) { return point_forces_.at(i); }
-  inline std::vector<Vector3d>& mutable_contact_points() { return contact_points_; }
-  inline Vector3d& mutable_contact_point(size_t i) { return contact_points_.at(i); }
+  inline std::vector<Vector3d>& mutable_contact_points() {
+    return contact_points_;
+  }
+  inline Vector3d& mutable_contact_point(size_t i) {
+    return contact_points_.at(i);
+  }
   inline Vector6d& mutable_equivalent_wrench() { return equivalent_wrench_; }
   inline Vector3d& mutable_reference_point() { return reference_point_; }
 };
@@ -319,12 +354,10 @@ class BodyAcceleration {
   Vector6d acceleration_;
 
  public:
-  explicit BodyAcceleration(const RigidBody& body) :
-    body_(body), acceleration_(Vector6d::Zero()) { ; }
+  explicit BodyAcceleration(const RigidBody& body)
+      : body_(body), acceleration_(Vector6d::Zero()) {}
 
-  inline bool is_valid() const {
-    return acceleration_.allFinite();
-  }
+  inline bool is_valid() const { return acceleration_.allFinite(); }
 
   // Getters
   inline const RigidBody& body() const { return body_; }
@@ -344,11 +377,12 @@ class DesiredBodyAcceleration : public BodyAcceleration {
   double weight_;
 
  public:
-  explicit DesiredBodyAcceleration(const RigidBody& body) :
-    BodyAcceleration(body), weight_(0) { ; }
+  explicit DesiredBodyAcceleration(const RigidBody& body)
+      : BodyAcceleration(body), weight_(0) {}
 
   inline bool is_valid() const {
-    return BodyAcceleration::is_valid() && std::isfinite(weight_) && weight_ >= 0;
+    return BodyAcceleration::is_valid() && std::isfinite(weight_) &&
+           weight_ >= 0;
   }
 
   // Getters
@@ -431,10 +465,12 @@ class QPInput {
   inline const std::vector<ContactInformation>& contact_info() const {
     return contact_info_;
   }
-  inline const std::vector<DesiredBodyAcceleration>& desired_body_accelerations() const {
+  inline const std::vector<DesiredBodyAcceleration>&
+  desired_body_accelerations() const {
     return desired_body_accelerations_;
   }
-  inline const DesiredBodyAcceleration& desired_body_acceleration(size_t idx) const {
+  inline const DesiredBodyAcceleration& desired_body_acceleration(
+      size_t idx) const {
     return desired_body_accelerations_.at(idx);
   }
   inline const Vector3d& desired_comdd() const { return desired_comdd_; }
@@ -445,12 +481,18 @@ class QPInput {
   inline double& mutable_w_vd() { return w_vd_; }
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
 
-  inline std::vector<ContactInformation>& mutable_contact_info() { return contact_info_; }
-  inline ContactInformation& mutable_contact_info(size_t idx) { return contact_info_.at(idx); }
-  inline std::vector<DesiredBodyAcceleration>& mutable_desired_body_accelerations() {
+  inline std::vector<ContactInformation>& mutable_contact_info() {
+    return contact_info_;
+  }
+  inline ContactInformation& mutable_contact_info(size_t idx) {
+    return contact_info_.at(idx);
+  }
+  inline std::vector<DesiredBodyAcceleration>&
+  mutable_desired_body_accelerations() {
     return desired_body_accelerations_;
   }
-  inline DesiredBodyAcceleration& mutable_desired_body_acceleration(size_t idx) {
+  inline DesiredBodyAcceleration& mutable_desired_body_acceleration(
+      size_t idx) {
     return desired_body_accelerations_.at(idx);
   }
   inline Vector3d& mutable_desired_comdd() { return desired_comdd_; }
@@ -479,10 +521,11 @@ class QPOutput {
   // Computed contact wrench in the world frame.
   // The first part of the pair is the reference point in the world frame,
   // and the second is the wrench.
-  //std::vector<ComputedContactInformation> contact_
+  // std::vector<ComputedContactInformation> contact_
   std::vector<ResolvedContact> resolved_contacts_;
 
-  // Pair of the name of cost term and cost value (only the quadratic and linear term, no constant term).
+  // Pair of the name of cost term and cost value (only the quadratic and linear
+  // term, no constant term).
   std::vector<std::pair<std::string, double>> costs_;
 
  public:
@@ -519,11 +562,19 @@ class QPOutput {
   }
   inline const Vector3d& comdd() const { return comdd_; }
   inline const VectorXd& vd() const { return vd_; }
-  inline const std::vector<BodyAcceleration>& body_accelerations() const { return body_accelerations_; }
-  inline const BodyAcceleration& body_acceleration(size_t i) const { return body_accelerations_.at(i); }
+  inline const std::vector<BodyAcceleration>& body_accelerations() const {
+    return body_accelerations_;
+  }
+  inline const BodyAcceleration& body_acceleration(size_t i) const {
+    return body_accelerations_.at(i);
+  }
   inline const VectorXd& joint_torque() const { return joint_torque_; }
-  inline const std::vector<ResolvedContact>& resolved_contacts() const { return resolved_contacts_; }
-  inline const ResolvedContact& resolved_contact(size_t i) const { return resolved_contacts_.at(i); }
+  inline const std::vector<ResolvedContact>& resolved_contacts() const {
+    return resolved_contacts_;
+  }
+  inline const ResolvedContact& resolved_contact(size_t i) const {
+    return resolved_contacts_.at(i);
+  }
   inline const std::vector<std::pair<std::string, double>>& costs() const {
     return costs_;
   }
@@ -534,10 +585,18 @@ class QPOutput {
   // Setters
   inline Vector3d& mutable_comdd() { return comdd_; }
   inline VectorXd& mutable_vd() { return vd_; }
-  inline std::vector<BodyAcceleration>& mutable_body_accelerations() { return body_accelerations_; }
-  inline BodyAcceleration& mutable_body_acceleration(size_t i) { return body_accelerations_.at(i); }
-  inline std::vector<ResolvedContact>& mutable_resolved_contacts() { return resolved_contacts_; }
-  inline ResolvedContact& mutable_resolved_contact(size_t i) { return resolved_contacts_.at(i); }
+  inline std::vector<BodyAcceleration>& mutable_body_accelerations() {
+    return body_accelerations_;
+  }
+  inline BodyAcceleration& mutable_body_acceleration(size_t i) {
+    return body_accelerations_.at(i);
+  }
+  inline std::vector<ResolvedContact>& mutable_resolved_contacts() {
+    return resolved_contacts_;
+  }
+  inline ResolvedContact& mutable_resolved_contact(size_t i) {
+    return resolved_contacts_.at(i);
+  }
   inline VectorXd& mutable_joint_torque() { return joint_torque_; }
 
   inline std::vector<std::pair<std::string, double>>& mutable_costs() {
@@ -602,7 +661,8 @@ class QPController {
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_contact_wrench_;
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_comdd_;
-  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>> cost_body_accelerations_;
+  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>>
+      cost_body_accelerations_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_vd_reg_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
 
@@ -612,11 +672,14 @@ class QPController {
    * matrices and vectors in prog_ instead of making a new one on every call.
    * Size change typically happens when contact state changes (making / breaking
    * contacts).
-   * @param
+   * @param robot Model
+   * @param all_contacts Information about contacts
+   * @param all_body_accelerations Desired body accelerations to be tracked
    */
-  void ResizeQP(const RigidBodyTree& robot,
-                const std::vector<ContactInformation>& all_contacts,
-                const std::vector<DesiredBodyAcceleration>& all_body_accelerations);
+  void ResizeQP(
+      const RigidBodyTree& robot,
+      const std::vector<ContactInformation>& all_contacts,
+      const std::vector<DesiredBodyAcceleration>& all_body_accelerations);
 
   /**
    * Zeros out the temporary matrices.
@@ -635,9 +698,10 @@ class QPController {
   /**
    * Computes the generalized acceleration, joint torque and contact wrenches
    * that best tracks the input given the current robot configuration.
-   * @param rs, robot configuration
-   * @param input specified by a higher level controller
-   * @param output stores the output
+   * @param rs Robot configuration
+   * @param input Desired motions and objectives specified by a higher level
+   * controller
+   * @param output Container for outputs
    * @return 0 if successful. < 1 if error.
    */
   int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);

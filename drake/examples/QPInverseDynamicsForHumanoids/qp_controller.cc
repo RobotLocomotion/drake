@@ -6,9 +6,10 @@
 
 using namespace drake::solvers;
 
-void QPController::ResizeQP(const RigidBodyTree& robot,
-                            const std::vector<ContactInformation>& all_supports,
-                            const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
+void QPController::ResizeQP(
+    const RigidBodyTree& robot,
+    const std::vector<ContactInformation>& all_supports,
+    const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
   // Figure out dimensions
   int num_contact_body = all_supports.size();
   int num_vd = robot.number_of_velocities();
@@ -87,14 +88,18 @@ void QPController::ResizeQP(const RigidBodyTree& robot,
   body_Jdv_.resize(all_body_accelerations.size());
   body_J_.resize(all_body_accelerations.size());
   for (size_t i = 0; i < all_body_accelerations.size(); i++) {
-    cost_body_accelerations_[i] = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-    cost_body_accelerations_[i]->set_description(all_body_accelerations[i].name() + " cost");
+    cost_body_accelerations_[i] =
+        prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+    cost_body_accelerations_[i]->set_description(
+        all_body_accelerations[i].name() + " cost");
   }
   // Regularize vd
   cost_vd_reg_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
   cost_vd_reg_->set_description("vd reg cost");
   // Regularize vd
-  cost_basis_reg_ = prog_.AddQuadraticCost(MatrixXd::Identity(num_basis_, num_basis_), VectorXd::Zero(num_basis_), {basis});
+  cost_basis_reg_ =
+      prog_.AddQuadraticCost(MatrixXd::Identity(num_basis_, num_basis_),
+                             VectorXd::Zero(num_basis_), {basis});
   cost_basis_reg_->set_description("basis reg cost");
 }
 
@@ -106,7 +111,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   // Resize and zero temporary matrices.
-  ResizeQP(rs.robot(), input.contact_info(), input.desired_body_accelerations());
+  ResizeQP(rs.robot(), input.contact_info(),
+           input.desired_body_accelerations());
   SetTempMatricesToZero();
 
   ////////////////////////////////////////////////////////////////////
@@ -124,7 +130,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //
   // For inverse dynamics, we are usually given desired motions, and
   // we want to solve for tau to achieve those motions.
-  // Desired motions can be directly specified as desired_vd, or as acceleration_d in Cartesian
+  // Desired motions can be directly specified as desired_vd, or as
+  // acceleration_d in Cartesian
   // space, which is linear w.r.t. vd as well: acceleration_d = J * vd + Jd * v.
   //
   // Note that since S.topRows(6) is zero,
@@ -234,11 +241,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
       input.w_com() * rs.J_com().transpose() *
           (rs.Jdot_times_v_com() - input.desired_comdd()));
 
-  const std::vector<DesiredBodyAcceleration>& body_motions_d = input.desired_body_accelerations();
+  const std::vector<DesiredBodyAcceleration>& body_motions_d =
+      input.desired_body_accelerations();
   for (size_t i = 0; i < body_motions_d.size(); i++) {
     const DesiredBodyAcceleration& body_motion_d = body_motions_d[i];
-    body_J_[i] = GetTaskSpaceJacobian(rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
-    body_Jdv_[i] = GetTaskSpaceJacobianDotTimesV(rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
+    body_J_[i] = GetTaskSpaceJacobian(rs.robot(), rs.cache(),
+                                      body_motion_d.body(), Vector3d::Zero());
+    body_Jdv_[i] = GetTaskSpaceJacobianDotTimesV(
+        rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
 
     cost_body_accelerations_[i]->UpdateConstraint(
         body_motion_d.weight() * body_J_[i].transpose() * body_J_[i],
@@ -303,44 +313,63 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   ////////////////////////////////////////////////////////////////////
-  // Parse result
-  // Compute resulting contact wrenches
+  // Parse results.
+  // Compute resulting contact wrenches.
   int basis_index = 0;
   int point_force_index = 0;
   point_forces_ = basis_to_force_matrix_ * basis.value();
 
   output->mutable_resolved_contacts().clear();
   for (size_t i = 0; i < input.contact_info().size(); i++) {
-    const ContactInformation &contact_info = input.contact_info(i);
-    output->mutable_resolved_contacts().push_back(ResolvedContact(contact_info.body()));
-    ResolvedContact &resolved_contact = output->mutable_resolved_contacts().back();
-    // Copy basis
-    resolved_contact.mutable_basis() = basis.value().segment(basis_index, contact_info.num_basis());
+    const ContactInformation& contact_info = input.contact_info(i);
+    ResolvedContact resolved_contact(contact_info.body());
+
+    // Copy basis.
+    resolved_contact.mutable_basis() =
+        basis.value().segment(basis_index, contact_info.num_basis());
     basis_index += contact_info.num_basis();
 
     // Compute contact points and reference point in the world frame.
-    contact_info.ComputeContactPointsAndWrenchReferencePoint(rs.robot(), rs.cache(), Vector3d::Zero(), &resolved_contact.mutable_contact_points(), &resolved_contact.mutable_reference_point());
+    contact_info.ComputeContactPointsAndWrenchReferencePoint(
+        rs.robot(), rs.cache(), Vector3d::Zero(),
+        &resolved_contact.mutable_contact_points(),
+        &resolved_contact.mutable_reference_point());
 
-    // Convert point forces to an equivalent wrench wrt to the reference point in the world frame.
-    resolved_contact.mutable_equivalent_wrench() = contact_info.ComputeWrenchMatrix(resolved_contact.contact_points(), resolved_contact.reference_point()) * point_forces_.segment(point_force_index, 3 * contact_info.num_contact_points());
+    // Convert point forces to an equivalent wrench wrt to the reference point
+    // in the world frame.
+    resolved_contact.mutable_equivalent_wrench() =
+        contact_info.ComputeWrenchMatrix(resolved_contact.contact_points(),
+                                         resolved_contact.reference_point()) *
+        point_forces_.segment(point_force_index,
+                              3 * contact_info.num_contact_points());
 
-    // Copy point forces
-    resolved_contact.mutable_point_forces().resize(contact_info.num_contact_points());
+    // Copy point forces.
+    resolved_contact.mutable_point_forces().resize(
+        contact_info.num_contact_points());
     for (int j = 0; j < contact_info.num_contact_points(); j++) {
-      resolved_contact.mutable_point_force(j) = point_forces_.segment<3>(point_force_index);
+      resolved_contact.mutable_point_force(j) =
+          point_forces_.segment<3>(point_force_index);
       point_force_index += 3;
     }
+
+    // Add to output.
+    output->mutable_resolved_contacts().push_back(resolved_contact);
   }
 
-  // Set output accelerations
+  // Set output accelerations.
   output->mutable_vd() = vd.value();
   output->mutable_comdd() = rs.J_com() * output->vd() + rs.Jdot_times_v_com();
 
-  std::vector<BodyAcceleration>& body_accelerations = output->mutable_body_accelerations();
-  body_accelerations.clear();
+  output->mutable_body_accelerations().clear();
   for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
-    body_accelerations.push_back(BodyAcceleration(input.desired_body_acceleration(i).body()));
-    body_accelerations.back().mutable_acceleration() = body_J_[i] * output->vd() + body_Jdv_[i];
+    BodyAcceleration body_acceleration(
+        input.desired_body_acceleration(i).body());
+    // Compute accelerations.
+    body_acceleration.mutable_acceleration() =
+        body_J_[i] * output->vd() + body_Jdv_[i];
+
+    // Add to output.
+    output->mutable_body_accelerations().push_back(body_acceleration);
   }
 
   // Set output joint torques
@@ -353,7 +382,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                 rs.centroidal_momentum_matrix_dot_times_v();
   Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
   for (int i = 0; i < num_contact_body_; i++) {
-    const Vector6d& contact_wrench = output->resolved_contact(i).equivalent_wrench();
+    const Vector6d& contact_wrench =
+        output->resolved_contact(i).equivalent_wrench();
     const Vector3d& ref_point = output->resolved_contact(i).reference_point();
     net_wrench += contact_wrench;
     net_wrench.segment<3>(0) +=
@@ -361,7 +391,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
   DRAKE_ASSERT((net_wrench - Ld).isZero(EPSILON));
 
-  if (!output->is_valid(rs.robot().number_of_velocities(), rs.robot().actuators.size())) {
+  if (!output->is_valid(rs.robot().number_of_velocities(),
+                        rs.robot().actuators.size())) {
     std::cerr << "output is invalid\n";
     return -1;
   }
@@ -374,15 +405,19 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "QPInput:\n";
   out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
   for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
-    const DesiredBodyAcceleration &body_motion_d = input.desired_body_acceleration(i);
-    out << body_motion_d.name() << "_d" << body_motion_d.acceleration().transpose() << std::endl;
+    const DesiredBodyAcceleration& body_motion_d =
+        input.desired_body_acceleration(i);
+    out << "desired_" << body_motion_d.name()
+        << "dd: " << body_motion_d.acceleration().transpose() << std::endl;
   }
   out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
 
   out << "w_com: " << input.w_com() << std::endl;
   for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
-    const DesiredBodyAcceleration &body_motion_d = input.desired_body_acceleration(i);
-    out << "w_" << body_motion_d.name() << ": " << body_motion_d.weight() << std::endl;
+    const DesiredBodyAcceleration& body_motion_d =
+        input.desired_body_acceleration(i);
+    out << "w_" << body_motion_d.name() << ": " << body_motion_d.weight()
+        << std::endl;
   }
   out << "w_vd: " << input.w_vd() << std::endl;
   out << "w_basis_reg: " << input.w_basis_reg() << std::endl;
@@ -401,13 +436,16 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
 
   for (size_t i = 0; i < output.body_accelerations().size(); i++) {
     const BodyAcceleration& body_motion = output.body_acceleration(i);
-    out << body_motion.name() << " acc: " << body_motion.acceleration().transpose() << std::endl;
+    out << body_motion.name()
+        << " acc: " << body_motion.acceleration().transpose() << std::endl;
   }
 
   out << "===============================================\n";
   for (size_t i = 0; i < output.resolved_contacts().size(); i++) {
     const ResolvedContact& contact_result = output.resolved_contact(i);
-    out << contact_result.name() << " wrench: " << contact_result.equivalent_wrench().transpose() << std::endl;
+    out << contact_result.name()
+        << " wrench: " << contact_result.equivalent_wrench().transpose()
+        << std::endl;
     out << "point forces:\n";
     for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
       out << contact_result.point_force(j).transpose() << std::endl;

@@ -52,9 +52,11 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
   for (int i = 0; i < 2; i++) {
     // Rotate the sensor measurement to body frame first.
     foot_wrench_in_sensor_frame_[i].head(3) =
-        kFootToSensorRotationOffset.transpose() * foot_wrench_in_sensor_frame_[i].head(3);
+        kFootToSensorRotationOffset.transpose() *
+        foot_wrench_in_sensor_frame_[i].head(3);
     foot_wrench_in_sensor_frame_[i].tail(3) =
-        kFootToSensorRotationOffset.transpose() * foot_wrench_in_sensor_frame_[i].tail(3);
+        kFootToSensorRotationOffset.transpose() *
+        foot_wrench_in_sensor_frame_[i].tail(3);
 
     // H^w_s = sensor frame = rs.foot_sensor(i).pose()
     // H^w_ak = world frame aligned, but located at ankle joint = [I,
