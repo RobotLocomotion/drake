@@ -266,13 +266,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // Call solver
-  SolutionResult result;
-  SnoptSolver solver_;
   if (!solver_.available()) {
     std::cerr << "Solver not available.\n";
     return -1;
   }
-  result = solver_.Solve(prog_);
+  SolutionResult result = solver_.Solve(prog_);
   if (result != drake::solvers::SolutionResult::kSolutionFound) {
     std::cerr << "solution not found\n";
     return -1;
