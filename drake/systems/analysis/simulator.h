@@ -100,31 +100,6 @@ class Simulator {
   // TODO(sherm1) Publish() should be called at publishing sample times.
   void StepTo(const T& final_time);
 
-  /** Request that the integrator attempt to achieve a particular accuracy for
-  the continuous portions of the simulation. Otherwise a default accuracy is
-  chosen for you. This is ignored for fixed-step integration since accuracy
-  control requires variable step sizes.
-
-  Integrators vary in the range of accuracy (loosest to tightest) that they can
-  support. If you request accuracy outside the supported range for the chosen
-  integrator it will be quietly adjusted to be in range. You can find out the
-  accuracy setting actually being used using `get_accuracy_in_use()`.
-
-  The precise meaning of *accuracy* is a complicated discussion, but translates
-  roughly to the number of significant digits you want in the results. By
-  convention it is supplied as `10^-digits`, meaning that an accuracy of 1e-3
-  provides about three significant digits. For more information, see <pre>
-    Sherman, et al. Procedia IUTAM 2:241-261 (2011), section 3.3.
-    http://dx.doi.org/10.1016/j.piutam.2011.04.023
-  </pre> **/
-  void set_target_accuracy(double accuracy) {
-    integrator_->set_target_accuracy(accuracy); }
-
-  /** Report the accuracy setting actually being used. **/
-  double get_target_accuracy() const {
-    return integrator_->get_target_accuracy();
-  }
-
   /** Request that the first attempted integration step have a particular size.
   Otherwise the integrator will estimate a suitable size for the initial step
   attempt. For fixed-step integration, all steps will be taken at this step

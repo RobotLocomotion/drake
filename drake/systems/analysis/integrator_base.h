@@ -113,7 +113,7 @@ class IntegratorBase {
    * TODO(edrumwri): complain if integrator with error estimation wants to drop
    *                 below the minimum step size
    **/
-  virtual void set_target_accuracy(double accuracy) {
+  virtual void set_target_accuracy(const T& accuracy) {
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -121,12 +121,12 @@ class IntegratorBase {
   /**
    *   Gets the target accuracy.
    */
-  virtual double get_target_accuracy() const { return target_accuracy_; }
+  virtual const T& get_target_accuracy() const { return target_accuracy_; }
 
   /**
    * Gets the accuracy in use by the integrator
    */
-  virtual double get_accuracy_in_use() const { return accuracy_in_use_; }
+  virtual const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
    * Sets the maximum step size for this integrator
@@ -313,7 +313,7 @@ class IntegratorBase {
 
   // TODO(edrumwri): update to T?
   // the accuracy being used
-  double accuracy_in_use_;
+  T accuracy_in_use_{nan()};
 
   // The maximum step size
   T max_step_size_{(T) std::numeric_limits<double>::infinity()};
@@ -338,7 +338,7 @@ class IntegratorBase {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double target_accuracy_{0.0};      // means "unspecified, use default"
+  T target_accuracy_{(T) nan()};      // means "unspecified, use default"
   T req_initial_step_size_{(T)0.0};  // means "unspecified, use default"
 };                                   // IntegratorBase
 }  // namespace systems

@@ -48,7 +48,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    * No accuracy setting for Euler integrator.
    * @param accuracy unused
    */
-  void set_target_accuracy(double accuracy) override {
+  void set_target_accuracy(const T& accuracy) override {
     throw std::logic_error(
         "Accuracy setting not available"
             " for explicit Euler"
@@ -58,7 +58,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
   /**
    * No accuracy setting for Euler integrator.
    */
-  double get_target_accuracy() const override {
+  const T& get_target_accuracy() const override {
     throw std::logic_error(
         "Accuracy setting not available"
             " for explicit Euler"

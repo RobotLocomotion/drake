@@ -50,7 +50,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
    * No accuracy setting for RK2 integrator.
    * @param accuracy unused
    */
-  void set_target_accuracy(double accuracy) override {
+  void set_target_accuracy(const T& accuracy) override {
     throw std::runtime_error("Accuracy setting not available"
                                  " for RungeKutta2"
                                  " integrator");
@@ -59,7 +59,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   /**
    * No accuracy setting for RK2 integrator.
    */
-  double get_target_accuracy() const override {
+  const T& get_target_accuracy() const override {
     throw std::logic_error("Accuracy setting not available"
                                  " for RungeKutta2"
                                  " integrator");
