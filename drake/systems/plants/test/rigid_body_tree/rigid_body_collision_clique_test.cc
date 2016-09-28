@@ -38,7 +38,8 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     c1b = new Element();
     r1b1->AddCollisionElement("default", c1b);
     // assign inertia to avoid the welding code in RigidBodyTree::compile
-    drake::SquareTwistMatrix<double> I = drake::SquareTwistMatrix<double>::Zero();
+    drake::SquareTwistMatrix<double> I =
+        drake::SquareTwistMatrix<double>::Zero();
     I.block(3, 3, 3, 3) << Matrix3d::Identity();
     r1b1->set_spatial_inertia(I);
 
