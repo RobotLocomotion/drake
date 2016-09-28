@@ -54,7 +54,7 @@ GTEST_TEST(DrakeSingleCarInStataGarageTest, BasicTest) {
     ::ros::V_string node_list;
     EXPECT_TRUE(::ros::master::getNodes(node_list));
 
-    for(auto it : node_list) {
+    for (auto it : node_list) {
       std::string node_name = it;
       if (node_name == "/drake/single_car_in_stata_garage")
         drake_node_found = true;
