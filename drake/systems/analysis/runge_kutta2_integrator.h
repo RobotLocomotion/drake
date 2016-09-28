@@ -17,6 +17,14 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
   virtual ~RungeKutta2Integrator() {}
 
+  /**
+ * Constructs fixed-step integrator for a given system using the given
+ * context for initial conditions.
+ * @param system A reference to the system to be simulated
+ * @param max_step_size The maximum (fixed) step size; the integrator will
+ *                      not take larger step sizes than this.
+ * @param pointer to the context (nullptr is ok)
+ */
   RungeKutta2Integrator(const System<T>& system, const T& max_step_size,
                         Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {

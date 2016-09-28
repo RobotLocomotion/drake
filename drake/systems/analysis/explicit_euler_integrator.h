@@ -22,6 +22,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    * @param system A reference to the system to be simulated
    * @param max_step_size The maximum (fixed) step size; the integrator will
    *                      not take larger step sizes than this.
+   * @param pointer to the context (nullptr is ok)
    */
   ExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
                           Context<T>* context = nullptr)
