@@ -1,9 +1,4 @@
-//
-// Created by drum on 9/14/16.
-//
-
-#ifndef DRAKE_SUPERBUILD_RK2_INTEGRATOR_H
-#define DRAKE_SUPERBUILD_RK2_INTEGRATOR_H
+#pragma once
 
 #include "drake/systems/analysis/integrator_base.h"
 #include "integrator_base.h"
@@ -11,6 +6,12 @@
 namespace drake {
 namespace systems {
 
+/**
+ * A second-order, explicit Runge Kutta integrator. Configuration (q) and
+ * velocity (v) are both updated using the following formula:
+ * q(t+h) = q(t) + v(t)*h
+ * v(t+h) = v(t) + dv/dt(q(t), v(t)) * h
+ */
 template <class T>
 class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
@@ -20,17 +21,17 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
                         Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {
     step_size_ = step_size;
-    derivs0_ = IntegratorBase<T>::system_.AllocateTimeDerivatives();
-    derivs1_ = IntegratorBase<T>::system_.AllocateTimeDerivatives();
+    derivs0_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
+    derivs1_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
   }
 
-  virtual typename IntegratorBase<T>::StepResult Step(const T& dt);
+  typename IntegratorBase<T>::StepResult Step(const T& dt) override;
 
   /**
    * No accuracy setting for RK2 integrator.
    * @param accuracy unused
    */
-  virtual void set_target_accuracy(double accuracy) {
+  void set_target_accuracy(double accuracy) override {
     throw std::runtime_error("Accuracy setting not available"
                                  " for RungeKutta2"
                                  " integrator");
@@ -39,8 +40,8 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   /**
    * No accuracy setting for RK2 integrator.
    */
-  virtual double get_target_accuracy() const {
-    throw std::runtime_error("Accuracy setting not available"
+  double get_target_accuracy() const override {
+    throw std::logic_error("Accuracy setting not available"
                                  " for RungeKutta2"
                                  " integrator");
   }
@@ -48,7 +49,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   /**
    *   Gets the fixed step size.
    */
-  virtual const T& get_ideal_next_step_size() const { return step_size_; }
+  const T& get_ideal_next_step_size() const override { return step_size_; }
 
   /**
    *   Sets the fixed step size.
@@ -63,13 +64,13 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   /** Request that the first attempted integration step have a particular size.
      All steps will be taken at this step size.
    **/
-  virtual void request_initial_step_size_target(const T& step_size) {
+  void request_initial_step_size_target(const T& step_size) override {
     step_size_ = step_size;
   }
 
   /** Get the first integration step target size. Equal to the fixed step size.
    **/
-  virtual const T& get_initial_step_size_target() const {
+  const T& get_initial_step_size_target() const override {
     return step_size_;
   }
 
@@ -84,30 +85,33 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 template <class T>
 typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
     const T& dt) {
-  DRAKE_THROW_UNLESS(dt >= 0.0);
-  DRAKE_THROW_UNLESS(IntegratorBase<T>::initialization_done_);
+
+  if (dt < 0.0)
+    throw std::logic_error("Negative dt.");
+  if (!IntegratorBase<T>::is_initialized())
+    throw std::logic_error("Integrator not initialized.");
 
   // Find the continuous state xc within the Context, just once.
-  auto& context = IntegratorBase<T>::context_;
+  auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc =
       context->get_mutable_state()->get_mutable_continuous_state()->
           get_mutable_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
-  IntegratorBase<T>::system_.EvalTimeDerivatives(*IntegratorBase<T>::context_,
-                                                 derivs0_.get());
+  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+      *IntegratorBase<T>::get_mutable_context(), derivs0_.get());
 
   // First stage is an explicit Euler step:
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), xd(t+), u(t))
   const auto& xcdot0 = derivs0_->get_state();
   xc->PlusEqScaled(dt, xcdot0);  // xc += dt * xcdot0
-  T t = IntegratorBase<T>::context_->get_time() + dt;
-  IntegratorBase<T>::context_->set_time(t);
+  T t = IntegratorBase<T>::get_context().get_time() + dt;
+  IntegratorBase<T>::get_mutable_context()->set_time(t);
 
   // use derivative at t+dt
-  IntegratorBase<T>::system_.EvalTimeDerivatives(*IntegratorBase<T>::context_,
-                                                 derivs1_.get());
+  IntegratorBase<T>::get_system().EvalTimeDerivatives(
+      *IntegratorBase<T>::get_mutable_context(), derivs1_.get());
   const auto& xcdot1 = derivs1_->get_state();
 
   // TODO(sherm1) Use better operators when available.
@@ -115,15 +119,17 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
   xc->PlusEqScaled(-dt * 0.5, xcdot0);
 
   // We successfully took a step -- collect statistics.
-  if (++IntegratorBase<T>::num_steps_taken_ == 1) {  // The first step.
-    IntegratorBase<T>::actual_initial_step_size_taken_ = dt;
-    IntegratorBase<T>::smallest_step_size_taken_ = dt;
-    IntegratorBase<T>::largest_step_size_taken_ = dt;
+  IntegratorBase<T>::set_num_steps_taken(
+      IntegratorBase<T>::get_num_steps_taken()+1);
+  if (IntegratorBase<T>::get_num_steps_taken() == 1) {  // The first step.
+    IntegratorBase<T>::set_actual_initial_step_size_taken(dt);
+    IntegratorBase<T>::set_smallest_step_size_taken(dt);
+    IntegratorBase<T>::set_largest_step_size_taken(dt);
   } else {  // Not the first step.
-    if (dt < IntegratorBase<T>::smallest_step_size_taken_)
-      IntegratorBase<T>::smallest_step_size_taken_ = dt;
-    if (dt > IntegratorBase<T>::largest_step_size_taken_)
-      IntegratorBase<T>::largest_step_size_taken_ = dt;
+    if (dt < IntegratorBase<T>::get_smallest_step_size_taken())
+      IntegratorBase<T>::set_smallest_step_size_taken(dt);
+    if (dt > IntegratorBase<T>::get_largest_step_size_taken())
+      IntegratorBase<T>::set_largest_step_size_taken(dt);
   }
 
   return IntegratorBase<T>::kTimeHasAdvanced;
@@ -131,4 +137,3 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
 }  // systems
 }  // drake
 
-#endif  // DRAKE_SUPERBUILD_EXPLICIT_EULER_INTEGRATOR_H

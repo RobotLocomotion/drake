@@ -158,20 +158,6 @@ void AutomotiveSimulator<T>::Start() {
   lcm_receive_thread_ =
       std::make_unique<systems::lcm::LcmReceiveThread>(lcm_.get());
 
-  // setup the step size
-  // TODO(edrumwri): replace this integrator with variable step version
-  // when available
-  const T DT = (T) 1e-3;
-
-  // create the integrator and initialize it
-  std::unique_ptr<systems::IntegratorBase<double>> integrator(
-      new systems::ExplicitEulerIntegrator<double>(*diagram_, DT,
-                                          simulator_->get_mutable_context()));
-  integrator->Initialize();
-
-  // set the integrator
-  simulator_->reset_integrator(integrator);
-
   simulator_->Initialize();
 
   started_ = true;

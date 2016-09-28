@@ -16,43 +16,45 @@ namespace drake {
 namespace systems {
 
 /** A forward dynamics solver for hybrid dynamic systems represented by
-`System<T>` objects. Starting with an initial Context for a given System,
-%Simulator advances time and produces a series of Context values that forms a
-trajectory satisfying the system's dynamic equations to a specified accuracy.
-Only the Context is modified by a %Simulator; the System is const.
-
-A Drake System is a continuous/discrete/hybrid dynamic system where the
-continuous part is a DAE, that is, it is expected to consist of a set of
-differential equations and bilateral algebraic constraints. The set of active
-constraints may change as a result of particular events, such as contact.
-
-Given a current Context, we expect a System to provide us with
- - derivatives for the continuous differential equations that already satisfy
-   the differentiated form of the constraints (typically, acceleration
-   constraints),
- - a projection method for least-squares correction of violated higher-level
-   constraints (position and velocity level),
- - a time-of-next-sample method that can be used to adjust the integrator
-   step size in preparation for a discrete update,
- - a method that can update discrete variables when their sample time is
-   reached,
- - witness (guard) functions for event isolation,
- - event handlers (reset functions) for making appropriate changes to state and
-   mode variables when an event has been isolated.
-
-The continuous parts of the trajectory are advanced using a numerical
-integrator. Different integrators have different properties; if you know about
-that you can choose the one that is most appropriate for your application.
-Otherwise, a default is provided which is adequate for most systems.
-
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided and
-available to link against in libdrakeSystemAnalysis:
- - double
- - AutoDiffXd
-
- Other instantiations are permitted but take longer to compile. **/
+ * `System<T>` objects. Starting with an initial Context for a given System,
+ * %Simulator advances time and produces a series of Context values that forms a
+ * trajectory satisfying the system's dynamic equations to a specified accuracy.
+ * Only the Context is modified by a %Simulator; the System is const.
+ *
+ * A Drake System is a continuous/discrete/hybrid dynamic system where the
+ * continuous part is a DAE, that is, it is expected to consist of a set of
+ * differential equations and bilateral algebraic constraints. The set of active
+ * constraints may change as a result of particular events, such as contact.
+ *
+ * Given a current Context, we expect a System to provide us with
+ * - derivatives for the continuous differential equations that already satisfy
+ * the differentiated form of the constraints (typically, acceleration
+ * constraints),
+ * - a projection method for least-squares correction of violated higher-level
+ * constraints (position and velocity level),
+ * - a time-of-next-sample method that can be used to adjust the integrator
+ * step size in preparation for a discrete update,
+ * - a method that can update discrete variables when their sample time is
+ * reached,
+ * - witness (guard) functions for event isolation,
+ * - event handlers (reset functions) for making appropriate changes to state
+ * and mode variables when an event has been isolated.
+ *
+ * The continuous parts of the trajectory are advanced using a numerical
+ * integrator. Different integrators have different properties; if you know
+ * about that you can choose the one that is most appropriate for your
+ * application. Otherwise, a default is provided which is adequate for most
+ * systems.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided and
+ * available to link against in libdrakeSystemAnalysis:
+ * - double
+ * - AutoDiffXd
+ *
+ * Other instantiations are permitted but take longer to compile.
+ **/
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -230,11 +232,12 @@ class Simulator {
   // TODO(edrumwri): Undo initialization upon integrator reset?
   /**
    *   Resets the integrator.
-   *   @param integrator a non-NULL pointer to an integrator
+   *   @param integrator a non-NULL pointer to an integrator; an exception
+   *          will be thrown if the integrator is null.
    */
   void reset_integrator(std::unique_ptr<IntegratorBase<T>>& integrator) {
     if (!integrator)
-      throw std::runtime_error("Integrator is null");
+      throw std::logic_error("Integrator is null");
     integrator_ = std::move(integrator);
   }
 
@@ -345,7 +348,7 @@ void Simulator<T>::StepTo(const T& final_time) {
   UpdateActions update_actions;
   bool update_time_hit = false;
 
-  // integrate until desired interval has completed
+  // Integrate until desired interval has completed.
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();

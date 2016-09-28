@@ -1,13 +1,10 @@
-//
-// Created by drum on 9/20/16.
-//
-
 #pragma once
 
 #include "drake/systems/framework/examples/spring_mass_system.h"
 
 namespace drake {
 namespace systems {
+namespace {
 
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
@@ -61,6 +58,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int publish_count_{0};
   mutable int update_count_{0};
 };  // MySpringMassSystem
+}  // blank
 }  // systems
 }  // drake
 

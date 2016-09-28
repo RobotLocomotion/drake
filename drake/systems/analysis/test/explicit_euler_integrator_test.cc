@@ -76,8 +76,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kInitialVelocity = 0.0;
   const double kOmega = std::sqrt(kSpring / kMass);
 
-  // Set initial condition using the Simulator's internal Context.
-  spring_mass.set_position(integrator.get_mutable_context(), kInitialPosition);
+  // Set initial condition.
+  spring_mass.set_position(context.get(), kInitialPosition);
 
   // Take all the defaults.
   integrator.Initialize();
