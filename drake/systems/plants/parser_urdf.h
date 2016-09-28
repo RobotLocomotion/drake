@@ -65,11 +65,12 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfStringRpyJointToWorld(
+ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfStringRpyJointToWorld().")
+  DRAKE_DEPRECATED(
+      "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
@@ -81,7 +82,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * @p tree. The model instance is connected to the world via a `kRollPitchYaw`
  * joint. When this joint is at its zero position, the model instance's frame is
  * coincident with the world's coordinate frame. This method has parameter
- * @p package_map that contains a mapping from ROS package names to their
+ * @p ros_package_map that contains a mapping from ROS package names to their
  * paths on the local file system. This mapping is used to find resources like
  * mesh files that are referenced within the URDF. This method may be called
  * from within the context of a [ROS node](http://wiki.ros.org/Nodes) or a
@@ -92,8 +93,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when searching for files referenced in the
+ * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * are the packages to search through when searching for files referenced in the
  * URDF.
  *
  * @param[out] tree The `RigidBodyTree` to which to add the model instance.
@@ -103,18 +104,18 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfStringRpyJointToWorldRos(
+DRAKERBM_EXPORT ModelInstanceIdTable
+AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string,
-    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
+    std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfStringRpyJointToWorldRos().")
+DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
-    std::map<std::string, std::string>& package_map, RigidBodyTree* tree);
+    std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
@@ -142,23 +143,10 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfString(
-    const std::string& urdf_string,
-    const std::string& root_dir,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
-
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfString().")
-#endif
-DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    const std::string& root_dir,
+    const std::string& urdf_string, const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
@@ -166,7 +154,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * of type @p floating_base_type. The body to which this joint attaches and
  * the transform between this body and the model instance's frame when this
  * joint is in its zero position is determined by @p weld_to_frame. This method
- * has parameter @p package_map that contains a mapping from ROS package names
+ * has parameter @p ros_package_map that contains a mapping from ROS package names
  * to their paths on the local file system. This mapping is used to find
  * resources like mesh files that are referenced within the URDF. This method
  * may be called from within the context of a
@@ -177,8 +165,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * A new model instance is created based on this URDF text and added to
  * @p tree.
  *
- * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when finding files referenced in the URDF.
+ * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] root_dir The root directory in which to search for files
  * mentioned in the URDF.
@@ -197,25 +185,21 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * the `RigidBodyTree`.
  */
 DRAKERBM_EXPORT
-ModelInstanceIdTable AddUrdfStringRos(
-    const std::string& urdf_string,
-    PackageMap& package_map,
+ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
+    const std::string& urdf_string, PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 #ifndef SWIG
-  DRAKE_DEPRECATED("Please use AddUrdfStringRos().")
+  DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string,
-    PackageMap& package_map,
+    const std::string& urdf_string, PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
 
 /**
  * Reads a single model from a URDF specification and adds a single instance of
@@ -304,8 +288,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * description of the model. An instance of this model will be added to
  * @p tree.
  *
- * @param[in] package_map A map of ROS package names to their paths. These are
- * the packages to search through when finding files referenced in the URDF.
+ * @param[in] ros_package_map A map of ROS package names to their paths. These
+ * are the packages to search through when finding files referenced in the URDF.
  *
  * @param[in] floating_base_type The type of joint that connects the model
  * instance's root to the @p tree.
@@ -323,7 +307,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKERBM_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    std::map<std::string, std::string>& package_map,
+    std::map<std::string, std::string>& ros_package_map,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree);

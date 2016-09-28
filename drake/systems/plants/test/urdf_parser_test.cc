@@ -50,8 +50,8 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Instantiates a RigidBodyTree using the URDF string defined above.
   std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
-  drake::parsers::urdf::AddUrdfStringRpyJointToWorld(urdf_string,
-      rigid_body_tree.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld(
+      urdf_string, rigid_body_tree.get());
 
   // Obtains the child link of food_joint.
   RigidBody* foo_joint_link =

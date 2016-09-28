@@ -898,8 +898,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstanceFromUrdfString(
 
   // Adds the URDF to the RigidBodyTree.
   ModelInstanceIdTable model_instance_id_table =
-      drake::parsers::urdf::AddUrdfString(urdf_string, root_dir,
-          floating_base_type, weld_to_frame, tree.get());
+      drake::parsers::urdf::AddModelInstanceFromUrdfString(urdf_string,
+          root_dir, floating_base_type, weld_to_frame, tree.get());
 
   // Parses the additional tags understood by the RigidBodySystem. These include
   // actuators, sensors, etc.
