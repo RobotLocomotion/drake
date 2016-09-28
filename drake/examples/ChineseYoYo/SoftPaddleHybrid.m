@@ -3,7 +3,13 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   properties
     in_contact
     no_contact
-    radius = 1;
+    radius
+    paddleId
+    dxzPaddleFramePos
+    dxzPaddleFrameNeg
+    baseId
+    emptyState
+    options
   end
   
   methods
@@ -52,6 +58,16 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       obj.in_contact = in_contact;
       obj.no_contact = no_contact;
       obj = setStateFrame(obj,getOutputFrame(obj));
+      
+      %Precalculations for guards:
+      obj.radius = 1;
+      obj.paddleId = obj.no_contact.findLinkId('paddle'); % from findLinkId or findFrameInd)
+      obj.dxzPaddleFramePos = [0,0,1];
+      obj.dxzPaddleFrameNeg = [0,0,-1];
+      obj.baseId = obj.no_contact.findLinkId('world+base');
+      obj.options.base_or_frame_id = obj.baseId;
+      obj.emptyState = Point(getStateFrame(obj));
+            
     end
     
     function [g,dg] = collisionGuard(obj,t,x,u)
@@ -65,21 +81,17 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       kinsol=doKinematics(obj.no_contact, x(1:npos));
       
       % transform state into inertial frame
-      pos_disc_global = [x(3);0;x(4)]; %TODO find state to inertial frame a function call
+      pos_disc_global = [x(3);0;x(4)]; %TODO find state to inertial frame a proper function call
       
-      paddleId = obj.no_contact.findLinkId('paddle'); % from findLinkId or findFrameInd)
       %get point from frame
-      [pos_disc_in_paddle_frame] = bodyKin(obj.no_contact,kinsol,paddleId,pos_disc_global);
+      [pos_disc_in_paddle_frame] = bodyKin(obj.no_contact,kinsol,obj.paddleId,pos_disc_global);
       
       %heightjoint = findPositionIndices(obj.in_contact,'load_z');
-      g = pos_disc_in_paddle_frame(3)-obj.radius; %todo: pick z index generically
+      g = pos_disc_in_paddle_frame(3)-obj.radius; %todo: make this more generic
       
-      dxz_paddle_frame = [0,0,1];
-      baseId = obj.no_contact.findLinkId('world+base');
-      options.base_or_frame_id = baseId;
-      dxz = forwardKin(obj.no_contact,kinsol,paddleId,dxz_paddle_frame,options);		
+      dxz = forwardKin(obj.no_contact,kinsol,obj.paddleId,obj.dxzPaddleFramePos,obj.options);		
       
-      dg = Point(getStateFrame(obj));
+      dg = obj.emptyState;
       dg.load_x =dxz(1);
       dg.load_z =dxz(3);
       
@@ -99,19 +111,15 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % transform state into inertial frame
       pos_disc_global = [x(3);0;x(4)]; %TODO find state to inertial frame a function call
       
-      paddleId = obj.in_contact.findLinkId('paddle'); % from findLinkId or findFrameInd)
       %get point from frame
-      [pos_disc_in_paddle_frame] = bodyKin(obj.in_contact,kinsol,paddleId,pos_disc_global);
+      [pos_disc_in_paddle_frame] = bodyKin(obj.in_contact,kinsol,obj.paddleId,pos_disc_global);
       
       %heightjoint = findPositionIndices(obj.in_contact,'load_z');
-      g = - pos_disc_in_paddle_frame(3)+ obj.radius;
+      g = - pos_disc_in_paddle_frame(3) + obj.radius;
           
-      dxz_paddle_frame = [0,0,-1];
-      baseId = obj.no_contact.findLinkId('world+base');
-      options.base_or_frame_id = baseId;
-      dxz = forwardKin(obj.in_contact,kinsol,paddleId,dxz_paddle_frame,options);		
+      dxz = forwardKin(obj.in_contact,kinsol,obj.paddleId,obj.dxzPaddleFrameNeg,obj.options);		
       
-      dg = Point(getStateFrame(obj));
+      dg = obj.emptyState;
       dg.load_x =dxz(1);
       dg.load_z =dxz(3);
       
