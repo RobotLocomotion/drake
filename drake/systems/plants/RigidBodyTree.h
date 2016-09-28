@@ -100,7 +100,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string,
-      std::map<std::string, std::string>& package_map,
+      std::map<std::string, std::string>& ros_package_map,
       const std::string& root_dir = ".",
       const drake::systems::plants::joints::FloatingBaseType
           floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
@@ -120,7 +120,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      std::map<std::string, std::string>& package_map,
+      std::map<std::string, std::string>& ros_package_map,
       const drake::systems::plants::joints::FloatingBaseType
           floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
