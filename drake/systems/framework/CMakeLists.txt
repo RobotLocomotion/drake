@@ -24,8 +24,8 @@ set(sources
   primitives/pid_controller.cc
   primitives/time_varying_polynomial_source.cc
   state.cc
-  state_subvector.cc
-  state_supervector.cc
+  subvector.cc
+  supervector.cc
   system.cc
   system_input.cc
   system_output.cc
@@ -39,7 +39,7 @@ set(sources
 # TODO(david-german-tri): Some of these headers are implementation details that
 # should never be directly included outside of systems/framework. They ought to
 # be private, but we can't make them private yet because they are included in
-# API headers. (For example, state_subvector.h is used in state.h.) Once the
+# API headers. (For example, subvector.h is used in state.h.) Once the
 # System2 framework template implementations have been moved into .cc files
 # using explicit instantiation, tighten this list.
 set(installed_headers
@@ -55,8 +55,8 @@ set(installed_headers
   input_port_evaluator_interface.h
   output_port_listener_interface.h
   state.h
-  state_subvector.h
-  state_supervector.h
+  subvector.h
+  supervector.h
   system.h
   system_input.h
   system_output.h

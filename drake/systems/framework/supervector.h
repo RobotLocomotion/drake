@@ -12,17 +12,17 @@
 namespace drake {
 namespace systems {
 
-/// StateSupervector is a concrete class template that implements
+/// Supervector is a concrete class template that implements
 /// VectorBase by concatenating multiple VectorBases, which it
 /// does not own.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
-class StateSupervector : public VectorBase<T> {
+class Supervector : public VectorBase<T> {
  public:
   /// Constructs a supervector consisting of all the vectors in
   /// subvectors, which must live at least as long as this supervector.
-  explicit StateSupervector(const std::vector<VectorBase<T>*>& subvectors)
+  explicit Supervector(const std::vector<VectorBase<T>*>& subvectors)
       : vectors_(subvectors) {
     int sum = 0;
     for (const VectorBase<T>* vec : vectors_) {
@@ -61,7 +61,7 @@ class StateSupervector : public VectorBase<T> {
   std::pair<VectorBase<T>*, int> GetSubvectorAndOffset(int index) const {
     if (index >= size() || index < 0) {
       throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for state supervector of size " +
+                              " out of bounds for supervector of size " +
                               std::to_string(size()));
     }
     // Binary-search the lookup_table_ for the first element that is larger
@@ -80,17 +80,17 @@ class StateSupervector : public VectorBase<T> {
     return std::make_pair(subvector, index - start_of_subvector);
   }
 
-  // StateSupervector objects are neither copyable nor moveable.
-  StateSupervector(const StateSupervector& other) = delete;
-  StateSupervector& operator=(const StateSupervector& other) = delete;
-  StateSupervector(StateSupervector&& other) = delete;
-  StateSupervector& operator=(StateSupervector&& other) = delete;
+  // Supervector objects are neither copyable nor moveable.
+  Supervector(const Supervector& other) = delete;
+  Supervector& operator=(const Supervector& other) = delete;
+  Supervector(Supervector&& other) = delete;
+  Supervector& operator=(Supervector&& other) = delete;
 
   // An ordered list of all the constituent vectors in this supervector.
   std::vector<VectorBase<T>*> vectors_;
 
   // The integer in the lookup_table_ at index N is the sum of the number of
-  // state variables in the constituent vectors 0 through N inclusive.
+  // elements in the constituent vectors 0 through N inclusive.
   // For example, if the sizes of the constituent vectors are [1, 3, 5],
   // the lookup table is [1, 4, 9].
   std::vector<int> lookup_table_;

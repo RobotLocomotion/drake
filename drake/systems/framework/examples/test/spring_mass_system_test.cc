@@ -1,6 +1,7 @@
 #ifdef _MSC_VER
 // Suppress ugly Eigen internal warning in PartialPivLU's solver, correctly
 // caught by Microsoft C++, and an irrelevant GTest warning.
+
 #pragma warning(disable : 4800 4275)
 #endif
 
@@ -14,7 +15,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/state_subvector.h"
+#include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
@@ -36,8 +37,8 @@ class SpringMassSystemTest : public ::testing::Test {
 
   void Initialize(bool with_input_force = false) {
     // Construct the system I/O objects.
-    system_ = std::make_unique<SpringMassSystem<double>>(
-        kSpring, kMass, with_input_force);
+    system_ = std::make_unique<SpringMassSystem<double>>(kSpring, kMass,
+                                                         with_input_force);
     system_->set_name("test_system");
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
@@ -155,7 +156,7 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
 
   // Slice just the configuration derivatives out of the derivative
   // vector.
-  StateSubvector<double> configuration_derivatives(derivatives_, 0, 1);
+  Subvector<double> configuration_derivatives(derivatives_, 0, 1);
 
   system_->MapVelocityToConfigurationDerivatives(
       *context_, continuous_state->get_generalized_velocity(),
@@ -263,8 +264,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
   MatrixX<double> d_xdot_dx(nx, nx);
 
   auto temp_context = context.Clone();
-  auto x =
-      temp_context->get_mutable_continuous_state()->get_mutable_state();
+  auto x = temp_context->get_mutable_continuous_state()->get_mutable_state();
 
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateTimeDerivatives();
