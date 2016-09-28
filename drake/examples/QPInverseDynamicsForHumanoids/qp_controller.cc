@@ -6,32 +6,34 @@
 
 using namespace drake::solvers;
 
-void QPController::ResizeQP(const HumanoidStatus& rs,
-                            const std::vector<SupportElement>& all_supports) {
+void QPController::ResizeQP(const RigidBodyTree& robot,
+                            const std::vector<ContactInformation>& all_supports,
+                            const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
   // Figure out dimensions
-  int num_contacts = all_supports.size();
-  int num_vd = rs.robot().get_num_velocities();
+  int num_contact_body = all_supports.size();
+  int num_vd = robot.number_of_velocities();
   int num_basis = 0;
-  int num_point_forces = 0;
+  int num_point_force = 0;
   for (size_t i = 0; i < all_supports.size(); i++) {
-    num_point_forces += all_supports[i].contact_points().size();
-    num_basis +=
-        num_basis_per_contact_point_ * all_supports[i].contact_points().size();
+    num_point_force += all_supports[i].contact_points().size();
+    num_basis += all_supports[i].num_basis();
   }
-  int num_torque = rs.robot().actuators.size();
+  int num_torque = robot.actuators.size();
   int num_variable = num_vd + num_basis;
 
-  if (num_contacts == num_supports_ && num_vd == num_vd_ &&
-      num_basis == num_basis_ && num_point_forces == num_point_forces_ &&
-      num_torque == num_torque_ && num_variable == num_variable_)
+  if (num_contact_body == num_contact_body_ && num_vd == num_vd_ &&
+      num_basis == num_basis_ && num_point_force == num_point_force_ &&
+      num_torque == num_torque_ && num_variable == num_variable_ &&
+      (int)all_body_accelerations.size() == num_body_acceleration_)
     return;
 
-  num_supports_ = num_contacts;
+  num_contact_body_ = num_contact_body;
   num_vd_ = num_vd;
   num_basis_ = num_basis;
-  num_point_forces_ = num_point_forces;
+  num_point_force_ = num_point_force;
   num_torque_ = num_torque;
   num_variable_ = num_variable;
+  num_body_acceleration_ = (int)all_body_accelerations.size();
 
   // The order of insertion is important, the rest of the program assumes this
   // layout.
@@ -41,12 +43,11 @@ void QPController::ResizeQP(const HumanoidStatus& rs,
       prog_.AddContinuousVariables(num_basis_, "basis");
 
   // Allocate space for contact force jacobian and basis matrix.
-  stacked_contact_jacobians_.resize(3 * num_point_forces_, num_vd_);
-  basis_to_force_matrix_.resize(3 * num_point_forces_, num_basis_);
-  stacked_contact_jacobians_dot_times_v_.resize(3 * num_point_forces_);
+  stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
+  basis_to_force_matrix_.resize(3 * num_point_force_, num_basis_);
+  stacked_contact_jacobians_dot_times_v_.resize(3 * num_point_force_);
   torque_linear_.resize(num_torque_, num_variable_);
   dynamics_linear_.resize(6, num_variable_);
-  point_force_to_wrench_.resize(6 * num_supports_, 3 * num_point_forces_);
 
   // Allocate equality constraints
   // Dyanmics
@@ -54,13 +55,13 @@ void QPController::ResizeQP(const HumanoidStatus& rs,
       MatrixXd::Zero(6, num_variable_), Matrix<double, 6, 1>::Zero(),
       {vd, basis});
   eq_dynamics_->set_description("dynamics eq");
-  eq_contacts_.resize(num_supports_);
+  eq_contacts_.resize(num_contact_body_);
   // Contact constraints, 3 rows per contact point
-  for (int i = 0; i < num_supports_; i++) {
+  for (int i = 0; i < num_contact_body_; i++) {
     eq_contacts_[i] = prog_.AddLinearEqualityConstraint(
         MatrixXd::Zero(3 * all_supports[i].contact_points().size(), num_vd_),
         VectorXd::Zero(3 * all_supports[i].contact_points().size()), {vd});
-    eq_contacts_[i]->set_description("contact eq");
+    eq_contacts_[i]->set_description(all_supports[i].name() + " contact eq");
   }
 
   // Allocate inequality constraints
@@ -76,41 +77,36 @@ void QPController::ResizeQP(const HumanoidStatus& rs,
       VectorXd::Zero(num_torque_), {vd, basis});
   ineq_torque_limit_->set_description("torque limit ineq");
 
-  // Allocate cost function
-  Eigen::MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
-  Eigen::VectorXd tmp_vector_vd(num_vd_);
+  // Allocate cost terms
+  MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
+  VectorXd tmp_vector_vd(num_vd_);
   // CoMdd
   cost_comdd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
   cost_comdd_->set_description("com cost");
-  // Pelvdd
-  cost_pelvdd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_pelvdd_->set_description("pelv cost");
-  // Torsodd
-  cost_torsodd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_torsodd_->set_description("torso cost");
-  // Left footdd
-  cost_footdd_[Side::LEFT] =
-      prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_footdd_[Side::LEFT]->set_description("left foot cost");
-  // Right footdd
-  cost_footdd_[Side::RIGHT] =
-      prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_footdd_[Side::RIGHT]->set_description("right foot cost");
-
+  cost_body_accelerations_.resize(all_body_accelerations.size());
+  body_Jdv_.resize(all_body_accelerations.size());
+  body_J_.resize(all_body_accelerations.size());
+  for (size_t i = 0; i < all_body_accelerations.size(); i++) {
+    cost_body_accelerations_[i] = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+    cost_body_accelerations_[i]->set_description(all_body_accelerations[i].name() + " cost");
+  }
   // Regularize vd
   cost_vd_reg_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_vd_reg_->set_description("vd cost");
+  cost_vd_reg_->set_description("vd reg cost");
+  // Regularize vd
+  cost_basis_reg_ = prog_.AddQuadraticCost(MatrixXd::Identity(num_basis_, num_basis_), VectorXd::Zero(num_basis_), {basis});
+  cost_basis_reg_->set_description("basis reg cost");
 }
 
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput* output) {
-  if (!input.is_valid()) {
+  if (!input.is_valid(rs.robot().number_of_velocities())) {
     std::cerr << "input is invalid\n";
     return -1;
   }
 
   // Resize and zero temporary matrices.
-  ResizeQP(rs, input.supports());
+  ResizeQP(rs.robot(), input.contact_info(), input.desired_body_accelerations());
   SetTempMatricesToZero();
 
   ////////////////////////////////////////////////////////////////////
@@ -128,8 +124,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //
   // For inverse dynamics, we are usually given desired motions, and
   // we want to solve for tau to achieve those motions.
-  // Desired motions can be directly specified as vd_d, or as xdd_d in Cartesian
-  // space, which is linear w.r.t. vd as well: xdd_d = J * vd + Jd * v.
+  // Desired motions can be directly specified as desired_vd, or as acceleration_d in Cartesian
+  // space, which is linear w.r.t. vd as well: acceleration_d = J * vd + Jd * v.
   //
   // Note that since S.topRows(6) is zero,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
@@ -144,8 +140,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   //  J * vd + Jd * v = 0, (contact constraints)
   // inEquality: joint torque limit, limits on Beta, etc.
   // cost func:
-  //  min (Jcom*vd + Jcomd*v - comdd_d)^2
-  //    + (vd - vd_d)^2
+  //  min (Jcom*vd + Jcomd*v - desired_comdd)^2
+  //    + (vd - desired_vd)^2
   //    + all_kinds_of_body_acceleration_cost_terms (pelvis, torso, feet, etc)
   //
   // I made the dynamics and stationary contact equality constraints.
@@ -161,14 +157,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Stack the contact Jacobians and basis matrices for each contact link
   int rowIdx = 0;
   int colIdx = 0;
-  for (int b = 0; b < num_supports_; b++) {
-    const SupportElement& support = input.support(b);
+  for (int b = 0; b < num_contact_body_; b++) {
+    const ContactInformation& support = input.contact_info(b);
     int force_dim = 3 * support.contact_points().size();
-    int basis_dim =
-        num_basis_per_contact_point_ * support.contact_points().size();
+    int basis_dim = support.num_basis();
     basis_to_force_matrix_.block(rowIdx, colIdx, force_dim, basis_dim) =
-        support.ComputeBasisMatrix(rs.robot(), rs.cache(),
-                                   num_basis_per_contact_point_);
+        support.ComputeBasisMatrix(rs.robot(), rs.cache());
     stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_) =
         support.ComputeJacobianAtContactPoints(rs.robot(), rs.cache());
     stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) =
@@ -177,7 +171,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     colIdx += basis_dim;
   }
   JB_ = stacked_contact_jacobians_.transpose() * basis_to_force_matrix_;
-  DRAKE_ASSERT(rowIdx == num_point_forces_ * 3);
+  DRAKE_ASSERT(rowIdx == num_point_force_ * 3);
   DRAKE_ASSERT(colIdx == num_basis_);
 
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta,
@@ -198,14 +192,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   // contact constraints, 3 rows per contact point
   rowIdx = 0;
-  for (int i = 0; i < num_supports_; i++) {
-    int force_dim = 3 * input.support(i).contact_points().size();
+  for (int i = 0; i < num_contact_body_; i++) {
+    int force_dim = 3 * input.contact_info(i).contact_points().size();
     eq_contacts_[i]->UpdateConstraint(
         stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
         -stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim));
     rowIdx += force_dim;
   }
-  DRAKE_ASSERT(rowIdx == num_point_forces_ * 3);
+  DRAKE_ASSERT(rowIdx == num_point_force_ * 3);
 
   ////////////////////////////////////////////////////////////////////
   // Inequality constraints:
@@ -234,36 +228,31 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   ////////////////////////////////////////////////////////////////////
   // Cost function:
   // CoM term (task space acceleration costs)
-  // w * (J * vd + Jdv - comdd_d)^T * (J * vd + Jdv - comdd_d)
+  // w * (J * vd + Jdv - desired_comdd)^T * (J * vd + Jdv - desired_comdd)
   cost_comdd_->UpdateConstraint(
       input.w_com() * rs.J_com().transpose() * rs.J_com(),
       input.w_com() * rs.J_com().transpose() *
-          (rs.Jdot_times_v_com() - input.comdd_d()));
+          (rs.Jdot_times_v_com() - input.desired_comdd()));
 
-  // For pelvisdd
-  cost_pelvdd_->UpdateConstraint(
-      input.w_pelv() * rs.pelv().J().transpose() * rs.pelv().J(),
-      input.w_pelv() * rs.pelv().J().transpose() *
-          (rs.pelv().Jdot_times_v() - input.pelvdd_d()));
+  const std::vector<DesiredBodyAcceleration>& body_motions_d = input.desired_body_accelerations();
+  for (size_t i = 0; i < body_motions_d.size(); i++) {
+    const DesiredBodyAcceleration& body_motion_d = body_motions_d[i];
+    body_J_[i] = GetTaskSpaceJacobian(rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
+    body_Jdv_[i] = GetTaskSpaceJacobianDotTimesV(rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
 
-  // For torsodd
-  cost_torsodd_->UpdateConstraint(
-      input.w_torso() * rs.torso().J().transpose() * rs.torso().J(),
-      input.w_torso() * rs.torso().J().transpose() *
-          (rs.torso().Jdot_times_v() - input.torsodd_d()));
-
-  // For footdd
-  for (int i = 0; i < 2; i++) {
-    cost_footdd_[i]->UpdateConstraint(
-        input.w_foot() * rs.foot(i).J().transpose() * rs.foot(i).J(),
-        input.w_foot() * rs.foot(i).J().transpose() *
-            (rs.foot(i).Jdot_times_v() - input.footdd_d(i)));
+    cost_body_accelerations_[i]->UpdateConstraint(
+        body_motion_d.weight() * body_J_[i].transpose() * body_J_[i],
+        body_motion_d.weight() * body_J_[i].transpose() *
+            (body_Jdv_[i] - body_motion_d.acceleration()));
   }
-
-  // Regularize vd to vd_d
+  // Regularize vd to desired_vd
   cost_vd_reg_->UpdateConstraint(
       input.w_vd() * MatrixXd::Identity(num_vd_, num_vd_),
-      input.w_vd() * (-input.vd_d()));
+      input.w_vd() * (-input.desired_vd()));
+  // Regularize basis to zero
+  cost_basis_reg_->UpdateConstraint(
+      input.w_basis_reg() * MatrixXd::Identity(num_basis_, num_basis_),
+      VectorXd::Zero(num_basis_));
 
   ////////////////////////////////////////////////////////////////////
   // Call solver
@@ -315,91 +304,64 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   ////////////////////////////////////////////////////////////////////
   // Parse result
+  // Compute resulting contact wrenches
+  int basis_index = 0;
+  int point_force_index = 0;
+  point_forces_ = basis_to_force_matrix_ * basis.value();
+
+  output->mutable_resolved_contacts().clear();
+  for (size_t i = 0; i < input.contact_info().size(); i++) {
+    const ContactInformation &contact_info = input.contact_info(i);
+    output->mutable_resolved_contacts().push_back(ResolvedContact(contact_info.body()));
+    ResolvedContact &resolved_contact = output->mutable_resolved_contacts().back();
+    // Copy basis
+    resolved_contact.mutable_basis() = basis.value().segment(basis_index, contact_info.num_basis());
+    basis_index += contact_info.num_basis();
+
+    // Compute contact points and reference point in the world frame.
+    contact_info.ComputeContactPointsAndWrenchReferencePoint(rs.robot(), rs.cache(), Vector3d::Zero(), &resolved_contact.mutable_contact_points(), &resolved_contact.mutable_reference_point());
+
+    // Convert point forces to an equivalent wrench wrt to the reference point in the world frame.
+    resolved_contact.mutable_equivalent_wrench() = contact_info.ComputeWrenchMatrix(resolved_contact.contact_points(), resolved_contact.reference_point()) * point_forces_.segment(point_force_index, 3 * contact_info.num_contact_points());
+
+    // Copy point forces
+    resolved_contact.mutable_point_forces().resize(contact_info.num_contact_points());
+    for (int j = 0; j < contact_info.num_contact_points(); j++) {
+      resolved_contact.mutable_point_force(j) = point_forces_.segment<3>(point_force_index);
+      point_force_index += 3;
+    }
+  }
+
+  // Set output accelerations
   output->mutable_vd() = vd.value();
   output->mutable_comdd() = rs.J_com() * output->vd() + rs.Jdot_times_v_com();
-  output->mutable_pelvdd() =
-      rs.pelv().J() * output->vd() + rs.pelv().Jdot_times_v();
-  output->mutable_torsodd() =
-      rs.torso().J() * output->vd() + rs.torso().Jdot_times_v();
 
+  std::vector<BodyAcceleration>& body_accelerations = output->mutable_body_accelerations();
+  body_accelerations.clear();
+  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
+    body_accelerations.push_back(BodyAcceleration(input.desired_body_acceleration(i).body()));
+    body_accelerations.back().mutable_acceleration() = body_J_[i] * output->vd() + body_Jdv_[i];
+  }
+
+  // Set output joint torques
   output->mutable_joint_torque() = torque_linear_ * solution + torque_constant_;
 
-  for (int i = 0; i < 2; i++) {
-    output->mutable_footdd(i) =
-        (rs.foot(i).J() * output->vd() + rs.foot(i).Jdot_times_v());
-    output->mutable_foot_wrench_in_world_frame(i).setZero();
-    output->mutable_foot_wrench_in_sensor_frame(i).setZero();
-  }
-
-  // Matrix from basis to wrench
-  rowIdx = colIdx = 0;
-  for (int i = 0; i < num_supports_; i++) {
-    const SupportElement& support = input.support(i);
-    const Vector3d ref_point = rs.robot().transformPoints(
-        rs.cache(), Vector3d::Zero(), support.body().get_body_index(), 0);
-
-    for (size_t j = 0; j < support.contact_points().size(); j++) {
-      const Vector3d contact_point =
-          rs.robot().transformPoints(rs.cache(), support.contact_points()[j],
-                                     support.body().get_body_index(), 0);
-      // Force part: just sum up all the point forces, so these are I
-      point_force_to_wrench_.block<3, 3>(rowIdx + 3, colIdx).setIdentity();
-      // Torque part:
-      point_force_to_wrench_.block<3, 3>(rowIdx, colIdx) =
-          drake::math::VectorToSkewSymmetric(contact_point - ref_point);
-      colIdx += 3;
-    }
-    rowIdx += 6;
-  }
-  DRAKE_ASSERT(rowIdx == 6 * num_supports_);
-  DRAKE_ASSERT(colIdx == 3 * num_point_forces_);
-  contact_wrenches_ =
-      point_force_to_wrench_ * basis_to_force_matrix_ * basis.value();
-
-  // Compute wrench for left and right foot in the world frame.
-  for (int i = 0; i < num_supports_; i++) {
-    int contact_body_idx = input.support(i).body().get_body_index();
-    if (contact_body_idx ==
-        rs.foot_sensor(Side::LEFT).body().get_body_index()) {
-      output->mutable_foot_wrench_in_world_frame(Side::LEFT) =
-          contact_wrenches_.segment<6>(6 * i);
-    } else if (contact_body_idx ==
-               rs.foot_sensor(Side::RIGHT).body().get_body_index()) {
-      output->mutable_foot_wrench_in_world_frame(Side::RIGHT) =
-          contact_wrenches_.segment<6>(6 * i);
-    }
-  }
-
-  // Convert world frame wrench to sensor frame
-  for (int i = 0; i < 2; i++) {
-    // H^w_s = sensor frame = rs.foot_sensor(i).pose()
-    // H^w_ak = world frame aligned, but located at ankle joint = [I,
-    // rs.foot(i).pose().translation()]
-    // To transform wrench from ak frame to s frame, we need H^s_ak.
-    Isometry3d H_w_to_s = rs.foot_sensor(i).pose().inverse();
-    Isometry3d H_ak_to_w(Isometry3d::Identity());
-    H_ak_to_w.translation() = rs.foot(i).pose().translation();
-
-    output->mutable_foot_wrench_in_sensor_frame(i) = transformSpatialForce(
-        H_w_to_s * H_ak_to_w, output->foot_wrench_in_world_frame(i));
-  }
-
+  ////////////////////////////////////////////////////////////////////
   // Sanity check, net external wrench should = centroidal_matrix * vd +
   // centroidal_matrix_dot * v
   Vector6d Ld = rs.centroidal_momentum_matrix() * output->vd() +
                 rs.centroidal_momentum_matrix_dot_times_v();
   Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
-  for (int i = 0; i < num_supports_; i++) {
-    int contact_body_idx = input.support(i).body().get_body_index();
-    net_wrench += contact_wrenches_.segment<6>(6 * i);
-    const Vector3d ref_point = rs.robot().transformPoints(
-        rs.cache(), Vector3d::Zero(), contact_body_idx, 0);
+  for (int i = 0; i < num_contact_body_; i++) {
+    const Vector6d& contact_wrench = output->resolved_contact(i).equivalent_wrench();
+    const Vector3d& ref_point = output->resolved_contact(i).reference_point();
+    net_wrench += contact_wrench;
     net_wrench.segment<3>(0) +=
-        (ref_point - rs.com()).cross(contact_wrenches_.segment<3>(6 * i + 3));
+        (ref_point - rs.com()).cross(contact_wrench.segment<3>(3));
   }
   DRAKE_ASSERT((net_wrench - Ld).isZero(EPSILON));
 
-  if (!output->is_valid()) {
+  if (!output->is_valid(rs.robot().number_of_velocities(), rs.robot().actuators.size())) {
     std::cerr << "output is invalid\n";
     return -1;
   }
@@ -409,17 +371,19 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
 std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "===============================================\n";
-  out << "comdd_d: " << input.comdd_d().transpose() << std::endl;
-  out << "pelvdd_d: " << input.pelvdd_d().transpose() << std::endl;
-  out << "torsodd_d: " << input.torsodd_d().transpose() << std::endl;
-  out << "footdd_d[0]: " << input.footdd_d(0).transpose() << std::endl;
-  out << "footdd_d[1]: " << input.footdd_d(1).transpose() << std::endl;
-  out << "vd_d: " << input.vd_d().transpose() << std::endl;
+  out << "QPInput:\n";
+  out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
+  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
+    const DesiredBodyAcceleration &body_motion_d = input.desired_body_acceleration(i);
+    out << body_motion_d.name() << "_d" << body_motion_d.acceleration().transpose() << std::endl;
+  }
+  out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
 
   out << "w_com: " << input.w_com() << std::endl;
-  out << "w_pelv: " << input.w_pelv() << std::endl;
-  out << "w_torso: " << input.w_torso() << std::endl;
-  out << "w_foot: " << input.w_foot() << std::endl;
+  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
+    const DesiredBodyAcceleration &body_motion_d = input.desired_body_acceleration(i);
+    out << "w_" << body_motion_d.name() << ": " << body_motion_d.weight() << std::endl;
+  }
   out << "w_vd: " << input.w_vd() << std::endl;
   out << "w_basis_reg: " << input.w_basis_reg() << std::endl;
   return out;
@@ -427,6 +391,7 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
 
 std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   out << "===============================================\n";
+  out << "QPOutput:\n";
   out << "accelerations:\n";
   for (int i = 0; i < output.vd().size(); i++)
     out << output.coord_name(i) << ": " << output.vd()[i] << std::endl;
@@ -434,29 +399,20 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   out << "com acc: ";
   out << output.comdd().transpose() << std::endl;
 
-  out << "pelv acc: ";
-  out << output.pelvdd().transpose() << std::endl;
-
-  out << "torso acc: ";
-  out << output.torsodd().transpose() << std::endl;
-
-  out << "left foot acc: " << output.footdd(Side::LEFT).transpose()
-      << std::endl;
-  out << "right foot acc: " << output.footdd(Side::RIGHT).transpose()
-      << std::endl;
+  for (size_t i = 0; i < output.body_accelerations().size(); i++) {
+    const BodyAcceleration& body_motion = output.body_acceleration(i);
+    out << body_motion.name() << " acc: " << body_motion.acceleration().transpose() << std::endl;
+  }
 
   out << "===============================================\n";
-  out << "left foot wrench_w: "
-      << output.foot_wrench_in_world_frame(Side::LEFT).transpose() << std::endl;
-  out << "right foot wrench_w: "
-      << output.foot_wrench_in_world_frame(Side::RIGHT).transpose()
-      << std::endl;
-  out << "left foot wrench in sensor frame: "
-      << output.foot_wrench_in_sensor_frame(Side::LEFT).transpose()
-      << std::endl;
-  out << "right foot wrench in sensor frame: "
-      << output.foot_wrench_in_sensor_frame(Side::RIGHT).transpose()
-      << std::endl;
+  for (size_t i = 0; i < output.resolved_contacts().size(); i++) {
+    const ResolvedContact& contact_result = output.resolved_contact(i);
+    out << contact_result.name() << " wrench: " << contact_result.equivalent_wrench().transpose() << std::endl;
+    out << "point forces:\n";
+    for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
+      out << contact_result.point_force(j).transpose() << std::endl;
+    }
+  }
 
   out << "===============================================\n";
   out << "torque:\n";

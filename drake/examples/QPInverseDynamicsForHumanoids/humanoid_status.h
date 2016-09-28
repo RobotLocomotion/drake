@@ -6,7 +6,7 @@
 using namespace Eigen;
 
 /**
- * A handy struct that stores important kinematic properties.
+ * An object that holds important kinematic properties.
  * For all the velocity / acceleration / wrench, the first 3 are always angular,
  * and the last 3 are linear.
  */
@@ -65,13 +65,16 @@ class BodyOfInterest {
  * Mostly a thin wrapper on RigidBodyTree.
  * It has kinematic values such as task space velocity of various body parts,
  * some measured contact force / torque information, joint torque, etc.
+ * It also stores robot specific constants.
  */
 class HumanoidStatus {
  public:
   /// Offset from the foot frame to contact position in the foot frame.
   static const Vector3d kFootToContactOffset;
-  /// Offset from the foot frame to force torque sensor in the foot frame.
-  static const Vector3d kFootToSensorOffset;
+  /// Position Offset from the foot frame to force torque sensor in the foot frame.
+  static const Vector3d kFootToSensorPositionOffset;
+  /// Rotation Offset from the foot frame to force torque sensor in the foot frame.
+  static const Matrix3d kFootToSensorRotationOffset;
 
   // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
   // Valkyrie, and they should be specified in some separate config file.
@@ -88,9 +91,9 @@ class HumanoidStatus {
             BodyOfInterest("rightFoot", *robot_.FindBody("rightFoot"),
                            Vector3d::Zero()),
             BodyOfInterest("leftFootSensor", *robot_.FindBody("leftFoot"),
-                           kFootToSensorOffset),
+                           kFootToSensorPositionOffset),
             BodyOfInterest("rightFootSensor", *robot_.FindBody("rightFoot"),
-                           kFootToSensorOffset)} {
+                           kFootToSensorPositionOffset)} {
     time_ = 0;
 
     position_.resize(robot_.number_of_positions());
@@ -172,24 +175,19 @@ class HumanoidStatus {
    * @param v is the vector of generalized velocities.
    * @param trq is joint torque, should be in the same order as @p v, not
    * in robot->actuators order
-   * @param l_ft is wrench measured at the foot force torque sensor
-   * location.
-   * @param r_ft is wrench measured at the foot force torque sensor
-   * location.
-   * @param rot rotates @p l_ft and @p r_ft in the same orientation as
-   * the foot frame. This is useful if the foot ft sensor has a different
-   * orientation than the foot.
+   * @param l_ft is wrench measured in the sensor frame.
+   * @param r_ft is wrench measured in the sensor frame.
    */
   void Update(double t, const Ref<const VectorXd>& q,
               const Ref<const VectorXd>& v, const Ref<const VectorXd>& trq,
-              const Ref<const Vector6d>& l_ft, const Ref<const Vector6d>& r_ft,
-              const Ref<const Matrix3d>& rot = Matrix3d::Identity());
+              const Ref<const Vector6d>& l_ft, const Ref<const Vector6d>& r_ft);
 
   /**
    * Returns a nominal q.
    */
-  Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
+  VectorXd GetNominalPosition() const { return nominal_position_; }
 
+  // Getters
   inline const RigidBodyTree& robot() const { return robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
@@ -203,7 +201,6 @@ class HumanoidStatus {
       const {
     return actuator_name_to_actuator_index_;
   }
-
   inline double time() const { return time_; }
   inline const VectorXd& position() const { return position_; }
   inline const VectorXd& velocity() const { return velocity_; }
@@ -247,7 +244,6 @@ class HumanoidStatus {
   inline const Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
     return foot_wrench_in_world_frame_[s];
   }
-
   inline const BodyOfInterest& foot_sensor(int s) const {
     return foot_sensor(Side::values.at(s));
   }

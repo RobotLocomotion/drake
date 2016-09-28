@@ -4,15 +4,16 @@
 // TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
 // should be included in the model file or loaded from a separate config file.
 const Vector3d HumanoidStatus::kFootToContactOffset = Vector3d(0, 0, -0.09);
-const Vector3d HumanoidStatus::kFootToSensorOffset =
+const Vector3d HumanoidStatus::kFootToSensorPositionOffset =
     Vector3d(0.0215646, 0.0, -0.051054);
+const Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
+    Matrix3d(AngleAxisd(-M_PI, Vector3d::UnitX()));
 
 void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
                             const Ref<const VectorXd>& v,
                             const Ref<const VectorXd>& trq,
                             const Ref<const Vector6d>& l_ft,
-                            const Ref<const Vector6d>& r_ft,
-                            const Ref<const Matrix3d>& rot) {
+                            const Ref<const Vector6d>& r_ft) {
   if (q.size() != position_.size() || v.size() != velocity_.size() ||
       trq.size() != joint_torque_.size()) {
     throw std::runtime_error("robot state update dimension mismatch.");
@@ -49,12 +50,11 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
   foot_wrench_in_sensor_frame_[Side::RIGHT] = r_ft;
   Vector6d tmp_wrench;
   for (int i = 0; i < 2; i++) {
-    // Rotate the sensor measurement first. Rot is the rotation between the
-    // sensor frame and the foot frame.
+    // Rotate the sensor measurement to body frame first.
     foot_wrench_in_sensor_frame_[i].head(3) =
-        rot * foot_wrench_in_sensor_frame_[i].head(3);
+        kFootToSensorRotationOffset.transpose() * foot_wrench_in_sensor_frame_[i].head(3);
     foot_wrench_in_sensor_frame_[i].tail(3) =
-        rot * foot_wrench_in_sensor_frame_[i].tail(3);
+        kFootToSensorRotationOffset.transpose() * foot_wrench_in_sensor_frame_[i].tail(3);
 
     // H^w_s = sensor frame = rs.foot_sensor(i).pose()
     // H^w_ak = world frame aligned, but located at ankle joint = [I,

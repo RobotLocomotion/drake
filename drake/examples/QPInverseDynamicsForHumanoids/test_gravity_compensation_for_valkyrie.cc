@@ -5,9 +5,9 @@
 #include <eigen3/Eigen/Geometry>
 #include <chrono>
 
-QPOutput TestGravityCompensation(HumanoidStatus& robot_status) {
+QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
   // Make controller.
-  QPController con(robot_status, 4);
+  QPController con;
 
   QPInput input(robot_status.robot());
   QPOutput output(robot_status.robot());
@@ -15,44 +15,51 @@ QPOutput TestGravityCompensation(HumanoidStatus& robot_status) {
   // Make input.
   // These represent the desired motions for the robot, and are typically
   // outputs of motion planner or hand-crafted behavior state machines.
-  input.mutable_comdd_d().setZero();
-  input.mutable_pelvdd_d().setZero();
-  input.mutable_torsodd_d().setZero();
-  input.mutable_footdd_d(Side::LEFT).setZero();
-  input.mutable_footdd_d(Side::RIGHT).setZero();
-  input.mutable_vd_d().setZero();
+  input.mutable_desired_comdd().setZero();
+  input.mutable_desired_vd().setZero();
+  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("pelvis")));
+  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e1;
+  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
+  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("torso")));
+  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e1;
+  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("leftFoot")));
+  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e5;
+  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
+  input.mutable_desired_body_accelerations().push_back(DesiredBodyAcceleration(*robot_status.robot().FindBody("rightFoot")));
+  input.mutable_desired_body_accelerations().back().mutable_weight() = 1e5;
+  input.mutable_desired_body_accelerations().back().mutable_acceleration().setZero();
 
   // Weights are set arbitrarily by the control designer, these typically
   // require tuning.
   input.mutable_w_com() = 1e2;
-  input.mutable_w_pelv() = 1e1;
-  input.mutable_w_torso() = 1e1;
-  input.mutable_w_foot() = 1e5;
-  input.mutable_w_vd() = 1e3;
-  input.mutable_w_basis_reg() = 1e-5;
+  input.mutable_w_vd() = 1e-1;
+  input.mutable_w_basis_reg() = 1e-6;
 
   // make contact
-  input.mutable_supports().push_back(
-      SupportElement(*robot_status.robot().FindBody("leftFoot")));
-  input.mutable_support(0).get_mutable_contact_points().push_back(
+  input.mutable_contact_info().push_back(
+      ContactInformation(*robot_status.robot().FindBody("leftFoot"), 4));
+  input.mutable_contact_info(0).mutable_contact_points().push_back(
       Vector3d(0.2, 0.05, -0.09));
-  input.mutable_support(0).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(0).mutable_contact_points().push_back(
       Vector3d(0.2, -0.05, -0.09));
-  input.mutable_support(0).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(0).mutable_contact_points().push_back(
       Vector3d(-0.05, -0.05, -0.09));
-  input.mutable_support(0).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(0).mutable_contact_points().push_back(
       Vector3d(-0.05, 0.05, -0.09));
 
-  input.mutable_supports().push_back(
-      SupportElement(*robot_status.robot().FindBody("rightFoot")));
-  input.mutable_support(1).get_mutable_contact_points().push_back(
+  input.mutable_contact_info().push_back(
+      ContactInformation(*robot_status.robot().FindBody("rightFoot"), 4));
+  input.mutable_contact_info(1).mutable_contact_points().push_back(
       Vector3d(0.2, 0.05, -0.09));
-  input.mutable_support(1).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(1).mutable_contact_points().push_back(
       Vector3d(0.2, -0.05, -0.09));
-  input.mutable_support(1).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(1).mutable_contact_points().push_back(
       Vector3d(-0.05, -0.05, -0.09));
-  input.mutable_support(1).get_mutable_contact_points().push_back(
+  input.mutable_contact_info(1).mutable_contact_points().push_back(
       Vector3d(-0.05, 0.05, -0.09));
+
+  // call controller
+  std::cout << input << std::endl;
 
   con.Control(robot_status, input, &output);
 
@@ -82,9 +89,5 @@ int main() {
                       Vector6d::Zero(), Vector6d::Zero());
 
   QPOutput output = TestGravityCompensation(robot_status);
-
-  robot_status.Update(0, q, v, output.joint_torque(),
-                      output.foot_wrench_in_sensor_frame(Side::LEFT),
-                      output.foot_wrench_in_sensor_frame(Side::RIGHT));
   return 0;
 }
