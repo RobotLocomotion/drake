@@ -8,7 +8,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/lcm/lcm_receive_thread.h"
-#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -122,8 +122,8 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
 
       bool values_match = true;
 
-      for (int ii = 0; ii < kDim && values_match; ++ii) {
-        if (value[ii] != ii) values_match = false;
+      for (int i = 0; i < kDim && values_match; ++i) {
+        if (value[i] != i) values_match = false;
       }
 
       // At this point, the basic vector contains the expected values, which
@@ -159,7 +159,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
       "drake_system2_lcm_test_subscriber_channel_name";
 
   // Instantiates a LCM-VectorBase translator.
-  const TranslatorBetweenLcmtDrakeSignal translator(kDim);
+  const LcmtDrakeSignalTranslator translator(kDim);
 
   // Instantiates an LcmSubscriberSystem that receives LCM messages of type
   // drake::lcmt_drake_signal and outputs System 2.0 Vectors of type
@@ -185,7 +185,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(
       channel_name,
-      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
 
   EXPECT_TRUE(dictionary.HasTranslator(channel_name));
 

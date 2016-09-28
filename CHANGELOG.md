@@ -22,6 +22,7 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
+ - [#3605][] Deprecated `KinematicsCache::getNumPositions()` and `KinematicsCache::getNumVelocities()` in favor of `KinematicsCache::get_num_positions()` and `KinematicsCache::get_num_velocities()`.
  - [#3566][] Replaced `number_of_foo()` with `get_num_foo()`.
  - [#3276][] The `measure::execution()` function has been replaced by `MeasureExecutionTime()`.
  - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.

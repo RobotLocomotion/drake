@@ -452,7 +452,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(
   VectorXd x = rigid_body_state.getX();
   auto xdd = get_rigid_body_system().dynamics(t, x, u);
   auto const& tree = get_rigid_body_system().getRigidBodyTree();
-  auto v_dot = xdd.bottomRows(rigid_body_state.getNumVelocities());
+  auto v_dot = xdd.bottomRows(rigid_body_state.get_num_velocities());
 
   Vector3d sensor_origin =
       Vector3d::Zero();  // assumes sensor coincides with the frame's origin;

@@ -13,17 +13,17 @@ KinematicsResults<T>::KinematicsResults(const RigidBodyTree &tree) :
 
 template<typename T>
 int KinematicsResults<T>::get_num_bodies() const {
-  return tree_.get_number_of_bodies();
+  return tree_.get_num_bodies();
 }
 
 template<typename T>
 int KinematicsResults<T>::get_num_positions() const {
-  return kinematics_cache_.getNumPositions();
+  return kinematics_cache_.get_num_positions();
 }
 
 template<typename T>
 int KinematicsResults<T>::get_num_velocities() const {
-  return kinematics_cache_.getNumVelocities();
+  return kinematics_cache_.get_num_velocities();
 }
 
 template<typename T>
@@ -51,8 +51,8 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
   auto x = dynamic_cast<const BasicVector<T> &>(
       context.get_continuous_state()->get_state()).get_value();
 
-  const int nq = tree_.number_of_positions();
-  const int nv = tree_.number_of_velocities();
+  const int nq = tree_.get_num_positions();
+  const int nv = tree_.get_num_velocities();
 
   // TODO(amcastro-tri): We would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
