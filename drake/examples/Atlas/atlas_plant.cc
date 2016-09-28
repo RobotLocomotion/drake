@@ -50,7 +50,7 @@ AtlasPlant::dynamics(const double& t,
 
 void AtlasPlant::SetInitialConfiguration() {
   RigidBodyTree* tree = sys_->getRigidBodyTree().get();
-  x0_.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Magic numbers are initial conditions used in runAtlasWalking.m.
   x0_(2) = 0.844;    // base z

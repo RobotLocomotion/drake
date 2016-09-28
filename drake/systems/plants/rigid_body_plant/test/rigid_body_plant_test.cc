@@ -16,6 +16,7 @@
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -54,7 +55,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   EXPECT_EQ(rigid_body_sys.get_output_size(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree& tree = rigid_body_sys.get_multibody_world();
+  const RigidBodyTree& tree = rigid_body_sys.get_rigid_body_tree();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -91,10 +92,10 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   tree->compile();
 
   // Verifies the correct number of DOF's.
-  EXPECT_EQ(tree->get_number_of_bodies(), 2);
-  EXPECT_EQ(tree->number_of_positions(), kNumPositions);
+  EXPECT_EQ(tree->get_num_bodies(), 2);
+  EXPECT_EQ(tree->get_num_positions(), kNumPositions);
   // There are two bodies: the "world" and "free_body".
-  EXPECT_EQ(tree->number_of_velocities(), kNumVelocities);
+  EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
   RigidBodyPlant<double> plant(move(tree));
@@ -206,9 +207,13 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 }
 
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
-// For a RigidBodyPlant<T> the output of the system should equal the
-// state vector.
+// For a RigidBodyPlant<T> the first output of the system should equal the
+// state vector. The second output from this system should correspond to a
+// RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
+// system.
 TEST_F(KukaArmTest, EvalOutput) {
+  auto& tree = kuka_system_->get_rigid_body_tree();
+
   // Checks that the number of input and output ports in the system and context
   // are consistent.
   ASSERT_EQ(1, kuka_system_->get_num_input_ports());
@@ -243,14 +248,38 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  ASSERT_EQ(1, output_->get_num_ports());
-  const BasicVector<double>* output_port = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_port);
+  ASSERT_EQ(2, output_->get_num_ports());
+  const BasicVector<double>* output_state = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, output_state);
 
   kuka_system_->EvalOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
-  EXPECT_EQ(desired_state, output_port->get_value());
+  EXPECT_EQ(desired_state, output_state->get_value());
+
+  // Evaluates the correctness of the kinematics results port.
+  auto& kinematics_results =
+      output_->get_data(1)->GetValue<KinematicsResults<double>>();
+  ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
+  ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
+
+  VectorXd q = xc.topRows(kNumPositions_);
+  VectorXd v = xc.bottomRows(kNumVelocities_);
+  auto cache = tree.doKinematics(q, v);
+
+  for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
+    Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
+    Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
+    // Note that Eigen quaternion elements are not laid out in memory in the
+    // same way Drake currently aligns them. See issue #3470.
+    // When solved we will not need to instantiate a temporary Quaternion below
+    // just to perform a comparison.
+    Quaterniond quat(
+        quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+    Vector3d position = pose.translation();
+    EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
+    EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
+  }
 }
 
 // Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
@@ -297,15 +326,15 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // For rbs1:
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(rbs1->getNumStates());
-  x0.head(rbs1->number_of_positions()) =
+  x0.head(rbs1->get_num_positions()) =
       rbs1->getRigidBodyTree()->getZeroConfiguration();
 
   // Some non-zero velocities.
-  x0.tail(rbs1->number_of_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
+  x0.tail(rbs1->get_num_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
 
-  Eigen::VectorXd arbitrary_angles(rbs1->number_of_positions());
+  Eigen::VectorXd arbitrary_angles(rbs1->get_num_positions());
   arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(rbs1->number_of_positions()) += arbitrary_angles;
+  x0.head(rbs1->get_num_positions()) += arbitrary_angles;
 
   // For rbs2:
   // Zeroes the state.
@@ -342,8 +371,8 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Performs the comparison.
   //////////////////////////////////////////////////////////////////////////////
-  EXPECT_TRUE(rbs1->number_of_positions() == rbs2->get_num_positions());
-  EXPECT_TRUE(rbs1->number_of_velocities() == rbs2->get_num_velocities());
+  EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
+  EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
   EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
 }
 

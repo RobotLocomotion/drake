@@ -7,15 +7,15 @@ target_link_libraries(basic_vector_test drakeSystemFramework drakeCommon
   ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME basic_vector_test COMMAND basic_vector_test)
 
-add_executable(state_subvector_test state_subvector_test.cc)
-target_link_libraries(state_subvector_test drakeSystemFramework
+add_executable(subvector_test subvector_test.cc)
+target_link_libraries(subvector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME state_subvector_test COMMAND state_subvector_test)
+drake_add_test(NAME subvector_test COMMAND subvector_test)
 
-add_executable(state_supervector_test state_supervector_test.cc)
-target_link_libraries(state_supervector_test drakeSystemFramework
+add_executable(supervector_test supervector_test.cc)
+target_link_libraries(supervector_test drakeSystemFramework
                       ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME state_supervector_test COMMAND state_supervector_test)
+drake_add_test(NAME supervector_test COMMAND supervector_test)
 
 add_executable(continuous_state_test continuous_state_test.cc)
 target_link_libraries(continuous_state_test drakeSystemFramework

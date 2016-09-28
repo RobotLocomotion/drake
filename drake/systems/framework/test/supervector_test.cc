@@ -1,11 +1,11 @@
-#include "drake/systems/framework/state_supervector.h"
-
 #include <memory>
 
 #include <Eigen/Dense>
+
 #include "gtest/gtest.h"
 
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -14,7 +14,7 @@ namespace {
 
 const int kLength = 9;
 
-class StateSupervectorTest : public ::testing::Test {
+class SupervectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
     vec1_ = BasicVector<int>::Make({0, 1, 2, 3});
@@ -22,22 +22,22 @@ class StateSupervectorTest : public ::testing::Test {
     vec3_ = BasicVector<int>::Make({});
     vec4_ = BasicVector<int>::Make({6, 7, 8});
     supervector_ =
-        std::make_unique<StateSupervector<int>>(std::vector<VectorBase<int>*>{
+        std::make_unique<Supervector<int>>(std::vector<VectorBase<int>*>{
             vec1_.get(), vec2_.get(), vec3_.get(), vec4_.get()});
   }
 
   std::unique_ptr<VectorBase<int>> vec1_, vec2_, vec3_, vec4_;
-  std::unique_ptr<StateSupervector<int>> supervector_;
+  std::unique_ptr<Supervector<int>> supervector_;
 };
 
-TEST_F(StateSupervectorTest, GetAtIndex) {
+TEST_F(SupervectorTest, GetAtIndex) {
   ASSERT_EQ(kLength, supervector_->size());
   for (int i = 0; i < kLength; ++i) {
     EXPECT_EQ(i, supervector_->GetAtIndex(i));
   }
 }
 
-TEST_F(StateSupervectorTest, SetAtIndex) {
+TEST_F(SupervectorTest, SetAtIndex) {
   for (int i = 0; i < kLength; ++i) {
     supervector_->SetAtIndex(i, i * 2);
   }
@@ -57,13 +57,13 @@ TEST_F(StateSupervectorTest, SetAtIndex) {
   EXPECT_EQ(16, vec4_->GetAtIndex(2));
 }
 
-TEST_F(StateSupervectorTest, OutOfRange) {
+TEST_F(SupervectorTest, OutOfRange) {
   EXPECT_THROW(supervector_->GetAtIndex(-1), std::out_of_range);
   EXPECT_THROW(supervector_->GetAtIndex(10), std::out_of_range);
 }
 
-TEST_F(StateSupervectorTest, Empty) {
-  StateSupervector<int> supervector(std::vector<VectorBase<int>*>{});
+TEST_F(SupervectorTest, Empty) {
+  Supervector<int> supervector(std::vector<VectorBase<int>*>{});
   EXPECT_EQ(0, supervector.size());
 }
 

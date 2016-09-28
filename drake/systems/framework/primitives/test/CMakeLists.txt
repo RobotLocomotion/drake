@@ -39,3 +39,8 @@ drake_add_test(NAME demultiplexer_test COMMAND demultiplexer_test)
 
 drake_add_cc_test(multiplexer_test)
 target_link_libraries(multiplexer_test drakeSystemFramework)
+
+add_executable(time_varying_polynomial_source_test time_varying_polynomial_source_test.cc)
+target_link_libraries(time_varying_polynomial_source_test
+    drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
+drake_add_test(NAME time_varying_polynomial_source_test COMMAND time_varying_polynomial_source_test)
