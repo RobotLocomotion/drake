@@ -121,7 +121,7 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   Scalar theta1, theta3;
 
   // There is a singularity when cos(theta2) == 0
-  if (Rsum > 4 * std::numeric_limits<Scalar>::epsilon()) {
+  if (Rsum > 4 * Eigen::NumTraits<Scalar>::epsilon()) {
     theta1 = atan2(minusPlus * R(j, k), R(k, k));
     theta3 = atan2(minusPlus * R(i, j), R(i, i));
   } else if (plusMinus * R(i, k) > 0) {
