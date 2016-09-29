@@ -65,6 +65,10 @@ endfunction()
 function(drake_add_test)
   cmake_parse_arguments("" "" "NAME;SIZE" "" ${ARGN})
 
+  if(NOT _NAME)
+    message(FATAL_ERROR "The NAME argument to drake_add_test is required")
+  endif()
+
   if(NOT _SIZE)
     set(_SIZE small)
   endif()
@@ -123,7 +127,7 @@ function(drake_add_cc_test)
     set(_NAME ${ARGV0})
   endif()
 
-  # Add the executable and link with gtest and gtest-main.  
+  # Add the executable and link with gtest and gtest-main.
   if(_EXCLUDE_FROM_ALL)
     set(_exclude_from_all EXCLUDE_FROM_ALL)
   endif()
@@ -182,6 +186,10 @@ function(drake_add_matlab_test)
 
   cmake_parse_arguments("" "" "COMMAND;NAME;SIZE;WORKING_DIRECTORY" "OPTIONAL;REQUIRES" ${ARGN})
 
+  if(NOT _NAME)
+    message(FATAL_ERROR "The NAME argument to drake_add_matlab_test is required")
+  endif()
+
   if(NOT _SIZE)
     set(_SIZE medium)
   endif()
@@ -224,11 +232,11 @@ function(drake_add_matlab_test)
 
   matlab_add_unit_test(
     NAME ${_NAME}
-    ADDITIONAL_PATH ${_additional_paths}
-    UNITTEST_PRECOMMAND ${_test_precommand}
-    CUSTOM_TEST_COMMAND \"${_test_command}\"
+    ADDITIONAL_PATH "${_additional_paths}"
+    UNITTEST_PRECOMMAND "${_test_precommand}"
+    CUSTOM_TEST_COMMAND "${_test_command}"
     TIMEOUT -1
-    WORKING_DIRECTORY ${_WORKING_DIRECTORY}
+    WORKING_DIRECTORY "${_WORKING_DIRECTORY}"
     ${_test_args})
   set_tests_properties(${_NAME} PROPERTIES
     LABELS ${_size}
