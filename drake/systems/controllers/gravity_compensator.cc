@@ -21,11 +21,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  Eigen::VectorXd x = System<T>::CopyContinuousStateVector(context);
-
-  int number_of_velocities = rigid_body_tree_.get_num_velocities();
-
-  Eigen::VectorXd vd = Eigen::VectorXd::Zero(number_of_velocities);
+  Eigen::VectorXd x = this->EvalEigenVectorInput(context, 0);
 
   KinematicsCache<T> cache = rigid_body_tree_.doKinematics(x);
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<T>>

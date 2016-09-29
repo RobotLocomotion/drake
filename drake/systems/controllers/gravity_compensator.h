@@ -9,21 +9,20 @@
 namespace drake {
 namespace systems {
 
-/// A gravity compensator block with input as the partial state of a
-/// `RigidBodyPlant` `[q]` and output `y = G(q)`, where, for a given
+/// A gravity compensator system that computes a vector of generalized gravity
+/// forces that exactly counteracts the effects of gravity for a given
+/// `RigidBodyTree`. The input to this block is the vector valued port
+/// corresponding generalized positions from a `RigidBodyPlant` `q` and the
+/// output is a vector valued port given by `y = G(q)`, where, for a given
 /// `RigidBodyTree`, `G(q)` is a vector of generalised gravity forces
-/// corresponding to a given joint configuration `q`.
-///
+/// corresponding to a given joint configuration `q`. The size of the input
+/// corresponds to the number of generalized positions in the `RigidBodyTree`
+/// and the size of the output corresponds to the number of actuators.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
  public:
-  /// Constructs a gravity compensator (corresponding to a `RigidBodyTree`)
-  /// with the dimension of the input and output port equaling the dimension
-  /// of the Degrees of Freedom of the `RigidBodyTree` (positions of a
-  /// `RigidBodyPlant`)
-  /// @param rigid_body_tree_ a constant reference to a `RigidBodyTree` object
-  /// corresponding to the `RigidBodyPlant` that is to be controlled.
+  /// Constructs a gravity compensator for a given `RigidBodyTree`.
   explicit GravityCompensator(const RigidBodyTree& rigid_body_tree);
 
   /// Sets the output port value to the generalised gravity forces
