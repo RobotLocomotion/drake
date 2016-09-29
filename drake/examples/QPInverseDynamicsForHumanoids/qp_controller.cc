@@ -427,7 +427,6 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   }
   out << "w_vd: " << input.w_vd() << std::endl;
   out << "w_basis_reg: " << input.w_basis_reg() << std::endl;
-  out << "w_contact_acceleration: " << input.w_contact_acceleration() << std::endl;
   return out;
 }
 
@@ -455,7 +454,8 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
         << std::endl;
     out << "point forces:\n";
     for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
-      out << contact_result.point_force(j).transpose() << " at " << contact_result.contact_point(j).transpose() << std::endl;
+      out << contact_result.point_force(j).transpose() << " at "
+          << contact_result.contact_point(j).transpose() << std::endl;
     }
   }
 

@@ -219,7 +219,9 @@ class HumanoidStatus {
   inline const Vector6d& centroidal_momentum_matrix_dot_times_v() const {
     return centroidal_momentum_matrix_dot_times_v_;
   }
-  inline const Vector6d& centroidal_momentum() const { return centroidal_momentum_; }
+  inline const Vector6d& centroidal_momentum() const {
+    return centroidal_momentum_;
+  }
   inline const BodyOfInterest& pelvis() const { return bodies_of_interest_[0]; }
   inline const BodyOfInterest& torso() const { return bodies_of_interest_[1]; }
   inline const BodyOfInterest& foot(Side::SideEnum s) const {
