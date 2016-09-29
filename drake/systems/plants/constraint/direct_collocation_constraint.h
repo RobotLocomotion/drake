@@ -7,6 +7,8 @@
 #include "drake/drakeDynamicConstraint_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/System.h"
 
 namespace drake {
@@ -74,6 +76,25 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   }
 
   std::shared_ptr<System> system_;
+};
+
+/// Implements a dynamic constraint which uses the continuous dynamics
+/// of a system.
+class DRAKEDYNAMICCONSTRAINT_EXPORT System2DirectCollocationConstraint
+    : public DirectCollocationConstraint {
+ public:
+  explicit System2DirectCollocationConstraint(
+      std::unique_ptr<System<AutoDiffXd>>);
+  virtual ~System2DirectCollocationConstraint();
+
+ private:
+  void dynamics(const TaylorVecXd& state,
+                const TaylorVecXd& input,
+                TaylorVecXd* xdot) const override;
+
+  std::unique_ptr<System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  FreestandingInputPort* input_port_;
 };
 
 }  // systems

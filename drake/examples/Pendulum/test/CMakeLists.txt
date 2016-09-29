@@ -5,7 +5,7 @@ if(lcm_FOUND)
 
   add_executable(pendulum_dynamic_constraint_test pendulum_dynamic_constraint_test.cc)
   target_link_libraries(pendulum_dynamic_constraint_test
-    drakeDynamicConstraint drakeLCMSystem ${GTEST_BOTH_LIBRARIES})
+    drakePendulumSystem drakeDynamicConstraint ${GTEST_BOTH_LIBRARIES})
   drake_add_test(NAME pendulum_dynamic_constraint_test
     COMMAND pendulum_dynamic_constraint_test)
 

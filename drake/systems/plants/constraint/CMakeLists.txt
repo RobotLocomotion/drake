@@ -36,7 +36,9 @@ drake_add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT
 
 add_library_with_exports(LIB_NAME drakeDynamicConstraint
   SOURCE_FILES direct_collocation_constraint.cc)
-target_link_libraries(drakeDynamicConstraint drakeCommon)
+target_link_libraries(drakeDynamicConstraint
+  drakeSystemFramework
+  drakeCommon)
 drake_install_headers(direct_collocation_constraint.h)
 pods_install_libraries(drakeDynamicConstraint)
 pods_install_pkg_config_file(drake-dynamic-constraint
