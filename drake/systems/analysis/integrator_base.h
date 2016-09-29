@@ -133,7 +133,7 @@ class IntegratorBase {
    * Sets the maximum step size for this integrator
    */
   virtual void set_maximum_step_size(const T& max_step_size) {
-    DRAKE_ASSERT(max_step_size >= (double) 0.0);
+    DRAKE_ASSERT(max_step_size >= 0.0);
     max_step_size_ = max_step_size;
   }
 
@@ -146,7 +146,7 @@ class IntegratorBase {
    * Sets the minimum step size for this integrator
    */
   virtual void set_minimum_step_size(const T& min_step_size) {
-    DRAKE_ASSERT(min_step_size >= (double) 0.0);
+    DRAKE_ASSERT(min_step_size >= 0.0);
     min_step_size_ = min_step_size;
   }
 
@@ -316,10 +316,10 @@ class IntegratorBase {
   T accuracy_in_use_{nan()};
 
   // The maximum step size
-  T max_step_size_{(T) std::numeric_limits<double>::infinity()};
+  T max_step_size_{std::numeric_limits<double>::infinity()};
 
   // The minimum step size
-  T min_step_size_{(T) 0.0};
+  T min_step_size_{0.0};
 
   // Statistics.
   T actual_initial_step_size_taken_{nan()};
@@ -338,8 +338,8 @@ class IntegratorBase {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  T target_accuracy_{(T) nan()};      // means "unspecified, use default"
-  T req_initial_step_size_{(T)0.0};  // means "unspecified, use default"
+  T target_accuracy_{nan()};      // means "unspecified, use default"
+  T req_initial_step_size_{0.0};  // means "unspecified, use default"
 };                                   // IntegratorBase
 }  // namespace systems
 }  // namespace drake
