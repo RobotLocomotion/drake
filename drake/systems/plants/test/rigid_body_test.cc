@@ -12,10 +12,12 @@ namespace plants {
 namespace test {
 namespace {
 
+using std::make_unique;
+
 // Tests whether an exception is thrown if RigidBody::getJoint() is called prior
 // to a joint being set.
 GTEST_TEST(RigidBodyTest, TestGetJointThatIsNotSet) {
-  std::unique_ptr<RigidBody> rigid_body_ptr(new RigidBody());
+  auto rigid_body_ptr = make_unique<RigidBody>();
   EXPECT_THROW(rigid_body_ptr->getJoint(), std::runtime_error);
 }
 
@@ -23,11 +25,11 @@ GTEST_TEST(RigidBodyTest, TestGetJointThatIsNotSet) {
 // RigidBody::adjacentTo for details
 GTEST_TEST(RigidBodyTest, TestAdjacency) {
   // self adjacency
-  std::unique_ptr<RigidBody> rigid_body_ptrA(new RigidBody());
+  auto rigid_body_ptrA = make_unique<RigidBody>();
   EXPECT_FALSE(rigid_body_ptrA->adjacentTo(*rigid_body_ptrA));
 
   // unconnected rigid bodies
-  std::unique_ptr<RigidBody> rigid_body_ptrB(new RigidBody());
+  auto rigid_body_ptrB = make_unique<RigidBody>();
   EXPECT_FALSE(rigid_body_ptrA->adjacentTo(*rigid_body_ptrB));
   EXPECT_FALSE(rigid_body_ptrB->adjacentTo(*rigid_body_ptrA));
 
@@ -52,8 +54,8 @@ GTEST_TEST(RigidBodyTest, TestAdjacency) {
   EXPECT_TRUE(rigid_body_ptrB->adjacentTo(*rigid_body_ptrA));
 
   // connected by floating link
-  std::unique_ptr<RigidBody> rigid_body_ptrC(new RigidBody());
-  std::unique_ptr<RigidBody> rigid_body_ptrD(new RigidBody());
+  auto rigid_body_ptrC = make_unique<RigidBody>();
+  auto rigid_body_ptrD = make_unique<RigidBody>();
   rigid_body_ptrC->set_parent(rigid_body_ptrD.get());
   std::unique_ptr<DrakeJoint> floating_joint(new QuaternionFloatingJoint(
       "",
