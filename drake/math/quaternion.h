@@ -14,9 +14,13 @@
 namespace drake {
 namespace math {
 template <typename Derived>
-void CheckUnitLengthQuaternion(const Eigen::MatrixBase<Derived>& q) {
+/**
+ * Check if the quaternion has unit length, and is of size 4 x 1
+ * @param quaternion A unit length quaternion.
+ */
+void CheckUnitLengthQuaternion(const Eigen::MatrixBase<Derived>& quaternion) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  DRAKE_ASSERT(std::abs(q.norm() - 1.0) <
+  DRAKE_ASSERT(std::abs(quaternion.norm() - 1.0) <
                10 * Eigen::NumTraits<typename Derived::Scalar>::epsilon());
 }
 
@@ -142,9 +146,9 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 
 /** Adapts the code from simbody
  * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Quaternion.cpp
- * @param q a 4 x 1 vector, the quaternion that has been normalized to unit
- * length
- * @return [x; y; z; angle] a 4 x 1 vector, the angle-axis representation of a
+ * @param quaternion a 4 x 1 vector, the quaternion that has been normalized to
+ * unit length.
+ * @return [x; y; z; angle] a 4 x 1 vector, the axis-angle representation of a
  * rotation, the angle satisfies -PI < angle <= PI, and the axis [x;y;z]
  * has unit length.
  * The cost of this function is roughly one atan2, one sqrt, and one divide
@@ -152,23 +156,24 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
-    const Eigen::MatrixBase<Derived>& q) {
+    const Eigen::MatrixBase<Derived>& quaternion) {
   using std::sqrt;
-  CheckUnitLengthQuaternion(q);
+  CheckUnitLengthQuaternion(quaternion);
   using Scalar = typename Derived::Scalar;
-  Scalar abs_sin_half_angle = q.template tail<3>().norm();  // abs(sin(angle/2))
+  Scalar abs_sin_half_angle =
+      quaternion.template tail<3>().norm();  // abs(sin(angle/2))
   Scalar epsilon_scalar = Eigen::NumTraits<Scalar>::epsilon();
 
   Vector4<Scalar> axis_angle;
   if (abs_sin_half_angle < epsilon_scalar * epsilon_scalar) {
-    // No rotation - arbitrarily retrun x-axis rotation of 0 degrees.
+    // No rotation - arbitrarily return x-axis rotation of 0 degrees.
     axis_angle << 1.0, 0.0, 0.0, 0.0;
     return axis_angle;
   } else {
     // Use atan2.  Do NOT just use acos(q[0]) to calculate the rotation angle!!!
     // Otherwise results are numerical garbage anywhere where abs_sin_half_angle
     // (or equivalent rotation angle) is close to zero.
-    Scalar angle = 2 * std::atan2(abs_sin_half_angle, q(0));
+    Scalar angle = 2 * std::atan2(abs_sin_half_angle, quaternion(0));
 
     // Since sa2>=0, atan2 returns a value between 0 and pi, which is then
     // multiplied by 2 which means the angle is between 0 and 2pi.
@@ -178,7 +183,8 @@ Vector4<typename Derived::Scalar> quat2axis(
     if (angle > M_PI) angle -= 2 * M_PI;
 
     // Normalize the axis part of the return value.
-    axis_angle.template head<3>() = q.template tail<3>() / abs_sin_half_angle;
+    axis_angle.template head<3>() =
+        quaternion.template tail<3>() / abs_sin_half_angle;
     axis_angle(3) = angle;
     return axis_angle;
   }
