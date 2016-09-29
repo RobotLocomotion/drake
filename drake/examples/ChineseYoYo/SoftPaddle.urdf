@@ -106,7 +106,7 @@
     <child link="paddle" />
     <origin xyz="-3 0 3" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.1" />
+    <dynamics damping="0.0" />
   </joint>
 
   <joint name="tensioner_angle" type="revolute">

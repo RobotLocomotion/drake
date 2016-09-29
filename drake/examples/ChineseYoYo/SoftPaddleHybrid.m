@@ -13,7 +13,11 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   end
   
   methods
-    function obj = SoftPaddleHybrid
+    function obj = SoftPaddleHybrid()
+%       options = struct('CableLengthFcn','CableLength');
+%       if nargin > 0
+%           options = struct('CableLengthFcn', 'CableLength_new');
+%       end
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
       
       %TODO: Set input frame
@@ -33,12 +37,12 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
         
       pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
-      if(~taylorvar)
-        pulley_constraint.grad_level = 2; %declare that the second derivative is provided
-        pulley_constraint.grad_method = 'user';
-      else
+%      if(~taylorvar)
+%        pulley_constraint.grad_level = 2; %declare that the second derivative is provided
+%        pulley_constraint.grad_method = 'user';
+%      else
         
-      end
+%      end
       no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
       
       if(taylorvar)
@@ -79,7 +83,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       obj.baseId = obj.no_contact.findLinkId('world+base');
       obj.options.base_or_frame_id = obj.baseId;
       obj.emptyState = Point(getStateFrame(obj));
-            
+
     end
     
     function [g,dg] = collisionGuard(obj,t,x,u)
@@ -276,12 +280,17 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       x_load = -2 + (2-(-2)) .*rand(numtest,1); % x position of load within -2 to 2 range (uniform dist)
       z_load = 2.5 + (3.9 - 2.5) .*rand(numtest,1); % z position of load within 2.5 to 3.9 range (uniform dist)
       paddle_angle = -pi/4 + (pi/4-(-pi/4)) .*rand(numtest,1); % angle of paddle in range -pi/4 to pi/4 range (uniform dist)
+      x_load = 0.1;
+      z_load = 3;
+      paddle_angle = 0;
       %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
       for i = 1:numtest
        xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
        %[cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
-       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
-
+%        gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+        q = xDes((1:nq)+1);
+        [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1))
+        [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q)
       end
     end
     
@@ -291,7 +300,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 1],x0);
+      [ytraj,xtraj] = simulate(r,[0 3],x0);
       v.playback(ytraj,struct('slider',true));
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
