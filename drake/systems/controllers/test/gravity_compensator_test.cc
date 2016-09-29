@@ -34,8 +34,7 @@ VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd g = rigid_body_tree.dynamicsBiasTerm(cache, f_ext, false);
-  return g;
+  return rigid_body_tree.dynamicsBiasTerm(cache, f_ext, false);
 }
 
 template <class T>
@@ -68,13 +67,17 @@ class GravityCompensatorTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
+
+// Tests that the expected value of the gravity compensating torque and the
+// value computed by the GravityCompensator for a given joint configuration
+// on the IIWA Arm are identical.
 TEST_F(GravityCompensatorTest, OutputTest) {
   // Checks that the number of input ports in the Gravity Compensator system
   // and the Context are consistent.
   ASSERT_EQ(1, gravity_compensator_->get_num_input_ports());
   ASSERT_EQ(1, context_->get_num_input_ports());
 
-  // Arbitrary robot position
+  // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
   robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
 
