@@ -144,11 +144,13 @@ class QuadraticConstraint : public Constraint {
     void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& new_Q,
       const Eigen::MatrixBase<DerivedB>& new_b) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
-        new_b.cols() != 1)
+        new_b.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
+    }
 
-    if (new_b.rows() != b_.rows())
+    if (new_b.rows() != b_.rows()) {
       throw std::runtime_error("Can't change the number of decision variables");
+    }
 
     Q_ = new_Q;
     b_ = new_b;

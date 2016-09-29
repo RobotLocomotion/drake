@@ -208,10 +208,14 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
 
     VariableList const& variable_list() const { return variable_list_; }
 
+    /**
+     * @brief Returns a Eigen::VectorXd for all the variables in the variable
+     * list.
+     */
     Eigen::VectorXd VariableListToVectorXd() const {
       size_t dim = 0;
       Eigen::VectorXd X(GetNumElements());
-      for (auto var : variable_list_) {
+      for (auto& var : variable_list_) {
         X.segment(dim, var.size()) = var.value();
         dim += var.size();
       }
@@ -327,9 +331,9 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
    * @return The DecisionVariableView of first variable that matches \param name.
    */
   const DecisionVariableView GetVariable(const std::string& name) const {
-    for (auto it = variable_views_.begin(); it != variable_views_.end(); it++) {
-      if (name.compare(it->name()) == 0)
-        return *it;
+    for (auto& var : variable_views_) {
+      if (name.compare(var.name()) == 0)
+        return var;
     }
     throw std::runtime_error("unable to find variable: " + name);
   }
@@ -918,7 +922,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
   const Eigen::VectorXd GetSolution() const {
     Eigen::VectorXd solution(num_vars_);
     int start_index = 0;
-    for (auto var : variables_) {
+    for (auto& var : variables_) {
       solution.segment(start_index, var.size()) = var.value();
       start_index += var.size();
     }
