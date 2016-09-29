@@ -88,7 +88,7 @@ template <typename Derived>
 Vector3<typename Derived::Scalar> axis2rpy(
     const Eigen::MatrixBase<Derived>& axis_angle) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  return rotmat2rpy(axis2rotmat(axis_angle));
+  return rotmat2rpy( axis2rotmat(axis_angle) );
 }
 
 }  // namespace math

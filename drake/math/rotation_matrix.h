@@ -55,13 +55,10 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   return q;
 }
 
-/** Computes the angle axis representation from a rotation matrix. Since our
- * ::rotmat2quat and ::quat2axis are both numerical stable (they handle all the
- * corner cases, and avoid calling acos), we will call these two transform
- * functions directly.
+/** Computes the angle axis representation from a rotation matrix.
  * @param R  the 3 x 3 rotation matrix
  * @return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
- * axis [x;y;z] has unit length, the angle satisfies -PI < angle <= PI
+ * axis [x;y;z] has unit length, the angle satisfies -PI <= angle <= PI
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2axis(
@@ -87,6 +84,7 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1301
   // is fixed. Currently Eigen's EulerAngles does not guarantee the range of
   // the second angle covers PI.
+  // Also delete Simbody's derived implementation
 
   /*EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
