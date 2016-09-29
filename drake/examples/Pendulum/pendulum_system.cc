@@ -25,7 +25,6 @@ PendulumStateVector<T>::PendulumStateVector()
 template <typename T>
 PendulumStateVector<T>::~PendulumStateVector() {}
 
-
 template <typename T>
 T PendulumStateVector<T>::get_theta() const {
   return this->GetAtIndex(0);
@@ -61,6 +60,9 @@ PendulumSystem<T>::PendulumSystem() {
   this->DeclareOutputPort(
       systems::kVectorValued, kStateSize, systems::kContinuousSampling);
 }
+
+template <typename T>
+PendulumSystem<T>::~PendulumSystem() {}
 
 template <typename T>
 const systems::SystemPortDescriptor<T>&

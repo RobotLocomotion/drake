@@ -46,6 +46,7 @@ class DRAKEPENDULUMSYSTEM_EXPORT PendulumSystem
     : public systems::LeafSystem<T> {
  public:
   PendulumSystem();
+  ~PendulumSystem();
 
   using MyContext = systems::Context<T>;
   using MyContinuousState = systems::ContinuousState<T>;
