@@ -231,8 +231,13 @@ else()
 endif()
 
 # iris
-drake_add_external(iris PUBLIC
-  CONFIGURE_COMMAND ${MAKE_COMMAND} configure-cdd-only
+drake_add_external(iris PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DIRIS_WITH_CDD=ON
+    -DIRIS_WITH_EIGEN=OFF
+    -DIRIS_WITH_MOSEK=OFF
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
   DEPENDS eigen mosek)
 
 # lcm (and gtk)
