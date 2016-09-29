@@ -1,3 +1,10 @@
+#=============================================================================
+# NOTICE: This file is not an exact copy of FindMatlab.cmake from upstream.
+#
+# Improvements made in the upstream version depend on changes to the CMake C++
+# source code. This copy has been modified to incorporate similar improvements
+# without depending on the newer version of CMake.
+#=============================================================================
 #.rst:
 # FindMatlab
 # ----------
