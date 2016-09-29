@@ -351,11 +351,12 @@ class DRAKERBM_EXPORT RigidBody {
       const Eigen::Isometry3d& transform_body_to_joint);
 
   /** Adds body to a given collision clique by clique id.
-
-   This call adds each of the collision elements in this body to the provided
-   collision clique.
-   @param[in] clique_id Collision clique id.
-   @see CollisionElement::AddToCollisionClique. **/
+   *
+   * This call adds each of the collision elements in this body to the provided
+   * collision clique.
+   * @param[in] clique_id Collision clique id.
+   * @see Element::AddToCollisionClique.
+   */
   void AddCollisionElementsToClique(int clique_id);
 
  public:
