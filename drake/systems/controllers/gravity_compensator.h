@@ -19,6 +19,8 @@ namespace systems {
 /// number of generalized positions in the `RigidBodyTree` and the size of the
 /// output corresponds to the number of actuators. Note that the current
 /// implementation assumes that every DoF of the `RigidBodyPlant` is actuated.
+/// If used on an underactuated system, gravity compensation will not be
+/// achieved.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {
