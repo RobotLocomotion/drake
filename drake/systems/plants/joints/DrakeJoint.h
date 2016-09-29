@@ -107,16 +107,17 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   virtual ~DrakeJoint();
 
   /**
-   * Returns the transform between this joint's fixed frame and the joint's
-   * parent body's frame.
+   * Returns the transform `T_PF` giving the pose of the joint's "fixed" frame
+   * `F` in its parent body frame `P`. Frame `F` is the joint frame that is
+   * fixed to the parent body; thus `T_PF` is not configuration dependent.
    *
-   * Let `J` be this joint's fixed frame and `P` be this joint's parent body's
-   * frame. Furthermore, let `point_J` be a location in frame `J` and
-   * `point_P` be the same location in frame `P`. The returned value is `T_PJ`
-   * where:
+   * To clarify the sense of the returned transform `T_PF`, consider the
+   * location of a point `Q` somewhere in space. Let `p_PQ` be point `Q`
+   * expressed in frame `P` and `p_FQ` be point `Q` expressed in frame
+   * `F`. Then `p_PQ` is given by:
    *
    * <pre>
-   * point_P = T_PJ * point_J;
+   * p_PQ = T_PF * p_FQ
    * </pre>
    */
   const Eigen::Isometry3d& get_transform_to_parent_body() const;
