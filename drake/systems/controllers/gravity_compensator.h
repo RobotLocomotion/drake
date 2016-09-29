@@ -11,13 +11,13 @@ namespace systems {
 
 /// A gravity compensator system that computes a vector of generalized gravity
 /// forces that exactly counteracts the effects of gravity for a given
-/// `RigidBodyTree`. The input to this block is the vector valued port
-/// corresponding generalized positions from a `RigidBodyPlant` `q` and the
+/// `RigidBodyTree`. The input to this block is a vector valued port
+/// corresponding to generalized positions from a `RigidBodyPlant` `q`. The
 /// output is a vector valued port given by `y = G(q)`, where, for a given
 /// `RigidBodyTree`, `G(q)` is a vector of generalised gravity forces
-/// corresponding to a given joint configuration `q`. The size of the input
-/// corresponds to the number of generalized positions in the `RigidBodyTree`
-/// and the size of the output corresponds to the number of actuators.
+/// corresponding to `q`. The size of the input corresponds to the number of
+/// generalized positions in the `RigidBodyTree` and the size of the output
+/// corresponds to the number of actuators.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
 class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator : public LeafSystem<T> {

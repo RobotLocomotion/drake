@@ -21,15 +21,15 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  Eigen::VectorXd x = this->EvalEigenVectorInput(context, 0);
+  Eigen::VectorXd q = this->EvalEigenVectorInput(context, 0);
 
-  KinematicsCache<T> cache = rigid_body_tree_.doKinematics(x);
+  KinematicsCache<T> cache = rigid_body_tree_.doKinematics(q);
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<T>>
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd G = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext, false);
-  System<T>::GetMutableOutputVector(output, 0) = G;
+  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext, false);
+  System<T>::GetMutableOutputVector(output, 0) = g;
 }
 
 template class DRAKESYSTEMCONTROLLERS_EXPORT GravityCompensator<double>;
