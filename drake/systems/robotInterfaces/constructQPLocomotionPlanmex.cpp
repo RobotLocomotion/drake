@@ -20,7 +20,7 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
   const size_t* coefs_mex_dims = mxGetDimensions(coefs_mex);
   int num_coefs_mex_dims = mxGetNumberOfDimensions(coefs_mex);
 
-  size_t number_of_elements = mxGetNumberOfElements(coefs_mex);
+  size_t num_elements = mxGetNumberOfElements(coefs_mex);
   if (!mxIsDouble(coefs_mex))
     mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs",
                       "coefs should have type double");
@@ -47,7 +47,7 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
   }
 
   size_t num_coefficients =
-      number_of_elements / (num_segments * product_of_dimensions);  // k
+      num_elements / (num_segments * product_of_dimensions);  // k
 
   vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
   polynomial_matrices.reserve(num_segments);
