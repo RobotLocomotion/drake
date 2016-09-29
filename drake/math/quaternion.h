@@ -7,11 +7,18 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
+template <typename Derived>
+void CheckUnitLengthQuaternion(const Eigen::MatrixBase<Derived>& q) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  DRAKE_ASSERT(std::abs(q.norm() - 1.0) <
+               10 * Eigen::NumTraits<typename Derived::Scalar>::epsilon());
+}
 
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
@@ -135,32 +142,33 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 
 /** Adapts the code from simbody
  * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Quaternion.cpp
- * @param q a 4 x 1 vector, the unit length quaternion
- * @return [x; y; z; angle] a 4 x 1 vecotr, the angle-axis representation of a
+ * @param q a 4 x 1 vector, the quaternion that has been normalized to unit
+ * length
+ * @return [x; y; z; angle] a 4 x 1 vector, the angle-axis representation of a
  * rotation, the angle satisfies -PI < angle <= PI, and the axis [x;y;z]
  * has unit length.
- * The cost of this operation is roughly one atan2, one sqrt, and one divide
+ * The cost of this function is roughly one atan2, one sqrt, and one divide
  * (about 100 flops)
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& q) {
   using std::sqrt;
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  CheckUnitLengthQuaternion(q);
   using Scalar = typename Derived::Scalar;
-  Scalar sa2 = q.template tail<3>().norm();  // sin(angle/2)*axis
+  Scalar abs_sin_half_angle = q.template tail<3>().norm();  // abs(sin(angle/2))
   Scalar epsilon_scalar = Eigen::NumTraits<Scalar>::epsilon();
 
-  Vector4<Scalar> a;
-  if (sa2 < epsilon_scalar * epsilon_scalar) {
-    // no rotation
-    a << 1.0, 0.0, 0.0, 0.0;
-    return a;
+  Vector4<Scalar> axis_angle;
+  if (abs_sin_half_angle < epsilon_scalar * epsilon_scalar) {
+    // No rotation - arbitrarily retrun x-axis rotation of 0 degrees.
+    axis_angle << 1.0, 0.0, 0.0, 0.0;
+    return axis_angle;
   } else {
     // Use atan2.  Do NOT just use acos(q[0]) to calculate the rotation angle!!!
-    // Otherwise results are numerical garbage anywhere near zero (or less
-    // near).
-    Scalar angle = 2 * std::atan2(sa2, q(0));
+    // Otherwise results are numerical garbage anywhere where abs_sin_half_angle
+    // (or equivalent rotation angle) is close to zero.
+    Scalar angle = 2 * std::atan2(abs_sin_half_angle, q(0));
 
     // Since sa2>=0, atan2 returns a value between 0 and pi, which is then
     // multiplied by 2 which means the angle is between 0 and 2pi.
@@ -169,23 +177,23 @@ Vector4<typename Derived::Scalar> quat2axis(
     // counterclockwise.
     if (angle > M_PI) angle -= 2 * M_PI;
 
-    // Normalize the axis part of the return value
-    a.template head<3>() = q.template tail<3>() / sa2;
-    a(3) = angle;
-    return a;
+    // Normalize the axis part of the return value.
+    axis_angle.template head<3>() = q.template tail<3>() / abs_sin_half_angle;
+    axis_angle(3) = angle;
+    return axis_angle;
   }
 }
 
 /**
- * Compute the rotation matrix from quaternion representation
- * @param q A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
+ * Compute the rotation matrix from quaternion representation.
+ * @param quaternion A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
  * @return A 3 x 3 rotation matrix
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
-    const Eigen::MatrixBase<Derived>& q) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
+    const Eigen::MatrixBase<Derived>& quaternion) {
+  CheckUnitLengthQuaternion(quaternion);
+  auto q_normalized = quaternion.normalized();
   auto w = q_normalized(0);
   auto x = q_normalized(1);
   auto y = q_normalized(2);
@@ -211,7 +219,7 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 
 /**
  * Compute the Euler angles from quaternion representation
- * @param q A 4 x 1 unit length vector @p q=[w;x;y;z]
+ * @param quaternion A 4 x 1 unit length vector @p q=[w;x;y;z]
  * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
  * rpy(1), rpy(0)]
  * @see rpy2rotmat
@@ -221,8 +229,9 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
-    const Eigen::MatrixBase<Derived>& q) {
-  return rotmat2rpy(quat2rotmat(q));
+    const Eigen::MatrixBase<Derived>& quaternion) {
+  CheckUnitLengthQuaternion(quaternion);
+  return rotmat2rpy(quat2rotmat(quaternion));
 }
 
 template <typename Derived>
