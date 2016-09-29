@@ -63,11 +63,11 @@ PiecewisePolynomial<double> generateSpline(
     for (auto it = value_constraints.begin(); it != value_constraints.end();
          ++it) {
       const ValueConstraint& constraint = *it;
-      int num_coefficients =
+      int num_segment_coefficients =
           spline_information.getNumberOfCoefficients(i);
       auto constraint_matrix_segment_part = constraint_matrix.block<1, Dynamic>(
           constraint_row_start, segment_col_starts[i], 1,
-          num_coefficients);
+          num_segment_coefficients);
       double t_local =
           constraint.getTime() - spline_information.getStartTime(i);
       setConstraintMatrixPart(t_local, constraint.getDerivativeOrder(),
