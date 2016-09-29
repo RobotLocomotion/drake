@@ -7,8 +7,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/examples/spring_mass_system.h"
 #include "drake/systems/framework/examples/controlled_spring_mass_system.h"
+#include "drake/systems/framework/examples/spring_mass_system.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -170,10 +170,9 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 }
 
 // Tests Simulator for a Diagram system consisting of a tree of systems.
-// For this case the System is a PidControlledSpringMassSystem which is a
+// In this case the System is a PidControlledSpringMassSystem which is a
 // Diagram containing a SpringMassSystem (the plant) and a PidController which
-// in turns is a Diagram composed of primitive systems such as Gain's and
-// Adder's.
+// in turn is a Diagram composed of primitives such as Gain and Adder systems.
 GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   typedef complex<double> complexd;
   typedef AutoDiffScalar<Vector1d> SingleVarAutoDiff;
@@ -192,7 +191,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kp = kSpring;
   const double ki = 0.0;
   // System's undamped frequency (when kd = 0).
-  const double w0 = sqrt(wol*wol + kp / kMass);
+  const double w0 = sqrt(wol * wol + kp / kMass);
   // Damping ratio (underdamped).
   const double zeta = 0.5;
   const double kd = 2.0 * kMass * w0 * zeta;
@@ -205,11 +204,11 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   // Sets initial conditions to zero.
   spring_mass.SetDefaultState(simulator.get_mutable_context());
 
-  // Set initial condition using the Simulator's internal Context.
+  // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), x0);
   spring_mass.set_velocity(simulator.get_mutable_context(), v0);
 
-  // Take all the defaults.
+  // Takes all the defaults for the simulator.
   simulator.Initialize();
 
   EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
@@ -217,8 +216,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
   // Computes analytical solution.
   // 1) Roots of the characteristic equation.
-  complexd lambda1 = -zeta * w0 + w0 * sqrt(complexd(zeta*zeta - 1));
-  complexd lambda2 = -zeta * w0 - w0 * sqrt(complexd(zeta*zeta - 1));
+  complexd lambda1 = -zeta * w0 + w0 * sqrt(complexd(zeta * zeta - 1));
+  complexd lambda2 = -zeta * w0 - w0 * sqrt(complexd(zeta * zeta - 1));
 
   // Roots should be the complex conjugate of each other.
   EXPECT_NEAR(lambda1.real(),  lambda2.real(), NumTraits<double>::epsilon());
