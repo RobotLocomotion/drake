@@ -4,7 +4,7 @@ if(lcm_FOUND)
 
   drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test
-    drakeDynamicConstraint drakeLCMSystem)
+    drakePendulumSystem drakeDynamicConstraint)
 
   add_executable(pendulum_trajectory_optimization_test
     pendulum_trajectory_optimization_test.cc)
