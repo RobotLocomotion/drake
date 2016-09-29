@@ -20,7 +20,8 @@ template <typename Derived>
  */
 void CheckUnitLengthQuaternion(const Eigen::MatrixBase<Derived>& quaternion) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  DRAKE_ASSERT(std::abs(quaternion.norm() - 1.0) <
+  using std::abs;
+  DRAKE_ASSERT(abs(quaternion.norm() - 1.0) <
                10 * Eigen::NumTraits<typename Derived::Scalar>::epsilon());
 }
 
