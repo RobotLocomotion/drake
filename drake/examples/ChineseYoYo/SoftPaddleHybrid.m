@@ -14,10 +14,6 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   
   methods
     function obj = SoftPaddleHybrid()
-%       options = struct('CableLengthFcn','CableLength');
-%       if nargin > 0
-%           options = struct('CableLengthFcn', 'CableLength_new');
-%       end
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
       
       %TODO: Set input frame
@@ -27,10 +23,10 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       pulley_constraint = in_contact.position_constraints{1};
       cable_length_fcn = pulley_constraint.fcn;
       
-      taylorvar = false;
-      
-
-      
+%       taylorvar = false;
+%       
+% 
+%       
       cable_length_fcn.pulley = cable_length_fcn.pulley([1 3 4]); %removing the disc wioth id 2 from the constraint
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
         pulley_constraint.ub, cable_length_fcn); %construct a new function constraint
@@ -38,19 +34,19 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         
       pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
 %      if(~taylorvar)
-%        pulley_constraint.grad_level = 2; %declare that the second derivative is provided
-%        pulley_constraint.grad_method = 'user';
+       pulley_constraint.grad_level = 2; %declare that the second derivative is provided
+       pulley_constraint.grad_method = 'user';
 %      else
         
 %      end
       no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
       
-      if(taylorvar)
-        pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
-          pulley_constraint.ub, cable_length_fcn);
-        pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
-        in_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
-      end
+%       if(taylorvar)
+%         pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
+%           pulley_constraint.ub, cable_length_fcn);
+%         pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
+%         in_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
+%       end
       
       modeStates = 1; %number of discrete state variables, here only one mode variable
       obj = obj@HybridDrakeSystem(getNumInputs(in_contact),...
@@ -272,7 +268,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
     
     function gradTestCableLength()
       r = SoftPaddleHybrid();
-      numtest = 1; %change this to test for various points
+      numtest = 10; %change this to test for various points
       cl=zeros(1,numtest); %init a cable length output
       nq=getNumPositions(r.no_contact);
       dcl=zeros(numtest,1,nq);
@@ -280,17 +276,31 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       x_load = -2 + (2-(-2)) .*rand(numtest,1); % x position of load within -2 to 2 range (uniform dist)
       z_load = 2.5 + (3.9 - 2.5) .*rand(numtest,1); % z position of load within 2.5 to 3.9 range (uniform dist)
       paddle_angle = -pi/4 + (pi/4-(-pi/4)) .*rand(numtest,1); % angle of paddle in range -pi/4 to pi/4 range (uniform dist)
-      x_load = 0.1;
-      z_load = 3;
-      paddle_angle = 0;
+      
+%       paddle_angle = 0.15365;
+%       x_load = 0.79569;
+%       z_load = 2.9002;
+%       
+%       paddle_angle = 0.40945;
+%       x_load = 0.18235;
+%       z_load = 2.7739;
+      
       %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
       for i = 1:numtest
        xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
-       %[cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
-%        gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
-        q = xDes((1:nq)+1);
-        [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1))
-        [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q)
+%        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
+       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+%         q = xDes((1:nq)+1)
+%         [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
+%         [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
+%         ddl = reshape(ddl,4,[]);
+%         ddlH = reshape(ddlH,4,[]);
+%         
+%         E = [zeros(2,2), eye(2,2)];
+%         e = (ddl-ddlH);
+%         if norm(e) > 1e-7
+%             error('Not good')
+%         end
       end
     end
     
