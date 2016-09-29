@@ -117,6 +117,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                   end
                 end
               end
+              error('Nothing to see here')
             
             else % the pulleys rotate in opposite directions, then it's like a cross flat belt drive
               % see image here:
@@ -146,15 +147,15 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                   dds = 2/C^3*(r1+r2)*(dC'*dC) - (r1+r2)/C^2*ddC;   % should be correct
                   ddalpha = s/(1-s^2)^(3/2)*(ds'*ds) + dds/sqrt(1-s^2); % should be correct
 %                   ddcvec = ddvec/C - 1/C^2*reshape(kron(dC,dvec),3*dims,[]) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
-                  ddcvec = ddvec/C - 1/C^2*kron(dC,dvec) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []); % should be correct
+%                   ddcvec = ddvec/C - 1/C^2*kron(dC,dvec) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []); % should be correct
+                  ddcvec = ddvec/C - 1/C^2*reshape(kron(reshape(dvec,3*dims,[]),dC),3,[]) - reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []); % should be correct
                   if r1>0
                       R = axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha]);
-                      dRda = daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]);
-                      d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2+alpha]);
-                      dRdq = kron(dRda, dalpha);
-%                       dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)];
-                      dRdq = [dRdq(:,1:4); dRdq(:,5:8); dRdq(:,9:12)]; % TODO: make this generic
-                    ddpt1 = last_ddpt + r1*reshape(matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*dalpha, ddalpha) + ...
+                      dRda = daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2+alpha]);
+                      d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2+alpha]);
+                      dRdq = kron(reshape(dRda,9,[]),dalpha);
+                      
+                    ddpt1 = last_ddpt + reshape(r1*matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*dalpha + dRda*dcvec, ddalpha) + ...
                       r1*matGradMultMat(R,dcvec,dRdq, reshape(ddcvec,3*dims,[])), 3, []);   % should be correct
                   else
                     ddpt1 = last_ddpt;
@@ -163,10 +164,10 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                       R = axis2rotmat([obj.pulley(i).axis;-pi/2-alpha]);
                       dRda = daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
                       d2Rda2 = ddaxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha]);
-                      dRdq = kron(dRda, -dalpha);
-%                       dRdq = [dRdq(:,1:3); dRdq(:,4:6); dRdq(:,7:9)]; % TODO: make this generic
-                      dRdq = [dRdq(:,1:4); dRdq(:,5:8); dRdq(:,9:12)]; % TODO: make this generic
-                    ddpt2 = ddpt - r2*reshape(matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*-dalpha, ddalpha) + ...
+                      dRdq = kron(reshape(dRda,9,[]),-dalpha);
+      
+                      
+                    ddpt2 = ddpt + reshape(-r2*matGradMultMat(dRda*cvec, dalpha, d2Rda2*cvec*-dalpha + dRda*dcvec, ddalpha) + ...
                       r2*matGradMultMat(R,dcvec, dRdq, reshape(ddcvec,3*dims,[])), 3, []);   % should be correct
                   else
                     ddpt2 = ddpt;
@@ -208,7 +209,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 if nargout>2
                   ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;    % should be correct
                   ddc = matGradMultMat(v2',dv1,dv2,reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1,reshape(ddv2,3*dims,[]));    % should be correct
-                  ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % needs to be done
+                  ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % should be correct
                   dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
 %                   ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
                   ddtheta = -dc'*ds - s*ddc + ds'*dc + c*dds;   % should be correct
