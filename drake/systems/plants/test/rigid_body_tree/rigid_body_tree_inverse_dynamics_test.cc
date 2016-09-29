@@ -4,6 +4,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/parameterized_type_map.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -107,10 +108,14 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   }
 
   // Compute Coriolis matrix (see Murray et al., eq. (4.23)).
+  ParameterizedTypeMap<KinematicsCache> cache_map;
   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
     using Scalar =
         typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
-    KinematicsCache<Scalar> kinematics_cache_coriolis(tree_rpy_->bodies);
+    if (!cache_map.has_key<Scalar>()) {
+      cache_map.emplace<Scalar>(tree_rpy_->bodies);
+    }
+    auto& kinematics_cache_coriolis = *cache_map.get<Scalar>();
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 

@@ -6,6 +6,8 @@ target_link_libraries(functional_form_test drakeCommon)
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 
+drake_add_cc_test(parameterized_type_map_test)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
