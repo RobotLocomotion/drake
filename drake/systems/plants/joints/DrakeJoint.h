@@ -113,8 +113,8 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
    *
    * To clarify the sense of the returned transform `T_PF`, consider the
    * location of a point `Q` somewhere in space. Let `p_PQ` be point `Q`
-   * expressed in frame `P` and `p_FQ` be point `Q` expressed in frame
-   * `F`. Then `p_PQ` is given by:
+   * measured and expressed in frame `P` and `p_FQ` be point `Q` measured and
+   * expressed in frame `F`. Then `p_PQ` is given by:
    *
    * <pre>
    * p_PQ = T_PF * p_FQ
