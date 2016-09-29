@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/automotive/curve2.h"
@@ -10,6 +12,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
 namespace automotive {
@@ -34,6 +37,11 @@ class AutomotiveSimulator {
   /// Returns the DiagramBuilder.
   /// @pre Start() has NOT been called.
   systems::DiagramBuilder<T>* get_builder();
+
+  /// Returns the RigidBodyTree.  Beware that the AutomotiveSimulator::Start()
+  /// method invokes RigidBodyTree::compile, which may substantially update the
+  /// tree representation.
+  const RigidBodyTree& get_rigid_body_tree();
 
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
   /// LCM input and EulerFloatingJoint output.
@@ -98,12 +106,19 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
+  void AddBoxcar(const SimpleCarToEulerFloatingJoint<T>*);
+
+  // For both building and simulation.
+  std::unique_ptr<RigidBodyTree> rigid_body_tree_{
+    std::make_unique<RigidBodyTree>()};
+  std::unique_ptr<lcm::LCM> lcm_{std::make_unique<lcm::LCM>()};
 
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
     std::make_unique<systems::DiagramBuilder<T>>()};
+  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
+      rigid_body_tree_publisher_inputs_;
   int next_vehicle_number_{0};
-  std::unique_ptr<lcm::LCM> lcm_{std::make_unique<lcm::LCM>()};
   bool started_{false};
 
   // For simulation.

@@ -2308,21 +2308,21 @@ void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  PackageMap ros_package_map;
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string,
-    std::map<std::string, std::string>& package_map,
+    std::map<std::string, std::string>& ros_package_map,
     const std::string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
@@ -2331,19 +2331,19 @@ void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
+  PackageMap ros_package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      filename, package_map, floating_base_type, weld_to_frame, this);
+      filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
-    std::map<std::string, std::string>& package_map,
+    std::map<std::string, std::string>& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      filename, package_map, floating_base_type, weld_to_frame, this);
+      filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2360,12 +2360,12 @@ int RigidBodyTree::add_model_instance() {
   return num_model_instances_++;
 }
 
-int RigidBodyTree::get_num_model_instances() {
+int RigidBodyTree::get_num_model_instances() const {
   return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int RigidBodyTree::get_number_of_model_instances() {
+int RigidBodyTree::get_number_of_model_instances() const {
   return get_num_model_instances();
 }
 

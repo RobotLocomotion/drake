@@ -100,7 +100,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string,
-      std::map<std::string, std::string>& package_map,
+      std::map<std::string, std::string>& ros_package_map,
       const std::string& root_dir = ".",
       const drake::systems::plants::joints::FloatingBaseType
           floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
@@ -120,7 +120,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      std::map<std::string, std::string>& package_map,
+      std::map<std::string, std::string>& ros_package_map,
       const drake::systems::plants::joints::FloatingBaseType
           floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
@@ -145,12 +145,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * Returns the number of model instances in the tree.
    */
-  int get_num_model_instances();
+  int get_num_model_instances() const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
 #endif
-  int get_number_of_model_instances();
+  int get_number_of_model_instances() const;
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
