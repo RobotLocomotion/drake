@@ -7,6 +7,8 @@
 #include "drake/drakeDynamicConstraint_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
 #include "drake/systems/System.h"
 
 namespace drake {
@@ -47,6 +49,15 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DirectCollocationConstraint :
                         TaylorVecXd* xdot) const = 0;
 
  private:
+  explicit DirectCollocationConstraint(
+      const DirectCollocationConstraint& other) = delete;
+  DirectCollocationConstraint& operator=(
+      const DirectCollocationConstraint& other) = delete;
+  explicit DirectCollocationConstraint(
+      DirectCollocationConstraint&& other) = delete;
+  DirectCollocationConstraint& operator=(
+      DirectCollocationConstraint&& other) = delete;
+
   int num_states_;
   int num_inputs_;
 };
@@ -73,7 +84,49 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
     *xdot = toEigen(system_->dynamics(t, x, u));
   }
 
+  explicit SystemDirectCollocationConstraint(
+      const DirectCollocationConstraint& other) = delete;
+  SystemDirectCollocationConstraint& operator=(
+      const DirectCollocationConstraint& other) = delete;
+  explicit SystemDirectCollocationConstraint(
+      DirectCollocationConstraint&& other) = delete;
+  SystemDirectCollocationConstraint& operator=(
+      DirectCollocationConstraint&& other) = delete;
+
   std::shared_ptr<System> system_;
+};
+
+/// Implements a dynamic constraint which uses the continuous dynamics
+/// of a system.
+class DRAKEDYNAMICCONSTRAINT_EXPORT System2DirectCollocationConstraint
+    : public DirectCollocationConstraint {
+ public:
+  /// Create a direct colocation constraint for a system.  Systems
+  /// must have a single input port and a single output port, match
+  /// the template requirement of AutoDiffXd, and implement
+  /// EvalTimeDerivatives.
+  explicit System2DirectCollocationConstraint(
+      std::unique_ptr<System<AutoDiffXd>> system);
+  ~System2DirectCollocationConstraint() override;
+
+ private:
+  void dynamics(const TaylorVecXd& state,
+                const TaylorVecXd& input,
+                TaylorVecXd* xdot) const override;
+
+  explicit System2DirectCollocationConstraint(
+      const DirectCollocationConstraint& other) = delete;
+  System2DirectCollocationConstraint& operator=(
+      const DirectCollocationConstraint& other) = delete;
+  explicit System2DirectCollocationConstraint(
+      DirectCollocationConstraint&& other) = delete;
+  System2DirectCollocationConstraint& operator=(
+      DirectCollocationConstraint&& other) = delete;
+
+  std::unique_ptr<System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  FreestandingInputPort* input_port_{nullptr};
+  std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 
 }  // systems
