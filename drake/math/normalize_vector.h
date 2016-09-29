@@ -6,15 +6,19 @@
 
 namespace drake {
 namespace math {
-/** Computes the normalized vector, together with its gradient and second
-   derivatives
-    @param x A \p N x 1 vector to be normalized
-    @param x_norm The normalized vector
-    @param dx_norm A @p N x @p N matrix, @p dx_norm(i,j) is the partial
-   derivative
-    of @p x_norm(i) w.r.t @p x(j)
-    @param ddx_norm
- */
+/** Computes the normalized vector, optinally with its gradient and second
+derivative.
+@param[in]  x        An N x 1 vector to be normalized. Must not be zero.
+@param[out] x_norm   The normalized vector (N x 1).
+@param[out] dx_norm
+    If non-null, returned as an N x N matrix,
+    where dx_norm(i,j) = D x_norm(i)/D x(j).
+@param[out] ddx_norm
+    If non-null, and dx_norm is non-null, returned as an N^2 x N matrix,
+    where ddx_norm.col(j) = D dx_norm/D x(j), with dx_norm stacked
+    columnwise.
+
+(D x / D y above means partial derivative of x with respect to y.) */
 template <typename Derived>
 void NormalizeVector(
     const Eigen::MatrixBase<Derived>& x, typename Derived::PlainObject& x_norm,
