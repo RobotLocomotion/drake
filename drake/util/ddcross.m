@@ -1,4 +1,8 @@
 function ddvcrossw = ddcross(v,w,dv,dw,ddv,ddw)
+if(size(dv,2)~=4)
+error('Need to fix the sizes!')
+end
+%TODO: Need to make this generic
 dims = 4;
 ddvcrossw = zeros(3*dims,dims);
 
