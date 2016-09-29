@@ -56,6 +56,7 @@ void QPController::ResizeQP(
       MatrixXd::Zero(6, num_variable_), Matrix<double, 6, 1>::Zero(),
       {vd, basis});
   eq_dynamics_->set_description("dynamics eq");
+
   eq_contacts_.resize(num_contact_body_);
   // Contact constraints, 3 rows per contact point
   for (int i = 0; i < num_contact_body_; i++) {
@@ -410,6 +411,13 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   }
   out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
 
+  for (size_t i = 0; i < input.contact_info().size(); i++) {
+    const ContactInformation& contact_info = input.contact_info(i);
+    out << "contact: " << contact_info.name() << std::endl;
+    for (size_t j = 0; j < contact_info.contact_points().size(); j++)
+      out << contact_info.contact_points()[j].transpose() << std::endl;
+  }
+
   out << "w_com: " << input.w_com() << std::endl;
   for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
     const DesiredBodyAcceleration& body_motion_d =
@@ -419,6 +427,7 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   }
   out << "w_vd: " << input.w_vd() << std::endl;
   out << "w_basis_reg: " << input.w_basis_reg() << std::endl;
+  out << "w_contact_acceleration: " << input.w_contact_acceleration() << std::endl;
   return out;
 }
 
@@ -446,7 +455,7 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
         << std::endl;
     out << "point forces:\n";
     for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
-      out << contact_result.point_force(j).transpose() << std::endl;
+      out << contact_result.point_force(j).transpose() << " at " << contact_result.contact_point(j).transpose() << std::endl;
     }
   }
 

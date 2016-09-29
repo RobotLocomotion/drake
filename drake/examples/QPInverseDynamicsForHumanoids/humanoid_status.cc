@@ -36,10 +36,11 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
   com_ = robot_.centerOfMass(cache_);
   J_com_ = robot_.centerOfMassJacobian(cache_);
   Jdot_times_v_com_ = robot_.centerOfMassJacobianDotTimesV(cache_);
-  comd_ = J_com_ * v;
+  comd_ = J_com_ * velocity_;
   centroidal_momentum_matrix_ = robot_.centroidalMomentumMatrix(cache_);
   centroidal_momentum_matrix_dot_times_v_ =
       robot_.centroidalMomentumMatrixDotTimesV(cache_);
+  centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
   for (size_t i = 0; i < bodies_of_interest_.size(); i++)

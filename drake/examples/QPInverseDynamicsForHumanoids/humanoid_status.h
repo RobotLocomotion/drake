@@ -219,7 +219,8 @@ class HumanoidStatus {
   inline const Vector6d& centroidal_momentum_matrix_dot_times_v() const {
     return centroidal_momentum_matrix_dot_times_v_;
   }
-  inline const BodyOfInterest& pelv() const { return bodies_of_interest_[0]; }
+  inline const Vector6d& centroidal_momentum() const { return centroidal_momentum_; }
+  inline const BodyOfInterest& pelvis() const { return bodies_of_interest_[0]; }
   inline const BodyOfInterest& torso() const { return bodies_of_interest_[1]; }
   inline const BodyOfInterest& foot(Side::SideEnum s) const {
     if (s == Side::LEFT)
@@ -297,6 +298,7 @@ class HumanoidStatus {
   // [angular; linear] = centroidal_momentum_matrix_ * v
   MatrixXd centroidal_momentum_matrix_;
   Vector6d centroidal_momentum_matrix_dot_times_v_;
+  Vector6d centroidal_momentum_;
 
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
