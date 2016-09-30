@@ -353,10 +353,10 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         subplot(3,1,2); plot(tt,dcl(:,1,4), 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
-        ylabel('$\dot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        ylabel('$\dot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         subplot(3,1,3); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
-        ylabel('$\ddot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        ylabel('$\ddot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         
         t = linspace(xtraj.tspan(1), xtraj.tspan(end), 1001);
         x = eval(xtraj, t);
