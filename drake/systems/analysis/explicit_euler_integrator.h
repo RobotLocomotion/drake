@@ -79,10 +79,12 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 };  // ExplictEulerIntegrator
 
 /**
- * Integrates the system forward in time by dt. Integrator must already have
+ * Integrates the system forward in time. Integrator must already have
  * been initialized or exception will be thrown.
- * @param dt the integration step size, dt >= 0.0 (exception will be thrown
- *        if this is not the case).
+ * @param publish_dt the step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next publish will occur
+ * @param update_dt the step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next update will occur
  * @return the reason for the integration step ending
  */
 template <class T>
