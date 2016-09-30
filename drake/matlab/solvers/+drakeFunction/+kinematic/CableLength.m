@@ -242,7 +242,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 %%TODO:deal with small svec and s 
                 dc = v2'*dv1+v1'*dv2; 
                 dsvec=dcross(v1,v2,dv1,dv2); 
-%                 ds = svec'*dsvec/max(s,eps);
+                ds = svec'*dsvec/max(s,eps);
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % This is very dirty, fix it
@@ -266,7 +266,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                     ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;    % should be correct
                     ddc = matGradMultMat(v2',dv1,dv2,reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1,reshape(ddv2,3*dims,[]));    % should be correct
                     ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % should be correct
-%                     dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
+                    dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
                     
                     % See if this is correct
                     dds = reshape(n'*reshape(ddsvec,3,[]),dims,[]);

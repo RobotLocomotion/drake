@@ -15,7 +15,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   methods
     function obj = SoftPaddleHybrid()
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
-      taylorvar = false;
+      taylorvar = true;
 
       %TODO: Set input frame
       %obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
@@ -171,7 +171,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       %x0.
       x0.load_x = 0.45;  % was 1
 %       x0.load_x = -0.0585;
-      x0.load_z = 4.5;
+      x0.load_z = 5;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
@@ -280,15 +280,15 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
 %       paddle_angle = 0.40945;
 %       x_load = 0.18235;
 %       z_load = 2.7739;
-      load('collisionProb.mat','xInterest');
-      xTest = xInterest(:,1:3);
-      numtest = size(xTest,2);
+%       load('collisionProb.mat','xInterest');
+%       xTest = xInterest(:,1:3);
+%       numtest = size(xTest,2);
       %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
-      for i = 2:numtest
-       %xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
-       xDes = xTest(:,i);
+      for i = 1:numtest
+       xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
+%        xDes = xTest(:,i);
 %        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
-%        gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
         q = xDes((1:nq)+1)
         [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
         [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
@@ -311,7 +311,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 3],x0);
+      [ytraj,xtraj] = simulate(r,[0 5],x0);
       v.playback(ytraj,struct('slider',true));
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
