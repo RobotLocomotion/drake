@@ -180,7 +180,7 @@ endfunction()
 #     the working directory set to CMAKE_CURRENT_SOURCE_DIR.
 #------------------------------------------------------------------------------
 function(drake_add_matlab_test)
-  if(NOT MATLAB_FOUND)
+  if(NOT Matlab_FOUND)
     return()
   endif()
 
