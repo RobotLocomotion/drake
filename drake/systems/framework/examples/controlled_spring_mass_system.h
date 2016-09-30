@@ -44,12 +44,6 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
   ~PidControlledSpringMassSystem() override {}
 
-  T get_position(const Context<T>& context) const;
-
-  T get_velocity(const Context<T>& context) const;
-
-  T get_conservative_work(const Context<T>& context) const;
-
   /// Sets the position of the mass in the given Context.
   void set_position(Context<T>* context, const T& position) const;
 
