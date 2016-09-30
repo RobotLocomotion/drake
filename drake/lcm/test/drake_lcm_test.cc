@@ -1,6 +1,5 @@
 #include "drake/lcm/drake_lcm.h"
 
-// #include <atomic>
 #include <chrono>
 #include <mutex>
 #include <thread>
@@ -8,13 +7,8 @@
 #include "gtest/gtest.h"
 
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcmt_drake_signal.hpp"
-
-// #include "drake/systems/framework/basic_vector.h"
-// #include "drake/systems/lcm/lcm_receive_thread.h"
-// #include "drake/systems/lcm/lcm_publisher_system.h"
-// #include "drake/systems/lcm/lcm_translator_dictionary.h"
-// #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace lcm {
@@ -30,11 +24,11 @@ class MessageSubscriber {
 
   // A constructor that sets up the LCM message subscription and initializes the
   // member variable that will be used to store received LCM messages.
-  MessageSubscriber(const std::string& channel_name)
+  MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
       : channel_name_(channel_name) {
     // Sets up the LCM message subscriber.
     ::lcm::Subscription* sub =
-        lcm_.subscribe(channel_name, &MessageSubscriber::HandleMessage, this);
+        lcm->subscribe(channel_name, &MessageSubscriber::HandleMessage, this);
     sub->setQueueCapacity(1);
 
     // Initializes the fields of received_message_ so the test logic below can
@@ -69,7 +63,6 @@ class MessageSubscriber {
     }
   }
 
-  ::lcm::LCM lcm_;
   const std::string channel_name_;
   std::mutex message_mutex_;
   drake::lcmt_drake_signal received_message_;
@@ -79,7 +72,10 @@ class MessageSubscriber {
 GTEST_TEST(DrakeLcmTest, PublishTest) {
   std::string channel_name = "drake_lcm_test_publisher_channel_name";
 
-  MessageSubscriber subscriber(channel_name);
+  // Instantiates the Device Under Test (DUT).
+  DrakeLcm dut;
+
+  MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
   // Instantes a test LCM message and serializes it into an array of bytes.
   drake::lcmt_drake_signal message;
@@ -93,9 +89,6 @@ GTEST_TEST(DrakeLcmTest, PublishTest) {
   uint8_t buffer[message.getEncodedSize()];
   EXPECT_EQ(message.encode(buffer, 0, message.getEncodedSize()),
             message.getEncodedSize());
-
-  // Instantiates the Device Under Test (DUT).
-  DrakeLcm dut;
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -114,10 +107,10 @@ GTEST_TEST(DrakeLcmTest, PublishTest) {
   const int kMaxCount = 10;
   const int kDelayMS = 500;
 
-  // We must periodically call dut->Publish(...) since we do not know when
-  // the receiver will actually receive the message.
+  // We must periodically call dut.Publish(...) since we do not know when the
+  // receiver will actually receive the message.
   while (!done && count++ < kMaxCount) {
-    dut->Publish(channel_name, buffer, message.getEncodedSize());
+    dut.Publish(channel_name, buffer, message.getEncodedSize());
 
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =
@@ -127,12 +120,14 @@ GTEST_TEST(DrakeLcmTest, PublishTest) {
     if (received_message.dim == message.dim) {
       bool values_match = true;
 
-      if (received_message.timestamp != message.dim)
+      if (received_message.timestamp != message.timestamp)
         values_match = false;
 
       for (int i = 0; i < message.dim && values_match; ++i) {
-        if (received_message.val[i] != message.value[i]) values_match = false;
-        if (received_message.coord[i] != message.coord[i]) values_match = false;
+        if (received_message.val[i] != message.val[i])
+          values_match = false;
+        if (received_message.coord[i] != message.coord[i])
+          values_match = false;
       }
 
       // At this point, if values_match is true the received message equals the

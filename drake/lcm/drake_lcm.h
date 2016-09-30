@@ -3,6 +3,8 @@
 #include "drake/drakeLcm_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
+#include "drake/lcm/drake_lcm_message_handler_interface.h"
+
 namespace drake {
 namespace lcm {
 
@@ -38,8 +40,7 @@ namespace lcm {
 /**
  * A wrapper around a *real* LCM instance.
  */
-template <class MessageHandlerClass>
-class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface<MessageHandlerClass> {
+class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
  public:
 
   /**
@@ -90,9 +91,9 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface<MessageHandlerClass> {
    * invoked on.
    */
   void Subscribe(const std::string& channel,
-      void (MessageHandlerClass::*handlerMethod)(
+      void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
           const uint8_t* message_buffer, uint32_t message_length),
-      MessageHandlerClass* handler) {
+      DrakeLcmMessageHandlerInterface* handler) {
 
   }
 
