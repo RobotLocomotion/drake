@@ -15,7 +15,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   methods
     function obj = SoftPaddleHybrid()
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
-      taylorvar = true;
+      taylorvar = false;
 
       %TODO: Set input frame
       %obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
@@ -264,7 +264,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
     
     function gradTestCableLength()
       r = SoftPaddleHybrid();
-      numtest = 1; %change this to test for various points
+      numtest = 10; %change this to test for various points
       cl=zeros(1,numtest); %init a cable length output
       nq=getNumPositions(r.no_contact);
       dcl=zeros(numtest,1,nq);
@@ -273,35 +273,43 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       z_load = 2.5 + (3.9 - 2.5) .*rand(numtest,1); % z position of load within 2.5 to 3.9 range (uniform dist)
       paddle_angle = -pi/4 + (pi/4-(-pi/4)) .*rand(numtest,1); % angle of paddle in range -pi/4 to pi/4 range (uniform dist)
       
-%       paddle_angle = 0.15365;
-%       x_load = 0.79569;
-%       z_load = 4.5;
-%       
-%       paddle_angle = 0.40945;
-%       x_load = 0.18235;
-%       z_load = 2.7739;
-%       load('collisionProb.mat','xInterest');
-%       xTest = xInterest(:,1:3);
-%       numtest = size(xTest,2);
+      %       paddle_angle = 0.15365;
+      %       x_load = 0.79569;
+      %       z_load = 4.5;
+      %
+      %       paddle_angle = 0.40945;
+      %       x_load = 0.18235;
+      %       z_load = 2.7739;
+      %       load('collisionProb.mat','xInterest');
+      %load('troubleX.mat','xDes');
+      %       xTest = xInterest(:,1:3);
+      %       numtest = size(xTest,2);
       %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
       for i = 1:numtest
-       xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
-%        xDes = xTest(:,i);
-%        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
-       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
-        q = xDes((1:nq)+1)
-        [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
-        [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
-        ddl = reshape(ddl,4,[])
-        ddlH = reshape(ddlH,4,[])
-%         
-%         E = [zeros(2,2), eye(2,2)];
-%         e = (ddl-ddlH);
-%         if norm(e) > 1e-7
-%             error('Not good')
+        xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
+        %        xDes = xTest(:,i);
+        %        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
+%         gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+%         if(i== numtest)
+          q = xDes((1:nq)+1);
+          [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
+          [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
+          ddl = reshape(ddl,4,[]);
+          ddlH = reshape(ddlH,4,[]);
+          if norm(dl-dlH) > 1e-10
+            fprintf('Wrong calculation\n')
+          else
+            fprintf('Good for now\n')
+          end
 %         end
-%        xDes = getInitialState(r);
-%        gradTest(@(q) (r.no_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+        %
+        %         E = [zeros(2,2), eye(2,2)];
+        %         e = (ddl-ddlH);
+        %         if norm(e) > 1e-7
+        %             error('Not good')
+        %         end
+        %        xDes = getInitialState(r);
+        %        gradTest(@(q) (r.no_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
       end
     end
     
@@ -311,7 +319,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 5],x0);
+      [ytraj,xtraj] = simulate(r,[0 15],x0);
       v.playback(ytraj,struct('slider',true));
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       

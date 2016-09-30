@@ -22,7 +22,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     
     function [length,dlength,ddlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
-      smallEps = 1e-12;
+      smallEps = 1e-16;
       dims = obj.getNumInputs;
 
       length = 0;
@@ -242,23 +242,29 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 %%TODO:deal with small svec and s 
                 dc = v2'*dv1+v1'*dv2; 
                 dsvec=dcross(v1,v2,dv1,dv2); 
-                ds = svec'*dsvec/max(s,eps);
+%                 ds = svec'*dsvec/max(s,eps)
                 
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % This is very dirty, fix it
-                if size(obj.pulley, 2) == 3
-                  n = [0; -1; 0];
+
+% This calculation is correct, but why?
+                if(i==4)
+                  fac = -1;
                 else
-                  n = [0; 1; 0];
+                  fac = 1;
                 end
-                ds = n'*dsvec;
+                %alignment
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                
-%                 if ~norm(svec) < eps
-%                   ds = (svec/norm(svec))'*dsvec;  % ?!? Check if divide by zero does not happen.
-%                 else
-%                   error('Things''ve gone bad.')
-%                 end
+                % This is beautiful, nothing to fix here.
+                if size(obj.pulley, 2) == 3
+                  n = fac*[0; -1; 0];
+                else
+                  n = fac* [0; 1; 0];
+                end
+%                 n = cross(v1, (pt2-pt1));
+%                 n = n/norm(n);
+                ds = n'*dsvec;
+                %n'*dsvec
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+               
                   
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
@@ -266,7 +272,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                     ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;    % should be correct
                     ddc = matGradMultMat(v2',dv1,dv2,reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1,reshape(ddv2,3*dims,[]));    % should be correct
                     ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % should be correct
-                    dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
+%                     dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
                     
                     % See if this is correct
                     dds = reshape(n'*reshape(ddsvec,3,[]),dims,[]);
