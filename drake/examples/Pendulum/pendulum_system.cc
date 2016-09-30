@@ -125,8 +125,8 @@ void PendulumSystem<T>::EvalTimeDerivatives(
        b_ * state.get_thetadot()) / I_);
 }
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT PendulumSystem<double>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT PendulumSystem<AutoDiffXd>;
+template class DRAKEPENDULUMSYSTEM_EXPORT PendulumSystem<double>;
+template class DRAKEPENDULUMSYSTEM_EXPORT PendulumSystem<AutoDiffXd>;
 
 }  // namespace pendulum
 }  // namespace examples
