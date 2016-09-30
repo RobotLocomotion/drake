@@ -37,7 +37,7 @@ void NormalizeVector(
 
     if (ddx_norm) {
       auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
-      Eigen::MatrixXd ddx_norm_times_norm = -matGradMultMat(
+      auto ddx_norm_times_norm = -matGradMultMat(
           x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
       auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
       (*ddx_norm) = ddx_norm_times_norm / norm_x;
