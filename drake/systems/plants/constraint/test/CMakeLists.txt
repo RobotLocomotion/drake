@@ -1,9 +1,5 @@
-add_executable(direct_collocation_constraint_test
-  direct_collocation_constraint_test.cc)
-target_link_libraries(direct_collocation_constraint_test
-  drakeDynamicConstraint ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME direct_collocation_constraint_test
-  COMMAND direct_collocation_constraint_test)
+drake_add_cc_test(direct_collocation_constraint_test)
+target_link_libraries(direct_collocation_constraint_test drakeDynamicConstraint)
 
 drake_add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND AllBodiesClosestDistanceConstraintTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND RelativeGazeTargetConstraintTest SIZE large)
