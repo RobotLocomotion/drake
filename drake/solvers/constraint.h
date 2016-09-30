@@ -139,7 +139,7 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::VectorXd& b() const { return b_; }
 
   /**
-   * @brief Updates the quadratic and linear term of the constraint. The new
+   * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
    * @param new_Q new quadratic term
    * @param new_b new linear term
@@ -303,9 +303,8 @@ class LinearConstraint : public Constraint {
     return A_;
   }
 
-  /* UpdateConstraint
-   * @brief Updates the linear term, upper and lower bounds in the lienar
-   * constraint.
+  /**
+   * Updates the linear term, upper and lower bounds in the lienar constraint.
    * The updated constraint is:
    * new_lb <= new_A * x <= new_ub
    * Note that the size of constraints (number of rows) can change, but the

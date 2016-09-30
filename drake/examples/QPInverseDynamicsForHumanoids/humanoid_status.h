@@ -3,7 +3,6 @@
 #include "drake/systems/robotInterfaces/Side.h"
 #include "rigid_body_tree_utils.h"
 
-
 namespace drake {
 namespace example {
 namespace qp_inverse_dynamics {
@@ -168,8 +167,7 @@ class HumanoidStatus {
     }
 
     Update(other.time(), other.position(), other.velocity(),
-           other.joint_torque(),
-           other.foot_wrench_raw(Side::LEFT),
+           other.joint_torque(), other.foot_wrench_raw(Side::LEFT),
            other.foot_wrench_raw(Side::RIGHT));
   }
 
@@ -179,14 +177,17 @@ class HumanoidStatus {
    * @param time is in seconds
    * @param q is the vector or generalized positions.
    * @param v is the vector of generalized velocities.
-   * @param joint_torque is joint torque, should be in the same order as @p v, not
+   * @param joint_torque is joint torque, should be in the same order as @p v,
+   * not
    * in robot->actuators order
    * @param l_wrench is wrench measured in the sensor frame.
    * @param r_wrench is wrench measured in the sensor frame.
    */
   void Update(double t, const Eigen::Ref<const Eigen::VectorXd>& q,
-              const Eigen::Ref<const Eigen::VectorXd>& v, const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
-              const Eigen::Ref<const Eigen::Vector6d>& l_wrench, const Eigen::Ref<const Eigen::Vector6d>& r_wrench);
+              const Eigen::Ref<const Eigen::VectorXd>& v,
+              const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
+              const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
+              const Eigen::Ref<const Eigen::Vector6d>& r_wrench);
 
   /**
    * Returns a nominal q.
@@ -216,7 +217,9 @@ class HumanoidStatus {
   inline const Eigen::Vector3d& com() const { return com_; }
   inline const Eigen::Vector3d& comd() const { return comd_; }
   inline const Eigen::MatrixXd& J_com() const { return J_com_; }
-  inline const Eigen::Vector3d& Jdot_times_v_com() const { return Jdot_times_v_com_; }
+  inline const Eigen::Vector3d& Jdot_times_v_com() const {
+    return Jdot_times_v_com_;
+  }
   inline const Eigen::MatrixXd& centroidal_momentum_matrix() const {
     return centroidal_momentum_matrix_;
   }
@@ -247,13 +250,15 @@ class HumanoidStatus {
   inline const Eigen::Vector2d& cop_in_sole_frame(Side::SideEnum s) const {
     return cop_in_sole_frame_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(Side::SideEnum s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(
+      Side::SideEnum s) const {
     return foot_wrench_in_sole_frame_[s];
   }
   inline const Eigen::Vector6d& foot_wrench_raw(Side::SideEnum s) const {
     return foot_wrench_raw_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_world_frame(
+      Side::SideEnum s) const {
     return foot_wrench_in_world_frame_[s];
   }
   inline const BodyOfInterest& foot_sensor(int s) const {
@@ -333,6 +338,6 @@ class HumanoidStatus {
   Eigen::Vector6d foot_wrench_raw_[2];
 };
 
-} // end namespace qp_inverse_dynamics
-} // end namespace example
-} // end namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace example
+}  // end namespace drake

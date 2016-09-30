@@ -9,12 +9,12 @@ namespace drake {
 namespace example {
 namespace qp_inverse_dynamics {
 
-QPInput GenerateQPInput(const HumanoidStatus& robot_status,
-                        const Eigen::Vector3d& desired_com, const Eigen::Vector3d& Kp_com,
-                        const Eigen::Vector3d& Kd_com, const Eigen::VectorXd& desired_joints,
-                        const Eigen::VectorXd& Kp_joints, const Eigen::VectorXd& Kd_joints,
-                        const CartesianSetPoint& desired_pelvis,
-                        const CartesianSetPoint& desired_torso) {
+QPInput GenerateQPInput(
+    const HumanoidStatus& robot_status, const Eigen::Vector3d& desired_com,
+    const Eigen::Vector3d& Kp_com, const Eigen::Vector3d& Kd_com,
+    const Eigen::VectorXd& desired_joints, const Eigen::VectorXd& Kp_joints,
+    const Eigen::VectorXd& Kd_joints, const CartesianSetPoint& desired_pelvis,
+    const CartesianSetPoint& desired_torso) {
   // Make input.
   QPInput input(robot_status.robot());
 
@@ -96,9 +96,9 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   v.setZero();
   Eigen::VectorXd q_ini = q;
 
-  robot_status.Update(0, q, v,
-                      Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
-                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(
+      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // Setup a tracking problem.
   Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
@@ -114,17 +114,18 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
   Eigen::Vector3d desired_com = robot_status.com();
   Eigen::VectorXd desired_q = robot_status.position();
-  CartesianSetPoint desired_pelvis(robot_status.pelvis().pose(),
-                                   Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
-                                   Kp_pelvis, Kd_pelvis);
-  CartesianSetPoint desired_torso(robot_status.torso().pose(), Eigen::Vector6d::Zero(),
+  CartesianSetPoint desired_pelvis(
+      robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
+      Eigen::Vector6d::Zero(), Kp_pelvis, Kd_pelvis);
+  CartesianSetPoint desired_torso(robot_status.torso().pose(),
+                                  Eigen::Vector6d::Zero(),
                                   Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
 
   // Perturb initial condition
   v[robot_status.joint_name_to_position_index().at("torsoPitch")] += 0.1;
-  robot_status.Update(0, q, v,
-                      Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
-                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(
+      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   double dt = 4e-3;
   double time = 0;
@@ -141,13 +142,14 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
     if (status) break;
 
     // Dummy integration.
-    // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's ready.
+    // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's
+    // ready.
     q += v * dt;
     v += output.vd() * dt;
     time += dt;
 
-    robot_status.Update(time, q, v, output.joint_torque(), Eigen::Vector6d::Zero(),
-                        Eigen::Vector6d::Zero());
+    robot_status.Update(time, q, v, output.joint_torque(),
+                        Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
   }
 
   // Robot should be stabilized.
@@ -163,6 +165,6 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   std::cout << output;
 }
 
-} // end namespace qp_inverse_dynamics
-} // end namespace example
-} // end namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace example
+}  // end namespace drake

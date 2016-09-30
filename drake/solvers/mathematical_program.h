@@ -209,8 +209,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
     VariableList const& variable_list() const { return variable_list_; }
 
     /**
-     * @brief Returns a Eigen::VectorXd for all the variables in the variable
-     * list.
+     * @return A Eigen::VectorXd for all the variables in the variable list.
      */
     Eigen::VectorXd VariableListToVectorXd() const {
       size_t dim = 0;

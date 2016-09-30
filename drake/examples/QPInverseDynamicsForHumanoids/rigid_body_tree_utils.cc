@@ -5,8 +5,9 @@ namespace example {
 namespace qp_inverse_dynamics {
 
 Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
-                         const KinematicsCache<double>& cache,
-                         const RigidBody& body, const Eigen::Vector3d& local_offset) {
+                                const KinematicsCache<double>& cache,
+                                const RigidBody& body,
+                                const Eigen::Vector3d& local_offset) {
   const auto& element = cache.getElement(body);
   Eigen::Vector3d pt = element.transform_to_world.translation();
 
@@ -30,12 +31,12 @@ Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
 }
 
 Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
-                              const KinematicsCache<double>& cache,
-                              const RigidBody& body,
-                              const Eigen::Vector3d& local_offset) {
+                                     const KinematicsCache<double>& cache,
+                                     const RigidBody& body,
+                                     const Eigen::Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
-  Eigen::MatrixXd Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0, true,
-                                    &v_or_q_indices);
+  Eigen::MatrixXd Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0,
+                                           true, &v_or_q_indices);
   Eigen::MatrixXd J(6, r.get_num_velocities());
   J.setZero();
 
@@ -59,12 +60,12 @@ Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
   return J;
 }
 
-Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(const RigidBodyTree& r,
-                                       const KinematicsCache<double>& cache,
-                                       const RigidBody& body,
-                                       const Eigen::Vector3d& local_offset) {
+Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
+    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBody& body, const Eigen::Vector3d& local_offset) {
   // position of point in world
-  Eigen::Vector3d p = r.transformPoints(cache, local_offset, body.get_body_index(), 0);
+  Eigen::Vector3d p =
+      r.transformPoints(cache, local_offset, body.get_body_index(), 0);
   Eigen::Vector6d twist = r.relativeTwist(cache, 0, body.get_body_index(), 0);
   Eigen::Vector6d J_geometric_dot_times_v =
       r.geometricJacobianDotTimesV(cache, 0, body.get_body_index(), 0);
@@ -84,6 +85,6 @@ Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(const RigidBodyTree& r,
   return Jdv;
 }
 
-} // end namespace qp_inverse_dynamics
-} // end namespace example
-} // end namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace example
+}  // end namespace drake

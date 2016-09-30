@@ -11,17 +11,17 @@ namespace drake {
 namespace example {
 namespace qp_inverse_dynamics {
 
-  /**
- * This is used to compute target task space acceleration, which is the input
- * to the inverse dynamics controller.
- * The target acceleration is computed by:
- * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
- * where x is pose, xd is velocity, and xdd is acceleration.
- * Variables with superscript * are the set points, and Kp and Kd are the
- * position and velocity gains.
- * The first terms 3 are angular accelerations, and the last 3 are linear
- * accelerations.
- */
+/**
+*This is used to compute target task space acceleration, which is the input
+*to the inverse dynamics controller.
+*The target acceleration is computed by:
+*acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
+*where x is pose, xd is velocity, and xdd is acceleration.
+*Variables with superscript * are the set points, and Kp and Kd are the
+*position and velocity gains.
+*The first terms 3 are angular accelerations, and the last 3 are linear
+*accelerations.
+*/
 class CartesianSetPoint {
  public:
   CartesianSetPoint() {
@@ -39,9 +39,9 @@ class CartesianSetPoint {
    * @param Kp Position gain
    * @param Kd Velocity gain
    */
-  CartesianSetPoint(const Eigen::Isometry3d& pose_d, const Eigen::Vector6d& vel_d,
-                    const Eigen::Vector6d& acc_d, const Eigen::Vector6d& Kp,
-                    const Eigen::Vector6d& Kd) {
+  CartesianSetPoint(const Eigen::Isometry3d& pose_d,
+                    const Eigen::Vector6d& vel_d, const Eigen::Vector6d& acc_d,
+                    const Eigen::Vector6d& Kp, const Eigen::Vector6d& Kd) {
     pose_d_ = pose_d;
     vel_d_ = vel_d;
     acc_d_ = acc_d;
@@ -50,14 +50,13 @@ class CartesianSetPoint {
   }
 
   /**
-   * @brief Computes target acceleration using PD feedback + feedfoward
-   * acceleration.
+   * Computes target acceleration using PD feedback + feedfoward acceleration.
    * @param pose Measured pose
    * @param vel Measured velocity
    * @return Computed spatial acceleration.
    */
   Eigen::Vector6d ComputeTargetAcceleration(const Eigen::Isometry3d& pose,
-                                     const Eigen::Vector6d& vel) const {
+                                            const Eigen::Vector6d& vel) const {
     // feedforward acc + velocity feedback
     Eigen::Vector6d qdd = acc_d_;
     qdd += (Kd_.array() * (vel_d_ - vel).array()).matrix();
@@ -101,14 +100,19 @@ class CartesianSetPoint {
 class ContactInformation {
  private:
   const RigidBody& body_;  ///< Link in contact
-  // Offsets of the contact point specified in the body frame.
+  /// Offsets of the contact point specified in the body frame.
   std::vector<Eigen::Vector3d> contact_points_;
-  // Contact normal specified in the body frame.
+
   // TODO(siyuan.feng@tri.global): normal is currently assumed to be the same
   // for all the contact points.
+  /// Contact normal specified in the body frame.
   Eigen::Vector3d normal_;
+
+  /// Number of basis vectors per contact point
   int num_basis_per_contact_point_;
-  double mu_;  ///< Friction coeff
+
+  /// Friction coeff
+  double mu_;
 
  public:
   /*
@@ -124,8 +128,7 @@ class ContactInformation {
   }
 
   /**
-   * @brief Computes a matrix (Basis) that converts a vector of scalars (Beta)
-   * to
+   * Computes a matrix (Basis) that converts a vector of scalars (Beta) to
    * the stacked point contact forces (F).
    * All the point forces are in the world frame, and are applied at
    * the contact points in the world frame.
@@ -136,10 +139,11 @@ class ContactInformation {
    * initialized first.
    * @return Basis matrix
    */
-  Eigen::MatrixXd ComputeBasisMatrix(const RigidBodyTree& robot,
-                              const KinematicsCache<double>& cache) const {
-    Eigen::MatrixXd basis(3 * contact_points_.size(),
-                   num_basis_per_contact_point_ * contact_points_.size());
+  Eigen::MatrixXd ComputeBasisMatrix(
+      const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
+    Eigen::MatrixXd basis(
+        3 * contact_points_.size(),
+        num_basis_per_contact_point_ * contact_points_.size());
     Eigen::Matrix3d body_rot =
         robot.relativeTransform(cache, 0, body_.get_body_index()).linear();
     basis.setZero();
@@ -147,7 +151,7 @@ class ContactInformation {
     Eigen::Vector3d t1, t2, tangent_vec, base;
     double theta;
 
-    // Computes the tangent vectors that are perpendicular to normal_
+    // Computes the tangent vectors that are perpendicular to normal_.
     if (fabs(1 - normal_[2]) < EPSILON) {
       t1 << 1, 0, 0;
     } else if (fabs(1 + normal_[2]) < EPSILON) {
@@ -164,7 +168,7 @@ class ContactInformation {
         theta = k * 2 * M_PI / num_basis_per_contact_point_;
         tangent_vec = cos(theta) * t1 + sin(theta) * t2;
         base = (normal_ + mu_ * tangent_vec).normalized();
-        // rotate basis into world frame
+        // Rotate basis into world frame.
         basis.block(3 * i, num_basis_per_contact_point_ * i + k, 3, 1) =
             body_rot * base;
       }
@@ -173,7 +177,7 @@ class ContactInformation {
   }
 
   /**
-   * @brief Compute the contact points and reference point location in the world
+   * Computes the contact points and reference point location in the world
    * frame.
    * @param robot Robot model
    * @param cache Stores the kinematics information, needs to be initialized
@@ -186,7 +190,8 @@ class ContactInformation {
    */
   void ComputeContactPointsAndWrenchReferencePoint(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache,
-      const Eigen::Vector3d& offset, std::vector<Eigen::Vector3d>* contact_points,
+      const Eigen::Vector3d& offset,
+      std::vector<Eigen::Vector3d>* contact_points,
       Eigen::Vector3d* reference_point) const {
     *reference_point =
         robot.transformPoints(cache, offset, body_.get_body_index(), 0);
@@ -198,7 +203,7 @@ class ContactInformation {
   }
 
   /**
-   * @brief Computes a matrix that converts a vector of stacked point forces
+   * Computes a matrix that converts a vector of stacked point forces
    * to an equivalent wrench in a frame that has the same orientation as the
    * world frame, but located at \param reference_point. The stacked point
    * forces are assumed to have the same order of \param contact_points.
@@ -207,20 +212,21 @@ class ContactInformation {
    * @param referece_point the reference point for the equivalent wrench.
    * @return The matrix that converts point forces to an equivalent wrench.
    */
-  Eigen::MatrixXd ComputeWrenchMatrix(const std::vector<Eigen::Vector3d>& contact_points,
-                               const Eigen::Vector3d& reference_point) const {
+  Eigen::MatrixXd ComputeWrenchMatrix(
+      const std::vector<Eigen::Vector3d>& contact_points,
+      const Eigen::Vector3d& reference_point) const {
     if (contact_points.size() != contact_points_.size())
       throw std::runtime_error("contact points size mismatch");
 
-    Eigen::MatrixXd force_to_wrench = Eigen::MatrixXd::Zero(6, 3 * contact_points.size());
+    Eigen::MatrixXd force_to_wrench =
+        Eigen::MatrixXd::Zero(6, 3 * contact_points.size());
     int col_idx = 0;
     for (const Eigen::Vector3d& contact_point : contact_points) {
       // Force part: just sum up all the point forces, so these are I
       force_to_wrench.block<3, 3>(3, col_idx).setIdentity();
       // Torque part:
       force_to_wrench.block<3, 3>(0, col_idx) =
-          drake::math::VectorToSkewSymmetric(contact_point -
-                                             reference_point);
+          drake::math::VectorToSkewSymmetric(contact_point - reference_point);
       col_idx += 3;
     }
     return force_to_wrench;
@@ -265,7 +271,9 @@ class ContactInformation {
   }
 
   inline const std::string& name() const { return body_.get_name(); }
-  inline int num_contact_points() const { return static_cast<int>(contact_points_.size()); }
+  inline int num_contact_points() const {
+    return static_cast<int>(contact_points_.size());
+  }
   inline int num_basis() const {
     return num_contact_points() * num_basis_per_contact_point_;
   }
@@ -337,19 +345,27 @@ class ResolvedContact {
   inline const Eigen::Vector6d& equivalent_wrench() const {
     return equivalent_wrench_;
   }
-  inline const Eigen::Vector3d& reference_point() const { return reference_point_; }
+  inline const Eigen::Vector3d& reference_point() const {
+    return reference_point_;
+  }
 
   // Setters
   inline Eigen::VectorXd& mutable_basis() { return basis_; }
-  inline std::vector<Eigen::Vector3d>& mutable_point_forces() { return point_forces_; }
-  inline Eigen::Vector3d& mutable_point_force(size_t i) { return point_forces_.at(i); }
+  inline std::vector<Eigen::Vector3d>& mutable_point_forces() {
+    return point_forces_;
+  }
+  inline Eigen::Vector3d& mutable_point_force(size_t i) {
+    return point_forces_.at(i);
+  }
   inline std::vector<Eigen::Vector3d>& mutable_contact_points() {
     return contact_points_;
   }
   inline Eigen::Vector3d& mutable_contact_point(size_t i) {
     return contact_points_.at(i);
   }
-  inline Eigen::Vector6d& mutable_equivalent_wrench() { return equivalent_wrench_; }
+  inline Eigen::Vector6d& mutable_equivalent_wrench() {
+    return equivalent_wrench_;
+  }
   inline Eigen::Vector3d& mutable_reference_point() { return reference_point_; }
 };
 
@@ -414,7 +430,8 @@ class QPInput {
   std::vector<DesiredBodyAcceleration> desired_body_accelerations_;
   // Desired task space accelerations for various body parts
   Eigen::Vector3d desired_comdd_;
-  Eigen::VectorXd desired_vd_;  ///< Desired generalized coordinate accelerations
+  Eigen::VectorXd
+      desired_vd_;  ///< Desired generalized coordinate accelerations
 
   // These are weights for each cost term.
   // Prefix w_ indicates weights.
@@ -433,19 +450,20 @@ class QPInput {
     desired_vd_.resize(r.get_num_velocities());
   }
 
-  /*
-   * @brief Checks validity of this QPInput.
+  /**
+   * Checks validity of this QPInput.
    * @param size Dimension of acceleration in the generalized coordinates.
    * @return true if this QPInput is valid.
    */
-  bool is_valid(int size) const {
+  bool is_valid(int num_vd) const {
     int valid = true;
-    valid &= static_cast<int>(coord_names_.size()) == size;
+    valid &= static_cast<int>(coord_names_.size()) == num_vd;
     valid &= static_cast<int>(coord_names_.size()) == desired_vd_.size();
 
     valid &= desired_comdd_.allFinite();
     valid &= desired_vd_.allFinite();
-    for (const DesiredBodyAcceleration& desired_body_acceleration : desired_body_accelerations_) {
+    for (const DesiredBodyAcceleration& desired_body_acceleration :
+         desired_body_accelerations_) {
       valid &= desired_body_acceleration.is_valid();
     }
 
@@ -548,10 +566,10 @@ class QPOutput {
     joint_torque_.resize(r.actuators.size());
   }
 
-  bool is_valid(int vd_size, int act_size) const {
+  bool is_valid(int num_vd, int num_actuators) const {
     bool ret = static_cast<int>(coord_names_.size()) == vd_.size();
-    ret &= vd_.size() == vd_size;
-    ret &= joint_torque_.size() == act_size;
+    ret &= vd_.size() == num_vd;
+    ret &= joint_torque_.size() == num_actuators;
 
     ret &= comdd_.allFinite();
     ret &= vd_.allFinite();
@@ -676,8 +694,8 @@ class QPController {
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
 
   /**
-   * @brief Resize the QP. This resizes the temporary matrices. It also
-   * reinitialize prog_ to the correct size, so that Control only updates the
+   * Resize the QP. This resizes the temporary matrices. It also reinitialize
+   * prog_ to the correct size, so that Control only updates the
    * matrices and vectors in prog_ instead of making a new one on every call.
    * Size change typically happens when contact state changes (making / breaking
    * contacts).
@@ -718,7 +736,6 @@ class QPController {
   static const double kUpperBoundForContactBasis;
 };
 
-
-} // end namespace qp_inverse_dynamics
-} // end namespace example
-} // end namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace example
+}  // end namespace drake
