@@ -143,11 +143,6 @@ drake_add_external(bullet PUBLIC CMAKE
     -DUSE_DOUBLE_PRECISION=ON
     ${BULLET_EXTRA_CMAKE_ARGS})
 
-# cmake
-drake_add_external(cmake PUBLIC ALWAYS
-  BUILD_COMMAND :
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/cmake)
-
 # dreal
 drake_add_external(dreal PUBLIC CMAKE
   CMAKE_ARGS -DUSE_NLOPT=OFF
@@ -328,7 +323,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     bertini
     bot_core_lcmtypes
     bullet
-    cmake
     director
     dreal
     eigen

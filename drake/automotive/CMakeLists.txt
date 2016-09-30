@@ -49,7 +49,7 @@ if(lcm_FOUND)
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
-    drakeLCMSystem2
+    drakeRigidBodyPlant
     )
   pods_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
