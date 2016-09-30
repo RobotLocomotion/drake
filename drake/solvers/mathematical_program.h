@@ -328,7 +328,8 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
 
   /**
    * @param name of the variable
-   * @return The DecisionVariableView of first variable that matches \param name.
+   * @return The DecisionVariableView of first variable that matches
+   * \param name.
    */
   const DecisionVariableView GetVariable(const std::string& name) const {
     for (auto& var : variable_views_) {

@@ -7,17 +7,17 @@ namespace qp_inverse_dynamics {
 
 // TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
 // should be included in the model file or loaded from a separate config file.
-const Eigen::Vector3d HumanoidStatus::kFootToContactOffset = Eigen::Vector3d(0, 0, -0.09);
+const Eigen::Vector3d HumanoidStatus::kFootToSoleOffset = Eigen::Vector3d(0, 0, -0.09);
 const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
     Eigen::Vector3d(0.0215646, 0.0, -0.051054);
-const Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
-    Matrix3d(AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
+const Eigen::Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
+    Eigen::Matrix3d(Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
 
-void HumanoidStatus::Update(double t, const Ref<const Eigen::VectorXd>& q,
-                            const Ref<const Eigen::VectorXd>& v,
-                            const Ref<const Eigen::VectorXd>& joint_torque,
-                            const Ref<const Eigen::Vector6d>& l_wrench,
-                            const Ref<const Eigen::Vector6d>& r_wrench) {
+void HumanoidStatus::Update(double t, const Eigen::Ref<const Eigen::VectorXd>& q,
+                            const Eigen::Ref<const Eigen::VectorXd>& v,
+                            const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
+                            const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
+                            const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
   if (q.size() != position_.size() || v.size() != velocity_.size() ||
       joint_torque.size() != joint_torque_.size()) {
     throw std::runtime_error("robot state update dimension mismatch.");
@@ -47,48 +47,45 @@ void HumanoidStatus::Update(double t, const Ref<const Eigen::VectorXd>& q,
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
-  for (size_t i = 0; i < bodies_of_interest_.size(); i++)
-    bodies_of_interest_[i].Update(robot_, cache_);
+  for (BodyOfInterest& body_of_interest : bodies_of_interest_)
+    body_of_interest.Update(robot_, cache_);
 
   // ft sensor
-  foot_wrench_in_sensor_frame_[Side::LEFT] = l_wrench;
-  foot_wrench_in_sensor_frame_[Side::RIGHT] = r_wrench;
+  foot_wrench_raw_[Side::LEFT] = l_wrench;
+  foot_wrench_raw_[Side::RIGHT] = r_wrench;
+  Eigen::Isometry3d H;
   for (int i = 0; i < 2; i++) {
-    // Rotate the sensor measurement to body frame first.
-    foot_wrench_in_sensor_frame_[i].head(3) =
-        kFootToSensorRotationOffset.transpose() *
-        foot_wrench_in_sensor_frame_[i].head(3);
-    foot_wrench_in_sensor_frame_[i].tail(3) =
-        kFootToSensorRotationOffset.transpose() *
-        foot_wrench_in_sensor_frame_[i].tail(3);
+    // Make H = H_sensor_to_sole.
+    // Assuming the sole frame has the same orientation as the foot frame.
+    H.linear() = kFootToSensorRotationOffset.transpose();
+    H.translation() = -kFootToSensorPositionOffset + kFootToSoleOffset;
 
-    // H^w_s = sensor frame = rs.foot_sensor(i).pose()
-    // H^w_ak = world frame aligned, but located at ankle joint = [I,
-    // rs.foot(i).pose().translation()]
-    // To transform wrench from s frame to ak frame, we need H^ak_s.
-    Eigen::Isometry3d H_s_to_w = foot_sensor(i).pose();
-    Eigen::Isometry3d H_ak_to_w(Eigen::Isometry3d::Identity());
-    H_ak_to_w.translation() = foot(i).pose().translation();
-    foot_wrench_in_world_frame_[i] = transformSpatialForce(
-        H_ak_to_w.inverse() * H_s_to_w, foot_wrench_in_sensor_frame_[i]);
+    foot_wrench_in_sole_frame_[i] = transformSpatialForce(H, foot_wrench_raw_[i]);
+
+    // H = transformation from sensor frame to a frame that is aligned with the
+    // world frame, and is located at the origin of the foot frame.
+    H.linear() = foot(i).pose().linear() * kFootToSensorRotationOffset.transpose();
+    H.translation() = foot(i).pose().translation() - foot_sensor(i).pose().translation();
+
+    foot_wrench_in_world_frame_[i] = transformSpatialForce(H, foot_wrench_raw_[i]);
   }
 
   // Compute center of pressure (CoP)
   Eigen::Vector2d cop_w[2];
-  double Fz[2];
+  double Fz[2] = {foot_wrench_in_world_frame_[Side::LEFT][5], foot_wrench_in_world_frame_[Side::RIGHT][5]};
   for (int i = 0; i < 2; i++) {
-    Fz[i] = foot_wrench_in_world_frame_[i][5];
-    if (fabs(Fz[i]) < 1e-3) {
-      cop_in_sensor_frame_[i][0] = 0;
-      cop_in_sensor_frame_[i][1] = 0;
+    // Ignore CoP computation if normal force is small
+    if (fabs(foot_wrench_raw_[i][5]) < 1) {
+      cop_in_sole_frame_[i][0] = 0;
+      cop_in_sole_frame_[i][1] = 0;
       cop_w[i][0] = foot(i).pose().translation()[0];
       cop_w[i][1] = foot(i).pose().translation()[1];
     } else {
       // CoP relative to the ft sensor
-      cop_in_sensor_frame_[i][0] = -foot_wrench_in_sensor_frame_[i][1] /
-                                   foot_wrench_in_sensor_frame_[i][5];
-      cop_in_sensor_frame_[i][1] = foot_wrench_in_sensor_frame_[i][0] /
-                                   foot_wrench_in_sensor_frame_[i][5];
+      cop_in_sole_frame_[i][0] = -foot_wrench_in_sole_frame_[i][1] /
+                                   foot_wrench_in_sole_frame_[i][5];
+      cop_in_sole_frame_[i][1] = foot_wrench_in_sole_frame_[i][0] /
+                                   foot_wrench_in_sole_frame_[i][5];
 
       // CoP in the world frame
       cop_w[i][0] = -foot_wrench_in_world_frame_[i][1] / Fz[i] +

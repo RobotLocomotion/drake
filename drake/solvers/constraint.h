@@ -80,6 +80,11 @@ class Constraint {
   inline const std::string& get_description() const { return description_; }
 
  protected:
+  /**
+   * Set the upper and lower bounds of the constraint.
+   * @param lower_bound. A num_constraint() x 1 vector.
+   * @param upper_bound. A num_constraint() x 1 vector.
+   */
   template <typename DerivedL, typename DerivedU> void set_bounds(
       const Eigen::MatrixBase<DerivedL>& lower_bound,
       const Eigen::MatrixBase<DerivedU>& upper_bound) {
@@ -93,11 +98,10 @@ class Constraint {
     upper_bound_ = upper_bound;
   }
 
-  std::string description_;
-
  private:
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+  std::string description_;
 };
 
 /**
@@ -141,7 +145,7 @@ class QuadraticConstraint : public Constraint {
    * @param new_b new linear term
    */
   template <typename DerivedQ, typename DerivedB>
-    void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& new_Q,
+    void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
       const Eigen::MatrixBase<DerivedB>& new_b) {
     if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
         new_b.cols() != 1) {
@@ -302,8 +306,10 @@ class LinearConstraint : public Constraint {
   /* UpdateConstraint
    * @brief Updates the linear term, upper and lower bounds in the lienar
    * constraint.
+   * The updated constraint is:
+   * new_lb <= new_A * x <= new_ub
    * Note that the size of constraints (number of rows) can change, but the
-   * number of varibles (number of cols) cannot.
+   * number of variables (number of cols) cannot.
    * @param new_A new linear term
    * @param new_lb new lower bound
    * @param new_up new upper bound
@@ -313,11 +319,13 @@ class LinearConstraint : public Constraint {
                           const Eigen::MatrixBase<DerivedL>& new_lb,
                           const Eigen::MatrixBase<DerivedU>& new_ub) {
     if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
-        new_lb.cols() != 1 || new_ub.cols() != 1)
+        new_lb.cols() != 1 || new_ub.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions");
+    }
 
-    if (new_A.cols() != A_.cols())
+    if (new_A.cols() != A_.cols()) {
       throw std::runtime_error("Can't change the number of decision variables");
+    }
 
     A_ = new_A;
     set_bounds(new_lb, new_ub);

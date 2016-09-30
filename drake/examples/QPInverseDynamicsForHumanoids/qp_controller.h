@@ -63,8 +63,12 @@ class CartesianSetPoint {
     qdd += (Kd_.array() * (vel_d_ - vel).array()).matrix();
 
     // pose feedback
-    Matrix3d R_err = pose_d_.linear() * pose.linear().transpose();
-    AngleAxisd angle_axis_err(R_err);
+    // H^w_d = desired orientation in the world frame,
+    // H^w_m = measured orientation in the world frame,
+    // E = a small rotation in the world frame from measured to desired.
+    // H^w_d = E * H^w_m, E = H^w_d * H^w_m.transpose()
+    Eigen::Matrix3d R_err = pose_d_.linear() * pose.linear().transpose();
+    Eigen::AngleAxisd angle_axis_err(R_err);
 
     Eigen::Vector3d pos_err = pose_d_.translation() - pose.translation();
     Eigen::Vector3d rot_err = angle_axis_err.axis() * angle_axis_err.angle();
@@ -136,7 +140,7 @@ class ContactInformation {
                               const KinematicsCache<double>& cache) const {
     Eigen::MatrixXd basis(3 * contact_points_.size(),
                    num_basis_per_contact_point_ * contact_points_.size());
-    Matrix3d body_rot =
+    Eigen::Matrix3d body_rot =
         robot.relativeTransform(cache, 0, body_.get_body_index()).linear();
     basis.setZero();
 
@@ -155,7 +159,7 @@ class ContactInformation {
     }
     t2 = t1.cross(normal_);
 
-    for (size_t i = 0; i < contact_points_.size(); i++) {
+    for (int i = 0; i < static_cast<int>(contact_points_.size()); i++) {
       for (int k = 0; k < num_basis_per_contact_point_; k++) {
         theta = k * 2 * M_PI / num_basis_per_contact_point_;
         tangent_vec = cos(theta) * t1 + sin(theta) * t2;
@@ -210,12 +214,12 @@ class ContactInformation {
 
     Eigen::MatrixXd force_to_wrench = Eigen::MatrixXd::Zero(6, 3 * contact_points.size());
     int col_idx = 0;
-    for (size_t j = 0; j < contact_points.size(); j++) {
+    for (const Eigen::Vector3d& contact_point : contact_points) {
       // Force part: just sum up all the point forces, so these are I
       force_to_wrench.block<3, 3>(3, col_idx).setIdentity();
       // Torque part:
       force_to_wrench.block<3, 3>(0, col_idx) =
-          drake::math::VectorToSkewSymmetric(contact_points[j] -
+          drake::math::VectorToSkewSymmetric(contact_point -
                                              reference_point);
       col_idx += 3;
     }
@@ -441,8 +445,8 @@ class QPInput {
 
     valid &= desired_comdd_.allFinite();
     valid &= desired_vd_.allFinite();
-    for (size_t i = 0; i < desired_body_accelerations_.size(); i++) {
-      valid &= desired_body_accelerations_[i].is_valid();
+    for (const DesiredBodyAcceleration& desired_body_acceleration : desired_body_accelerations_) {
+      valid &= desired_body_acceleration.is_valid();
     }
 
     valid &= std::isfinite(w_com_);
@@ -553,8 +557,8 @@ class QPOutput {
     ret &= vd_.allFinite();
     ret &= joint_torque_.allFinite();
 
-    for (size_t i = 0; i < body_accelerations_.size(); i++) {
-      ret &= body_accelerations_[i].is_valid();
+    for (const BodyAcceleration& body_acceleration : body_accelerations_) {
+      ret &= body_acceleration.is_valid();
     }
 
     return ret;
@@ -710,6 +714,8 @@ class QPController {
    * @return 0 if successful. < 0 if error.
    */
   int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);
+
+  static const double kUpperBoundForContactBasis;
 };
 
 

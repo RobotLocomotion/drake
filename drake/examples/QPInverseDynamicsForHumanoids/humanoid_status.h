@@ -3,9 +3,6 @@
 #include "drake/systems/robotInterfaces/Side.h"
 #include "rigid_body_tree_utils.h"
 
-namespace Eigen {
-typedef Matrix<double, 6, 1> Vector6d;
-}
 
 namespace drake {
 namespace example {
@@ -46,7 +43,7 @@ class BodyOfInterest {
    * Updates pose, velocity, Jacobian, Jacobian_dot_times_v based on @p robot
    * and @p cache.
    * @param robot is the robot model.
-   * @param cache is the kinematics cache. It needs to be initialed first
+   * @param cache is the kinematics cache. It needs to be initialized first
    */
   void Update(const RigidBodyTree& robot,
               const KinematicsCache<double>& cache) {
@@ -76,13 +73,13 @@ class BodyOfInterest {
 class HumanoidStatus {
  public:
   /// Offset from the foot frame to contact position in the foot frame.
-  static const Eigen::Vector3d kFootToContactOffset;
+  static const Eigen::Vector3d kFootToSoleOffset;
   /// Position Offset from the foot frame to force torque sensor in the foot
   /// frame.
   static const Eigen::Vector3d kFootToSensorPositionOffset;
   /// Rotation Offset from the foot frame to force torque sensor in the foot
   /// frame.
-  static const Matrix3d kFootToSensorRotationOffset;
+  static const Eigen::Matrix3d kFootToSensorRotationOffset;
 
   // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
   // Valkyrie, and they should be specified in some separate config file.
@@ -109,7 +106,7 @@ class HumanoidStatus {
     joint_torque_.resize(robot_.actuators.size());
     nominal_position_ = robot_.getZeroConfiguration();
 
-    // Build map
+    // Build various lookup maps.
     body_name_to_id_ = std::unordered_map<std::string, int>();
     for (auto it = robot_.bodies.begin(); it != robot_.bodies.end(); ++it) {
       body_name_to_id_[(*it)->get_name()] = it - robot_.bodies.begin();
@@ -119,8 +116,8 @@ class HumanoidStatus {
     for (int i = 0; i < robot_.get_num_positions(); i++) {
       joint_name_to_position_index_[robot_.getPositionName(i)] = i;
     }
-    for (size_t i = 0; i < robot_.actuators.size(); i++) {
-      actuator_name_to_actuator_index_[robot_.actuators[i].name_] = i;
+    for (int i = 0; i < static_cast<int>(robot_.actuators.size()); i++) {
+      actuator_name_to_actuator_index_[robot_.actuators.at(i).name_] = i;
     }
 
     // TODO(siyuan.feng@tri.global): these are hard coded for Valkyrie, and they
@@ -161,18 +158,19 @@ class HumanoidStatus {
         -M_PI / 2.;
   }
 
-  HumanoidStatus& operator=(const HumanoidStatus& other) {
-    if (&other == this) return *this;
-
+  void UpdateFromOther(const HumanoidStatus& other) {
     if (&robot_ != &other.robot()) {
       throw std::runtime_error("can't assign with different robot ref");
     }
 
-    Update(other.time(), other.position(), other.velocity(),
-           other.joint_torque(), other.foot_wrench_in_sensor_frame(Side::LEFT),
-           other.foot_wrench_in_sensor_frame(Side::RIGHT));
+    if (&other == this) {
+      return;
+    }
 
-    return *this;
+    Update(other.time(), other.position(), other.velocity(),
+           other.joint_torque(),
+           other.foot_wrench_raw(Side::LEFT),
+           other.foot_wrench_raw(Side::RIGHT));
   }
 
   /**
@@ -186,9 +184,9 @@ class HumanoidStatus {
    * @param l_wrench is wrench measured in the sensor frame.
    * @param r_wrench is wrench measured in the sensor frame.
    */
-  void Update(double t, const Ref<const Eigen::VectorXd>& q,
-              const Ref<const Eigen::VectorXd>& v, const Ref<const Eigen::VectorXd>& joint_torque,
-              const Ref<const Eigen::Vector6d>& l_wrench, const Ref<const Eigen::Vector6d>& r_wrench);
+  void Update(double t, const Eigen::Ref<const Eigen::VectorXd>& q,
+              const Eigen::Ref<const Eigen::VectorXd>& v, const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
+              const Eigen::Ref<const Eigen::Vector6d>& l_wrench, const Eigen::Ref<const Eigen::Vector6d>& r_wrench);
 
   /**
    * Returns a nominal q.
@@ -246,11 +244,14 @@ class HumanoidStatus {
       return bodies_of_interest_[5];
   }
   inline const Eigen::Vector2d& cop() const { return cop_; }
-  inline const Eigen::Vector2d& cop_in_sensor_frame(Side::SideEnum s) const {
-    return cop_in_sensor_frame_[s];
+  inline const Eigen::Vector2d& cop_in_sole_frame(Side::SideEnum s) const {
+    return cop_in_sole_frame_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_in_sensor_frame(Side::SideEnum s) const {
-    return foot_wrench_in_sensor_frame_[s];
+  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(Side::SideEnum s) const {
+    return foot_wrench_in_sole_frame_[s];
+  }
+  inline const Eigen::Vector6d& foot_wrench_raw(Side::SideEnum s) const {
+    return foot_wrench_raw_[s];
   }
   inline const Eigen::Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
     return foot_wrench_in_world_frame_[s];
@@ -258,11 +259,14 @@ class HumanoidStatus {
   inline const BodyOfInterest& foot_sensor(int s) const {
     return foot_sensor(Side::values.at(s));
   }
-  inline const Eigen::Vector2d& cop_in_sensor_frame(int s) const {
-    return cop_in_sensor_frame(Side::values.at(s));
+  inline const Eigen::Vector2d& cop_in_sole_frame(int s) const {
+    return cop_in_sole_frame(Side::values.at(s));
   }
-  inline const Eigen::Vector6d& foot_wrench_in_sensor_frame(int s) const {
-    return foot_wrench_in_sensor_frame(Side::values.at(s));
+  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(int s) const {
+    return foot_wrench_in_sole_frame(Side::values.at(s));
+  }
+  inline const Eigen::Vector6d& foot_wrench_raw(int s) const {
+    return foot_wrench_raw(Side::values.at(s));
   }
   inline const Eigen::Vector6d& foot_wrench_in_world_frame(int s) const {
     return foot_wrench_in_world_frame(Side::values.at(s));
@@ -302,8 +306,9 @@ class HumanoidStatus {
   Eigen::Vector3d comd_;              ///< Com velocity
   Eigen::MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
   Eigen::Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
-  // Centroidal momentum = [angular; linear] momentum.
-  // [angular; linear] = centroidal_momentum_matrix_ * v
+
+  /// Centroidal momentum = [angular; linear] momentum.
+  /// [angular; linear] = centroidal_momentum_matrix_ * v
   Eigen::MatrixXd centroidal_momentum_matrix_;
   Eigen::Vector6d centroidal_momentum_matrix_dot_times_v_;
   Eigen::Vector6d centroidal_momentum_;
@@ -311,16 +316,21 @@ class HumanoidStatus {
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
 
-  Eigen::Vector2d cop_;  ///< Center of pressure
-  Eigen::Vector2d
-      cop_in_sensor_frame_[2];  ///< Individual center of pressure in foot frame
+  /// Center of pressure
+  Eigen::Vector2d cop_;
+  /// Individual center of pressure in foot frame
+  Eigen::Vector2d cop_in_sole_frame_[2];
 
-  Eigen::Vector6d foot_wrench_in_sensor_frame_[2];  ///< Wrench rotated to align with
-  /// the foot frame, located at the
-  /// sensor position.
-  Eigen::Vector6d foot_wrench_in_world_frame_[2];  ///< Wrench rotated to align with
-  /// the world frame, located at the
-  /// ankle joint.
+  /// Wrench expressed in a frame that is aligned with the world frame, and
+  /// is located at the origin of the foot frame.
+  Eigen::Vector6d foot_wrench_in_world_frame_[2];
+
+  /// Wrench expressed in a frame that is aligned with the foot frame, and
+  /// is offsetted from the foot frame by kFootToSoleOffset.
+  Eigen::Vector6d foot_wrench_in_sole_frame_[2];
+
+  /// Untransformed raw measurement from the foot force torque sensor
+  Eigen::Vector6d foot_wrench_raw_[2];
 };
 
 } // end namespace qp_inverse_dynamics

@@ -8,18 +8,20 @@ namespace drake {
 namespace example {
 namespace qp_inverse_dynamics {
 
+const double QPController::kUpperBoundForContactBasis = 1000;
+
 void QPController::ResizeQP(
     const RigidBodyTree& robot,
     const std::vector<ContactInformation>& all_supports,
     const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
-  // Figure out dimensions
+  // Figure out dimensions.
   int num_contact_body = all_supports.size();
   int num_vd = robot.get_num_velocities();
   int num_basis = 0;
   int num_point_force = 0;
-  for (size_t i = 0; i < all_supports.size(); i++) {
-    num_point_force += all_supports[i].contact_points().size();
-    num_basis += all_supports[i].num_basis();
+  for (const ContactInformation& support : all_supports) {
+    num_point_force += support.contact_points().size();
+    num_basis += support.num_basis();
   }
   int num_torque = robot.actuators.size();
   int num_variable = num_vd + num_basis;
@@ -27,8 +29,9 @@ void QPController::ResizeQP(
   if (num_contact_body == num_contact_body_ && num_vd == num_vd_ &&
       num_basis == num_basis_ && num_point_force == num_point_force_ &&
       num_torque == num_torque_ && num_variable == num_variable_ &&
-      static_cast<int>(all_body_accelerations.size()) == num_body_acceleration_)
+      static_cast<int>(all_body_accelerations.size()) == num_body_acceleration_) {
     return;
+  }
 
   num_contact_body_ = num_contact_body;
   num_vd_ = num_vd;
@@ -52,15 +55,16 @@ void QPController::ResizeQP(
   torque_linear_.resize(num_torque_, num_variable_);
   dynamics_linear_.resize(6, num_variable_);
 
-  // Allocate equality constraints
+  // Allocate equality constraints.
   // Dyanmics
   eq_dynamics_ = prog_.AddLinearEqualityConstraint(
-      Eigen::MatrixXd::Zero(6, num_variable_), Matrix<double, 6, 1>::Zero(),
+      Eigen::MatrixXd::Zero(6, num_variable_), Eigen::Vector6d::Zero(),
       {vd, basis});
   eq_dynamics_->set_description("dynamics eq");
 
-  eq_contacts_.resize(num_contact_body_);
   // Contact constraints, 3 rows per contact point
+  // TODO(siyuan.feng@tri.global): switch this to cost eventually.
+  eq_contacts_.resize(num_contact_body_);
   for (int i = 0; i < num_contact_body_; i++) {
     eq_contacts_[i] = prog_.AddLinearEqualityConstraint(
         Eigen::MatrixXd::Zero(3 * all_supports[i].contact_points().size(), num_vd_),
@@ -68,12 +72,12 @@ void QPController::ResizeQP(
     eq_contacts_[i]->set_description(all_supports[i].name() + " contact eq");
   }
 
-  // Allocate inequality constraints
-  // Contact force scalar (Beta).
-  // This is constant and does not depend on the robot configuration.
+  // Allocate inequality constraints.
+  // Contact force scalar (Beta), which is constant and does not depend on the
+  // robot configuration.
   ineq_contact_wrench_ = prog_.AddLinearConstraint(
       Eigen::MatrixXd::Identity(num_basis_, num_basis_), Eigen::VectorXd::Zero(num_basis_),
-      Eigen::VectorXd::Constant(num_basis_, 1000), {basis});
+      Eigen::VectorXd::Constant(num_basis_, kUpperBoundForContactBasis), {basis});
   ineq_contact_wrench_->set_description("contact force basis ineq");
   // Torque limit
   ineq_torque_limit_ = prog_.AddLinearConstraint(
@@ -81,7 +85,7 @@ void QPController::ResizeQP(
       Eigen::VectorXd::Zero(num_torque_), {vd, basis});
   ineq_torque_limit_->set_description("torque limit ineq");
 
-  // Allocate cost terms
+  // Allocate cost terms.
   Eigen::MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
   Eigen::VectorXd tmp_vector_vd(num_vd_);
   // CoMdd
@@ -96,10 +100,10 @@ void QPController::ResizeQP(
     cost_body_accelerations_[i]->set_description(
         all_body_accelerations[i].name() + " cost");
   }
-  // Regularize vd
+  // Regularize vd.
   cost_vd_reg_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
   cost_vd_reg_->set_description("vd reg cost");
-  // Regularize vd
+  // Regularize basis.
   cost_basis_reg_ =
       prog_.AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
                              Eigen::VectorXd::Zero(num_basis_), {basis});
@@ -164,11 +168,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   int basis_start = basis.index();
   int vd_start = vd.index();
 
-  // Stack the contact Jacobians and basis matrices for each contact link
+  // Stack the contact Jacobians and basis matrices for each contact link.
   int rowIdx = 0;
   int colIdx = 0;
-  for (int b = 0; b < num_contact_body_; b++) {
-    const ContactInformation& support = input.contact_info(b);
+  for (const ContactInformation& support : input.contact_info()) {
     int force_dim = 3 * support.contact_points().size();
     int basis_dim = support.num_basis();
     basis_to_force_matrix_.block(rowIdx, colIdx, force_dim, basis_dim) =
@@ -184,7 +187,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   DRAKE_ASSERT(rowIdx == num_point_force_ * 3);
   DRAKE_ASSERT(colIdx == num_basis_);
 
-  // tau = M_l * vd + h_l - (J^T * basis)_l * Beta,
+  // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   torque_linear_.block(0, vd_start, num_torque_, num_vd_) =
       rs.M().bottomRows(num_torque_);
@@ -200,7 +203,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   dynamics_constant_ = -rs.bias_term().head(6);
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
 
-  // contact constraints, 3 rows per contact point
+  // Contact constraints, 3 rows per contact point
   rowIdx = 0;
   for (int i = 0; i < num_contact_body_; i++) {
     int force_dim = 3 * input.contact_info(i).contact_points().size();
@@ -222,7 +225,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = rs.robot->B.bottomRows(num_torque_) * u,
   // u = rs.robot->B.bottomRows(num_torque_).transpose() * tau
   // since B should be orthonormal.
-  // tau is joint space indexed, and u is actuator space indexed.
+  // Tau is joint space indexed, and u is actuator space indexed.
   // constraints are specified with u index.
   inequality_linear_ =
       rs.robot().B.bottomRows(num_torque_).transpose() * torque_linear_;
@@ -239,7 +242,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Cost function:
   // CoM term (task space acceleration costs)
   // w * (J * vd + Jdv - desired_comdd)^T * (J * vd + Jdv - desired_comdd)
-  cost_comdd_->UpdateConstraint(
+  cost_comdd_->UpdateQuadraticAndLinearTerms(
       input.w_com() * rs.J_com().transpose() * rs.J_com(),
       input.w_com() * rs.J_com().transpose() *
           (rs.Jdot_times_v_com() - input.desired_comdd()));
@@ -249,26 +252,26 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (size_t i = 0; i < body_motions_d.size(); i++) {
     const DesiredBodyAcceleration& body_motion_d = body_motions_d[i];
     body_J_[i] = GetTaskSpaceJacobian(rs.robot(), rs.cache(),
-                                      body_motion_d.body(), Vector3d::Zero());
+                                      body_motion_d.body(), Eigen::Vector3d::Zero());
     body_Jdv_[i] = GetTaskSpaceJacobianDotTimesV(
-        rs.robot(), rs.cache(), body_motion_d.body(), Vector3d::Zero());
+        rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
 
-    cost_body_accelerations_[i]->UpdateConstraint(
+    cost_body_accelerations_[i]->UpdateQuadraticAndLinearTerms(
         body_motion_d.weight() * body_J_[i].transpose() * body_J_[i],
         body_motion_d.weight() * body_J_[i].transpose() *
             (body_Jdv_[i] - body_motion_d.acceleration()));
   }
-  // Regularize vd to desired_vd
-  cost_vd_reg_->UpdateConstraint(
+  // Regularize vd to desired_vd.
+  cost_vd_reg_->UpdateQuadraticAndLinearTerms(
       input.w_vd() * Eigen::MatrixXd::Identity(num_vd_, num_vd_),
       input.w_vd() * (-input.desired_vd()));
-  // Regularize basis to zero
-  cost_basis_reg_->UpdateConstraint(
+  // Regularize basis to zero.
+  cost_basis_reg_->UpdateQuadraticAndLinearTerms(
       input.w_basis_reg() * Eigen::MatrixXd::Identity(num_basis_, num_basis_),
       Eigen::VectorXd::Zero(num_basis_));
 
   ////////////////////////////////////////////////////////////////////
-  // Call solver
+  // Call solver.
   if (!solver_.available()) {
     std::cerr << "Solver not available.\n";
     return -1;
@@ -281,14 +284,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   Eigen::VectorXd solution = prog_.GetSolutionVectorValues();
 
   ////////////////////////////////////////////////////////////////////
-  // Example of inspecting each cost / eq, ineq term
+  // Examples of inspecting each cost / eq, ineq term
   auto costs = prog_.quadratic_costs();
   auto eqs = prog_.linear_equality_constraints();
   auto ineqs = prog_.linear_constraints();
 
   output->mutable_costs().resize(costs.size());
   int ctr = 0;
-  for (auto cost_b : costs) {
+  for (auto& cost_b : costs) {
     Eigen::VectorXd val;
     std::shared_ptr<solvers::Constraint> cost = cost_b.constraint();
     cost->Eval(cost_b.VariableListToVectorXd(), val);
@@ -297,13 +300,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     ctr++;
   }
 
-  for (auto eq_b : eqs) {
+  for (auto& eq_b : eqs) {
     std::shared_ptr<solvers::LinearEqualityConstraint> eq = eq_b.constraint();
     Eigen::VectorXd X = eq_b.VariableListToVectorXd();
     DRAKE_ASSERT((eq->A() * X - eq->lower_bound()).isZero(EPSILON));
   }
 
-  for (auto ineq_b : ineqs) {
+  for (auto& ineq_b : ineqs) {
     std::shared_ptr<solvers::LinearConstraint> ineq = ineq_b.constraint();
     Eigen::VectorXd X = ineq_b.VariableListToVectorXd();
     X = ineq->A() * X;
@@ -321,8 +324,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   point_forces_ = basis_to_force_matrix_ * basis.value();
 
   output->mutable_resolved_contacts().clear();
-  for (size_t i = 0; i < input.contact_info().size(); i++) {
-    const ContactInformation& contact_info = input.contact_info(i);
+  for (const ContactInformation& contact_info : input.contact_info()) {
     ResolvedContact resolved_contact(contact_info.body());
 
     // Copy basis.
@@ -332,7 +334,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
     // Compute contact points and reference point in the world frame.
     contact_info.ComputeContactPointsAndWrenchReferencePoint(
-        rs.robot(), rs.cache(), Vector3d::Zero(),
+        rs.robot(), rs.cache(), Eigen::Vector3d::Zero(),
         &resolved_contact.mutable_contact_points(),
         &resolved_contact.mutable_reference_point());
 
@@ -347,9 +349,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     // Copy point forces.
     resolved_contact.mutable_point_forces().resize(
         contact_info.num_contact_points());
-    for (int j = 0; j < contact_info.num_contact_points(); j++) {
-      resolved_contact.mutable_point_force(j) =
-          point_forces_.segment<3>(point_force_index);
+    for (Eigen::Vector3d& point_force : resolved_contact.mutable_point_forces()) {
+      point_force = point_forces_.segment<3>(point_force_index);
       point_force_index += 3;
     }
 
@@ -382,10 +383,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   Eigen::Vector6d Ld = rs.centroidal_momentum_matrix() * output->vd() +
                 rs.centroidal_momentum_matrix_dot_times_v();
   Eigen::Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
-  for (int i = 0; i < num_contact_body_; i++) {
+  for (const ResolvedContact& resolved_contact : output->resolved_contacts()) {
     const Eigen::Vector6d& contact_wrench =
-        output->resolved_contact(i).equivalent_wrench();
-    const Vector3d& ref_point = output->resolved_contact(i).reference_point();
+        resolved_contact.equivalent_wrench();
+    const Eigen::Vector3d& ref_point = resolved_contact.reference_point();
     net_wrench += contact_wrench;
     net_wrench.segment<3>(0) +=
         (ref_point - rs.com()).cross(contact_wrench.segment<3>(3));
@@ -405,25 +406,20 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "===============================================\n";
   out << "QPInput:\n";
   out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
-  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
-    const DesiredBodyAcceleration& body_motion_d =
-        input.desired_body_acceleration(i);
+  for (const DesiredBodyAcceleration& body_motion_d : input.desired_body_accelerations()) {
     out << "desired_" << body_motion_d.name()
         << "dd: " << body_motion_d.acceleration().transpose() << std::endl;
   }
   out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
 
-  for (size_t i = 0; i < input.contact_info().size(); i++) {
-    const ContactInformation& contact_info = input.contact_info(i);
+  for (const ContactInformation& contact_info : input.contact_info()) {
     out << "contact: " << contact_info.name() << std::endl;
     for (size_t j = 0; j < contact_info.contact_points().size(); j++)
       out << contact_info.contact_points()[j].transpose() << std::endl;
   }
 
   out << "w_com: " << input.w_com() << std::endl;
-  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
-    const DesiredBodyAcceleration& body_motion_d =
-        input.desired_body_acceleration(i);
+  for (const DesiredBodyAcceleration& body_motion_d : input.desired_body_accelerations()) {
     out << "w_" << body_motion_d.name() << ": " << body_motion_d.weight()
         << std::endl;
   }
@@ -436,21 +432,20 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   out << "===============================================\n";
   out << "QPOutput:\n";
   out << "accelerations:\n";
-  for (int i = 0; i < output.vd().size(); i++)
+  for (int i = 0; i < output.vd().size(); i++) {
     out << output.coord_name(i) << ": " << output.vd()[i] << std::endl;
+  }
 
   out << "com acc: ";
   out << output.comdd().transpose() << std::endl;
 
-  for (size_t i = 0; i < output.body_accelerations().size(); i++) {
-    const BodyAcceleration& body_motion = output.body_acceleration(i);
+  for (const BodyAcceleration& body_motion : output.body_accelerations()) {
     out << body_motion.name()
         << " acc: " << body_motion.acceleration().transpose() << std::endl;
   }
 
   out << "===============================================\n";
-  for (size_t i = 0; i < output.resolved_contacts().size(); i++) {
-    const ResolvedContact& contact_result = output.resolved_contact(i);
+  for (const ResolvedContact& contact_result : output.resolved_contacts()) {
     out << contact_result.name()
         << " wrench: " << contact_result.equivalent_wrench().transpose()
         << std::endl;
@@ -463,13 +458,15 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
 
   out << "===============================================\n";
   out << "torque:\n";
-  for (int i = 0; i < output.joint_torque().size(); i++)
+  for (int i = 0; i < output.joint_torque().size(); i++) {
     out << output.coord_name(i + 6) << ": " << output.joint_torque()[i]
         << std::endl;
+  }
   out << "===============================================\n";
   out << "costs:\n";
-  for (size_t i = 0; i < output.costs().size(); i++)
-    out << output.costs(i).first << ": " << output.costs(i).second << std::endl;
+  for (const std::pair<std::string, double>& cost : output.costs()) {
+    out << cost.first << ": " << cost.second << std::endl;
+  }
 
   return out;
 }
