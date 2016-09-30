@@ -232,6 +232,7 @@ endif()
 include_directories(thirdParty/bsd/spruce/include)
 
 add_subdirectory(common)
+add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
