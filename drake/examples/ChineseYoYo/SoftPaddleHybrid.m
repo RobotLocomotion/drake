@@ -15,7 +15,8 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
   methods
     function obj = SoftPaddleHybrid()
       in_contact = PlanarRigidBodyManipulator('SoftPaddle.urdf');
-      
+      taylorvar = false;
+
       %TODO: Set input frame
       %obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
       
@@ -23,30 +24,25 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       pulley_constraint = in_contact.position_constraints{1};
       cable_length_fcn = pulley_constraint.fcn;
       
-%       taylorvar = false;
-%       
-% 
-%       
+      %Update in contact
+      if(taylorvar)
+        pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
+          pulley_constraint.ub, cable_length_fcn);
+        pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
+        in_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
+      end
+      
+      %Update no contact
       cable_length_fcn.pulley = cable_length_fcn.pulley([1 3 4]); %removing the disc with id 2 from the constraint
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
         pulley_constraint.ub, cable_length_fcn); %construct a new function constraint
-      
-        
       pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
-%      if(~taylorvar)
-       pulley_constraint.grad_level = 2; %declare that the second derivative is provided
-       pulley_constraint.grad_method = 'user';
-%      else
-        
-%      end
-      no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
+      if(~taylorvar)
+        pulley_constraint.grad_level = 2; %declare that the second derivative is provided
+        pulley_constraint.grad_method = 'user';
+      end
       
-%       if(taylorvar)
-%         pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, ...
-%           pulley_constraint.ub, cable_length_fcn);
-%         pulley_constraint = setName(pulley_constraint,cable_length_fcn.name);
-%         in_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
-%       end
+      no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);      
       
       modeStates = 1; %number of discrete state variables, here only one mode variable
       obj = obj@HybridDrakeSystem(getNumInputs(in_contact),...
@@ -79,7 +75,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       obj.baseId = obj.no_contact.findLinkId('world+base');
       obj.options.base_or_frame_id = obj.baseId;
       obj.emptyState = Point(getStateFrame(obj));
-
+      
     end
     
     function [g,dg] = collisionGuard(obj,t,x,u)
@@ -284,17 +280,20 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
 %       paddle_angle = 0.40945;
 %       x_load = 0.18235;
 %       z_load = 2.7739;
-      
+      load('collisionProb.mat','xInterest');
+      xTest = xInterest(:,1:3);
+      numtest = size(xTest,2);
       %cableLengthFunction = r.in_contact.position_constraints{1}.fcn;
-      for i = 1:numtest
-       xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
+      for i = 2:numtest
+       %xDes = r.calcStateInContact(x_load(i),z_load(i),paddle_angle(i));
+       xDes = xTest(:,i);
 %        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1))
-       gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
-%         q = xDes((1:nq)+1)
-%         [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
-%         [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
-%         ddl = reshape(ddl,4,[])
-%         ddlH = reshape(ddlH,4,[])
+%        gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+        q = xDes((1:nq)+1)
+        [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
+        [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
+        ddl = reshape(ddl,4,[])
+        ddlH = reshape(ddlH,4,[])
 %         
 %         E = [zeros(2,2), eye(2,2)];
 %         e = (ddl-ddlH);
@@ -312,7 +311,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 3],x0);
+      [ytraj,xtraj] = simulate(r,[0 0.4],x0);
       v.playback(ytraj,struct('slider',true));
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
@@ -349,10 +348,13 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         
         figure(3); clf;
-        subplot(2,1,1); plot(tt,dcl(:,1,4), 'LineWidth', 2);
+        subplot(3,1,1); plot(tt,cl, 'LineWidth', 2);
+        xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+        subplot(3,1,2); plot(tt,dcl(:,1,4), 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
         ylabel('$\dot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
-        subplot(2,1,2); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
+        subplot(3,1,3); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
         ylabel('$\ddot{\phi(q)}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
         
