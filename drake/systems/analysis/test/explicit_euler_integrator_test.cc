@@ -21,11 +21,6 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(spring_mass, DT, context.get());
-
-  // set the accuracy
-  integrator.request_initial_step_size_target(DT);
-
-  EXPECT_EQ(integrator.get_initial_step_size_target(), DT);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {

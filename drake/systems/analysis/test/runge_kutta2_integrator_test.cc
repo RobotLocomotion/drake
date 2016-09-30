@@ -19,11 +19,6 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
   // create the integrator
   RungeKutta2Integrator<double> integrator(spring_mass, DT);
-
-  // set the accuracy
-  integrator.request_initial_step_size_target(DT);
-
-  EXPECT_EQ(integrator.get_initial_step_size_target(), DT);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
