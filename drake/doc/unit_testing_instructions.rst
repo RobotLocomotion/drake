@@ -82,6 +82,16 @@ To run every enabled unit test, execute::
     cd drake-distro/build/drake
     ctest -VV
 
+To run tests in parallel, either add the ``-j`` option to the command line,
+e.g., ``ctest -VV -j$(nproc)``, or set the ``CTEST_PARALLEL_LEVEL`` environment
+variable, e.g., ``export CTEST_PARALLEL_LEVEL=$(nproc)``.  (Testing in parallel
+can be applied to any of the ``ctest`` command lines in this document.)
+
+To run every valgrind-enabled test, execute::
+
+    cd drake-distro/build/drake
+    ctest -C valgrind -R ^valgrind
+
 .. _list-all-unit-tests:
 
 Finding a Specific Unit Test
@@ -97,6 +107,9 @@ If you have a clue about a particular unit test's name, you can pipe the output
 of the `ctest -N` command to `grep`. One way to learn the name of a unit test is
 to look at the ``CMakeLists.txt`` that adds the unit test to the build system.
 
+To include the valgrind variants of tests, add ``-C valgrind`` to the command,
+e.g., ``ctest -C valgrind -N``.
+
 .. _running-a-specific-test:
 
 Running a Specific Test
@@ -105,12 +118,13 @@ Running a Specific Test
 Once you know the unit tests' name, you can run it by executing::
 
   cd drake-distro/build/drake
-  ctest -VV -C [build mode] -R [test name]
+  ctest -VV -R [test name]
 
-where: ``[build mode]`` is the build mode, e.g., ``Debug``, ``RelWithDebInfo``,
-or ``Release``, and ``[test name]`` is the name of the test exactly as printed
-by ``ctest -N`` including, if any, the entire path to the test as printed on the
-screen.
+where: ``[test name]`` is the name of the test exactly as printed by ``ctest
+-N`` including, if any, the entire path to the test as printed on the screen.
+
+To run the test in both non-valgrind and valgrind modes (highly recommended!),
+add ``-C valgrind`` to the command: ``ctest -VV -C valgrind -R [test name]``.
 
 .. _example-running-unit-test:
 
@@ -124,7 +138,7 @@ Find test::
 
 Run the test::
 
-  ctest -VV -C RelWithDebInfo -R cascade_system_test
+  ctest -VV -R cascade_system_test
 
 .. _enabling-assertions:
 
