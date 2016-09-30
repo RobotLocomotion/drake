@@ -236,22 +236,9 @@ class Diagram : public System<T>,
     return diagram_derivatives->get_substate(i);
   }
 
-  /// Returns a constant reference to the subcontext that corresponds to the
-  /// system @p subsystem.
-  /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
-  /// @p subsystem is not actually a subsystem of this diagram.
-  const Context<T>& GetSubsystemContext(const Context<T>& context,
-                                        const System<T>* subsystem) const {
-    DRAKE_DEMAND(subsystem != nullptr);
-    auto& diagram_context = dynamic_cast<const DiagramContext<T>&>(context);
-    const int i = GetSystemIndexOrAbort(subsystem);
-    return *diagram_context.GetSubsystemContext(i);
-  }
-
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// pass their constituent subsystem's the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>* GetMutableSubsystemContext(Context<T>* context,
                                          const System<T>* subsystem) const {
