@@ -1,7 +1,5 @@
 /// @file
 /// Tests that rotation conversion functions are inverses.
-#pragma GCC diagnostic ignored "-Wunused-function"
-#pragma GCC diagnostic ignored "-Wunused-variable"
 
 #include <cmath>
 #include <iostream>

@@ -14,18 +14,6 @@
 namespace drake {
 namespace math {
 template <typename Derived>
-/**
- * Check if the quaternion has unit length, and is of size 4 x 1
- * @param quaternion A unit length quaternion.
- */
-void CheckUnitLengthQuaternion(const Eigen::MatrixBase<Derived>& quaternion) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  using std::abs;
-  DRAKE_ASSERT(abs(quaternion.norm() - 1.0) <
-               10 * Eigen::NumTraits<typename Derived::Scalar>::epsilon());
-}
-
-template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
   static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
@@ -159,7 +147,7 @@ template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& quaternion) {
   using std::sqrt;
-  CheckUnitLengthQuaternion(quaternion);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   using Scalar = typename Derived::Scalar;
   Scalar abs_sin_half_angle =
       quaternion.template tail<3>().norm();  // abs(sin(angle/2))
@@ -199,7 +187,7 @@ Vector4<typename Derived::Scalar> quat2axis(
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  CheckUnitLengthQuaternion(quaternion);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   auto q_normalized = quaternion.normalized();
   auto w = q_normalized(0);
   auto x = q_normalized(1);
@@ -237,7 +225,7 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  CheckUnitLengthQuaternion(quaternion);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return rotmat2rpy(quat2rotmat(quaternion));
 }
 
