@@ -1,7 +1,6 @@
 if(lcm_FOUND)
-  add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem drakeLCMSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
+  drake_add_cc_test(pendulum_urdf_dynamics_test)
+  target_link_libraries(pendulum_urdf_dynamics_test drakeRBSystem drakeLCMSystem)
 
   drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test
