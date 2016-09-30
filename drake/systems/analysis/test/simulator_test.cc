@@ -181,7 +181,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
   // System's open loop frequency.
-  const double wol = sqrt(kSpring / kMass);
+  const double wol = std::sqrt(kSpring / kMass);
 
   // Initial conditions.
   const double x0 = 0.1;
@@ -191,7 +191,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kp = kSpring;
   const double ki = 0.0;
   // System's undamped frequency (when kd = 0).
-  const double w0 = sqrt(wol * wol + kp / kMass);
+  const double w0 = std::sqrt(wol * wol + kp / kMass);
   // Damping ratio (underdamped).
   const double zeta = 0.5;
   const double kd = 2.0 * kMass * w0 * zeta;
@@ -216,8 +216,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
   // Computes analytical solution.
   // 1) Roots of the characteristic equation.
-  complexd lambda1 = -zeta * w0 + w0 * sqrt(complexd(zeta * zeta - 1));
-  complexd lambda2 = -zeta * w0 - w0 * sqrt(complexd(zeta * zeta - 1));
+  complexd lambda1 = -zeta * w0 + w0 * std::sqrt(complexd(zeta * zeta - 1));
+  complexd lambda2 = -zeta * w0 - w0 * std::sqrt(complexd(zeta * zeta - 1));
 
   // Roots should be the complex conjugate of each other.
 #ifdef __APPLE__
@@ -232,7 +232,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
   // The damped frequency corresponds to the absolute value of the imaginary
   // part of any of the roots.
-  double wd = abs(lambda1.imag());
+  double wd = std::abs(lambda1.imag());
 
   // 2) Differential equation's constants of integration.
   double C1 = x0;
