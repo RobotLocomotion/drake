@@ -15,12 +15,17 @@ function(drake_compute_test_timeout SIZE SIZE_OUTVAR TIMEOUT_OUTVAR)
   # http://googletesting.blogspot.com/2010/12/test-sizes.html
   if(SIZE STREQUAL small)
     set(_timeout 60)
-  elseif(SIZE STREQUAL medium)
+  elseif(SIZE STREQUAL ++)
+    set(SIZE small)
+    set(_timeout 300)  
+  elseif(SIZE STREQUAL medium OR SIZE STREQUAL small++)
     set(_timeout 300)
-  elseif(SIZE STREQUAL large)
+  elseif(SIZE STREQUAL large OR SIZE STREQUAL medium++)
     set(_timeout 900)
-  elseif(SIZE STREQUAL enormous)
+  elseif(SIZE STREQUAL enormous OR SIZE STREQUAL large++)
     set(_timeout 2700)
+  elseif(SIZE STREQUAL enormous++)
+    set(_timeout 8100)
   else()
     set(SIZE small)
     set(_timeout 60)
@@ -96,7 +101,8 @@ endfunction()
 #   drake_add_cc_test(NAME <name> [EXTENSION <extension>]
 #                    [CONFIGURATIONS <configuration>...]
 #                    [SIZE <small | medium | large | enormous>]
-#                    [WORKING_DIRECTORY <directory>] [EXCLUDE_FROM_ALL])
+#                    [WORKING_DIRECTORY <directory>] [EXCLUDE_FROM_ALL]
+#                    [NO_VALGRIND])
 #
 # Arguments:
 #   NAME
@@ -120,10 +126,12 @@ endfunction()
 #   EXCLUDE_FROM_ALL
 #     Set the EXCLUDE_FROM_ALL target property on the executable to exclude the
 #     executable from the default build target.
+#   NO_VALGRIND
+#     Do not add a valgrind variant of this test.
 #------------------------------------------------------------------------------
 function(drake_add_cc_test)
   # Parse optional keyword arguments.
-  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;EXTENSION;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
+  cmake_parse_arguments("" "EXCLUDE_FROM_ALL;NO_VALGRIND" "NAME;EXTENSION;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
 
   # Set name from first and only (non-keyword) argument in short signature.
   if(NOT _EXCLUDE_FROM_ALL AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
@@ -149,6 +157,22 @@ function(drake_add_cc_test)
     CONFIGURATIONS ${_CONFIGURATIONS}
     SIZE ${_SIZE}
     WORKING_DIRECTORY ${_WORKING_DIRECTORY})
+
+  if(NOT _NO_VALGRIND)
+    # Add the valgrind flavor of the test.
+    # The size attribute is bumped up one level.
+    drake_add_test(
+      NAME valgrind_${_NAME}
+      COMMAND /usr/bin/valgrind
+         "--error-exitcode=1"
+         "--show-leak-kinds=definite,possible"
+         "--leak-check=full"
+         "--suppressions=${PROJECT_SOURCE_DIR}/valgrind.supp"
+          $<TARGET_FILE:${_NAME}>
+      CONFIGURATIONS valgrind${_CONFIGURATIONS}
+      SIZE ${_SIZE}++
+      WORKING_DIRECTORY ${_WORKING_DIRECTORY})
+  endif()
 endfunction()
 
 

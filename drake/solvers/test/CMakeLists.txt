@@ -1,4 +1,5 @@
-drake_add_cc_test(mathematical_program_test)
+# TODO(jwnimmer-tri) Get valgrind passing again.
+drake_add_cc_test(NAME mathematical_program_test NO_VALGRIND)
 target_link_libraries(mathematical_program_test drakeOptimization)
 
 if(mosek_FOUND)
@@ -20,6 +21,8 @@ if(gurobi_FOUND)
 endif()
 
 if(dreal_FOUND)
-  drake_add_cc_test(dreal_solver_test)
+  # TODO(jwnimmer-tri) Xenial valgrind has a broken RDRAND.  Find a way to turn
+  # valgrind on again here.  (See https://bugs.kde.org/show_bug.cgi?id=353370.)
+  drake_add_cc_test(NAME dreal_solver_test NO_VALGRIND)
   target_link_libraries(dreal_solver_test drakeOptimization)
 endif()
