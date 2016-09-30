@@ -311,7 +311,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 0.4],x0);
+      [ytraj,xtraj] = simulate(r,[0 3],x0);
       v.playback(ytraj,struct('slider',true));
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       

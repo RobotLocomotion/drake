@@ -243,11 +243,22 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 dc = v2'*dv1+v1'*dv2; 
                 dsvec=dcross(v1,v2,dv1,dv2); 
 %                 ds = svec'*dsvec/max(s,eps);
-                if ~norm(svec) < eps
-                  ds = (svec/norm(svec))'*dsvec;  % ?!? Check if divide by zero does not happen.
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % This is very dirty, fix it
+                if size(obj.pulley, 2) == 3
+                  n = [0; -1; 0];
                 else
-                  error('Things''ve gone bad.')
+                  n = [0; 1; 0];
                 end
+                ds = n'*dsvec;
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
+%                 if ~norm(svec) < eps
+%                   ds = (svec/norm(svec))'*dsvec;  % ?!? Check if divide by zero does not happen.
+%                 else
+%                   error('Things''ve gone bad.')
+%                 end
                   
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
@@ -255,8 +266,11 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                     ddv1 = (ddpt1 - last_ddpt)/r1; ddv2 = (last_attachment_ddpt-last_ddpt)/r1;    % should be correct
                     ddc = matGradMultMat(v2',dv1,dv2,reshape(ddv1,3*dims,[])) + matGradMultMat(v1',dv2,dv1,reshape(ddv2,3*dims,[]));    % should be correct
                     ddsvec = ddcross(v1,v2,dv1,dv2,reshape(ddv1,3*dims,[]),reshape(ddv2,3*dims,[]));    % should be correct
-                    dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
-                    %                   ddtheta = -ds'*dc - s*ddc + dc'*ds + c*dds;
+%                     dds = -(svec'*dsvec)'*(svec'*dsvec)/max(eps,(svec'*svec)^(3/2)) + matGradMultMat(svec',dsvec,dsvec,reshape(ddsvec,3*dims,[]))/max(s,eps);    % should be correct
+                    
+                    % See if this is correct
+                    dds = reshape(n'*reshape(ddsvec,3,[]),dims,[]);
+                    
                     ddtheta = -dc'*ds - s*ddc + ds'*dc + c*dds;   % should be correct
                     ddlength = ddlength + reshape(ddtheta,1,[])*r1;
                 end
