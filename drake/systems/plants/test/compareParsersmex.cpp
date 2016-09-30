@@ -24,6 +24,7 @@ using drake::systems::plants::joints::kRollPitchYaw;
  * robot generated via the c++ parser
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 1) {
     mexErrMsgIdAndTxt(

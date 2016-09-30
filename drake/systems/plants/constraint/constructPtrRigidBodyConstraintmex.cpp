@@ -26,6 +26,7 @@ void checkBodyOrFrameID(const int body, const RigidBodyTree* model,
   }
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (!mxIsNumeric(prhs[0])) {
     if (isa(prhs[0], "DrakeMexPointer")) {  // then it's calling the destructor
