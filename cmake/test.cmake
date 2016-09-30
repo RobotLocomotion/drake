@@ -205,6 +205,7 @@ function(drake_add_matlab_test)
   if(_REQUIRES)
     foreach(_require ${_REQUIRES})
       string(TOUPPER ${_require} _require_upper)
+      string(REPLACE - _ _require_upper ${_require_upper})
       if(NOT WITH_${_require_upper} AND NOT ${_require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${_require}.m")
         message(STATUS
           "Not running ${_NAME} because ${_require} was not installed")
