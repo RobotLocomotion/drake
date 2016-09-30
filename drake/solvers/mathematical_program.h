@@ -919,7 +919,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
    * compute the solution first by calling Solve.
    * @return a flat Eigen vector that represents the solution.
    */
-  const Eigen::VectorXd GetSolution() const {
+  const Eigen::VectorXd GetSolutionVectorValues() const {
     Eigen::VectorXd solution(num_vars_);
     int start_index = 0;
     for (auto& var : variables_) {

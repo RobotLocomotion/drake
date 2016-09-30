@@ -1,28 +1,32 @@
 #include "humanoid_status.h"
 #include <iostream>
 
+namespace drake {
+namespace example {
+namespace qp_inverse_dynamics {
+
 // TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
 // should be included in the model file or loaded from a separate config file.
-const Vector3d HumanoidStatus::kFootToContactOffset = Vector3d(0, 0, -0.09);
-const Vector3d HumanoidStatus::kFootToSensorPositionOffset =
-    Vector3d(0.0215646, 0.0, -0.051054);
+const Eigen::Vector3d HumanoidStatus::kFootToContactOffset = Eigen::Vector3d(0, 0, -0.09);
+const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
+    Eigen::Vector3d(0.0215646, 0.0, -0.051054);
 const Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
-    Matrix3d(AngleAxisd(-M_PI, Vector3d::UnitX()));
+    Matrix3d(AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
 
-void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
-                            const Ref<const VectorXd>& v,
-                            const Ref<const VectorXd>& trq,
-                            const Ref<const Vector6d>& l_ft,
-                            const Ref<const Vector6d>& r_ft) {
+void HumanoidStatus::Update(double t, const Ref<const Eigen::VectorXd>& q,
+                            const Ref<const Eigen::VectorXd>& v,
+                            const Ref<const Eigen::VectorXd>& joint_torque,
+                            const Ref<const Eigen::Vector6d>& l_wrench,
+                            const Ref<const Eigen::Vector6d>& r_wrench) {
   if (q.size() != position_.size() || v.size() != velocity_.size() ||
-      trq.size() != joint_torque_.size()) {
+      joint_torque.size() != joint_torque_.size()) {
     throw std::runtime_error("robot state update dimension mismatch.");
   }
 
   time_ = t;
   position_ = q;
   velocity_ = v;
-  joint_torque_ = trq;
+  joint_torque_ = joint_torque;
 
   cache_.initialize(position_, velocity_);
   robot_.doKinematics(cache_, true);
@@ -47,9 +51,8 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
     bodies_of_interest_[i].Update(robot_, cache_);
 
   // ft sensor
-  foot_wrench_in_sensor_frame_[Side::LEFT] = l_ft;
-  foot_wrench_in_sensor_frame_[Side::RIGHT] = r_ft;
-  Vector6d tmp_wrench;
+  foot_wrench_in_sensor_frame_[Side::LEFT] = l_wrench;
+  foot_wrench_in_sensor_frame_[Side::RIGHT] = r_wrench;
   for (int i = 0; i < 2; i++) {
     // Rotate the sensor measurement to body frame first.
     foot_wrench_in_sensor_frame_[i].head(3) =
@@ -63,15 +66,15 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
     // H^w_ak = world frame aligned, but located at ankle joint = [I,
     // rs.foot(i).pose().translation()]
     // To transform wrench from s frame to ak frame, we need H^ak_s.
-    Isometry3d H_s_to_w = foot_sensor(i).pose();
-    Isometry3d H_ak_to_w(Isometry3d::Identity());
+    Eigen::Isometry3d H_s_to_w = foot_sensor(i).pose();
+    Eigen::Isometry3d H_ak_to_w(Eigen::Isometry3d::Identity());
     H_ak_to_w.translation() = foot(i).pose().translation();
     foot_wrench_in_world_frame_[i] = transformSpatialForce(
         H_ak_to_w.inverse() * H_s_to_w, foot_wrench_in_sensor_frame_[i]);
   }
 
   // Compute center of pressure (CoP)
-  Vector2d cop_w[2];
+  Eigen::Vector2d cop_w[2];
   double Fz[2];
   for (int i = 0; i < 2; i++) {
     Fz[i] = foot_wrench_in_world_frame_[i][5];
@@ -100,3 +103,7 @@ void HumanoidStatus::Update(double t, const Ref<const VectorXd>& q,
           cop_w[Side::RIGHT] * Fz[Side::RIGHT]) /
          (Fz[Side::LEFT] + Fz[Side::RIGHT]);
 }
+
+} // end namespace qp_inverse_dynamics
+} // end namespace example
+} // end namespace drake

@@ -5,6 +5,10 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
+namespace drake {
+namespace example {
+namespace qp_inverse_dynamics {
+
 QPInput GenerateQPInput(const HumanoidStatus& robot_status,
                         const Vector3d& desired_com, const Vector3d& Kp_com,
                         const Vector3d& Kd_com, const VectorXd& desired_joints,
@@ -137,6 +141,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
     if (status) break;
 
     // Dummy integration.
+    // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's ready.
     q += v * dt;
     v += output.vd() * dt;
     time += dt;
@@ -155,3 +160,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       v, VectorXd::Zero(robot_status.robot().get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
 }
+
+} // end namespace qp_inverse_dynamics
+} // end namespace example
+} // end namespace drake

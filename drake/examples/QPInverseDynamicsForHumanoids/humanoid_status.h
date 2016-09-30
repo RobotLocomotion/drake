@@ -3,7 +3,13 @@
 #include "drake/systems/robotInterfaces/Side.h"
 #include "rigid_body_tree_utils.h"
 
-using namespace Eigen;
+namespace Eigen {
+typedef Matrix<double, 6, 1> Vector6d;
+}
+
+namespace drake {
+namespace example {
+namespace qp_inverse_dynamics {
 
 /**
  * An object that holds important kinematic properties.
@@ -17,23 +23,23 @@ class BodyOfInterest {
   /// The link which this BOI is attached to
   const RigidBody& body_;
   /// Offset is specified in the body frame.
-  Vector3d offset_;
+  Eigen::Vector3d offset_;
 
-  Isometry3d pose_;
+  Eigen::Isometry3d pose_;
   /// This is the task space velocity, or twist of a frame that has the same
   /// orientation as the world frame, but located at the origin of the body
   /// frame.
-  Vector6d vel_;
+  Eigen::Vector6d vel_;
   /// Task space Jacobian, xdot = J * v
-  MatrixXd J_;
+  Eigen::MatrixXd J_;
   /// Task space Jd * v
-  Vector6d Jdot_times_v_;
+  Eigen::Vector6d Jdot_times_v_;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  public:
   explicit BodyOfInterest(const std::string& name, const RigidBody& body,
-                          const Vector3d& off)
+                          const Eigen::Vector3d& off)
       : name_(name), body_(body), offset_(off) {}
 
   /**
@@ -55,10 +61,10 @@ class BodyOfInterest {
 
   inline const std::string& name() const { return name_; }
   inline const RigidBody& body() const { return body_; }
-  inline const Isometry3d& pose() const { return pose_; }
-  inline const Vector6d& velocity() const { return vel_; }
-  inline const MatrixXd& J() const { return J_; }
-  inline const Vector6d& Jdot_times_v() const { return Jdot_times_v_; }
+  inline const Eigen::Isometry3d& pose() const { return pose_; }
+  inline const Eigen::Vector6d& velocity() const { return vel_; }
+  inline const Eigen::MatrixXd& J() const { return J_; }
+  inline const Eigen::Vector6d& Jdot_times_v() const { return Jdot_times_v_; }
 };
 
 /**
@@ -70,10 +76,10 @@ class BodyOfInterest {
 class HumanoidStatus {
  public:
   /// Offset from the foot frame to contact position in the foot frame.
-  static const Vector3d kFootToContactOffset;
+  static const Eigen::Vector3d kFootToContactOffset;
   /// Position Offset from the foot frame to force torque sensor in the foot
   /// frame.
-  static const Vector3d kFootToSensorPositionOffset;
+  static const Eigen::Vector3d kFootToSensorPositionOffset;
   /// Rotation Offset from the foot frame to force torque sensor in the foot
   /// frame.
   static const Matrix3d kFootToSensorRotationOffset;
@@ -85,13 +91,13 @@ class HumanoidStatus {
         cache_(robot_.bodies),
         bodies_of_interest_{
             BodyOfInterest("pelvis", *robot_.FindBody("pelvis"),
-                           Vector3d::Zero()),
+                           Eigen::Vector3d::Zero()),
             BodyOfInterest("torso", *robot_.FindBody("torso"),
-                           Vector3d::Zero()),
+                           Eigen::Vector3d::Zero()),
             BodyOfInterest("leftFoot", *robot_.FindBody("leftFoot"),
-                           Vector3d::Zero()),
+                           Eigen::Vector3d::Zero()),
             BodyOfInterest("rightFoot", *robot_.FindBody("rightFoot"),
-                           Vector3d::Zero()),
+                           Eigen::Vector3d::Zero()),
             BodyOfInterest("leftFootSensor", *robot_.FindBody("leftFoot"),
                            kFootToSensorPositionOffset),
             BodyOfInterest("rightFootSensor", *robot_.FindBody("rightFoot"),
@@ -175,19 +181,19 @@ class HumanoidStatus {
    * @param time is in seconds
    * @param q is the vector or generalized positions.
    * @param v is the vector of generalized velocities.
-   * @param trq is joint torque, should be in the same order as @p v, not
+   * @param joint_torque is joint torque, should be in the same order as @p v, not
    * in robot->actuators order
-   * @param l_ft is wrench measured in the sensor frame.
-   * @param r_ft is wrench measured in the sensor frame.
+   * @param l_wrench is wrench measured in the sensor frame.
+   * @param r_wrench is wrench measured in the sensor frame.
    */
-  void Update(double t, const Ref<const VectorXd>& q,
-              const Ref<const VectorXd>& v, const Ref<const VectorXd>& trq,
-              const Ref<const Vector6d>& l_ft, const Ref<const Vector6d>& r_ft);
+  void Update(double t, const Ref<const Eigen::VectorXd>& q,
+              const Ref<const Eigen::VectorXd>& v, const Ref<const Eigen::VectorXd>& joint_torque,
+              const Ref<const Eigen::Vector6d>& l_wrench, const Ref<const Eigen::Vector6d>& r_wrench);
 
   /**
    * Returns a nominal q.
    */
-  VectorXd GetNominalPosition() const { return nominal_position_; }
+  Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
 
   // Getters
   inline const RigidBodyTree& robot() const { return robot_; }
@@ -204,22 +210,22 @@ class HumanoidStatus {
     return actuator_name_to_actuator_index_;
   }
   inline double time() const { return time_; }
-  inline const VectorXd& position() const { return position_; }
-  inline const VectorXd& velocity() const { return velocity_; }
-  inline const VectorXd& joint_torque() const { return joint_torque_; }
-  inline const MatrixXd& M() const { return M_; }
-  inline const VectorXd& bias_term() const { return bias_term_; }
-  inline const Vector3d& com() const { return com_; }
-  inline const Vector3d& comd() const { return comd_; }
-  inline const MatrixXd& J_com() const { return J_com_; }
-  inline const Vector3d& Jdot_times_v_com() const { return Jdot_times_v_com_; }
-  inline const MatrixXd& centroidal_momentum_matrix() const {
+  inline const Eigen::VectorXd& position() const { return position_; }
+  inline const Eigen::VectorXd& velocity() const { return velocity_; }
+  inline const Eigen::VectorXd& joint_torque() const { return joint_torque_; }
+  inline const Eigen::MatrixXd& M() const { return M_; }
+  inline const Eigen::VectorXd& bias_term() const { return bias_term_; }
+  inline const Eigen::Vector3d& com() const { return com_; }
+  inline const Eigen::Vector3d& comd() const { return comd_; }
+  inline const Eigen::MatrixXd& J_com() const { return J_com_; }
+  inline const Eigen::Vector3d& Jdot_times_v_com() const { return Jdot_times_v_com_; }
+  inline const Eigen::MatrixXd& centroidal_momentum_matrix() const {
     return centroidal_momentum_matrix_;
   }
-  inline const Vector6d& centroidal_momentum_matrix_dot_times_v() const {
+  inline const Eigen::Vector6d& centroidal_momentum_matrix_dot_times_v() const {
     return centroidal_momentum_matrix_dot_times_v_;
   }
-  inline const Vector6d& centroidal_momentum() const {
+  inline const Eigen::Vector6d& centroidal_momentum() const {
     return centroidal_momentum_;
   }
   inline const BodyOfInterest& pelvis() const { return bodies_of_interest_[0]; }
@@ -239,26 +245,26 @@ class HumanoidStatus {
     else
       return bodies_of_interest_[5];
   }
-  inline const Vector2d& cop() const { return cop_; }
-  inline const Vector2d& cop_in_sensor_frame(Side::SideEnum s) const {
+  inline const Eigen::Vector2d& cop() const { return cop_; }
+  inline const Eigen::Vector2d& cop_in_sensor_frame(Side::SideEnum s) const {
     return cop_in_sensor_frame_[s];
   }
-  inline const Vector6d& foot_wrench_in_sensor_frame(Side::SideEnum s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_sensor_frame(Side::SideEnum s) const {
     return foot_wrench_in_sensor_frame_[s];
   }
-  inline const Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_world_frame(Side::SideEnum s) const {
     return foot_wrench_in_world_frame_[s];
   }
   inline const BodyOfInterest& foot_sensor(int s) const {
     return foot_sensor(Side::values.at(s));
   }
-  inline const Vector2d& cop_in_sensor_frame(int s) const {
+  inline const Eigen::Vector2d& cop_in_sensor_frame(int s) const {
     return cop_in_sensor_frame(Side::values.at(s));
   }
-  inline const Vector6d& foot_wrench_in_sensor_frame(int s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_sensor_frame(int s) const {
     return foot_wrench_in_sensor_frame(Side::values.at(s));
   }
-  inline const Vector6d& foot_wrench_in_world_frame(int s) const {
+  inline const Eigen::Vector6d& foot_wrench_in_world_frame(int s) const {
     return foot_wrench_in_world_frame(Side::values.at(s));
   }
 
@@ -271,7 +277,7 @@ class HumanoidStatus {
   /// Nominal position for the robot.
   /// TODO(siyuan.feng@tri.global): should read this from the model file
   /// eventually
-  VectorXd nominal_position_;
+  Eigen::VectorXd nominal_position_;
 
   /// Maps body name to its index
   std::unordered_map<std::string, int> body_name_to_id_;
@@ -283,36 +289,40 @@ class HumanoidStatus {
   double time_;
 
   // Pos and Vel include 6 dof for the floating base.
-  VectorXd position_;  /// Position in generalized coordinate
-  VectorXd velocity_;  /// Velocity in generalized coordinate
-  // In the same order as vel, but trq contains only actuated joints.
-  VectorXd joint_torque_;  /// Joint torque
+  Eigen::VectorXd position_;  /// Position in generalized coordinate
+  Eigen::VectorXd velocity_;  /// Velocity in generalized coordinate
+  // In the same order as vel, but torque contains only actuated joints.
+  Eigen::VectorXd joint_torque_;  /// Joint torque
 
-  MatrixXd M_;          ///< Inertial matrix
-  VectorXd bias_term_;  ///< Bias term: M * vd + h = tau + J^T * lambda
+  Eigen::MatrixXd M_;          ///< Inertial matrix
+  Eigen::VectorXd bias_term_;  ///< Bias term: M * vd + h = tau + J^T * lambda
 
   // Computed from kinematics
-  Vector3d com_;               ///< Center of mass
-  Vector3d comd_;              ///< Com velocity
-  MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
-  Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
+  Eigen::Vector3d com_;               ///< Center of mass
+  Eigen::Vector3d comd_;              ///< Com velocity
+  Eigen::MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
+  Eigen::Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
   // Centroidal momentum = [angular; linear] momentum.
   // [angular; linear] = centroidal_momentum_matrix_ * v
-  MatrixXd centroidal_momentum_matrix_;
-  Vector6d centroidal_momentum_matrix_dot_times_v_;
-  Vector6d centroidal_momentum_;
+  Eigen::MatrixXd centroidal_momentum_matrix_;
+  Eigen::Vector6d centroidal_momentum_matrix_dot_times_v_;
+  Eigen::Vector6d centroidal_momentum_;
 
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
 
-  Vector2d cop_;  ///< Center of pressure
-  Vector2d
+  Eigen::Vector2d cop_;  ///< Center of pressure
+  Eigen::Vector2d
       cop_in_sensor_frame_[2];  ///< Individual center of pressure in foot frame
 
-  Vector6d foot_wrench_in_sensor_frame_[2];  ///< Wrench rotated to align with
+  Eigen::Vector6d foot_wrench_in_sensor_frame_[2];  ///< Wrench rotated to align with
   /// the foot frame, located at the
   /// sensor position.
-  Vector6d foot_wrench_in_world_frame_[2];  ///< Wrench rotated to align with
+  Eigen::Vector6d foot_wrench_in_world_frame_[2];  ///< Wrench rotated to align with
   /// the world frame, located at the
   /// ankle joint.
 };
+
+} // end namespace qp_inverse_dynamics
+} // end namespace example
+} // end namespace drake

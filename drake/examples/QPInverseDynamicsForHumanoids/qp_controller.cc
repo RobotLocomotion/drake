@@ -4,7 +4,9 @@
 #include "qp_controller.h"
 #include "drake/math/cross_product.h"
 
-using namespace drake::solvers;
+namespace drake {
+namespace example {
+namespace qp_inverse_dynamics {
 
 void QPController::ResizeQP(
     const RigidBodyTree& robot,
@@ -25,7 +27,7 @@ void QPController::ResizeQP(
   if (num_contact_body == num_contact_body_ && num_vd == num_vd_ &&
       num_basis == num_basis_ && num_point_force == num_point_force_ &&
       num_torque == num_torque_ && num_variable == num_variable_ &&
-      (int)all_body_accelerations.size() == num_body_acceleration_)
+      static_cast<int>(all_body_accelerations.size()) == num_body_acceleration_)
     return;
 
   num_contact_body_ = num_contact_body;
@@ -34,13 +36,13 @@ void QPController::ResizeQP(
   num_point_force_ = num_point_force;
   num_torque_ = num_torque;
   num_variable_ = num_variable;
-  num_body_acceleration_ = (int)all_body_accelerations.size();
+  num_body_acceleration_ = static_cast<int>(all_body_accelerations.size());
 
   // The order of insertion is important, the rest of the program assumes this
   // layout.
-  prog_ = MathematicalProgram();
-  DecisionVariableView vd = prog_.AddContinuousVariables(num_vd_, "vd");
-  DecisionVariableView basis =
+  prog_ = solvers::MathematicalProgram();
+  solvers::DecisionVariableView vd = prog_.AddContinuousVariables(num_vd_, "vd");
+  solvers::DecisionVariableView basis =
       prog_.AddContinuousVariables(num_basis_, "basis");
 
   // Allocate space for contact force jacobian and basis matrix.
@@ -53,7 +55,7 @@ void QPController::ResizeQP(
   // Allocate equality constraints
   // Dyanmics
   eq_dynamics_ = prog_.AddLinearEqualityConstraint(
-      MatrixXd::Zero(6, num_variable_), Matrix<double, 6, 1>::Zero(),
+      Eigen::MatrixXd::Zero(6, num_variable_), Matrix<double, 6, 1>::Zero(),
       {vd, basis});
   eq_dynamics_->set_description("dynamics eq");
 
@@ -61,8 +63,8 @@ void QPController::ResizeQP(
   // Contact constraints, 3 rows per contact point
   for (int i = 0; i < num_contact_body_; i++) {
     eq_contacts_[i] = prog_.AddLinearEqualityConstraint(
-        MatrixXd::Zero(3 * all_supports[i].contact_points().size(), num_vd_),
-        VectorXd::Zero(3 * all_supports[i].contact_points().size()), {vd});
+        Eigen::MatrixXd::Zero(3 * all_supports[i].contact_points().size(), num_vd_),
+        Eigen::VectorXd::Zero(3 * all_supports[i].contact_points().size()), {vd});
     eq_contacts_[i]->set_description(all_supports[i].name() + " contact eq");
   }
 
@@ -70,18 +72,18 @@ void QPController::ResizeQP(
   // Contact force scalar (Beta).
   // This is constant and does not depend on the robot configuration.
   ineq_contact_wrench_ = prog_.AddLinearConstraint(
-      MatrixXd::Identity(num_basis_, num_basis_), VectorXd::Zero(num_basis_),
-      VectorXd::Constant(num_basis_, 1000), {basis});
+      Eigen::MatrixXd::Identity(num_basis_, num_basis_), Eigen::VectorXd::Zero(num_basis_),
+      Eigen::VectorXd::Constant(num_basis_, 1000), {basis});
   ineq_contact_wrench_->set_description("contact force basis ineq");
   // Torque limit
   ineq_torque_limit_ = prog_.AddLinearConstraint(
-      MatrixXd::Zero(num_torque_, num_variable_), VectorXd::Zero(num_torque_),
-      VectorXd::Zero(num_torque_), {vd, basis});
+      Eigen::MatrixXd::Zero(num_torque_, num_variable_), Eigen::VectorXd::Zero(num_torque_),
+      Eigen::VectorXd::Zero(num_torque_), {vd, basis});
   ineq_torque_limit_->set_description("torque limit ineq");
 
   // Allocate cost terms
-  MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
-  VectorXd tmp_vector_vd(num_vd_);
+  Eigen::MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
+  Eigen::VectorXd tmp_vector_vd(num_vd_);
   // CoMdd
   cost_comdd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
   cost_comdd_->set_description("com cost");
@@ -99,8 +101,8 @@ void QPController::ResizeQP(
   cost_vd_reg_->set_description("vd reg cost");
   // Regularize vd
   cost_basis_reg_ =
-      prog_.AddQuadraticCost(MatrixXd::Identity(num_basis_, num_basis_),
-                             VectorXd::Zero(num_basis_), {basis});
+      prog_.AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+                             Eigen::VectorXd::Zero(num_basis_), {basis});
   cost_basis_reg_->set_description("basis reg cost");
 }
 
@@ -144,7 +146,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // For the QP problem:
   // the unknown is _X = [vd, Beta]
   // equality constraints:
-  //  M_u * vd + h_u = (J^T * basis)_u * Beta *  (equations of motion)
+  //  M_u * vd + h_u = (J^T * basis)_u * Beta (equations of motion)
   //  J * vd + Jd * v = 0, (contact constraints)
   // inEquality: joint torque limit, limits on Beta, etc.
   // cost func:
@@ -156,8 +158,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Alternatively, they can be setup as high weight cost terms. This is
   // sometimes preferred as it introduce slacks for better stability.
 
-  const DecisionVariableView vd = prog_.GetVariable("vd");
-  const DecisionVariableView basis = prog_.GetVariable("basis");
+  const solvers::DecisionVariableView vd = prog_.GetVariable("vd");
+  const solvers::DecisionVariableView basis = prog_.GetVariable("basis");
 
   int basis_start = basis.index();
   int vd_start = vd.index();
@@ -258,12 +260,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
   // Regularize vd to desired_vd
   cost_vd_reg_->UpdateConstraint(
-      input.w_vd() * MatrixXd::Identity(num_vd_, num_vd_),
+      input.w_vd() * Eigen::MatrixXd::Identity(num_vd_, num_vd_),
       input.w_vd() * (-input.desired_vd()));
   // Regularize basis to zero
   cost_basis_reg_->UpdateConstraint(
-      input.w_basis_reg() * MatrixXd::Identity(num_basis_, num_basis_),
-      VectorXd::Zero(num_basis_));
+      input.w_basis_reg() * Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+      Eigen::VectorXd::Zero(num_basis_));
 
   ////////////////////////////////////////////////////////////////////
   // Call solver
@@ -271,12 +273,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     std::cerr << "Solver not available.\n";
     return -1;
   }
-  SolutionResult result = solver_.Solve(prog_);
-  if (result != drake::solvers::SolutionResult::kSolutionFound) {
+  solvers::SolutionResult result = solver_.Solve(prog_);
+  if (result != solvers::SolutionResult::kSolutionFound) {
     std::cerr << "solution not found\n";
     return -1;
   }
-  VectorXd solution = prog_.GetSolution();
+  Eigen::VectorXd solution = prog_.GetSolutionVectorValues();
 
   ////////////////////////////////////////////////////////////////////
   // Example of inspecting each cost / eq, ineq term
@@ -287,8 +289,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   output->mutable_costs().resize(costs.size());
   int ctr = 0;
   for (auto cost_b : costs) {
-    VectorXd val;
-    std::shared_ptr<Constraint> cost = cost_b.constraint();
+    Eigen::VectorXd val;
+    std::shared_ptr<solvers::Constraint> cost = cost_b.constraint();
     cost->Eval(cost_b.VariableListToVectorXd(), val);
     output->mutable_cost(ctr).first = cost->get_description();
     output->mutable_cost(ctr).second = val(0);
@@ -296,14 +298,14 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   for (auto eq_b : eqs) {
-    std::shared_ptr<LinearEqualityConstraint> eq = eq_b.constraint();
-    VectorXd X = eq_b.VariableListToVectorXd();
+    std::shared_ptr<solvers::LinearEqualityConstraint> eq = eq_b.constraint();
+    Eigen::VectorXd X = eq_b.VariableListToVectorXd();
     DRAKE_ASSERT((eq->A() * X - eq->lower_bound()).isZero(EPSILON));
   }
 
   for (auto ineq_b : ineqs) {
-    std::shared_ptr<LinearConstraint> ineq = ineq_b.constraint();
-    VectorXd X = ineq_b.VariableListToVectorXd();
+    std::shared_ptr<solvers::LinearConstraint> ineq = ineq_b.constraint();
+    Eigen::VectorXd X = ineq_b.VariableListToVectorXd();
     X = ineq->A() * X;
     for (int i = 0; i < X.size(); i++) {
       DRAKE_ASSERT(X[i] >= ineq->lower_bound()[i] - EPSILON &&
@@ -377,11 +379,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   ////////////////////////////////////////////////////////////////////
   // Sanity check, net external wrench should = centroidal_matrix * vd +
   // centroidal_matrix_dot * v
-  Vector6d Ld = rs.centroidal_momentum_matrix() * output->vd() +
+  Eigen::Vector6d Ld = rs.centroidal_momentum_matrix() * output->vd() +
                 rs.centroidal_momentum_matrix_dot_times_v();
-  Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
+  Eigen::Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
   for (int i = 0; i < num_contact_body_; i++) {
-    const Vector6d& contact_wrench =
+    const Eigen::Vector6d& contact_wrench =
         output->resolved_contact(i).equivalent_wrench();
     const Vector3d& ref_point = output->resolved_contact(i).reference_point();
     net_wrench += contact_wrench;
@@ -471,3 +473,7 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
 
   return out;
 }
+
+} // end namespace qp_inverse_dynamics
+} // end namespace example
+} // end namespace drake
