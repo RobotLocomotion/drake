@@ -220,8 +220,15 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   complexd lambda2 = -zeta * w0 - w0 * sqrt(complexd(zeta * zeta - 1));
 
   // Roots should be the complex conjugate of each other.
-  EXPECT_NEAR(lambda1.real(),  lambda2.real(), NumTraits<double>::epsilon());
-  EXPECT_NEAR(lambda1.imag(), -lambda2.imag(), NumTraits<double>::epsilon());
+#ifdef __APPLE__
+  // The factor of 20 is needed for OS X builds where the comparison needs a
+  // looser tolerance, see #3636.
+  auto abs_error = 20.0 * NumTraits<double>::epsilon();
+#else
+  auto abs_error = NumTraits<double>::epsilon();
+#endif
+  EXPECT_NEAR(lambda1.real(),  lambda2.real(), abs_error);
+  EXPECT_NEAR(lambda1.imag(), -lambda2.imag(), abs_error);
 
   // The damped frequency corresponds to the absolute value of the imaginary
   // part of any of the roots.
