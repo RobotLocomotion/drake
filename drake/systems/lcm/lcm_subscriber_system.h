@@ -5,11 +5,11 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+// #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
 namespace drake {

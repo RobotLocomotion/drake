@@ -7,9 +7,9 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/lcm/lcm_receive_thread.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcmt_drake_signal.hpp"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace systems {
@@ -18,6 +18,8 @@ namespace {
 
 const int kDim = 10;
 const int64_t kTimestamp = 123456;
+
+using drake::lcm::LcmReceiveThread;
 
 /**
  * Periodically publishes an LCM message of type `drake::lcmt_drake_signal`.

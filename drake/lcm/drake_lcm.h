@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/drakeLcm_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
 
 namespace drake {
 namespace lcm {
@@ -38,26 +38,38 @@ namespace lcm {
 /**
  * A wrapper around a *real* LCM instance.
  */
-class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
+template <class MessageHandlerClass>
+class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface<MessageHandlerClass> {
  public:
+
+  /**
+   * An accessor to the LCM instance encapsulated by this object. The returned
+   * pointer is guaranteed to be valid for the duration of this object's
+   * lifetime.
+   */
+  ::lcm::LCM* get_lcm_instance() {
+    return &lcm_;
+  }
 
   /**
    * A constructor that initializes the real LCM instance.
    */
-  explicit DrakeLcm();
+  // explicit DrakeLcm() {}
 
   /**
    * Publishes an LCM message.
    *
    * @param[in] channel The LCM channel name.
    *
-   * @param[in] data A pointer to an array of bytes that contains the serialized
-   * LCM message to publish.
+   * @param[in] data A pointer to an array of bytes that isthe serialized LCM
+   * message to publish.
    *
    * @param[in] data_length The number of bytes in @p data.
    */
   void Publish(const std::string& channel, const void *data,
-               unsigned int data_length);
+               unsigned int data_length) {
+    lcm_.publish(channel, data, data_length);
+  }
 
   /**
    * Subscribes a callback method of an object to an LCM channel, without
@@ -77,11 +89,16 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
    * @param handler A class instance that the callback method will be
    * invoked on.
    */
-  // template <class MessageType, class MessageHandlerClass>
-  // void Subscribe(const std::string& channel,
-  //     void (MessageHandlerClass::*handlerMethod)(
-  //         const uint8_t* message_buffer, uint32_t message_length),
-  //     MessageHandlerClass* handler);
+  void Subscribe(const std::string& channel,
+      void (MessageHandlerClass::*handlerMethod)(
+          const uint8_t* message_buffer, uint32_t message_length),
+      MessageHandlerClass* handler) {
+
+  }
+
+ private:
+  // The real LCM intance that's encapsulated by this class.
+  ::lcm::LCM lcm_;
 };
 
 }  // namespace lcm

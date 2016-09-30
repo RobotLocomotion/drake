@@ -1,6 +1,11 @@
 # Creates lists of header and source files that should ways be included.
-set(source_files drake_lcm_mock.cc)
-set(header_files drake_lcm_interface.h drake_lcm_mock.h)
+set(source_files
+    drake_lcm_mock.cc
+    lcm_receive_thread.cc)
+set(header_files
+    drake_lcm_interface.h
+    drake_lcm_mock.h
+    lcm_receive_thread.h)
 
 # Creates lists of header files, source files, and libraries that should only be
 # included if LCM is present.
@@ -12,8 +17,8 @@ endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
-  set(lcm_dependent_source_files
-      drake_lcm.cc)
+  set(lcm_dependent_source_files)
+      # drake_lcm.cc)
 endif()
 
 set(lcm_dependent_link_libraries)

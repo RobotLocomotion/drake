@@ -11,6 +11,7 @@ namespace lcm {
  * A top-level abstract class that for enabling users to seamlessly switch
  * between _real_ and _mock_ LCM instances.
  */
+template <class MessageHandlerClass>
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
   /**
@@ -41,10 +42,9 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    * @param handler A class instance that the callback method will be
    * invoked on.
    */
-  // template <class MessageHandlerClass>
-  // void Subscribe(const std::string& channel,
-  //     void (MessageHandlerClass::*handlerMethod)(const uint8_t* message_buffer, uint32_t message_size),
-  //     MessageHandlerClass* handler) = 0;
+  void Subscribe(const std::string& channel,
+      void (MessageHandlerClass::*handlerMethod)(const uint8_t* message_buffer, uint32_t message_size),
+      MessageHandlerClass* handler) = 0;
 };
 
 }  // namespace lcm

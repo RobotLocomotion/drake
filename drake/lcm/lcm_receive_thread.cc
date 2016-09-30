@@ -1,4 +1,4 @@
-#include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/lcm/lcm_receive_thread.h"
 
 #include <iostream>
 
@@ -12,7 +12,6 @@
 #include "drake/common/text_logging.h"
 
 namespace drake {
-namespace systems {
 namespace lcm {
 
 LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
@@ -76,5 +75,4 @@ void LcmReceiveThread::Stop() {
 }
 
 }  // namespace lcm
-}  // namespace systems
 }  // namespace drake

@@ -5,9 +5,9 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
@@ -19,6 +19,8 @@ namespace {
 
 const int kDim = 10;
 const int kPortNumber = 0;
+
+using drake::lcm::LcmReceiveThread;
 
 /**
  * Subscribes to LCM messages of type `drake::lcmt_drake_signal`. Provides an
