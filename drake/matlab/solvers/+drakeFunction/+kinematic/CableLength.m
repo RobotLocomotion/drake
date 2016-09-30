@@ -22,7 +22,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     
     function [length,dlength,ddlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
-      
+      smallEps = 1e-12;
       dims = obj.getNumInputs;
 
       length = 0;
@@ -38,6 +38,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
         else
           pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         end          
+        %TODO: Do a reshape of forwardKin outputs here
         
         length = length + 2*pi*obj.pulley(i).radius*obj.pulley(i).number_of_wraps;
 
@@ -49,10 +50,17 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
           %Csq = vec'*vec; %squared distance between the two pulleys
           
           if nargout>1
+            if(C<smallEps)
+              error(['C too small: ',num2str(C)]);
+            end
+              
             dvec = dpt-last_dpt;
             dC = vec'*dvec/C;
             
             if nargout>2
+              if(C^2<smallEps)
+                error(['Csq too small: ',num2str(C^2)]);
+              end
               ddvec = ddpt - last_ddpt;
               ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/C - (vec'*dvec)'/C^2*dC; 
             end
@@ -65,11 +73,14 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             continue;  % TODO: just skip this one... because the optimizers might actually get here
           end
           if r1>0 || r2>0 % at least one pulley is a physical object
-            alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
+            alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis); %from terminate pulley to first pulley, there will most likely be no alignment, check if that is important
             if r1>0 && r2>0 % both pulleys are physical objects, so make sure the axes are aligned
               assert(abs(alignment)-1>-1e-8,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
             end
             
+            if(C<smallEps)
+              error(['C too small: ',num2str(C)]);
+            end
             % as described in https://github.com/RobotLocomotion/drake/issues/546
             cvec = vec/C; % unit vector of line from prev pulley to curr pulley
             
@@ -129,6 +140,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             
             else % the pulleys rotate in opposite directions, then it's like a cross flat belt drive
               % https://cloud.githubusercontent.com/assets/6442292/4991474/3dcc88f2-6962-11e4-952d-8385566e4f6c.png
+              if(C<smallEps)
+                error(['C too small: ',num2str(C)]);
+              end
               s = (r1+r2)/C;
               alpha = asin(s); % contact angle of belt
               % contact pts of belt to pulley 1 and 2
@@ -136,6 +150,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
 
               if nargout>1
+                if(C^2<smallEps)
+                  error(['Csq too small: ',num2str(C^2)]);
+                end
                 ds = -(r1+r2)/C^2*dC;
                 dalpha = 1/sqrt(1-s^2)*ds;
                 dcvec = dvec/C - vec/C^2*dC;
@@ -152,6 +169,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               end
               
               if nargout>2
+                  if(C^3<smallEps)
+                    error(['Ccubic too small: ',num2str(C^3)]);
+                  end
                   dds = 2/C^3*(r1+r2)*(dC'*dC) - (r1+r2)/C^2*ddC;   % should be correct
                   ddalpha = s/(1-s^2)^(3/2)*(ds'*ds) + dds/sqrt(1-s^2); % should be correct
                   %                   ddcvec = ddvec/C - 1/C^2*reshape(kron(dC,dvec),3*dims,[]) + reshape(matGradMultMat(vec,dC,dvec,ddC)/C^2, 3, []);
@@ -184,17 +204,25 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               end
             end
                         
+            % TODO rename these variables since those are considering other
+            % vectors
             vec = pt2-pt1; % belt between pulleys (aka length not in contact with pulley)
-            C = sqrt(vec'*vec);
+            C = sqrt(vec'*vec); % length of belt between pulleys
             length = length+C;
             
             if nargout>1
+                if(C<smallEps)
+                  error(['C too small: ',num2str(C)]);
+                end
                 dvec = dpt2 - dpt1;
-                dC = vec'*dvec/(C+eps);
+                dC = vec'*dvec/(C);
                 dlength = dlength+dC;
                 if nargout>2
+                    if(C^2<smallEps)
+                      error(['Csq too small: ',num2str(C^2)]);
+                    end
                     ddvec = ddpt2 - ddpt1;
-                    ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/(C+eps) - (vec'*dvec)'/(C+eps)^2*dC;    % should be correct
+                    ddC = matGradMultMat(vec',dvec,dvec,reshape(ddvec,3*dims,[]))/(C) - (vec'*dvec)'/(C^2)*dC;    % should be correct
                     ddlength = ddlength + reshape(ddC, 1, []);
                 end
             end
@@ -204,12 +232,23 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               v1 = (pt1-last_pt)/r1; v2 = (last_attachment_pt-last_pt)/r1;
               c = dot(v1,v2); svec = cross(v1,v2); s = sqrt(svec'*svec);
               theta = atan2(s,c); % contact arc angle
-              if theta<0, theta=theta+2*pi; end
+              if theta<0 
+                theta=theta+2*pi; 
+              end
               length = length+theta*r1;
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2,dv1,dv2); ds = svec'*dsvec/max(s,eps);
+                %%TODO:deal with small svec and s 
+                dc = v2'*dv1+v1'*dv2; 
+                dsvec=dcross(v1,v2,dv1,dv2); 
+%                 ds = svec'*dsvec/max(s,eps);
+                if ~norm(svec) < eps
+                  ds = (svec/norm(svec))'*dsvec;  % ?!? Check if divide by zero does not happen.
+                else
+                  error('Things''ve gone bad.')
+                end
+                  
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
                 if nargout>2
