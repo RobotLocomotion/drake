@@ -12,9 +12,9 @@ namespace systems {
 /// A gravity compensator system that computes a vector of generalized gravity
 /// forces that exactly counteracts the effects of gravity for a given
 /// `RigidBodyTree` configuration. The input to this block is a vector valued
-/// port corresponding to generalized positions from a `RigidBodyPlant` `q`.
+/// port containing to generalized positions from a `RigidBodyPlant` `q`.
 /// The output is a vector valued port containing the value `y = G(q)`, where,
-/// for a given `RigidBodyTree`, `G(q)` is a vector of generalised gravity
+/// for a given `RigidBodyTree`, `G(q)` is a vector of generalized gravity
 /// forces corresponding to `q`. The size of the input corresponds to the
 /// number of generalized positions in the `RigidBodyTree` and the size of the
 /// output corresponds to the number of actuators. Note that the current

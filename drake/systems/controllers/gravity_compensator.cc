@@ -28,7 +28,8 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext, false);
+  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext,
+  false /* include velocity terms */);
   System<T>::GetMutableOutputVector(output, 0) = g;
 }
 
