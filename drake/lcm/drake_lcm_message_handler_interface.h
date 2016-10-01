@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "drake/drakeLcm_export.h"
 
 namespace drake {

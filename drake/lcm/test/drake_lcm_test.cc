@@ -88,6 +88,7 @@ class MessageSubscriber {
   drake::lcmt_drake_signal received_message_;
 };
 
+// This is a test fixture.
 class DrakeLcmTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -104,7 +105,7 @@ class DrakeLcmTest : public ::testing::Test {
 
 // Tests DrakeLcm's ability to publish an LCM message.
 TEST_F(DrakeLcmTest, PublishTest) {
-  std::string channel_name = "drake_lcm_test_publisher_channel_name";
+  const std::string channel_name = "drake_lcm_test_publisher_channel_name";
 
   // Instantiates the Device Under Test (DUT).
   DrakeLcm dut;
@@ -150,11 +151,11 @@ TEST_F(DrakeLcmTest, PublishTest) {
 }
 
 // Handles received LCM messages.
-class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
+class MessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
   // A constructor that initializes the memory for storing received LCM
   // messages.
-  TestMessageHandler() {
+  MessageHandler() {
     // Initializes the fields of received_message_ so the test logic can
     // determine whether the desired message was received.
     received_message_.dim = 0;
@@ -185,12 +186,12 @@ class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
 
 // Tests DrakeLcm's ability to publish an LCM message.
 TEST_F(DrakeLcmTest, SubscribeTest) {
-  std::string channel_name = "drake_lcm_test_publisher_channel_name";
+  const std::string channel_name = "drake_lcm_subscriber_channel_name";
 
   // Instantiates the Device Under Test (DUT).
   DrakeLcm dut;
 
-  TestMessageHandler handler;
+  MessageHandler handler;
   dut.Subscribe(channel_name, &DrakeLcmMessageHandlerInterface::HandleMessage,
       &handler);
 

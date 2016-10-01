@@ -1,10 +1,10 @@
 # Creates lists of header and source files that should ways be included.
 set(source_files
-    drake_lcm_mock.cc
+    drake_mock_lcm.cc
     lcm_receive_thread.cc)
 set(header_files
     drake_lcm_interface.h
-    drake_lcm_mock.h
+    drake_mock_lcm.h
     lcm_receive_thread.h)
 
 # Creates lists of header files, source files, and libraries that should only be

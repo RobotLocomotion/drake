@@ -1,4 +1,4 @@
-#include "drake/lcm/drake_lcm_mock.h"
+#include "drake/lcm/drake_mock_lcm.h"
 
 #include <cstring>
 
@@ -7,23 +7,23 @@
 namespace drake {
 namespace lcm {
 
-DrakeLcmMockSubscriber::DrakeLcmMockSubscriber(DrakeLcmMessageHandlerInterface*
+DrakeMockLcmSubscriber::DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface*
   drake_handler) : drake_handler_(drake_handler) { }
 
 
-DrakeLcmMessageHandlerInterface* DrakeLcmMockSubscriber::get_subscriber() {
+DrakeLcmMessageHandlerInterface* DrakeMockLcmSubscriber::get_subscriber() {
   return drake_handler_;
 }
 
-DrakeLcmMock::DrakeLcmMock() {
+DrakeMockLcm::DrakeMockLcm() {
 }
 
-void DrakeLcmMock::StartReceiveThread() {
+void DrakeMockLcm::StartReceiveThread() {
   // Do nothing. A thread is created each time InduceSubscriberCallback() is
   // called.
 }
 
-void DrakeLcmMock::Publish(const std::string& channel, const void *data,
+void DrakeMockLcm::Publish(const std::string& channel, const void *data,
                        unsigned int data_size) {
   last_published_message_.set = true;
   last_published_message_.channel = channel;
@@ -32,7 +32,7 @@ void DrakeLcmMock::Publish(const std::string& channel, const void *data,
   last_published_message_.data_size = data_size;
 }
 
-bool DrakeLcmMock::get_last_published_message(std::string* channel, void** data,
+bool DrakeMockLcm::get_last_published_message(std::string* channel, void** data,
                                               unsigned int* data_size) {
   bool result = last_published_message_.set;
   if (result) {
@@ -43,22 +43,27 @@ bool DrakeLcmMock::get_last_published_message(std::string* channel, void** data,
   return result;
 }
 
-void DrakeLcmMock::Subscribe(const std::string& channel,
+void DrakeMockLcm::Subscribe(const std::string& channel,
     void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
         const void* message_buffer, uint32_t message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end() ) {
-    auto subscriber = make_unique<DrakeLcmMockSubscriber>(handler);
+    auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);
     subscriptions_[channel] = std::move(subscriber);
   } else {
-    throw std::runtime_error("DrakeLcmMock::Subscribe: Subscription to "
+    throw std::runtime_error("DrakeMockLcm::Subscribe: Subscription to "
         "channel \"" + channel + "\" already exists.");
   }
 }
 
-void DrakeLcmMock::InduceSubsciberCallback(const std::string& channel,
+void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
     const void *data, unsigned int data_size) {
-  // TODO
+  if (subscriptions_.find(channel) == subscriptions_.end() ) {
+    throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
+        "subscription to channel \"" + channel + "\".");
+  } else {
+    subscriptions_[channel]->get_subscriber()->HandleMessage(data, data_size);
+  }
 }
 
 }  // namespace lcm

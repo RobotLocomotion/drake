@@ -18,13 +18,13 @@ using std::unique_ptr;
 // This is a mock subscriber to an LCM channel. It simply passes the
 // serialized LCM message to the `DrakeLcmMessageHandlerInterface`
 // object.
-class DRAKELCM_EXPORT DrakeLcmMockSubscriber {
+class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
  public:
-  explicit DrakeLcmMockSubscriber(DrakeLcmMessageHandlerInterface* drake_handler);
+  explicit DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface* drake_handler);
 
   // Disable copy and assign.
-  DrakeLcmMockSubscriber(const DrakeLcmMockSubscriber&) = delete;
-  DrakeLcmMockSubscriber& operator=(const DrakeLcmMockSubscriber&) = delete;
+  DrakeMockLcmSubscriber(const DrakeMockLcmSubscriber&) = delete;
+  DrakeMockLcmSubscriber& operator=(const DrakeMockLcmSubscriber&) = delete;
 
   DrakeLcmMessageHandlerInterface* get_subscriber();
 
@@ -39,13 +39,13 @@ class DRAKELCM_EXPORT DrakeLcmMockSubscriber {
  * messages. It contains additional methods for accessing the most recent
  * message that would have been published, and faking a callback.
  */
-class DRAKELCM_EXPORT DrakeLcmMock : public DrakeLcmInterface {
+class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
  public:
-  explicit DrakeLcmMock();
+  explicit DrakeMockLcm();
 
   // Disable copy and assign.
-  DrakeLcmMock(const DrakeLcmMock&) = delete;
-  DrakeLcmMock& operator=(const DrakeLcmMock&) = delete;
+  DrakeMockLcm(const DrakeMockLcm&) = delete;
+  DrakeMockLcm& operator=(const DrakeMockLcm&) = delete;
 
   /**
    * Starts the receive thread. This should be called *after* all of the
@@ -85,7 +85,8 @@ class DRAKELCM_EXPORT DrakeLcmMock : public DrakeLcmInterface {
       DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
-   * Fakes a callback to be called by a separate thread.
+   * Fakes a callback. The callback is executed by the same thread as the one
+   * calling this method.
    *
    * @param[in] channel The channel on which to publish the message.
    *
@@ -108,7 +109,7 @@ class DRAKELCM_EXPORT DrakeLcmMock : public DrakeLcmInterface {
   LastPublishedMessage last_published_message_;
 
   // Maps the channel name to the subscriber.
-  std::map<std::string, std::unique_ptr<DrakeLcmMockSubscriber>> subscriptions_;
+  std::map<std::string, std::unique_ptr<DrakeMockLcmSubscriber>> subscriptions_;
 };
 
 }  // namespace lcm
