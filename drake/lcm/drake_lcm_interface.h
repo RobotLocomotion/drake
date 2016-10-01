@@ -15,6 +15,13 @@ namespace lcm {
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
   /**
+   * Starts the receive thread. This should be called *after* all of the
+   * subscribers are instantiated. Otherwise, the subscribers may be destroyed
+   * while the receive thread is still running resulting a segmentation fault.
+   */
+  virtual void StartReceiveThread() = 0;
+
+  /**
    * Publishes a raw data LCM message.
    *
    * @param[in] channel The channel on which to publish the message.

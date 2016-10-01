@@ -15,7 +15,7 @@ using std::unique_ptr;
 
 /// @cond
 
-// This is the actual subscriber to the LCM channel. It simply extracts the
+// This is the actual subscriber to an LCM channel. It simply extracts the
 // serialized LCM message and passes it to the `DrakeLcmMessageHandlerInterface`
 // object. A single type of subscriber is used to avoid DrakeLcm from being
 // templated on the subscriber type.
@@ -47,12 +47,7 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
   DrakeLcm(const DrakeLcm&) = delete;
   DrakeLcm& operator=(const DrakeLcm&) = delete;
 
-  /**
-   * Starts the receive thread. This should be called *after* all of the
-   * subscribers are instantiated. Otherwise, the subscribers may be destroyed
-   * while the receive thread is still running resulting a segmentation fault.
-   */
-  void StartReceiveThread();
+  void StartReceiveThread() override;
 
   /**
    * An accessor to the real LCM instance encapsulated by this object. The
