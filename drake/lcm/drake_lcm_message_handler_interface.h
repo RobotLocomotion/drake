@@ -20,7 +20,7 @@ class DRAKELCM_EXPORT DrakeLcmMessageHandlerInterface {
    *
    * @param[in] message_size The size of @p message_buffer.
    */
-  virtual void HandleMessage(const uint8_t* message_buffer,
+  virtual void HandleMessage(const void* message_buffer,
       uint32_t message_size) = 0;
 };
 

@@ -18,6 +18,8 @@ namespace {
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
 
+// A utility method for determining if two `drake::lcmt_drake_signal` messages
+// are equal.
 bool CompareMessages(const drake::lcmt_drake_signal& message1,
                      const drake::lcmt_drake_signal& message2) {
   bool result = true;
@@ -42,7 +44,6 @@ bool CompareMessages(const drake::lcmt_drake_signal& message1,
 // accessor to the latest message received.
 class MessageSubscriber {
  public:
-
   // A constructor that sets up the LCM message subscription and initializes the
   // member variable that will be used to store received LCM messages.
   MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
@@ -63,10 +64,8 @@ class MessageSubscriber {
   // Returns a copy of the most recently received message.
   drake::lcmt_drake_signal GetReceivedMessage() {
     drake::lcmt_drake_signal message_copy;
-
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
-
     return message_copy;
   }
 
@@ -116,12 +115,12 @@ TEST_F(DrakeLcmTest, PublishTest) {
   EXPECT_EQ(message_.encode(buffer, 0, message_.getEncodedSize()),
             message_.getEncodedSize());
 
-  // Start the LCM recieve thread after all objects it can potentially use
-  // are instantiated. Since objects are destructed in the reverse order of
-  // construction, this ensures the LCM receive thread stops before any
+  // Start the LCM recieve thread after all objects it can potentially use like
+  // subscribers are instantiated. Since objects are destructed in the reverse
+  // order of construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
-  LcmReceiveThread lcm_receive_thread(dut.get_lcm_instance());
+  dut.StartReceiveThread();
 
   // Records whether the receiver received an LCM message published by the DUT.
   bool done = false;
@@ -154,10 +153,10 @@ TEST_F(DrakeLcmTest, PublishTest) {
 class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
 
-  // A constructor that initializes the member variable that will be used to
-  // store received LCM messages.
+  // A constructor that initializes the memory for storing received LCM
+  // messages.
   TestMessageHandler() {
-    // Initializes the fields of received_message_ so the test logic below can
+    // Initializes the fields of received_message_ so the test logic can
     // determine whether the desired message was received.
     received_message_.dim = 0;
     received_message_.val.resize(received_message_.dim);
@@ -165,7 +164,8 @@ class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
     received_message_.timestamp = 0;
   }
 
-  void HandleMessage(const uint8_t* message_buffer,
+  // This is the callback method.
+  void HandleMessage(const void* message_buffer,
       uint32_t message_size) override {
     std::lock_guard<std::mutex> lock(message_mutex_);
     received_message_.decode(message_buffer, 0, message_size);
@@ -174,10 +174,8 @@ class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
   // Returns a copy of the most recently received message.
   drake::lcmt_drake_signal GetReceivedMessage() {
     drake::lcmt_drake_signal message_copy;
-
     std::lock_guard<std::mutex> lock(message_mutex_);
     message_copy = received_message_;
-
     return message_copy;
   }
 
@@ -194,9 +192,11 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   DrakeLcm dut;
 
   TestMessageHandler handler;
-  dut.Subscribe("channel_name", &DrakeLcmMessageHandlerInterface::HandleMessage,
+  dut.Subscribe(channel_name, &DrakeLcmMessageHandlerInterface::HandleMessage,
       &handler);
 
+  // Starts the LCM receive thread after the subscribers are created.
+  dut.StartReceiveThread();
   ::lcm::LCM* lcm = dut.get_lcm_instance();
 
   // Prevents this unit test from running indefinitely when the receiver fails
@@ -212,13 +212,10 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   // receiver will actually receive the message.
   while (!done && count++ < kMaxCount) {
     lcm->publish(channel_name, &message_);
-
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =
         handler.GetReceivedMessage();
-
     done = CompareMessages(received_message, message_);
-
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 

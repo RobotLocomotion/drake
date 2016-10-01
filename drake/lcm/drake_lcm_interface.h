@@ -17,12 +17,15 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
   /**
    * Publishes a raw data LCM message.
    *
-   * @param[in] channel the channel to publish the message on.
-   * @param[in] data data buffer containing the message to publish
-   * @param[in] datalen length of the message, in bytes.
+   * @param[in] channel The channel on which to publish the message.
+   *
+   * @param[in] data A buffer containing the serialized bytes of the message to
+   * publish.
+   *
+   * @param[in] data_size The length of @data in bytes.
    */
   virtual void Publish(const std::string& channel, const void *data,
-                       unsigned int datalen) = 0;
+                       unsigned int data_size) = 0;
 
   /**
    * Subscribes a callback method of an object to an LCM channel, without
@@ -36,14 +39,14 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    *
    * @param[in] channel The channel to subscribe to.
    *
-   * @param[in] handlerMethod A class method pointer identifying the callback
+   * @param[in] HandleMessage A class method pointer identifying the callback
    * method.
    *
-   * @param handler A class instance that the callback method will be
-   * invoked on.
+   * @param handler A class instance whose callback method will be invoked.
    */
   virtual void Subscribe(const std::string& channel,
-      void (DrakeLcmMessageHandlerInterface::*HandleMessage)(const uint8_t* message_buffer, uint32_t message_size),
+      void (DrakeLcmMessageHandlerInterface::*HandleMessage)(
+          const void* message_buffer, uint32_t message_size),
       DrakeLcmMessageHandlerInterface* handler) = 0;
 };
 
