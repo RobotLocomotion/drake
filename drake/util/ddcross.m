@@ -1,11 +1,15 @@
 function ddvcrossw = ddcross(v,w,dv,dw,ddv,ddw)
-if(size(dv,2)~=4)
-error('Need to fix the sizes!')
-end
-%TODO: Need to make this generic
-dims = 4;
-% ddvcrossw = zeros(3*dims,dims);
+dims = size(dv,2);
 
+ddvcrossw = reshape(bsxfun(@cross,v,reshape(ddw,3,[])),3*dims,[])-reshape(bsxfun(@cross,w,reshape(ddv,3,[])),3*dims,[]);
+for i = 1:dims
+    for j = 1:dims
+        ddvcrossw(3*(j-1)+1:3*j,i) = ddvcrossw(3*(j-1)+1:3*j,i) + cross(dv(:,j),dw(:,i)) + cross(dv(:,i),dw(:,j));
+    end
+end
+
+% Old implementation, keeping it here for a while
+%
 % ddvcrossw(1,1) = ddv(2,1)*w(3) + dv(2,1)*dw(3,1) + dv(2,1)*dw(3,1) + v(2)*ddw(3,1) - ddv(3,1)*w(2) - dv(3,1)*dw(2,1) - dv(3,1)*dw(2,1) - v(3)*ddw(2,1);
 % ddvcrossw(2,1) = ddv(3,1)*w(1) + dv(3,1)*dw(1,1) + dv(3,1)*dw(1,1) + v(3)*ddw(1,1) - ddv(1,1)*w(3) - dv(1,1)*dw(3,1) - dv(1,1)*dw(3,1) - v(1)*ddw(3,1);
 % ddvcrossw(3,1) = ddv(1,1)*w(2) + dv(1,1)*dw(2,1) + dv(1,1)*dw(2,1) + v(1)*ddw(2,1) - ddv(2,1)*w(1) - dv(2,1)*dw(1,1) - dv(2,1)*dw(1,1) - v(2)*ddw(1,1);
@@ -66,13 +70,5 @@ dims = 4;
 %         ddtry(3*(j-1)+1:3*j,i) = ddtry(3*(j-1)+1:3*j,i) + cross(dv(:,j),dw(:,i)) + cross(dv(:,i),dw(:,j));
 %     end
 % end
-
-ddvcrossw = reshape(bsxfun(@cross,v,reshape(ddw,3,[])),3*dims,[])-reshape(bsxfun(@cross,w,reshape(ddv,3,[])),3*dims,[]);
-for i = 1:dims
-    for j = 1:dims
-        ddvcrossw(3*(j-1)+1:3*j,i) = ddvcrossw(3*(j-1)+1:3*j,i) + cross(dv(:,j),dw(:,i)) + cross(dv(:,i),dw(:,j));
-    end
-end
-
 
 end
