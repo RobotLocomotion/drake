@@ -171,7 +171,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       %x0.
       x0.load_x = -0.02845;  % was 1
 %       x0.load_x = -0.0585;
-      x0.load_z = 4.5;
+      x0.load_z = 5;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
@@ -279,6 +279,14 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         [xFixed, fval, exitflag, output, jacobian] = fsolve(f,xGuess);
     end
     
+    
+    function [utraj,xtraj] = getRefTrajectory()
+      obj = SoftPaddleHybrid();
+      x0 = getInitialState(obj);
+      [ytraj,xtraj] = simulate(obj,[0 5],x0);
+      utraj = 0;
+    end
+    
     function gradTestCableLength()
       r = SoftPaddleHybrid();
       numtest = 10; %change this to test for various points
@@ -323,11 +331,13 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       end
     end
     
-    function runPassive()
+    function runPassive(x0)
       r = SoftPaddleHybrid();
       v = r.constructVisualizer();
       
-      x0 = getInitialState(r);
+      if nargin < 1
+        x0 = getInitialState(r);
+      end
       v.drawWrapper(0,x0);
       [ytraj,xtraj] = simulate(r,[0 15],x0);
       v.playback(ytraj,struct('slider',true));
