@@ -13,10 +13,11 @@ namespace drake {
 namespace math {
 namespace {
 
-void NormalizeVectorTestFun(const Eigen::VectorXd& x) {
-  VectorXd x_normalized(x.size());
-  MatrixXd dx_normalized(x.size(), x.size());
-  MatrixXd ddx_normalized(x.size() * x.size(), x.size());
+template<int nx>
+void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
+  Eigen::Matrix<double, nx, 1> x_normalized;
+  typename Gradient<Eigen::Matrix<double, nx, 1>, nx, 1>::type dx_normalized;
+  typename Gradient<Eigen::Matrix<double, nx, 1>, nx, 2>::type ddx_normalized;
   NormalizeVector(x, x_normalized, &dx_normalized, &ddx_normalized);
 
   // now computes the gradient from autodiff
@@ -33,8 +34,8 @@ void NormalizeVectorTestFun(const Eigen::VectorXd& x) {
 }
 
 GTEST_TEST(NormalizeVectorTest, NormalizeVector) {
-  NormalizeVectorTestFun(Eigen::Vector2d(1.0, 0.0));
-  NormalizeVectorTestFun(Eigen::Vector3d(1.0, 2.0, 3.0));
+  NormalizeVectorTestFun<2>(Eigen::Vector2d(1.0, 0.0));
+  NormalizeVectorTestFun<3>(Eigen::Vector3d(1.0, 2.0, 3.0));
 }
 }  // namespace
 }  // namespace math
