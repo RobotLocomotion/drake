@@ -162,25 +162,6 @@ class Simulator {
  */
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /** What what the actual size of the successful first step?
-   *  TODO(edrumwri): update this function when discrete updates introduced
-   **/
-  T get_actual_initial_step_size_taken() const {
-    return integrator_->get_actual_initial_step_size_taken();
-  }
-
-  /** What was the size of the smallest step taken since the last Initialize()
-  call? **/
-  T get_smallest_step_size_taken() const {
-    return integrator_->get_smallest_step_size_taken();
-  }
-
-  /** What was the size of the largest step taken since the last Initialize()
-  call? **/
-  T get_largest_step_size_taken() const {
-    return integrator_->get_largest_step_size_taken();
-  }
-
   /** How many integration steps have been taken since the last Initialize()
   call? **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
@@ -189,13 +170,6 @@ class Simulator {
   Initialize() call? **/
   int64_t get_num_updates() const { return num_updates_; }
   /**@}**/
-
-  /** Return the step size the simulator would like to take next, based
-  primarily on the integrator's accuracy prediction. For variable
-  step integrators this will change as the simulation progresses. **/
-  T get_ideal_next_step_size() const {
-    return integrator_->get_ideal_next_step_size();
-  }
 
   /**
    *   Gets a pointer to the mutable integrator.
@@ -284,9 +258,10 @@ Simulator<T>::Simulator(const System<T>& system,
   // create a context if necessary
   if (!context_) context_ = system_.CreateDefaultContext();
 
-  // create a default integrator
+  // create a default integrator and initialize it.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta2Integrator<T>(system_, DT, context_.get()));
+  integrator_->Initialize();
 }
 
 template <typename T>
