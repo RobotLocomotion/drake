@@ -111,9 +111,8 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
-  // NOLINTNEXTLINE(runtime/arrays)
-  uint8_t buffer[message_.getEncodedSize()];
-  EXPECT_EQ(message_.encode(buffer, 0, message_.getEncodedSize()),
+  std::vector<uint8_t> buffer(message_.getEncodedSize());
+  EXPECT_EQ(message_.encode(&buffer[0], 0, message_.getEncodedSize()),
             message_.getEncodedSize());
 
   // Start the LCM recieve thread after all objects it can potentially use like
@@ -136,7 +135,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
   // We must periodically call dut.Publish(...) since we do not know when the
   // receiver will actually receive the message.
   while (!done && count++ < kMaxCount) {
-    dut.Publish(channel_name, buffer, message_.getEncodedSize());
+    dut.Publish(channel_name, &buffer[0], message_.getEncodedSize());
 
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =
