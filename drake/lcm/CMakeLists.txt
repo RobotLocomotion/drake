@@ -17,8 +17,8 @@ endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
-  set(lcm_dependent_source_files)
-      # drake_lcm.cc)
+  set(lcm_dependent_source_files
+      drake_lcm.cc)
 endif()
 
 set(lcm_dependent_link_libraries)

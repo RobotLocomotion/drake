@@ -111,6 +111,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
+  // NOLINTNEXTLINE(runtime/arrays)
   uint8_t buffer[message_.getEncodedSize()];
   EXPECT_EQ(message_.encode(buffer, 0, message_.getEncodedSize()),
             message_.getEncodedSize());
@@ -152,7 +153,6 @@ TEST_F(DrakeLcmTest, PublishTest) {
 // Handles received LCM messages.
 class TestMessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
-
   // A constructor that initializes the memory for storing received LCM
   // messages.
   TestMessageHandler() {
