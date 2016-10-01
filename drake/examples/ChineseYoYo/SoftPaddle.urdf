@@ -106,7 +106,7 @@
     <child link="paddle" />
     <origin xyz="-3 0 3" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.1" />
+    <dynamics damping="0.0" />
   </joint>
 
   <joint name="tensioner_angle" type="revolute">
@@ -114,7 +114,7 @@
     <axis xyz="0 1 0"/>
     <parent link="paddle"/>
     <child link="tensioner"/>
-    <dynamics damping="0.1"/>
+    <dynamics damping="0.0"/>
   </joint>
   
   <link name="load_x" />
@@ -134,7 +134,7 @@
   </joint>
 
   <force_element name="paddle_spring">
-    <torsional_spring rest_angle="0" stiffness="5000">
+    <torsional_spring rest_angle="0" stiffness="100000">
       <joint name="paddle_angle"/>
     </torsional_spring>
   </force_element>

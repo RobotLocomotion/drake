@@ -169,9 +169,9 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
       %x0.
-      x0.load_x = 0.45;  % was 1
+      x0.load_x = -0.02845;  % was 1
 %       x0.load_x = -0.0585;
-      x0.load_z = 5;
+      x0.load_z = 4.5;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
@@ -262,6 +262,23 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
     end
     
+    function f = fun(x)
+        r = SoftPaddleHybrid();
+%         u = SoftPaddleController();
+        x_load = x;
+        z_load = 3.9;
+        paddle_angle = 0;
+        x0 = r.calcStateInContact(x_load,z_load,paddle_angle);
+        f = dynamics(r.modes{2},0,x0(2:end),0);
+        f = f(7);
+    end
+    
+    function [xFixed,fval,exitflag,output,jacobian] = findFixedPoint(xGuess)
+        r = SoftPaddleHybrid();
+        f = @(q) r.fun(q);
+        [xFixed, fval, exitflag, output, jacobian] = fsolve(f,xGuess);
+    end
+    
     function gradTestCableLength()
       r = SoftPaddleHybrid();
       numtest = 10; %change this to test for various points
@@ -302,14 +319,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
             fprintf('Good for now\n')
           end
 %         end
-        %
-        %         E = [zeros(2,2), eye(2,2)];
-        %         e = (ddl-ddlH);
-        %         if norm(e) > 1e-7
-        %             error('Not good')
-        %         end
-        %        xDes = getInitialState(r);
-        %        gradTest(@(q) (r.no_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
+        
       end
     end
     
@@ -321,6 +331,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       v.drawWrapper(0,x0);
       [ytraj,xtraj] = simulate(r,[0 15],x0);
       v.playback(ytraj,struct('slider',true));
+%       v.playbackAVI(ytraj,'soft_juggler_passive')
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
       if (1) 
