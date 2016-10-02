@@ -24,8 +24,10 @@ bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
     result = false;
   }
 
-  DRAKE_DEMAND(actual_message.dim == actual_message.val.size());
-  DRAKE_DEMAND(actual_message.dim == actual_message.coord.size());
+  DRAKE_DEMAND(actual_message.dim ==
+      static_cast<int>(actual_message.val.size()));
+  DRAKE_DEMAND(actual_message.dim ==
+      static_cast<int>(actual_message.coord.size()));
 
   for (int i = 0; i < expected_message.dim && result; ++i) {
     if (actual_message.val[i] != expected_message.val[i]) {
