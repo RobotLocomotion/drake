@@ -1,5 +1,6 @@
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -22,6 +23,9 @@ bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
         expected_message.timestamp);
     result = false;
   }
+
+  DRAKE_DEMAND(actual_message.dim == actual_message.val.size());
+  DRAKE_DEMAND(actual_message.dim == actual_message.coord.size());
 
   for (int i = 0; i < expected_message.dim && result; ++i) {
     if (actual_message.val[i] != expected_message.val[i]) {

@@ -33,7 +33,7 @@ TEST_F(LcmtDrakeSignalUtilsTest, TestMatch) {
 }
 
 // Tests CompareLcmtDrakeSignalMessages()'s ability to determine that two
-// `drake::lcmt_drake_signal` messages are unequal becuase their dimensions
+// `drake::lcmt_drake_signal` messages are unequal because their dimensions
 // don't match.
 TEST_F(LcmtDrakeSignalUtilsTest, TestDimensionsMismatch) {
   drake::lcmt_drake_signal message2;
@@ -42,6 +42,42 @@ TEST_F(LcmtDrakeSignalUtilsTest, TestDimensionsMismatch) {
   message2.dim = 1;
   message2.val.pop_back();
   message2.coord.pop_back();
+
+  EXPECT_FALSE(CompareLcmtDrakeSignalMessages(message1_, message2));
+}
+
+// Tests CompareLcmtDrakeSignalMessages()'s ability to determine that two
+// `drake::lcmt_drake_signal` messages are unequal because their timestamps
+// don't match.
+TEST_F(LcmtDrakeSignalUtilsTest, TestTimestampsMismatch) {
+  drake::lcmt_drake_signal message2;
+  message2 = message1_;
+
+  message2.timestamp = 4;
+
+  EXPECT_FALSE(CompareLcmtDrakeSignalMessages(message1_, message2));
+}
+
+// Tests CompareLcmtDrakeSignalMessages()'s ability to determine that two
+// `drake::lcmt_drake_signal` messages are unequal because their values
+// don't match.
+TEST_F(LcmtDrakeSignalUtilsTest, TestValMismatch) {
+  drake::lcmt_drake_signal message2;
+  message2 = message1_;
+
+  message2.val[0] = 1980;
+
+  EXPECT_FALSE(CompareLcmtDrakeSignalMessages(message1_, message2));
+}
+
+// Tests CompareLcmtDrakeSignalMessages()'s ability to determine that two
+// `drake::lcmt_drake_signal` messages are unequal because their coordinates
+// don't match.
+TEST_F(LcmtDrakeSignalUtilsTest, TestCoordMismatch) {
+  drake::lcmt_drake_signal message2;
+  message2 = message1_;
+
+  message2.coord[0] = "foo";
 
   EXPECT_FALSE(CompareLcmtDrakeSignalMessages(message1_, message2));
 }
