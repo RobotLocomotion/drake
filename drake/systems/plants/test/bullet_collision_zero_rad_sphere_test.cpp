@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
       drake::GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
           kFixed, &tree);
 
-  VectorXd q = VectorXd::Random(tree.number_of_positions());
-  VectorXd v = VectorXd::Random(tree.number_of_velocities());
+  VectorXd q = VectorXd::Random(tree.get_num_positions());
+  VectorXd v = VectorXd::Random(tree.get_num_velocities());
   auto kinsol = tree.doKinematics(q, v);
 
   VectorXd phi;

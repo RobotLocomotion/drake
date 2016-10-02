@@ -12,23 +12,23 @@ namespace systems {
 namespace lcm {
 
 /**
- * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
+ * Specializes LcmAndVectorBaseTranslator to handle LCM messages of type
  * `drake::lcmt_drake_signal`.
  *
- * Assumes that the number of values and the order of the values in the LCM
- * message and the `drake::systems::VectorBase` are identical.
+ * Assumes the number and order of values in the LCM message and the
+ * drake::systems::VectorBase are identical.
  */
-class DRAKELCMSYSTEM2_EXPORT TranslatorBetweenLcmtDrakeSignal
+class DRAKELCMSYSTEM2_EXPORT LcmtDrakeSignalTranslator
     : public LcmAndVectorBaseTranslator {
  public:
   /**
-   * The constructor.
+   * A constructor that sets the expected sizes of the LCM message and the
+   * VectorBase. Both the LCM message and VectorBase must be the same size.
    *
-   * @param[in] size The number of elements in the
-   * `drake::systems::VectorBase`. It is assumed that the
-   * `drake::lcmt_drake_signal` LCM message has the same number of elements.
+   * @param[in] size The number of elements in both `VectorBase` and
+   * `drake::lcmt_drake_signal`.
    */
-  explicit TranslatorBetweenLcmtDrakeSignal(int size)
+  explicit LcmtDrakeSignalTranslator(int size)
       : LcmAndVectorBaseTranslator(size) {}
 
   void Deserialize(

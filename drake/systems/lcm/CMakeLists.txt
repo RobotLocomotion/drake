@@ -5,10 +5,11 @@ if(lcm_FOUND)
     lcm_receive_thread.cc
     lcm_subscriber_system.cc
     lcm_translator_dictionary.cc
-    translator_between_lcmt_drake_signal.cc)
+    lcmt_drake_signal_translator.cc)
   add_dependencies(drakeLCMSystem2 drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMSystem2
     drakeSystemFramework
+    drakeLCMTypes
     lcm
     ${CMAKE_THREAD_LIBS_INIT})
   if(WIN32)
@@ -22,7 +23,7 @@ if(lcm_FOUND)
     lcm_subscriber_system.h
     lcm_translator_dictionary.h
     lcm_and_vector_base_translator.h
-    translator_between_lcmt_drake_signal.h)
+    lcmt_drake_signal_translator.h)
   pods_install_pkg_config_file(drake-lcm-system2
     LIBS -ldrakeLCMSystem2
     REQUIRES lcm

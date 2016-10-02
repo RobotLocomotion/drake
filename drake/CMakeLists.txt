@@ -30,8 +30,6 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# prepend module path so we can override FindMatlab.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
@@ -143,8 +141,13 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
     mex_setup()
 
     # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test
-    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
+    # matlab_add_unit_test and matlab_add_mex
+    find_package(Matlab REQUIRED
+      COMPONENTS
+        MAIN_PROGRAM
+        MEX_COMPILER
+        MX_LIBRARY
+        SIMULINK)
   endif()
 endif()
 
@@ -176,9 +179,9 @@ target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 # set up and build lcm types
 find_package(lcm)
 if(lcm_FOUND)
+  find_package(bot2-core)
+
   add_subdirectory(lcmtypes)
-  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
-  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes) #TODO(#3351)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java

@@ -236,9 +236,9 @@ class SensorPublisherJointState {
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
-    auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-                          rigid_body_tree->number_of_velocities());
+    auto q = uvec.head(rigid_body_tree->get_num_positions());    // position
+    auto v = uvec.segment(rigid_body_tree->get_num_positions(),  // velocity
+                          rigid_body_tree->get_num_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     int q_index = 0;

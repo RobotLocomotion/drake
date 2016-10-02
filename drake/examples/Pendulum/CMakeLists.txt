@@ -3,14 +3,13 @@ if(lcm_FOUND)
     pendulum_swing_up.cc
     )
   target_link_libraries(drakePendulum drakeDynamicConstraint
-    drakeTrajectoryOptimization)
+    drakeTrajectoryOptimization drakeLCMTypes)
   pods_install_libraries(drakePendulum)
   drake_install_headers(Pendulum.h pendulum_swing_up.h)
   pods_install_pkg_config_file(drake-pendulum
     LIBS -ldrakePendulum
     REQUIRES
     VERSION 0.0.1)
-  add_dependencies(drakePendulum drake_lcmtypes_hpp)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics
@@ -39,7 +38,8 @@ if(lcm_FOUND)
     drakeLCMSystem)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
-  if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
+  find_package(NLopt)
+  if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
     drake_add_test(NAME pendulum_run_swing_up
       COMMAND pendulum_run_swing_up --non-realtime)
   endif()

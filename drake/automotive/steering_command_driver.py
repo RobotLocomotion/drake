@@ -6,8 +6,6 @@
 import argparse
 import copy
 import math
-import os
-import subprocess
 import sys
 
 try:
@@ -16,20 +14,9 @@ except ImportError:
     # We will flag this as an error later, and only if we really needed it.
     pass
 
-THIS_FILE = os.path.abspath(__file__)
-THIS_DIR = os.path.dirname(THIS_FILE)
-DRAKE_DIR = os.path.dirname(THIS_DIR)
-DRAKE_DIST_DIR = os.path.dirname(DRAKE_DIR)
-DRAKE_DIST_BUILD_DIR = os.getenv(
-    'DRAKE_DIST_BUILD',
-    os.path.join(DRAKE_DIST_DIR, 'build'))
-DRAKE_LCMTYPES_DIR = os.path.join(
-    DRAKE_DIST_BUILD_DIR, 'drake/lcmtypes')
-LCM_PYTHON_DIR = os.path.join(DRAKE_DIST_BUILD_DIR, 'externals/lcm/lib/python2.7')
-sys.path.extend([
-    DRAKE_LCMTYPES_DIR,  # First (to pick up local edits to messages).
-    os.path.join(LCM_PYTHON_DIR, 'dist-packages'),
-    os.path.join(LCM_PYTHON_DIR, 'site-packages')])
+from drake_paths import add_module_search_paths
+
+add_module_search_paths()  # So we can find lcm stuff.
 
 import lcm
 
@@ -47,11 +34,13 @@ TURN_RIGHT_SIGN = -1.0
 THROTTLE_SCALE = 1.0
 BRAKE_SCALE = 1.0
 
+
 def _limit_steering(requested_value):
     if abs(requested_value) <= MAX_STEERING_ANGLE:
         return requested_value
     else:
         return math.copysign(MAX_STEERING_ANGLE, requested_value)
+
 
 class KeyboardEventProcessor:
     def __init__(self):
@@ -179,12 +168,12 @@ def main():
       '--input_method', choices=['joystick', 'keyboard'], default='keyboard',
       help='the interactive input method to use for publishing LCM commands')
     parser.add_argument(
-      '--joy_name', default='Driving Force GT',
+        '--joy_name', default='Driving Force GT',
         help='system name of the joystick')
     parser.add_argument(
       '--throttle', type=float, default='0.0', help='initial throttle')
     parser.add_argument(
-      '--steering-angle', type=float, default='0.0',
+        '--steering-angle', type=float, default='0.0',
         help='initial steering angle (in radians), positive-left')
 
     args = parser.parse_args()

@@ -1,4 +1,4 @@
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_driving_command_t.hpp"
 
 #include "drake/automotive/car_simulation.h"
 #include "drake/common/drake_path.h"

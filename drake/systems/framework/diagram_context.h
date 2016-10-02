@@ -9,15 +9,16 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/state_supervector.h"
+#include "drake/systems/framework/supervector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace systems {
 
-/// DiagramContinuousState is a ContinuousState consisting of StateSupervectors
+/// DiagramContinuousState is a ContinuousState consisting of Supervectors
 /// over a set of constituent ContinuousStates.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
@@ -55,7 +56,7 @@ class DiagramContinuousState : public ContinuousState<T> {
   }
 
  private:
-  // Returns a StateSupervector over the x, q, v, or z components of each
+  // Returns a Supervector over the x, q, v, or z components of each
   // substate in @p substates, as indicated by @p selector.
   static std::unique_ptr<VectorBase<T>> Span(
       const std::vector<ContinuousState<T>*>& substates,
@@ -66,7 +67,7 @@ class DiagramContinuousState : public ContinuousState<T> {
         sub_xs.push_back(selector(*substate));
       }
     }
-    return std::make_unique<StateSupervector<T>>(sub_xs);
+    return std::make_unique<Supervector<T>>(sub_xs);
   }
 
   // Returns the entire state vector in @p xc.
@@ -120,6 +121,7 @@ class DiagramContext : public Context<T> {
                  std::unique_ptr<SystemOutput<T>> output) {
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
+    context->set_parent(this);
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }
@@ -173,9 +175,10 @@ class DiagramContext : public Context<T> {
   void MakeState() {
     std::vector<ContinuousState<T>*> substates;
     for (auto& context : contexts_) {
-      substates.push_back(context->get_mutable_state()->continuous_state.get());
+      substates.push_back(context->get_mutable_continuous_state());
     }
-    state_.continuous_state.reset(new DiagramContinuousState<T>(substates));
+    this->set_continuous_state(
+        std::make_unique<DiagramContinuousState<T>>(substates));
   }
 
   /// Returns the output structure for a given constituent system at @p index.
@@ -191,6 +194,7 @@ class DiagramContext : public Context<T> {
   /// Returns the context structure for a given constituent system @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
+  /// TODO(david-german-tri): Rename to get_subsystem_context.
   const Context<T>* GetSubsystemContext(SystemIndex index) const {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_DEMAND(index >= 0 && index < num_contexts);
@@ -201,6 +205,7 @@ class DiagramContext : public Context<T> {
   /// Returns the context structure for a given subsystem @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
+  /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
   Context<T>* GetMutableSubsystemContext(SystemIndex index) {
     const int num_contexts = static_cast<int>(contexts_.size());
     DRAKE_DEMAND(index >= 0 && index < num_contexts);
@@ -222,6 +227,18 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
+  /// Returns the input port at the given @p index, which of course belongs
+  /// to the subsystem whose input was exposed at that index.
+  const InputPort* GetInputPort(int index) const override {
+    if (index < 0 || index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    return GetSubsystemContext(system_index)->GetInputPort(port_index);
+  }
+
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
@@ -232,26 +249,6 @@ class DiagramContext : public Context<T> {
     GetMutableSubsystemContext(system_index)
         ->SetInputPort(port_index, std::move(port));
     // TODO(david-german-tri): Set invalidation callbacks.
-  }
-
-  const BasicVector<T>* get_vector_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->get_vector_input(port_index);
-  }
-
-  const AbstractValue* get_abstract_input(int index) const override {
-    if (index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->get_abstract_input(port_index);
   }
 
   const State<T>& get_state() const override { return state_; }
@@ -270,8 +267,7 @@ class DiagramContext : public Context<T> {
       DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
       // appears on each of its input ports into a FreestandingInputPort.
-      clone->contexts_[i] = contexts_[i]->Clone();
-      clone->outputs_[i] = outputs_[i]->Clone();
+      clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
     }
 
     // Build a superstate over the subsystem contexts.

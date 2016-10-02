@@ -1,20 +1,28 @@
 #include "drake/systems/analysis/simulator.h"
 
 #include <cmath>
+#include <complex>
+
+#include <unsupported/Eigen/AutoDiff>
 
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
 #include "drake/systems/framework/examples/spring_mass_system.h"
+
+using Eigen::AutoDiffScalar;
+using Eigen::NumTraits;
+using std::complex;
 
 namespace drake {
 namespace systems {
 namespace {
 
-class MySpringMassSystem : public SpringMassSystem {
+class MySpringMassSystem : public SpringMassSystem<double> {
  public:
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MySpringMassSystem(double stiffness, double mass, double sample_rate)
-      : SpringMassSystem(stiffness, mass, false /*no input force*/),
+      : SpringMassSystem<double>(stiffness, mass, false /*no input force*/),
         sample_rate_(sample_rate) {}
 
   int get_publish_count() const { return publish_count_; }
@@ -159,6 +167,107 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // require more than one extra step per sample though.
   EXPECT_LE(spring_mass.get_publish_count(), 1030);
   EXPECT_EQ(spring_mass.get_update_count(), 30);
+}
+
+// Tests Simulator for a Diagram system consisting of a tree of systems.
+// In this case the System is a PidControlledSpringMassSystem which is a
+// Diagram containing a SpringMassSystem (the plant) and a PidController which
+// in turn is a Diagram composed of primitives such as Gain and Adder systems.
+GTEST_TEST(SimulatorTest, ControlledSpringMass) {
+  typedef complex<double> complexd;
+  typedef AutoDiffScalar<Vector1d> SingleVarAutoDiff;
+
+  // SpringMassSystem parameters.
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+  // System's open loop frequency.
+  const double wol = std::sqrt(kSpring / kMass);
+
+  // Initial conditions.
+  const double x0 = 0.1;
+  const double v0 = 0.0;
+
+  // Choose some controller constants.
+  const double kp = kSpring;
+  const double ki = 0.0;
+  // System's undamped frequency (when kd = 0).
+  const double w0 = std::sqrt(wol * wol + kp / kMass);
+  // Damping ratio (underdamped).
+  const double zeta = 0.5;
+  const double kd = 2.0 * kMass * w0 * zeta;
+  const double x_target = 0.0;
+
+  PidControlledSpringMassSystem<double> spring_mass(
+      kSpring, kMass, kp, ki, kd, x_target);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Sets initial conditions to zero.
+  spring_mass.SetDefaultState(simulator.get_mutable_context());
+
+  // Sets initial condition using the Simulator's internal Context.
+  spring_mass.set_position(simulator.get_mutable_context(), x0);
+  spring_mass.set_velocity(simulator.get_mutable_context(), v0);
+
+  // Takes all the defaults for the simulator.
+  simulator.Initialize();
+
+  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
+      IntegratorType::RungeKutta2);
+
+  // Computes analytical solution.
+  // 1) Roots of the characteristic equation.
+  complexd lambda1 = -zeta * w0 + w0 * std::sqrt(complexd(zeta * zeta - 1));
+  complexd lambda2 = -zeta * w0 - w0 * std::sqrt(complexd(zeta * zeta - 1));
+
+  // Roots should be the complex conjugate of each other.
+#ifdef __APPLE__
+  // The factor of 20 is needed for OS X builds where the comparison needs a
+  // looser tolerance, see #3636.
+  auto abs_error = 20.0 * NumTraits<double>::epsilon();
+#else
+  auto abs_error = NumTraits<double>::epsilon();
+#endif
+  EXPECT_NEAR(lambda1.real(),  lambda2.real(), abs_error);
+  EXPECT_NEAR(lambda1.imag(), -lambda2.imag(), abs_error);
+
+  // The damped frequency corresponds to the absolute value of the imaginary
+  // part of any of the roots.
+  double wd = std::abs(lambda1.imag());
+
+  // 2) Differential equation's constants of integration.
+  double C1 = x0;
+  double C2 = (zeta * w0 * x0 + v0) / wd;
+
+  // 3) Computes analytical solution at time final_time.
+  // Velocity is computed using AutoDiffScalar.
+  double final_time = 0.2;
+  double x_final{}, v_final{};
+  { // At the end of this local scope x_final and v_final are properly
+    // initialized.
+    // Auxiliary AutoDiffScalar variables are confined to this local scope so
+    // that we don't pollute the test's scope with them.
+    SingleVarAutoDiff time(final_time);
+    time.derivatives() << 1.0;
+    auto x = exp(-zeta * w0 * time) * (
+        C1 * cos(wd * time) + C2 * sin(wd * time));
+    x_final = x.value();
+    v_final = x.derivatives()[0];
+  }
+
+  // Simulates to final_time.
+  simulator.StepTo(final_time);
+
+  EXPECT_EQ(simulator.get_num_steps_taken(), 200);
+  EXPECT_NEAR(simulator.get_smallest_step_size_taken(),
+              simulator.get_largest_step_size_taken(),
+              NumTraits<double>::epsilon());
+
+  const auto& context = simulator.get_context();
+  EXPECT_EQ(context.get_time(), final_time);  // Should be exact.
+
+  // Compares with analytical solution (to numerical integration error).
+  EXPECT_NEAR(spring_mass.get_position(context), x_final, 3.0e-6);
+  EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
 }  // namespace

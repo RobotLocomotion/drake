@@ -17,9 +17,9 @@ namespace {
 // Tests that an exception is thrown if the diagram contains an algebraic loop.
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
-  auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* length */);
+  auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   // Connect the output port to the input port.
-  builder.Connect(adder->get_output_port(0), adder->get_input_port(0));
+  builder.Connect(adder->get_output_port(), adder->get_input_port(0));
   EXPECT_THROW(builder.Build(), std::logic_error);
 }
 
@@ -34,8 +34,8 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
   //           |   Adder +---> Integrator -|
   //        |->| 1       |                 |---> output
   //        |------------------------------|
-  auto adder = builder.AddSystem<Adder>(2 /* inputs */, 1 /* length */);
-  auto integrator = builder.AddSystem<Integrator>(1 /* length */);
+  auto adder = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+  auto integrator = builder.AddSystem<Integrator>(1 /* size */);
 
   builder.Connect(integrator->get_output_port(0), adder->get_input_port(1));
   builder.ExportInput(adder->get_input_port(0));
@@ -50,8 +50,8 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoop) {
 GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
   DiagramBuilder<double> builder;
 
-  auto integrator1 = builder.AddSystem<Integrator>(1 /* length */);
-  auto integrator2 = builder.AddSystem<Integrator>(1 /* length */);
+  auto integrator1 = builder.AddSystem<Integrator>(1 /* size */);
+  auto integrator2 = builder.AddSystem<Integrator>(1 /* size */);
 
   builder.Connect(integrator1->get_output_port(0),
                   integrator2->get_input_port(0));
@@ -70,10 +70,10 @@ GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
 
 GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   DiagramBuilder<double> builder;
-  Adder<double> adder(1 /* inputs */, 1 /* length */);
+  Adder<double> adder(1 /* inputs */, 1 /* size */);
   EXPECT_THROW(builder.Connect(adder, adder), std::exception);
   EXPECT_THROW(builder.ExportInput(adder.get_input_port(0)), std::exception);
-  EXPECT_THROW(builder.ExportOutput(adder.get_output_port(0)), std::exception);
+  EXPECT_THROW(builder.ExportOutput(adder.get_output_port()), std::exception);
 }
 
 // Helper class that has one input port, and no output ports.
@@ -90,9 +90,9 @@ class DiagramBuilderSolePortsTest : public ::testing::Test {
   void SetUp() override {
     out1_ = builder_.AddSystem<ConstantVectorSource>(Vector1d::Ones());
     in1_ = builder_.AddSystem<Sink>();
-    in1out1_ = builder_.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
-    in2out1_ = builder_.AddSystem<Adder>(2 /* inputs */, 1 /* length */);
-    in1out2_ = builder_.AddSystem<Demultiplexer>(2 /* length */);
+    in1out1_ = builder_.AddSystem<Gain>(1.0 /* gain */, 1 /* size */);
+    in2out1_ = builder_.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+    in1out2_ = builder_.AddSystem<Demultiplexer>(2 /* size */);
   }
 
   DiagramBuilder<double> builder_;
@@ -143,8 +143,8 @@ TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
 // Test for GetMutableSystems.
 GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
   DiagramBuilder<double> builder;
-  auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* length */);
-  auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* length */);
+  auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   EXPECT_EQ((std::vector<System<double>*>{adder1, adder2}),
             builder.GetMutableSystems());
 }

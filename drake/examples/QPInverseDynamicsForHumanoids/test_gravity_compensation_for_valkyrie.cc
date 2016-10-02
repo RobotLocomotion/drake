@@ -62,8 +62,8 @@ int main() {
           drake::systems::plants::joints::kRollPitchYaw));
 
   // Sets state and does kinematics.
-  VectorXd q(robot_status.robot().number_of_positions());
-  VectorXd v(robot_status.robot().number_of_velocities());
+  VectorXd q(robot_status.robot().get_num_positions());
+  VectorXd v(robot_status.robot().get_num_velocities());
 
   q.setZero();
   v.setZero();

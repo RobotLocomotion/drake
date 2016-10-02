@@ -89,8 +89,8 @@ void CheckLimitViolations(
     const std::shared_ptr<drake::RigidBodySystem> rigid_body_sys,
     const Eigen::VectorXd& final_robot_state) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  int num_positions = rigid_body_sys->get_num_positions();
+  int num_velocities = rigid_body_sys->get_num_velocities();
 
   // Ensures the size of the output is correct.
   if (final_robot_state.size() !=

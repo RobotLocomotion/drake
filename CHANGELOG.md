@@ -22,7 +22,8 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
-
+ - [#3605][] Deprecated `KinematicsCache::getNumPositions()` and `KinematicsCache::getNumVelocities()` in favor of `KinematicsCache::get_num_positions()` and `KinematicsCache::get_num_velocities()`.
+ - [#3566][] Replaced `number_of_foo()` with `get_num_foo()`.
  - [#3276][] The `measure::execution()` function has been replaced by `MeasureExecutionTime()`.
  - [#3246][] Replaced `RigidBody::hasParent()` with `RigidBody::has_mobilizer_joint()`.
  - [#3191][] All matlab solvers code moved from solvers/ to matlab/solvers/.
@@ -140,3 +141,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3191]: https://github.com/RobotLocomotion/drake/issues/3191
 [#3246]: https://github.com/RobotLocomotion/drake/issues/3246
 [#3276]: https://github.com/RobotLocomotion/drake/issues/3276
+[#3566]: https://github.com/RobotLocomotion/drake/issues/3276

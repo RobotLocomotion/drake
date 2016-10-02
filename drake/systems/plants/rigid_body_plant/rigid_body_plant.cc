@@ -1,5 +1,6 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -11,11 +12,11 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/common/eigen_autodiff_types.h"
 
+using std::make_unique;
 using std::move;
 using std::string;
+using std::unique_ptr;
 using std::vector;
-
-using drake::parsers::ModelInstanceIdTable;
 
 namespace drake {
 namespace systems {
@@ -23,14 +24,18 @@ namespace systems {
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
     tree_(move(tree)) {
-  // The input to the system is the generalized forces on the actuators.
-  // TODO(amcastro-tri): add separate input ports for each model_id.
+  // The input to this system are the generalized forces commanded on the
+  // actuators.
+  // TODO(amcastro-tri): add separate input ports for each model_instance_id.
   System<T>::DeclareInputPort(
       kVectorValued, get_num_actuators(), kContinuousSampling);
-  // The output to the system is the state vector.
+  // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
-  System<T>::DeclareOutputPort(
-      kVectorValued, get_num_states(), kContinuousSampling);
+  state_output_port_id_ = this->DeclareOutputPort(
+      kVectorValued, get_num_states(), kContinuousSampling).get_index();
+  // Declares an abstract valued port for kinematics results.
+  kinematics_output_port_id_ =
+      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
 }
 
 template <typename T>
@@ -42,18 +47,23 @@ bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-const RigidBodyTree& RigidBodyPlant<T>::get_multibody_world() const {
+const RigidBodyTree& RigidBodyPlant<T>::get_rigid_body_tree() const {
   return *tree_.get();
 }
 
 template <typename T>
+int RigidBodyPlant<T>::get_num_bodies() const {
+  return tree_->get_num_bodies();
+}
+
+template <typename T>
 int RigidBodyPlant<T>::get_num_positions() const {
-  return tree_->number_of_positions();
+  return tree_->get_num_positions();
 }
 
 template <typename T>
 int RigidBodyPlant<T>::get_num_velocities() const {
-  return tree_->number_of_velocities();
+  return tree_->get_num_velocities();
 }
 
 template <typename T>
@@ -80,16 +90,16 @@ template <typename T>
 void RigidBodyPlant<T>::set_position(Context<T>* context,
                                      int position_index, T position) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_generalized_position()->SetAtIndex(position_index, position);
+  context->get_mutable_continuous_state()->get_mutable_generalized_position()
+      ->SetAtIndex(position_index, position);
 }
 
 template <typename T>
 void RigidBodyPlant<T>::set_velocity(Context<T>* context,
                                      int velocity_index, T velocity) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_generalized_velocity()->SetAtIndex(velocity_index, velocity);
+  context->get_mutable_continuous_state()->get_mutable_generalized_velocity()
+      ->SetAtIndex(velocity_index, velocity);
 }
 
 template <typename T>
@@ -97,8 +107,31 @@ void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_state()->continuous_state->
-      get_mutable_state()->SetFromVector(x);
+  context->get_mutable_continuous_state()->get_mutable_state()
+      ->SetFromVector(x);
+}
+
+template <typename T>
+std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
+    const Context<T>& context) const {
+  auto output = make_unique<LeafSystemOutput<T>>();
+  // Allocates an output for the RigidBodyPlant state (output port 0).
+  {
+    auto data = make_unique<BasicVector<T>>(get_num_states());
+    auto port = make_unique<OutputPort>(move(data));
+    output->get_mutable_ports()->push_back(move(port));
+  }
+
+  // Allocates an output for the RigidBodyPlant kinematics results
+  // (output port 1).
+  {
+    auto kinematics_results =
+        make_unique<Value<KinematicsResults<T>>>(
+            KinematicsResults<T>(*tree_));
+    output->add_port(move(kinematics_results));
+  }
+
+  return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
 template <typename T>
@@ -119,12 +152,19 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
-
+  // Evaluates the state output port.
+  BasicVector<T>* output_vector = output->GetMutableVectorData(
+      state_output_port_id_);
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
-      context.get_continuous_state().CopyToVector();
+      context.get_continuous_state()->CopyToVector();
+
+  // Evaluates the kinematics results output port.
+  auto& kinematics_results =
+      output->GetMutableData(kinematics_output_port_id_)->
+          template GetMutableValue<KinematicsResults<T>>();
+  kinematics_results.UpdateFromContext(context);
 }
 
 template <typename T>
@@ -132,7 +172,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
-  const BasicVector<T>* input = context.get_vector_input(0);
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
 
   // The input vector of actuation values.
   auto u = input->get_value();
@@ -140,7 +180,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_state().continuous_state->get_state()).get_value();
+      context.get_continuous_state()->get_state()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
@@ -167,7 +207,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // dynamicsBiasTerm.
   // TODO(amcastro-tri): external_wrenches should be made an optional parameter
   // of dynamicsBiasTerm().
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree::BodyToWrenchMap<T> no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
   // [H, -J^T] * [vdot; f] = -right_hand_side.
   VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol,
@@ -312,7 +352,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_state().continuous_state->get_state()).get_value();
+      context.get_continuous_state()->get_state()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();

@@ -2002,7 +2002,7 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
   DRAKE_DEMAND(parent_body_index >= 0 &&
-                     parent_body_index < get_number_of_bodies());
+                     parent_body_index < get_num_bodies());
 
   // Obtains a reference to the parent body.
   const RigidBody& parent_body = get_body(parent_body_index);
@@ -2107,12 +2107,20 @@ int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
 
 const RigidBody& RigidBodyTree::get_body(int body_index) const {
   DRAKE_DEMAND(body_index >= 0 &&
-                     body_index < get_number_of_bodies());
+                     body_index < get_num_bodies());
   return *bodies[body_index].get();
 }
 
-int RigidBodyTree::get_number_of_bodies() const {
+int RigidBodyTree::get_num_bodies() const {
   return static_cast<int>(bodies.size());
+}
+
+// TODO(liang.fok) Remove this method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_bodies().")
+#endif
+int RigidBodyTree::get_number_of_bodies() const {
+  return get_num_bodies();
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -2261,26 +2269,45 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   bodies.push_back(std::move(body));
 }
 
+
+int RigidBodyTree::get_num_positions() const {
+  return num_positions_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::number_of_positions() const {
+  return get_num_positions();
+}
+
+int RigidBodyTree::get_num_velocities() const {
+  return num_velocities_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::number_of_velocities() const {
+  return get_num_velocities();
+}
+
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  PackageMap ros_package_map;
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDFString(
     const std::string& xml_string,
-    std::map<std::string, std::string>& package_map,
+    std::map<std::string, std::string>& ros_package_map,
     const std::string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfString(
-      xml_string, package_map, root_dir, floating_base_type, weld_to_frame,
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
+      xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
       this);
 }
 
@@ -2289,19 +2316,19 @@ void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  PackageMap package_map;
+  PackageMap ros_package_map;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      filename, package_map, floating_base_type, weld_to_frame, this);
+      filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 void RigidBodyTree::addRobotFromURDF(
     const std::string& filename,
-    std::map<std::string, std::string>& package_map,
+    std::map<std::string, std::string>& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      filename, package_map, floating_base_type, weld_to_frame, this);
+      filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -2311,6 +2338,20 @@ void RigidBodyTree::addRobotFromSDF(
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);
+}
+
+
+int RigidBodyTree::add_model_instance() {
+  return num_model_instances_++;
+}
+
+int RigidBodyTree::get_num_model_instances() const {
+  return num_model_instances_;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+int RigidBodyTree::get_number_of_model_instances() const {
+  return get_num_model_instances();
 }
 
 // Explicit template instantiations for massMatrix.

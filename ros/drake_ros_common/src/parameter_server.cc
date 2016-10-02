@@ -3,18 +3,15 @@
 namespace drake {
 namespace ros {
 
-void WaitForParameter(const std::string& parameter_name, double max_wait_time) {
-  ::ros::Time begin_time = ::ros::Time::now();
-
-  while (::ros::ok() && !::ros::param::has(parameter_name)
-      && (::ros::Time::now() - begin_time).toSec() < max_wait_time) {
-    ::ros::Duration(0.5).sleep();  // Sleeps for half a second.
+bool WaitForParameter(const std::string& parameter_name, double max_wait_time) {
+  ::ros::WallTime begin_time = ::ros::WallTime::now();
+  while (::ros::ok() && !::ros::param::has(parameter_name)) {
+    ::ros::WallDuration elapsed_time = ::ros::WallTime::now() - begin_time;
+    if (elapsed_time.toSec() >= max_wait_time)
+      break;
+    ::ros::WallDuration(0.1).sleep();  // Sleeps for 0.1 seconds.
   }
-
-  if (!::ros::param::has(parameter_name)) {
-    throw std::runtime_error("ERROR: Failed to obtain parameter \"" +
-        parameter_name + "\" from the ROS parameter server.");
-  }
+  return ::ros::param::has(parameter_name);
 }
 
 }  // namespace ros

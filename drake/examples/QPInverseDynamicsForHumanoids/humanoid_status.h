@@ -69,17 +69,17 @@ class HumanoidStatus {
     }
 
     joint_name_to_position_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_->number_of_positions(); i++) {
+    for (int i = 0; i < robot_->get_num_positions(); ++i) {
       joint_name_to_position_index_[robot_->getPositionName(i)] = i;
     }
-    for (size_t i = 0; i < robot_->actuators.size(); i++) {
+    for (size_t i = 0; i < robot_->actuators.size(); ++i) {
       actuator_name_to_id_[robot_->actuators[i].name_] = i;
     }
 
     time_ = time0_ = 0;
 
-    position_.resize(robot_->number_of_positions());
-    velocity_.resize(robot_->number_of_velocities());
+    position_.resize(robot_->get_num_positions());
+    velocity_.resize(robot_->get_num_velocities());
     joint_torque_.resize(robot_->actuators.size());
   }
 
