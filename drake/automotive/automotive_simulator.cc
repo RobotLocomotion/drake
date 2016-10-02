@@ -1,6 +1,6 @@
 #include "drake/automotive/automotive_simulator.h"
 
-#include <lcm/lcm-cpp.hpp>
+// #include <lcm/lcm-cpp.hpp>
 
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
@@ -12,7 +12,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeAutomotive_export.h"
-// #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"

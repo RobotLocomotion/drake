@@ -2,13 +2,10 @@
 
 #include <vector>
 
-// #include <lcm/lcm-cpp.hpp>
-
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
-// #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"

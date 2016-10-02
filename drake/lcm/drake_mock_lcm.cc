@@ -48,7 +48,7 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
         const std::string& channel, const void* message_buffer,
         uint32_t message_length),
     DrakeLcmMessageHandlerInterface* handler) {
-  if (subscriptions_.find(channel) == subscriptions_.end() ) {
+  if (subscriptions_.find(channel) == subscriptions_.end()) {
     auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);
     subscriptions_[channel] = std::move(subscriber);
   } else {
@@ -59,7 +59,7 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
 
 void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
     const void *data, unsigned int data_size) {
-  if (subscriptions_.find(channel) == subscriptions_.end() ) {
+  if (subscriptions_.find(channel) == subscriptions_.end()) {
     throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
         "subscription to channel \"" + channel + "\".");
   } else {

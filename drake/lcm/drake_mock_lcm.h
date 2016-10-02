@@ -20,7 +20,8 @@ using std::unique_ptr;
 // object.
 class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
  public:
-  explicit DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface* drake_handler);
+  explicit DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface*
+      drake_handler);
 
   // Disable copy and assign.
   DrakeMockLcmSubscriber(const DrakeMockLcmSubscriber&) = delete;
@@ -41,7 +42,7 @@ class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
  */
 class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
  public:
-  explicit DrakeMockLcm();
+  DrakeMockLcm();
 
   // Disable copy and assign.
   DrakeMockLcm(const DrakeMockLcm&) = delete;

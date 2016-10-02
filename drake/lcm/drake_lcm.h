@@ -41,7 +41,7 @@ class DRAKELCM_EXPORT DrakeLcmSubscriber {
  */
 class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
  public:
-  explicit DrakeLcm();
+  DrakeLcm();
 
   // Disable copy and assign.
   DrakeLcm(const DrakeLcm&) = delete;

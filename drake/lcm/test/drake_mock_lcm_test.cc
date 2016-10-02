@@ -15,7 +15,7 @@ namespace {
 GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   const std::string channel_name = "drake_mock_lcm_test_publisher_channel_name";
   const int message_size = 10;
-  uint8_t message_bytes[message_size];
+  std::vector<uint8_t> message_bytes(message_size);
 
   for (int i = 0; i < message_size; ++i) {
     message_bytes[i] = i;
@@ -25,7 +25,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   DrakeMockLcm dut;
 
   dut.StartReceiveThread();
-  dut.Publish(channel_name, message_bytes, message_size);
+  dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".
   std::string published_channel{};
@@ -93,13 +93,13 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
 
   // Defines a fake serialized message.
   const int message_size = 10;
-  uint8_t message_bytes[message_size];
+  std::vector<uint8_t> message_bytes(message_size);
 
   for (int i = 0; i < message_size; ++i) {
     message_bytes[i] = i;
   }
 
-  dut.InduceSubsciberCallback(channel_name, message_bytes, message_size);
+  dut.InduceSubsciberCallback(channel_name, &message_bytes[0], message_size);
 
   EXPECT_EQ(handler.get_buffer_size(), message_size);
 
