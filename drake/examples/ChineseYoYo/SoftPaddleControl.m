@@ -1,4 +1,4 @@
-classdef SoftPaddleControl < HybridDrakeSystem
+classdef SoftPaddleControl < DrakeSystem
     properties
         kp
         kd
@@ -6,8 +6,8 @@ classdef SoftPaddleControl < HybridDrakeSystem
     
     methods
         function obj = SoftPaddleControl(plant)
-            obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
-%             obj = obj@DrakeSystem(0,0,9,1);
+            %obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
+            obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
             obj.kp = 100;
@@ -42,10 +42,12 @@ classdef SoftPaddleControl < HybridDrakeSystem
         function run()
             p = SoftPaddleHybrid();
             c = SoftPaddleControl(p);
+            cSim = SimulinkModel(c.getModel());
+            
             sys = feedback(p,c);
             v = p.constructVisualizer();
             
-            x0 = r.getInitialState();
+            x0 = p.getInitialState();
             v.drawWrapper(0,x0);
             [ytraj,xtraj] = simulate(sys,[0 15],x0);
             v.playback(ytraj,struct('slider',true));
