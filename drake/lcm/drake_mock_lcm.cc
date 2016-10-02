@@ -19,8 +19,7 @@ DrakeMockLcm::DrakeMockLcm() {
 }
 
 void DrakeMockLcm::StartReceiveThread() {
-  // Do nothing. A thread is created each time InduceSubscriberCallback() is
-  // called.
+  // Do nothing.
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void *data,

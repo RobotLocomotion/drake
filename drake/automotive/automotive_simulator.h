@@ -124,7 +124,6 @@ class AutomotiveSimulator {
   // For simulation.
   std::unique_ptr<systems::Diagram<T>> diagram_;
   std::unique_ptr<systems::Simulator<T>> simulator_;
-  // std::unique_ptr<lcm::LcmReceiveThread> lcm_receive_thread_;
 };
 
 }  // namespace automotive

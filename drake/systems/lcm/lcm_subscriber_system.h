@@ -2,11 +2,8 @@
 
 #include <mutex>
 
-// #include <lcm/lcm-cpp.hpp>
-
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
-// #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"

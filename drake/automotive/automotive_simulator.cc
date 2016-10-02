@@ -1,7 +1,5 @@
 #include "drake/automotive/automotive_simulator.h"
 
-// #include <lcm/lcm-cpp.hpp>
-
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
@@ -234,8 +232,6 @@ void AutomotiveSimulator<T>::Start() {
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
-  // lcm_receive_thread_ =
-  //     std::make_unique<lcm::LcmReceiveThread>(lcm_.get());
   lcm_->StartReceiveThread();
 
   simulator_->Initialize();

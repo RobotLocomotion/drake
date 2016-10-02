@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <lcm/lcm-cpp.hpp>
-
 #include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
