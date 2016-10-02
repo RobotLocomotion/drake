@@ -94,8 +94,8 @@ class QuadraticConstraint : public Constraint {
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {
-    DRAKE_ASSERT(Q_.rows()==Q_.cols());
-    DRAKE_ASSERT(Q_.cols()==b_.rows());
+    DRAKE_ASSERT(Q_.rows() == Q_.cols());
+    DRAKE_ASSERT(Q_.cols() == b_.rows());
   }
 
   ~QuadraticConstraint() override {}
@@ -117,11 +117,11 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::VectorXd& b() const { return b_; }
 
   template <typename DerivedQ, typename DerivedB>
-  void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& Q, const
-    Eigen::MatrixBase<DerivedB>& b) {
-    DRAKE_ASSERT(Q.rows()==Q.cols());
-    DRAKE_ASSERT(Q.cols()==b.rows());
-    DRAKE_ASSERT(b.rows()==b_.rows());
+  void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
+                        const Eigen::MatrixBase<DerivedB>& b) {
+    DRAKE_ASSERT(Q.rows() == Q.cols());
+    DRAKE_ASSERT(Q.cols() == b.rows());
+    DRAKE_ASSERT(b.rows() == b_.rows());
     Q_ = Q;
     b_ = b;
   }
