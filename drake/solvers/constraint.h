@@ -85,7 +85,7 @@ class Constraint {
 class QuadraticConstraint : public Constraint {
  public:
   static const int kNumConstraints = 1;
-  // TODO(naveenoid) : ASSERT check on dimensions of Q and b.
+
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
@@ -93,7 +93,10 @@ class QuadraticConstraint : public Constraint {
       : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
-        b_(b) {}
+        b_(b) {
+    DRAKE_ASSERT(Q_.rows()==Q_.cols());
+    DRAKE_ASSERT(Q_.cols()==b_.rows());
+  }
 
   ~QuadraticConstraint() override {}
 
@@ -113,13 +116,13 @@ class QuadraticConstraint : public Constraint {
 
   virtual const Eigen::VectorXd& b() const { return b_; }
 
-  template <typename DerivedQ>
-  void set_Q(const Eigen::MatrixBase<DerivedQ>& Q) {
+  template <typename DerivedQ, typename DerivedB>
+  void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& Q, const
+    Eigen::MatrixBase<DerivedB>& b) {
+    DRAKE_ASSERT(Q.rows()==Q.cols());
+    DRAKE_ASSERT(Q.cols()==b.rows());
+    DRAKE_ASSERT(b.rows()==b_.rows());
     Q_ = Q;
-  }
-
-  template <typename DerivedQ>
-  void set_b(const Eigen::MatrixBase<DerivedQ>& b) {
     b_ = b;
   }
 
@@ -280,23 +283,21 @@ class LinearEqualityConstraint : public LinearConstraint {
 
   ~LinearEqualityConstraint() override {}
 
-  /* set_Aeq
-   * @brief change the matrix parameters of the constraint, but not
-   * the number of constraints nor the variable associations
+  /* updateConstraint
+   * @brief change the parameters of the constraint (A and b), but not the
+   *variable associations
+   *
+   * note that A and b can change size in the rows only (representing a
+   *different number of linear constraints, but on the same decision variables)
    */
-  template <typename Derived>
-  void set_Aeq(const Eigen::MatrixBase<Derived>& Aeq) {
-    DRAKE_ASSERT(Aeq.rows() == A_.rows());
-    DRAKE_ASSERT(Aeq.cols() == A_.cols());
+  template <typename DerivedA, typename DerivedB>
+  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
+                        const Eigen::MatrixBase<DerivedB>& beq) {
+    DRAKE_ASSERT(Aeq.rows() == beq.rows());
+    if (Aeq.cols() != A_.cols())
+      throw std::runtime_error("Can't change the number of decision variables");
+    A_.resize(Aeq.rows(), Eigen::NoChange);
     A_ = Aeq;
-  }
-
-  /* set_beq
-   * @brief change the vector parameters of the constraint, but not
-   * the number of constraints nor the variable associations
-   */
-  template <typename Derived>
-  void set_beq(const Eigen::MatrixBase<Derived>& beq) {
     set_bounds(beq, beq);
   }
 };

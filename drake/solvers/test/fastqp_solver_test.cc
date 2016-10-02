@@ -32,7 +32,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
   for (int i = 0; i < N; i++) {
     double theta = 2.0 * M_PI * i / N;
     x_desired << sin(theta), cos(theta);
-    objective->set_b(-2.0 * Q * x_desired);
+    objective->UpdateConstraint(2.0*Q, -2.0 * Q * x_desired);
 
     if (theta <= M_PI_2) {
       // simple lagrange multiplier problem:
@@ -71,8 +71,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
     // now 2(x-xd)^2 + (y-yd)^2 s.t. x+y=1
     x_desired << 1.0, 1.0;
     Q(0,0) = 2.0;
-    objective->set_Q(2.0*Q);
-    objective->set_b(-2.0*Q * x_desired);
+    objective->UpdateConstraint(2.0*Q, -2.0 * Q * x_desired);
 
     x_expected << 2.0/3.0, 1.0/3.0;
 
