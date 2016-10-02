@@ -22,7 +22,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
   auto objective = prog.AddQuadraticErrorCost(Q, x_desired);
 
   Eigen::Matrix2d A;
-  A << 1, 1, -1, 1;
+  A << 1.0, 1.0, -1.0, 1.0;
   Eigen::Vector2d ub = Eigen::Vector2d::Constant(1.0);
   Eigen::Vector2d lb = Eigen::Vector2d::Constant(-1.0);
   auto constraint = prog.AddLinearConstraint(A, lb, ub);
@@ -32,7 +32,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
   for (int i = 0; i < N; i++) {
     double theta = 2.0 * M_PI * i / N;
     x_desired << sin(theta), cos(theta);
-    objective->set_b(-2 * Q * x_desired);
+    objective->set_b(-2.0 * Q * x_desired);
 
     if (theta <= M_PI_2) {
       // simple lagrange multiplier problem:
@@ -60,10 +60,33 @@ GTEST_TEST(testFastQP, unitBallExample) {
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     // todo: assert that fastQP only falls back on the expected iterations
 
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
+                                MatrixCompareType::absolute));
+  }
+
+
+  // provide some test coverage for set_Q
+  //
+  {
+    // now 2(x-xd)^2 + (y-yd)^2 s.t. x+y=1
+    x_desired << 1.0, 1.0;
+    Q(0,0) = 2.0;
+    objective->set_Q(2.0*Q);
+    objective->set_b(-2.0*Q * x_desired);
+
+    x_expected << 2.0/3.0, 1.0/3.0;
+
+    SolutionResult result = SolutionResult::kUnknownError;
+
+    ASSERT_NO_THROW(result = prog.Solve());
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
                                 MatrixCompareType::absolute));
   }
 }
+
+
 }
 }
 }  // end namespaces
