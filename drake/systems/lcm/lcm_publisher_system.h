@@ -3,6 +3,7 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -12,6 +13,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+using drake::lcm::DrakeLcmInterface;
 /**
  * Publishes an LCM message containing information from its input port.
  */
@@ -27,11 +29,11 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    * is aliased by this constructor and thus must remain valid for the lifetime
    * of this object.
    *
-   * @param[in] lcm A pointer to the LCM subsystem.
+   * @param[in] lcm A pointer to the LCM interface.
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     ::lcm::LCM* lcm);
+                     DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -45,7 +47,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     ::lcm::LCM* lcm);
+                     DrakeLcmInterface* lcm);
 
 
   ~LcmPublisherSystem() override;
@@ -55,6 +57,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   std::string get_name() const override;
+
+  const std::string& get_channel_name() const;
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string get_name(const std::string& channel);
@@ -92,7 +96,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   const LcmAndVectorBaseTranslator& translator_;
 
   // A pointer to the LCM subsystem.
-  ::lcm::LCM* lcm_;
+  DrakeLcmInterface* lcm_;
 
   // The most recent message bytes; mutable is ok because it only affects the
   // GetMessage() results, which are not part of the System contract.

@@ -12,7 +12,8 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeAutomotive_export.h"
-#include "drake/lcm/lcm_receive_thread.h"
+// #include "drake/lcm/lcm_receive_thread.h"
+#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -28,13 +29,19 @@ namespace drake {
 namespace automotive {
 
 template <typename T>
-AutomotiveSimulator<T>::AutomotiveSimulator() {}
+AutomotiveSimulator<T>::AutomotiveSimulator() :
+    lcm_(std::make_unique<lcm::DrakeMockLcm>()) {}
+
+template <typename T>
+AutomotiveSimulator<T>::AutomotiveSimulator(
+    std::unique_ptr<lcm::DrakeLcmInterface> lcm) :
+    lcm_(std::move(lcm)) {}
 
 template <typename T>
 AutomotiveSimulator<T>::~AutomotiveSimulator() {}
 
 template <typename T>
-::lcm::LCM* AutomotiveSimulator<T>::get_lcm() {
+lcm::DrakeLcmInterface* AutomotiveSimulator<T>::get_lcm() {
   return lcm_.get();
 }
 
@@ -228,8 +235,9 @@ void AutomotiveSimulator<T>::Start() {
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
-  lcm_receive_thread_ =
-      std::make_unique<lcm::LcmReceiveThread>(lcm_.get());
+  // lcm_receive_thread_ =
+  //     std::make_unique<lcm::LcmReceiveThread>(lcm_.get());
+  lcm_->StartReceiveThread();
 
   simulator_->Initialize();
 

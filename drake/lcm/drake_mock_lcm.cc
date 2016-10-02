@@ -45,7 +45,8 @@ bool DrakeMockLcm::get_last_published_message(std::string* channel, void** data,
 
 void DrakeMockLcm::Subscribe(const std::string& channel,
     void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-        const void* message_buffer, uint32_t message_length),
+        const std::string& channel, const void* message_buffer,
+        uint32_t message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end() ) {
     auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);
@@ -62,7 +63,8 @@ void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
     throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
         "subscription to channel \"" + channel + "\".");
   } else {
-    subscriptions_[channel]->get_subscriber()->HandleMessage(data, data_size);
+    subscriptions_[channel]->get_subscriber()->HandleMessage(channel, data,
+        data_size);
   }
 }
 

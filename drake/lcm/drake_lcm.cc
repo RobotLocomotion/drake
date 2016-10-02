@@ -8,7 +8,7 @@ DrakeLcmSubscriber::DrakeLcmSubscriber(DrakeLcmMessageHandlerInterface*
 
 void DrakeLcmSubscriber::LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
     const std::string& channel) {
-  drake_handler_->HandleMessage(rbuf->data, rbuf->data_size);
+  drake_handler_->HandleMessage(channel, rbuf->data, rbuf->data_size);
 }
 
 DrakeLcm::DrakeLcm() {
@@ -29,10 +29,13 @@ void DrakeLcm::Publish(const std::string& channel, const void *data,
 
 void DrakeLcm::Subscribe(const std::string& channel,
     void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-        const void* message_buffer, uint32_t message_length),
+        const std::string& channel, const void* message_buffer,
+        uint32_t message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   auto subscriber = make_unique<DrakeLcmSubscriber>(handler);
-  lcm_.subscribe(channel, &DrakeLcmSubscriber::LcmCallback, subscriber.get());
+  auto sub = lcm_.subscribe(channel, &DrakeLcmSubscriber::LcmCallback,
+      subscriber.get());
+  sub->setQueueCapacity(1);
   subscriptions_.push_back(std::move(subscriber));
 }
 

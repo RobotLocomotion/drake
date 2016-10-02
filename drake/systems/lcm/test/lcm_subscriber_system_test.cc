@@ -7,7 +7,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/lcm/lcm_receive_thread.h"
+#include "drake/lcm/drake_mock_lcm.h"
+// #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
@@ -19,72 +20,72 @@ namespace {
 const int kDim = 10;
 const int64_t kTimestamp = 123456;
 
-using drake::lcm::LcmReceiveThread;
+// using drake::lcm::LcmReceiveThread;
 
 /**
  * Periodically publishes an LCM message of type `drake::lcmt_drake_signal`.
  */
-class MessagePublisher {
- public:
-  MessagePublisher(const std::string& channel_name, ::lcm::LCM* lcm)
-      : channel_name_(channel_name), lcm_(lcm) {
-    message_.dim = kDim;
-    message_.val.resize(kDim);
-    message_.coord.resize(kDim);
-    for (int ii = 0; ii < kDim; ++ii) {
-      message_.val[ii] = ii;
-      message_.coord[ii] = "coord_" + std::to_string(ii);
-    }
-    message_.timestamp = kTimestamp;
-  }
+// class MessagePublisher {
+//  public:
+//   MessagePublisher(const std::string& channel_name, ::drake::lcm::* lcm)
+//       : channel_name_(channel_name), lcm_(lcm) {
+//     message_.dim = kDim;
+//     message_.val.resize(kDim);
+//     message_.coord.resize(kDim);
+//     for (int ii = 0; ii < kDim; ++ii) {
+//       message_.val[ii] = ii;
+//       message_.coord[ii] = "coord_" + std::to_string(ii);
+//     }
+//     message_.timestamp = kTimestamp;
+//   }
 
-  ~MessagePublisher() {
-    EXPECT_TRUE(stop_);
-    // Test cases are required to call Stop() before completing, but sometimes
-    // fail to do so (e.g., if the test case raised an unexpected exception).
-    // If that happens, we need to join the thread here, or else its destructor
-    // will fail and confuse the gtest reporting of the earlier failures.
-    if (!stop_) {
-      Stop();
-    }
-  }
+//   ~MessagePublisher() {
+//     EXPECT_TRUE(stop_);
+//     // Test cases are required to call Stop() before completing, but sometimes
+//     // fail to do so (e.g., if the test case raised an unexpected exception).
+//     // If that happens, we need to join the thread here, or else its destructor
+//     // will fail and confuse the gtest reporting of the earlier failures.
+//     if (!stop_) {
+//       Stop();
+//     }
+//   }
 
-  void Start() {
-    thread_.reset(new std::thread(&MessagePublisher::DoPublish, this));
-  }
+//   void Start() {
+//     thread_.reset(new std::thread(&MessagePublisher::DoPublish, this));
+//   }
 
-  void Stop() {
-    stop_ = true;
-    thread_->join();
-  }
+//   void Stop() {
+//     stop_ = true;
+//     thread_->join();
+//   }
 
- private:
-  void DoPublish() {
-    while (!stop_) {
-      lcm_->publish(channel_name_, &message_);
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-  }
+//  private:
+//   void DoPublish() {
+//     while (!stop_) {
+//       lcm_->publish(channel_name_, &message_);
+//       std::this_thread::sleep_for(std::chrono::milliseconds(200));
+//     }
+//   }
 
-  const std::string channel_name_;
+//   const std::string channel_name_;
 
-  ::lcm::LCM* lcm_;
+//   ::lcm::LCM* lcm_;
 
-  drake::lcmt_drake_signal message_;
+//   drake::lcmt_drake_signal message_;
 
-  std::atomic<bool> stop_{false};
+//   std::atomic<bool> stop_{false};
 
-  std::unique_ptr<std::thread> thread_;
-};
+//   std::unique_ptr<std::thread> thread_;
+// };
 
-void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
-                    LcmSubscriberSystem* dut) {
+void TestSubscriber(::drake::lcm::DrakeMockLcm* lcm,
+    const std::string& channel_name, LcmSubscriberSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
   // Instantiates a publisher of lcmt_drake_signal messages on the LCM network.
   // network.
-  MessagePublisher publisher(channel_name, lcm);
-  publisher.Start();
+  // MessagePublisher publisher(channel_name, lcm);
+  // publisher.Start();
 
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
@@ -94,67 +95,94 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
   // construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
-  LcmReceiveThread lcm_receive_thread(lcm);
+  // LcmReceiveThread lcm_receive_thread(lcm);
 
   // Whether the LcmSubscriberSystem successfully received an LCM message and
   // outputted it as a BasicVector.
-  bool done = false;
+  // bool done = false;
 
   // This is used to prevent this unit test from running indefinitely when
   // the LcmSubscriberSystem fails to output a BasicVector.
-  int count = 0;
+  // int count = 0;
 
-  const int kMaxCount = 10;
-  const int kDelayMS = 500;
+  // const int kMaxCount = 10;
+  // const int kDelayMS = 500;
 
-  // We must periodically call dut->EvalOutput(...) since we do not know when
-  // the LcmSubscriberSystem will receive the LCM message and thus return a
-  // valid output.
-  while (!done && count++ < kMaxCount) {
-    dut->EvalOutput(*context.get(), output.get());
+  drake::lcmt_drake_signal message;
+  message.dim = kDim;
+  message.val.resize(kDim);
+  message.coord.resize(kDim);
+  for (int i = 0; i < kDim; ++i) {
+    message.val[i] = i;
+    message.coord[i] = "coord_" + std::to_string(i);
+  }
+  message.timestamp = kTimestamp;
 
-    // Gets the output of the LcmSubscriberSystem.
-    const BasicVector<double>& basic_vector = *output->get_vector_data(0);
+  std::vector<uint8_t> buffer(message.getEncodedSize());
+  EXPECT_EQ(message.encode(&buffer[0], 0, message.getEncodedSize()),
+            message.getEncodedSize());
 
-    // Verifies that the size of the basic vector is correct.
-    if (basic_vector.size() == kDim) {
-      // Verifies that the values in the basic vector are correct.
-      Eigen::VectorBlock<const VectorX<double>> value =
-          basic_vector.get_value();
+  lcm->InduceSubsciberCallback(dut->get_channel_name(), &buffer[0],
+      message.getEncodedSize());
 
-      bool values_match = true;
+  dut->EvalOutput(*context.get(), output.get());
 
-      for (int i = 0; i < kDim && values_match; ++i) {
-        if (value[i] != i) values_match = false;
-      }
+  const BasicVector<double>& basic_vector = *output->get_vector_data(0);
+  EXPECT_EQ(basic_vector.size(), kDim);
+  Eigen::VectorBlock<const VectorX<double>> value = basic_vector.get_value();
 
-      // At this point, the basic vector contains the expected values, which
-      // must have been delivered by the receipt of an drake::lcmt_drake_signal
-      // message.
-      //
-      // We cannot check whether the following member variables of
-      // drake::lcmt_drake_signal message was successfully transferred because
-      // BasicVector does not save this information:
-      //
-      //   1. coord
-      //   2. timestamp
-      //
-      // Thus, we must conclude that the experiment succeeded.
-      if (values_match) done = true;
-    }
-
-    if (!done) std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
+  for (int i = 0; i < kDim; ++i) {
+    EXPECT_EQ(value[i], i);
   }
 
-  EXPECT_TRUE(done);
+  // // We must periodically call dut->EvalOutput(...) since we do not know when
+  // // the LcmSubscriberSystem will receive the LCM message and thus return a
+  // // valid output.
+  // // while (!done && count++ < kMaxCount) {
+  //   // dut->EvalOutput(*context.get(), output.get());
 
-  publisher.Stop();
+  //   // Gets the output of the LcmSubscriberSystem.
+  //   const BasicVector<double>& basic_vector = *output->get_vector_data(0);
+
+  //   // Verifies that the size of the basic vector is correct.
+  //   if (basic_vector.size() == kDim) {
+  //     // Verifies that the values in the basic vector are correct.
+  //     Eigen::VectorBlock<const VectorX<double>> value =
+  //         basic_vector.get_value();
+
+  //     bool values_match = true;
+
+  //     for (int i = 0; i < kDim && values_match; ++i) {
+  //       if (value[i] != i) values_match = false;
+  //     }
+
+  //     // At this point, the basic vector contains the expected values, which
+  //     // must have been delivered by the receipt of an drake::lcmt_drake_signal
+  //     // message.
+  //     //
+  //     // We cannot check whether the following member variables of
+  //     // drake::lcmt_drake_signal message was successfully transferred because
+  //     // BasicVector does not save this information:
+  //     //
+  //     //   1. coord
+  //     //   2. timestamp
+  //     //
+  //     // Thus, we must conclude that the experiment succeeded.
+  //     if (values_match) done = true;
+  //   }
+
+  //   if (!done) std::this_thread::sleep_for(std::chrono::milliseconds(kDelayMS));
+  // }
+
+  // EXPECT_TRUE(done);
+
+  // publisher.Stop();
 }
 
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
-  ::lcm::LCM lcm;
+  ::drake::lcm::DrakeMockLcm lcm;
 
   // Defines a channel name.
   const std::string channel_name =
@@ -177,7 +205,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // Instantiates LCM.
-  ::lcm::LCM lcm;
+  ::drake::lcm::DrakeMockLcm lcm;
 
   // Defines a channel name.
   const std::string channel_name =
@@ -273,7 +301,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   // The "device under test" and its prerequisites.
   CustomDrakeSignalTranslator translator;
-  ::lcm::LCM lcm;
+  ::drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut("dummy", translator, &lcm);
 
   // Create a data-filled vector.

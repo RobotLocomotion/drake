@@ -2,13 +2,14 @@
 
 #include <vector>
 
-#include <lcm/lcm-cpp.hpp>
+// #include <lcm/lcm-cpp.hpp>
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
-#include "drake/lcm/lcm_receive_thread.h"
+// #include "drake/lcm/lcm_receive_thread.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -28,11 +29,13 @@ namespace automotive {
 template <typename T>
 class AutomotiveSimulator {
  public:
+  /// A constructor that configures this object to use a DrakeMockLcm instance.
   AutomotiveSimulator();
+  explicit AutomotiveSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
   ~AutomotiveSimulator();
 
   /// Returns the LCM object used by this AutomotiveSimulator.
-  ::lcm::LCM* get_lcm();
+  lcm::DrakeLcmInterface* get_lcm();
 
   /// Returns the DiagramBuilder.
   /// @pre Start() has NOT been called.
@@ -111,7 +114,7 @@ class AutomotiveSimulator {
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
     std::make_unique<RigidBodyTree>()};
-  std::unique_ptr<::lcm::LCM> lcm_{std::make_unique<::lcm::LCM>()};
+  std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
 
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
@@ -124,7 +127,7 @@ class AutomotiveSimulator {
   // For simulation.
   std::unique_ptr<systems::Diagram<T>> diagram_;
   std::unique_ptr<systems::Simulator<T>> simulator_;
-  std::unique_ptr<lcm::LcmReceiveThread> lcm_receive_thread_;
+  // std::unique_ptr<lcm::LcmReceiveThread> lcm_receive_thread_;
 };
 
 }  // namespace automotive

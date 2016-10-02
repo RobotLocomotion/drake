@@ -2,10 +2,12 @@
 
 #include <mutex>
 
-#include <lcm/lcm-cpp.hpp>
+// #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
 // #include "drake/lcm/lcm_receive_thread.h"
+#include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -16,12 +18,16 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+using ::drake::lcm::DrakeLcmInterface;
+using ::drake::lcm::DrakeLcmMessageHandlerInterface;
+
 /**
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
+class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
+    public DrakeLcmMessageHandlerInterface  {
  public:
   /**
    * A constructor.
@@ -39,7 +45,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator& translator,
-                      ::lcm::LCM* lcm);
+                      DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -54,7 +60,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmTranslatorDictionary& translator_dictionary,
-                      ::lcm::LCM* lcm);
+                      DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
 
@@ -62,6 +68,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
   /// Returns the default name for a system that subscribes to @p channel.
   static std::string get_name(const std::string& channel);
+
+  const std::string& get_channel_name() const;
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
@@ -102,8 +110,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
  private:
   // Callback entry point from LCM into this class.
-  void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
-                     const std::string& channel);
+  void HandleMessage(const std::string& channel, const void* message_buffer,
+      uint32_t message_size) override;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;

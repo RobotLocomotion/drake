@@ -9,6 +9,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
+#include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -17,28 +18,6 @@ namespace {
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
-
-// A utility method for determining if two `drake::lcmt_drake_signal` messages
-// are equal.
-bool CompareMessages(const drake::lcmt_drake_signal& message1,
-                     const drake::lcmt_drake_signal& message2) {
-  bool result = true;
-
-  if (message1.dim != message2.dim)
-    result = false;
-
-  if (result && message1.timestamp != message2.timestamp)
-     result = false;
-
-  for (int i = 0; i < message2.dim && result; ++i) {
-    if (message1.val[i] != message2.val[i])
-      result = false;
-    if (message1.coord[i] != message2.coord[i])
-      result = false;
-  }
-
-  return result;
-}
 
 // Subscribes to LCM messages of type `drake::lcmt_drake_signal`. Provides an
 // accessor to the latest message received.
@@ -142,7 +121,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
     const drake::lcmt_drake_signal received_message =
         subscriber.GetReceivedMessage();
 
-    done = CompareMessages(received_message, message_);
+    done = CompareLcmtDrakeSignalMessages(received_message, message_);
 
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
@@ -165,8 +144,9 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   }
 
   // This is the callback method.
-  void HandleMessage(const void* message_buffer,
+  void HandleMessage(const std::string& channel, const void* message_buffer,
       uint32_t message_size) override {
+    channel_ = channel;
     std::lock_guard<std::mutex> lock(message_mutex_);
     received_message_.decode(message_buffer, 0, message_size);
   }
@@ -179,7 +159,13 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
     return message_copy;
   }
 
+  // Returns the channel on which the most recent message was received.
+  const std::string& get_receive_channel() {
+    return channel_;
+  }
+
  private:
+  std::string channel_{};
   std::mutex message_mutex_;
   drake::lcmt_drake_signal received_message_;
 };
@@ -215,7 +201,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =
         handler.GetReceivedMessage();
-    done = CompareMessages(received_message, message_);
+    done = CompareLcmtDrakeSignalMessages(received_message, message_);
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 

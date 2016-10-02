@@ -61,7 +61,8 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
 
   void Subscribe(const std::string& channel,
       void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-          const void* message_buffer, uint32_t message_length),
+          const std::string& channel, const void* message_buffer,
+          uint32_t message_length),
       DrakeLcmMessageHandlerInterface* handler) override;
 
  private:

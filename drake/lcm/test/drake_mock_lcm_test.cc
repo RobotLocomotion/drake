@@ -51,11 +51,16 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   MockMessageHandler() { }
 
   // This is the callback method.
-  void HandleMessage(const void* message_buffer, uint32_t message_size)
-      override {
+  void HandleMessage(const std::string& channel, const void* message_buffer,
+      uint32_t message_size) override {
+    channel_ = channel;
     // std::lock_guard<std::mutex> lock(message_mutex_)
     buffer_.resize(message_size);
     std::memcpy(&buffer_[0], message_buffer, message_size);
+  }
+
+  const std::string& get_channel() const {
+    return channel_;
   }
 
   uint8_t* get_buffer() {
@@ -67,6 +72,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   }
 
  private:
+  std::string channel_{};
   std::vector<uint8_t> buffer_;
 };
 

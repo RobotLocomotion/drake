@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
+// #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeRigidBodyPlant_export.h"
 #include "drake/systems/framework/context.h"
@@ -8,8 +8,10 @@
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
+
 
 namespace drake {
 namespace systems {
@@ -54,7 +56,8 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    */
-  RigidBodyTreeLcmPublisher(const RigidBodyTree& tree, ::lcm::LCM* lcm);
+  RigidBodyTreeLcmPublisher(const RigidBodyTree& tree,
+      ::drake::lcm::DrakeLcmInterface* lcm);
 
   void EvalOutput(const systems::Context<double>& context,
                   systems::SystemOutput<double>* output) const override {}
@@ -91,7 +94,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
-  ::lcm::LCM* const lcm_;
+  ::drake::lcm::DrakeLcmInterface* const lcm_;
 
   // Using 'mutable' here is OK since it's only used for assertion checking.
   mutable bool sent_load_robot_{false};

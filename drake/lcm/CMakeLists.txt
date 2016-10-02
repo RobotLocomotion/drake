@@ -12,18 +12,21 @@ set(header_files
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
-      drake_lcm.h)
+      drake_lcm.h
+      lcmt_drake_signal_utils.h)
 endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
-      drake_lcm.cc)
+      drake_lcm.cc
+      lcmt_drake_signal_utils.cc)
 endif()
 
 set(lcm_dependent_link_libraries)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
+      drakeLCMTypes
       lcm)
 endif()
 

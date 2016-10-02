@@ -53,7 +53,8 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    */
   virtual void Subscribe(const std::string& channel,
       void (DrakeLcmMessageHandlerInterface::*HandleMessage)(
-          const void* message_buffer, uint32_t message_size),
+          const std::string& channel, const void* message_buffer,
+          uint32_t message_size),
       DrakeLcmMessageHandlerInterface* handler) = 0;
 };
 
