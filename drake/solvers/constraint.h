@@ -15,13 +15,16 @@ namespace solvers {
 /**
  * A constraint is a function + lower and upper bounds.
  *
+ * Solver interfaces must acknowledge that these constraints are mutable.
+ * Parameters can change after the constraint is constructed and before the
+ * call to Solve().
+ *
  * Some thoughts:
  * It should support evaluating the constraint, adding it to an optimization
- *problem,
- * and have support for constraints that require slack variables (adding
- *additional decision variables to the problem).  There
+ * problem, and have support for constraints that require slack variables
+ * (adding additional decision variables to the problem).  There
  * should also be some notion of parameterized constraints:  e.g. the
- *acceleration constraints in the rigid body dynamics are constraints
+ * acceleration constraints in the rigid body dynamics are constraints
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
@@ -64,7 +67,6 @@ class Constraint {
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
 
- protected:
   void set_bounds(const Eigen::VectorXd& lower_bound,
                   const Eigen::VectorXd& upper_bound) {
     DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
@@ -278,21 +280,23 @@ class LinearEqualityConstraint : public LinearConstraint {
 
   ~LinearEqualityConstraint() override {}
 
-  /* updateConstraint
-   * @brief change the parameters of the constraint (A and b), but not the
-   *variable associations
-   *
-   * note that A and b can change size in the rows only (representing a
-   *different number of linear constraints, but on the same decision variables)
+  /* set_Aeq
+   * @brief change the matrix parameters of the constraint, but not
+   * the number of constraints nor the variable associations
    */
-  template <typename DerivedA, typename DerivedB>
-  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
-                        const Eigen::MatrixBase<DerivedB>& beq) {
-    DRAKE_ASSERT(Aeq.rows() == beq.rows());
-    if (Aeq.cols() != A_.cols())
-      throw std::runtime_error("Can't change the number of decision variables");
-    A_.resize(Aeq.rows(), Eigen::NoChange);
+  template <typename Derived>
+  void set_Aeq(const Eigen::MatrixBase<Derived>& Aeq) {
+    DRAKE_ASSERT(Aeq.rows() == A_.rows());
+    DRAKE_ASSERT(Aeq.cols() == A_.cols());
     A_ = Aeq;
+  }
+
+  /* set_beq
+   * @brief change the vector parameters of the constraint, but not
+   * the number of constraints nor the variable associations
+   */
+  template <typename Derived>
+  void set_beq(const Eigen::MatrixBase<Derived>& beq) {
     set_bounds(beq, beq);
   }
 };

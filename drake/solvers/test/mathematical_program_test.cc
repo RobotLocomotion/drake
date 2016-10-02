@@ -146,7 +146,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
-  con->UpdateConstraint(3 * Matrix4d::Identity(), b);
+  con->set_Aeq(3 * Matrix4d::Identity());
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
