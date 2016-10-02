@@ -428,10 +428,10 @@ class QPInput {
 
   // Desired task space accelerations for specific bodies
   std::vector<DesiredBodyAcceleration> desired_body_accelerations_;
-  // Desired task space accelerations for various body parts
+  // Desired task space accelerations for the center of mass
   Eigen::Vector3d desired_comdd_;
-  Eigen::VectorXd
-      desired_vd_;  ///< Desired generalized coordinate accelerations
+  // Desired generalized coordinate accelerations
+  Eigen::VectorXd desired_vd_;
 
   // These are weights for each cost term.
   // Prefix w_ indicates weights.
@@ -537,7 +537,7 @@ class QPOutput {
   // Tracked body motion
   std::vector<BodyAcceleration> body_accelerations_;
 
-  // Computed task space accelerations of various body parts.
+  // Computed task space accelerations for the center of mass
   Eigen::Vector3d comdd_;
   // Computed generalized coordinate accelerations
   Eigen::VectorXd vd_;
@@ -694,7 +694,7 @@ class QPController {
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
 
   /**
-   * Resize the QP. This resizes the temporary matrices. It also reinitialize
+   * Resize the QP. This resizes the temporary matrices. It also reinitializes
    * prog_ to the correct size, so that Control only updates the
    * matrices and vectors in prog_ instead of making a new one on every call.
    * Size change typically happens when contact state changes (making / breaking

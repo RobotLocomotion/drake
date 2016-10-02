@@ -55,25 +55,26 @@ void HumanoidStatus::Update(
   // ft sensor
   foot_wrench_raw_[Side::LEFT] = l_wrench;
   foot_wrench_raw_[Side::RIGHT] = r_wrench;
-  Eigen::Isometry3d H;
   for (int i = 0; i < 2; i++) {
-    // Make H = H_sensor_to_sole.
+    // Make H1 = H_sensor_to_sole.
     // Assuming the sole frame has the same orientation as the foot frame.
-    H.linear() = kFootToSensorRotationOffset.transpose();
-    H.translation() = -kFootToSensorPositionOffset + kFootToSoleOffset;
+    Eigen::Isometry3d H1;
+    H1.linear() = kFootToSensorRotationOffset.transpose();
+    H1.translation() = -kFootToSensorPositionOffset + kFootToSoleOffset;
 
     foot_wrench_in_sole_frame_[i] =
-        transformSpatialForce(H, foot_wrench_raw_[i]);
+        transformSpatialForce(H1, foot_wrench_raw_[i]);
 
-    // H = transformation from sensor frame to a frame that is aligned with the
+    // H2 = transformation from sensor frame to a frame that is aligned with the
     // world frame, and is located at the origin of the foot frame.
-    H.linear() =
+    Eigen::Isometry3d H2;
+    H2.linear() =
         foot(i).pose().linear() * kFootToSensorRotationOffset.transpose();
-    H.translation() =
+    H2.translation() =
         foot(i).pose().translation() - foot_sensor(i).pose().translation();
 
     foot_wrench_in_world_frame_[i] =
-        transformSpatialForce(H, foot_wrench_raw_[i]);
+        transformSpatialForce(H2, foot_wrench_raw_[i]);
   }
 
   // Compute center of pressure (CoP)

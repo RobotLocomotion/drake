@@ -168,7 +168,11 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // I made the dynamics and stationary contact equality constraints.
   // Alternatively, they can be setup as high weight cost terms. This is
   // sometimes preferred as it introduce slacks for better stability.
-
+  //
+  // For more details on the QP setup, the interested readers could refer to
+  // [1]  An efficiently solvable quadratic program for stabilizing dynamic
+  // locomotion, Scott Kuindersma, Frank Permenter, and Russ Tedrake
+  // http://groups.csail.mit.edu/robotics-center/public_papers/Kuindersma13.pdf
   const solvers::DecisionVariableView vd = prog_.GetVariable("vd");
   const solvers::DecisionVariableView basis = prog_.GetVariable("basis");
 
@@ -207,7 +211,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Equations of motion part, 6 rows
   dynamics_linear_.block(0, vd_start, 6, num_vd_) = rs.M().topRows(6);
   dynamics_linear_.block(0, basis_start, 6, num_basis_) = -JB_.topRows(6);
-  dynamics_constant_ = -rs.bias_term().head(6);
+  dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
 
   // Contact constraints, 3 rows per contact point

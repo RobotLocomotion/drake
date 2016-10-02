@@ -71,7 +71,7 @@ class BodyOfInterest {
  */
 class HumanoidStatus {
  public:
-  /// Offset from the foot frame to contact position in the foot frame.
+  /// Position offset from the foot frame to the sole frame.
   static const Eigen::Vector3d kFootToSoleOffset;
   /// Position Offset from the foot frame to force torque sensor in the foot
   /// frame.

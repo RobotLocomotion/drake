@@ -304,7 +304,7 @@ class LinearConstraint : public Constraint {
   }
 
   /**
-   * Updates the linear term, upper and lower bounds in the lienar constraint.
+   * Updates the linear term, upper and lower bounds in the linear constraint.
    * The updated constraint is:
    * new_lb <= new_A * x <= new_ub
    * Note that the size of constraints (number of rows) can change, but the
