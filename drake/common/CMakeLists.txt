@@ -18,6 +18,7 @@ set(sources
   polynomial.cc
   symbolic_environment.cc
   symbolic_expression.cc
+  symbolic_formula.cc
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -44,6 +45,7 @@ set(installed_headers
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
+  symbolic_formula.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
