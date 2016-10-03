@@ -1,0 +1,15 @@
+# This is drake's EditorConfig file. It allows users to have per-project coding
+# styles. For more information, see http://editorconfig.org/
+#
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+charset = utf
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 80
