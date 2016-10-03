@@ -93,7 +93,8 @@ endfunction()
 #
 #   drake_add_cc_test(<name>)
 #
-#   drake_add_cc_test(NAME <name> [CONFIGURATIONS <configuration>...]
+#   drake_add_cc_test(NAME <name> [EXTENSION <extension>]
+#                    [CONFIGURATIONS <configuration>...]
 #                    [SIZE <small | medium | large | enormous>]
 #                    [WORKING_DIRECTORY <directory>] [EXCLUDE_FROM_ALL])
 #
@@ -101,7 +102,9 @@ endfunction()
 #   NAME
 #     Set the name of the executable and the test. The name may not contain
 #     spaces or quotes. The C++ source code for the executable must be
-#     completely contained in a single file named <name>.cc.
+#     completely contained in a single file named <name>.<extension>.
+#   EXTENSION
+#     Set the source code extension; if not given, use "cc" by default.
 #   CONFIGURATIONS
 #     Restrict execution of the test to only the named configurations.
 #   SIZE
@@ -120,18 +123,22 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_add_cc_test)
   # Parse optional keyword arguments.
-  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
+  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;EXTENSION;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
 
   # Set name from first and only (non-keyword) argument in short signature.
   if(NOT _EXCLUDE_FROM_ALL AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
     set(_NAME ${ARGV0})
   endif()
 
+  if(NOT _EXTENSION)
+    set(_EXTENSION "cc")
+  endif()
+
   # Add the executable and link with gtest and gtest-main.
   if(_EXCLUDE_FROM_ALL)
     set(_exclude_from_all EXCLUDE_FROM_ALL)
   endif()
-  add_executable(${_NAME} ${_NAME}.cc ${_exclude_from_all})
+  add_executable(${_NAME} ${_NAME}.${_EXTENSION} ${_exclude_from_all})
   target_include_directories(${_NAME} PRIVATE ${GTEST_INCLUDE_DIRS})
   target_link_libraries(${_NAME} ${GTEST_BOTH_LIBRARIES})
 
