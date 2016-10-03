@@ -198,6 +198,10 @@ For more details on unit testing, see :ref:`here <unit-test-instructions>`.
 Other Handy Notes
 =================
 
+If you have only set your environment variables in your local shell, but want to use the IDE, you can launch it with e.g.
+``c:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\devenv drake.sln``
+
+
 To compile Fortran pods (e.g. ``avl``, ``xfoil``, ...), I installed Intel Parallel Studio XE Cluster (for ``ifort`` compiler, requires a license).
 Would have loved to use ``gfortran``, but my understanding is that it is fundamentally not compatible with the rest of the visual studio building tools.
 
