@@ -28,7 +28,8 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup systems
 template <typename T>
-class DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT PidControlledSpringMassSystem : public Diagram<T> {
+class DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem : public Diagram<T> {
  public:
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass controlled by a PID controller to achieve a specified target

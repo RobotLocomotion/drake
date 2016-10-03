@@ -74,7 +74,8 @@ class DRAKESPRINGMASSSYSTEMPLANT_EXPORT SpringMassStateVector
 ///
 /// @ingroup systems
 template <typename T>
-class DRAKESPRINGMASSSYSTEMPLANT_EXPORT SpringMassSystem : public LeafSystem<T> {
+class DRAKESPRINGMASSSYSTEMPLANT_EXPORT SpringMassSystem
+    : public LeafSystem<T> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.

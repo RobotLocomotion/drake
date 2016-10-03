@@ -131,14 +131,17 @@ void PidControlledSpringMassSystem<T>::set_velocity(
 }
 
 template <typename T>
-const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant() const {
+const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant()
+const {
   return *plant_;
 }
 
 template class
-DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT PidControlledSpringMassSystem<double>;
+DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem<double>;
 template class
-DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT PidControlledSpringMassSystem<AutoDiffXd>;
+DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
