@@ -5,6 +5,11 @@ if(BULLET_FOUND)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
   set(bullet "yes" CACHE STRING "yes")
 endif()
+
+if(fcl_FOUND)
+  list(APPEND drakeCollision_SRC_FILES fcl_model.cc)
+endif()
+
 set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} unusable_model.cc)
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
