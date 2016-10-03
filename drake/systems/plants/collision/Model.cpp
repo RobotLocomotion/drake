@@ -17,16 +17,7 @@ bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const Element* Model::FindElement(ElementId id) const {
-  auto element_iter = elements.find(id);
-  if (element_iter != elements.end()) {
-    return element_iter->second.get();
-  } else {
-    return nullptr;
-  }
-}
-
-Element* Model::FindMutableElement(ElementId id) {
+const Element* Model::readElement(ElementId id) const {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();

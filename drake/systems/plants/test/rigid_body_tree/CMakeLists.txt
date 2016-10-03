@@ -10,6 +10,3 @@ target_link_libraries(rigid_body_tree_test drakeRBSystem)
 
 drake_add_cc_test(rigid_body_tree_inverse_dynamics_test)
 target_link_libraries(rigid_body_tree_inverse_dynamics_test drakeRBSystem)
-
-drake_add_cc_test(rigid_body_collision_clique_test)
-target_link_libraries(rigid_body_collision_clique_test drakeRBSystem)

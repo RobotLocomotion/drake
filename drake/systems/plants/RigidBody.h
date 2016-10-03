@@ -188,22 +188,25 @@ class DRAKERBM_EXPORT RigidBody {
   const DrakeShapes::VectorOfVisualElements& get_visual_elements() const;
 
   /**
-   * Sets the rigid body's self-collision logic.
-   *
-   * The body may or may not require a self-collision clique. If not, the
-   * provided clique id will remain unused.
-   * @param[in] clique_id  An available clique id.
-   * @returns true if the clique id was used.
+   * Adds a collision element to this rigid body by collision element @p id.
+   * This effectively defines the collision geometry of this rigid body. If more
+   * than one collision element is added, the resulting collision geometry is
+   * the union of the individual geometries of each collision element.
    */
-  bool SetSelfCollisionClique(int clique_id);
+  void AddCollisionElement(DrakeCollision::ElementId id);
 
   /**
-   * Adds the given collision @p element to the body with the given group name.
-   * @param[in] group_name The collision element's group name.
-   * @param[in] element The element to associate with the rigid body.
+   * Adds a collision element represented by its @p id to the collision group
+   * @p group_name. Collision groups are just a convenient way to group a
+   * collection of collision elements so that they can be referenced by the name
+   * of the group they belong to. There is no implication on whether these
+   * elements can collide between them or not.
+   *
+   * Note that the collision element @p id must have already been passed to
+   * RigidBody::AddCollisionElement().
    */
-  void AddCollisionElement(const std::string& group_name,
-                           DrakeCollision::Element* element);
+  void AddCollisionElementToGroup(const std::string& group_name,
+      DrakeCollision::ElementId id);
 
   /**
    * @returns A reference to an `std::vector` of collision elements that
@@ -253,34 +256,9 @@ class DRAKERBM_EXPORT RigidBody {
   void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group);
 
   // TODO(amcastro-tri): Change to is_adjacent_to().
-  // TODO(SeanCurtis-TRI): This method is only used by the collision clique
-  // calculation.  Maybe it would be better if the name reflected this: e.g.,
-  // is_collision_adjacent(), or some such thing.
-  /**
-   * Reports if this body is considered "adjacent" to the given body.
-   *
-   * "Adjacency" refers to the idea that the bodies are connected to each other
-   * in the rigid body tree by a non-floating joint. By this definition,
-   * a rigid body is *not* adjacent to itself.
-   *
-   * In the degenerate case where one rigid body is a parent of the other, but
-   * with no joint assigned, the rigid bodies will be considered adjacent.
-   * Conversely, the degenerate case where a joint is assigned, but the parent
-   * relationship is not set, the rigid bodies will *not* be considered
-   * adjacent.
-   * @param[in] other The body to test against this body.
-   * @returns `true` if the bodies are "adjacent".
-   */
   bool adjacentTo(const RigidBody& other) const;
 
-  /**
-   * Returns `true` if this body should be checked for collisions
-   * with the @p other body.  CanCollideWith should be commutative: A can
-   * collide with B implies B can collide with A.
-   * @param[in] other The body to query against.
-   * @returns `true` if collision between this and other should be tested.
-   */
-  bool CanCollideWith(const RigidBody& other) const;
+  bool CollidesWith(const RigidBody& other) const;
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
@@ -350,15 +328,6 @@ class DRAKERBM_EXPORT RigidBody {
   void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
 
-  /** Adds body to a given collision clique by clique id.
-   *
-   * This call adds each of the collision elements in this body to the provided
-   * collision clique.
-   * @param[in] clique_id Collision clique id.
-   * @see Element::AddToCollisionClique.
-   */
-  void AddCollisionElementsToClique(int clique_id);
-
  public:
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
@@ -424,17 +393,6 @@ class DRAKERBM_EXPORT RigidBody {
   std::map<std::string, std::vector<DrakeCollision::ElementId>>
       collision_element_groups_;
 
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
-  typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
-
-  CollisionElementsIterator collision_elements_begin() {
-    return collision_elements_.begin();
-  }
-
-  CollisionElementsIterator collision_elements_end() {
-    return collision_elements_.end();
-  }
-
   // The contact points this rigid body has with its environment.
   Eigen::Matrix3Xd contact_points_;
 
@@ -446,9 +404,4 @@ class DRAKERBM_EXPORT RigidBody {
 
   // The spatial inertia of this rigid body.
   drake::SquareTwistMatrix<double> spatial_inertia_;
-
-  // TODO(SeanCurtis-TRI): This data is only used in the compilation of the
-  // body.  As such, it should be moved into a factory so that the runtime
-  // class only has runtime data.
-  CollisionElementsVector collision_elements_;
 };

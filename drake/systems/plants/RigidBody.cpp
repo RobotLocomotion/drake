@@ -82,23 +82,18 @@ void RigidBody::AddVisualElement(const DrakeShapes::VisualElement& element) {
   visual_elements_.push_back(element);
 }
 
-void RigidBody::AddCollisionElementsToClique(int clique_id) {
-  for (const auto& element : collision_elements_) {
-    element->AddToCollisionClique(clique_id);
-  }
-}
-
 const DrakeShapes::VectorOfVisualElements& RigidBody::get_visual_elements()
     const {
   return visual_elements_;
 }
 
-void RigidBody::AddCollisionElement(const std::string& group_name,
-                                    DrakeCollision::Element* element) {
-  DrakeCollision::ElementId id = element->getId();
+void RigidBody::AddCollisionElement(DrakeCollision::ElementId id) {
   collision_element_ids_.push_back(id);
+}
+
+void RigidBody::AddCollisionElementToGroup(const std::string& group_name,
+    DrakeCollision::ElementId id) {
   collision_element_groups_[group_name].push_back(id);
-  collision_elements_.push_back(element);
 }
 
 const std::vector<DrakeCollision::ElementId>&
@@ -161,7 +156,7 @@ bool RigidBody::adjacentTo(const RigidBody& other) const {
            !(other.joint_ && other.joint_->isFloating())));
 }
 
-bool RigidBody::CanCollideWith(const RigidBody& other) const {
+bool RigidBody::CollidesWith(const RigidBody& other) const {
   bool ignored =
       this == &other || adjacentTo(other) ||
       (collision_filter_group_ & other.getCollisionFilterIgnores()).any() ||
@@ -253,12 +248,4 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
       << "  - Collision elements IDs: " << collision_element_str.str();
 
   return out;
-}
-
-bool RigidBody::SetSelfCollisionClique(int clique_id) {
-  if (collision_elements_.size() > 1) {
-    AddCollisionElementsToClique(clique_id);
-    return true;
-  }
-  return false;
 }
