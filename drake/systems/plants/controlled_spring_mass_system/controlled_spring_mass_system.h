@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/plants/spring_mass_system/spring_mass_system.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
