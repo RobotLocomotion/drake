@@ -31,33 +31,31 @@ class RigidBodyTreeTest : public ::testing::Test {
     tree.reset(new RigidBodyTree());
 
     // Defines four rigid bodies.
-    r1b1 = new RigidBody();
-    r1b1->set_model_name("robot1");
-    r1b1->set_name("body1");
+    r1b1_ = std::make_unique<RigidBody>();
+    r1b1_->set_model_name("robot1");
+    r1b1_->set_name("body1");
 
-    r2b1 = new RigidBody();
-    r2b1->set_model_name("robot2");
-    r2b1->set_name("body1");
+    r2b1_ = std::make_unique<RigidBody>();
+    r2b1_->set_model_name("robot2");
+    r2b1_->set_name("body1");
 
-    r3b1 = new RigidBody();
-    r3b1->set_model_name("robot3");
-    r3b1->set_name("body1");
+    r3b1_ = std::make_unique<RigidBody>();
+    r3b1_->set_model_name("robot3");
+    r3b1_->set_name("body1");
 
-    r4b1 = new RigidBody();
-    r4b1->set_model_name("robot4");
-    r4b1->set_name("body1");
+    r4b1_ = std::make_unique<RigidBody>();
+    r4b1_->set_model_name("robot4");
+    r4b1_->set_name("body1");
   }
 
  public:
   // TODO(amcastro-tri): A stack object here (preferable to a pointer)
   // generates build issues on Windows platforms. See git-hub issue #1854.
   std::unique_ptr<RigidBodyTree> tree;
-  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's.
-  RigidBody* r1b1{};
-  RigidBody* r2b1{};
-  RigidBody* r3b1{};
-  RigidBody* r4b1{};
+  std::unique_ptr<RigidBody> r1b1_{};
+  std::unique_ptr<RigidBody> r2b1_{};
+  std::unique_ptr<RigidBody> r3b1_{};
+  std::unique_ptr<RigidBody> r4b1_{};
 };
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
@@ -66,8 +64,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
   // RigidBodyTree takes ownership of these bodies.
   // User still has access to these bodies through the raw pointers.
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
+  RigidBody* r1b1 = tree->add_rigid_body(std::move(r1b1_));
+  RigidBody* r2b1 = tree->add_rigid_body(std::move(r2b1_));
 
   EXPECT_TRUE(tree->FindBody("body1", "robot1") != nullptr);
   EXPECT_TRUE(tree->FindBody("body1", "robot2") != nullptr);
@@ -95,10 +93,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
-  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
+  RigidBody* r1b1 = tree->add_rigid_body(std::move(r1b1_));
+  RigidBody* r2b1 = tree->add_rigid_body(std::move(r2b1_));
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world at offset x = 1, y = 1, z = 1.
@@ -134,9 +130,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1 to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
-  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
+  RigidBody* r1b1 = tree->add_rigid_body(std::move(r1b1_));
 
   AddFloatingJoint(kQuaternion, {r1b1->get_body_index()},
                    nullptr /* weld_to_frame */, nullptr /* pose_map */,
@@ -144,9 +138,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   // Adds rigid body r2b1 to the rigid body tree and welds it to r1b1 with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
-  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r2b1));
+  RigidBody* r2b1 = tree->add_rigid_body(std::move(r2b1_));
 
   Eigen::Isometry3d T_r2_to_r1;
   {
@@ -165,10 +157,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
-  // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r3b1));
-  tree->add_rigid_body(std::unique_ptr<RigidBody>(r4b1));
+  RigidBody* r3b1 = tree->add_rigid_body(std::move(r3b1_));
+  RigidBody* r4b1 = tree->add_rigid_body(std::move(r4b1_));
 
   Eigen::Isometry3d T_r3_and_r4_to_r2;
   {
