@@ -7,9 +7,8 @@ classdef SoftPaddleControl < DrakeSystem
     
     methods
         function obj = SoftPaddleControl(plant)
-%             obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
-            obj = obj@DrakeSystem(0,0,9,1);
-
+            %obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
+            obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
             obj.kp = 100;
