@@ -1,0 +1,109 @@
+#include "drake/systems/analysis/simulator.h"
+#include "sys2_dummy_val.h"
+#include "sys2_qp.h"
+#include "drake/common/drake_path.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/primitives/constant_value_source.h"
+#include "drake/systems/framework/diagram_builder.h"
+
+using namespace drake;
+using namespace systems;
+
+static std::string urdf = drake::GetDrakePath() + std::string("/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
+RigidBodyTree robot(urdf);
+
+void const_acc_test() {
+  System2DummyValkyrieSim val(robot);
+  DiagramBuilder<double> builder;
+
+  example::qp_inverse_dynamics::QPOutput out(robot);
+  out.mutable_vd() = Eigen::VectorXd::Constant(robot.get_num_velocities(), 0.01);
+
+  std::unique_ptr<System<double>> const_qp_out = std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPOutput>(out)));
+  builder.Connect(const_qp_out->get_output_port(0), val.get_input_port(0));
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+
+  // set initial state
+  // probably should pass in sub context?
+  val.set_initial_state(simulator.get_mutable_context());
+
+  simulator.request_initial_step_size_attempt(1e-2);
+  simulator.Initialize();
+
+  simulator.StepTo(0.1);
+}
+
+example::qp_inverse_dynamics::QPInput default_QP_input(const RigidBodyTree& r) {
+  example::qp_inverse_dynamics::QPInput input(r);
+  input.mutable_desired_comdd().setZero();
+  input.mutable_w_com() = 1e3;
+
+  input.mutable_desired_vd().setZero();
+  input.mutable_w_vd() = 1;
+
+  example::qp_inverse_dynamics:: DesiredBodyAcceleration pelvdd_d(*r.FindBody("pelvis"));
+  pelvdd_d.mutable_weight() = 1e1;
+  pelvdd_d.mutable_acceleration().setZero();
+  input.mutable_desired_body_accelerations().push_back(pelvdd_d);
+
+  example::qp_inverse_dynamics::DesiredBodyAcceleration torsodd_d(*r.FindBody("torso"));
+  torsodd_d.mutable_weight() = 1e1;
+  torsodd_d.mutable_acceleration().setZero();
+  input.mutable_desired_body_accelerations().push_back(torsodd_d);
+
+  input.mutable_w_basis_reg() = 1e-6;
+
+  // Make contact points.
+  example::qp_inverse_dynamics::ContactInformation left_foot_contact(
+      *r.FindBody("leftFoot"), 4);
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(0.2, 0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(0.2, -0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(-0.05, -0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(-0.05, 0.05, -0.09));
+
+  example::qp_inverse_dynamics::ContactInformation right_foot_contact(
+      *r.FindBody("rightFoot"), 4);
+  right_foot_contact.mutable_contact_points() =
+      left_foot_contact.contact_points();
+
+  input.mutable_contact_info().push_back(left_foot_contact);
+  input.mutable_contact_info().push_back(right_foot_contact);
+
+  return input;
+}
+
+void close_loop_test() {
+  System2DummyValkyrieSim val(robot);
+  System2QP qp_con(robot);
+  example::qp_inverse_dynamics::QPInput input = default_QP_input(robot);
+
+  DiagramBuilder<double> builder;
+  builder.Connect(qp_con.get_output_port(0), val.get_input_port(0));
+  builder.Connect(val.get_output_port(0), qp_con.get_input_port(0));
+
+  // qp input
+  std::unique_ptr<System<double>> const_qp_input = std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPInput>(input)));
+  builder.Connect(const_qp_input->get_output_port(0), qp_con.get_input_port(1));
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  // probably should pass in sub context?
+  val.set_initial_state(simulator.get_mutable_context());
+
+  simulator.request_initial_step_size_attempt(1e-2);
+  simulator.Initialize();
+  simulator.StepTo(1.0);
+}
+
+int main() {
+
+  close_loop_test();
+
+  return 0;
+}
