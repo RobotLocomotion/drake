@@ -952,8 +952,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * RigidBodyTree::body.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
+   * @return A bare, unowned pointer to the @p body.
    */
-  void add_rigid_body(std::unique_ptr<RigidBody> body);
+  RigidBody* add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
