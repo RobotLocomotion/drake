@@ -51,6 +51,8 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
 
   void StartReceiveThread() override;
 
+  void StopReceiveThread() override;
+
   /**
    * An accessor to the real LCM instance encapsulated by this object. The
    * returned pointer is guaranteed to be valid for the duration of this
@@ -69,8 +71,8 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
 
  private:
   ::lcm::LCM lcm_;
-  std::unique_ptr<LcmReceiveThread> receive_thread_;
-  std::vector<unique_ptr<DrakeLcmSubscriber>> subscriptions_;
+  std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
+  std::vector<unique_ptr<DrakeLcmSubscriber>> subscriptions_{};
 };
 
 }  // namespace lcm

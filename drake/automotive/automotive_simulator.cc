@@ -247,6 +247,12 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
 }
 
 template <typename T>
+void AutomotiveSimulator<T>::Stop() {
+  DRAKE_DEMAND(started_);
+  lcm_->StopReceiveThread();
+}
+
+template <typename T>
 int AutomotiveSimulator<T>::allocate_vehicle_number() {
   DRAKE_DEMAND(!started_);
   return next_vehicle_number_++;

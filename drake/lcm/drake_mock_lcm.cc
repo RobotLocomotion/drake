@@ -20,7 +20,11 @@ DrakeMockLcm::DrakeMockLcm() {
 }
 
 void DrakeMockLcm::StartReceiveThread() {
-  // Do nothing.
+  received_thread_started_ = true;
+}
+
+void DrakeMockLcm::StopReceiveThread() {
+  received_thread_started_ = false;
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void *data,
@@ -71,12 +75,14 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
 
 void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
     const void *data, unsigned int data_size) {
-  if (subscriptions_.find(channel) == subscriptions_.end()) {
-    throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
-        "subscription to channel \"" + channel + "\".");
-  } else {
-    subscriptions_[channel]->get_subscriber()->HandleMessage(channel, data,
-        data_size);
+  if (received_thread_started_) {
+    if (subscriptions_.find(channel) == subscriptions_.end()) {
+      throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
+          "subscription to channel \"" + channel + "\".");
+    } else {
+      subscriptions_[channel]->get_subscriber()->HandleMessage(channel, data,
+          data_size);
+    }
   }
 }
 

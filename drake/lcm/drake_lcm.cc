@@ -1,5 +1,7 @@
 #include "drake/lcm/drake_lcm.h"
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace lcm {
 
@@ -15,7 +17,13 @@ DrakeLcm::DrakeLcm() {
 }
 
 void DrakeLcm::StartReceiveThread() {
+  DRAKE_DEMAND(receive_thread_ == nullptr);
   receive_thread_ = make_unique<LcmReceiveThread>(&lcm_);
+}
+
+void DrakeLcm::StopReceiveThread() {
+  DRAKE_DEMAND(receive_thread_ != nullptr);
+  receive_thread_->Stop();
 }
 
 ::lcm::LCM* DrakeLcm::get_lcm_instance() {

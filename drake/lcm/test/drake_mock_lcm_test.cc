@@ -40,6 +40,8 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
     EXPECT_EQ(static_cast<uint8_t*>(published_message_bytes)[i],
         message_bytes[i]);
   }
+
+  dut.StopReceiveThread();
 }
 
 // Handles received LCM messages.
@@ -106,6 +108,8 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   for (int i = 0; i < message_size; ++i) {
     EXPECT_EQ(received_bytes[i], message_bytes[i]);
   }
+
+  dut.StopReceiveThread();
 }
 
 }  // namespace

@@ -88,6 +88,8 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_EQ(
       &simulator->GetDiagramSystemByName(driving_command_name), &command_sub);
   EXPECT_EQ(&simulator->GetDiagramSystemByName(joint_state_name), &state_pub);
+
+  simulator->Stop();
 }
 
 // Cover AddTrajectoryCar (and thus AddPublisher).

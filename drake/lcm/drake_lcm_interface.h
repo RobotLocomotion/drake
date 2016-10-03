@@ -12,11 +12,20 @@ namespace lcm {
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
   /**
-   * Starts the receive thread. This should be called *after* all of the
-   * subscribers are instantiated. Otherwise, the subscribers may be destroyed
-   * while the receive thread is still running resulting a segmentation fault.
+   * Starts the receive thread. This must be called for subscribers to receive
+   * any messages.
+   *
+   * @pre StartReceiveThread() was not called.
    */
   virtual void StartReceiveThread() = 0;
+
+  /**
+   * Stops the receive thread. This should be called prior to any subscribers
+   * being destroyed. Otherwise a segmentation fault may occur.
+   *
+   * @pre StartReceiveThread() was called.
+   */
+  virtual void StopReceiveThread() = 0;
 
   /**
    * Publishes a raw data LCM message.

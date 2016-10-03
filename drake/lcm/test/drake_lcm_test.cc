@@ -66,7 +66,7 @@ class MessageSubscriber {
   drake::lcmt_drake_signal received_message_;
 };
 
-// This is a test fixture.
+// This is a test fixture that defines a `drake::lcmt_drake_signal` message.
 class DrakeLcmTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -125,6 +125,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 
+  dut.StopReceiveThread();
   EXPECT_TRUE(done);
 }
 
@@ -169,7 +170,7 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   drake::lcmt_drake_signal received_message_;
 };
 
-// Tests DrakeLcm's ability to publish an LCM message.
+// Tests DrakeLcm's ability to subscribe to an LCM message.
 TEST_F(DrakeLcmTest, SubscribeTest) {
   const std::string channel_name = "drake_lcm_subscriber_channel_name";
 
@@ -204,6 +205,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 
+  dut.StopReceiveThread();
   EXPECT_TRUE(done);
 }
 

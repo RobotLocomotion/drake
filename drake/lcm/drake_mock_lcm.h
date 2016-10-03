@@ -49,12 +49,9 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   DrakeMockLcm(const DrakeMockLcm&) = delete;
   DrakeMockLcm& operator=(const DrakeMockLcm&) = delete;
 
-  /**
-   * Starts the receive thread. This should be called *after* all of the
-   * subscribers are instantiated. Otherwise, the subscribers may be destroyed
-   * while the receive thread is still running resulting a segmentation fault.
-   */
   void StartReceiveThread() override;
+
+  void StopReceiveThread() override;
 
   void Publish(const std::string& channel, const void *data,
                unsigned int data_size) override;
@@ -87,8 +84,9 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
       DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
-   * Fakes a callback. The callback is executed by the same thread as the one
-   * calling this method.
+   * Fakes a callback. This will only works if StartReceivedThread() was already
+   * called. The callback is executed by the same thread as the one calling this
+   * method.
    *
    * @param[in] channel The channel on which to publish the message.
    *
@@ -101,6 +99,8 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
       unsigned int data_size);
 
  private:
+  bool received_thread_started_{false};
+
   struct LastPublishedMessage {
     std::string channel{};
     std::vector<uint8_t> data{};
