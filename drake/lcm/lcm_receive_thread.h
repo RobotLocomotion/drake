@@ -10,11 +10,11 @@
 namespace drake {
 namespace lcm {
 
-// /// @cond
+/// @cond
 
-// bool DRAKELCM_EXPORT WaitForLcm(::lcm::LCM* lcm, double timeout);
+bool DRAKELCM_EXPORT WaitForLcm(::lcm::LCM* lcm, double timeout);
 
-// /// @endcond
+/// @endcond
 
 /**
  * Maintains a thread that receives LCM messages and dispatches the messages to
@@ -50,9 +50,6 @@ class DRAKELCM_EXPORT LcmReceiveThread {
   // Loops waiting for LCM messages and dispatching them to the appropriate
   // subscriber message handlers when they arrive.
   void LoopWithSelect();
-
-  // Waits for an LCM message to arrive.
-  bool WaitForLcm(::lcm::LCM* lcm, double timeout) const;
 
   // Whether to stop lcm_thread_.
   std::atomic<bool> stop_{false};
