@@ -30,7 +30,7 @@ LcmReceiveThread::~LcmReceiveThread() {
 namespace {
 
 // Waits for an LCM message to arrive.
-inline bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
+bool DRAKELCM_EXPORT WaitForLcm(::lcm::LCM* lcm, double timeout) {
   int lcm_file_descriptor = lcm->getFileno();
 
   struct timeval tv;
