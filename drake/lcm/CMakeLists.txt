@@ -1,5 +1,5 @@
-# Creates lists of header files, source files, and libraries that should ways be
-# included regardless of whether LCM is present.
+# Creates lists of header files, source files, and libraries that should always
+# be included regardless of whether LCM is present.
 set(lcm_independent_header_files
     drake_lcm_interface.h
     drake_mock_lcm.h)

@@ -39,7 +39,7 @@ class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
 /**
  * A *mock* LCM instance. This does not actually publish or subscribe to LCM
  * messages. It contains additional methods for accessing the most recent
- * message that would have been published, and faking a callback.
+ * message that was "published," and faking a callback.
  */
 class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
  public:
@@ -57,9 +57,9 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
                unsigned int data_size) override;
 
   /**
-   * Obtains the most recently published message on a particular channel.
+   * Obtains the most recently "published" message on a particular channel.
    *
-   * @param[inb] channel The channel on which the LCM message was published.
+   * @param[in] channel The channel on which the LCM message was published.
    *
    * @param[out] data A pointer to where the pointer to the message's serialized
    * byte array should be saved.
@@ -84,7 +84,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
       DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
-   * Fakes a callback. This will only works if StartReceivedThread() was already
+   * Fakes a callback. This will only work if StartReceivedThread() was already
    * called. The callback is executed by the same thread as the one calling this
    * method.
    *

@@ -14,6 +14,7 @@ namespace systems {
 namespace lcm {
 
 using drake::lcm::DrakeLcmInterface;
+
 /**
  * Publishes an LCM message containing information from its input port.
  */

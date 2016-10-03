@@ -64,7 +64,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
     return channel_;
   }
 
-  uint8_t* get_buffer() {
+  const uint8_t* get_buffer() {
     return &buffer_[0];
   }
 
@@ -104,7 +104,7 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
 
   EXPECT_EQ(handler.get_buffer_size(), message_size);
 
-  uint8_t* received_bytes = handler.get_buffer();
+  const uint8_t* received_bytes = handler.get_buffer();
   for (int i = 0; i < message_size; ++i) {
     EXPECT_EQ(received_bytes[i], message_bytes[i]);
   }
