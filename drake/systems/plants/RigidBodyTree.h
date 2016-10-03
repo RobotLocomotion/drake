@@ -142,6 +142,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // This method is not thread safe!
   int add_model_instance();
 
+  // This method is not thread safe.
+  int get_next_clique_id() { return next_available_clique_++; }
+
   /**
    * Returns the number of model instances in the tree.
    */
@@ -1039,6 +1042,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // See RigidBodyTree::compile
   void SortTree();
 
+  // Defines a number of collision cliques to be used by DrakeCollision::Model.
+  // Collision cliques are defined so that:
+  // - There is one clique per RigidBody: and so CollisionElement's attached to
+  // a RigidBody do not collide.
+  // - There is one clique per pair of RigidBodies that are not meant to
+  // collide. These are determined according to the policy provided by
+  // RigidBody::CanCollideWith.
+  //
+  // Collision cliques provide a simple mechanism to omit pairs of collision
+  // elements from collision tests. The collision element pair (A, B) will not
+  // be tested for collision if A and B belong to the same clique.
+  // This particular method implements a default heuristics to create cliques
+  // for a RigidBodyTree which are in accordance to the policy implemented by
+  // RigidBody::CanCollideWith().
+  //
+  // @see RigidBody::CanCollideWith.
+  void CreateCollisionCliques();
+
   // collision_model maintains a collection of the collision geometry in the
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
@@ -1059,4 +1080,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
   bool initialized_{false};
+
+  int next_available_clique_ = 0;
 };
