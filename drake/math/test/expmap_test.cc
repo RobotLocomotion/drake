@@ -27,7 +27,7 @@ void ConvertQuaternionToExpmapAndBack(const Vector4d& quat) {
   auto quat_back = autoDiffToValueMatrix(quat_back_autodiff);
   auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
 
-  EXPECT_NEAR(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
+  EXPECT_NEAR(std::abs(quat.dot(quat_back)), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
   EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
                               1e-10, MatrixCompareType::absolute));

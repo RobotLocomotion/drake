@@ -591,12 +591,12 @@ PointPair BulletModel::findClosestPointsBetweenElements(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
   auto bt_objA_iter = bt_world.bt_collision_objects.find(idA);
-  DRAKE_ABORT_UNLESS(bt_objA_iter != bt_world.bt_collision_objects.end() &&
+  DRAKE_DEMAND(bt_objA_iter != bt_world.bt_collision_objects.end() &&
       "In BulletModel::findClosestPointsBetweenElements: "
           "invalid ElementId for body A.");
 
   auto bt_objB_iter = bt_world.bt_collision_objects.find(idB);
-  DRAKE_ABORT_UNLESS(bt_objB_iter != bt_world.bt_collision_objects.end() &&
+  DRAKE_DEMAND(bt_objB_iter != bt_world.bt_collision_objects.end() &&
         "In BulletModel::findClosestPointsBetweenElements: "
             "invalid ElementId for body B.");
 

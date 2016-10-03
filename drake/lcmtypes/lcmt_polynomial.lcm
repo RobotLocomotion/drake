@@ -1,10 +1,10 @@
 package drake;
 
-struct lcmt_polynomial
-{
-	int64_t timestamp;
+struct lcmt_polynomial {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
 
-	int32_t num_coefficients;
+  int32_t num_coefficients;
 
-	double coefficients[num_coefficients];
+  double coefficients[num_coefficients];
 }

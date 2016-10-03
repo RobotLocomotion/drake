@@ -1,19 +1,12 @@
 #include "iiwa_simulation.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-using Eigen::MatrixXd;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
-using drake::RigidBodySystem;
 using lcm::LCM;
 
 std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(
@@ -22,8 +15,9 @@ const std::string &file_name) {
   auto rigid_body_system = std::allocate_shared<RigidBodySystem>(
       Eigen::aligned_allocator<RigidBodySystem>());
 
-  rigid_body_system->AddModelInstanceFromFile(drake::GetDrakePath() + file_name,
-                                              DrakeJoint::FIXED);
+  rigid_body_system->AddModelInstanceFromFile(
+      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+      drake::systems::plants::joints::kFixed);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;
@@ -96,8 +90,8 @@ void CheckLimitViolations(
     const std::shared_ptr<drake::RigidBodySystem> rigid_body_sys,
     const Eigen::VectorXd& final_robot_state) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  int num_positions = rigid_body_sys->get_num_positions();
+  int num_velocities = rigid_body_sys->get_num_velocities();
 
   // Ensures the size of the output is correct.
   if (final_robot_state.size() !=
@@ -131,8 +125,9 @@ void CheckLimitViolations(
   std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size()); ++body_index) {
-    // Skips rigid bodies without a parent (this includes the world link).
-    if (!bodies[body_index]->hasParent()) continue;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!bodies[body_index]->has_parent_body()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

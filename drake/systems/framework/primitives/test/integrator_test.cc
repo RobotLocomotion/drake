@@ -41,11 +41,11 @@ class IntegratorTest : public ::testing::Test {
   }
 
   ContinuousState<double>* continuous_state() {
-    return context_->get_mutable_state()->continuous_state.get();
+    return context_->get_mutable_continuous_state();
   }
 
   std::unique_ptr<System<double>> integrator_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
@@ -77,8 +77,7 @@ TEST_F(IntegratorTest, Output) {
   integrator_->EvalOutput(*context_, output_.get());
 
   ASSERT_EQ(1, output_->get_num_ports());
-  const BasicVector<double>* output_port =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_port = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_port);
 
   Eigen::Vector3d expected;

@@ -3,6 +3,10 @@
 /// @file
 /// This file contains abbreviated definitions for certain specializations of
 /// Eigen::Matrix that are commonly used in Drake.
+/// These convenient definitions are templated on the scalar type of the Eigen
+/// object. While Drake uses `<T>` for scalar types across the entire code base
+/// we decided in this file to use `<Scalar>` to be more consistent with the
+/// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
 #include <Eigen/Dense>
@@ -50,9 +54,21 @@ using Matrix3X = Eigen::Matrix<Scalar, 3, Eigen::Dynamic>;
 template <typename Scalar>
 using Matrix4X = Eigen::Matrix<Scalar, 4, Eigen::Dynamic>;
 
+/// A matrix of 6 rows, dynamic columns, templated on scalar type.
+template <typename Scalar>
+using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
+
 /// A matrix of dynamic size, templated on scalar type.
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+/// A quaternion templated on scalar type.
+template <typename Scalar>
+using Quaternion = Eigen::Quaternion<Scalar>;
+
+/// An Isometry templated on scalar type.
+template <typename Scalar>
+using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
@@ -68,5 +84,9 @@ using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
 /// A six-by-six matrix.
 template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
+
+/// A column vector consisting of one wrench.
+template <typename Scalar>
+using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 
 }  // namespace drake

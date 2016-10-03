@@ -28,18 +28,18 @@ int main(int argc, char* argv[]) {
   }
 
   VectorXd q = model->getZeroConfiguration();
-  VectorXd v = VectorXd::Zero(model->number_of_velocities());
+  VectorXd v = VectorXd::Zero(model->get_num_velocities());
   int i;
 
-  if (argc >= 2 + model->number_of_positions()) {
-    for (i = 0; i < model->number_of_positions(); i++)
+  if (argc >= 2 + model->get_num_positions()) {
+    for (i = 0; i < model->get_num_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
   if (argc >=
-      2 + model->number_of_positions() + model->number_of_velocities()) {
-    for (i = 0; i < model->number_of_velocities(); i++)
-      sscanf(argv[2 + model->number_of_positions() + i], "%lf", &v(i));
+      2 + model->get_num_positions() + model->get_num_velocities()) {
+    for (i = 0; i < model->get_num_velocities(); i++)
+      sscanf(argv[2 + model->get_num_positions() + i], "%lf", &v(i));
   }
 
   KinematicsCache<double> cache = model->doKinematics(q, v);
@@ -47,9 +47,8 @@ int main(int argc, char* argv[]) {
   auto H = model->massMatrix(cache);
   cout << H << endl;
 
-  eigen_aligned_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
-  auto C = model->dynamicsBiasTerm(cache, f_ext);
+  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  auto C = model->dynamicsBiasTerm(cache, no_external_wrenches);
   cout << C << endl;
 
   cout << model->B << endl;

@@ -163,7 +163,7 @@ A simulation of a dynamical car model based on the Toyota Prius body, simulated 
 
 	<iframe width="560" height="315" src="https://www.youtube.com/embed/dbtz6Gvs1Q8?rel=0" frameborder="0" allowfullscreen></iframe>
 
-*Source Code:* `drake/examples/Cars <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Cars>`_
+*Source Code:* `drake/automotive <https://github.com/RobotLocomotion/drake/tree/master/drake/automotive>`_
 
 
 Canonical Underactuated Systems

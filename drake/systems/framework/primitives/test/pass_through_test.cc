@@ -29,14 +29,14 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class PassThroughTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    pass_through_ = make_unique<PassThrough<double>>(3 /* length */);
+    pass_through_ = make_unique<PassThrough<double>>(3 /* size */);
     context_ = pass_through_->CreateDefaultContext();
     output_ = pass_through_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> pass_through_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -59,15 +59,14 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
   // output are consistent.
   ASSERT_EQ(1, output_->get_num_ports());
   ASSERT_EQ(1, pass_through_->get_num_output_ports());
-  const BasicVector<double>* output_vector =
-      dynamic_cast<const BasicVector<double>*>(output_->get_vector_data(0));
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_vector);
   EXPECT_EQ(input_vector, output_vector->get_value());
 }
 
 // Tests that PassThrough allocates no state variables in the context_.
 TEST_F(PassThroughTest, PassThroughIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

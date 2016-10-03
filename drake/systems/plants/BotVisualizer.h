@@ -1,3 +1,5 @@
+// TODO(liang.fok) Delete this class once all System 1.0-based demos that use
+// it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
 #include <lcm/lcm-cpp.hpp>
@@ -6,24 +8,24 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 
-// these could all go in the cpp file:
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 
-/** BotVisualizer<RobotStateVector>
- * @brief A system which takes the robot state as input and publishes an lcm
- *draw command to the drake visualizer
+/**
+ * A system that takes the robot state as input and publishes an LCM
+ * draw command to the Drake Visualizer.
+ *
  * @concept{system_concept}
  *
  * The resulting system has no internal state; the publish command is executed
- *on every call to the output method.
+ * on every call to the output method.
  * For convenience, the input is passed directly through as an output.
  *
  */
-
 template <template <typename> class RobotStateVector>
 class BotVisualizer {
  public:
@@ -42,7 +44,8 @@ class BotVisualizer {
 
   BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
                 const std::string& urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type)
+                const drake::systems::plants::joints::FloatingBaseType
+                    floating_base_type)
       : tree_(new RigidBodyTree(urdf_filename, floating_base_type)), lcm_(lcm) {
     init();
   }
@@ -155,7 +158,7 @@ class BotVisualizer {
                               const InputVector<double>& u) const {
     draw_msg_.timestamp = static_cast<int64_t>(t * 1000.0);
 
-    const Eigen::VectorXd q = toEigen(u).head(tree_->number_of_positions());
+    const Eigen::VectorXd q = toEigen(u).head(tree_->get_num_positions());
     KinematicsCache<double> cache = tree_->doKinematics(q);
 
     for (size_t i = 0; i < tree_->bodies.size(); i++) {

@@ -1,12 +1,14 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 
+#include "drake/common/eigen_autodiff_types.h"
+
 namespace drake {
 namespace systems {
 
 template <typename T>
 Demultiplexer<T>::Demultiplexer(int length, int output_ports_sizes) {
   // length must be a multiple of output_ports_sizes.
-  DRAKE_ABORT_UNLESS(length % output_ports_sizes == 0);
+  DRAKE_DEMAND(length % output_ports_sizes == 0);
 
   const int num_output_ports = length / output_ports_sizes;
 
@@ -21,7 +23,7 @@ Demultiplexer<T>::Demultiplexer(int length, int output_ports_sizes) {
 }
 
 template <typename T>
-void Demultiplexer<T>::EvalOutput(const ContextBase<T>& context,
+void Demultiplexer<T>::EvalOutput(const Context<T>& context,
                                   SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
@@ -31,7 +33,7 @@ void Demultiplexer<T>::EvalOutput(const ContextBase<T>& context,
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  auto in_vector = System<T>::get_input_vector(context, 0);
+  auto in_vector = System<T>::EvalEigenVectorInput(context, 0);
   for (int iport = 0; iport < this->get_num_output_ports(); ++iport) {
     auto out_vector = System<T>::GetMutableOutputVector(output, iport);
     out_vector = in_vector.segment(iport * out_size, out_size);
@@ -39,6 +41,7 @@ void Demultiplexer<T>::EvalOutput(const ContextBase<T>& context,
 }
 
 template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

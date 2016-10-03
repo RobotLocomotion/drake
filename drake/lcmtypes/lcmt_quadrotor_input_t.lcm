@@ -1,7 +1,7 @@
 package drake;
 
-struct lcmt_quadrotor_input_t
-{
+struct lcmt_quadrotor_input_t {
+  // The timestamp in milliseconds.
   int64_t timestamp;
 
   double motors[4];

@@ -45,7 +45,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       (QuasiStaticConstraint*)getDrakeMexPointer(prhs[0]);
   bool active = qsc->isActive();
   RigidBodyTree* model = qsc->getRobotPointer();
-  int nq = model->number_of_positions();
+  int nq = model->get_num_positions();
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   int num_weights = qsc->getNumWeights();
   double* weights = new double[num_weights];

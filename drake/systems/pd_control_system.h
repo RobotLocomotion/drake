@@ -8,15 +8,19 @@
 
 namespace drake {
 
-/** PDControlSystem<System>
- * @brief Wraps an existing system with a PD controller (the new system
- * represents the closed-loop controller + system)
- * @concept{system_concept}
+/**
+ * Wraps an existing system with a PD controller. The new system represents the
+ * closed-loop controller + system.
  *
- *   x_d --->[ Kp, Kd ]-->(+)----->[ sys ]----------> yout
- *                     | -                 |
+ * Specifically, it implements the following feedback controller:
+ *
+ * <pre>
+ *   x_d --->[ Kp, Kd ]-->(+)----->[ sys ]----------> y_out
+ *                     | -                  |
  *                     -------[ Kp, Kd ]<----
+ * </pre>
  *
+ * @concept{system_concept}
  */
 template <class System>
 class PDControlSystem {

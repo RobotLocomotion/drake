@@ -1,15 +1,20 @@
 #include "drake/util/drakeGradientUtil.h"
-#include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/testUtil.h"
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+
+#include <array>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <vector>
-#include <array>
-#include <random>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include "drake/common/test/measure_execution.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 using namespace Eigen;
+
+using drake::common::test::MeasureExecutionTime;
 
 template <typename Derived>
 void setLinearIndices(MatrixBase<Derived>& A) {
@@ -130,19 +135,19 @@ int main(int argc, char** argv) {
   testSetSubMatrixGradient(1000, true);
 
   int ntests = 100000;
-  std::cout << "testTransposeGrad elapsed time: "
-            << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+  std::cout << "testTransposeGrad elapsed time (s): "
+            << MeasureExecutionTime(testTransposeGrad, ntests) << std::endl;
 
-  std::cout << "testMatGradMult elapsed time: "
-            << measure<>::execution(testMatGradMult, ntests, false)
+  std::cout << "testMatGradMult elapsed time (s): "
+            << MeasureExecutionTime(testMatGradMult, ntests, false)
             << std::endl;
 
-  std::cout << "testGetSubMatrixGradient elapsed time: "
-            << measure<>::execution(testGetSubMatrixGradient, ntests)
+  std::cout << "testGetSubMatrixGradient elapsed time (s): "
+            << MeasureExecutionTime(testGetSubMatrixGradient, ntests)
             << std::endl;
 
-  std::cout << "testSetSubMatrixGradient elapsed time: "
-            << measure<>::execution(testSetSubMatrixGradient, ntests, false)
+  std::cout << "testSetSubMatrixGradient elapsed time (s): "
+            << MeasureExecutionTime(testSetSubMatrixGradient, ntests, false)
             << std::endl;
 
   return 0;

@@ -4,10 +4,8 @@ if(simulink_FOUND)
 endif()
 
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES
-    LCMSystem.cpp)
-  add_dependencies(drakeLCMSystem drake_lcmtypes_hpp)
-  target_link_libraries(drakeLCMSystem lcm)
+  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
+  target_link_libraries(drakeLCMSystem drakeLCMTypes lcm)
   if(WIN32)
     target_link_libraries(drakeLCMSystem ws2_32)
   endif()
@@ -53,8 +51,6 @@ drake_install_headers(
   cascade_system.h
   feedback_system.h
   LinearSystem.h
-  n_ary_state.h
-  n_ary_system.h
   pd_control_system.h
   gravity_compensated_pd_position_control_system.h
   gravity_compensated_system.h

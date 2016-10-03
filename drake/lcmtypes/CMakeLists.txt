@@ -50,6 +50,14 @@ add_custom_target(drake_lcmtypes_hpp DEPENDS ${cpp_install_headers})
 
 add_library(drake_lcmtypes STATIC ${sources})
 target_link_libraries(drake_lcmtypes lcm)
+target_include_directories(drake_lcmtypes INTERFACE
+  ${CMAKE_CURRENT_BINARY_DIR})
+
+add_library(drakeLCMTypes INTERFACE)
+add_dependencies(drakeLCMTypes drake_lcmtypes_hpp)
+target_link_libraries(drakeLCMTypes INTERFACE lcm-coretypes)
+target_include_directories(drakeLCMTypes INTERFACE
+  ${CMAKE_CURRENT_BINARY_DIR})
 
 install(FILES ${c_install_headers} DESTINATION include/lcmtypes)
 install(FILES ${cpp_install_headers} DESTINATION include/lcmtypes/drake)

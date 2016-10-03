@@ -32,7 +32,7 @@ endif()
 
 add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
 target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint)
-add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
+drake_add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
 
 add_library_with_exports(LIB_NAME drakeDynamicConstraint
   SOURCE_FILES direct_collocation_constraint.cc)

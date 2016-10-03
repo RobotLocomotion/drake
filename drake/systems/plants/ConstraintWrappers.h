@@ -8,7 +8,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -111,7 +111,7 @@ class QuasiStaticConstraintWrapper :
             Eigen::VectorXd& y) const override {
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
-            rigid_body_constraint_->getRobotPointer()->number_of_positions()),
+            rigid_body_constraint_->getRobotPointer()->get_num_positions()),
             rigid_body_constraint_->getRobotPointer());
     auto weights = q.tail(rigid_body_constraint_->getNumWeights());
     Eigen::MatrixXd dy;
@@ -122,7 +122,7 @@ class QuasiStaticConstraintWrapper :
     Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
-            rigid_body_constraint_->getRobotPointer()->number_of_positions()),
+            rigid_body_constraint_->getRobotPointer()->get_num_positions()),
         rigid_body_constraint_->getRobotPointer());
 
     Eigen::VectorXd y;

@@ -23,7 +23,7 @@ class ConstantValueSourceTest : public ::testing::Test {
     source_ = make_unique<ConstantValueSource<double>>(std::move(value));
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(
@@ -32,7 +32,7 @@ class ConstantValueSourceTest : public ::testing::Test {
   }
 
   std::unique_ptr<System<double>> source_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -45,6 +45,8 @@ TEST_F(ConstantValueSourceTest, Output) {
 
   EXPECT_EQ("foo",
             output_->get_port(0).get_abstract_data()->GetValue<std::string>());
+  EXPECT_EQ("foo",
+            output_->get_data(0)->GetValue<std::string>());
 }
 
 // Tests that inputs cannot be set for a ConstantValueSource.
@@ -55,7 +57,7 @@ TEST_F(ConstantValueSourceTest, ShouldNotBePossibleToConnectInputs) {
 
 // Tests that ConstantValueSource allocates no state variables in the context_.
 TEST_F(ConstantValueSourceTest, ConstantValueSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

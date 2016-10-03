@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -103,7 +102,7 @@ void MobyLCPSolver::ClearIndexVectors() const {
   j_.clear();
 }
 
-SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //

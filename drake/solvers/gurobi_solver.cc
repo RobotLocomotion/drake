@@ -4,7 +4,6 @@
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -63,7 +62,7 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 }
 
 /// Splits out the quadratic costs and makes calls to add them individually.
-int AddCosts(GRBmodel* model, OptimizationProblem& prog,
+int AddCosts(GRBmodel* model, MathematicalProgram& prog,
              double sparseness_threshold) {
   int start_row = 0;
   for (const auto& binding : prog.quadratic_costs()) {
@@ -117,7 +116,7 @@ int AddCosts(GRBmodel* model, OptimizationProblem& prog,
 
 /// Splits out the equality and inequality constraints and makes call to
 /// add any non-inf constraints.
-int ProcessConstraints(GRBmodel* model, OptimizationProblem& prog,
+int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
                        double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
@@ -161,7 +160,7 @@ int ProcessConstraints(GRBmodel* model, OptimizationProblem& prog,
 
 bool GurobiSolver::available() const { return true; }
 
-SolutionResult GurobiSolver::Solve(OptimizationProblem& prog) const {
+SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
 

@@ -200,7 +200,7 @@ class DrakeRosTfPublisher {
     // The following code extracts the position values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree_->number_of_positions());
+    auto q = uvec.head(rigid_body_tree_->get_num_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
     // Publishes the transform for each rigid body in the rigid body tree.
@@ -292,8 +292,9 @@ class DrakeRosTfPublisher {
   // rigid body. A rigid body should be skipped if it is the world link or if
   // it is connected to the world via a fixed joint.
   bool PublishTfForRigidBody(const RigidBody* rigid_body) {
-    // Skips parent-less links. This includes the world.
-    if (!rigid_body->hasParent()) return false;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!rigid_body->has_parent_body()) return false;
     return true;
   }
 

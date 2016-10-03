@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
-#include "drake/systems/lcm/translator_between_lcmt_drake_signal.h"
+#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
 namespace systems {
@@ -22,14 +22,14 @@ GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(
       channel_name,
-      std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim));
+      std::make_unique<const LcmtDrakeSignalTranslator>(kDim));
 
   // Verifies that an exception is thrown when the user attempts to add a
   // duplicate translator to the dictionary.
   EXPECT_THROW(
       dictionary.AddEntry(
           channel_name,
-          std::make_unique<const TranslatorBetweenLcmtDrakeSignal>(kDim)),
+          std::make_unique<const LcmtDrakeSignalTranslator>(kDim)),
       std::runtime_error);
 
   EXPECT_FALSE(dictionary.HasTranslator("Boo"));

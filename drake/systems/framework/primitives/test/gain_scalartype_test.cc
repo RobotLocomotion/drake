@@ -46,10 +46,10 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // does not necessarily need to be the same as the size of the derivatives
   // vectors and, for this unit test, they are not equal.
   const double kGain = 2.0;
-  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* length */);
+  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* size */);
   auto context = gain->CreateDefaultContext();
   auto output = gain->AllocateOutput(*context);
-  auto input = make_unique<BasicVector<T>>(3 /* length */);
+  auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
   VectorX<T> input_vector(3);
@@ -67,9 +67,7 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   gain->EvalOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
-  const auto& output_vector =
-      dynamic_cast<const BasicVector<T>*>(output->get_vector_data(0))
-          ->get_value();
+  const auto& output_vector = output->get_vector_data(0)->get_value();
 
   // The expected output value is the gain times the input vector.
   VectorX<T> expected = kGain * input_vector;

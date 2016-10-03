@@ -3,9 +3,13 @@
 namespace drake {
 namespace systems {
 
-OutputPortListenerInterface::~OutputPortListenerInterface() {}
-
-OutputPort::~OutputPort() {}
+OutputPort::~OutputPort() {
+  // Notify any input ports that are still connected to this output port that
+  // this output port no longer exists.
+  for (detail::OutputPortListenerInterface* dependent : dependents_) {
+    dependent->Disconnect();
+  }
+}
 
 
 std::unique_ptr<OutputPort> OutputPort::Clone() const {
@@ -18,7 +22,7 @@ std::unique_ptr<OutputPort> OutputPort::Clone() const {
 
 void OutputPort::InvalidateAndIncrement() {
   ++version_;
-  for (OutputPortListenerInterface* dependent : dependents_) {
+  for (detail::OutputPortListenerInterface* dependent : dependents_) {
     dependent->Invalidate();
   }
 }

@@ -13,6 +13,7 @@ pods_install_pkg_config_file(drake-control-util
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
+find_package(yaml-cpp)
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
@@ -39,7 +40,7 @@ if(MATLAB_FOUND)
   if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
+    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide drakeYAMLUtil)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
@@ -61,4 +62,26 @@ pods_install_pkg_config_file(drake-zmp-util
   REQUIRES
   VERSION 0.0.1)
 
+
+# System 2 controllers
+set(system2_sources
+    gravity_compensator.cc)
+set(system2_installed_headers
+    gravity_compensator.h)
+add_library_with_exports(LIB_NAME drakeSystemControllers
+    SOURCE_FILES ${system2_sources} ${system2_installed_headers})
+add_dependencies(drakeSystemControllers drakeCommon drakeRBM drakeSystemFramework)
+target_link_libraries(drakeSystemControllers
+    drakeCommon
+    drakeRBM
+    drakeSystemFramework)
+
+drake_install_headers(${system2_installed_headers})
+
+pods_install_libraries(drakeSystemControllers)
+pods_install_pkg_config_file(drake-system2-controllers
+    LIBS -ldrakeSystem2Controllers -ldrakeSystemFramework -ldrakeRBM
+    REQUIRES
+    VERSION 0.0.1)
 add_subdirectory(test)
+

@@ -12,8 +12,10 @@ drake_install_headers(
   gravity_compensator.h
   time_varying_polynomial_source.h
   integrator.h
+  multiplexer.h
   pass_through.h
   pass_through-inl.h
-  pid_controller2.h)
+  pid_controller.h
+  time_varying_polynomial_source.h)
 
 add_subdirectory(test)

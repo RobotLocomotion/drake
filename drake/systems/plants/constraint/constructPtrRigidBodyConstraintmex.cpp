@@ -949,7 +949,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       VectorXi joint_ind(num_joints);
       for (int i = 0; i < num_joints; i++) {
         joint_ind(i) = (int)joint_ind_tmp(i) - 1;
-        if (joint_ind(i) < 0 || joint_ind(i) >= model->number_of_positions()) {
+        if (joint_ind(i) < 0 || joint_ind(i) >= model->get_num_positions()) {
           mexErrMsgIdAndTxt(
               "Drake:constructPtrRigidBodyConstraintmex:BadInputs",
               "joint_ind must be within [1, nq]");
@@ -1196,7 +1196,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       VectorXi joint_ind(num_joints);
       for (int i = 0; i < num_joints; i++) {
         joint_ind(i) = (int)joint_ind_tmp(i) - 1;
-        if (joint_ind(i) < 0 || joint_ind(i) >= model->number_of_positions()) {
+        if (joint_ind(i) < 0 || joint_ind(i) >= model->get_num_positions()) {
           mexErrMsgIdAndTxt(
               "Drake:constructPtrRigidBodyConstraintmex:BadInputs",
               "joint_ind must be within [1, nq]");

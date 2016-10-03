@@ -5,7 +5,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/optimization.h"
 
 namespace drake {
 namespace solvers {

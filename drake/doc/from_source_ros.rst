@@ -91,12 +91,19 @@ Execute the following commands to build the workspace::
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
     catkin init
-    catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin config --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin build
 
-There are numerous optional flags that can be included after the ``catkin build``
-command listed above. The example above includes the build type flag that
-specifies the build should be ``RelWithDebInfo``. Alternative include
-``Release`` and ``Debug``. Another flag is ``-DDISABLE_MATLAB=TRUE``, which
+There are numerous optional build flags that can be specified with the
+``catkin config`` command listed above. These options can also be passed
+directly to ``catkin build``, though they will not persist.
+For a full list, execute::
+
+    catkin config --help
+
+The example above includes the ``cmake`` flag that specifies a build type of
+``RelWithDebInfo``. Alternatives include ``Release`` and ``Debug``. Another
+``cmake`` flag is ``-DDISABLE_MATLAB=TRUE``, which
 disables MATLAB support. This may be useful if you have MATLAB installed but
 don't have access to a license server. There are many additional command line
 flags that, for example, enables support for certain optimizers like
@@ -106,7 +113,7 @@ in ``~/dev/drake_catkin_workspace/src/drake/CMakeLists.txt``.
 
 Note also that Catkin by default performs a multi-threaded build.
 If your computer does not have sufficient computational resources to support
-this, you can add a ``-j1`` flag after the ``catkin_make`` command to force a
+this, you can add a ``-j1`` flag after the ``catkin config`` command to force a
 single-threaded build, which uses fewer resources.
 
 Later, if you want to do a clean build, you can execute::
@@ -114,6 +121,8 @@ Later, if you want to do a clean build, you can execute::
     cd ~/dev/drake_catkin_workspace
     catkin clean
     cd src/drake
+    rm -rf externals
+    git reset --hard HEAD
     git clean -fdx
     cd ~/dev/drake_catkin_workspace
     source /opt/ros/indigo/setup.bash
@@ -213,7 +222,8 @@ Since a new package was added to the ROS workspace, re-build the workspace
 runs too slowly when compiled in the default ``Debug`` mode)::
 
     cd ~/dev/drake_catkin_workspace
-    catkin build --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin config --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
+    catkin build
 
 Finally, to run the car simulation demo, execute::
 

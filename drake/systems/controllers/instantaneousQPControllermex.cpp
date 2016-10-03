@@ -13,8 +13,8 @@
 
 #include "InstantaneousQPController.h"
 
-#include <limits>
 #include <cmath>
+#include <limits>
 
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeMexUtil.h"
@@ -41,8 +41,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   double t = mxGetScalar(prhs[narg++]);
 
   // x
-  int nq = controller->getRobot().number_of_positions();
-  int nv = controller->getRobot().number_of_velocities();
+  int nq = controller->getRobot().get_num_positions();
+  int nv = controller->getRobot().get_num_velocities();
   if (static_cast<int>(mxGetNumberOfElements(prhs[narg])) != (nq + nv))
     mexErrMsgTxt("size of x should be nq + nv\n");
   if (nq != nv) mexErrMsgTxt("still assume nv==nq");
@@ -85,7 +85,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     debug.reset(new QPControllerDebugData());
   }
 
-  std::map<Side, ForceTorqueMeasurement> foot_force_torque_measurements;
+  drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>
+      foot_force_torque_measurements;
   if (nrhs > 5) {
     const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
     if (!mxIsEmpty(mex_foot_force_torque_measurements)) {

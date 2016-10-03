@@ -1,46 +1,48 @@
-#include <iostream>
 #include "drake/util/convexHull.h"
-#include "drake/util/testUtil.h"
+
+#include <iostream>
+
+#include "gtest/gtest.h"
 
 using namespace Eigen;
 
-void testConvexHull() {
+GTEST_TEST(TestConvexHull, testConvexHull) {
   Matrix<double, 2, Dynamic> pts(2, 4);
   pts << 1.0, 2.0, 3.0, 2.0, 2.0, 1.0, 2.0, 3.0;
 
-  valuecheck(inConvexHull(pts, Vector2d(2.0, 2.0)), true);
-  valuecheck(inConvexHull(pts, Vector2d(1.0001, 2.0)), true);
-  valuecheck(inConvexHull(pts, Vector2d(0.9999, 2.0)), false);
-  valuecheck(inConvexHull(pts, Vector2d(2.49, 2.49)), true);
-  valuecheck(inConvexHull(pts, Vector2d(2.51, 2.51)), false);
+  EXPECT_TRUE(inConvexHull(pts, Vector2d(2.0, 2.0)));
+  EXPECT_TRUE(inConvexHull(pts, Vector2d(1.0001, 2.0)));
+  EXPECT_FALSE(inConvexHull(pts, Vector2d(0.9999, 2.0)));
+  EXPECT_TRUE(inConvexHull(pts, Vector2d(2.49, 2.49)));
+  EXPECT_FALSE(inConvexHull(pts, Vector2d(2.51, 2.51)));
 }
 
-void testDistanceFromHull() {
+GTEST_TEST(TestConvexHull, testDistanceFromHull) {
   Matrix<double, 2, Dynamic> pts(2, 5);
   pts << 0, 1, 1, 0, 0.5, 0, 1, 0, 1, 0.5;
 
   double d = signedDistanceInsideConvexHull(pts, Vector2d(0, 0));
-  valuecheck(d, 0.0, 1e-8);
+  EXPECT_NEAR(d, 0.0, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(0.5, 0.5));
-  valuecheck(d, 0.5, 1e-8);
+  EXPECT_NEAR(d, 0.5, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(-0.5, 0));
-  valuecheck(d, -0.5, 1e-8);
+  EXPECT_NEAR(d, -0.5, 1e-8);
 
   pts << 0, 2, 2, 0, 0.5, 0, 2, 0, 2, 0.5;
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(0, 0));
-  valuecheck(d, 0.0, 1e-8);
+  EXPECT_NEAR(d, 0.0, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(0.5, 0.5));
-  valuecheck(d, 0.5, 1e-8);
+  EXPECT_NEAR(d, 0.5, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(-0.5, 0));
-  valuecheck(d, -0.5, 1e-8);
+  EXPECT_NEAR(d, -0.5, 1e-8);
 }
 
-void testRealData() {
+GTEST_TEST(TestConvexHull, testRealData) {
   // A real example that we once got wrong (due to an indexing bug in
   // signedDistanceInsideConvexHull)
   Matrix<double, 2, Dynamic> pts(2, 16);
@@ -52,24 +54,24 @@ void testRealData() {
   Vector2d q(0.196956, 0.0487772);
 
   double d = signedDistanceInsideConvexHull(pts, q);
-  valuecheck(d, 0.136017, 1e-6);
+  EXPECT_NEAR(d, 0.136017, 1e-6);
 }
 
-void testDuplicates() {
+GTEST_TEST(TestConvexHull, testDuplicates) {
   Matrix<double, 2, Dynamic> pts(2, 8);
   pts << 0.0, 1.0, 1.0, 0.0, 0.5, 0.0, 0.0, 1.0 - 1e-16, 0.0, 1.0, 0.0, 1.0,
       0.5, 0.0, 0.0, 1.0 - 1e-16;
   double d = signedDistanceInsideConvexHull(pts, Vector2d(0, 0));
-  valuecheck(d, 0.0, 1e-8);
+  EXPECT_NEAR(d, 0.0, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(0.5, 0.5));
-  valuecheck(d, 0.5, 1e-8);
+  EXPECT_NEAR(d, 0.5, 1e-8);
 
   d = signedDistanceInsideConvexHull(pts, Vector2d(-0.5, 0));
-  valuecheck(d, -0.5, 1e-8);
+  EXPECT_NEAR(d, -0.5, 1e-8);
 }
 
-void testRandomConvexCombinations() {
+GTEST_TEST(TestConvexHull, testRandomConvexCombinations) {
   // Generate a set of points, then find a random convex combination of those
   // points, and verify that it's correctly reported as being inside the
   // convex hull
@@ -83,35 +85,18 @@ void testRandomConvexCombinations() {
       }
       weights = weights.array() / weights.sum();
       Vector2d q = pts * weights;
-      valuecheck(inConvexHull(pts, q, 1e-8), true);
+      EXPECT_TRUE(inConvexHull(pts, q, 1e-8));
     }
   }
 }
 
-void testRandomTriangles() {
+GTEST_TEST(TestConvexHull, testRandomTriangles) {
   // signed distance to convex hull should always be 0 for any vertex of a
   // triangle
   for (int j = 0; j < 500; ++j) {
     MatrixXd pts = MatrixXd::Random(2, 3);
     for (int i = 0; i < 3; ++i) {
-      valuecheck(signedDistanceInsideConvexHull(pts, pts.col(i)), 0, 1e-8);
+      EXPECT_NEAR(signedDistanceInsideConvexHull(pts, pts.col(i)), 0, 1e-8);
     }
   }
-}
-
-int main() {
-  testConvexHull();
-  std::cout << "testConvexHull passed" << std::endl;
-  testDistanceFromHull();
-  std::cout << "testDistanceFromHull passed" << std::endl;
-  testRealData();
-  std::cout << "testRealData passed" << std::endl;
-  testDuplicates();
-  std::cout << "testDuplicates passed" << std::endl;
-  testRandomConvexCombinations();
-  std::cout << "testRandomConvexCombinations passed" << std::endl;
-  testRandomTriangles();
-  std::cout << "testRandomTriangles passed" << std::endl;
-
-  std::cout << "convex hull tests passed" << std::endl;
 }

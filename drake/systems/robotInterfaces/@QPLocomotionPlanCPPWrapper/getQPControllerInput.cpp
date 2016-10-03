@@ -14,8 +14,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   QPLocomotionPlan *plan = (QPLocomotionPlan *)getDrakeMexPointer(
       mxGetPropertySafe(prhs[0], "qp_locomotion_plan_ptr"));
   double t_global = mxGetScalar(prhs[1]);
-  int nq = plan->getRobot().number_of_positions();
-  int nv = plan->getRobot().number_of_velocities();
+  int nq = plan->getRobot().get_num_positions();
+  int nv = plan->getRobot().get_num_velocities();
   auto q = Map<const VectorXd>(mxGetPrSafe(prhs[2]), nq);
   auto v = Map<const VectorXd>(mxGetPrSafe(prhs[2]) + nq, nv);
   auto contact_force_detected = matlabToStdVector<bool>(prhs[3]);

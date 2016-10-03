@@ -29,14 +29,14 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class DemultiplexerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    demux_ = make_unique<Demultiplexer<double>>(3 /* length */);
+    demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
     output_ = demux_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
-  std::unique_ptr<ContextBase<double>> context_;
+  std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
@@ -62,19 +62,19 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(input_vector.size(), output_->get_num_ports());
   ASSERT_EQ(input_vector.size(), demux_->get_num_output_ports());
 
-  EXPECT_EQ(1, output_->get_vector_data(0)->size());
-  EXPECT_EQ(input_vector[0], output_->get_vector_data(0)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(0)->size());
+  ASSERT_EQ(input_vector[0], output_->get_vector_data(0)->get_value()[0]);
 
-  EXPECT_EQ(1, output_->get_vector_data(1)->size());
-  EXPECT_EQ(input_vector[1], output_->get_vector_data(1)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(1)->size());
+  ASSERT_EQ(input_vector[1], output_->get_vector_data(1)->get_value()[0]);
 
-  EXPECT_EQ(1, output_->get_vector_data(2)->size());
-  EXPECT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
+  ASSERT_EQ(1, output_->get_vector_data(2)->size());
+  ASSERT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
 }
 
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(nullptr, context_->get_continuous_state());
 }
 
 }  // namespace

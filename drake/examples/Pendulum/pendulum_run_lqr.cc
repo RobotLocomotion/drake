@@ -7,6 +7,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
@@ -30,7 +31,7 @@ int main(int argc, char* argv[]) {
   auto c = MakeTimeInvariantLqrSystem(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
       lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   auto sys = cascade(feedback(p, c), v);
 

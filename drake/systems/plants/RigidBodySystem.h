@@ -2,10 +2,15 @@
 
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
-#include "drake/solvers/optimization.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/System.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+
+using drake::systems::plants::joints::FloatingBaseType;
+using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::joints::kRollPitchYaw;
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)
@@ -192,8 +197,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfString(
       const std::string& urdf_string, const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const FloatingBaseType floating_base_type = kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -220,8 +224,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromUrdfFile(
       const std::string& filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::QUATERNION,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -255,8 +258,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfFile(
       const std::string& filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::QUATERNION,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -291,8 +293,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromSdfString(
       const std::string& sdf_string,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::QUATERNION,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -320,8 +321,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstanceFromFile(
       const std::string& filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::QUATERNION,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**
@@ -349,8 +349,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    */
   drake::parsers::ModelInstanceIdTable AddModelInstancesFromString(
       const std::string& string_description,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::QUATERNION,
+      const FloatingBaseType floating_base_type = kQuaternion,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
@@ -381,12 +380,22 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
+  int get_num_positions() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
   int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
+  int get_num_velocities() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
   int number_of_velocities() const;
 
   /** dynamics
@@ -448,7 +457,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   bool direct_feedthrough;
 
   /*
-  mutable OptimizationProblem dynamics_program;
+  mutable MathematicalProgram dynamics_program;
   */
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -5,6 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/test.cmake)
 
 drake_setup_platform()
 
@@ -26,12 +27,9 @@ endif()
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-option(RANDOMIZE_MATLAB_TESTS "every MATLAB unit is started with a new random seed" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# prepend module path so we can override FindMatlab.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
@@ -45,7 +43,7 @@ include(../cmake/pods.cmake)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
 # set up automatic export header generation
@@ -100,9 +98,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   endif()
-  # TODO(rdeits) Remove when https://github.com/jaeandersson/swig/pull/73 is
-  # accessible from the version of swig_matlab we are using
-  set(CXX_FLAGS_NO_ERROR_MAYBE_UNINITIALIZED -Wno-error=maybe-uninitialized)
   set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
   set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 elseif(MSVC)
@@ -146,65 +141,15 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
     mex_setup()
 
     # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test
-    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
+    # matlab_add_unit_test and matlab_add_mex
+    find_package(Matlab REQUIRED
+      COMPONENTS
+        MAIN_PROGRAM
+        MEX_COMPILER
+        MX_LIBRARY
+        SIMULINK)
   endif()
 endif()
-
-# add ctest for a MATLAB string
-# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
-#   [CONFIGURATIONS <config>...]
-#   [WORKING_DIRECTORY <dir>]
-#   [PROPERTIES <prop1> <value1> ...]
-#   [REQUIRES <package1> <package2> ...])
-# note: default working directory is CMAKE_CURRENT_SOURCE_DIR
-# note: properties are set internally using set_tests_properties (<testname> PROPERTIES <prop1> <value1> ...)
-# note: packages in REQUIRES must write a file addpath_<package>.m to CMAKE_INSTALL_PREFIX/matlab
-# or define WITH_<package> or <package>_FOUND.
-function(add_matlab_test)
-  # no matlab no tests
-  if(NOT MATLAB_FOUND)
-    return()
-  endif()
-  set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-  set(multiValueArgs PROPERTIES REQUIRES OPTIONAL)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-  if(parsed_args_REQUIRES)
-    foreach(require ${parsed_args_REQUIRES})
-      string(TOUPPER ${require} requireUpper)
-      if(NOT WITH_${requireUpper} AND NOT ${require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${require}.m")
-        message(STATUS "Not running ${parsed_args_NAME} because ${require} was not installed.")
-        return()
-      endif()
-    endforeach()
-  endif()
-
-  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in MATLAB
-  if(NOT parsed_args_WORKING_DIRECTORY)
-    set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  endif()
-
-  set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-  set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
-  set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
-  set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
-
-  if(RANDOMIZE_MATLAB_TESTS)
-    set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
-  endif()
-
-  matlab_add_unit_test(NAME ${parsed_args_NAME}
-    ADDITIONAL_PATH ${additional_paths}
-    UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
-    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
-    WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
-    TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
-
-  if(parsed_args_PROPERTIES)
-    set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
-  endif()
-endfunction()
 
 enable_testing()
 include(CTest)
@@ -234,8 +179,9 @@ target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 # set up and build lcm types
 find_package(lcm)
 if(lcm_FOUND)
+  find_package(bot2-core)
+
   add_subdirectory(lcmtypes)
-  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
 
   list(APPEND drake_jar_javafiles
     util/MyLCMTypeDatabase.java
@@ -248,12 +194,20 @@ if(lcm_FOUND)
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
   execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
   if(NOT LCMGL_BUILD_DIR)
-    message(WARNING "\n\n----- IMPORTANT: bot2-lcmgl not found")
+    message("
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl build directory not found. ***
+  --------------------------------------------------------------------------------
+    ")
   else()
     string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
     find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${LCMGL_BUILD_DIR}/share/java/")
     if(NOT LCMGL_JAR_FILE)
-      message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
+      message(FATAL_ERROR "
+  --------------------------------------------------------------------------------
+    *** IMPORTANT: bot2-lcmgl JAR file not found. ***
+  --------------------------------------------------------------------------------
+      ")
     else()
       message(STATUS "Found bot2-lcmgl")
     endif()
@@ -269,20 +223,8 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-pods_find_pkg_config(eigen3 3.2.92)
-
-if(eigen3_FOUND)
-  pods_use_pkg_config_includes(eigen3)
-else()
-  # then use the traditional approach to finding Eigen3
-  find_package(Eigen3 3.2.92)
-  if(EIGEN3_FOUND)
-    set(eigen3_FOUND 1)
-    include_directories(${EIGEN3_INCLUDE_DIR})
-  else()
-    message(FATAL_ERROR "Could not find eigen, which is a required depedency")
-  endif()
-endif()
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 pods_find_pkg_config(spdlog)
 if(spdlog_FOUND)
@@ -303,6 +245,10 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/bsd/GetFullPath)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
+if(NOT WIN32)
+  # This subdirectory does not support windows.
+  add_subdirectory(automotive)
+endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)
@@ -354,11 +300,9 @@ else()
 endif()
 
 if(MATLAB_FOUND)
-  # DISABLED due to #3149.
-  # add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
-  #   COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-  #   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
-  #   PROPERTIES TIMEOUT 300)
+  drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
+    COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)
 endif()
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

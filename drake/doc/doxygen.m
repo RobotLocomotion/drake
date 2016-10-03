@@ -4,7 +4,7 @@
 %> <span style="font-weight:bold; font-size:larger">First time?  Check out the <a href="inherits.html">Class Hierarchy</a></span>.
 %> <br />
 %> <p>
-%> If you want to make your own doxygen, run <b><i>make doxygen</i></b> in the root drake directory.  You may need to install doxygen (<i>sudo apt-get install doxygen</i>).</p>
+%> If you want to make your own Doxygen, run <b><i>make doxygen</i></b> in the root drake directory.  You may need to install Doxygen (<i>sudo apt-get install doxygen</i>).</p>
 %> <p>
 %> Other useful pages:
 %> <ul>
@@ -36,7 +36,7 @@
 %> <p>
 %> Doxygen also supports most HTML tags including <b>\<pre\></b>, <b>\<b\></b>, <b>\<i\></b>, and more.  Take a look at <a href="http://www.stack.nl/~dimitri/doxygen/commands.html">the full command list</a>.
 %>
-%> Drake's doxygen documentation is automatically updated on every push to
+%> Drake's Doxygen documentation is automatically updated on every push to
 %> the <a href="https://github.com/RobotLocomotion/drake">github repository</a>, so it
 %> should always be up to date.
 %>

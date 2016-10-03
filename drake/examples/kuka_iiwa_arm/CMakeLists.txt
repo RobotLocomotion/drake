@@ -4,7 +4,7 @@ if(lcm_FOUND)
     drakeKukaIiwaArm
     drakeRBSystem
     drakeLCMSystem)
-  add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+  drake_add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES iiwa_simulation.cc)
   target_link_libraries(drakeKukaIiwaArm
@@ -13,7 +13,10 @@ if(lcm_FOUND)
     drakeLCMSystem
     drakeRBSystem
     drakeShapes
-    drakeTrajectories)
+    drakeCommon
+    drakeLCMSystem
+    drakeLCMTypes)
+  pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
     iiwa_simulation.h)
   pods_install_libraries(drakeKukaIiwaArm)
@@ -21,8 +24,6 @@ if(lcm_FOUND)
           LIBS -ldrakeKukaIiwaArm 
           REQUIRES
           VERSION 0.0.1)
-  add_dependencies(drakeKukaIiwaArm
-    drake_lcmtypes_hpp)
 
   add_executable(kuka_lcm_visualizer kuka_lcm_visualizer.cc)
   target_link_libraries(kuka_lcm_visualizer

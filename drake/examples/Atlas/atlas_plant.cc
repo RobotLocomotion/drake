@@ -2,15 +2,15 @@
 
 namespace drake {
 
+using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using Eigen::Isometry3d;
 
 AtlasPlant::AtlasPlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
-      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
-      DrakeJoint::QUATERNION);
+      GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf",
+      systems::plants::joints::kQuaternion);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();
@@ -50,7 +50,7 @@ AtlasPlant::dynamics(const double& t,
 
 void AtlasPlant::SetInitialConfiguration() {
   RigidBodyTree* tree = sys_->getRigidBodyTree().get();
-  x0_.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Magic numbers are initial conditions used in runAtlasWalking.m.
   x0_(2) = 0.844;    // base z

@@ -41,7 +41,7 @@ int DoMain(int argc, char* argv[]) {
 
   // Obtains an initial state of the simulation.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Specifies the simulation options.
   drake::SimulationOptions options;
@@ -74,8 +74,8 @@ int DoMain(int argc, char* argv[]) {
   drake::simulate(*sys.get(), kStartTime, duration, x0, options);
 
   auto final_robot_state = robot_state_tap->get_input_vector();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  int num_positions = rigid_body_sys->get_num_positions();
+  int num_velocities = rigid_body_sys->get_num_velocities();
 
   // Ensures the size of the output is correct.
   if (final_robot_state.size() !=
@@ -110,8 +110,9 @@ int DoMain(int argc, char* argv[]) {
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size());
        ++body_index) {
-    // Skips rigid bodies without a parent (this includes the world link).
-    if (!bodies[body_index]->hasParent()) continue;
+    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
+    // that represents the world.
+    if (!bodies[body_index]->has_parent_body()) continue;
 
     const DrakeJoint& joint = bodies[body_index]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();

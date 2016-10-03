@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                       "constraint1, constraint2,..., ikoptions");
   }
   RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
-  int nq = model->number_of_positions();
+  int nq = model->get_num_positions();
   int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPrSafe(prhs[1]);
   Map<MatrixXd> q_seed(mxGetPrSafe(prhs[2]), nq, nT);

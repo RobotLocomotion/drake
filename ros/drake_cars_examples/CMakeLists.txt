@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(drake_cars_examples)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -32,7 +32,7 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 add_executable(single_car_in_stata_garage src/single_car_in_stata_garage.cc)
 target_link_libraries(single_car_in_stata_garage
   ${catkin_LIBRARIES}
-  drakeCars
+  drakeAutomotiveLcm
   drakeCommon
   drakeRBM
   drakeRBSystem
