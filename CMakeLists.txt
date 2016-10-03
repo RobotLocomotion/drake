@@ -222,7 +222,7 @@ drake_add_external(textbook PUBLIC
     extract_examples.py underactuated.html ./examples)
 
 # yaml_cpp
-if(APPLE OR WIN32)
+if(WIN32)
   drake_add_external(yaml_cpp PUBLIC CMAKE
     CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF)
 else()
