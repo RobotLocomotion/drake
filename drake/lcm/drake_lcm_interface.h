@@ -9,8 +9,7 @@ namespace drake {
 namespace lcm {
 
 /**
- * A top-level abstract class that enables seamless switching between _real_ and
- * _mock_ LCM instances.
+ * A top-level abstract class that enables LCM to be mocked.
  */
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
