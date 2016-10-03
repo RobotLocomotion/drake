@@ -1,6 +1,6 @@
 
 if(simulink_FOUND)
-  add_mex(DCSFunction DCSFunction.cpp)
+  drake_add_mex(DCSFunction DCSFunction.cpp)
 endif()
 
 if(lcm_FOUND)

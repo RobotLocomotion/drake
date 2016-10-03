@@ -136,10 +136,6 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
   else()
-    # Search for MATLAB and configure various MEX options.
-    # If MATLAB is found, MATLAB_FOUND is set.
-    mex_setup()
-
     # Use find_package to find "all of matlab" along with what is needed to use
     # matlab_add_unit_test and matlab_add_mex
     find_package(Matlab REQUIRED
@@ -238,7 +234,7 @@ add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(systems)
@@ -299,7 +295,7 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)

@@ -35,6 +35,7 @@ expects things to be non-degenrate.
 static const double radius = 0.5;
 static btSphereShape *point = new btSphereShape(radius);
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check for proper number of arguments.
   if (nrhs != 1) {

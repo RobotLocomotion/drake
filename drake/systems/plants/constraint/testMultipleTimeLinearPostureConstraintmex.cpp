@@ -23,6 +23,7 @@
  * @retval upper_bound          The upper bound of the constraint at time t
  * */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 8) {
     mexErrMsgIdAndTxt(
