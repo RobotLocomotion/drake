@@ -38,30 +38,29 @@ class IntegratorBase {
    * When a step is successful, it will return an indication of what caused it
    * to stop where it did. When unsuccessful it will throw an exception so you
    * won't see any return value. When return of control is due ONLY to reaching
-   * a report time, (status is ReachedReportTime) the context may return an
+   * a publish time, (status is kReachedPublishTime) the context may return an
    * interpolated value at an earlier time.
    *
    * Note: the simulation step must always end at an update time but can end
    * after a publish time.
-
    **/
   enum StepResult {
     /**
      * Indicates a publish time has been reached but not an update time.
      */
     kReachedPublishTime = 1,
-    /** localized an event; this is the *before* state (interpolated) **/
+    /** Localized an event; this is the *before* state (interpolated) **/
     kReachedZeroCrossing = 2,
     /**
-     * Indicates that integration terminated at an update time/event.
+     * Indicates that integration terminated at an event.
      */
     kReachedUpdateTime = 3,
     /**
-     * user requested control whenever an internal step is successful;
+     * User requested control whenever an internal step is successful.
      */
     kTimeHasAdvanced = 4,
-    /** took maximum number of steps without finishing integrating over the
-     * interval **/
+    /** Took maximum number of steps without finishing integrating over the
+     * interval. **/
     kReachedStepLimit = 5,
   };
 
@@ -83,14 +82,14 @@ class IntegratorBase {
    * Indicates whether an integrator supports accuracy estimation.
    * Without accuracy estimation, target accuracy will be unused.
    */
-  virtual bool does_support_accuracy_estimation() const = 0;
+  virtual bool supports_accuracy_estimation() const = 0;
 
   /**
    * Indicates whether an integrator supports stepping with error control.
    * Without stepping with error control, initial step size targets will be
    * unused.
    */
-  virtual bool does_support_error_control() const = 0;
+  virtual bool supports_error_control() const = 0;
 
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
@@ -125,12 +124,12 @@ class IntegratorBase {
   virtual const T& get_target_accuracy() const { return target_accuracy_; }
 
   /**
-   * Gets the accuracy in use by the integrator
+   * Gets the accuracy in use by the integrator.
    */
   virtual const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
-   * Sets the maximum step size for this integrator
+   * Sets the maximum step size for this integrator.
    */
   virtual void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
@@ -203,7 +202,7 @@ class IntegratorBase {
     num_steps_taken_ = 0;
   }
 
-  /** What what the actual size of the successful first step? **/
+  /** What was the actual size of the successful first step? **/
   const T& get_actual_initial_step_size_taken() const {
     return actual_initial_step_size_taken_;
   }
@@ -227,7 +226,7 @@ class IntegratorBase {
    **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** Return the step size the simulator would like to take next, based
+  /** Return the step size the integrator would like to take next, based
    * primarily on the integrator's accuracy prediction (variable step
    * integrators; will change as the simulation progresses) or using the fixed
    * step for fixed step integrators.
@@ -304,7 +303,7 @@ class IntegratorBase {
   // Reference to the system being simulated.
   const System<T>& system_;
 
-  // Pointer to the context
+  // Pointer to the context.
   Context<T>* context_{nullptr};  // The trajectory Context.
 
   // Runtime variables.
@@ -312,13 +311,13 @@ class IntegratorBase {
   // the next one.
   T ideal_next_step_size_{nan()};  // indicates that the value is uninitialized
 
-  // the accuracy being used
+  // the accuracy being used.
   T accuracy_in_use_{nan()};
 
-  // The maximum step size
+  // The maximum step size.
   T max_step_size_{std::numeric_limits<double>::infinity()};
 
-  // The minimum step size
+  // The minimum step size.
   T min_step_size_{0.0};
 
   // Statistics.
@@ -327,7 +326,7 @@ class IntegratorBase {
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
 
-  // Variable for indicating when an integrator has been initialized
+  // Variable for indicating when an integrator has been initialized.
   bool initialization_done_{false};
 
   // This a workaround for an apparent bug in clang 3.8 in which

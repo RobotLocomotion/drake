@@ -39,12 +39,12 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   /**
    * Integrator does not support accuracy estimation.
    */
-  bool does_support_accuracy_estimation() const override { return false; }
+  bool supports_accuracy_estimation() const override { return false; }
 
   /**
    * Integrator does not support error control.
    */
-  bool does_support_error_control() const override { return false; }
+  bool supports_error_control() const override { return false; }
 
   /**
  * Integrator does not support an initial step size target.
@@ -109,17 +109,16 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
 
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>* xc =
-      context->get_mutable_state()->get_mutable_continuous_state()->
-          get_mutable_state();
+  VectorBase<T>* xc = context->get_mutable_continuous_state()->
+      get_mutable_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
   IntegratorBase<T>::get_system().EvalTimeDerivatives(
-      *IntegratorBase<T>::get_mutable_context(), derivs0_.get());
+      IntegratorBase<T>::get_context(), derivs0_.get());
 
   // First stage is an explicit Euler step:
-  // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), xd(t+), u(t))
+  // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
   const auto& xcdot0 = derivs0_->get_state();
   xc->PlusEqScaled(dt, xcdot0);  // xc += dt * xcdot0
   T t = IntegratorBase<T>::get_context().get_time() + dt;
@@ -134,20 +133,16 @@ typename IntegratorBase<T>::StepResult RungeKutta2Integrator<T>::Step(
   xc->PlusEqScaled(dt * 0.5, xcdot1);
   xc->PlusEqScaled(-dt * 0.5, xcdot0);
 
-  // We successfully took a step -- collect statistics.
   IntegratorBase<T>::UpdateStatistics(dt);
 
-  // return appropriately
-  if (stop_dts[0] == &max_step_size) {
+  // Return depending on the step taken.
+  if (stop_dts[0] == &max_step_size)
     return IntegratorBase<T>::kTimeHasAdvanced;
-  } else {
-    if (stop_dts[0] == &publish_dt) {
-      return IntegratorBase<T>::kReachedPublishTime;
-    } else {
-      DRAKE_ASSERT(stop_dts[0] == &update_dt);
-      return IntegratorBase<T>::kReachedUpdateTime;
-    }
-  }
+  if (stop_dts[0] == &publish_dt)
+    return IntegratorBase<T>::kReachedPublishTime;
+  if (stop_dts[0] == &update_dt)
+    return IntegratorBase<T>::kReachedUpdateTime;
+  DRAKE_ABORT_MSG("Never should have reached here.");
 }  // Step(.)
 }  // systems
 }  // drake

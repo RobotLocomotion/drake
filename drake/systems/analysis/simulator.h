@@ -98,23 +98,6 @@ class Simulator {
    **/
   void StepTo(const T& final_time);
 
-  /** Request that the first attempted integration step have a particular size.
-   * Otherwise the integrator will estimate a suitable size for the initial step
-   * attempt. For fixed-step integration, all steps will be taken at this step
-   * size. For variable-step integration this will be treated as a maximum size
-   * subject to accuracy requirements and event occurrences. You can find out
-   * what size *actually* worked with `get_actual_initial_step_size_taken()`.
-   **/
-  void request_initial_step_size_target(double step_size) {
-    integrator_->request_initial_step_size_target(step_size);
-  }
-
-  /** Report the step size we will attempt for an initial step. **/
-  const T& get_initial_step_size_target() const {
-    return integrator_->get_initial_step_size_target();
-  }
-  /**@}**/
-
   /** Returns a const reference to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for publishing or
   extracting information about this trajectory step. **/
