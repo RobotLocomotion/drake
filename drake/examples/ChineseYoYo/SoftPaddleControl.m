@@ -48,13 +48,15 @@ classdef SoftPaddleControl < DrakeSystem
             c = SoftPaddleControl(p);
             c = setInputFrame(c, getOutputFrame(plantSim));
             c = setOutputFrame(c, getInputFrame(plantSim));
+            p = setInputFrame(p, getOutputFrame(c));
+            p = setOutputFrame(p, getInputFrame(c));
             
             sys = feedback(plantSim,c);
             v = p.constructVisualizer();
             
             x0 = p.getInitialState();
             v.drawWrapper(0,x0);
-            [ytraj,xtraj] = simulate(sys,[0 15],x0);
+            [ytraj,xtraj] = simulate(sys,[0 5],x0);
             v.playback(ytraj,struct('slider',true));
         end
     end
