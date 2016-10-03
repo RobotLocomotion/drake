@@ -107,7 +107,7 @@ Create Build Directory
 Create a directory for holding Drake's compiler artifacts::
 
     $ cd drake-distro
-    $ mkdir -p build
+    $ mkdir build
 
 .. _windows-configure-build:
 
