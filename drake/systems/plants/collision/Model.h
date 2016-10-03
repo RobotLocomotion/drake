@@ -33,7 +33,16 @@ class DRAKECOLLISION_EXPORT Model {
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
-  virtual const Element* readElement(ElementId id) const;
+  virtual const Element* FindElement(ElementId id) const;
+
+  /** Gets a pointer to a mutable collision element in this model.
+   * @param[in] id an ElementId corresponding to the desired collision
+   * element.
+   * @returns a pointer to a mutable collision element corresponding to
+   * the given id or nullptr if no such collision element is present in the
+   * model.
+   **/
+  virtual Element* FindMutableElement(ElementId id);
 
   virtual void getTerrainContactPoints(ElementId id0,
                                        Eigen::Matrix3Xd& terrain_points);
