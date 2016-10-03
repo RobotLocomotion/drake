@@ -65,7 +65,7 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
   RigidBody* body2_{};
   RigidBody* body3_{};
 
-  // The collision elements are owned by the test class, the bodes receive
+  // The collision elements are owned by the test class, the bodies receive
   // raw pointers which they do *not* own.
   std::unique_ptr<Element> body1_collision_element_1_{};
   std::unique_ptr<Element> body1_collision_element_2_{};
