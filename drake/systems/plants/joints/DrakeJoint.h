@@ -12,12 +12,7 @@
 #include "drake/drakeJoints_export.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-// TODO(liang.Fok) Figure out and document whether jointTransform() returns X_FM
-// or X_MF. From this method's first call site in RigidBodyTree::doKinematics(),
-// I suspect it returns X_MF because I believe it's being used to compute X_MP.
-//
-// For additional context and variable definitions, see:
-// https://reviewable.io/reviews/RobotLocomotion/drake/3137#-KPAy7Gzc5VtPqgiE6Kg
+// TODO(liang.Fok) Document these method once #3608 is resolved.
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \
                                                                              \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(       \
