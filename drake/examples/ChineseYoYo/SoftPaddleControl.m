@@ -26,17 +26,23 @@ classdef SoftPaddleControl < DrakeSystem
             qp = x(6:9);
             
             [H,C,B] = manipulatorDynamics(obj.plant.no_contact, q, qp);
-            [phi,J,ddphi] = obj.plant.in_contact.position_constraints{1}.eval(q);
+            [~,J,ddphi] = obj.plant.in_contact.position_constraints{1}.eval(q);
             
             Jp = reshape(ddphi,length(q),[])*qp;
             Hinv = inv(H);
             Hinvtilde = J*Hinv*J';
-            Delta = Hinvtilde - J(1)*J*Hinv*B;
+%             Hinvtilde = J*(H\J');
             
-            u = -obj.kp*q(1) - obj.kd*qp(1);
+            Delta = Hinvtilde - J(1)*J*Hinv*B;
+%             Delta = Hinvtilde - J(1)*J*(H\B);
+            
+            u = -obj.kp*q(1) - obj.kd*qp(1) + C(1);
             if m == 2
-                u = -Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+                u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+%                 u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*(H\C))/(Delta);
             end
+%             u = C(1);
+            
         end
     end
     
@@ -55,8 +61,82 @@ classdef SoftPaddleControl < DrakeSystem
             
             x0 = p.getInitialState();
             v.drawWrapper(0,x0);
-            [ytraj,xtraj] = simulate(sys,[0 5],x0);
+            tic
+            [ytraj,xtraj] = simulate(sys,[0 10],x0);
+            toc
             v.playback(ytraj,struct('slider',true));
+            
+            r=p;
+            
+            if (1)
+                % energy / cable length plotting
+                % note, set alpha=0 in Manipulator/computeConstraintForce to reveal
+                % some artifacts, especially at the release guard when
+                % the pulley effectively hits a hard-stop.  this is due to the fact
+                % that phidot>0 during the in_contact phase.  it's hard to tell if
+                % this is numerical artifact or a bad gradient in CableLength.
+                tt=getBreaks(xtraj);
+                E=tt;
+                cl=tt;
+                nq=getNumPositions(r.no_contact);
+                dcl=zeros(length(tt),1,nq);
+                ddcl=zeros(length(tt),1,nq*nq);
+                for i=1:length(tt)
+                    x = xtraj.eval(tt(i));
+                    %           if i >= length(tt)/20 keyboard; end
+                    [T,U] = energy(r,x);
+                    E(i)= T+U;
+                    if (x(1)==1) %flight mode
+                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.no_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+                    else
+                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+                    end
+                end
+                figure(1); clf;
+                subplot(2,1,1); plot(tt,E, 'LineWidth', 2);
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\mathcal{H}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(2,1,2); plot(tt,cl, 'LineWidth', 2);
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                
+                figure(3); clf;
+                subplot(3,1,1); plot(tt,cl, 'LineWidth', 2);
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(3,1,2); plot(tt,dcl(:,1,4), 'LineWidth', 2);
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\dot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(3,1,3); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\ddot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                
+                t = linspace(xtraj.tspan(1), xtraj.tspan(end), 1001);
+                x = eval(xtraj, t);
+                figure(2), clf
+                subplot(2,2,1)
+                plot(t,x(3,:), 'LineWidth', 2)
+                axis('tight')
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\theta$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(2,2,2)
+                plot(t,x(4,:), 'LineWidth', 2)
+                axis('tight')
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$x$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(2,2,3)
+                plot(t, x(5,:), 'LineWidth', 2)
+                axis('tight')
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$z$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(2,2,4)
+                plot(t, x(2,:), 'LineWidth', 2)
+                axis('tight')
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$\psi$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                
+            end
         end
+    
     end
 end
