@@ -1,17 +1,20 @@
-classdef SoftPaddleControl < HybridDrakeSystem
+classdef SoftPaddleControl < DrakeSystem
     properties
         kp
         kd
+        plant
     end
     
     methods
         function obj = SoftPaddleControl(plant)
-            obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
-%             obj = obj@DrakeSystem(0,0,9,1);
+%             obj = obj@HybridDrakeSystem(2*plant.in_contact.num_positions+1,size(plant.in_contact.B,2));
+            obj = obj@DrakeSystem(0,0,9,1);
+
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
             obj.kp = 100;
             obj.kd = 2*sqrt(obj.kp);
+            obj.plant = plant;
             
             Q = diag([10,1,1,10]); R = 1; Qf = diag([10,1,0,10]);
             % xtraj and utraj to be defined
@@ -23,8 +26,8 @@ classdef SoftPaddleControl < HybridDrakeSystem
             q = x(2:5);
             qp = x(6:9);
             
-            [H,C,B] = manipulatorDynamics(obj, q, qp);
-            [phi,J,ddphi] = obj.in_contact.position_constraints{1}.eval(q);
+            [H,C,B] = manipulatorDynamics(obj.plant.no_contact, q, qp);
+            [phi,J,ddphi] = obj.plant.in_contact.position_constraints{1}.eval(q);
             
             Jp = reshape(ddphi,length(q),[])*qp;
             Hinv = inv(H);
@@ -33,7 +36,7 @@ classdef SoftPaddleControl < HybridDrakeSystem
             
             u = -obj.kp*q(1) - obj.kd*qp(1);
             if m == 2
-                u = -Hinvtilde/(Hinvtilde-Delta)*u + J(1)*(Jp*qp-J*Hinv*C)/(Hinvtilde-Delta);
+                u = -Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
             end
         end
     end
@@ -41,11 +44,16 @@ classdef SoftPaddleControl < HybridDrakeSystem
     methods (Static)
         function run()
             p = SoftPaddleHybrid();
+            plantSim = SimulinkModel(p.getModel());
+            
             c = SoftPaddleControl(p);
-            sys = feedback(p,c);
+            c = setInputFrame(c, getOutputFrame(plantSim));
+            c = setOutputFrame(c, getInputFrame(plantSim));
+            
+            sys = feedback(plantSim,c);
             v = p.constructVisualizer();
             
-            x0 = r.getInitialState();
+            x0 = p.getInitialState();
             v.drawWrapper(0,x0);
             [ytraj,xtraj] = simulate(sys,[0 15],x0);
             v.playback(ytraj,struct('slider',true));
