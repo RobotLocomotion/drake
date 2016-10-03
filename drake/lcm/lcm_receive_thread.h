@@ -10,12 +10,6 @@
 namespace drake {
 namespace lcm {
 
-/// @cond
-
-bool DRAKELCM_EXPORT WaitForLcm(::lcm::LCM* lcm, double timeout);
-
-/// @endcond
-
 /**
  * Maintains a thread that receives LCM messages and dispatches the messages to
  * the appropriate message handlers.

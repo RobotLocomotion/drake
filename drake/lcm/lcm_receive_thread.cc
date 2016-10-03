@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/drakeLcm_export.h"
 
 namespace drake {
 namespace lcm {
@@ -26,10 +27,10 @@ LcmReceiveThread::~LcmReceiveThread() {
   Stop();
 }
 
-// namespace {
+namespace {
 
 // Waits for an LCM message to arrive.
-bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
+inline bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
   int lcm_file_descriptor = lcm->getFileno();
 
   struct timeval tv;
@@ -50,7 +51,7 @@ bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
   return (status > 0 && FD_ISSET(lcm_file_descriptor, &fds));
 }
 
-// }  // namespace
+}  // namespace
 
 void LcmReceiveThread::LoopWithSelect() {
   while (!stop_) {
