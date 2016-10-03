@@ -202,11 +202,40 @@ public:
 };
 
 /**
- *
+ * A rotated Lorentz cone constraint that taks a n x 1 vector x, and imposes
+ * constraint
+ * \f[
+ * x_0 >= 0
+ * x_1 >= 0
+ * x_0*x_1 >= \sqrt{x_2^2+x_3^x+...+x_n^2}
+ * \f]
+ * Ideally this constraint should be handled by a second order cone solver.
+ * In case the user wants to enforce this constraint through general nonlinear
+ * nonconvex optimization, with smooth gradient, we alternatively impose the
+ * following constraint, with smooth gradient everywhere
+ * \f[
+ * x_0 >= 0
+ * x_1 >=0
+ * x_0^2*x_1^2 -x_2^2 - x_3^2 - .. - x_n^2 >=0
+ * \f]
  */
 class RotatedLorentzConeConstraint: public Constraint {
  public:
-  RotatedLorentzConeConstraint():Constraint(2, Eigen::Vector3d::Constant(0.0), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())) {};
+  RotatedLorentzConeConstraint():Constraint(3, Eigen::Vector3d::Constant(0.0), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())) {};
+
+  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd &y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = x(1);
+    y(2) = x(0)*x(0) + x(1) * x(1) - x.tail(x.size()-1).squaredNorm();
+  }
+
+  void Eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+    y.resize(num_constraints());
+    y(0) = x(0);
+    y(1) = x(1);
+    y(2) = x(0)*x(0) + x(1) * x(1) - x.tail(x.size()-1).squaredNorm();
+  }
 };
 /** A semidefinite constraint  that takes a symmetric matrix as
  well as a linear component.
