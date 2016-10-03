@@ -6,18 +6,18 @@
 #include "drake/common/drake_path.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/gravity_compensator.h"
-#include "drake/systems/framework/primitives/pid_controller2.h"
+#include "drake/systems/framework/primitives/pid_controller.h"
 #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
-#include "drake/systems/bot_visualizer_system.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_system/rigid_body_plant.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 // Includes for the planner part. Move somewher else
 #include "drake/common/polynomial.h"
@@ -49,7 +49,7 @@ namespace {
 unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      DrakeJoint::FIXED);
+      drake::systems::plants::joints::kFixed);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).
@@ -189,7 +189,7 @@ class KukaDemo : public Diagram<T> {
     auto mbd_world = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        DrakeJoint::FIXED, nullptr /* weld to frame */, mbd_world.get());
+        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */, mbd_world.get());
 
     // Adds the ground.
     double kBoxWidth = 3;
@@ -225,8 +225,8 @@ class KukaDemo : public Diagram<T> {
     state_minus_target_ = make_unique<Adder<T>>(2 /*number of inputs*/,
                                    plant_->get_num_states() /* size */);
 
-    const double numerical_stiffness = 3000;
-    plant_->penetration_stiffness_ = 10*numerical_stiffness;
+    //const double numerical_stiffness = 3000;
+    //plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
     // Rough estimation of controller constants.
     //const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
@@ -246,7 +246,7 @@ class KukaDemo : public Diagram<T> {
     controller_ = make_unique<PidController<T>>(kp, ki, kd,
                                                 plant_->get_num_positions());
     gravity_compensator_ = make_unique<GravityCompensator<T>>(
-        plant_->get_multibody_world());
+        plant_->get_rigid_body_tree());
     gcomp_minus_pid_ = make_unique<Adder<T>>(
         2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
 
@@ -266,8 +266,10 @@ class KukaDemo : public Diagram<T> {
     target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(
         *poly_trajectory_);
 
+#if 0
     viz_publisher_ = make_unique<BotVisualizerSystem>(
         plant_->get_multibody_world(), &lcm_);
+#endif
 
     DiagramBuilder<T> builder;
     // Target.
@@ -275,20 +277,20 @@ class KukaDemo : public Diagram<T> {
     //builder.Connect(target_state_->get_output_port(0),
     //                error_inverter_->get_input_port(0));
     builder.Connect(target_plan_->get_output_port(0),
-                    error_inverter_->get_input_port(0));
-    builder.Connect(error_inverter_->get_output_port(0),
+                    error_inverter_->get_input_port());
+    builder.Connect(error_inverter_->get_output_port(),
                     state_minus_target_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0),
                     state_minus_target_->get_input_port(1));
 
     // Splits plant output port into a positions and velocities ports.
-    builder.Connect(state_minus_target_->get_output_port(0),
+    builder.Connect(state_minus_target_->get_output_port(),
                     demux_->get_input_port(0));
 
     builder.Connect(demux_->get_output_port(0),
-                    controller_->get_error_signal_port());
+                    controller_->get_error_port());     
     builder.Connect(demux_->get_output_port(1),
-                    controller_->get_error_signal_rate_port());
+                    controller_->get_error_derivative_port());     
 
     // Connects the gravity compensator.
     builder.Connect(plant_->get_output_port(0),
@@ -298,31 +300,32 @@ class KukaDemo : public Diagram<T> {
 
     // Adds feedback.
     builder.Connect(controller_->get_output_port(0),
-                    inverter_->get_input_port(0));
-    builder.Connect(inverter_->get_output_port(0),
+                    inverter_->get_input_port());
+    builder.Connect(inverter_->get_output_port(),
                     gcomp_minus_pid_->get_input_port(1));
 
-    builder.Connect(gcomp_minus_pid_->get_output_port(0),
+    builder.Connect(gcomp_minus_pid_->get_output_port(),
                     plant_->get_input_port(0));
 
     // Connects to visualizer.
+#if 0
     builder.Connect(plant_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
+#endif
     builder.ExportOutput(plant_->get_output_port(0));
     builder.BuildInto(this);
   }
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
-  void SetDefaultState(ContextBase<T>* context) const {
-    ContextBase<T>* controller_context =
-        Diagram<T>::GetMutableSubSystemContext(context, controller_.get());
+  void SetDefaultState(Context<T>* context) const {
+    Context<T>* controller_context =
+        this->GetMutableSubsystemContext(context, controller_.get());
     controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
 
-    ContextBase<T>* plant_context =
-        Diagram<T>::GetMutableSubSystemContext(context, plant_.get());
-
-    plant_->ObtainZeroConfiguration(plant_context);
+    Context<T>* plant_context =
+        this->GetMutableSubsystemContext(context, plant_.get());
+    plant_->SetZeroConfiguration(plant_context);
   }
 
  private:
@@ -337,7 +340,7 @@ class KukaDemo : public Diagram<T> {
   std::unique_ptr<ConstantVectorSource<T>> target_state_;
   std::unique_ptr<TimeVaryingPolynomialSource<T>> target_plan_;
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
-  std::unique_ptr<BotVisualizerSystem> viz_publisher_;
+  //std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
 };
 
