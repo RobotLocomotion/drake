@@ -134,16 +134,31 @@
   </joint>
 
   <force_element name="paddle_spring">
-    <torsional_spring rest_angle="0" stiffness="100000">
+    <torsional_spring rest_angle="0" stiffness="0">
       <joint name="paddle_angle"/>
     </torsional_spring>
-  </force_element>
+  </force_element> 
 
   <force_element name="tensioner_spring">
     <torsional_spring rest_angle="0" stiffness="80">
       <joint name="tensioner_angle"/>
     </torsional_spring>
   </force_element>
+
+  
+<!--  <force_element name="ball_spring_x">
+    <linear_spring_damper rest_length="0.0" stiffness="100000" damping="100">
+      <link1 link="base" xyz="-0.02845 1 5" />
+      <link2 link="load_x" xyz="0 0 0" />
+    </linear_spring_damper>
+  </force_element>
+
+  <force_element name="ball_spring_z">
+    <linear_spring_damper rest_length="0.0" stiffness="100000" damping="100">
+      <link1 link="load_x" xyz="0 0 0" />
+      <link2 link="load" xyz="0 0 0" />
+    </linear_spring_damper>
+  </force_element> -->
 
  <transmission type="SimpleTransmission" name="paddle_trans">
     <actuator name="paddle_angle" />
