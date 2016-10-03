@@ -44,13 +44,12 @@ classdef SoftPaddleControl < DrakeSystem
         function run()
             p = SoftPaddleHybrid();
             plantSim = SimulinkModel(p.getModel());
+            % take the frames from the simulink model and use those for the simulation of plant and controller 
+            p = setOutputFrame(p, getOutputFrame(plantSim));
+            p = setInputFrame(p, getInputFrame(plantSim));
             
             c = SoftPaddleControl(p);
-            c = setInputFrame(c, getOutputFrame(plantSim));
-            c = setOutputFrame(c, getInputFrame(plantSim));
-            p = setInputFrame(p, getOutputFrame(c));
-            p = setOutputFrame(p, getInputFrame(c));
-            
+                       
             sys = feedback(plantSim,c);
             v = p.constructVisualizer();
             
