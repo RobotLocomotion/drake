@@ -91,9 +91,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_updates(), 0);
 
-  // TODO(edrumwri): Not sure whether this is still true- commenting out
-  // Publish() should get called at start and finish.
-//  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
+  EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
 
   // Current time is 1. An earlier final time should fail.

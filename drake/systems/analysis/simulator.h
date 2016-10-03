@@ -269,6 +269,9 @@ void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
+  // Do a publish before the simulation starts.
+  system_.Publish(*context_);
+
   // Restore default values.
   ResetStatistics();
 
@@ -349,6 +352,9 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
+
+  // publish at the end of the step
+  system_.Publish(*context_);
 }
 
 // TODO(edrumwri): Prepare to remove
