@@ -3,6 +3,7 @@ classdef SoftPaddleControl < DrakeSystem
         kp
         kd
         plant
+        numerically_stable
     end
     
     methods
@@ -18,6 +19,7 @@ classdef SoftPaddleControl < DrakeSystem
             Q = diag([10,1,1,10]); R = 1; Qf = diag([10,1,0,10]);
             % xtraj and utraj to be defined
 %             c = tvlqr(plant,xtraj,utraj,Q,R,Qf);
+            obj.numerically_stable = false;
         end
         
         function u = output(obj,t,~,x)
@@ -26,22 +28,28 @@ classdef SoftPaddleControl < DrakeSystem
             qp = x(6:9);
             
             [H,C,B] = manipulatorDynamics(obj.plant.no_contact, q, qp);
-            [~,J,ddphi] = obj.plant.in_contact.position_constraints{1}.eval(q);
+            [phi,J,ddphi] = obj.plant.in_contact.position_constraints{1}.eval(q);
             
             Jp = reshape(ddphi,length(q),[])*qp;
             Hinv = inv(H);
             Hinvtilde = J*Hinv*J';
-%             Hinvtilde = J*(H\J');
+            %             Hinvtilde = J*(H\J');
             
             Delta = Hinvtilde - J(1)*J*Hinv*B;
-%             Delta = Hinvtilde - J(1)*J*(H\B);
-            
+            %             Delta = Hinvtilde - J(1)*J*(H\B);
+            epsilon = 0.5;
             u = -obj.kp*q(1) - obj.kd*qp(1) + C(1);
             if m == 2
-                u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
-%                 u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*(H\C))/(Delta);
+                if(obj.numerically_stable)
+                     u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
+                else
+                    u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+                    %                 u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*(H\C))/(Delta);
+                end
             end
-%             u = C(1);
+            
+            %% Set
+            %             u = C(1);
             
         end
     end
@@ -62,7 +70,7 @@ classdef SoftPaddleControl < DrakeSystem
             x0 = p.getInitialState();
             v.drawWrapper(0,x0);
             tic
-            [ytraj,xtraj] = simulate(sys,[0 10],x0);
+            [ytraj,xtraj] = simulate(sys,[0 40],x0);
             toc
             v.playback(ytraj,struct('slider',true));
             
