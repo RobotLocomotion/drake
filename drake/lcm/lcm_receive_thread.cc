@@ -28,8 +28,7 @@ LcmReceiveThread::~LcmReceiveThread() {
 
 // namespace {
 
-// Waits for an LCM message to arrive.
-bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
+bool LcmReceiveThread::WaitForLcm(::lcm::LCM* lcm, double timeout) const {
   int lcm_file_descriptor = lcm->getFileno();
 
   struct timeval tv;
