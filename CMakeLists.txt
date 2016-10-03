@@ -54,9 +54,9 @@ option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 if(DISABLE_MATLAB)
   message(STATUS "MATLAB is disabled.")
 else()
-  find_program(matlab matlab)
-  if(matlab)
-    message(STATUS "Found MATLAB at " ${matlab})
+  drake_setup_matlab()
+  if(MATLAB_ROOT_DIR)
+    message(STATUS "Found MATLAB at " ${MATLAB_ROOT_DIR})
   else()
     message(STATUS "Looked for MATLAB but could not find it.")
   endif()
@@ -64,16 +64,16 @@ endif()
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
-cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
+cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR" OFF)
 
 ## The following projects are default OFF when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
-cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR;NOT WIN32" OFF)
+cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR;NOT WIN32" OFF)
+cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR;NOT WIN32;WITH_MOSEK" OFF)
+cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR;NOT WIN32" OFF)
+cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;MATLAB_ROOT_DIR;NOT WIN32" OFF)
 
 ###########################################
 # External Projects that are OFF by default
@@ -112,7 +112,6 @@ drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
-drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC CMAKE)
@@ -197,6 +196,23 @@ drake_add_external(nlopt PUBLIC CMAKE
 # sedumi
 drake_add_external(sedumi CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+
+# snopt
+if(NOT DISABLE_MATLAB AND MATLAB_ROOT_DIR)
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=ON
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+else()
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=OFF)
+endif()
+
+drake_add_external(snopt CMAKE
+  CMAKE_ARGS
+    -DBUILD_SNOPT_CPP=OFF
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    ${SNOPT_EXTRA_CMAKE_ARGS})
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE
