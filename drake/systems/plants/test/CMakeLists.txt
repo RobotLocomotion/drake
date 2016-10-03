@@ -101,22 +101,19 @@ if(lcm_FOUND)
     drake_add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/automotive/models/prius")
   endif()
 
-  add_executable(load_model_test load_model_test.cc)
-  target_link_libraries(load_model_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME load_model_test COMMAND load_model_test)
+  drake_add_cc_test(load_model_test)
+  target_link_libraries(load_model_test drakeRBSystem)
 endif()
 
 add_executable(testXmlUtil testXmlUtil.cpp)
 target_link_libraries(testXmlUtil drakeXMLUtil ${GTEST_BOTH_LIBRARIES})
 drake_add_test(NAME testXmlUtil COMMAND testXmlUtil)
 
-add_executable(urdf_parser_test urdf_parser_test.cc)
-target_link_libraries(urdf_parser_test drakeRBM ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME urdf_parser_test COMMAND urdf_parser_test)
+drake_add_cc_test(urdf_parser_test)
+target_link_libraries(urdf_parser_test drakeRBM)
 
-add_executable(rigid_body_test rigid_body_test.cc)
-target_link_libraries(rigid_body_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME rigid_body_test COMMAND rigid_body_test)
+drake_add_cc_test(rigid_body_test)
+target_link_libraries(rigid_body_test drakeRBSystem)
 
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)

@@ -1,3 +1,2 @@
-add_executable(rigid_body_system_test rigid_body_system_test.cc)
-target_link_libraries(rigid_body_system_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME rigid_body_system_test COMMAND rigid_body_system_test)
+drake_add_cc_test(rigid_body_system_test)
+target_link_libraries(rigid_body_system_test drakeRBSystem)

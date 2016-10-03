@@ -36,7 +36,7 @@ drake_install_headers(
     ${lcm_dependent_header_files}
     kinematics_results.h rigid_body_plant.h)
 pods_install_libraries(drakeRigidBodyPlant)
-pods_install_pkg_config_file(drake-rbs
+pods_install_pkg_config_file(drake-rigid-body-plant
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -ldrakeRigidBodyPlant -ldrakeRBM
     VERSION 0.0.1)

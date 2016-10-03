@@ -141,8 +141,13 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
     mex_setup()
 
     # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test
-    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
+    # matlab_add_unit_test and matlab_add_mex
+    find_package(Matlab REQUIRED
+      COMPONENTS
+        MAIN_PROGRAM
+        MEX_COMPILER
+        MX_LIBRARY
+        SIMULINK)
   endif()
 endif()
 
