@@ -164,7 +164,9 @@ enum ProgramAttributes {
   kLinearCost = 1 << 5,
   kLinearConstraint = 1 << 6,
   kLinearEqualityConstraint = 1 << 7,
-  kLinearComplementarityConstraint = 1 << 8
+  kLinearComplementarityConstraint = 1 << 8,
+  kLorentzConeConstraint = 1 << 9,
+  kRotatedLorentzConeConstraint = 1 << 10
 };
 typedef uint32_t AttributesSet;
 
@@ -483,6 +485,14 @@ class DRAKE_EXPORT MathematicalProgram {
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
 
+  /**
+   * Adds Lorentz cone constraint referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, VariableList const& vars) {
+    required_capabilities_ |= kLorentzConeConstraint;
+
+  }
   /**
    * @brief Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
@@ -943,6 +953,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
+  std::list<Binding<LorentzConeConstraint>> lorentz_cone_constraint_
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
