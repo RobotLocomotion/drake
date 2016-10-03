@@ -227,14 +227,14 @@ class RotatedLorentzConeConstraint: public Constraint {
     y.resize(num_constraints());
     y(0) = x(0);
     y(1) = x(1);
-    y(2) = x(0)*x(0) + x(1) * x(1) - x.tail(x.size()-1).squaredNorm();
+    y(2) = x(0)*x(0)*x(1) * x(1) - x.tail(x.size()-2).squaredNorm();
   }
 
   void Eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y(0) = x(0);
     y(1) = x(1);
-    y(2) = x(0)*x(0) + x(1) * x(1) - x.tail(x.size()-1).squaredNorm();
+    y(2) = x(0)*x(0)* x(1) * x(1) - x.tail(x.size()-2).squaredNorm();
   }
 };
 /** A semidefinite constraint  that takes a symmetric matrix as
