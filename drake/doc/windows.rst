@@ -171,8 +171,8 @@ Update PATH Environment Variable
 
 The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
-* ``drake-distro/build\install\lib``
-* ``drake-distro/build\install\bin``
+* ``drake-distro/build/install/lib``
+* ``drake-distro/build/install/bin``
 
 Test Compilation Results
 ------------------------
