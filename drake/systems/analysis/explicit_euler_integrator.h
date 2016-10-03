@@ -6,10 +6,11 @@ namespace drake {
 namespace systems {
 
 /**
- * A first-order, explicit Euler integrator. Configuration (q) and velocity (v)
- * are both updated using last configuration and velocity:
- * q(t+h) = q(t) + v(t)*h
- * v(t+h) = v(t) + dv/dt(q(t), v(t)) * h
+ * A first-order, explicit Euler integrator. State is updated in the following
+ * manner:
+ * <pre>
+ * x(t+h) = x(t) + dx/dt * h
+ * </pre>
  */
 template <class T>
 class ExplicitEulerIntegrator : public IntegratorBase<T> {

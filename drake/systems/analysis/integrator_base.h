@@ -99,9 +99,14 @@ class IntegratorBase {
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
    * chosen for you. This may be ignored for fixed-step integration since
-   * accuracy control requires variable step sizes. Alternatively, the
-   * integrator may log a message- assuming the integrator supports this
-   * capability- when the designated accuracy has not been achieved.
+   * accuracy control requires variable step sizes. Additionally, the integrator
+   * may support estimating accuracy but not provide the ability to control
+   * it. You should call supports_accuracy_estimation() to ensure that the
+   * integrator supports this capability before calling this function; if
+   * the integrator does not support it, this method will throw an exception.
+   * Alternatively, the integrator may log a message- assuming the integrator
+   * supports this capability- when the designated accuracy has not been
+   * achieved.
    *
    * Integrators vary in the range of accuracy (loosest to tightest) that they
    * can support. If you request accuracy outside the supported range for the
@@ -117,11 +122,12 @@ class IntegratorBase {
    * http://dx.doi.org/10.1016/j.piutam.2011.04.023
    * TODO(edrumwri): complain if integrator with error estimation wants to drop
    *                 below the minimum step size
+   * @throws std::logic_error if integrator does not support accuracy estimation
    **/
   void set_target_accuracy(const T& accuracy) {
     if (!supports_accuracy_estimation())
-      drake::log()->warn("Integrator does not support accuracy estimation and "
-                             "user has requested error control");
+      throw std::logic_error("Integrator does not support accuracy estimation "
+                                 "and user has requested error control");
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -137,7 +143,9 @@ class IntegratorBase {
   const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
-   * Sets the maximum step size for this integrator.
+   * Sets the maximum step size for this integrator. For fixed step integrators
+   * all steps will be taken at the maximum step size *unless* an event would
+   * be missed.
    */
   void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
@@ -145,12 +153,13 @@ class IntegratorBase {
   }
 
   /**
-   * Gets the maximum step size for this integrator
+   * Gets the maximum step size for this integrator.
    */
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
-   * Sets the minimum step size for this integrator
+   * Sets the minimum step size for this integrator. All integration steps
+   * will be at least this large *unless* an event would be missed.
    */
   void set_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
@@ -174,27 +183,25 @@ class IntegratorBase {
 
   /** Request that the first attempted integration step have a particular size.
    * Otherwise the integrator will estimate a suitable size for the initial step
-   * attempt. For fixed-step integration, all steps will be taken at this step
-   * size. For variable-step integration this will be treated as a maximum size
-   * subject to accuracy requirements and event occurrences. You can find out
-   * what size *actually* worked with `get_actual_initial_step_size_taken()`.
-   * Note that this function is virtual b/c so that fixed step integrators
-   * exhibit the user-expected behavior without having to keep track of two
-   * variable settings (step size and requested initial step size).
+   * attempt. If the integrator does not support error control, this method
+   * will throw a std::logic_error (call supports_error_control() to verify
+   * before calling this method). For variable-step integration, the initial
+   * target will be treated as a maximum size subject to accuracy requirements
+   * and event occurrences. You can find out what size *actually* worked with
+   * `get_actual_initial_step_size_taken()`.
+   * @throws std::logic_error if the integrator does not support error control
    */
   void request_initial_step_size_target(const T& step_size) {
     if (!supports_error_control())
-      drake::log()->warn("Integrator does not support error control and "
+      throw std::logic_error("Integrator does not support error control and "
                              "user has initial step size target");
     req_initial_step_size_ = step_size;
   }
 
-  /** Get the first integration step target size. Otherwise the integrator will
-   * estimate a suitable size for the initial step attempt. For fixed-step
-   * integration, all steps will be taken at this step size. For variable-step
-   * integration this will be treated as a maximum size subject to accuracy
-   * requirements and event occurrences. You can find out what size *actually*
-   * worked with `get_actual_initial_step_size_taken()`. **/
+  /** Get the first integration step target size. You can find out what size
+   * *actually* worked with `get_actual_initial_step_size_taken()`.
+   * @see request_initial_step_size_target()
+   **/
   const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
