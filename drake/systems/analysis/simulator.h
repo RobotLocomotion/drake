@@ -290,6 +290,7 @@ class Simulator {
 };
 
 // No need for user code to instantiate these; they are in the library.
+
 // TODO(sherm1) Clean this up with a more nuanced export macro.
 #ifdef _MSC_VER
 extern template class Simulator<double>;
