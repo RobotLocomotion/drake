@@ -16,8 +16,7 @@ namespace solvers {
 namespace {
 
 // Tests if the Lorentz Cone constraint is imposed correctly
-template<typename Derived>
-void TestLorentzConeEval(const Derived &x_test, bool is_in_cone) {
+void TestLorentzConeEval(const VectorXd &x_test, bool is_in_cone) {
   auto cnstr = LorentzConeConstraint();
   VectorXd y;
   cnstr.Eval(x_test, y);
