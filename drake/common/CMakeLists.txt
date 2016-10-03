@@ -17,6 +17,7 @@ set(sources
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
+  symbolic_expression.cc
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -42,6 +43,7 @@ set(installed_headers
   polynomial.h
   sorted_vectors_have_intersection.h
   symbolic_environment.h
+  symbolic_expression.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
