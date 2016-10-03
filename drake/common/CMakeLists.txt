@@ -16,6 +16,7 @@ set(sources
   functional_form.cc
   nice_type_name.cc
   polynomial.cc
+  symbolic_variable.cc
   text_logging.cc
   )
 
@@ -38,6 +39,7 @@ set(installed_headers
   number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
+  symbolic_variable.h
   text_logging.h
   trig_poly.h
   )
