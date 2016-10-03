@@ -1,5 +1,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
+#include <array>
+
 #include "gtest/gtest.h"
 
 #include "drake/lcm/drake_mock_lcm.h"

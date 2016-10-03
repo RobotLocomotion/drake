@@ -1,7 +1,5 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/drakeLcm_export.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 

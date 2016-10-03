@@ -27,7 +27,6 @@ class MessageSubscriber {
   // member variable that will be used to store received LCM messages.
   MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
       : channel_name_(channel_name) {
-    // Sets up the LCM message subscriber.
     ::lcm::Subscription* sub =
         lcm->subscribe(channel_name, &MessageSubscriber::HandleMessage, this);
     sub->setQueueCapacity(1);

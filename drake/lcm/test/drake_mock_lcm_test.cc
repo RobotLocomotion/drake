@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"

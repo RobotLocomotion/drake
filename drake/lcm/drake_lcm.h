@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "lcm/lcm-cpp.hpp"
+
 #include "drake/drakeLcm_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
@@ -23,7 +25,7 @@ class DRAKELCM_EXPORT DrakeLcmSubscriber {
  public:
   explicit DrakeLcmSubscriber(DrakeLcmMessageHandlerInterface* drake_handler);
 
-  // Disable copy and assign.
+  // Disables copy and assign.
   DrakeLcmSubscriber(const DrakeLcmSubscriber&) = delete;
   DrakeLcmSubscriber& operator=(const DrakeLcmSubscriber&) = delete;
 

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "drake/drakeLcm_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -23,7 +24,7 @@ class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
   explicit DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface*
       drake_handler);
 
-  // Disable copy and assign.
+  // Disables copy and assign.
   DrakeMockLcmSubscriber(const DrakeMockLcmSubscriber&) = delete;
   DrakeMockLcmSubscriber& operator=(const DrakeMockLcmSubscriber&) = delete;
 
