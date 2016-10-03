@@ -16,25 +16,6 @@ if(lcm_FOUND)
     LIBS -ldrakeLCMSystem
     REQUIRES lcm
     VERSION 0.0.1)
-
-  add_library_with_exports(LIB_NAME drakeBotVisualizerSystem SOURCE_FILES
-    bot_visualizer_system.cc)
-  add_dependencies(drakeBotVisualizerSystem
-    drake_lcmtypes_hpp)
-  target_link_libraries(drakeBotVisualizerSystem
-    drakeRBM
-    drakeSystemFramework
-    lcm)
-  if(WIN32)
-    target_link_libraries(drakeBotVisualizerSystem ws2_32)
-  endif()
-
-  pods_install_libraries(drakeBotVisualizerSystem)
-  drake_install_headers(bot_visualizer_system.h)
-  pods_install_pkg_config_file(drake-bot-visualizer-system
-    LIBS -ldrakeBotVisualizerSystem
-    REQUIRES lcm
-    VERSION 0.0.1)
 endif()
 
 add_subdirectory(analysis)
@@ -47,7 +28,6 @@ add_subdirectory(robotInterfaces)
 add_subdirectory(lcm)
 
 drake_install_headers(
-  bot_visualizer_system.h
   cascade_system.h
   feedback_system.h
   LinearSystem.h
