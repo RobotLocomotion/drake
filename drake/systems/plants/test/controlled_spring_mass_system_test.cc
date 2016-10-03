@@ -1,4 +1,4 @@
-#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
+#include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
