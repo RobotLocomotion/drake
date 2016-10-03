@@ -100,3 +100,9 @@
 [submodule "externals/eigen"]
 	path = externals/eigen
 	url = https://github.com/RobotLocomotion/eigen-mirror.git
+[submodule "externals/libccd"]
+	path = externals/libccd
+	url = https://github.com/danfis/libccd.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git
