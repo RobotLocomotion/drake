@@ -170,18 +170,19 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
-/** A LorentzConeConstraint that takes a n x 1 vector x, and imposes constraint
- <pre>
- x_1 >= sqrt(x_2^2+...+x_n^2)
- </pre>
+/**
+ A LorentzConeConstraint that takes a n x 1 vector x, and imposes constraint
+ \f[
+ x_1 >= \sqrt{x_2^2+...+x_n^2}
+ \f]
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
- optimization, with smooth gradient, we alternatively impose the constraint, to
- avoid the singularity of the constraint at x_i = 0, i = 2,...,n
- <pre>
- x_1 >= 0
+ optimization, with smooth gradient, we alternatively impose the following
+ constraint, with smooth gradient everywhere
+ \f[
+ x_1 >= 0 \\
  x_1^2-x_2^2-...-x_n^2 >= 0
- </pre>
+ \f]
  */
 class LorentzConeConstraint: public Constraint {
 public:
@@ -198,6 +199,14 @@ public:
     y(0) = x(0);
     y(1) = pow(x(0), 2) - x.tail(x.size()-1).squaredNorm();
   }
+};
+
+/**
+ *
+ */
+class RotatedLorentzConeConstraint: public Constraint {
+ public:
+  RotatedLorentzConeConstraint():Constraint(2, Eigen::Vector3d::Constant(0.0), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())) {};
 };
 /** A semidefinite constraint  that takes a symmetric matrix as
  well as a linear component.
