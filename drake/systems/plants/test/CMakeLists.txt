@@ -115,6 +115,9 @@ target_link_libraries(urdf_parser_test drakeRBM)
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBSystem)
 
+find_package(avl)
+find_package(xfoil)
+
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/bodyKinTest OPTIONAL bullet COMMAND bodyKinTest)
