@@ -71,7 +71,9 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, translator, &lcm);
 
+  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
+  lcm.StopReceiveThread();
 }
 
 // Tests the functionality of LcmSubscriberSystem.
@@ -99,7 +101,9 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // "device under test".
   LcmSubscriberSystem dut(channel_name, dictionary, &lcm);
 
+  lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
+  lcm.StopReceiveThread();
 }
 
 // A lcmt_drake_signal translator that preserves coordinate names.
@@ -175,6 +179,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   CustomDrakeSignalTranslator translator;
   ::drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut("dummy", translator, &lcm);
+  lcm.StartReceiveThread();
 
   // Create a data-filled vector.
   typedef CustomDrakeSignalTranslator::CustomVector CustomVector;
@@ -204,6 +209,8 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
     EXPECT_EQ(sample_vector.GetName(i), custom_output->GetName(i));
   }
+
+  lcm.StopReceiveThread();
 }
 
 }  // namespace
