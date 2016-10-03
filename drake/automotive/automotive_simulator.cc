@@ -10,7 +10,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeAutomotive_export.h"
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -27,7 +27,7 @@ namespace automotive {
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator() :
-    lcm_(std::make_unique<lcm::DrakeMockLcm>()) {}
+    lcm_(std::make_unique<lcm::DrakeLcm>()) {}
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(

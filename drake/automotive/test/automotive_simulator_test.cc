@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -25,7 +27,8 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
       systems::lcm::LcmPublisherSystem::get_name("0_FLOATING_JOINT_STATE");
 
   // Set up a basic simulation with just SimpleCar and its hangers-on.
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
+      std::make_unique<lcm::DrakeMockLcm>());
   simulator->AddSimpleCar();
   // Grab the pieces we want (testing the GetSystemByName in the process).
   auto& command_sub = dynamic_cast<systems::lcm::LcmSubscriberSystem&>(
@@ -63,8 +66,23 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   state_pub.GetMessage(&joint_value);
   EXPECT_GT(joint_value.x(), 1.0);
 
-  // TODO(jwnimmer-tri) Confirm that appropriate draw messages are coming out.
-  // Let's wait until we have LCM mocking (#3546) before doing this.
+  // Confirm that appropriate draw messages are coming out. Just a few of the
+  // messages fields are checked.
+  void* published_message_bytes = nullptr;
+  unsigned int published_message_size{};
+
+  lcm::DrakeMockLcm* mock_lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  EXPECT_TRUE(mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW",
+      &published_message_bytes, &published_message_size));
+
+  drake::lcmt_viewer_draw published_draw_message;
+  EXPECT_GT(published_draw_message.decode(published_message_bytes, 0,
+      published_message_size), 0);
+
+  EXPECT_EQ(published_draw_message.num_links, 2);
+  EXPECT_EQ(published_draw_message.link_name[0], "world");
+  EXPECT_EQ(published_draw_message.link_name[1], "box_shape");
 
   // The subsystem pointers must not change.
   EXPECT_EQ(

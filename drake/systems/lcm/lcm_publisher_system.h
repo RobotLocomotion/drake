@@ -75,12 +75,14 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Gets the most recently published message bytes; typically only used for
    * unit testing.
    */
   std::vector<uint8_t> GetMessage() const;
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Gets the most recently published message bytes, and converts them to into
    * vector form using the translator; typically only used for unit testing.

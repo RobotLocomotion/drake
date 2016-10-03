@@ -26,7 +26,8 @@ namespace automotive {
 template <typename T>
 class AutomotiveSimulator {
  public:
-  /// A constructor that configures this object to use a DrakeMockLcm instance.
+  /// A constructor that configures this object to use a DrakeLcm instance,
+  /// which uses a _real_ LCM instance.
   AutomotiveSimulator();
   explicit AutomotiveSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
   ~AutomotiveSimulator();

@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "drake/common/drake_assert.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -24,20 +25,32 @@ void DrakeMockLcm::StartReceiveThread() {
 
 void DrakeMockLcm::Publish(const std::string& channel, const void *data,
                        unsigned int data_size) {
-  last_published_message_.set = true;
-  last_published_message_.channel = channel;
-  last_published_message_.data.resize(data_size);
-  std::memcpy(&last_published_message_.data[0], data, data_size);
-  last_published_message_.data_size = data_size;
+  LastPublishedMessage* saved_message{nullptr};
+  if (last_published_messages_.find(channel) ==
+      last_published_messages_.end()) {
+    last_published_messages_[channel] = make_unique<LastPublishedMessage>();
+  }
+  saved_message = last_published_messages_[channel].get();
+
+  DRAKE_DEMAND(saved_message);
+
+  saved_message->channel = channel;
+  saved_message->data.resize(data_size);
+  std::memcpy(&saved_message->data[0], data, data_size);
+  saved_message->data_size = data_size;
 }
 
-bool DrakeMockLcm::get_last_published_message(std::string* channel, void** data,
-                                              unsigned int* data_size) {
-  bool result = last_published_message_.set;
-  if (result) {
-    *channel = last_published_message_.channel;
-    *data = &last_published_message_.data[0];
-    *data_size = last_published_message_.data_size;
+bool DrakeMockLcm::get_last_published_message(const std::string& channel,
+    void** data, unsigned int* data_size) {
+  bool result{true};
+  if (last_published_messages_.find(channel) ==
+      last_published_messages_.end()) {
+    result = false;
+  } else {
+    LastPublishedMessage* message = last_published_messages_[channel].get();
+    DRAKE_DEMAND(message);
+    *data = &message->data[0];
+    *data_size = message->data_size;
   }
   return result;
 }

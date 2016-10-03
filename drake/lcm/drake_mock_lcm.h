@@ -59,10 +59,9 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
                unsigned int data_size) override;
 
   /**
-   * Obtains the most recently transmitted message.
+   * Obtains the most recently published message on a particular channel.
    *
-   * @param[out] channel A pointer to where the channel name upon which the
-   * message was published should be saved.
+   * @param[inb] channel The channel on which the LCM message was published.
    *
    * @param[out] data A pointer to where the pointer to the message's serialized
    * byte array should be saved.
@@ -72,7 +71,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    *
    * @return `true` if a message was published, `false` otherwise.
    */
-  bool get_last_published_message(std::string* channel, void** data,
+  bool get_last_published_message(const std::string& channel, void** data,
       unsigned int* data_size);
 
   /**
@@ -102,13 +101,13 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
 
  private:
   struct LastPublishedMessage {
-    bool set{false};
     std::string channel{};
     std::vector<uint8_t> data{};
     unsigned int data_size{};
   };
 
-  LastPublishedMessage last_published_message_;
+  std::map<std::string, std::unique_ptr<LastPublishedMessage>>
+    last_published_messages_;
 
   // Maps the channel name to the subscriber.
   std::map<std::string, std::unique_ptr<DrakeMockLcmSubscriber>> subscriptions_;

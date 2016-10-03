@@ -71,6 +71,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Sets the `message_bytes` that will provide the value for `EvalOutput`;
    * typically only used for unit testing.
@@ -85,6 +86,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    */
   void SetMessage(std::vector<uint8_t> message_bytes);
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Sets the message vector that will provide the value for `EvalOutput`;
    * typically only used for unit testing.  The value will come translating the

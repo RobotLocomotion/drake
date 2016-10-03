@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/drakeLcm_export.h"
 
 namespace drake {
 namespace lcm {
@@ -29,7 +30,7 @@ LcmReceiveThread::~LcmReceiveThread() {
 namespace {
 
 // Waits for an LCM message to arrive.
-bool WaitForLcm(::lcm::LCM* lcm, double timeout) {
+bool DRAKELCM_EXPORT WaitForLcm(::lcm::LCM* lcm, double timeout) {
   int lcm_file_descriptor = lcm->getFileno();
 
   struct timeval tv;
