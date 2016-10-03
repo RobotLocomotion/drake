@@ -255,15 +255,16 @@ class IntegratorBase {
   const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding
-   * the most recent step in the trajectory. This is suitable for use in
-   * updates, sampling operations, event handlers, and constraint projection.
-   * You can also modify this prior to calling Initialize() to set initial
-   * conditions. **/
+   * the most recent step in the trajectory. **/
   Context<T>* get_mutable_context() { return context_; }
 
   /** Replace the pointer to the internally-maintained Context with a different
-   * one. This is useful for supplying a new set of initial conditions. You
-   * should invoke Initialize() after replacing the Context.
+   * one. This is useful for supplying a new set of initial conditions or
+   * wiping out the current context (by passing in a null pointer). You
+   * should invoke Initialize() after replacing the Context unless the
+   * context is null.
+   * @param context The pointer to the new context or nullptr to wipe out
+   *                the current context without replacing it with another.
    **/
   void reset_context(Context<T>* context) {
     context_ = context;
