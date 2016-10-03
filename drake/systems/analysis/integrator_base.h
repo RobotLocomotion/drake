@@ -49,7 +49,9 @@ class IntegratorBase {
      * Indicates a publish time has been reached but not an update time.
      */
     kReachedPublishTime = 1,
-    /** Localized an event; this is the *before* state (interpolated) **/
+    /** TODO(edrumwri): incorporate this result into the simulator.
+     * Localized an event; this is the *before* state (interpolated).
+     **/
     kReachedZeroCrossing = 2,
     /**
      * Indicates that integration terminated at an event.
@@ -65,12 +67,15 @@ class IntegratorBase {
   };
 
   /**
-   * @param system a reference to the system to be integrated; the integrator
-   *               will maintain a reference to the system in perpetuity
-   * @param context a pointer to a writeable context. The integrator will
-   *                advance the system state using the pointer to this context.
-   *                The pointer to the context will be maintained internally.
-   *                The integrator must not outlive the context.
+   * @param system A reference to the system to be integrated; the integrator
+   *               will maintain a reference to the system in perpetuity, so
+   *               the integrator must not outlive the system.
+   * @param context A pointer to a writeable context (nullptr is ok, but a
+   *                non-null pointer must be set before Initialize(.) is
+   *                called). The integrator will advance the system state using
+   *                the pointer to this context. The pointer to the context will
+   *                be maintained internally. The integrator must not outlive
+   *                the context.
    */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
@@ -113,7 +118,10 @@ class IntegratorBase {
    * TODO(edrumwri): complain if integrator with error estimation wants to drop
    *                 below the minimum step size
    **/
-  virtual void set_target_accuracy(const T& accuracy) {
+  void set_target_accuracy(const T& accuracy) {
+    if (!supports_accuracy_estimation())
+      drake::log()->warn("Integrator does not support accuracy estimation and "
+                             "user has requested error control");
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -121,17 +129,17 @@ class IntegratorBase {
   /**
    *   Gets the target accuracy.
    */
-  virtual const T& get_target_accuracy() const { return target_accuracy_; }
+  const T& get_target_accuracy() const { return target_accuracy_; }
 
   /**
    * Gets the accuracy in use by the integrator.
    */
-  virtual const T& get_accuracy_in_use() const { return accuracy_in_use_; }
+  const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
    * Sets the maximum step size for this integrator.
    */
-  virtual void set_maximum_step_size(const T& max_step_size) {
+  void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
     max_step_size_ = max_step_size;
   }
@@ -139,12 +147,12 @@ class IntegratorBase {
   /**
    * Gets the maximum step size for this integrator
    */
-  virtual const T& get_maximum_step_size() const { return max_step_size_; }
+  const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
    * Sets the minimum step size for this integrator
    */
-  virtual void set_minimum_step_size(const T& min_step_size) {
+  void set_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
     min_step_size_ = min_step_size;
   }
@@ -152,13 +160,15 @@ class IntegratorBase {
   /**
    * Gets the minimum step size for this integrator
    */
-  virtual const T& get_minimum_step_size() const { return min_step_size_; }
+  const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
-   *   Integrator must be initialized before being used.
+   *   Integrator must be initialized before being used. The pointer to the
+   *   context must be set before Initialize(.) is called.
    */
   virtual void Initialize() {
-    DRAKE_ASSERT(context_);
+    if (!context_)
+      throw std::logic_error("Context has not been set.");
     initialization_done_ = true;
   }
 
@@ -172,7 +182,10 @@ class IntegratorBase {
    * exhibit the user-expected behavior without having to keep track of two
    * variable settings (step size and requested initial step size).
    */
-  virtual void request_initial_step_size_target(const T& step_size) {
+  void request_initial_step_size_target(const T& step_size) {
+    if (!supports_error_control())
+      drake::log()->warn("Integrator does not support error control and "
+                             "user has initial step size target");
     req_initial_step_size_ = step_size;
   }
 
@@ -182,7 +195,7 @@ class IntegratorBase {
    * integration this will be treated as a maximum size subject to accuracy
    * requirements and event occurrences. You can find out what size *actually*
    * worked with `get_actual_initial_step_size_taken()`. **/
-  virtual const T& get_initial_step_size_target() const {
+  const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
 

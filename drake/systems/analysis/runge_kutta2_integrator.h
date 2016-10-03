@@ -46,33 +46,6 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
    */
   bool supports_error_control() const override { return false; }
 
-  /**
- * Integrator does not support an initial step size target.
- */
-  void request_initial_step_size_target(const T& step_size) override {
-    drake::log()->warn("RungeKutta2Integrator does not support step size"
-                           " targets");
-  }
-
-  /**
-   * No accuracy setting for RK2 integrator.
-   * @param accuracy unused
-   */
-  void set_target_accuracy(const T& accuracy) override {
-    throw std::runtime_error("Accuracy setting not available"
-                                 " for RungeKutta2"
-                                 " integrator");
-  }
-
-  /**
-   * No accuracy setting for RK2 integrator.
-   */
-  const T& get_target_accuracy() const override {
-    throw std::logic_error("Accuracy setting not available"
-                                 " for RungeKutta2"
-                                 " integrator");
-  }
-
  private:
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
@@ -80,7 +53,9 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 
 /**
  * Integrates the system forward in time. Integrator must already have
- * been initialized or exception will be thrown.
+ * been initialized or exception will be thrown. The
+ * Step(.) method for the RK2 integrator will integrate forward
+ * by the maximum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
  * @param publish_dt the step size, >= 0.0 (exception will be thrown
  *        if this is not the case) at which the next publish will occur
  * @param update_dt the step size, >= 0.0 (exception will be thrown

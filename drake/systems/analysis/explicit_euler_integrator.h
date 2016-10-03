@@ -35,14 +35,6 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
                                               const T& update_dt) override;
 
   /**
-   * Integrator does not support an initial step size target.
-   */
-  void request_initial_step_size_target(const T& step_size) override {
-    drake::log()->warn("ExplicitEulerIntegrator does not support step size"
-                           " targets");
-  }
-
-  /**
    * Integrator does not support accuracy estimation.
    */
   bool supports_accuracy_estimation() const override { return false; }
@@ -52,29 +44,6 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    */
   bool supports_error_control() const override { return false; }
 
-  /**
-   * No accuracy setting for Euler integrator.
-   * @param accuracy unused
-   * Throws a std::logic_error(.) when called.
-   */
-  void set_target_accuracy(const T& accuracy) override {
-    throw std::logic_error(
-        "Accuracy setting not available"
-            " for explicit Euler"
-            " integrator");
-  }
-
-  /**
-   * No accuracy setting for Euler integrator.
-   * Throws a std::logic_error(.) when called.
-   */
-  const T& get_target_accuracy() const override {
-    throw std::logic_error(
-        "Accuracy setting not available"
-            " for explicit Euler"
-            " integrator");
-  }
-
  private:
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -82,12 +51,14 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
 /**
  * Integrates the system forward in time. Integrator must already have
- * been initialized or a std::logic_error exception will be thrown.
+ * been initialized or a std::logic_error exception will be thrown. The
+ * Step(.) method for the explicit Euler integrator will integrate forward
+ * by the maximum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
  * @param publish_dt the step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next publish will occur
+ *        if this is not the case) at which the next publish is desired
  * @param update_dt the step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next update will occur
- * @returns the reason for the integration step ending
+ *        if this is not the case) at which the next update is scheduled
+ * @returns The reason for the integration step ending.
  */
 template <class T>
 typename IntegratorBase<T>::StepResult ExplicitEulerIntegrator<T>::Step(

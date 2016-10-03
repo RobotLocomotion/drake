@@ -83,6 +83,7 @@ class Simulator {
    * constraint-satisfying initial condition. **/
   void Initialize();
 
+  // TODO(edrumwri): add ability to account for final time
   /** Advance the System's trajectory until `final_time` is reached or some
    * other termination condition occurs. A variety of `std::runtime_error`
    * conditions are possible here, as well as error conditions that may be
@@ -306,6 +307,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // TODO(edrumwri): Get the next publish time when API available.
     T next_publish_dt = (double) std::numeric_limits<double>::infinity();
+    T next_publish_time = step_start_time + next_publish_dt;
 
     // Attempt to integrate.
     typename IntegratorBase<T>::StepResult  result = integrator_->Step(
@@ -313,7 +315,9 @@ void Simulator<T>::StepTo(const T& final_time) {
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
         update_hit = true;
-        publish_hit = false;
+
+        // Check whether update time effectively identical to publish time.
+        publish_hit = (context_->get_time() >= next_publish_time);
         break;
 
       case IntegratorBase<T>::kReachedPublishTime:
