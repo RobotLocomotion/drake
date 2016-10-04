@@ -2,13 +2,14 @@
 
 #include <memory>
 
+#include "drake/drakeControlledSpringMassSystemPlant_export.h"
 #include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/examples/spring_mass_system.h"
 #include "drake/systems/framework/primitives/adder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/pid_controller.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +28,8 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup systems
 template <typename T>
-class PidControlledSpringMassSystem : public Diagram<T> {
+class DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem : public Diagram<T> {
  public:
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass controlled by a PID controller to achieve a specified target

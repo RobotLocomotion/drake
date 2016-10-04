@@ -1,8 +1,7 @@
-#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
+#include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using std::make_unique;
@@ -132,14 +131,17 @@ void PidControlledSpringMassSystem<T>::set_velocity(
 }
 
 template <typename T>
-const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant() const {
+const SpringMassSystem<T>& PidControlledSpringMassSystem<T>::get_plant()
+const {
   return *plant_;
 }
 
 template class
-DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<double>;
+DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem<double>;
 template class
-DRAKESYSTEMFRAMEWORK_EXPORT PidControlledSpringMassSystem<AutoDiffXd>;
+DRAKECONTROLLEDSPRINGMASSSYSTEMPLANT_EXPORT
+PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
