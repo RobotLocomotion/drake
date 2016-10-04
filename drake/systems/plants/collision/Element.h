@@ -23,19 +23,29 @@ typedef uintptr_t ElementId;
 
 class DRAKE_EXPORT Element : public DrakeShapes::Element {
  public:
-  Element(const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity());
+  /**
+   * Default constructor.
+   * The element's pose will be the identity with no geometry or rigid body.
+   */
+  Element();
 
+  /**
+   * Geometry constructor.
+   * @param[in] geometry                The colliding geometry.
+   * @param[in] T_element_to_local      The pose (defaults to identity).
+   */
   Element(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
 
-  Element(const Eigen::Isometry3d& T_element_to_link,
-          const RigidBody * const body);
-
+  /**
+   * Full constructor.
+   * @param[in] geometry            The colliding geometry.
+   * @param[in] T_element_to_link   The pose.
+   * @param[in] body                The associated rigid body.
+   */
   Element(const DrakeShapes::Geometry& geometry,
-          const Eigen::Isometry3d& T_element_to_link,
-          const RigidBody * const body);
+          const Eigen::Isometry3d& T_element_to_link, const RigidBody* body);
 
   virtual ~Element() {}
 
