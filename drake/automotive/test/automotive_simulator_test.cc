@@ -73,6 +73,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
 
   lcm::DrakeMockLcm* mock_lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(nullptr, mock_lcm);
   EXPECT_TRUE(mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW",
       &published_message_bytes, &published_message_size));
 
@@ -81,8 +82,8 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
       published_message_size), 0);
 
   EXPECT_EQ(published_draw_message.num_links, 2);
-  EXPECT_EQ(published_draw_message.link_name[0], "world");
-  EXPECT_EQ(published_draw_message.link_name[1], "box_shape");
+  EXPECT_EQ(published_draw_message.link_name.at(0), "world");
+  EXPECT_EQ(published_draw_message.link_name.at(1), "box_shape");
 
   // The subsystem pointers must not change.
   EXPECT_EQ(
