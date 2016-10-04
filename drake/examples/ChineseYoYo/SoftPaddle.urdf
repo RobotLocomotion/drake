@@ -114,7 +114,7 @@
     <axis xyz="0 1 0"/>
     <parent link="paddle"/>
     <child link="tensioner"/>
-    <dynamics damping="0.0"/>
+    <dynamics damping="0.01555"/>
   </joint>
   
   <link name="load_x" />
