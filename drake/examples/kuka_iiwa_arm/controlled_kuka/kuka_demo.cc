@@ -91,7 +91,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   const int kNumTimesteps = 5;
   double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
   MatrixXd q0(tree.get_num_positions(), kNumTimesteps);
-  for (int i = 0; i < kNumTimesteps; i++) {
+  for (int i = 0; i < kNumTimesteps; ++i) {
     q0.col(i) = zero_conf;
   }
 
@@ -110,7 +110,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
                       constraint_array.data(), ikoptions, &q_sol, info,
                       &infeasible_constraint);
   bool info_good = true;
-  for (int i = 0; i < kNumTimesteps; i++) {
+  for (int i = 0; i < kNumTimesteps; ++i) {
     printf("INFO[%d] = %d ", i, info[i]);
     if (info[i] != 1) {
       info_good = false;
@@ -142,13 +142,13 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   // position.  Each column of traj_ represents a particular time,
   // and the rows of that column contain values for each joint
   // coordinate.
-  for (int i = 0; i < nT_; i++) {
+  for (int i = 0; i < nT_; ++i) {
     PPMatrix poly_matrix(traj_.rows(), 1);
     const auto traj_now = traj_.col(i);
 
     // Produce interpolating polynomials for each joint coordinate.
     if (i != nT_ - 1) {
-      for (int row = 0; row < traj_.rows(); row++) {
+      for (int row = 0; row < traj_.rows(); ++row) {
         Eigen::Vector2d coeffs(0, 0);
         coeffs[0] = traj_now(row);
         // Set the coefficient such that it will reach the value of
