@@ -13,6 +13,7 @@ namespace drake {
 namespace math {
 namespace {
 
+// Test the value and the gradient of NormalizeVector function
 template<int nx>
 void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   Eigen::Matrix<double, nx, 1> x_normalized;
