@@ -2297,7 +2297,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);
 }
 
-void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+RigidBody* RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
@@ -2309,6 +2309,7 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // (world) will be at the top and subsequent generations of children will
   // follow.
   bodies.push_back(std::move(body));
+  return bodies.back().get();
 }
 
 
