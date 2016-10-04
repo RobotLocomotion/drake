@@ -181,7 +181,8 @@ class KukaDemo : public Diagram<T> {
     // Instantiates an MBD model of the world.
     auto mbd_world = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+        drake::GetDrakePath() +
+        "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
         drake::systems::plants::joints::kFixed,
         nullptr /* weld to frame */, mbd_world.get());
 
