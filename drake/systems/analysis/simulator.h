@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/drakeSystemAnalysis_export.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -218,6 +219,9 @@ class Simulator {
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
+
+  // Pre-allocated temporaries for updated difference states.
+  std::unique_ptr<DifferenceState<T>> discrete_updates_;
 };
 
 // No need for user code to instantiate these; they are in the library.
@@ -246,6 +250,8 @@ Simulator<T>::Simulator(const System<T>& system,
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta2Integrator<T>(system_, DT, context_.get()));
   integrator_->Initialize();
+
+  discrete_updates_ = system_.AllocateDifferenceVariables();
 }
 
 template <typename T>
@@ -277,18 +283,43 @@ void Simulator<T>::StepTo(const T& final_time) {
 
   DRAKE_THROW_UNLESS(final_time >= context_->get_time());
 
-  UpdateActions update_actions;
+  // Updates/publishes can be triggered throughout the integration process,
+  // but are not active at the start of the step.
   bool update_hit = false;
   bool publish_hit = false;
 
   // Integrate until desired interval has completed.
+  UpdateActions<T> update_actions;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
+    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
 
-    // First make any necessary discrete updates.
+    // First take any necessary discrete actions.
     if (update_hit) {
-      system_.Update(context_.get(), update_actions);
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        switch (event.action) {
+          case DiscreteEvent<T>::kPublishAction: {
+            system_.Publish(*context_, event);
+            break;
+          }
+          case DiscreteEvent<T>::kUpdateAction: {
+            DifferenceState<T>* xd = context_->get_mutable_difference_state();
+            // Systems with discrete update events must have difference state.
+            DRAKE_DEMAND(xd != nullptr);
+            // First, compute the discrete updates into a temporary buffer.
+            system_.EvalDifferenceUpdates(*context_, event,
+                                         discrete_updates_.get());
+            // Then, write them back into the context.
+            xd->CopyFrom(*discrete_updates_);
+            break;
+          }
+          default: {
+            DRAKE_ABORT_MSG("Unknown DiscreteEvent action.");
+            break;
+          }
+        }
+      }
       ++num_updates_;
     }
 
@@ -296,8 +327,8 @@ void Simulator<T>::StepTo(const T& final_time) {
     if (publish_hit)
       system_.Publish(*context_);
 
-    // That may have been the final trajectory entry.
-    if (step_start_time == final_time) break;
+    // Remove old events
+    update_actions.events.clear();
 
     // How far can we go before we have to take a sampling break?
     const T next_update_time =
@@ -310,7 +341,7 @@ void Simulator<T>::StepTo(const T& final_time) {
     T next_publish_time = step_start_time + next_publish_dt;
 
     // Attempt to integrate.
-    typename IntegratorBase<T>::StepResult  result = integrator_->Step(
+    typename IntegratorBase<T>::StepResult result = integrator_->Step(
         next_publish_dt, next_update_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:

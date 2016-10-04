@@ -19,6 +19,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+
 GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
@@ -115,6 +116,11 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // get the context
   auto context = simulator.get_mutable_context();
 
+  // TODO(edrumwri): remove this when discrete state has been created
+  // automatically
+  // Create the discrete state
+  context->set_difference_state(std::make_unique<DifferenceState<double>>());
+
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
@@ -167,8 +173,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kd = 2.0 * kMass * w0 * zeta;
   const double x_target = 0.0;
 
-  PidControlledSpringMassSystem<double> spring_mass(
-      kSpring, kMass, kp, ki, kd, x_target);
+  PidControlledSpringMassSystem<double> spring_mass(kSpring, kMass, kp, ki, kd,
+                                                    x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Sets initial conditions to zero.
@@ -186,7 +192,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   complexd lambda1 = -zeta * w0 + w0 * std::sqrt(complexd(zeta * zeta - 1));
   complexd lambda2 = -zeta * w0 - w0 * std::sqrt(complexd(zeta * zeta - 1));
 
-  // Roots should be the complex conjugate of each other.
+// Roots should be the complex conjugate of each other.
 #ifdef __APPLE__
   // The factor of 20 is needed for OS X builds where the comparison needs a
   // looser tolerance, see #3636.
@@ -194,7 +200,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 #else
   auto abs_error = NumTraits<double>::epsilon();
 #endif
-  EXPECT_NEAR(lambda1.real(),  lambda2.real(), abs_error);
+  EXPECT_NEAR(lambda1.real(), lambda2.real(), abs_error);
   EXPECT_NEAR(lambda1.imag(), -lambda2.imag(), abs_error);
 
   // The damped frequency corresponds to the absolute value of the imaginary
@@ -209,14 +215,15 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   // Velocity is computed using AutoDiffScalar.
   double final_time = 0.2;
   double x_final{}, v_final{};
-  { // At the end of this local scope x_final and v_final are properly
+  {
+    // At the end of this local scope x_final and v_final are properly
     // initialized.
     // Auxiliary AutoDiffScalar variables are confined to this local scope so
     // that we don't pollute the test's scope with them.
     SingleVarAutoDiff time(final_time);
     time.derivatives() << 1.0;
-    auto x = exp(-zeta * w0 * time) * (
-        C1 * cos(wd * time) + C2 * sin(wd * time));
+    auto x =
+        exp(-zeta * w0 * time) * (C1 * cos(wd * time) + C2 * sin(wd * time));
     x_final = x.value();
     v_final = x.derivatives()[0];
   }
