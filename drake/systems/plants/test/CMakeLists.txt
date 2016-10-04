@@ -211,7 +211,7 @@ drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAN
 add_subdirectory(rigid_body_system)
 add_subdirectory(rigid_body_tree)
 
-#System2.0 Tests
+# System2.0 Tests
 drake_add_cc_test(spring_mass_system_test)
 target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
 
