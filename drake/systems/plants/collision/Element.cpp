@@ -10,30 +10,21 @@ using drake::SortedVectorsHaveIntersection;
 
 namespace DrakeCollision {
 
-Element::Element(const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(T_element_to_local) {
+Element::Element()
+    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(geometry, T_element_to_local) {
+    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
   id = (ElementId) this;
 }
 
-Element::Element(const Isometry3d& T_element_to_link,
-                 const RigidBody * const body )
-    : DrakeShapes::Element(T_element_to_link) {
-  id = (ElementId)this;
-  body_ = body;
-}
-
 Element::Element(const DrakeShapes::Geometry& geometry,
-                 const Isometry3d& T_element_to_link,
-                 const RigidBody * const body )
-    : DrakeShapes::Element(geometry, T_element_to_link) {
-  id = (ElementId)this;
-  body_ = body;
+                 const Isometry3d& T_element_to_link, const RigidBody* body)
+    : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
+  id = (ElementId) this;
 }
 
 Element::Element(const Element& other)
