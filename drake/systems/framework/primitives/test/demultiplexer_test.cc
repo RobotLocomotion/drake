@@ -72,6 +72,49 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
 }
 
+// Tests that the input signal gets demultiplexed into its individual
+// components.
+GTEST_TEST(OutputSize, SizeDifferentFromOne) {
+  const int kInputSize = 10;
+  const int kOutputSize = 2;
+  const int kNumOutputs = kInputSize / kOutputSize;
+
+  // Creates a demultiplexer an input port of size ten and output ports of size
+  // two. Therefore there are five output ports.
+  auto demux_ = make_unique<Demultiplexer<double>>(
+      kInputSize /* size */, kOutputSize /* output_ports_sizes */);
+  auto context_ = demux_->CreateDefaultContext();
+  auto output_ = demux_->AllocateOutput(*context_);
+  auto input_ = make_unique<BasicVector<double>>(kInputSize /* size */);
+
+  /// Checks that the number of input ports in the system and in the context
+  // are consistent.
+  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, demux_->get_num_input_ports());
+  Eigen::VectorXd input_vector = Eigen::VectorXd::Random(kInputSize);
+  input_->get_mutable_value() << input_vector;
+
+  // Hook input of the expected size.
+  context_->SetInputPort(0, MakeInput(std::move(input_)));
+
+  demux_->EvalOutput(*context_, output_.get());
+
+  // Checks that the number of output ports in the system and in the
+  // output are consistent.
+  // The number of output ports must equal the size of the input port divided
+  // by the size of the output ports provided in the constructor, in this case
+  // 10 / 2 = 5.
+  ASSERT_EQ(kNumOutputs, output_->get_num_ports());
+  ASSERT_EQ(kNumOutputs, demux_->get_num_output_ports());
+
+  for (int output_index = 0;
+       output_index < demux_->get_num_output_ports(); ++output_index) {
+    ASSERT_EQ(kOutputSize, output_->get_vector_data(output_index)->size());
+    ASSERT_EQ(input_vector.segment<kOutputSize>(output_index * kOutputSize),
+              output_->get_vector_data(output_index)->get_value());
+  }
+}
+
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
   EXPECT_EQ(nullptr, context_->get_continuous_state());
