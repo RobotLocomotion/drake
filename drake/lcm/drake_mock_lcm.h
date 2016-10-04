@@ -11,9 +11,6 @@
 namespace drake {
 namespace lcm {
 
-using std::make_unique;
-using std::unique_ptr;
-
 /// @cond
 
 // This is a mock subscriber to an LCM channel. It simply passes the
@@ -92,11 +89,11 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    */
-  void InduceSubsciberCallback(const std::string& channel, const void *data,
+  void InduceSubsciberCallback(const std::string& channel, const void* data,
       int data_size);
 
  private:
-  bool received_thread_started_{false};
+  bool receive_thread_started_{false};
 
   struct LastPublishedMessage {
     std::string channel{};

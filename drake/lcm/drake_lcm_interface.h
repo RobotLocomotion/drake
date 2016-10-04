@@ -7,10 +7,13 @@ namespace drake {
 namespace lcm {
 
 /**
- * A top-level abstract class that enables LCM to be mocked.
+ * A pure virtual interface that enables LCM to be mocked.
  */
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
+
+  virtual ~DrakeLcmInterface() {};
+
   /**
    * Starts the receive thread. This must be called for subscribers to receive
    * any messages.
@@ -21,7 +24,12 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
 
   /**
    * Stops the receive thread. This must be called prior to any subscribers
-   * being destroyed.
+   * being destroyed. Note that the receive thread will be automatically stopped
+   * by this class's destructor, so usage of of this method will be extremely
+   * rare. It will only be needed if this class's instance and the subscribers
+   * to LCM channels are owned by different classes. In such a scenario, this
+   * method can be used to ensure the receive thread is destroyed before the
+   * subscribers are destroyed.
    *
    * @pre StartReceiveThread() was called.
    */
@@ -37,7 +45,7 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    */
-  virtual void Publish(const std::string& channel, const void *data,
+  virtual void Publish(const std::string& channel, const void* data,
                        int data_size) = 0;
 
   /**

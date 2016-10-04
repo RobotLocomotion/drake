@@ -20,19 +20,22 @@ DrakeMockLcm::DrakeMockLcm() {
 }
 
 void DrakeMockLcm::StartReceiveThread() {
-  received_thread_started_ = true;
+  DRAKE_DEMAND(!receive_thread_started_);
+  receive_thread_started_ = true;
 }
 
 void DrakeMockLcm::StopReceiveThread() {
-  received_thread_started_ = false;
+  DRAKE_DEMAND(receive_thread_started_);
+  receive_thread_started_ = false;
 }
 
-void DrakeMockLcm::Publish(const std::string& channel, const void *data,
+void DrakeMockLcm::Publish(const std::string& channel, const void* data,
                            int data_size) {
   LastPublishedMessage* saved_message{nullptr};
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
-    last_published_messages_[channel] = make_unique<LastPublishedMessage>();
+    last_published_messages_[channel] =
+        std::make_unique<LastPublishedMessage>();
   }
   saved_message = last_published_messages_[channel].get();
 
@@ -62,7 +65,7 @@ bool DrakeMockLcm::get_last_published_message(const std::string& channel,
 void DrakeMockLcm::Subscribe(const std::string& channel,
     DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end()) {
-    auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);
+    auto subscriber = std::make_unique<DrakeMockLcmSubscriber>(handler);
     subscriptions_[channel] = std::move(subscriber);
   } else {
     throw std::runtime_error("DrakeMockLcm::Subscribe: Subscription to "
@@ -71,8 +74,8 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
 }
 
 void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
-    const void *data, int data_size) {
-  if (received_thread_started_) {
+    const void* data, int data_size) {
+  if (receive_thread_started_) {
     if (subscriptions_.find(channel) == subscriptions_.end()) {
       throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
           "subscription to channel \"" + channel + "\".");

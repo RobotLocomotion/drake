@@ -10,7 +10,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeLcm_export.h"
 
 namespace drake {
 namespace lcm {
