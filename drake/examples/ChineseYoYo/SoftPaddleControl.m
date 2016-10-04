@@ -12,7 +12,7 @@ classdef SoftPaddleControl < DrakeSystem
             obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
-            obj.kp = 100;
+            obj.kp = 200;
             obj.kd = 2*sqrt(obj.kp);
             obj.plant = plant;
             
@@ -37,14 +37,31 @@ classdef SoftPaddleControl < DrakeSystem
             
             Delta = Hinvtilde - J(1)*J*Hinv*B;
             %             Delta = Hinvtilde - J(1)*J*(H\B);
+            
+            [T,U] = energy(obj.plant,x);
+            Eref = 128.4;
+            Etilde = T+U-Eref;
+            uE = -10*qp(1)*Etilde;
+            
             epsilon = 0.5;
-            u = -obj.kp*q(1) - obj.kd*qp(1) + C(1);
+            psid = -0.001*q(3)-0.005*qp(3);
+%             psid = -0.0001*q(3)-0.0001*qp(3);
+            u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
             if m == 2
                 if(obj.numerically_stable)
                      u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
                 else
+                    psid = -0.0005*q(3)-0.001*qp(3);
+%                     if psid > 0.01
+%                         psid = 0.01;
+%                     elseif psid < -0.01
+%                         psid = -0.01;
+%                     end
+                    u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
                     u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
-                    %                 u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*(H\C))/(Delta);
+%                     if q(1)*qp(1) < 0
+%                         u = u + uE;
+%                     end
                 end
             end
             
@@ -70,7 +87,7 @@ classdef SoftPaddleControl < DrakeSystem
             x0 = p.getInitialState();
             v.drawWrapper(0,x0);
             tic
-            [ytraj,xtraj] = simulate(sys,[0 40],x0);
+            [ytraj,xtraj] = simulate(sys,[0 75],x0);
             toc
             v.playback(ytraj,struct('slider',true));
             
@@ -102,20 +119,25 @@ classdef SoftPaddleControl < DrakeSystem
                 end
                 figure(1); clf;
                 subplot(2,1,1); plot(tt,E, 'LineWidth', 2);
+                axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\mathcal{H}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 subplot(2,1,2); plot(tt,cl, 'LineWidth', 2);
+                axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
-                
+
                 figure(3); clf;
                 subplot(3,1,1); plot(tt,cl, 'LineWidth', 2);
+                axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 subplot(3,1,2); plot(tt,dcl(:,1,4), 'LineWidth', 2);
+                axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\dot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 subplot(3,1,3); plot(tt,ddcl(:,1,16), 'LineWidth', 2);
+                axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\ddot{\phi}(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 
