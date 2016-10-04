@@ -26,8 +26,8 @@ namespace drake {
 namespace automotive {
 
 template <typename T>
-AutomotiveSimulator<T>::AutomotiveSimulator() :
-    lcm_(std::make_unique<lcm::DrakeLcm>()) {}
+AutomotiveSimulator<T>::AutomotiveSimulator()
+    : AutomotiveSimulator(std::make_unique<lcm::DrakeLcm>()) {}
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(
