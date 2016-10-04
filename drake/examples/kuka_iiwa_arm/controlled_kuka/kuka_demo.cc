@@ -37,6 +37,7 @@ using std::move;
 using std::unique_ptr;
 
 #include <iostream>
+#include <drake/systems/framework/examples/spring_mass_system.h>
 #define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
 
 namespace drake {
@@ -189,7 +190,8 @@ class KukaDemo : public Diagram<T> {
     auto mbd_world = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */, mbd_world.get());
+        drake::systems::plants::joints::kFixed,
+        nullptr /* weld to frame */, mbd_world.get());
 
     // Adds the ground.
     double kBoxWidth = 3;
@@ -209,9 +211,6 @@ class KukaDemo : public Diagram<T> {
         "terrain");
     mbd_world->updateStaticCollisionElements();
 
-    // Instantiates a RigidBodyPlant from an MBD model of the world.
-    plant_ = make_unique<RigidBodyPlant<T>>(move(mbd_world));
-
     VectorX<double> desired_state = VectorX<double>::Zero(14);
     desired_state[0] =   0.0 * deg_to_rad;  // base.
     desired_state[1] =  45.0 * deg_to_rad;  // first elbow.
@@ -221,50 +220,8 @@ class KukaDemo : public Diagram<T> {
     desired_state[5] =   0.0 * deg_to_rad;  // final wrist
     desired_state[6] =   0.0 * deg_to_rad;  // end effector rotation.
 
-    target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
-    state_minus_target_ = make_unique<Adder<T>>(2 /*number of inputs*/,
-                                   plant_->get_num_states() /* size */);
-
-    //const double numerical_stiffness = 3000;
-    //plant_->penetration_stiffness_ = 10*numerical_stiffness;
-
-    // Rough estimation of controller constants.
-    //const double arm_mass = plant_->get_multibody_world().getMass() / 7.0;
-    // Closed loop frequency.
-    //const double wol = sqrt(numerical_stiffness / arm_mass);
-
-    // Naveen's constants: Kp=10, Ki=0, Kd=0.3
-    const double kp = 2.0; //numerical_stiffness/100.0;
-    const double ki = 0.0;
-    // Closed loop system frequency.
-    //const double wcl = sqrt(wol*wol + kp / arm_mass);
-    // Damping ratio.
-    //const double zeta = 0.001;
-    //const double kd = 2.0 * arm_mass * wcl * zeta;
-    const double kd = 1.0;
-
-    controller_ = make_unique<PidController<T>>(kp, ki, kd,
-                                                plant_->get_num_positions());
-    gravity_compensator_ = make_unique<GravityCompensator<T>>(
-        plant_->get_rigid_body_tree());
-    gcomp_minus_pid_ = make_unique<Adder<T>>(
-        2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
-
-    // Split the input state into two signals one with the positions and one
-    // with the velocities.
-    // For Kuka:
-    // -  get_num_states() = 14
-    // -  get_num_positions() = 7
-    demux_ = make_unique<Demultiplexer<T>>(plant_->get_num_states(),
-                                           plant_->get_num_positions());
-
-    inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_actuators());
-    error_inverter_ = make_unique<Gain<T>>(-1.0, plant_->get_num_states());
-
-    // Creates a plan.
-    poly_trajectory_ = MakePlan();
-    target_plan_ = make_unique<TimeVaryingPolynomialSource<T>>(
-        *poly_trajectory_);
+    // const double numerical_stiffness = 3000;
+    // plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
 #if 0
     viz_publisher_ = make_unique<BotVisualizerSystem>(
@@ -272,10 +229,47 @@ class KukaDemo : public Diagram<T> {
 #endif
 
     DiagramBuilder<T> builder;
+
+    // Instantiates a RigidBodyPlant from an MBD model of the world.
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(mbd_world));
+
+    // target_state_ = make_unique<ConstantVectorSource<T>>(desired_state);
+    state_minus_target_ = builder.template AddSystem<Adder<T>>
+        (2 /*number of inputs*/, plant_->get_num_states() /* size */);
+
+    // Create and add PID controller.
+    const double kp = 2.0;  // proportional constant.
+    const double ki = 0.0;  // integral constant.
+    const double kd = 1.0;  // derivative constant.
+    controller_ = builder.template AddSystem<PidController<T>>(
+        kp, ki, kd, plant_->get_num_positions());
+
+    gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
+        plant_->get_rigid_body_tree());
+    gcomp_minus_pid_ = builder.template AddSystem<Adder<T>>(
+        2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
+
+    // Split the input state into two signals one with the positions and one
+    // with the velocities.
+    // For Kuka:
+    // -  get_num_states() = 14
+    // -  get_num_positions() = 7
+    demux_ = builder.template AddSystem<Demultiplexer<T>>(
+        plant_->get_num_states(), plant_->get_num_positions());
+
+    inverter_ = builder.template AddSystem<Gain<T>>(
+        -1.0, plant_->get_num_actuators());
+    error_inverter_ = builder.template AddSystem<Gain<T>>(
+        -1.0, plant_->get_num_states());
+
+    // Creates a plan and wraps it into a source system.
+    poly_trajectory_ = MakePlan();
+    target_plan_ = builder.template AddSystem<TimeVaryingPolynomialSource<T>>(
+        *poly_trajectory_);
+
     // Target.
-    // TODO(amcastro-tri): connect planner output.
-    //builder.Connect(target_state_->get_output_port(0),
-    //                error_inverter_->get_input_port(0));
+    // builder.Connect(target_state_->get_output_port(0),
+    //                 error_inverter_->get_input_port(0));
     builder.Connect(target_plan_->get_output_port(0),
                     error_inverter_->get_input_port());
     builder.Connect(error_inverter_->get_output_port(),
@@ -288,9 +282,9 @@ class KukaDemo : public Diagram<T> {
                     demux_->get_input_port(0));
 
     builder.Connect(demux_->get_output_port(0),
-                    controller_->get_error_port());     
+                    controller_->get_error_port());
     builder.Connect(demux_->get_output_port(1),
-                    controller_->get_error_derivative_port());     
+                    controller_->get_error_derivative_port());
 
     // Connects the gravity compensator.
     builder.Connect(plant_->get_output_port(0),
@@ -320,31 +314,30 @@ class KukaDemo : public Diagram<T> {
 
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
-        this->GetMutableSubsystemContext(context, controller_.get());
+        this->GetMutableSubsystemContext(context, controller_);
     controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
 
     Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_.get());
+        this->GetMutableSubsystemContext(context, plant_);
     plant_->SetZeroConfiguration(plant_context);
   }
 
  private:
-  std::unique_ptr<RigidBodyPlant<T>> plant_;
-  std::unique_ptr<PidController<T>> controller_;
-  std::unique_ptr<Demultiplexer<T>> demux_;
-  std::unique_ptr<Gain<T>> inverter_;
-  std::unique_ptr<Gain<T>> error_inverter_;
-  std::unique_ptr<GravityCompensator<T>> gravity_compensator_;
-  std::unique_ptr<Adder<T>> state_minus_target_;
-  std::unique_ptr<Adder<T>> gcomp_minus_pid_;
-  std::unique_ptr<ConstantVectorSource<T>> target_state_;
-  std::unique_ptr<TimeVaryingPolynomialSource<T>> target_plan_;
+  RigidBodyPlant<T>* plant_;
+  PidController<T>* controller_;
+  Demultiplexer<T>* demux_;
+  Gain<T>* inverter_;
+  Gain<T>* error_inverter_;
+  GravityCompensator<T>* gravity_compensator_;
+  Adder<T>* state_minus_target_;
+  Adder<T>* gcomp_minus_pid_;
+  // std::unique_ptr<ConstantVectorSource<T>> target_state_;
+  TimeVaryingPolynomialSource<T>* target_plan_;
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
-  //std::unique_ptr<BotVisualizerSystem> viz_publisher_;
+  // std::unique_ptr<BotVisualizerSystem> viz_publisher_;
   ::lcm::LCM lcm_;
 };
 
-//GTEST_TEST(KukaDemo, Testing) {
 int DoMain() {
   KukaDemo<double> model;
   Simulator<double> simulator(model);  // Use default Context.
