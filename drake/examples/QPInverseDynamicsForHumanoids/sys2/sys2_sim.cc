@@ -13,21 +13,22 @@ static std::string urdf = drake::GetDrakePath() + std::string("/examples/QPInver
 RigidBodyTree robot(urdf);
 
 void const_acc_test() {
-  System2DummyValkyrieSim val(robot);
   DiagramBuilder<double> builder;
 
   example::qp_inverse_dynamics::QPOutput out(robot);
   out.mutable_vd() = Eigen::VectorXd::Constant(robot.get_num_velocities(), 0.01);
 
-  std::unique_ptr<System<double>> const_qp_out = std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPOutput>(out)));
-  builder.Connect(const_qp_out->get_output_port(0), val.get_input_port(0));
+  ConstantValueSource<double> *const_qp_out = builder.AddSystem(std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPOutput>(out))));
+  System2DummyValkyrieSim *val_sim = builder.AddSystem(std::make_unique<System2DummyValkyrieSim>(robot));
+
+  builder.Connect(const_qp_out->get_output_port(0), val_sim->get_input_port(0));
   auto diagram = builder.Build();
 
   Simulator<double> simulator(*diagram);
 
   // set initial state
   // probably should pass in sub context?
-  val.set_initial_state(simulator.get_mutable_context());
+  val_sim->set_initial_state(simulator.get_mutable_context());
 
   simulator.request_initial_step_size_attempt(1e-2);
   simulator.Initialize();
@@ -79,22 +80,22 @@ example::qp_inverse_dynamics::QPInput default_QP_input(const RigidBodyTree& r) {
 }
 
 void close_loop_test() {
-  System2DummyValkyrieSim val(robot);
-  System2QP qp_con(robot);
   example::qp_inverse_dynamics::QPInput input = default_QP_input(robot);
 
   DiagramBuilder<double> builder;
-  builder.Connect(qp_con.get_output_port(0), val.get_input_port(0));
-  builder.Connect(val.get_output_port(0), qp_con.get_input_port(0));
+  System2DummyValkyrieSim *val_sim = builder.AddSystem(std::make_unique<System2DummyValkyrieSim>(robot));
+  System2QP *qp_con = builder.AddSystem(std::make_unique<System2QP>(robot));
+  ConstantValueSource<double> *const_qp_input = builder.AddSystem(std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPInput>(input))));
 
-  // qp input
-  std::unique_ptr<System<double>> const_qp_input = std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPInput>(input)));
-  builder.Connect(const_qp_input->get_output_port(0), qp_con.get_input_port(1));
+  builder.Connect(qp_con->get_output_port(0), val_sim->get_input_port(0));
+  builder.Connect(val_sim->get_output_port(0), qp_con->get_input_port(0));
+  builder.Connect(const_qp_input->get_output_port(0), qp_con->get_input_port(1));
+
   auto diagram = builder.Build();
 
   Simulator<double> simulator(*diagram);
   // probably should pass in sub context?
-  val.set_initial_state(simulator.get_mutable_context());
+  val_sim->set_initial_state(simulator.get_mutable_context());
 
   simulator.request_initial_step_size_attempt(1e-2);
   simulator.Initialize();
@@ -102,6 +103,7 @@ void close_loop_test() {
 }
 
 int main() {
+  //const_acc_test();
 
   close_loop_test();
 

@@ -42,11 +42,16 @@ class System2QP : public LeafSystem<double> {
     // get qp input
     const example::qp_inverse_dynamics::QPInput &qp_input = context.GetInputPort(1)->get_abstract_data()->GetValue<example::qp_inverse_dynamics::QPInput>();;
 
+    std::cout << qp_input;
+
     example::qp_inverse_dynamics::QPOutput& qp_output = output->GetMutableData(0)->GetMutableValue<example::qp_inverse_dynamics::QPOutput>();
 
     if (qp_controller__.Control(rs, qp_input, &qp_output) < 0) {
       throw std::runtime_error("System2QP: QP canot solve\n");
     }
+
+    std::cout << qp_output;
+    exit(-1);
 
     /*
     // qp output
