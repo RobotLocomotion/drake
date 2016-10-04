@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/drakeCommon_export.h"
-
 #include <cstddef>
 #include <initializer_list>
 #include <iosfwd>
@@ -101,7 +99,7 @@ namespace drake {
  * FunctionalForm may also be used as the scalar type of an \c Eigen::Matrix<>.
  * Basic matrix and vector expressions are supported.
  */
-class DRAKECOMMON_EXPORT FunctionalForm {
+class FunctionalForm {
  public:
   class Variable;
   class Variables;
@@ -184,152 +182,152 @@ class DRAKECOMMON_EXPORT FunctionalForm {
    * where "x,..." represents a comma-separated list of the variables
    * combined by the form.
    */
-  friend DRAKECOMMON_EXPORT
+  friend
       std::ostream&
       operator<<(std::ostream& os, FunctionalForm const& f);
 
   /** Return a copy of \p lhs updated to record addition of form \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator+(FunctionalForm const& lhs, FunctionalForm const& rhs);
 
   /** Return a copy of \p lhs updated to record addition of a \ref constant
       or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator+(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of \p rhs updated to record its addition to a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator+(double lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record addition of form \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator+=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record addition of a \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator+=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of \p lhs updated to record subtraction of form \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator-(FunctionalForm const& lhs, FunctionalForm const& rhs);
 
   /** Return a copy of \p lhs updated to record subtraction of a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator-(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of \p rhs updated to record its subtraction from a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator-(double lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record subtraction of form \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator-=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record subtraction of a \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator-=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of \p lhs updated to record multiplication by \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator*(FunctionalForm const& lhs, FunctionalForm const& rhs);
 
   /** Return a copy of \p lhs updated to record multiplication by a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator*(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of \p rhs updated to record its multiplication of a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator*(double lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record multiplication by \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator*=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record multiplication by a \ref constant
       or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator*=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of \p lhs updated to record division by \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator/(FunctionalForm const& lhs, FunctionalForm const& rhs);
 
   /** Return a copy of \p lhs updated to record division by a \ref constant
       or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator/(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of \p rhs updated to record its division of a
       \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       operator/(double lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record division by \p rhs.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator/=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update \p lhs to record division by a \ref constant or \ref zero.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm&
       operator/=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of \p x updated to record application of an
       \c abs function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       abs(FunctionalForm const& x);
 
   /** Return a copy of \p x updated to record application of a
       \c cos function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       cos(FunctionalForm const& x);
 
   /** Return a copy of \p x updated to record application of a
       \c exp function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       exp(FunctionalForm const& x);
 
   /** Return a copy of \p x updated to record application of a
       \c log function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       log(FunctionalForm const& x);
 
   /** Return a copy of \p x updated to record application of a
       \c sin function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       sin(FunctionalForm const& x);
 
   /** Return a copy of \p x updated to record application of a
       \c sqrt function.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       FunctionalForm
       sqrt(FunctionalForm const& x);
 
@@ -339,7 +337,7 @@ class DRAKECOMMON_EXPORT FunctionalForm {
    * to the \ref VariableOrdering "Variable Ordering" without duplicates.
    * The contained set is immutable.
    */
-  class DRAKECOMMON_EXPORT Variables {
+  class Variables {
    public:
     /** Construct an empty set.  */
     Variables() = default;
@@ -384,12 +382,12 @@ class DRAKECOMMON_EXPORT FunctionalForm {
     size_t size() const;
 
     /** Return \c true if \c lhs and \c rhs represent the same set.  */
-    friend DRAKECOMMON_EXPORT
+    friend
         bool
         operator==(Variables const& lhs, Variables const& rhs);
 
     /** Return \c false if \c lhs and \c rhs represent the same set.  */
-    friend DRAKECOMMON_EXPORT
+    friend
         bool
         operator!=(Variables const& lhs, Variables const& rhs);
 
@@ -444,7 +442,7 @@ bool operator>=(FunctionalForm const&, FunctionalForm const&) = delete;
  * We define a Variable Ordering first by type (in the above order) and then by
  * the natural order of values within each type.
  */
-class DRAKECOMMON_EXPORT FunctionalForm::Variable {
+class FunctionalForm::Variable {
  public:
   /** Construct the nil variable.  */
   Variable();
@@ -496,41 +494,41 @@ class DRAKECOMMON_EXPORT FunctionalForm::Variable {
   std::string const& name() const;
 
   /** Print the variable's identifier, if any, to the given stream.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       std::ostream&
       operator<<(std::ostream& os, Variable const& v);
 
   /** Return true if both variables have the same identifier type and value.  */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator==(Variable const& lhs, Variable const& rhs);
 
   /** Return false if both variables have the same identifier type and value. */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator!=(Variable const& lhs, Variable const& rhs);
 
   /** Return true if \p lhs comes before \p rhs in the \ref VariableOrdering
    * "Variable Ordering".  */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator<(Variable const& lhs, Variable const& rhs);
 
   /** Return true if \p lhs does not come after \p rhs in the \ref
    * VariableOrdering "Variable Ordering".  */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator<=(Variable const& lhs, Variable const& rhs);
 
   /** Return true if \p lhs comes after \p rhs in the \ref VariableOrdering
    * "Variable Ordering".  */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator>(Variable const& lhs, Variable const& rhs);
 
   /** Return true if \p lhs does not come before \p rhs in the \ref
    * VariableOrdering "Variable Ordering".  */
-  friend DRAKECOMMON_EXPORT
+  friend
       bool
       operator>=(Variable const& lhs, Variable const& rhs);
 

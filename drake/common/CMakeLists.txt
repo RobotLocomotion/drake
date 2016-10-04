@@ -44,8 +44,7 @@ set(installed_headers
 set(private_headers
   )
 
-# Create the library target and note its dependencies. Also generates
-# a header defining DRAKECOMMON_EXPORT for dealing with .dlls on Windows.
+# Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon threads)

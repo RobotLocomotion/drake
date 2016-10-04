@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include "drake/drakeCommon_export.h"
-
 /// @file
 /// Provides a convenient wrapper to throw an exception when a condition is
 /// unmet.  This is similar to an assertion, but uses exceptions instead of
@@ -12,7 +10,6 @@
 namespace drake {
 namespace detail {
 // Throw an error message.
-DRAKECOMMON_EXPORT
 void Throw(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
 }  // namespace drake

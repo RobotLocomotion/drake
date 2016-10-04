@@ -41,8 +41,6 @@ printed without any special handling.
 #include <spdlog/fmt/ostr.h>
 #endif
 
-#include "drake/drakeCommon_export.h"
-
 namespace drake {
 
 #ifdef HAVE_SPDLOG
@@ -58,7 +56,7 @@ namespace logging {
 
 /// A stubbed-out version of `spdlog::logger`.  Implements only those methods
 /// that we expect to use, as spdlog's API does change from time to time.
-class DRAKECOMMON_EXPORT logger {
+class logger {
  public:
   logger();
 
@@ -95,6 +93,6 @@ class DRAKECOMMON_EXPORT logger {
 
 /// Retrieve an instance of a logger to use for logging; for example:
 ///   `drake::log()->info("potato!")`
-DRAKECOMMON_EXPORT logging::logger* log();
+logging::logger* log();
 
 }  // namespace drake
