@@ -30,13 +30,21 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   Element();
 
   /**
-   * Geometry constructor.
+   * Geometry constructor. Defines geometry and pose but no body.
    * @param[in] geometry                The colliding geometry.
    * @param[in] T_element_to_local      The pose (defaults to identity).
    */
   Element(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity());
+          Eigen::Isometry3d::Identity());
+
+  /**
+   * Body constructor. Defines body and pose but no geometry.
+   * @param[in] T_element_to_local      The pose (defaults to identity).
+   * @param[in] body                The associated rigid body.
+   */
+  Element(const Eigen::Isometry3d& T_element_to_local,
+          const RigidBody* body);
 
   /**
    * Full constructor.
