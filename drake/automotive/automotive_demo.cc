@@ -41,8 +41,6 @@ int do_main(int argc, char* argv[]) {
     simulator->StepBy(0.01);
   }
 
-  simulator->Stop();
-
   return 0;
 }
 

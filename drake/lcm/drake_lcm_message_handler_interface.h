@@ -25,7 +25,7 @@ class DRAKELCM_EXPORT DrakeLcmMessageHandlerInterface {
    * @param[in] message_size The size of @p message_buffer.
    */
   virtual void HandleMessage(const std::string& channel,
-      const void* message_buffer, uint32_t message_size) = 0;
+      const void* message_buffer, int message_size) = 0;
 };
 
 }  // namespace lcm

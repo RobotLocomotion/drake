@@ -49,6 +49,11 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
   DrakeLcm(const DrakeLcm&) = delete;
   DrakeLcm& operator=(const DrakeLcm&) = delete;
 
+  /**
+   * A destructor that forces the receive thread to be stopped.
+   */
+  ~DrakeLcm();
+
   void StartReceiveThread() override;
 
   void StopReceiveThread() override;
@@ -61,12 +66,12 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
   ::lcm::LCM* get_lcm_instance();
 
   void Publish(const std::string& channel, const void *data,
-               unsigned int data_size) override;
+               int data_size) override;
 
   void Subscribe(const std::string& channel,
       void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
           const std::string& channel, const void* message_buffer,
-          uint32_t message_length),
+          int message_length),
       DrakeLcmMessageHandlerInterface* handler) override;
 
  private:

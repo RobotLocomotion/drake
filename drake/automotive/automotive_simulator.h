@@ -101,12 +101,6 @@ class AutomotiveSimulator {
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
 
-  /// Stops the LCM receiver thread. This must be called before any of the LCM
-  /// subscribers are destroyed. Otherwise, a segmentation fault may occur.
-  ///
-  /// @pre Start() was called.
-  void Stop();
-
   // We are neither copyable nor moveable.
   AutomotiveSimulator(const AutomotiveSimulator<T>& other) = delete;
   AutomotiveSimulator& operator=(const AutomotiveSimulator<T>& other) = delete;

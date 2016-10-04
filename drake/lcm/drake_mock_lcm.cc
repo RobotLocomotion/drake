@@ -28,7 +28,7 @@ void DrakeMockLcm::StopReceiveThread() {
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void *data,
-                       unsigned int data_size) {
+                           int data_size) {
   LastPublishedMessage* saved_message{nullptr};
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
@@ -45,7 +45,7 @@ void DrakeMockLcm::Publish(const std::string& channel, const void *data,
 }
 
 bool DrakeMockLcm::get_last_published_message(const std::string& channel,
-    void** data, unsigned int* data_size) {
+    void** data, int* data_size) {
   bool result{true};
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
@@ -62,7 +62,7 @@ bool DrakeMockLcm::get_last_published_message(const std::string& channel,
 void DrakeMockLcm::Subscribe(const std::string& channel,
     void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
         const std::string& channel, const void* message_buffer,
-        uint32_t message_length),
+        int message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end()) {
     auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);
@@ -74,7 +74,7 @@ void DrakeMockLcm::Subscribe(const std::string& channel,
 }
 
 void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
-    const void *data, unsigned int data_size) {
+    const void *data, int data_size) {
   if (received_thread_started_) {
     if (subscriptions_.find(channel) == subscriptions_.end()) {
       throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "

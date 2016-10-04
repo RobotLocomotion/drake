@@ -64,7 +64,7 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
 
   // Verifies that the correct message was published.
   void* published_message_bytes = nullptr;
-  unsigned int published_message_size{};
+  int published_message_size{};
 
   EXPECT_TRUE(lcm->get_last_published_message(dut->get_channel_name(),
     &published_message_bytes, &published_message_size));

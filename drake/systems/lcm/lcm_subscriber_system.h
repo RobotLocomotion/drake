@@ -110,7 +110,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
  private:
   // Callback entry point from LCM into this class.
   void HandleMessage(const std::string& channel, const void* message_buffer,
-      uint32_t message_size) override;
+      int message_size) override;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;

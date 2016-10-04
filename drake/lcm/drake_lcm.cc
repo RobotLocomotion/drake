@@ -16,14 +16,18 @@ void DrakeLcmSubscriber::LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
 DrakeLcm::DrakeLcm() {
 }
 
+DrakeLcm::~DrakeLcm() {
+  receive_thread_.reset();
+}
+
 void DrakeLcm::StartReceiveThread() {
   DRAKE_DEMAND(receive_thread_ == nullptr);
   receive_thread_ = make_unique<LcmReceiveThread>(&lcm_);
 }
 
 void DrakeLcm::StopReceiveThread() {
-  DRAKE_DEMAND(receive_thread_ != nullptr);
-  receive_thread_->Stop();
+  if (receive_thread_ != nullptr)
+    receive_thread_->Stop();
 }
 
 ::lcm::LCM* DrakeLcm::get_lcm_instance() {
@@ -31,14 +35,14 @@ void DrakeLcm::StopReceiveThread() {
 }
 
 void DrakeLcm::Publish(const std::string& channel, const void *data,
-                       unsigned int data_size) {
+                       int data_size) {
   lcm_.publish(channel, data, data_size);
 }
 
 void DrakeLcm::Subscribe(const std::string& channel,
     void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
         const std::string& channel, const void* message_buffer,
-        uint32_t message_length),
+        int message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   auto subscriber = make_unique<DrakeLcmSubscriber>(handler);
   auto sub = lcm_.subscribe(channel, &DrakeLcmSubscriber::LcmCallback,

@@ -81,7 +81,7 @@ std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
 // void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
 //                                         const std::string& channel) {
 void LcmSubscriberSystem::HandleMessage(const std::string& channel,
-    const void* message_buffer, uint32_t message_size) {
+    const void* message_buffer, int message_size) {
   SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);
 
   if (channel == channel_) {

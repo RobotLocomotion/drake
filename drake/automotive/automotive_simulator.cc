@@ -35,7 +35,11 @@ AutomotiveSimulator<T>::AutomotiveSimulator(
     lcm_(std::move(lcm)) {}
 
 template <typename T>
-AutomotiveSimulator<T>::~AutomotiveSimulator() {}
+AutomotiveSimulator<T>::~AutomotiveSimulator() {
+  // Forces the LCM instance to be destroyed before any of the subscribers are
+  // destroyed.
+  lcm_.reset();
+}
 
 template <typename T>
 lcm::DrakeLcmInterface* AutomotiveSimulator<T>::get_lcm() {
@@ -244,12 +248,6 @@ void AutomotiveSimulator<T>::StepBy(const T& time_step) {
   const T time = simulator_->get_context().get_time();
   SPDLOG_TRACE(drake::log(), "Time is now {}", time);
   simulator_->StepTo(time + time_step);
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::Stop() {
-  DRAKE_DEMAND(started_);
-  lcm_->StopReceiveThread();
 }
 
 template <typename T>

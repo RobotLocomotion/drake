@@ -145,7 +145,7 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
 
   // This is the callback method.
   void HandleMessage(const std::string& channel, const void* message_buffer,
-      uint32_t message_size) override {
+      int message_size) override {
     channel_ = channel;
     std::lock_guard<std::mutex> lock(message_mutex_);
     received_message_.decode(message_buffer, 0, message_size);

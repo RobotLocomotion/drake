@@ -30,7 +30,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
 
   // Verifies that the message was "published".
   void* published_message_bytes = nullptr;
-  unsigned int published_message_size{};
+  int published_message_size{};
 
   EXPECT_TRUE(dut.get_last_published_message(channel_name,
     &published_message_bytes, &published_message_size));
@@ -53,7 +53,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
 
   // This is the callback method.
   void HandleMessage(const std::string& channel, const void* message_buffer,
-      uint32_t message_size) override {
+      int message_size) override {
     channel_ = channel;
     // std::lock_guard<std::mutex> lock(message_mutex_)
     buffer_.resize(message_size);

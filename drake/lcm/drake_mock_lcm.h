@@ -53,8 +53,8 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
 
   void StopReceiveThread() override;
 
-  void Publish(const std::string& channel, const void *data,
-               unsigned int data_size) override;
+  void Publish(const std::string& channel, const void *data, int data_size)
+      override;
 
   /**
    * Obtains the most recently "published" message on a particular channel.
@@ -70,7 +70,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    * @return `true` if a message was published, `false` otherwise.
    */
   bool get_last_published_message(const std::string& channel, void** data,
-      unsigned int* data_size);
+      int* data_size);
 
   /**
    * Creates a subscription. Only one subscription per channel name is
@@ -80,7 +80,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   void Subscribe(const std::string& channel,
       void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
           const std::string& channel, const void* message_buffer,
-          uint32_t message_length),
+          int message_length),
       DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
@@ -96,7 +96,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    * @param[in] data_size The length of @data in bytes.
    */
   void InduceSubsciberCallback(const std::string& channel, const void *data,
-      unsigned int data_size);
+      int data_size);
 
  private:
   bool received_thread_started_{false};
@@ -104,7 +104,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   struct LastPublishedMessage {
     std::string channel{};
     std::vector<uint8_t> data{};
-    unsigned int data_size{};
+    int data_size{};
   };
 
   std::map<std::string, std::unique_ptr<LastPublishedMessage>>

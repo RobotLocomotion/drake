@@ -20,8 +20,8 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
   virtual void StartReceiveThread() = 0;
 
   /**
-   * Stops the receive thread. This should be called prior to any subscribers
-   * being destroyed. Otherwise a segmentation fault may occur.
+   * Stops the receive thread. This must be called prior to any subscribers
+   * being destroyed.
    *
    * @pre StartReceiveThread() was called.
    */
@@ -38,7 +38,7 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    * @param[in] data_size The length of @data in bytes.
    */
   virtual void Publish(const std::string& channel, const void *data,
-                       unsigned int data_size) = 0;
+                       int data_size) = 0;
 
   /**
    * Subscribes a callback method of an object to an LCM channel, without
@@ -60,7 +60,7 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
   virtual void Subscribe(const std::string& channel,
       void (DrakeLcmMessageHandlerInterface::*HandleMessage)(
           const std::string& channel, const void* message_buffer,
-          uint32_t message_size),
+          int message_size),
       DrakeLcmMessageHandlerInterface* handler) = 0;
 };
 
