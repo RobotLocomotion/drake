@@ -24,10 +24,17 @@ template <typename T>
 class Demultiplexer : public LeafSystem<T> {
  public:
   /// Constructs %Demultiplexer with one vector valued input port of size
-  /// @p size and @p size scalar valued output ports.
+  /// @p size and vector valued output ports of size @p output_ports_sizes.
+  ///
+  /// @p output_ports_sizes must exactly divide @p size. Otherwise this
+  /// constructor throws an exception. The number of output ports is therefore
+  /// `size / output_ports_sizes`.
+  ///
   /// @param size is the size of the input signal to be demultiplexed into its
   /// individual components.
-  explicit Demultiplexer(int size);
+  /// @param output_ports_sizes The size of the output ports. @p length must be
+  /// a multiple of @p output_ports_sizes.
+  explicit Demultiplexer(int size, int output_ports_sizes = 1);
 
   /// Sets the i-th output port to the value of the i-th component of the input
   /// port.
