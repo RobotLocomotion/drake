@@ -4,7 +4,13 @@ project(drake_cars_examples)
 set(CMAKE_CXX_STANDARD 14)
 
 ## Finds the required macros and libraries.
-find_package(catkin REQUIRED COMPONENTS roscpp tf sensor_msgs drake_ros_systems)
+find_package(catkin REQUIRED COMPONENTS
+  drake_ros_common
+  drake_ros_systems
+  roscpp
+  tf
+  rosgraph_msgs
+  sensor_msgs)
 
 
 # Assuming drake is being built in the same workspace, which builds eigen into
@@ -41,3 +47,13 @@ target_link_libraries(single_car_in_stata_garage
   drakeJoints
   drakeRigidBodyConstraint
   lcm)
+
+if (CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  include_directories(${CMAKE_INSTALL_PREFIX}/include)
+  add_rostest_gtest(single_car_in_stata_garage_test
+      test/single_car_in_stata_garage_test.test
+      test/single_car_in_stata_garage_test.cc)
+  target_link_libraries(single_car_in_stata_garage_test ${catkin_LIBRARIES})
+  set_target_properties(single_car_in_stata_garage_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
+endif()

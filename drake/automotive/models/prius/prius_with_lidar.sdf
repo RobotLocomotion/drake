@@ -1,7 +1,7 @@
 <?xml version='1.0' ?>
 
 <sdf version='1.6'>
-  <model name='prius_1'>
+  <model name='Prius'>
     <pose>0 0 0 0 0 0</pose>
 
     <link name='chassis_floor'>
@@ -417,7 +417,7 @@
         <geometry>
           <mesh>
             <!-- <uri>prius.dae</uri> -->
-            <uri>prius.dae</uri>
+            <uri>package://drake/drake/automotive/models/prius/prius.dae</uri>
           </mesh>
         </geometry>
         <material>

@@ -155,49 +155,60 @@ void AddFlatTerrainToWorld(
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
-CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
+CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
+    double steering_kp, double steering_kd, double throttle_k) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
 
   // Sets up PD controllers for throttle and steering.
-  const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
-
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->get_num_positions());
   Kp.setZero();
 
   MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->get_num_velocities());
   Kd.setZero();
 
-  Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
-      tree->get_num_positions() + tree->get_num_velocities(), 3);
+  // Computes the length of x_d, the desired state of each actuator DOF.
+  int length_of_x_d =
+      tree->get_num_positions() + tree->get_num_velocities();
+
+  // Instantiates a N x 3 matrix called map_driving_cmd_to_x_d where N is the
+  // number position and velocity states in the rigid body tree. The three
+  // columns are defined by drake::DrivingCommandIndices
+  // (see: drake/examples/Cars/car_simulation.h) to be as follows:
+  //
+  //  Column Index     Meaning
+  //      0            gain of Steering angle
+  //      1            gain of Throttle
+  //      2            gain of Brake
+  //
+  Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(length_of_x_d, 3);
   map_driving_cmd_to_x_d.setZero();
 
   for (int actuator_idx = 0;
        actuator_idx < static_cast<int>(tree->actuators.size());
        actuator_idx++) {
+    // Obtains the actuator's name.
     const std::string& actuator_name = tree->actuators[actuator_idx].name_;
 
-    if (actuator_name == "steering") {
-      // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body_;
+    // Obtains the rigid body to which the actuator is attached.
+    const auto& rigid_body = tree->actuators[actuator_idx].body_;
 
+    if (actuator_name == "steering") {
       // Sets the steering actuator's Kp gain.
-      Kp(actuator_idx, rigid_body->get_position_start_index()) = kpSteering;
+      Kp(actuator_idx, rigid_body->get_position_start_index()) = steering_kp;
 
       // Sets the steering actuator's Kd gain.
-      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kdSteering;
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = steering_kd;
 
       // Saves the mapping between the driving command and the steering command.
-      map_driving_cmd_to_x_d(rigid_body->get_position_start_index(),
-                             DrivingCommandIndices::kSteeringAngle) =
+      map_driving_cmd_to_x_d(
+          rigid_body->get_position_start_index(),
+          DrivingCommandIndices::kSteeringAngle) =
           1;  // steering command
 
     } else if (actuator_name == "right_wheel_joint" ||
                actuator_name == "left_wheel_joint") {
-      // Obtains the rigid body to which the actuator is attached.
-      const auto& rigid_body = tree->actuators[actuator_idx].body_;
-
       // Sets the throttle Kd gain.
-      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = kThrottle;
+      Kd(actuator_idx, rigid_body->get_velocity_start_index()) = throttle_k;
 
       // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(

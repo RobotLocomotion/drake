@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(drake_ros_systems)
 
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS
+  drake_ros_common
+  roscpp)
 
 catkin_package(
   INCLUDE_DIRS include

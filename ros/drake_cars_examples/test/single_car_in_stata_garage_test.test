@@ -1,0 +1,5 @@
+<launch>
+  <param name="drake/simulation_duration" type="double" value="10" />
+  <include file="$(find drake_cars_examples)/launch/single_car_in_stata_garage_drake.xml" />
+  <test pkg="drake_cars_examples" test-name="single_car_in_stata_garage_test" type="single_car_in_stata_garage_test" />
+</launch>

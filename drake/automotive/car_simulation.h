@@ -132,16 +132,43 @@ void AddFlatTerrainToWorld(
 /**
  * Creates a vehicle system by instantiating PD controllers for the actuators
  * in the model and cascading it with a rigid body system. The expected names
- * of the actuators are "steering", "right_wheel_joint", "left_wheel_joint".
+ * of the actuators are "steering", "right_wheel_joint", and "left_wheel_joint".
+ *
+ * Here's a system block diagram:
+ *
+ * <pre>
+ * --------------       ------------------------------------------
+ * |            |       |                  --------------------- |
+ * | Gain Block |  -->  | PD Control Block | Rigid Body System | |
+ * |            |       |                  --------------------- |
+ * --------------       ------------------------------------------
+ * </pre>
+ *
+ * The following gains are hard-coded:
+ *  - Kp steering = 400
+ *  - Kd steering = 80
+ *  - Kp wheel joint = 0
+ *  - Kd wheel joint = 100
+ *
+ * Note that the wheel joint controllers have `Kp = 0`, meaning they are
+ * effectively velocity controllers.
  *
  * @param[in] rigid_body_sys The rigid body system.
+ *
+ * @param[in] steering_kp The desired Kp gain used by the steering controller.
+ *
+ * @param[in] steering_kd The desired Kd gain used by the steering controller.
+ *
+ * @param[in] throttle_k The desired gain used by the throttle controller.
+ *
  * @return The resulting vehicle system.
  */
 DRAKEAUTOMOTIVE_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
-CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
+CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys,
+    double steering_kp = 400, double steering_kd = 80, double throttle_k = 100);
 
 /**
  * Returns the default simulation options for car simulations. The default

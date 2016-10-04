@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<!--
+This is the main launch file for the single car in MIT Stata garage demo.
+To run it:
+
+  $ roslaunch drake_cars_examples single_car_in_stata_garage.launch
+-->
+<launch>
+  <include file="$(find drake_cars_examples)/launch/drake_common.xml" />
+  <include file="$(find drake_cars_examples)/launch/single_car_in_stata_garage_desc.xml" />
+
+  <group ns="drake">
+    <param name="penetration_stiffness" type="double" value="5000" />
+    <param name="penetration_damping" type="double" value="500" />
+    <param name="steering_kp" type="double" value="1000" />
+    <param name="steering_kd" type="double" value="250" />
+    <param name="throttle_k" type="double" value="100" />
+    <param name="initial_step_size" type="double" value="0.005" />
+
+    <param
+        name="car_filename"
+        type="string"
+        value="$(find drake)/drake/automotive/models/prius/prius_with_lidar.sdf" />
+    <param
+        name="world_filename"
+        type="string"
+        value="$(find drake)/drake/automotive/models/stata_garage_p1.sdf" />
+
+    <node
+        name="single_car_in_stata_garage"
+        pkg="drake_cars_examples"
+        type="single_car_in_stata_garage"
+        output="screen"
+    />
+  </group>
+
+  <!-- <include file="$(find drake_cars_examples)/launch/golfcart_adapter.launch" /> -->
+</launch>
