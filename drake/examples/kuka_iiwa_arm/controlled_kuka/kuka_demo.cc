@@ -57,7 +57,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed);
 
-  // Create a basic pointwise IK trajectory for moving the iiwa arm.
+  // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
   VectorXd zero_conf = tree.getZeroConfiguration();
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.01);
@@ -68,7 +68,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   joint_idx << 0, 1, 2, 3, 4, 5, 6;
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
 
-  // Define an end effector constraint and make it active for the time span
+  // Defines an end effector constraint and makes it active for the time span
   // from 1 to 3 seconds.
   Vector3d pos_end;
   pos_end << 0.6, 0, 0.325;
@@ -78,18 +78,17 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
       &tree, tree.FindBodyIndex("iiwa_link_ee"),
       Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
-  // After the end effector constraint is released, apply the straight
-  // up configuration again.
+  // After the end effector constraint is released, applies the straight
+  // up configuration again from time 4 to 5.9.
   PostureConstraint pc2(&tree, Vector2d(4, 5.9));
   pc2.setJointLimits(joint_idx, joint_lb, joint_ub);
 
-  // Bring back the end effector constraint through second 9 of the
-  // demo.
+  // Apply the same end effector constraint from time 6 to 9 of the demo.
   WorldPositionConstraint wpc2(&tree, tree.FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(6, 9));
 
-  // For part of the time wpc2 is active, constrain the second joint while
+  // For part of the time wpc2 is active, constrains the second joint while
   // preserving the end effector constraint.
   //
   // Variable `joint_position_start_idx` below is a collection of offsets into
@@ -101,7 +100,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
-
+  // TODO(naveenoid): Explain here in a comment why kNumTimesteps = 5.
   const int kNumTimesteps = 5;
   double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
   MatrixXd q0(tree.get_num_positions(), kNumTimesteps);
@@ -133,11 +132,12 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   printf("\n");
 
   if (!info_good) {
-    throw std::runtime_error("Solution failed, not sending.");
+    throw std::runtime_error(
+        "inverseKinPointwise failed to compute a valid solution.");
   }
 
   // This code comes from TrajectoryRunner in kuka_id_demo.
-  // TODO(naveenoid): Removes duplicated code by refactoring TrajectoryRunner
+  // TODO(naveenoid): Remove duplicated code by refactoring TrajectoryRunner
   // out of kuka_ik_demo.
   typedef PiecewisePolynomial<double> PPType;
   typedef PPType::PolynomialType PPPoly;
@@ -152,20 +152,19 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   traj_.block(0, 0, tree.get_num_positions(), kNumTimesteps) = q_sol;
   auto& t_ = t;
 
-  // For each timestep, create a PolynomialMatrix for each joint
-  // position.  Each column of traj_ represents a particular time,
-  // and the rows of that column contain values for each joint
-  // coordinate.
+  // For each timestep, creates a PolynomialMatrix for each joint position.
+  // Each column of traj_ represents a particular time, and the rows of that
+  // column contain values for each joint coordinate.
   for (int i = 0; i < nT_; ++i) {
     PPMatrix poly_matrix(traj_.rows(), 1);
     const auto traj_now = traj_.col(i);
 
-    // Produce interpolating polynomials for each joint coordinate.
+    // Produces interpolating polynomials for each joint coordinate.
     if (i != nT_ - 1) {
       for (int row = 0; row < traj_.rows(); ++row) {
         Eigen::Vector2d coeffs(0, 0);
         coeffs[0] = traj_now(row);
-        // Set the coefficient such that it will reach the value of
+        // Sets the coefficient such that it will reach the value of
         // the next timestep at the time when we advance to the next
         // piece.  In the event that we're at the end of the
         // trajectory, this will be left 0.
@@ -190,36 +189,37 @@ class KukaDemo : public systems::Diagram<T> {
   KukaDemo() {
     this->set_name("KukaDemo");
 
-    // Instantiates an MBD model of the world.
-    auto mbd_world = make_unique<RigidBodyTree>();
+    // Instantiates an Multibody Dynamics (MBD) model of the world.
+    auto rigid_body_tree = make_unique<RigidBodyTree>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() +
         "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
         drake::systems::plants::joints::kFixed,
-        nullptr /* weld to frame */, mbd_world.get());
+        nullptr /* weld to frame */, rigid_body_tree.get());
 
     // Adds the ground.
     double kBoxWidth = 3;
     double kBoxDepth = 0.2;
     DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
     Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    // top of the box is at z = 0.
+    // The top of the box is at z = 0.
     T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
 
-    RigidBody& world = mbd_world->world();
+    RigidBody& world = rigid_body_tree->world();
     Eigen::Vector4d color;
     color << 0.9297, 0.7930, 0.6758, 1;
     world.AddVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    mbd_world->addCollisionElement(
+    rigid_body_tree->addCollisionElement(
         RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
         "terrain");
-    mbd_world->updateStaticCollisionElements();
+    rigid_body_tree->updateStaticCollisionElements();
 
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(mbd_world));
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
+        move(rigid_body_tree));
 
     state_minus_target_ = builder.template AddSystem<Adder<T>>
         (2 /*number of inputs*/, plant_->get_num_states() /* size */);
@@ -273,7 +273,7 @@ class KukaDemo : public systems::Diagram<T> {
     builder.Connect(state_minus_target_->get_output_port(),
                     error_demux_->get_input_port(0));
 
-    // This demux splits the RBP output into positions (q) and velocities (v).
+    // Splits the RBP output into positions (q) and velocities (v).
     builder.Connect(plant_->get_output_port(0),
                     rbp_state_demux_->get_input_port(0));
 
