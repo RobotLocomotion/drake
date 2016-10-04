@@ -9,8 +9,8 @@ Build Cop
 Overview
 --------
 
-The Drake build cop monitors `post-merge <https://drake-
-jenkins.csail.mit.edu/view/Continuous/>`_ and `nightly production
+The Drake build cop monitors `continuous production <https://drake-
+jenkins.csail.mit.edu/view/Continuous%20Production/>`_ and `nightly production
 <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_ continuous
 integration failures in the RobotLocomotion/drake GitHub repo.
 
