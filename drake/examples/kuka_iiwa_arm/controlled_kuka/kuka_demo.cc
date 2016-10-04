@@ -223,11 +223,6 @@ class KukaDemo : public Diagram<T> {
     // const double numerical_stiffness = 3000;
     // plant_->penetration_stiffness_ = 10*numerical_stiffness;
 
-#if 0
-    viz_publisher_ = make_unique<BotVisualizerSystem>(
-        plant_->get_multibody_world(), &lcm_);
-#endif
-
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
@@ -269,6 +264,10 @@ class KukaDemo : public Diagram<T> {
     target_plan_ = builder.template AddSystem<TimeVaryingPolynomialSource<T>>(
         *poly_trajectory_);
 
+    // Creates and adds LCM publisher for visualization.
+    viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+        plant_->get_rigid_body_tree(), &lcm_);
+
     // Target.
     // builder.Connect(target_state_->get_output_port(0),
     //                 error_inverter_->get_input_port(0));
@@ -308,11 +307,10 @@ class KukaDemo : public Diagram<T> {
     builder.Connect(gcomp_minus_pid_->get_output_port(),
                     plant_->get_input_port(0));
 
-    // Connects to visualizer.
-#if 0
+    // Connects to publisher for visualization.
     builder.Connect(plant_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
-#endif
+
     builder.ExportOutput(plant_->get_output_port(0));
     builder.BuildInto(this);
   }
@@ -342,7 +340,7 @@ class KukaDemo : public Diagram<T> {
   // std::unique_ptr<ConstantVectorSource<T>> target_state_;
   TimeVaryingPolynomialSource<T>* target_plan_;
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
-  // std::unique_ptr<BotVisualizerSystem> viz_publisher_;
+  RigidBodyTreeLcmPublisher* viz_publisher_;
   ::lcm::LCM lcm_;
 };
 
