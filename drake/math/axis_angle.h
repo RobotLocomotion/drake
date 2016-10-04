@@ -17,6 +17,7 @@ namespace math {
  * @param axis_angle A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis. angle is within [-PI, PI].
  * @return An Eigen::AngleAxis object.
+ * TODO (hongkai.dai@tri.global) switch to Eigen's AngleAxis
  */
 template <typename Derived>
 Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
@@ -31,6 +32,7 @@ Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI].
  * @return A 4 x 1 column vector, the unit length quaternion [w; x; y; z].
+ * TODO (hongkai.dai@tri.global) switch to Eigen's AngleAxis
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> axis2quat(
@@ -53,6 +55,7 @@ Vector4<typename Derived::Scalar> axis2quat(
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI].
  * @return A 3 x 3 rotation matrix.
+ * TODO (hongkai.dai@tri.global) switch to Eigen's AngleAxis
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> axis2rotmat(
@@ -84,6 +87,7 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
  * length rotation axis, angle is within [-PI, PI]
  * @return A 3 x 1 vector [roll, pitch, yaw]. Represents the body-fixed z-y'-x''
  * rotation with (yaw, pitch, roll) angles respectively. @see rpy2rotmat
+ * TODO (hongkai.dai@tri.global) switch to Eigen's AngleAxis
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> axis2rpy(

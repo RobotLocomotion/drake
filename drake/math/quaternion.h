@@ -13,6 +13,9 @@
 
 namespace drake {
 namespace math {
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
@@ -21,7 +24,9 @@ Vector4<typename Derived::Scalar> quatConjugate(
   q_conj << q(0), -q(1), -q(2), -q(3);
   return q_conj;
 }
-
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatProduct(
     const Eigen::MatrixBase<Derived1>& q1,
@@ -39,7 +44,9 @@ Vector4<typename Derived1::Scalar> quatProduct(
 
   return r;
 }
-
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename DerivedQ, typename DerivedV>
 Vector3<typename DerivedV::Scalar> quatRotateVec(
     const Eigen::MatrixBase<DerivedQ>& q,
@@ -55,14 +62,18 @@ Vector3<typename DerivedV::Scalar> quatRotateVec(
   Vector3<typename DerivedV::Scalar> r = v_rot.template bottomRows<3>();
   return r;
 }
-
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatDiff(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
   return quatProduct(quatConjugate(q1), q2);
 }
-
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived1, typename Derived2, typename DerivedU>
 typename Derived1::Scalar quatDiffAxisInvar(
     const Eigen::MatrixBase<Derived1>& q1,
@@ -73,7 +84,9 @@ typename Derived1::Scalar quatDiffAxisInvar(
   return -2.0 + 2 * r(0) * r(0) +
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
-
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived>
 typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
   using std::acos;
@@ -94,6 +107,8 @@ typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
  * 2004 IEEE International Conference on , vol.4, no., pp.3993, 3998 Vol.4,
  * April 26-May 1, 2004
  * doi: 10.1109/ROBOT.2004.1308895
+ *
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived1, typename Derived2, typename Scalar>
 Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
@@ -142,6 +157,8 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
  * has unit length.
  * The cost of this function is roughly one atan2, one sqrt, and one divide
  * (about 100 flops)
+ *
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
@@ -183,6 +200,8 @@ Vector4<typename Derived::Scalar> quat2axis(
  * Compute the rotation matrix from quaternion representation.
  * @param quaternion A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
  * @return A 3 x 3 rotation matrix
+ *
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
@@ -222,6 +241,7 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  * accurate. For pitch = PI/2 - 1E-6, the error can be in the order of 1E-7.
  * The error gets larger when the pitch gets closer to PI/2 or -PI/2.
  * TODO (mitiguy@tri.global) replace this method with the high-precision method.
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
@@ -230,6 +250,9 @@ Vector3<typename Derived::Scalar> quat2rpy(
   return rotmat2rpy(quat2rotmat(quaternion));
 }
 
+/**
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
+ */
 template <typename Derived>
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
     const Eigen::MatrixBase<Derived>& q) {

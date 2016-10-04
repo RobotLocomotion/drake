@@ -45,14 +45,14 @@ bool check_rpy_range(const Vector3d& rpy) {
 // axis-angle has singularities around 0 degree rotation and 180 degree rotation
 // So two axis-angles that are slightly different when the angle is close to 0,
 // their equivalent rotation matrices are almost the same
-bool CompareAngleAxisForSameOrientation(const AngleAxisd& a1,
-                                        const AngleAxisd& a2) {
+bool AreAngleAxisForSameOrientation(const AngleAxisd &a1,
+                                    const AngleAxisd &a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
 }
 
-bool CompareQuaternionsForSameOrientation(const Vector4d& q1,
-                                          const Vector4d& q2,
-                                          double precision = 1E-12) {
+bool AreQuaternionsForSameOrientation(const Vector4d &q1,
+                                      const Vector4d &q2,
+                                      double precision = 1E-12) {
   // The same orientation is described by both a quaternion and the negative of
   // that quaternion
   return q1.isApprox(q2, precision) | q1.isApprox(-q2, precision);
@@ -65,18 +65,18 @@ Quaterniond BodyZYXAnglesToEigenQuaternion(const Vector3d bodyZYX_angles) {
          AngleAxisd(bodyZYX_angles(2), Vector3d::UnitX());
 }
 
-bool CompareEulerAnglesForSameOrientation(const Vector3d& euler_angles1,
-                                          const Vector3d& euler_angles2,
-                                          double precision = 1E-12) {
+bool AreEulerAnglesForSameOrientation(const Vector3d &euler_angles1,
+                                      const Vector3d &euler_angles2,
+                                      double precision = 1E-12) {
   auto q1 = BodyZYXAnglesToEigenQuaternion(euler_angles1);
   auto q2 = BodyZYXAnglesToEigenQuaternion(euler_angles2);
-  return CompareQuaternionsForSameOrientation(EigenQuaternionToEigenVect4(q1),
-                                              EigenQuaternionToEigenVect4(q2),
-                                              precision);
+  return AreQuaternionsForSameOrientation(EigenQuaternionToEigenVect4(q1),
+                                          EigenQuaternionToEigenVect4(q2),
+                                          precision);
 }
 
-bool CompareRollPitchYawForSameOrientation(const Vector3d& rpy1,
-                                           const Vector3d& rpy2) {
+bool AreRollPitchYawForSameOrientation(const Vector3d &rpy1,
+                                       const Vector3d &rpy2) {
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
   // When pitch is close to PI/2 or -PI/2, the derivative of rotation matrix
@@ -89,8 +89,8 @@ bool CompareRollPitchYawForSameOrientation(const Vector3d& rpy1,
       std::abs(rpy1(1) + M_PI / 2) < 1E-5) {
     precision = 1E-7;
   }
-  return CompareEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
-                                              precision);
+  return AreEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
+                                          precision);
 }
 
 Vector4d EigenAngleAxisToDrakeAxisAngle(const AngleAxisd& eigenAngleAxis) {
@@ -415,7 +415,7 @@ TEST_F(RotationConversionTest, AxisQuat) {
     // axis2quat should be the inversion of quat2axis
     auto a_expected = quat2axis(q);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
   }
 }
 
@@ -443,7 +443,7 @@ TEST_F(RotationConversionTest, AxisRotmat) {
     // axis2rotmat should be the inversion of rotmat2axis
     auto a_expected = rotmat2axis(rotmat);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
   }
 }
 
@@ -454,7 +454,7 @@ TEST_F(RotationConversionTest, AxisRPY) {
     // axis2rpy should be the inversion of rpy2axis
     Vector4d a_expected = rpy2axis(rpy);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
@@ -468,10 +468,10 @@ TEST_F(RotationConversionTest, QuatAxis) {
 
     Vector4d a = quat2axis(qi);
     auto a_eigen = Eigen::AngleAxis<double>(a(3), a.head<3>());
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
     // quat2axis should be the inversion of axis2quat
     Vector4d quat_expected = axis2quat(a);
-    EXPECT_TRUE(CompareQuaternionsForSameOrientation(qi, quat_expected));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
   }
 }
 
@@ -486,7 +486,7 @@ TEST_F(RotationConversionTest, QuatRotmat) {
                                 MatrixCompareType::absolute));
     // quat2rotmat should be the inversion of rotmat2quat
     auto quat_expected = rotmat2quat(rotmat);
-    EXPECT_TRUE(CompareQuaternionsForSameOrientation(qi, quat_expected));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
   }
 }
 
@@ -496,7 +496,7 @@ TEST_F(RotationConversionTest, QuatRPY) {
     Vector3d rpy = quat2rpy(qi);
     // quat2rpy should be the inversion of rpy2quat
     Vector4d quat_expected = rpy2quat(rpy);
-    EXPECT_TRUE(CompareQuaternionsForSameOrientation(qi, quat_expected));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
@@ -518,7 +518,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     Vector4d quat = rotmat2quat(Ri);
     auto quat_expected_eigen = Quaterniond(Ri);
     Vector4d quat_expectd = EigenQuaternionToEigenVect4(quat_expected_eigen);
-    EXPECT_TRUE(CompareQuaternionsForSameOrientation(quat, quat_expectd));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expectd));
     // rotmat2quat should be the inversion of quat2rotmat
     Matrix3d rotmat_expected = quat2rotmat(quat);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
@@ -532,7 +532,7 @@ TEST_F(RotationConversionTest, RotmatAxis) {
     auto a_eigen_expected = AngleAxisd(Ri);
     Vector4d a = rotmat2axis(Ri);
     auto a_eigen = AngleAxisd(a(3), a.head<3>());
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
     // rotmat2axis should be the inversion of axis2rotmat
     auto rotmat_expected = axis2rotmat(a);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
@@ -562,7 +562,7 @@ TEST_F(RotationConversionTest, RPYRotmat) {
                                 1E-10, MatrixCompareType::absolute));
     // rpy2rotmat should be the inversion of rotmat2rpy
     Vector3d rpy_expected = rotmat2rpy(rotmat);
-    EXPECT_TRUE(CompareRollPitchYawForSameOrientation(rpyi, rpy_expected));
+    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
   }
 }
 
@@ -577,11 +577,11 @@ TEST_F(RotationConversionTest, RPYAxis) {
     auto a_eigen_expected = Eigen::AngleAxis<double>(rotation_expected);
     Vector4d a = rpy2axis(rpyi);
     AngleAxisd a_eigen = axisToEigenAngleAxis(a);
-    EXPECT_TRUE(CompareAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
+    EXPECT_TRUE(AreAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
 
     // rpy2axis should be the inversion of axis2rpy
     Vector3d rpy_expected = axis2rpy(a);
-    EXPECT_TRUE(CompareRollPitchYawForSameOrientation(rpyi, rpy_expected));
+    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
   }
 }
 
@@ -593,11 +593,11 @@ TEST_F(RotationConversionTest, RPYQuat) {
     auto quat_eigen_expected = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
     auto quat_expected = EigenQuaternionToEigenVect4(quat_eigen_expected);
     auto quat = rpy2quat(rpyi);
-    EXPECT_TRUE(CompareQuaternionsForSameOrientation(quat, quat_expected));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expected));
     // rpy2quat should be the inversion of quat2rpy
     auto rpy_expected = quat2rpy(quat);
-    EXPECT_TRUE(CompareRollPitchYawForSameOrientation(rpyi, rpy_expected));
-    EXPECT_TRUE(CompareRollPitchYawForSameOrientation(
+    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
+    EXPECT_TRUE(AreRollPitchYawForSameOrientation(
         rpyi, rotmat2rpy(rpy2rotmat(rpyi))));
   }
 }

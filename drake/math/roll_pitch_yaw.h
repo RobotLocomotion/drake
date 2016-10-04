@@ -15,6 +15,8 @@ namespace math {
  * by angles [rpy(2), rpy(1), rpy(0)].
  * @return A 4 x 1 unit length quaternion @p a=[w;x;y;z]
  * @see rpy2rotmat
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+ * the range problem in Eigen
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2quat(
@@ -39,6 +41,8 @@ Vector4<typename Derived::Scalar> rpy2quat(
  * @return A 4 x 1 angle-axis representation \c a, with \c a.head<3>() being the
  * rotation axis,  \c a(3) being the rotation angle
  * @see rpy2rotmat
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+ * the range problem in Eigen
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2axis(
@@ -63,6 +67,8 @@ Vector4<typename Derived::Scalar> rpy2axis(
  *                           0 & cos(c) & -sin(c)\\
  *                           0 & sin(c) & cos(c)\end{bmatrix}
  * @f]
+ * TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+ * the range problem in Eigen
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> rpy2rotmat(
