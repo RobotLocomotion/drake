@@ -166,8 +166,6 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   return pp_traj;
 }
 
-const double deg_to_rad = M_PI / 180.0;
-
 // A model of a Kuka iiwa arm with position control using gravity compensation
 // and a PID controller. A plan is created by the inverse kinematics method
 // MakePlan() above and is fed as the desired target using a
