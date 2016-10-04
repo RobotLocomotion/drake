@@ -9,13 +9,12 @@ Build Cop
 Overview
 --------
 
-The Drake build cop monitors `post-merge <https://drake-
-jenkins.csail.mit.edu/view/Continuous/>`_ and `nightly production
+The Drake build cop monitors `continuous production <https://drake-
+jenkins.csail.mit.edu/view/Continuous%20Production/>`_ and `nightly production
 <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_ continuous
 integration failures in the RobotLocomotion/drake GitHub repo.
 
-The build cop will rotate on a weekly basis, initially through members of the
-Kitware team, but may extend to include members of the TRI team in future. The
+The build cop will rotate on a weekly basis. The
 `schedule <https://github.com/RobotLocomotion/drake-ci/wiki/Build-Cop-Rotation>`_
 is maintained on the RobotLocomotion/drake-ci wiki.
 
@@ -144,11 +143,6 @@ click on the build that is yellow or red in Jenkins, then click on the first
 breaking change in the Build History. You will see a list of the new commits
 in that particular run.
 
-Build Known Not to Work
-***********************
-Certain nightly builds always fail because of known issues that haven't been
-resolved.
-
 Broken Compile or Test
 **********************
 Sometimes people merge code that doesn't compile, or that fails a test.
@@ -205,7 +199,6 @@ any code change. The most common infrastructure flakes include:
 
 * Unable to obtain a MATLAB license.
 * Broken connection to a Mac build agent.
-* Broken connection to a Windows build agent.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at
 an infrastructure flake, run the build manually at HEAD. If it passes, you are
