@@ -6,15 +6,15 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Demultiplexer<T>::Demultiplexer(int length, int output_ports_sizes) {
-  // length must be a multiple of output_ports_sizes.
-  DRAKE_DEMAND(length % output_ports_sizes == 0);
+Demultiplexer<T>::Demultiplexer(int size, int output_ports_sizes) {
+  // size must be a multiple of output_ports_sizes.
+  DRAKE_DEMAND(size % output_ports_sizes == 0);
 
-  const int num_output_ports = length / output_ports_sizes;
+  const int num_output_ports = size / output_ports_sizes;
 
-  // TODO(amcastro-tri): remove the length parameter from the constructor once
+  // TODO(amcastro-tri): remove the size parameter from the constructor once
   // #3109 supporting automatic lengths is resolved.
-  this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+  this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
   // TODO(david-german-tri): Provide a way to infer the type.
   for (int i = 0; i < num_output_ports; ++i) {
     this->DeclareOutputPort(

@@ -5,11 +5,9 @@
      underwent changes and therefore cannot be exactly generated from the
      original source file. See pull requests #2163 and #2520.
 
-     Collision models: complex meshes can drastically affect run time.
-     Therefore some collision models are represented as simple cylinders
-     instead of meshes. However it's important to have accurate collision
-     models for the end of the arm because we anticipate that the end is the
-     most likely part of the arm to make contact.
+     Collision models: complex meshes drastically affect run time.
+     Therefore the collision models are removed for all links except for the
+     end effector to speed up the simulation time.
 -->
 <!-- ===================================================================== -->
 <robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
