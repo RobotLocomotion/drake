@@ -143,16 +143,6 @@ class QuadraticConstraint : public Constraint {
 
   virtual const Eigen::VectorXd& b() const { return b_; }
 
-<<<<<<< HEAD
-  template <typename DerivedQ, typename DerivedB>
-  void UpdateConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
-                        const Eigen::MatrixBase<DerivedB>& b) {
-    DRAKE_ASSERT(Q.rows() == Q.cols());
-    DRAKE_ASSERT(Q.cols() == b.rows());
-    DRAKE_ASSERT(b.rows() == b_.rows());
-    Q_ = Q;
-    b_ = b;
-=======
   /**
    * Updates the quadratic and linear term of the constraint. The new
    * matrices need to have the same dimension as before.
@@ -173,7 +163,6 @@ class QuadraticConstraint : public Constraint {
 
     Q_ = new_Q;
     b_ = new_b;
->>>>>>> 7e9205b8f05fdf7160c10af4893ec2675b1998bf
   }
 
  private:
