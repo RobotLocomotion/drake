@@ -492,6 +492,25 @@ class System {
     return input_vector->get_value();
   }
 
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalInputValue<V>(parent_, get_input_port(port_index));
+  }
+
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
