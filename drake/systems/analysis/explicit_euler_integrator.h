@@ -65,6 +65,9 @@ template <class T>
 typename IntegratorBase<T>::StepResult ExplicitEulerIntegrator<T>::Step(
     const T& publish_dt, const T& update_dt) {
 
+  // TODO(edrumwri): Separate code into reusable chunks once variable
+  // step integration introduced
+
   // Sort the times for stopping- sort is stable to preserve preferences for
   // stopping. In decreasing order of preference for equal values, we want
   // the update step, then the publish step, then the maximum step size.
