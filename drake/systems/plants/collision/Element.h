@@ -21,6 +21,19 @@ class RigidBody;
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
+/**
+ * The underyling primitive class used for collision analysis.  Collisions
+ * between `RigidBody` instances are determined by performing geometry analysis
+ * on the `RigidBody` instances' corresponding collision `Element`s.  As such,
+ * The `Element` combines three pieces of data:
+ * - the geometric definition of the element's collidng shape (a `Geometry`
+ *   instance referred to as its "geometry").
+ * - the transform from the shape's local space to the element's space
+ *   (an instance of `Eigen::Isometry3d` referred to as its "pose").
+ * - the `RigidBody` instance to which this element belongs (its "body").  A
+ *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
+ *   can only belong to a single `RigidBody`.
+ */
 class DRAKE_EXPORT Element : public DrakeShapes::Element {
  public:
   /**
@@ -104,11 +117,11 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
    */
   const std::vector<int>& collision_cliques() const;
 
-  /** Returns a pointer to the const RigidBody to which this CollisionElement
+  /** Returns a pointer to the `RigidBody` to which this `Element`
   is attached. **/
   const RigidBody* get_body() const;
 
-  /** Sets the rigid body this collision element is attached to. **/
+  /** Sets the `RigidBody` this collision element is attached to. **/
   void set_body(const RigidBody *body);
 
   /**
