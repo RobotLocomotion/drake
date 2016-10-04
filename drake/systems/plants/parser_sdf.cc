@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_common.h"
@@ -566,6 +567,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
 
+    drake::log()->info("Made joint {} a loop joint.", name);
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
@@ -581,6 +583,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
            << " not found! Cannot update its local frame to be that of joint.";
         throw std::runtime_error(ss.str());
       }
+      drake::log()->info("Adding joint {} to the plant.", name);
     }
 
     // Update pose_map with child's new frame, which is now the same as this
