@@ -179,19 +179,6 @@ TEST_F(DiagramContextTest, Clone) {
     EXPECT_TRUE(CompareMatrices(orig_port->get_value(), clone_port->get_value(),
                                 1e-8, MatrixCompareType::absolute));
   }
-
-  // Verify that the graph structure was preserved: the VectorBase in
-  // sys0 output port 0 should be pointer-equal to the VectorBase in
-  // sys1 input port 1.
-  //
-  // This assertion abuses the GetInputPort implementation detail to fish out
-  // a pointer to the input vector without triggering an evaluation.
-  // An evaluation is not possible in this test fixture because there is no
-  // Diagram for context_ that can be asked to eval the input.
-  auto sys1_context = clone->GetSubsystemContext(1);
-  auto sys0_output = clone->GetSubsystemOutput(0);
-  EXPECT_EQ(sys1_context->GetInputPort(1)->get_vector_data<double>(),
-            sys0_output->get_vector_data(0));
 }
 
 }  // namespace

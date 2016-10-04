@@ -236,7 +236,8 @@ class DiagramContext : public Context<T> {
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->GetInputPort(port_index);
+    return Context<T>::GetInputPort(*GetSubsystemContext(system_index),
+                                    port_index);
   }
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
