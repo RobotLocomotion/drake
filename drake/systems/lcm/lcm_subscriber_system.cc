@@ -19,8 +19,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     : channel_(channel),
       translator_(translator) {
   DRAKE_DEMAND(lcm);
-  lcm->Subscribe(channel_, &DrakeLcmMessageHandlerInterface::HandleMessage,
-      this);
+  lcm->Subscribe(channel_, this);
   DeclareOutputPort(kVectorValued, translator_.get_vector_size(),
       kContinuousSampling);
 }

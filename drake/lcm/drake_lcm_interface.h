@@ -52,15 +52,9 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
    *
    * @param[in] channel The channel to subscribe to.
    *
-   * @param[in] HandleMessage A class method pointer identifying the callback
-   * method.
-   *
-   * @param handler A class instance whose callback method will be invoked.
+   * @param[in] handler A class instance whose callback method will be invoked.
    */
   virtual void Subscribe(const std::string& channel,
-      void (DrakeLcmMessageHandlerInterface::*HandleMessage)(
-          const std::string& channel, const void* message_buffer,
-          int message_size),
       DrakeLcmMessageHandlerInterface* handler) = 0;
 };
 

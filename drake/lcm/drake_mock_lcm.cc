@@ -60,9 +60,6 @@ bool DrakeMockLcm::get_last_published_message(const std::string& channel,
 }
 
 void DrakeMockLcm::Subscribe(const std::string& channel,
-    void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-        const std::string& channel, const void* message_buffer,
-        int message_length),
     DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end()) {
     auto subscriber = make_unique<DrakeMockLcmSubscriber>(handler);

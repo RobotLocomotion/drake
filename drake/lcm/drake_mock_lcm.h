@@ -78,9 +78,6 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    * the same channel name is attempted.
    */
   void Subscribe(const std::string& channel,
-      void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-          const std::string& channel, const void* message_buffer,
-          int message_length),
       DrakeLcmMessageHandlerInterface* handler) override;
 
   /**

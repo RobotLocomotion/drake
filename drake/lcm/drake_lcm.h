@@ -12,31 +12,7 @@
 namespace drake {
 namespace lcm {
 
-using std::make_unique;
-using std::unique_ptr;
-
-/// @cond
-
-// This is the actual subscriber to an LCM channel. It simply extracts the
-// serialized LCM message and passes it to the `DrakeLcmMessageHandlerInterface`
-// object. A single type of subscriber is used to avoid DrakeLcm from being
-// templated on the subscriber type.
-class DRAKELCM_EXPORT DrakeLcmSubscriber {
- public:
-  explicit DrakeLcmSubscriber(DrakeLcmMessageHandlerInterface* drake_handler);
-
-  // Disables copy and assign.
-  DrakeLcmSubscriber(const DrakeLcmSubscriber&) = delete;
-  DrakeLcmSubscriber& operator=(const DrakeLcmSubscriber&) = delete;
-
-  void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
-      const std::string& channel);
-
- private:
-  DrakeLcmMessageHandlerInterface* drake_handler_;
-};
-
-/// @endcond
+class Subscriber;
 
 /**
  * A wrapper around a *real* LCM instance.
@@ -69,15 +45,12 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
                int data_size) override;
 
   void Subscribe(const std::string& channel,
-      void (DrakeLcmMessageHandlerInterface::*handlerMethod)(
-          const std::string& channel, const void* message_buffer,
-          int message_length),
       DrakeLcmMessageHandlerInterface* handler) override;
 
  private:
   ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
-  std::vector<unique_ptr<DrakeLcmSubscriber>> subscriptions_{};
+  std::vector<std::unique_ptr<Subscriber>> subscriptions_{};
 };
 
 }  // namespace lcm

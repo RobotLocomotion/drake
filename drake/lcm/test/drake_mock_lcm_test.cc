@@ -89,8 +89,7 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   MockMessageHandler handler;
 
   dut.StartReceiveThread();
-  dut.Subscribe(channel_name, &DrakeLcmMessageHandlerInterface::HandleMessage,
-      &handler);
+  dut.Subscribe(channel_name, &handler);
 
   // Defines a fake serialized message.
   const int message_size = 10;

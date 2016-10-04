@@ -178,8 +178,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   DrakeLcm dut;
 
   MessageHandler handler;
-  dut.Subscribe(channel_name, &DrakeLcmMessageHandlerInterface::HandleMessage,
-      &handler);
+  dut.Subscribe(channel_name, &handler);
 
   // Starts the LCM receive thread after the subscribers are created.
   dut.StartReceiveThread();
