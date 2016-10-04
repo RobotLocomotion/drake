@@ -553,7 +553,7 @@ void BulletModel::updateModel() {
 }
 
 PointPair BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, const bool use_margins) {
+    const ElementId idA, const ElementId idB, bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -800,7 +800,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 }
 
 bool BulletModel::closestPointsAllToAll(
-    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    const std::vector<ElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kClosestPointsAllToAll;
@@ -823,7 +823,7 @@ bool BulletModel::closestPointsAllToAll(
 }
 
 bool BulletModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   closest_points.clear();
   for (const ElementIdPair& pair : id_pairs) {
@@ -834,7 +834,7 @@ bool BulletModel::closestPointsPairwise(
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
-    const bool use_margins, std::vector<PointPair> &collision_points) {
+    bool use_margins, std::vector<PointPair> &collision_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 

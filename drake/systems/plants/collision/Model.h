@@ -64,7 +64,7 @@ class DRAKECOLLISION_EXPORT Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
@@ -80,7 +80,7 @@ class DRAKECOLLISION_EXPORT Model {
    @returns `true` if this method ran successfully and `false` otherwise.
    **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& closest_points) = 0;
+      bool use_margins, std::vector<PointPair>& closest_points) = 0;
 
   /** \brief Compute the points of closest approach between specified pairs
    * of collision elements
@@ -94,7 +94,7 @@ class DRAKECOLLISION_EXPORT Model {
    * \return true if this method ran successfully
    */
   virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 

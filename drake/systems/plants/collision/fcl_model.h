@@ -18,10 +18,10 @@ class DRAKECOLLISION_EXPORT FCLModel : public Model {
   virtual ~FCLModel() {}
 
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
   bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             const bool use_margins,
+                             bool use_margins,
                              std::vector<PointPair>& closest_points) override;
   bool collidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
@@ -31,7 +31,7 @@ class DRAKECOLLISION_EXPORT FCLModel : public Model {
                         Eigen::VectorXd& distances,
                         Eigen::Matrix3Xd& normals) override;
   bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& points) override;
+      bool use_margins, std::vector<PointPair>& points) override;
   std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
   std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,

@@ -14,20 +14,20 @@ void FCLModel::updateModel() {
 }
 
 bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>& closest_points) {
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
 }
 
 bool FCLModel::ComputeMaximumDepthCollisionPoints(
-    const bool use_margins, std::vector<PointPair>& points) {
+    bool use_margins, std::vector<PointPair>& points) {
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
 }
 
 bool FCLModel::closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     const bool use_margins,
+                                     bool use_margins,
                                      std::vector<PointPair>& closest_points) {
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
