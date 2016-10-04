@@ -184,9 +184,40 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::VectorXd getRandomConfiguration(
       std::default_random_engine& generator) const;
 
-  // akin to the coordinateframe names in matlab
+  /**
+   * Returns the name of the position state at index @p position_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] position_num An index value between zero and
+   * number_of_positions().
+   *
+   * @return The name of the position value at index @p position_num.
+   */
+  std::string get_position_name(int position_num) const;
+
+  /**
+   * Returns the name of the velocity state at index @p velocity_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] velocity_num An index value between number_of_positions() and
+   * number_of_veocities().
+   *
+   * @return The name of the velocity value at index @p velocity_num.
+   */
+  std::string get_velocity_name(int velocity_num) const;
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_position_name.")
+#endif
   std::string getPositionName(int position_num) const;
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_velocity_name.")
+#endif
   std::string getVelocityName(int velocity_num) const;
+
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
@@ -894,8 +925,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
       RigidBody& body = *bodies[*it];
-      int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
-                                         : body.getJoint().getNumVelocities();
+      int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
+                                         : body.getJoint().get_num_velocities();
       int col_start =
           in_terms_of_qdot ? body.get_position_start_index() :
               body.get_velocity_start_index();

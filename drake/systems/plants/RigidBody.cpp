@@ -156,9 +156,9 @@ void RigidBody::collideWithCollisionFilterGroup(const DrakeCollision::bitmask&
 }
 
 bool RigidBody::adjacentTo(const RigidBody& other) const {
-  return ((has_as_parent(other) && !(joint_ && joint_->isFloating())) ||
+  return ((has_as_parent(other) && !(joint_ && joint_->is_floating())) ||
           (other.has_as_parent(*this) &&
-           !(other.joint_ && other.joint_->isFloating())));
+           !(other.joint_ && other.joint_->is_floating())));
 }
 
 bool RigidBody::CanCollideWith(const RigidBody& other) const {
@@ -236,7 +236,7 @@ const drake::SquareTwistMatrix<double>& RigidBody::get_spatial_inertia()
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
-      b.has_parent_body() ? b.getJoint().getName() : "no parent joint";
+      b.has_parent_body() ? b.getJoint().get_name() : "no parent joint";
 
   std::stringstream collision_element_str;
   collision_element_str << "[";

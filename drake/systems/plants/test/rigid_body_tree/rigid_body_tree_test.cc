@@ -85,13 +85,13 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree_->FindBody("body1", "robot1")->getJoint();
-  EXPECT_TRUE(jointR1B1.isFloating());
-  EXPECT_TRUE(jointR1B1.getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(jointR1B1.is_floating());
+  EXPECT_TRUE(jointR1B1.get_transform_to_parent_body().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
 
   const DrakeJoint& jointR2B1 = tree_->FindBody("body1", "robot2")->getJoint();
-  EXPECT_FALSE(jointR2B1.isFloating());
-  EXPECT_TRUE(jointR2B1.getTransformToParentBody().matrix() ==
+  EXPECT_FALSE(jointR2B1.is_floating());
+  EXPECT_TRUE(jointR2B1.get_transform_to_parent_body().matrix() ==
               Eigen::Isometry3d::Identity().matrix());
 }
 
@@ -121,13 +121,13 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree_->FindBody("body1", "robot1")->getJoint();
-  EXPECT_TRUE(jointR1B1.isFloating());
-  EXPECT_TRUE(jointR1B1.getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(jointR1B1.is_floating());
+  EXPECT_TRUE(jointR1B1.get_transform_to_parent_body().matrix() ==
               T_r1and2_to_world.matrix());
 
   const DrakeJoint& jointR2B1 = tree_->FindBody("body1", "robot2")->getJoint();
-  EXPECT_TRUE(jointR2B1.isFloating());
-  EXPECT_TRUE(jointR2B1.getTransformToParentBody().matrix() ==
+  EXPECT_TRUE(jointR2B1.is_floating());
+  EXPECT_TRUE(jointR2B1.get_transform_to_parent_body().matrix() ==
               T_r1and2_to_world.matrix());
 }
 
@@ -189,22 +189,22 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1")
                   ->getJoint()
-                  .getTransformToParentBody()
+                  .get_transform_to_parent_body()
                   .matrix() == Eigen::Isometry3d::Identity().matrix());
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot2")
                   ->getJoint()
-                  .getTransformToParentBody()
+                  .get_transform_to_parent_body()
                   .matrix() == T_r2_to_r1.matrix());
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot3")
                   ->getJoint()
-                  .getTransformToParentBody()
+                  .get_transform_to_parent_body()
                   .matrix() == T_r3_and_r4_to_r2.matrix());
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot4")
                   ->getJoint()
-                  .getTransformToParentBody()
+                  .get_transform_to_parent_body()
                   .matrix() == T_r3_and_r4_to_r2.matrix());
 }
 

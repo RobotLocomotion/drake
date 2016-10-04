@@ -201,5 +201,6 @@ drake_add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj SIZ
 drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame)
 drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust)
 
+add_subdirectory(drake_joint)
 add_subdirectory(rigid_body_system)
 add_subdirectory(rigid_body_tree)
