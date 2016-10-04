@@ -83,8 +83,6 @@ During the installation process, select the custom install option, then select "
 Drake Compilation
 =================
 
-Drake can only be compiled out-of-source. Building Drake out-of-source is recommended anyway since it separates compiler artifacts from version controlled files.
-
 .. _windows-obtain-source-code:
 
 Obtain the Source Code
@@ -108,7 +106,8 @@ Create Build Directory
 
 Create a directory for holding Drake's compiler artifacts::
 
-    $ mkdir -p [build artifacts directory]
+    $ cd drake-distro
+    $ mkdir build
 
 .. _windows-configure-build:
 
@@ -117,8 +116,8 @@ Configure Build
 
 Configure the build system::
 
-    $ cd [build artifacts directory]
-    $ cmake-gui [source code directory]/drake-distro
+    $ cd drake-distro/build
+    $ cmake-gui ..
 
 You should see the following ``CMake`` GUI appear:
 
@@ -135,7 +134,7 @@ Note: An alternative way to select the generator is via the ``CMAKE_FLAGS`` envi
 
 .. image:: images/windows_install/drake-windows-32bit.png
 
-Click the “Finish” button. Allow the CMake GUI to analyze all of the options. Once done, you should see the following:
+Click Finish. Allow the CMake GUI to analyze all of the options. Once done, you should see the following:
 
 .. image:: images/windows_install/drake-windows-config-red.png
 
@@ -152,19 +151,19 @@ Compile Drake
 
 Back in the ``bash`` terminal, start the compilation process. There are many configurations you can compile Drake in. For example, three popular configurations are ``Debug``, ``RelWithDebInfo``, and ``Release``. You specify the mode when compiling Drake, as shown below::
 
-    $ cd [build artifacts directory]
+    $ cd drake-distro/build
     $ cmake --build . --target ALL_BUILD --config [build configuration]
 
 For example, to compile Drake using build configuration ``RelWithDebInfo``, execute::
 
-    $ cd [build artifacts directory]
+    $ cd drake-distro/build
     $ cmake --build . --target ALL_BUILD --config RelWithDebInfo
 
 Sit back. Grab a coffee. The compilation process will take a while.
 
 Note that after this initial build is done, if you change Drake's code, you can more quickly recompile by executing::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-distro/build/drake
     $ cmake --build . --target ALL_BUILD --config [build configuration]
 
 Update PATH Environment Variable
@@ -172,20 +171,20 @@ Update PATH Environment Variable
 
 The compilation process generates a bunch of installed ``.dll`` libraries. You need to add the path to these libraries to your ``PATH`` environment variable:
 
-* ``[build artifacts directory]\install\lib``
-* ``[build artifacts directory]\install\bin``
+* ``drake-distro/build/install/lib``
+* ``drake-distro/build/install/bin``
 
 Test Compilation Results
 ------------------------
 
 To verify Drake was successfully compiled, run the unit tests::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-distro/build/drake
     $ ctest -VV -C [build mode]
 
 You can also run a specific unit test::
 
-    $ cd [build artifacts directory]/drake
+    $ cd drake-distro/build/drake
     $ ctest -VV -C [build mode] -R [name of unit test]
 
 For more details on unit testing, see :ref:`here <unit-test-instructions>`.
