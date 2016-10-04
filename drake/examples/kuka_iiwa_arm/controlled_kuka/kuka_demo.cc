@@ -33,10 +33,23 @@ using std::move;
 using std::unique_ptr;
 
 namespace drake {
-namespace systems {
-namespace plants {
-namespace rigid_body_system {
-namespace test {
+
+using systems::Adder;
+using systems::Context;
+using systems::Demultiplexer;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::Gain;
+using systems::GravityCompensator;
+using systems::PidController;
+using systems::RigidBodyPlant;
+using systems::RigidBodyTreeLcmPublisher;
+using systems::Simulator;
+using systems::TimeVaryingPolynomialSource;
+
+namespace examples {
+namespace kuka_iiwa_arm {
+namespace controlled_kuka {
 namespace {
 
 unique_ptr<PiecewisePolynomial<double>> MakePlan() {
@@ -61,8 +74,9 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
   pos_end << 0.6, 0, 0.325;
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.005);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.005);
-  WorldPositionConstraint wpc(&tree, tree.FindBodyIndex("iiwa_link_ee"),
-                              Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
+  WorldPositionConstraint wpc1(
+      &tree, tree.FindBodyIndex("iiwa_link_ee"),
+      Vector3d::Zero(), pos_lb, pos_ub, Vector2d(1, 3));
 
   // After the end effector constraint is released, apply the straight
   // up configuration again.
@@ -75,7 +89,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(6, 9));
 
-  // For part of the remaining time, constrain the second joint while
+  // For part of the time wpc2 is active, constrain the second joint while
   // preserving the end effector constraint.
   //
   // Variable `joint_position_start_idx` below is a collection of offsets into
@@ -97,7 +111,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&pc1);
-  constraint_array.push_back(&wpc);
+  constraint_array.push_back(&wpc1);
   constraint_array.push_back(&pc2);
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
@@ -171,7 +185,7 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
 // MakePlan() above and is fed as the desired target using a
 // TimeVaryingPolynomialSource system.
 template<typename T>
-class KukaDemo : public Diagram<T> {
+class KukaDemo : public systems::Diagram<T> {
  public:
   KukaDemo() {
     this->set_name("KukaDemo");
@@ -335,7 +349,7 @@ int DoMain() {
   simulator.Initialize();
 
   EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-      IntegratorType::RungeKutta2);
+      systems::IntegratorType::RungeKutta2);
 
   // Simulate for 20 seconds.
   simulator.StepTo(20.0);
@@ -344,12 +358,11 @@ int DoMain() {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace rigid_body_system
-}  // namespace plants
-}  // namespace systems
+}  // namespace controlled_kuka
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::systems::plants::rigid_body_system::test::DoMain();
+  return drake::examples::kuka_iiwa_arm::controlled_kuka::DoMain();
 }
