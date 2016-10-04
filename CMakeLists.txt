@@ -215,11 +215,19 @@ drake_add_external(swig_matlab PUBLIC
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # textbook
-drake_add_external(textbook PUBLIC
+if(NOT DISABLE_MATLAB AND matlab)
+  set(TEXTBOOK_CMAKE_ARGS
+    -DBUILD_TESTING=ON
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+else()
+  set(TEXTBOOK_CMAKE_ARGS -DBUILD_TESTING=OFF)
+endif()
+
+drake_add_external(textbook PUBLIC CMAKE
+  CMAKE_ARGS ${TEXTBOOK_CMAKE_ARGS}
+  INSTALL_COMMAND :
   REQUIRES PythonInterp
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook
-  BUILD_COMMAND \@PYTHON_EXECUTABLE\@
-    extract_examples.py underactuated.html ./examples)
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
 # yaml_cpp
 if(WIN32)
