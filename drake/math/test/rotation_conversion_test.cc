@@ -422,7 +422,7 @@ TEST_F(RotationConversionTest, AxisQuat) {
 TEST_F(RotationConversionTest, AxisRotmat) {
   for (const auto& ai_eigen : angle_axis_test_cases_) {
     // Manually computes the rotation matrix from axis-angle representation,
-    // using Rodriguez's rotation formula
+    // using Rodrigues' rotation formula
     // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula.
     // This is just to make sure that whatever our implementation of axis2rotmat
     // is, it outputs the right result.

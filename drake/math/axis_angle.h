@@ -78,7 +78,8 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
 }
 
 /**
- * Converts the axis-angle representation to body fixed z-y'-x'' Euler angles.
+ * Converts the axis-angle representation to body fixed z-y'-x'' Euler angles,
+ * or equivalently space fixed x-y-z Euler angles.
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI]
  * @return A 3 x 1 vector [roll, pitch, yaw]. Represents the body-fixed z-y'-x''
