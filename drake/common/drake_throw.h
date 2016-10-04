@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include "drake/drakeCommon_export.h"
+#include "drake/common/drake_export.h"
 
 /// @file
 /// Provides a convenient wrapper to throw an exception when a condition is
@@ -12,7 +12,7 @@
 namespace drake {
 namespace detail {
 // Throw an error message.
-DRAKECOMMON_EXPORT
+DRAKE_EXPORT
 void Throw(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
 }  // namespace drake
