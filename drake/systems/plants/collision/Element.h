@@ -28,8 +28,9 @@ typedef uintptr_t ElementId;
  * The `Element` combines three pieces of data:
  * - the geometric definition of the element's collidng shape (a `Geometry`
  *   instance referred to as its "geometry").
- * - the transform from the shape's local space to the element's space
- *   (an instance of `Eigen::Isometry3d` referred to as its "pose").
+ * - the transform from the space the shape is defined in (element) to its
+ *   position in the `RigidBody`'s local space (an instance of
+ *   `Eigen::Isometry3d` referred to as its "pose").
  * - the `RigidBody` instance to which this element belongs (its "body").  A
  *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
  *   can only belong to a single `RigidBody`.
