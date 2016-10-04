@@ -254,7 +254,9 @@ class KukaDemo : public Diagram<T> {
     // For Kuka:
     // -  get_num_states() = 14
     // -  get_num_positions() = 7
-    demux_ = builder.template AddSystem<Demultiplexer<T>>(
+    error_demux_ = builder.template AddSystem<Demultiplexer<T>>(
+        plant_->get_num_states(), plant_->get_num_positions());
+    rbp_state_demux_ = builder.template AddSystem<Demultiplexer<T>>(
         plant_->get_num_states(), plant_->get_num_positions());
 
     inverter_ = builder.template AddSystem<Gain<T>>(
@@ -277,17 +279,22 @@ class KukaDemo : public Diagram<T> {
     builder.Connect(plant_->get_output_port(0),
                     state_minus_target_->get_input_port(1));
 
-    // Splits plant output port into a positions and velocities ports.
+    // Splits the error signal into positions and velocities components.
     builder.Connect(state_minus_target_->get_output_port(),
-                    demux_->get_input_port(0));
+                    error_demux_->get_input_port(0));
 
-    builder.Connect(demux_->get_output_port(0),
+    // This demux splits the RBP output into positions (q) and velocities (v).
+    builder.Connect(plant_->get_output_port(0),
+                    rbp_state_demux_->get_input_port(0));
+
+    // Connects PID controller.
+    builder.Connect(error_demux_->get_output_port(0),
                     controller_->get_error_port());
-    builder.Connect(demux_->get_output_port(1),
+    builder.Connect(error_demux_->get_output_port(1),
                     controller_->get_error_derivative_port());
 
-    // Connects the gravity compensator.
-    builder.Connect(plant_->get_output_port(0),
+    // Connects the gravity compensator to the output generalized positions.
+    builder.Connect(rbp_state_demux_->get_output_port(0),
                     gravity_compensator_->get_input_port(0));
     builder.Connect(gravity_compensator_->get_output_port(0),
                     gcomp_minus_pid_->get_input_port(0));
@@ -325,7 +332,8 @@ class KukaDemo : public Diagram<T> {
  private:
   RigidBodyPlant<T>* plant_;
   PidController<T>* controller_;
-  Demultiplexer<T>* demux_;
+  Demultiplexer<T>* error_demux_;
+  Demultiplexer<T>* rbp_state_demux_;
   Gain<T>* inverter_;
   Gain<T>* error_inverter_;
   GravityCompensator<T>* gravity_compensator_;
