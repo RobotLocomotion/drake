@@ -45,25 +45,25 @@ classdef SoftPaddleControl < DrakeSystem
             
             epsilon = 0.5;
             psid = -0.001*q(3)-0.005*qp(3);
-            psid = -0.0001*q(3)-0.0001*qp(3);
+%             psid = -0.0001*q(3)-0.0001*qp(3);
             %psid = 0;
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
             if m == 2
-              if(obj.numerically_stable)
-                u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
-              else
-                psid = -0.0005*q(3)-0.001*qp(3);
-                %                     if psid > 0.01
-                %                         psid = 0.01;
-                %                     elseif psid < -0.01
-                %                         psid = -0.01;
-                %                     end
-                u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
-                u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
-                %                     if q(1)*qp(1) < 0
-                %                         u = u + uE;
-                %                     end
-              end
+                if(obj.numerically_stable)
+                     u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
+                else
+                    psid = -0.0005*q(3)-0.001*qp(3);
+%                     if psid > 0.01
+%                         psid = 0.01;
+%                     elseif psid < -0.01
+%                         psid = -0.01;
+%                     end
+                    u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
+                    u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+%                     if q(1)*qp(1) < 0
+%                         u = u + uE;
+%                     end
+                end
             end
             
             %% Set
@@ -88,7 +88,7 @@ classdef SoftPaddleControl < DrakeSystem
             x0 = p.getInitialState();
             v.drawWrapper(0,x0);
             tic
-            [ytraj,xtraj] = simulate(sys,[0 10],x0);
+            [ytraj,xtraj] = simulate(sys,[0 50],x0);
             toc
             v.playback(ytraj,struct('slider',true));
             

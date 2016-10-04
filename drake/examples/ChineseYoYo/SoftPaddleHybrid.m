@@ -168,8 +168,8 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % barf
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
-      x0.load_x = -0.5;  % was -0.03
-      x0.load_z = 5; %4.2
+      x0.load_x = -0.02905;  % was -0.029
+      x0.load_z = 4.5;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
@@ -211,19 +211,39 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       [T,U] = energy(obj.no_contact,x(2:end));
     end
     
+%     function [c, dc] = evaluateConstraint(obj,x)
+%         psi = x(1);
+%         R = [cos(psi), 0, sin(psi); 0, 1, 0; -sin(psi), 0, cos(psi)];
+%         c = [-3; 1; 3] + R*[x(3); 0; 0];
+%         dc = [-x(3)*sin(psi), 0, 0, 0; 0, 0, 0, 0; x(3)*cos(psi)];
+%     end
+    
     function [utraj,xtraj]=shootOffTrajectory(obj)
-        x0 = zeros(4,1);
-        xf = double(obj.xG);
-        tf0 = 4;
+        zInitial = 4.5;
+        tStrike = sqrt(2/9.81)*sqrt(zInitial-4);
+        vStrike = -9.81*tStrike;
+        x0 = [0; 0.1434; -0.5; 4; 0; 0; 0; vStrike];
+        
+        % Get the desired xf in the inertial frame
+        
+        
+%         xf1_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [-0.5,0,1], obj.options);
+%         xf2_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [0.5,0,1], obj.options);
+        
+        lb = [-0.02; 0.13; -0.51; 3.9650; 0; 0; 0; 0];
+        ub = [0.02; 0.15; 0.51; 4.0349; 0; 0; 0; 0];
+        
+        xTargetInitial = [0; 0.14; 0.03; 4; 0; 0; 0; 0];
+        tf0 = 0.75; % initial guess
         
         N = 21;
-        prog = DircolTrajectoryOptimization(obj,N,[2 6]);
+        prog = DircolTrajectoryOptimization(obj.in_contact,N,[0.4 1.2]);
         prog = prog.addStateConstraint(ConstantConstraint(x0),1);
-        prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+        prog = prog.addStateConstraint(BoundingBoxConstraint(lb,ub),N);   % Change this constraint
         prog = prog.addRunningCost(@cost);
         prog = prog.addFinalCost(@finalCost);
         
-        traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
+        traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xTargetInitial)]));   % Need to initialize well
         
         for attempts=1:10
             tic
@@ -255,19 +275,21 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         end
         
         function [h,dh] = finalCost(t,x)
-            h = t;
-            dh = [1,zeros(1,size(x,1))];
-            return;
+%             h = t;
+%             dh = [1,zeros(1,size(x,1))];
+%             return;
             
-            xd = repmat([pi;0;0;0],1,size(x,2));
+%             xd = repmat([pi;0;0;0],1,size(x,2));
             xerr = x-xd;
             xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
             
             Qf = 100*diag([10,10,1,1]);
             h = sum((Qf*xerr).*xerr,1);
+            h = 10*(x(3)-0.03)^2  + x(7)^2;
             
             if (nargout>1)
                 dh = [0, 2*xerr'*Qf];
+                dh = [0, 0, 0, 20*(x(3)-0.03), 0, 0, 2*x(7), 0];
             end
         end
         
