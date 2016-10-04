@@ -291,8 +291,8 @@ GTEST_TEST(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(context->get_num_input_ports(), 2);
   EXPECT_EQ(output->get_num_ports(), 2);
 
-  EXPECT_EQ(output->get_data(0)->GetValue<std::string>().compare("inputoutput"),
-            0);
+  EXPECT_EQ(output->get_data(0)->GetValue<std::string>(),
+            std::string("inputoutput"));
   EXPECT_EQ(output->get_vector_data(1)->get_value()(0), 4);
 }
 
