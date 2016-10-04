@@ -50,4 +50,5 @@ if(lcm_FOUND)
           gflags)
 endif()
 
+add_subdirectory(controlled_kuka)
 add_subdirectory(test)

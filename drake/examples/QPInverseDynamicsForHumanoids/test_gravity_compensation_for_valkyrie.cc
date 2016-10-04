@@ -2,105 +2,169 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-QPOutput TestGravityCompensation(const HumanoidStatus& robot_status) {
-  // Make controller.
-  QPController con;
-  QPInput input;
-  QPOutput output;
-  InitQPOutput(robot_status.robot(), &output);
-  InitQPInput(robot_status.robot(), &input);
+#include "drake/common/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
-  // Setup QP controller's parameter.
-  con.param.mu = 1;
-  con.param.mu_Mz = 0.1;
-  con.param.x_max = 0.2;
-  con.param.x_min = -0.05;
-  con.param.y_max = 0.05;
-  con.param.y_min = -0.05;
+namespace drake {
+namespace example {
+namespace qp_inverse_dynamics {
 
+QPInput GenerateQPInput(
+    const HumanoidStatus& robot_status, const Eigen::Vector3d& desired_com,
+    const Eigen::Vector3d& Kp_com, const Eigen::Vector3d& Kd_com,
+    const Eigen::VectorXd& desired_joints, const Eigen::VectorXd& Kp_joints,
+    const Eigen::VectorXd& Kd_joints, const CartesianSetPoint& desired_pelvis,
+    const CartesianSetPoint& desired_torso) {
   // Make input.
+  QPInput input(robot_status.robot());
+
   // These represent the desired motions for the robot, and are typically
   // outputs of motion planner or hand-crafted behavior state machines.
-  input.comdd_d.setZero();
-  input.pelvdd_d.setZero();
-  input.torsodd_d.setZero();
-  input.footdd_d[Side::LEFT].setZero();
-  input.footdd_d[Side::RIGHT].setZero();
-  input.wrench_d[Side::LEFT].setZero();
-  input.wrench_d[Side::RIGHT].setZero();
-  input.vd_d.setZero();
-  // [5] is Fz, 660N * 2 is about robot weight.
-  input.wrench_d[Side::LEFT][5] = 660;
-  input.wrench_d[Side::RIGHT][5] = 660;
+
+  // Setup a PD tracking law for center of mass
+  input.mutable_desired_comdd() =
+      (Kp_com.array() * (desired_com - robot_status.com()).array() -
+       Kd_com.array() * robot_status.comd().array())
+          .matrix();
+  input.mutable_w_com() = 1e3;
+
+  // Minimize acceleration in the generalized coordinates.
+  input.mutable_desired_vd() =
+      (Kp_joints.array() * (desired_joints - robot_status.position()).array() -
+       Kd_joints.array() * robot_status.velocity().array())
+          .matrix();
+  input.mutable_w_vd() = 1;
+
+  // Setup tracking for various body parts.
+  DesiredBodyAcceleration pelvdd_d(*robot_status.robot().FindBody("pelvis"));
+  pelvdd_d.mutable_weight() = 1e1;
+  pelvdd_d.mutable_acceleration() = desired_pelvis.ComputeTargetAcceleration(
+      robot_status.pelvis().pose(), robot_status.pelvis().velocity());
+  input.mutable_desired_body_accelerations().push_back(pelvdd_d);
+
+  DesiredBodyAcceleration torsodd_d(*robot_status.robot().FindBody("torso"));
+  torsodd_d.mutable_weight() = 1e1;
+  torsodd_d.mutable_acceleration() = desired_torso.ComputeTargetAcceleration(
+      robot_status.torso().pose(), robot_status.torso().velocity());
+  input.mutable_desired_body_accelerations().push_back(torsodd_d);
 
   // Weights are set arbitrarily by the control designer, these typically
   // require tuning.
-  input.w_com = 1e2;
-  input.w_pelv = 1e1;
-  input.w_torso = 1e1;
-  input.w_foot = 1e1;
-  input.w_vd = 1e3;
-  input.w_wrench_reg = 1e-5;
+  input.mutable_w_basis_reg() = 1e-6;
 
-  // Call QP controller.
-  con.Control(robot_status, input, &output);
+  // Make contact points.
+  ContactInformation left_foot_contact(
+      *robot_status.robot().FindBody("leftFoot"), 4);
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(0.2, 0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(0.2, -0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(-0.05, -0.05, -0.09));
+  left_foot_contact.mutable_contact_points().push_back(
+      Eigen::Vector3d(-0.05, 0.05, -0.09));
 
-  // Print quadratic costs for all the terms.
-  ComputeQPCost(robot_status, input, output);
+  ContactInformation right_foot_contact(
+      *robot_status.robot().FindBody("rightFoot"), 4);
+  right_foot_contact.mutable_contact_points() =
+      left_foot_contact.contact_points();
 
-  return output;
+  input.mutable_contact_info().push_back(left_foot_contact);
+  input.mutable_contact_info().push_back(right_foot_contact);
+
+  return input;
 }
 
-int main() {
+GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   // Loads model.
   std::string urdf =
       drake::GetDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
-  HumanoidStatus robot_status(
-      std::make_unique<RigidBodyTree>(urdf,
-          drake::systems::plants::joints::kRollPitchYaw));
+  RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
+  HumanoidStatus robot_status(robot);
 
-  // Sets state and does kinematics.
-  VectorXd q(robot_status.robot().get_num_positions());
-  VectorXd v(robot_status.robot().get_num_velocities());
+  QPController con;
+  QPInput input(robot_status.robot());
+  QPOutput output(robot_status.robot());
 
-  q.setZero();
+  // Setup initial condition.
+  Eigen::VectorXd q(robot_status.robot().get_num_positions());
+  Eigen::VectorXd v(robot_status.robot().get_num_velocities());
+
+  q = robot_status.GetNominalPosition();
   v.setZero();
+  Eigen::VectorXd q_ini = q;
 
-  // These corresponds to a nominal pose for the Valkyrie robot: slightly
-  // crouched, arm raised a bit.
-  q[robot_status.joint_name_to_position_index().at("rightHipRoll")] = 0.01;
-  q[robot_status.joint_name_to_position_index().at("rightHipPitch")] = -0.5432;
-  q[robot_status.joint_name_to_position_index().at("rightKneePitch")] = 1.2195;
-  q[robot_status.joint_name_to_position_index().at("rightAnklePitch")] =
-      -0.7070;
-  q[robot_status.joint_name_to_position_index().at("rightAnkleRoll")] = -0.0069;
+  robot_status.Update(
+      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
-  q[robot_status.joint_name_to_position_index().at("leftHipRoll")] = -0.01;
-  q[robot_status.joint_name_to_position_index().at("leftHipPitch")] = -0.5432;
-  q[robot_status.joint_name_to_position_index().at("leftKneePitch")] = 1.2195;
-  q[robot_status.joint_name_to_position_index().at("leftAnklePitch")] = -0.7070;
-  q[robot_status.joint_name_to_position_index().at("leftAnkleRoll")] = 0.0069;
+  // Setup a tracking problem.
+  Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
+  Eigen::Vector3d Kd_com = Eigen::Vector3d::Constant(12);
+  Eigen::VectorXd Kp_joints =
+      Eigen::VectorXd::Constant(robot_status.robot().get_num_positions(), 20);
+  Eigen::VectorXd Kd_joints =
+      Eigen::VectorXd::Constant(robot_status.robot().get_num_velocities(), 8);
+  Eigen::Vector6d Kp_pelvis = Eigen::Vector6d::Constant(20);
+  Eigen::Vector6d Kd_pelvis = Eigen::Vector6d::Constant(8);
+  Eigen::Vector6d Kp_torso = Eigen::Vector6d::Constant(20);
+  Eigen::Vector6d Kd_torso = Eigen::Vector6d::Constant(8);
 
-  q[robot_status.joint_name_to_position_index().at("rightShoulderRoll")] = 1;
-  q[robot_status.joint_name_to_position_index().at("rightShoulderYaw")] = 0.5;
-  q[robot_status.joint_name_to_position_index().at("rightElbowPitch")] =
-      M_PI / 2.;
+  Eigen::Vector3d desired_com = robot_status.com();
+  Eigen::VectorXd desired_q = robot_status.position();
+  CartesianSetPoint desired_pelvis(
+      robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
+      Eigen::Vector6d::Zero(), Kp_pelvis, Kd_pelvis);
+  CartesianSetPoint desired_torso(robot_status.torso().pose(),
+                                  Eigen::Vector6d::Zero(),
+                                  Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
 
-  q[robot_status.joint_name_to_position_index().at("leftShoulderRoll")] = -1;
-  q[robot_status.joint_name_to_position_index().at("leftShoulderYaw")] = 0.5;
-  q[robot_status.joint_name_to_position_index().at("leftElbowPitch")] =
-      -M_PI / 2.;
+  // Perturb initial condition
+  v[robot_status.joint_name_to_position_index().at("torsoPitch")] += 0.1;
+  robot_status.Update(
+      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
-  robot_status.Update(0, q, v,
-                      VectorXd::Zero(robot_status.robot().actuators.size()),
-                      Vector6d::Zero(), Vector6d::Zero());
+  double dt = 4e-3;
+  double time = 0;
 
-  QPOutput output = TestGravityCompensation(robot_status);
+  // Feet should be stationary
+  EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-10);
+  EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-10);
 
-  // Print results.
-  PrintQPOutput(output);
+  while (time < 2) {
+    input =
+        GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_q,
+                        Kp_joints, Kd_joints, desired_pelvis, desired_torso);
+    int status = con.Control(robot_status, input, &output);
+    if (status) break;
 
-  return 0;
+    // Dummy integration.
+    // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's
+    // ready.
+    q += v * dt;
+    v += output.vd() * dt;
+    time += dt;
+
+    robot_status.Update(time, q, v, output.joint_torque(),
+                        Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  }
+
+  // Robot should be stabilized.
+  EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
+  EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
+
+  EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
+                                     drake::MatrixCompareType::absolute));
+  EXPECT_TRUE(drake::CompareMatrices(
+      v, Eigen::VectorXd::Zero(robot_status.robot().get_num_velocities()), 1e-4,
+      drake::MatrixCompareType::absolute));
+
+  std::cout << output;
 }
+
+}  // end namespace qp_inverse_dynamics
+}  // end namespace example
+}  // end namespace drake

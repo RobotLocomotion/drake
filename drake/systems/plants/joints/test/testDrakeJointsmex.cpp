@@ -76,12 +76,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (vector<unique_ptr<DrakeJoint>>::const_iterator it = joints.begin();
        it != joints.end(); it++) {
     const unique_ptr<DrakeJoint>& joint = (*it);
-    mxArray* joint_struct_in = safelyGetField(prhs[0], joint->getName());
+    mxArray* joint_struct_in = safelyGetField(prhs[0], joint->get_name());
     VectorXd q =
         matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "q"));
     VectorXd v =
         matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "v"));
-    string name = joint->getName();
+    string name = joint->get_name();
 
     mxArray* joint_struct_out = mxCreateStructArray(1, dims, 0, nullptr);
 
@@ -91,7 +91,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
     Eigen::Matrix<double, drake::kTwistSize, Eigen::Dynamic, 0,
                   drake::kTwistSize, DrakeJoint::MAX_NUM_VELOCITIES>
-        motion_subspace(6, joint->getNumVelocities());
+        motion_subspace(6, joint->get_num_velocities());
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
     safelySetField(joint_struct_out, "motion_subspace",

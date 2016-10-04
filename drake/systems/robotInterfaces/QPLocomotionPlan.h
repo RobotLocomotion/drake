@@ -144,8 +144,8 @@ struct QPLocomotionPlanSettings {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
-          if (joint.getName().find(*joint_name_it) != std::string::npos) {
-            for (int i = 0; i < joint.getNumPositions(); i++) {
+          if (joint.get_name().find(*joint_name_it) != std::string::npos) {
+            for (int i = 0; i < joint.get_num_positions(); i++) {
               ret.push_back(body.get_position_start_index() + i);
             }
             break;

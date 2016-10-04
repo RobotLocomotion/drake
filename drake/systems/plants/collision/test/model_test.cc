@@ -187,6 +187,67 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   EXPECT_TRUE(points[2].ptB.isApprox(Vector3d(-0.5, 0, 0)));
 }
 
+GTEST_TEST(ModelTest, CollisionCliques) {
+  Element element_1, element_2, element_3;
+
+  // Adds element 1 to its own set of cliques.
+  element_1.AddToCollisionClique(2);
+  element_1.AddToCollisionClique(23);
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(15);
+  element_1.AddToCollisionClique(9);
+
+  // Tests the situation where the same collision cliques are added to a
+  // collision element multiple times.
+  // If a collision element is added to a clique it already belongs to, the
+  // addition has no effect. This is tested by asserting the total number of
+  // elements in the test below.
+  element_1.AddToCollisionClique(11);
+  element_1.AddToCollisionClique(23);
+
+  // Cliques cannot be repeated. Therefore expect 5 cliques instead of 7.
+  ASSERT_EQ(5, element_1.get_num_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({2, 9, 11, 15, 23}),
+            element_1.collision_cliques());
+
+  // Adds element 2 to its own set of cliques.
+  element_2.AddToCollisionClique(11);
+  element_2.AddToCollisionClique(9);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(13);
+  element_2.AddToCollisionClique(11);
+
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_2.get_num_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({9, 11, 13}), element_2.collision_cliques());
+
+  // Adds element 3 to its own set of cliques.
+  element_3.AddToCollisionClique(1);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(13);
+  element_3.AddToCollisionClique(8);
+  element_3.AddToCollisionClique(1);
+
+  // Cliques cannot be repeated. Therefore expect 3 cliques instead of 5.
+  ASSERT_EQ(3, element_3.get_num_cliques());
+  // Checks the correctness of the entire set.
+  EXPECT_EQ(std::vector<int>({1, 8, 13}), element_3.collision_cliques());
+
+  // element_2 does not collide with element_1 (cliques 9 and 11 in common).
+  EXPECT_FALSE(element_2.CanCollideWith(&element_1));
+
+  // element_2 does not collide with element_3 (clique 13 in common).
+  EXPECT_FALSE(element_2.CanCollideWith(&element_3));
+
+  // element_3 does collide with element_1 (no cliques in common).
+  EXPECT_TRUE(element_3.CanCollideWith(&element_1));
+
+  // element_3 does not collide with element_2 (clique 13 in common).
+  EXPECT_FALSE(element_3.CanCollideWith(&element_2));
+}
+
 // A sphere of diameter 1.0 is placed on top of a box with sides of length 1.0.
 // The sphere overlaps with the box with its deepest penetration point (the
 // bottom) 0.25 units into the box (negative distance). Only one contact point
