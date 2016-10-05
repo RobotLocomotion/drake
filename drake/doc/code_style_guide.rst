@@ -101,6 +101,11 @@ Clarifications
     very rare).  Do not use it as a generic "large signed integer" type, nor
     as a generic "index into a matrix" type.
 
+* For the `Use of const
+  <https://google.github.io/styleguide/cppguide.html#Use_of_const>`_ style rule,
+  we clarify that a class member variable must be declared ``const`` if it
+  is not modified after the class is constructed.
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
