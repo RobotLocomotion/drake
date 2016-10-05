@@ -486,14 +486,6 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
-   * Adds Lorentz cone constraint referencing potentially a subset
-   * of the decision variables (defined in the vars parameter).
-   */
-  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, VariableList const& vars) {
-    required_capabilities_ |= kLorentzConeConstraint;
-
-  }
-  /**
    * @brief Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
@@ -607,6 +599,88 @@ class DRAKE_EXPORT MathematicalProgram {
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
     return AddBoundingBoxConstraint(lb, ub, variable_views_);
+  }
+
+  /**
+   * Adds Lorentz cone constraint referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   * \f[
+   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * \f]
+   */
+  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, VariableList const& vars) {
+    required_capabilities_ |= kLorentzConeConstraint;
+    lorentz_cone_constraint_.push_back(Binding<LorentzConeConstraint>(con, vars));
+  }
+
+  /** AddLorentzConeConstraint
+   * @brief Adds Lorentz cone constraint referencing potentially a subset of the
+   * decision variables (defined in the vars parameter)
+   * \f[
+   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * \f]
+   */
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint( const VariableList& vars) {
+    std::shared_ptr<LorentzConeConstraint> constraint(new LorentzConeConstraint());
+    AddConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** AddLorentzConeConstraint
+   * @brief Adds Lorentz cone constraint to the program for all
+   * (currently existing) variables
+   * \f[
+   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * \f]
+   */
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
+    return AddLorentzConeConstraint(variable_views_);
+  }
+
+  /**
+   * Adds a rotated Lorentz cone constraint referencing potentially a subset
+   * of decision variables, such that
+   * \f[
+   * vars(0)*vars(1)>=\sqrt{vars(2)+...+vars(N-1)^2}\\
+   * vars(0)>=0, vars(1)>=0
+   * \f]
+   * @param con A pointer to a RotatedLorentzConeConstraint object
+   * @param vars A list of DecisionVariableView
+   */
+  void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con, VariableList const& vars) {
+    required_capabilities_ |= kRotatedLorentzConeConstraint;
+    rotated_lorentz_cone_constraint_.push_back(Binding<RotatedLorentzConeConstraint>(con, vars));
+  }
+
+  /** AddRotatedLorentzConeConstraint
+   * @param vars A list of DecisionVariableView
+   * Example: if you want to add the rotated Lorentz cone constraint
+   * \f[
+   * x(0)*x(1)>=\sqrt{x(2)^2+x(3)^2+...+x(N-1)^2}\\
+   * x(0)>=0, x(1)>=0
+   * \f]
+   * you can call
+   * \code{.cc}
+   *   auto x = prog.AddContinuousVariables(N,'x');
+   *   auto con = prog.AddRotatedLorentzConeConstraint(x);
+   * \endcode
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(const VariableList& vars) {
+    std::shared_ptr<RotatedLorentzConeConstraint> constraint(new RotatedLorentzConeConstraint());
+    AddConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** AddRotatedLorentzConeConstraint
+   * @brief Adds a rotated Lorentz constraint to the program for all
+   * (currently existing) variables
+   * \f[
+   * vars(0)*vars(1)>=\sqrt{vars(2)^2+...vars(N-1)^2}\\
+   * vars(0)>=0, vars(1)>=0
+   * \f]
+   */
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint() {
+    return AddRotatedLorentzConeConstraint(variable_views_);
   }
 
   /** AddLinearComplementarityConstraint
@@ -781,7 +855,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Supported solver names/options:
    *
    * "SNOPT" -- Paramater names and values as specified in SNOPT
-   * User's Guide section 7.7 "Description ofthe optional parameters",
+   * User's Guide section 7.7 "Description of the optional parameters",
    * used as described in section 7.5 for snSet().
    *
    * "IPOPT" -- Paramater names and values as specified in IPOPT users
@@ -873,6 +947,16 @@ class DRAKE_EXPORT MathematicalProgram {
     return linear_constraints_;
   }
 
+  /** Getter for Lorentz cone constraint */
+  const std::list<Binding<LorentzConeConstraint>>& lorentz_cone_constraints() const {
+    return lorentz_cone_constraint_;
+  }
+
+  /** Getter for rotated Lorentz cone constraint */
+  const std::list<Binding<RotatedLorentzConeConstraint>>& rotated_lorentz_cone_constraints() const {
+    return rotated_lorentz_cone_constraint_;
+  }
+
   /** GetAllCosts
    *
    * @brief Getter returning all costs (for now quadratic costs appended to
@@ -953,7 +1037,8 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
-  std::list<Binding<LorentzConeConstraint>> lorentz_cone_constraint_
+  std::list<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
+  std::list<Binding<RotatedLorentzConeConstraint>> rotated_lorentz_cone_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
@@ -977,8 +1062,8 @@ class DRAKE_EXPORT MathematicalProgram {
   std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface>
       equality_constrained_qp_solver_;
-  // TODO(ggould-tri) Add Gurobi here.
-  // TODO(ggould-tri) Add Mosek here.
+  std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
 };
 
 }  // namespace solvers
