@@ -3,9 +3,7 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "lcm/lcm-cpp.hpp"
 
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -33,11 +31,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
       dut.get_last_published_message(channel_name);
 
   EXPECT_EQ(message_size, published_message_bytes.size());
-  for (int i = 0; i < message_size; ++i) {
-    EXPECT_EQ(published_message_bytes[i], message_bytes[i]);
-  }
-
-  dut.StopReceiveThread();
+  EXPECT_EQ(message_bytes, published_message_bytes);
 }
 
 // Handles received LCM messages.
@@ -51,7 +45,6 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   void HandleMessage(const std::string& channel, const void* message_buffer,
       int message_size) override {
     channel_ = channel;
-    // std::lock_guard<std::mutex> lock(message_mutex_)
     buffer_.resize(message_size);
     std::memcpy(&buffer_[0], message_buffer, message_size);
   }
@@ -60,8 +53,8 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
     return channel_;
   }
 
-  const uint8_t* get_buffer() {
-    return &buffer_[0];
+  const std::vector<uint8_t>& get_buffer() {
+    return buffer_;
   }
 
   int get_buffer_size() {
@@ -75,7 +68,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
 
 // Tests DrakeMockLcm's ability to "subscribe" to an LCM channel.
 GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
-  const std::string channel_name =
+  const std::string kChannelName =
       "drake_mock_lcm_test_subscriber_channel_name";
 
   // Instantiates the Device Under Test (DUT).
@@ -85,26 +78,40 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   MockMessageHandler handler;
 
   dut.StartReceiveThread();
-  dut.Subscribe(channel_name, &handler);
+  dut.Subscribe(kChannelName, &handler);
 
   // Defines a fake serialized message.
-  const int message_size = 10;
-  std::vector<uint8_t> message_bytes(message_size);
+  const int kMessageSize = 10;
+  std::vector<uint8_t> message_bytes(kMessageSize);
 
-  for (int i = 0; i < message_size; ++i) {
+  for (int i = 0; i < kMessageSize; ++i) {
     message_bytes[i] = i;
   }
 
-  dut.InduceSubsciberCallback(channel_name, &message_bytes[0], message_size);
+  dut.InduceSubsciberCallback(kChannelName, &message_bytes[0], kMessageSize);
 
-  EXPECT_EQ(handler.get_buffer_size(), message_size);
+  EXPECT_EQ(kChannelName, handler.get_channel());
+  EXPECT_EQ(kMessageSize, handler.get_buffer_size());
 
-  const uint8_t* received_bytes = handler.get_buffer();
-  for (int i = 0; i < message_size; ++i) {
-    EXPECT_EQ(received_bytes[i], message_bytes[i]);
-  }
+  const std::vector<uint8_t>& received_bytes = handler.get_buffer();
+  EXPECT_EQ(message_bytes, received_bytes);
 
   dut.StopReceiveThread();
+
+  // Verifies that no more messages are received by subscribers after the
+  // receive thread is stopped.
+  std::vector<uint8_t> message_bytes2;
+  message_bytes2.push_back(128);
+
+  dut.InduceSubsciberCallback("foo_channel", &message_bytes2[0],
+      message_bytes2.size());
+
+  // Verifies that the original message is returned, not the one that was
+  // sent after the receive thread was stopped.
+  EXPECT_EQ(kChannelName, handler.get_channel());
+  EXPECT_EQ(kMessageSize, handler.get_buffer_size());
+  const std::vector<uint8_t>& received_bytes2 = handler.get_buffer();
+  EXPECT_EQ(message_bytes, received_bytes2);
 }
 
 }  // namespace

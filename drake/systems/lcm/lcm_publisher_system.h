@@ -13,8 +13,6 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-using drake::lcm::DrakeLcmInterface;
-
 /**
  * Publishes an LCM message containing information from its input port.
  */
@@ -34,7 +32,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     DrakeLcmInterface* lcm);
+                     ::drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -48,7 +46,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     DrakeLcmInterface* lcm);
+                     ::drake::lcm::DrakeLcmInterface* lcm);
 
 
   ~LcmPublisherSystem() override;
@@ -99,7 +97,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   const LcmAndVectorBaseTranslator& translator_;
 
   // A pointer to the LCM subsystem.
-  DrakeLcmInterface* lcm_;
+  ::drake::lcm::DrakeLcmInterface* lcm_;
 
   // The most recent message bytes; mutable is ok because it only affects the
   // GetMessage() results, which are not part of the System contract.

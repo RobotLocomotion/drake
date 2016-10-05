@@ -16,6 +16,8 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+using drake::lcm::DrakeLcmInterface;
+
 namespace {
 const int kPortIndex = 0;
 }  // namespace

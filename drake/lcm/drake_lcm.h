@@ -28,7 +28,7 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
   /**
    * A destructor that forces the receive thread to be stopped.
    */
-  ~DrakeLcm();
+  ~DrakeLcm() override;
 
   void StartReceiveThread() override;
 

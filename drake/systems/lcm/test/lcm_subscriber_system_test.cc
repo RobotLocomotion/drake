@@ -16,7 +16,7 @@ namespace {
 const int kDim = 10;
 const int64_t kTimestamp = 123456;
 
-void TestSubscriber(::drake::lcm::DrakeMockLcm* lcm,
+void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
     const std::string& channel_name, LcmSubscriberSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmSubscriberSystem(" + channel_name + ")");
 
@@ -54,7 +54,7 @@ void TestSubscriber(::drake::lcm::DrakeMockLcm* lcm,
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
-  ::drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeMockLcm lcm;
 
   // Defines a channel name.
   const std::string channel_name =
@@ -73,13 +73,12 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
   lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
-  lcm.StopReceiveThread();
 }
 
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // Instantiates LCM.
-  ::drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeMockLcm lcm;
 
   // Defines a channel name.
   const std::string channel_name =
@@ -103,7 +102,6 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 
   lcm.StartReceiveThread();
   TestSubscriber(&lcm, channel_name, &dut);
-  lcm.StopReceiveThread();
 }
 
 // A lcmt_drake_signal translator that preserves coordinate names.
@@ -177,7 +175,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   // The "device under test" and its prerequisites.
   CustomDrakeSignalTranslator translator;
-  ::drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut("dummy", translator, &lcm);
   lcm.StartReceiveThread();
 
@@ -209,8 +207,6 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
     EXPECT_EQ(sample_vector.GetName(i), custom_output->GetName(i));
   }
-
-  lcm.StopReceiveThread();
 }
 
 }  // namespace

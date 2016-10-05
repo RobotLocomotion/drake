@@ -15,16 +15,13 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-using ::drake::lcm::DrakeLcmInterface;
-using ::drake::lcm::DrakeLcmMessageHandlerInterface;
-
 /**
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
 class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
-    public DrakeLcmMessageHandlerInterface  {
+    public ::drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
   /**
    * A constructor.
@@ -42,7 +39,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator& translator,
-                      DrakeLcmInterface* lcm);
+                      ::drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -57,7 +54,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmTranslatorDictionary& translator_dictionary,
-                      DrakeLcmInterface* lcm);
+                      ::drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
 

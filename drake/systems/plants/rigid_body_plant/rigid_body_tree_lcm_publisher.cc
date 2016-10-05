@@ -9,7 +9,7 @@ const int kPortIndex = 0;
 }  // namespace
 
 RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
-    const RigidBodyTree& tree, ::drake::lcm::DrakeLcmInterface* lcm) :
+    const RigidBodyTree& tree, drake::lcm::DrakeLcmInterface* lcm) :
     lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
   set_name("rigid_body_tree_visualizer_lcm");

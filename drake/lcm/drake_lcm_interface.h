@@ -24,10 +24,10 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
   /**
    * Stops the receive thread. This must be called prior to any subscribers
    * being destroyed. Note that the receive thread will be automatically stopped
-   * by this class's destructor, so usage of of this method will be extremely
-   * rare. It will only be needed if this class's instance and the subscribers
-   * to LCM channels are owned by different classes. In such a scenario, this
-   * method can be used to ensure the receive thread is destroyed before the
+   * by this class's destructor, so usage of this method will be extremely rare.
+   * It will only be needed if this class's instance and the subscribers to LCM
+   * channels are owned by different classes. In such a scenario, this method
+   * can be used to ensure the receive thread is destroyed before the
    * subscribers are destroyed.
    *
    * @pre StartReceiveThread() was called.

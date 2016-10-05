@@ -11,11 +11,13 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+using ::drake::lcm::DrakeLcmInterface;
+
 using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator, lcm::DrakeLcmInterface* lcm)
+    const LcmAndVectorBaseTranslator& translator, DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator) {
   DRAKE_DEMAND(lcm);
@@ -27,7 +29,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
-    lcm::DrakeLcmInterface* lcm)
+    DrakeLcmInterface* lcm)
     : LcmSubscriberSystem(channel, translator_dictionary.GetTranslator(channel),
                           lcm) {}
 
@@ -77,8 +79,6 @@ std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
   return LeafSystem<double>::AllocateOutputVector(descriptor);
 }
 
-// void LcmSubscriberSystem::HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
-//                                         const std::string& channel) {
 void LcmSubscriberSystem::HandleMessage(const std::string& channel,
     const void* message_buffer, int message_size) {
   SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);

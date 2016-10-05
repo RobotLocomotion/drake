@@ -460,7 +460,7 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
 // Tests the basic functionality of the RigidBodyTreeLcmPublisher.
 GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
-  ::drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeMockLcm lcm;
   RigidBodyTreeLcmPublisher dut(*tree, &lcm);
 
   EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());

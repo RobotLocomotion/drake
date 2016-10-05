@@ -10,7 +10,6 @@
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
 
-
 namespace drake {
 namespace systems {
 
@@ -55,7 +54,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
    * published. This pointer must remain valid for the duration of this object.
    */
   RigidBodyTreeLcmPublisher(const RigidBodyTree& tree,
-      ::drake::lcm::DrakeLcmInterface* lcm);
+      drake::lcm::DrakeLcmInterface* lcm);
 
   void EvalOutput(const systems::Context<double>& context,
                   systems::SystemOutput<double>* output) const override {}
@@ -92,7 +91,7 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
-  ::drake::lcm::DrakeLcmInterface* const lcm_;
+  drake::lcm::DrakeLcmInterface* const lcm_;
 
   // Using 'mutable' here is OK since it's only used for assertion checking.
   mutable bool sent_load_robot_{false};
