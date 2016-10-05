@@ -18,7 +18,8 @@ Drake is currently undergoing a major renovation, with all of the core
 libraries moving into C++.  The examples will move and the existing APIs will
 change.  During this time, we recommend that users either engage deeply
 (contributing examples/tests which provide coverage of your use cases) or wait
-for a few months until the APIs have stabilized.
+for a few months until the APIs have stabilized.  For a stable release, consider
+checking out `this SHA <https://github.com/RobotLocomotion/drake/tree/last_sha_with_windows_support>`_.
 
 This change is fantastically exciting -- Drake is becoming a mature and powerful
 tool.  Thank you for your patience.
