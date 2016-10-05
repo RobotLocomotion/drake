@@ -3,40 +3,13 @@
 #include <memory>
 
 #include "drake/common/drake_export.h"
+#include "drake/examples/Pendulum/gen/pendulum_state.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
 namespace pendulum {
-
-/// The state of a one-dimensional pendulum system.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-template <typename T>
-class PendulumStateVector : public systems::BasicVector<T> {
- public:
-  PendulumStateVector(const T& initial_theta, const T& initial_thetadot);
-  PendulumStateVector();
-  ~PendulumStateVector() override;
-
-  T get_theta() const;
-  void set_theta(const T& theta);
-  T get_thetadot() const;
-  void set_thetadot(const T& thetadot);
-
-  explicit PendulumStateVector(const PendulumStateVector& other) = delete;
-  PendulumStateVector& operator=(const PendulumStateVector& other) = delete;
-  explicit PendulumStateVector(PendulumStateVector&& other) = delete;
-  PendulumStateVector& operator=(PendulumStateVector&& other) = delete;
-
- private:
-  PendulumStateVector<T>* DoClone() const override;
-};
 
 /// A model of a one-dimensional pendulum system, similar to the one
 /// described in Chapter 2 of Russ Tedrake. Underactuated Robotics:
@@ -100,26 +73,26 @@ class PendulumSystem : public systems::LeafSystem<T> {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
   }
 
-  static const PendulumStateVector<T>& get_state(
+  static const PendulumState<T>& get_state(
       const MyContinuousState& cstate) {
-    return dynamic_cast<const PendulumStateVector<T>&>(cstate.get_state());
+    return dynamic_cast<const PendulumState<T>&>(cstate.get_state());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(
+  static PendulumState<T>* get_mutable_state(
       MyContinuousState* cstate) {
-    return dynamic_cast<PendulumStateVector<T>*>(cstate->get_mutable_state());
+    return dynamic_cast<PendulumState<T>*>(cstate->get_mutable_state());
   }
 
-  static PendulumStateVector<T>* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<PendulumStateVector<T>*>(
+  static PendulumState<T>* get_mutable_output(MyOutput* output) {
+    return dynamic_cast<PendulumState<T>*>(
         output->GetMutableVectorData(0));
   }
 
-  static const PendulumStateVector<T>& get_state(const MyContext& context) {
+  static const PendulumState<T>& get_state(const MyContext& context) {
     return get_state(*context.get_continuous_state());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(MyContext* context) {
+  static PendulumState<T>* get_mutable_state(MyContext* context) {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
 

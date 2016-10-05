@@ -12,49 +12,6 @@ constexpr int kStateSize = 2;  // position, velocity
 }
 
 template <typename T>
-PendulumStateVector<T>::PendulumStateVector(
-    const T& initial_theta, const T& initial_thetadot)
-    : systems::BasicVector<T>(kStateSize) {
-  set_theta(initial_theta);
-  set_thetadot(initial_thetadot);
-}
-
-template <typename T>
-PendulumStateVector<T>::PendulumStateVector()
-    : PendulumStateVector(0., 0.) {}
-
-template <typename T>
-PendulumStateVector<T>::~PendulumStateVector() {}
-
-template <typename T>
-T PendulumStateVector<T>::get_theta() const {
-  return this->GetAtIndex(0);
-}
-
-template <typename T>
-void PendulumStateVector<T>::set_theta(const T& theta) {
-  this->SetAtIndex(0, theta);
-}
-
-template <typename T>
-T PendulumStateVector<T>::get_thetadot() const {
-  return this->GetAtIndex(1);
-}
-
-template <typename T>
-void PendulumStateVector<T>::set_thetadot(const T& thetadot) {
-  this->SetAtIndex(1, thetadot);
-}
-
-template <typename T>
-PendulumStateVector<T>* PendulumStateVector<T>::DoClone() const {
-  return new PendulumStateVector<T>(get_theta(), get_thetadot());
-}
-
-template class DRAKE_EXPORT PendulumStateVector<double>;
-template class DRAKE_EXPORT PendulumStateVector<AutoDiffXd>;
-
-template <typename T>
 PendulumSystem<T>::PendulumSystem() {
   this->DeclareInputPort(
       systems::kVectorValued, 1, systems::kContinuousSampling);
@@ -82,14 +39,14 @@ std::unique_ptr<systems::BasicVector<T>>
 PendulumSystem<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   DRAKE_THROW_UNLESS(descriptor.get_size() == kStateSize);
-  return std::make_unique<PendulumStateVector<T>>();
+  return std::make_unique<PendulumState<T>>();
 }
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 PendulumSystem<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<PendulumStateVector<T>>(),
+      std::make_unique<PendulumState<T>>(),
       1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
   static_assert(kStateSize == 1 + 1, "State size has changed");
 }
@@ -107,18 +64,18 @@ void PendulumSystem<T>::EvalTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
 
-  const PendulumStateVector<T>& state = get_state(context);
-  PendulumStateVector<T>* derivative_vector = get_mutable_state(derivatives);
+  const PendulumState<T>& state = get_state(context);
+  PendulumState<T>* derivative_vector = get_mutable_state(derivatives);
 
-  derivative_vector->set_theta(state.get_thetadot());
+  derivative_vector->set_theta(state.thetadot());
   // Pendulum formula from Section 2.2 of Russ Tedrake. Underactuated
   // Robotics: Algorithms for Walking, Running, Swimming, Flying, and
   // Manipulation (Course Notes for MIT 6.832). Downloaded on
   // 2016-09-30 from
   // http://underactuated.csail.mit.edu/underactuated.html?chapter=2
   derivative_vector->set_thetadot(
-      (get_tau(context) - m_ * g_ * lc_ * sin(state.get_theta()) -
-       b_ * state.get_thetadot()) / I_);
+      (get_tau(context) - m_ * g_ * lc_ * sin(state.theta()) -
+       b_ * state.thetadot()) / I_);
 }
 
 template class DRAKE_EXPORT PendulumSystem<double>;
