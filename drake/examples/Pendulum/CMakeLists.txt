@@ -31,10 +31,11 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
   target_link_libraries(pendulum_run_energy_shaping
-    drakeRBM
-    drakeLCMSystem
-    threads)
-  # drake_add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
+    drakePendulumSystem
+    drakeRigidBodyPlant
+    drakeSystemAnalysis)
+  drake_add_test(NAME pendulum_run_energy_shaping
+    COMMAND pendulum_run_energy_shaping)
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
   target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
