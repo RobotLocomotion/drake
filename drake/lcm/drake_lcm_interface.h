@@ -35,7 +35,7 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
   virtual void StopReceiveThread() = 0;
 
   /**
-   * Publishes a raw data LCM message.
+   * Publishes an LCM message on channel @p channel.
    *
    * @param[in] channel The channel on which to publish the message.
    *
@@ -48,14 +48,9 @@ class DRAKELCM_EXPORT DrakeLcmInterface {
                        int data_size) = 0;
 
   /**
-   * Subscribes a callback method of an object to an LCM channel, without
-   * automatic message decoding.
-   *
-   * This method is designed for use when automatic message decoding is
-   * not desired.
-   *
-   * The callback method will be invoked on the object when a message
-   * arrives on the specified channel.
+   * Subscribes to an LCM channel without automatic message decoding. The
+   * callback method within @p handler will be invoked when a message arrives on
+   * channel @p channel.
    *
    * @param[in] channel The channel to subscribe to.
    *
