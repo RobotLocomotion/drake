@@ -79,6 +79,7 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   }
   expected_message.timestamp = static_cast<int64_t>(time * 1000);
 
+  // TODO(liang.fok) Replace this with a Google Test matcher.
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message,
                                              expected_message));
 }
