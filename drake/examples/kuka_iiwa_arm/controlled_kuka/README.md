@@ -1,9 +1,11 @@
-# About This Demo
+# Controlled KUKA iiwa Arm Demo
+
+## About This Demo
 
 This demo shows the KUKA iiwa arm following a simple IK trajectory. It is
 controlled using a PID joint position controller with gravity compensation.
 
-# How To Run The Demo
+## How To Run The Demo
 
 Open two terminals. In the first terminal, start Drake Visualizer:
 
