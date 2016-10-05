@@ -29,16 +29,12 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   dut.Publish(channel_name, &message_bytes[0], message_size);
 
   // Verifies that the message was "published".
-  void* published_message_bytes = nullptr;
-  int published_message_size{};
+  const std::vector<uint8_t>& published_message_bytes =
+      dut.get_last_published_message(channel_name);
 
-  EXPECT_TRUE(dut.get_last_published_message(channel_name,
-    &published_message_bytes, &published_message_size));
-
-  EXPECT_EQ(message_size, published_message_size);
+  EXPECT_EQ(message_size, published_message_bytes.size());
   for (int i = 0; i < message_size; ++i) {
-    EXPECT_EQ(static_cast<uint8_t*>(published_message_bytes)[i],
-        message_bytes[i]);
+    EXPECT_EQ(published_message_bytes[i], message_bytes[i]);
   }
 
   dut.StopReceiveThread();

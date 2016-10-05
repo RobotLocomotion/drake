@@ -63,14 +63,12 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   dut->Publish(*context.get());
 
   // Verifies that the correct message was published.
-  void* published_message_bytes = nullptr;
-  int published_message_size{};
-
-  EXPECT_TRUE(lcm->get_last_published_message(dut->get_channel_name(),
-    &published_message_bytes, &published_message_size));
+  const std::vector<uint8_t>& published_message_bytes =
+      lcm->get_last_published_message(dut->get_channel_name());
 
   drake::lcmt_drake_signal received_message;
-  received_message.decode(published_message_bytes, 0, published_message_size);
+  received_message.decode(&published_message_bytes[0], 0,
+      published_message_bytes.size());
 
   drake::lcmt_drake_signal expected_message;
   expected_message.dim = kDim;

@@ -36,16 +36,13 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    *
    * @param[in] channel The channel on which the LCM message was published.
    *
-   * @param[out] data A pointer to where the pointer to the message's serialized
-   * byte array should be saved.
+   * @return A reference to a vector containing the serialized bytes of the
+   * LCM message that was previously published on channel @p channel.
    *
-   * @param[out] data_size A pointer to where the size of the byte array should
-   * be saved.
-   *
-   * @return `true` if a message was published, `false` otherwise.
+   * @pre A message was previously published on channel @p channel.
    */
-  bool get_last_published_message(const std::string& channel, void** data,
-      int* data_size);
+  const std::vector<uint8_t>& get_last_published_message(const std::string&
+      channel) const;
 
   /**
    * Creates a subscription. Only one subscription per channel name is
@@ -76,7 +73,6 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   struct LastPublishedMessage {
     std::string channel{};
     std::vector<uint8_t> data{};
-    int data_size{};
   };
 
   std::map<std::string, LastPublishedMessage> last_published_messages_;

@@ -35,22 +35,20 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
   saved_message->channel = channel;
   const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
   saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
-  saved_message->data_size = data_size;
 }
 
-bool DrakeMockLcm::get_last_published_message(const std::string& channel,
-    void** data, int* data_size) {
-  bool result{true};
+const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
+    const std::string& channel) const {
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
-    result = false;
-  } else {
-    LastPublishedMessage* message = &last_published_messages_[channel];
-    DRAKE_DEMAND(message);
-    *data = &message->data[0];
-    *data_size = message->data_size;
+    throw std::runtime_error("DrakeMockLcm::get_last_published_message: ERROR: "
+        "No message was previous published on channel \"" + channel + "\".");
   }
-  return result;
+
+  const LastPublishedMessage* message = &last_published_messages_.at(channel);
+  DRAKE_DEMAND(message);
+
+  return message->data;
 }
 
 void DrakeMockLcm::Subscribe(const std::string& channel,

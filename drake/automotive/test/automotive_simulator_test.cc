@@ -68,18 +68,15 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
   // messages fields are checked.
-  void* published_message_bytes = nullptr;
-  int published_message_size{};
-
   lcm::DrakeMockLcm* mock_lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(nullptr, mock_lcm);
-  EXPECT_TRUE(mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW",
-      &published_message_bytes, &published_message_size));
+  const std::vector<uint8_t>& published_message_bytes =
+      mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW");
 
   drake::lcmt_viewer_draw published_draw_message;
-  EXPECT_GT(published_draw_message.decode(published_message_bytes, 0,
-      published_message_size), 0);
+  EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
+      published_message_bytes.size()), 0);
 
   EXPECT_EQ(published_draw_message.num_links, 2);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
