@@ -26,12 +26,11 @@ typedef uintptr_t ElementId;
  * between `RigidBody` instances are determined by performing geometry analysis
  * on the `RigidBody` instances' corresponding collision `Element`s.  As such,
  * The `Element` combines three pieces of data:
- * - the geometric definition of the element's collidng shape (a `Geometry`
+ * - the geometric definition of the element's colliding shape (a `Geometry`
  *   instance referred to as its "geometry").
- * - the transform (T_LE) from the space the shape is defined in (element) to
- *   its position in the `RigidBody`'s "local" space (an instance of
- *   `Eigen::Isometry3d` referred to as its "pose").
- *   i.e. p_L = T_LE * p_E
+ * - the transform `T_element_to_local` (T_LE) giving the pose of the element's
+ *   frame E in the body's local frame L, with the sense that p_L = T_LE * p_E
+ *   for points measured and expressed in frames L and E, respectively.
  * - the `RigidBody` instance to which this element belongs (its "body").  A
  *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
  *   can only belong to a single `RigidBody`.
@@ -64,11 +63,11 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   /**
    * Full constructor.
    * @param[in] geometry            The colliding geometry.
-   * @param[in] T_element_to_link   The pose.
+   * @param[in] T_element_to_local   The pose.
    * @param[in] body                The associated rigid body.
    */
   Element(const DrakeShapes::Geometry& geometry,
-          const Eigen::Isometry3d& T_element_to_link, const RigidBody* body);
+          const Eigen::Isometry3d& T_element_to_local, const RigidBody* body);
 
   virtual ~Element() {}
 
