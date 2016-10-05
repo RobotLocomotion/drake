@@ -1,42 +1,43 @@
 #include "drake/common/symbolic_variable.h"
 
+#include <atomic>
 #include <iostream>
 #include <sstream>
 #include <string>
 
-#include "drake/common/drake_assert.h"
-
-using std::string;
+using std::atomic;
 using std::ostream;
 using std::ostringstream;
+using std::string;
 
 namespace drake {
 namespace symbolic {
 
-size_t Variable::next_id_{};
+size_t Variable::get_next_id() {
+  // Purposefully leaked to avoid static initialization fiasco.
+  static atomic<size_t>* next_id = new atomic<size_t>{0};
+  return (*next_id)++;
+}
 
-Variable::Variable(std::string const& name) : id_(next_id_++), name_(name) {}
+Variable::Variable(const string& name) : id_(get_next_id()), name_(name) {}
 size_t Variable::get_id() const { return id_; }
-std::string Variable::get_name() const { return name_; }
-bool operator<(Variable const& lhs, Variable const& rhs) {
+string Variable::get_name() const { return name_; }
+string Variable::to_string() const {
+  ostringstream oss;
+  oss << *this;
+  return oss.str();
+}
+bool operator<(const Variable& lhs, const Variable& rhs) {
   return lhs.get_id() < rhs.get_id();
 }
-bool operator==(Variable const& lhs, Variable const& rhs) {
+bool operator==(const Variable& lhs, const Variable& rhs) {
   return lhs.get_id() == rhs.get_id();
 }
 
-ostream& operator<<(ostream& os, Variable const& var) {
+ostream& operator<<(ostream& os, const Variable& var) {
   os << var.get_name();
   return os;
 }
 
 }  // namespace symbolic
 }  // namespace drake
-
-namespace std {
-string to_string(drake::symbolic::Variable const& v) {
-  ostringstream oss;
-  oss << v;
-  return oss.str();
-}
-}  // namespace std
