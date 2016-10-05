@@ -11,16 +11,21 @@ namespace systems {
 namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
-  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AScalar;
+  SpringMassSystem<double> spring_mass_dbl(1., 1., 0.);
+  SpringMassSystem<AScalar> spring_mass_ad(1., 1., 0.);
 
   // Setup the integration step size.
   const double DT = 1e-3;
 
   // Create a context.
-  auto context = spring_mass.CreateDefaultContext();
+  auto context_dbl = spring_mass_dbl.CreateDefaultContext();
+  auto context_ad = spring_mass_ad.CreateDefaultContext();
 
-  // Create the integrator.
-  ExplicitEulerIntegrator<double> integrator(spring_mass, DT, context.get());
+  // Create the integrator as a double and as an autodiff type
+  ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, DT,
+                                          context_dbl.get());
+  ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, DT, context_ad.get());
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {

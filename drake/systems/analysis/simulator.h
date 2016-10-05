@@ -62,17 +62,18 @@ template <typename T>
 class Simulator {
  public:
   /** Create a %Simulator that can advance a given System through time to
-  produce a trajectory consisting of a sequence of Context values. The System
-  must not have unresolved input ports if the values of those ports are
-  necessary for computations performed during simulation (see class
-  documentation).
-
-  The Simulator holds an internal, non-owned reference to the System
-  object so you must ensure that `system` has a longer lifetime than the
-  %Simulator. It also owns a compatible Context internally that takes on each
-  of the trajectory values. You may optionally provide a Context that will be
-  used as the initial condition for the simulation; otherwise the %Simulator
-  will obtain a default Context from `system`. **/
+   * produce a trajectory consisting of a sequence of Context values. The System
+   * must not have unresolved input ports if the values of those ports are
+   * necessary for computations performed during simulation (see class
+   * documentation).
+   *
+   * The Simulator holds an internal, non-owned reference to the System
+   * object so you must ensure that `system` has a longer lifetime than the
+   * %Simulator. It also owns a compatible Context internally that takes on each
+   * of the trajectory values. You may optionally provide a Context that will be
+   * used as the initial condition for the simulation; otherwise the %Simulator
+   * will obtain a default Context from `system`.
+   **/
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
@@ -101,19 +102,23 @@ class Simulator {
   void StepTo(const T& final_time);
 
   /** Returns a const reference to the internally-maintained Context holding the
-  most recent step in the trajectory. This is suitable for publishing or
-  extracting information about this trajectory step. **/
+   * most recent step in the trajectory. This is suitable for publishing or
+   * extracting information about this trajectory step.
+   **/
   const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding the
-  most recent step in the trajectory. This is suitable for use in updates,
-  sampling operations, event handlers, and constraint projection. You can
-  also modify this prior to calling Initialize() to set initial conditions. **/
+   * most recent step in the trajectory. This is suitable for use in updates,
+   * sampling operations, event handlers, and constraint projection. You can
+   * also modify this prior to calling Initialize() to set initial conditions.
+   **/
   Context<T>* get_mutable_context() { return context_.get(); }
 
   /** Replace the internally-maintained Context with a different one. The
-  current Context is deleted. This is useful for supplying a new set of initial
-  conditions. You should invoke Initialize() after replacing the Context. **/
+   * current Context is deleted. This is useful for supplying a new set of
+   * initial conditions. You should invoke Initialize() after replacing the
+   * Context.
+   **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
     integrator_->reset_context(context_.get());
@@ -128,12 +133,9 @@ class Simulator {
     return std::move(context_);
   }
 
-  /** @name                       Statistics
-  These methods track relevant activity of the %Simulator since the last call
-  to `Initialize()`. **/
-  /**@{**/
-  /** Forget accumulated statistics. These are reset to the values they have
-  post construction or immediately after `Initialize()`. **/
+  /** Forget accumulated statistics. Statistics are reset to the values they
+   * have post construction or immediately after `Initialize()`.
+   **/
   void ResetStatistics() {
     integrator_->ResetStatistics();
     num_steps_taken_ = 0;
@@ -151,7 +153,7 @@ class Simulator {
   call? **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** How many discrete update events have been processed since the last
+  /** How many difference equation updates have been performed since the last
   Initialize() call? **/
   int64_t get_num_updates() const { return num_updates_; }
   /**@}**/
@@ -177,7 +179,7 @@ class Simulator {
   U* reset_integrator(Args&&... args) {
     integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
     integrator_->Initialize();
-    return integrator_.get();
+    return static_cast<U*>(integrator_.get());
   }
 
  private:

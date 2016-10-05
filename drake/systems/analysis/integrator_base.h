@@ -379,8 +379,8 @@ class IntegratorBase {
  * @return the reason for the integration step ending
  */
 template <class T>
-typename IntegratorBase<T>::StepResult Step(const T& publish_dt,
-                                           const T& update_dt) {
+typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
+    const T& publish_dt, const T& update_dt) {
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
@@ -397,7 +397,7 @@ typename IntegratorBase<T>::StepResult Step(const T& publish_dt,
   const T& dt = *stop_dts[0];
   if (dt < 0.0)
     throw std::logic_error("Negative dt.");
-  IntegratorBase<T>::DoStep(dt);
+  DoStep(dt);
 
   // Return depending on the step taken.
   if (&dt == &max_step_size)
