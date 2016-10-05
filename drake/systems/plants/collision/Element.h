@@ -28,9 +28,10 @@ typedef uintptr_t ElementId;
  * The `Element` combines three pieces of data:
  * - the geometric definition of the element's collidng shape (a `Geometry`
  *   instance referred to as its "geometry").
- * - the transform from the space the shape is defined in (element) to its
- *   position in the `RigidBody`'s local space (an instance of
+ * - the transform (T_LE) from the space the shape is defined in (element) to
+ *   its position in the `RigidBody`'s "local" space (an instance of
  *   `Eigen::Isometry3d` referred to as its "pose").
+ *   i.e. p_L = T_LE * p_E
  * - the `RigidBody` instance to which this element belongs (its "body").  A
  *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
  *   can only belong to a single `RigidBody`.
@@ -55,7 +56,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   /**
    * Body constructor. Defines body and pose but no geometry.
    * @param[in] T_element_to_local      The pose (defaults to identity).
-   * @param[in] body                The associated rigid body.
+   * @param[in] body                    The associated rigid body.
    */
   Element(const Eigen::Isometry3d& T_element_to_local,
           const RigidBody* body);
