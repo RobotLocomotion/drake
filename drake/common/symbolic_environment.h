@@ -1,7 +1,8 @@
 #pragma once
 
 #include <initializer_list>
-#include <iostream>
+#include <ostream>
+#include <string>
 #include <unordered_map>
 
 #include "drake/common/symbolic_variable.h"
@@ -11,7 +12,7 @@ namespace drake {
 
 namespace symbolic {
 
-/** \brief Represent a symbolic form of an environment (mapping from a variable
+/** Represent a symbolic form of an environment (mapping from a variable
  * to a value).
  */
 class DRAKECOMMON_EXPORT Environment {
@@ -19,11 +20,6 @@ class DRAKECOMMON_EXPORT Environment {
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
   typedef typename std::unordered_map<key_type, mapped_type> map;
-
- private:
-  map map_;
-
- public:
   typedef typename map::value_type
       value_type; /** std::pair<key_type, mapped_type> */
   typedef typename map::iterator iterator;
@@ -36,13 +32,13 @@ class DRAKECOMMON_EXPORT Environment {
   Environment(Environment&& e) = default;
 
   /** Copy-construct a set from an lvalue. */
-  Environment(Environment const& e) = default;
+  Environment(const Environment& e) = default;
 
   /** Move-assign a set from an rvalue. */
   Environment& operator=(Environment&& e) = default;
 
   /** Copy-assign a set from an lvalue. */
-  Environment& operator=(Environment const& e) = default;
+  Environment& operator=(const Environment& e) = default;
 
   /** List constructor. */
   Environment(std::initializer_list<value_type> init);
@@ -54,22 +50,21 @@ class DRAKECOMMON_EXPORT Environment {
   const_iterator cbegin() const { return map_.cbegin(); }
   const_iterator cend() const { return map_.cend(); }
 
-  void insert(key_type const & key, mapped_type const & elem);
+  void insert(const key_type& key, const mapped_type& elem);
 
   bool empty() const { return map_.empty(); }
   size_t size() const { return map_.size(); }
 
-  iterator find(key_type const& key) { return map_.find(key); }
-  const_iterator find(key_type const& key) const { return map_.find(key); }
+  iterator find(const key_type& key) { return map_.find(key); }
+  const_iterator find(const key_type& key) const { return map_.find(key); }
+
+  std::string to_string() const;
 
   friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream& os,
-                                                     Environment const& env);
+                                                     const Environment& env);
+
+ private:
+  map map_;
 };
 }  // namespace symbolic
 }  // namespace drake
-
-namespace std {
-/** Provide std::to_string for drake::symbolic::Environment. */
-DRAKECOMMON_EXPORT std::string to_string(
-    drake::symbolic::Environment const& env);
-}  // namespace std

@@ -1,36 +1,32 @@
 #include "drake/common/symbolic_expression.h"
 
 #include <cmath>
-#include <iostream>
-#include <sstream>
+#include <functional>
+#include <memory>
 #include <stdexcept>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_environment.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/primitives/gain-inl.h"
 #include "drake/systems/framework/system_input.h"
 #include "gtest/gtest.h"
 
-using std::cerr;
-using std::endl;
 using std::domain_error;
 using std::equal_to;
 using std::make_unique;
-using std::ostringstream;
 using std::runtime_error;
-using std::string;
-using std::to_string;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
 GTEST_TEST(ExpressionTest, Variable) {
@@ -40,9 +36,9 @@ GTEST_TEST(ExpressionTest, Variable) {
   Expression const x{var_x};
   Expression const y{var_y};
   Expression const z{var_z};
-  EXPECT_EQ(to_string(x), var_x.get_name());
-  EXPECT_EQ(to_string(y), var_y.get_name());
-  EXPECT_EQ(to_string(z), var_z.get_name());
+  EXPECT_EQ(x.to_string(), var_x.get_name());
+  EXPECT_EQ(y.to_string(), var_y.get_name());
+  EXPECT_EQ(z.to_string(), var_z.get_name());
   EXPECT_TRUE(x.EqualTo(x));
   EXPECT_FALSE(x.EqualTo(y));
   EXPECT_FALSE(x.EqualTo(z));
@@ -59,10 +55,10 @@ GTEST_TEST(ExpressionTest, Constant) {
   Expression const c2{1.0};
   Expression const c3{3.14159};
   Expression const c4{-2.718};
-  EXPECT_EQ(to_string(c1), "0");
-  EXPECT_EQ(to_string(c2), "1");
-  EXPECT_EQ(to_string(c3), "3.14159");
-  EXPECT_EQ(to_string(c4), "-2.718");
+  EXPECT_EQ(c1.to_string(), "0");
+  EXPECT_EQ(c2.to_string(), "1");
+  EXPECT_EQ(c3.to_string(), "3.14159");
+  EXPECT_EQ(c4.to_string(), "-2.718");
 }
 
 GTEST_TEST(ExpressionTest, StaticConstant) {
@@ -75,10 +71,10 @@ GTEST_TEST(ExpressionTest, StaticConstant) {
 GTEST_TEST(ExpressionTest, HASH1) {
   Variable const var_x{"x"};
   Expression x{var_x};
-  Expression x_(x);
-  EXPECT_EQ(x.get_hash(), x_.get_hash());
+  Expression const x_prime(x);
+  EXPECT_EQ(x.get_hash(), x_prime.get_hash());
   x++;
-  EXPECT_NE(x.get_hash(), x_.get_hash());
+  EXPECT_NE(x.get_hash(), x_prime.get_hash());
 }
 
 GTEST_TEST(ExpressionTest, HASH_BINARY) {
@@ -161,19 +157,19 @@ GTEST_TEST(ExpressionTest, ADD1) {
   Expression const c2{-2.718};
 
   EXPECT_TRUE((c1 + zero).EqualTo(c1));
-  EXPECT_EQ(to_string(c1 + zero), to_string(c1));
+  EXPECT_EQ((c1 + zero).to_string(), c1.to_string());
   EXPECT_TRUE((zero + c1).EqualTo(c1));
-  EXPECT_EQ(to_string(zero + c1), to_string(c1));
+  EXPECT_EQ((zero + c1).to_string(), c1.to_string());
   EXPECT_TRUE((0.0 + c1).EqualTo(c1));
-  EXPECT_EQ(to_string(0.0 + c1), to_string(c1));
+  EXPECT_EQ((0.0 + c1).to_string(), c1.to_string());
   EXPECT_TRUE((c1 + 0.0).EqualTo(c1));
-  EXPECT_EQ(to_string(c1 + 0.0), to_string(c1));
+  EXPECT_EQ((c1 + 0.0).to_string(), c1.to_string());
   EXPECT_TRUE(equal_to<Expression>{}(c1 + c2, Expression{3.14159 + -2.718}));
-  EXPECT_EQ(to_string(c1 + c2), to_string(Expression{3.14159 + -2.718}));
+  EXPECT_EQ((c1 + c2).to_string(), Expression{3.14159 + -2.718}.to_string());
   EXPECT_TRUE(equal_to<Expression>{}(c1 + x, 3.14159 + x));
-  EXPECT_EQ(to_string(c1 + x), "(3.14159 + x)");
+  EXPECT_EQ((c1 + x).to_string(), "(3.14159 + x)");
   EXPECT_TRUE(equal_to<Expression>{}(x + c1, x + 3.14159));
-  EXPECT_EQ(to_string(x + c1), "(x + 3.14159)");
+  EXPECT_EQ((x + c1).to_string(), "(x + 3.14159)");
 }
 
 GTEST_TEST(ExpressionTest, ADD2) {
@@ -189,37 +185,37 @@ GTEST_TEST(ExpressionTest, ADD2) {
 
   Expression e1 = x + y;
   Expression e2 = e1 + e1;
-  EXPECT_EQ(to_string(e1), "(x + y)");
-  EXPECT_EQ(to_string(e2), "((x + y) + (x + y))");
+  EXPECT_EQ(e1.to_string(), "(x + y)");
+  EXPECT_EQ(e2.to_string(), "((x + y) + (x + y))");
   e1 += z;
-  EXPECT_EQ(to_string(e1), "((x + y) + z)");
-  EXPECT_EQ(to_string(e2), "((x + y) + (x + y))");  // e2 doesn't change.
+  EXPECT_EQ(e1.to_string(), "((x + y) + z)");
+  EXPECT_EQ(e2.to_string(), "((x + y) + (x + y))");  // e2 doesn't change.
 }
 
 GTEST_TEST(ExpressionTest, INC1) {
   // Prefix increment
   Variable const var_x{"x"};
   Expression x{var_x};
-  Expression x_{var_x};
+  Expression x_prime{var_x};
 
-  EXPECT_TRUE(x.EqualTo(x_));
-  EXPECT_TRUE(x++.EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_++));
-  EXPECT_TRUE(x.EqualTo(x_));
+  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_TRUE(x++.EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime++));
+  EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
 GTEST_TEST(ExpressionTest, INC2) {
   // Postfix increment
   Variable const var_x{"x"};
   Expression x{var_x};
-  Expression x_{var_x};
+  Expression x_prime{var_x};
 
-  EXPECT_TRUE(x.EqualTo(x_));
-  EXPECT_FALSE((++x).EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_));
-  EXPECT_TRUE(x.EqualTo(++x_));
-  EXPECT_TRUE(x.EqualTo(x_));
+  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_FALSE((++x).EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime));
+  EXPECT_TRUE(x.EqualTo(++x_prime));
+  EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
 GTEST_TEST(ExpressionTest, INC3) {
@@ -242,15 +238,15 @@ GTEST_TEST(ExpressionTest, SUB1) {
   Expression const c1{3.14159};
   Expression const c2{-2.718};
 
-  EXPECT_EQ(to_string(c1 - zero), to_string(c1));
-  EXPECT_EQ(to_string(zero - c1), "-3.14159");
-  EXPECT_EQ(to_string(0.0 - c1), "-3.14159");
-  EXPECT_EQ(to_string(0.0 - c1), to_string(-1 * c1));
-  EXPECT_EQ(to_string(c1 - 0.0), to_string(c1));
+  EXPECT_EQ((c1 - zero).to_string(), c1.to_string());
+  EXPECT_EQ((zero - c1).to_string(), "-3.14159");
+  EXPECT_EQ((0.0 - c1).to_string(), "-3.14159");
+  EXPECT_EQ((0.0 - c1).to_string(), (-1 * c1).to_string());
+  EXPECT_EQ((c1 - 0.0).to_string(), c1.to_string());
 
-  EXPECT_EQ(to_string(c1 - c2), to_string(Expression{3.14159 - -2.718}));
-  EXPECT_EQ(to_string(c1 - x), "(3.14159 - x)");
-  EXPECT_EQ(to_string(x - c1), "(x - 3.14159)");
+  EXPECT_EQ((c1 - c2).to_string(), Expression{3.14159 - -2.718}.to_string());
+  EXPECT_EQ((c1 - x).to_string(), "(3.14159 - x)");
+  EXPECT_EQ((x - c1).to_string(), "(x - 3.14159)");
 }
 
 GTEST_TEST(ExpressionTest, SUB2) {
@@ -267,12 +263,12 @@ GTEST_TEST(ExpressionTest, SUB2) {
   Expression e1 = x - y;
   Expression e2 = x - z;
   Expression e3 = e1 - e2;
-  EXPECT_EQ(to_string(e1), "(x - y)");
-  EXPECT_EQ(to_string(e2), "(x - z)");
-  EXPECT_EQ(to_string(e3), "((x - y) - (x - z))");
+  EXPECT_EQ(e1.to_string(), "(x - y)");
+  EXPECT_EQ(e2.to_string(), "(x - z)");
+  EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");
   e1 -= z;
-  EXPECT_EQ(to_string(e1), "((x - y) - z)");
-  EXPECT_EQ(to_string(e3), "((x - y) - (x - z))");  // e3 doesn't change.
+  EXPECT_EQ(e1.to_string(), "((x - y) - z)");
+  EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");  // e3 doesn't change.
 }
 
 GTEST_TEST(ExpressionTest, SUB3) {
@@ -284,35 +280,35 @@ GTEST_TEST(ExpressionTest, SUB3) {
   Expression e1 = x - y;
   Expression e2 = x - y;
   Expression e3 = e1 - e2;
-  EXPECT_EQ(to_string(e1), "(x - y)");
-  EXPECT_EQ(to_string(e2), "(x - y)");
-  EXPECT_EQ(to_string(e3), "0");  // simplified
+  EXPECT_EQ(e1.to_string(), "(x - y)");
+  EXPECT_EQ(e2.to_string(), "(x - y)");
+  EXPECT_EQ(e3.to_string(), "0");  // simplified
 }
 
 GTEST_TEST(ExpressionTest, DEC1) {
   // Postfix decrement.
   Variable const var_x{"x"};
   Expression x{var_x};
-  Expression x_{var_x};
+  Expression x_prime{var_x};
 
-  EXPECT_TRUE(x.EqualTo(x_));
-  EXPECT_TRUE(x--.EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_--));
-  EXPECT_TRUE(x.EqualTo(x_));
+  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_TRUE(x--.EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime--));
+  EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
 GTEST_TEST(ExpressionTest, DEC2) {
   // Prefix decrement.
   Variable const var_x{"x"};
   Expression x{var_x};
-  Expression x_{var_x};
+  Expression x_prime{var_x};
 
-  EXPECT_TRUE(x.EqualTo(x_));
-  EXPECT_FALSE((--x).EqualTo(x_));
-  EXPECT_FALSE(x.EqualTo(x_));
-  EXPECT_TRUE(x.EqualTo(--x_));
-  EXPECT_TRUE(x.EqualTo(x_));
+  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_FALSE((--x).EqualTo(x_prime));
+  EXPECT_FALSE(x.EqualTo(x_prime));
+  EXPECT_TRUE(x.EqualTo(--x_prime));
+  EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
 GTEST_TEST(ExpressionTest, DEC3) {
@@ -336,19 +332,19 @@ GTEST_TEST(ExpressionTest, MUL1) {
   Expression const c1{3.14159};
   Expression const c2{-2.718};
 
-  EXPECT_EQ(to_string(c1 * zero), to_string(zero));
-  EXPECT_EQ(to_string(zero * c1), to_string(zero));
-  EXPECT_EQ(to_string(c1 * 0.0), to_string(zero));
-  EXPECT_EQ(to_string(0.0 * c1), to_string(zero));
+  EXPECT_EQ((c1 * zero).to_string(), zero.to_string());
+  EXPECT_EQ((zero * c1).to_string(), zero.to_string());
+  EXPECT_EQ((c1 * 0.0).to_string(), zero.to_string());
+  EXPECT_EQ((0.0 * c1).to_string(), zero.to_string());
 
-  EXPECT_EQ(to_string(c1 * one), to_string(c1));
-  EXPECT_EQ(to_string(one * c1), to_string(c1));
-  EXPECT_EQ(to_string(1.0 * c1), to_string(c1));
-  EXPECT_EQ(to_string(c1 * 1.0), to_string(c1));
+  EXPECT_EQ((c1 * one).to_string(), c1.to_string());
+  EXPECT_EQ((one * c1).to_string(), c1.to_string());
+  EXPECT_EQ((1.0 * c1).to_string(), c1.to_string());
+  EXPECT_EQ((c1 * 1.0).to_string(), c1.to_string());
 
-  EXPECT_EQ(to_string(c1 * c2), to_string(Expression{3.14159 * -2.718}));
-  EXPECT_EQ(to_string(c1 * x), "(3.14159 * x)");
-  EXPECT_EQ(to_string(x * c1), "(x * 3.14159)");
+  EXPECT_EQ((c1 * c2).to_string(), Expression{3.14159 * -2.718}.to_string());
+  EXPECT_EQ((c1 * x).to_string(), "(3.14159 * x)");
+  EXPECT_EQ((x * c1).to_string(), "(x * 3.14159)");
 }
 
 GTEST_TEST(ExpressionTest, MUL2) {
@@ -365,11 +361,11 @@ GTEST_TEST(ExpressionTest, MUL2) {
 
   Expression e1 = x * y;
   Expression e2 = e1 * e1;
-  EXPECT_EQ(to_string(e1), "(x * y)");
-  EXPECT_EQ(to_string(e2), "((x * y) * (x * y))");
+  EXPECT_EQ(e1.to_string(), "(x * y)");
+  EXPECT_EQ(e2.to_string(), "((x * y) * (x * y))");
   e1 *= z;
-  EXPECT_EQ(to_string(e1), "((x * y) * z)");
-  EXPECT_EQ(to_string(e2), "((x * y) * (x * y))");  // e2 doesn't change.
+  EXPECT_EQ(e1.to_string(), "((x * y) * z)");
+  EXPECT_EQ(e2.to_string(), "((x * y) * (x * y))");  // e2 doesn't change.
 }
 
 GTEST_TEST(ExpressionTest, DIV1) {
@@ -383,16 +379,16 @@ GTEST_TEST(ExpressionTest, DIV1) {
   Expression const c2{-2.718};
 
   EXPECT_THROW(c1 / zero, runtime_error);
-  EXPECT_EQ(to_string(zero / c1), to_string(zero));
+  EXPECT_EQ((zero / c1).to_string(), zero.to_string());
   EXPECT_THROW(c1 / 0.0, runtime_error);
-  EXPECT_EQ(to_string(0.0 / c1), to_string(zero));
+  EXPECT_EQ((0.0 / c1).to_string(), zero.to_string());
 
-  EXPECT_EQ(to_string(c1 / one), to_string(c1));
-  EXPECT_EQ(to_string(c1 / 1.0), to_string(c1));
+  EXPECT_EQ((c1 / one).to_string(), c1.to_string());
+  EXPECT_EQ((c1 / 1.0).to_string(), c1.to_string());
 
-  EXPECT_EQ(to_string(c1 / c2), to_string(Expression{3.14159 / -2.718}));
-  EXPECT_EQ(to_string(c1 / x), "(3.14159 / x)");
-  EXPECT_EQ(to_string(x / c1), "(x / 3.14159)");
+  EXPECT_EQ((c1 / c2).to_string(), Expression{3.14159 / -2.718}.to_string());
+  EXPECT_EQ((c1 / x).to_string(), "(3.14159 / x)");
+  EXPECT_EQ((x / c1).to_string(), "(x / 3.14159)");
 }
 
 GTEST_TEST(ExpressionTest, DIV2) {
@@ -410,12 +406,12 @@ GTEST_TEST(ExpressionTest, DIV2) {
   Expression e1 = x / y;
   Expression e2 = x / z;
   Expression e3 = e1 / e2;
-  EXPECT_EQ(to_string(e1), "(x / y)");
-  EXPECT_EQ(to_string(e2), "(x / z)");
-  EXPECT_EQ(to_string(e3), "((x / y) / (x / z))");
+  EXPECT_EQ(e1.to_string(), "(x / y)");
+  EXPECT_EQ(e2.to_string(), "(x / z)");
+  EXPECT_EQ(e3.to_string(), "((x / y) / (x / z))");
   e1 /= z;
-  EXPECT_EQ(to_string(e1), "((x / y) / z)");
-  EXPECT_EQ(to_string(e3), "((x / y) / (x / z))");  // e2 doesn't change.
+  EXPECT_EQ(e1.to_string(), "((x / y) / z)");
+  EXPECT_EQ(e3.to_string(), "((x / y) / (x / z))");  // e2 doesn't change.
 }
 
 GTEST_TEST(ExpressionTest, DIV3) {
@@ -427,9 +423,9 @@ GTEST_TEST(ExpressionTest, DIV3) {
   Expression e1 = x / y;
   Expression e2 = x / y;
   Expression e3 = e1 / e2;
-  EXPECT_EQ(to_string(e1), "(x / y)");
-  EXPECT_EQ(to_string(e2), "(x / y)");
-  EXPECT_EQ(to_string(e3), "1");  // simplified
+  EXPECT_EQ(e1.to_string(), "(x / y)");
+  EXPECT_EQ(e2.to_string(), "(x / y)");
+  EXPECT_EQ(e3.to_string(), "1");  // simplified
 }
 
 GTEST_TEST(ExpressionTest, unordered_set) {
@@ -741,7 +737,7 @@ GTEST_TEST(ExpressionTest, atan) {
   EXPECT_DOUBLE_EQ(atan(neg_pi).Evaluate(), std::atan(-3.141592));
 
   Expression const e = atan(x * y * pi) + atan(x) + atan(y);
-  Environment env{{var_x, 0.2}, {var_y, 0.3}};
+  Environment const env{{var_x, 0.2}, {var_y, 0.3}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::atan(0.2 * 0.3 * 3.141592) +
                                         std::atan(0.2) + std::atan(0.3));
 }
@@ -805,7 +801,7 @@ GTEST_TEST(ExpressionTest, atan2) {
                    std::atan2(-3.141592, -3.141592));
 
   Expression const e = atan2(x * y * pi, sin(x) + sin(y));
-  Environment env{{var_x, 2}, {var_y, 3.2}};
+  Environment const env{{var_x, 2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::atan2(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
 }
@@ -830,7 +826,7 @@ GTEST_TEST(ExpressionTest, sinh) {
   EXPECT_DOUBLE_EQ(sinh(neg_pi).Evaluate(), std::sinh(-3.141592));
 
   Expression const e = sinh(x * y * pi) + sinh(x) + sinh(y);
-  Environment env{{var_x, 2}, {var_y, 3.2}};
+  Environment const env{{var_x, 2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sinh(2 * 3.2 * 3.141592) +
                                         std::sinh(2) + std::sinh(3.2));
 }
@@ -855,7 +851,7 @@ GTEST_TEST(ExpressionTest, cosh) {
   EXPECT_DOUBLE_EQ(cosh(neg_pi).Evaluate(), std::cosh(-3.141592));
 
   Expression const e = cosh(x * y * pi) + cosh(x) + cosh(y);
-  Environment env{{var_x, 2}, {var_y, 3.2}};
+  Environment const env{{var_x, 2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::cosh(2 * 3.2 * 3.141592) +
                                         std::cosh(2) + std::cosh(3.2));
 }
@@ -880,7 +876,7 @@ GTEST_TEST(ExpressionTest, tanh) {
   EXPECT_DOUBLE_EQ(tanh(neg_pi).Evaluate(), std::tanh(-3.141592));
 
   Expression const e = tanh(x * y * pi) + tanh(x) + tanh(y);
-  Environment env{{var_x, 2}, {var_y, 3.2}};
+  Environment const env{{var_x, 2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::tanh(2 * 3.2 * 3.141592) +
                                         std::tanh(2) + std::tanh(3.2));
 }
@@ -949,12 +945,10 @@ GTEST_TEST(ExpressionTest, output_operator) {
   Expression const e1 = sin(x + y * z);
   Expression const e2 = cos(x * x + pow(y, 2) * z);
 
-  EXPECT_EQ(to_string(e1), "sin((x + (y * z)))");
-  EXPECT_EQ(to_string(e2), "cos(((x * x) + (pow(y, 2) * z)))");
+  EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
+  EXPECT_EQ(e2.to_string(), "cos(((x * x) + (pow(y, 2) * z)))");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
 
