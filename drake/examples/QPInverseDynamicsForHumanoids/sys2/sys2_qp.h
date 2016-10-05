@@ -11,17 +11,13 @@ static example::qp_inverse_dynamics::QPController qp_controller__;
 
 class System2QP : public LeafSystem<double> {
  public:
-  explicit System2QP(const RigidBodyTree &robot) :
-    robot_(robot) {
-    // make IO ports
-    // state input
-    this->DeclareAbstractInputPort(kInheritedSampling);
+  explicit System2QP(const RigidBodyTree &robot) : robot_(robot) {
+    input_port_num_humanoid_status_ = DeclareAbstractInputPort(kInheritedSampling).get_index();
+    input_port_num_qp_input_ = DeclareAbstractInputPort(kInheritedSampling).get_index();
+    output_port_num_qp_input_ = DeclareAbstractOutputPort(kInheritedSampling).get_index();
 
-    // qp input
-    this->DeclareAbstractInputPort(kInheritedSampling);
-
-    // qp output
-    this->DeclareAbstractOutputPort(kInheritedSampling);
+    DRAKE_ASSERT(this->get_num_input_ports() == 2);
+    DRAKE_ASSERT(this->get_num_output_ports() == 1);
 
     set_name("qp_controller");
   }
@@ -31,12 +27,12 @@ class System2QP : public LeafSystem<double> {
     DRAKE_ASSERT(output->get_num_ports() == 1);
 
     // get robot status
-    const example::qp_inverse_dynamics::HumanoidStatus *rs = EvalInputValue<example::qp_inverse_dynamics::HumanoidStatus>(context, 0);
+    const example::qp_inverse_dynamics::HumanoidStatus *rs = EvalInputValue<example::qp_inverse_dynamics::HumanoidStatus>(context, input_port_num_humanoid_status_);
 
     // get qp input
-    const example::qp_inverse_dynamics::QPInput *qp_input = EvalInputValue<example::qp_inverse_dynamics::QPInput>(context, 1);;
+    const example::qp_inverse_dynamics::QPInput *qp_input = EvalInputValue<example::qp_inverse_dynamics::QPInput>(context, input_port_num_qp_input_);
 
-    example::qp_inverse_dynamics::QPOutput& qp_output = output->GetMutableData(0)->GetMutableValue<example::qp_inverse_dynamics::QPOutput>();
+    example::qp_inverse_dynamics::QPOutput& qp_output = output->GetMutableData(output_port_num_qp_input_)->GetMutableValue<example::qp_inverse_dynamics::QPOutput>();
 
     if (qp_controller__.Control(*rs, *qp_input, &qp_output) < 0) {
       throw std::runtime_error("System2QP: QP canot solve\n");
@@ -50,8 +46,24 @@ class System2QP : public LeafSystem<double> {
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
 
+  inline const SystemPortDescriptor<double>& get_input_port_humanoid_status() const {
+    return get_input_port(input_port_num_humanoid_status_);
+  }
+
+  inline const SystemPortDescriptor<double>& get_input_port_qp_input() const {
+    return get_input_port(input_port_num_qp_input_);
+  }
+
+  inline const SystemPortDescriptor<double>& get_output_port_qp_output() const {
+    return get_output_port(output_port_num_qp_input_);
+  }
+
  private:
   const RigidBodyTree &robot_;
+
+  int input_port_num_humanoid_status_;
+  int input_port_num_qp_input_;
+  int output_port_num_qp_input_;
 };
 
 }
