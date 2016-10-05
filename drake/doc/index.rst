@@ -3,8 +3,26 @@
    make html (from this doc directory)
 
 
+.. image:: images/under_construction.png
+	:width: 39%
+
 .. image:: images/logo_w_text.jpg
 	:width: 60%
+
+******************************
+Important Note (October, 2016)
+******************************
+
+
+Drake is currently undergoing a major renovation, with all of the core
+libraries moving into C++.  The examples will move and the existing APIs will
+change.  During this time, we recommend that users either engage deeply
+(contributing examples/tests which provide coverage of your use cases) or wait
+for a few months until the APIs have stabilized.
+
+This change is fantastically exciting -- Drake is becoming a mature and powerful
+tool.  Thank you for your patience.
+
 
 ********
 Overview
