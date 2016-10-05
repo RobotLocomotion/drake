@@ -1,28 +1,15 @@
 #include "drake/common/symbolic_formula.h"
-
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
-using std::cerr;
-using std::endl;
-using std::equal_to;
-using std::ostringstream;
-using std::string;
 using std::to_string;
-using std::runtime_error;
 
 GTEST_TEST(SymFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
 
@@ -319,7 +306,5 @@ GTEST_TEST(SymFormulaTest, output_operator) {
   EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake

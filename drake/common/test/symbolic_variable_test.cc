@@ -1,28 +1,12 @@
 #include "drake/common/symbolic_variable.h"
-
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
 #include "drake/common/symbolic_expression.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
-using std::cerr;
-using std::endl;
-using std::equal_to;
-using std::ostringstream;
-using std::string;
 using std::to_string;
-using std::runtime_error;
 
 GTEST_TEST(SymVariableTest, get_id) {
   Variable x{"x"};
@@ -103,7 +87,5 @@ GTEST_TEST(SymVariableTest, output_operator) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake

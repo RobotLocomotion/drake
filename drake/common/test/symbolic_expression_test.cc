@@ -1,27 +1,25 @@
 #include "drake/common/symbolic_expression.h"
 
 #include <cmath>
-#include <iostream>
-#include <sstream>
+#include <functional>
+#include <memory>
 #include <stdexcept>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/primitives/gain-inl.h"
 #include "drake/systems/framework/system_input.h"
 #include "gtest/gtest.h"
 
-using std::cerr;
-using std::endl;
 using std::domain_error;
 using std::equal_to;
 using std::make_unique;
-using std::ostringstream;
 using std::runtime_error;
-using std::string;
 using std::to_string;
 using std::unordered_map;
 using std::unordered_set;
@@ -29,8 +27,6 @@ using std::vector;
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
 GTEST_TEST(ExpressionTest, Variable) {
@@ -953,8 +949,6 @@ GTEST_TEST(ExpressionTest, output_operator) {
   EXPECT_EQ(to_string(e2), "cos(((x * x) + (pow(y, 2) * z)))");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
 

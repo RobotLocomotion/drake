@@ -1,16 +1,11 @@
 #include "drake/common/symbolic_variables.h"
-
 #include "drake/common/symbolic_expression.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
-using std::cerr;
-using std::endl;
 using std::to_string;
 
 GTEST_TEST(SymVarsTest, hash_eq) {
@@ -339,7 +334,5 @@ GTEST_TEST(SymVarsTest, output_operator) {
   EXPECT_EQ(to_string(vars5), "{w, v}");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
