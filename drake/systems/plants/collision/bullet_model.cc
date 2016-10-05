@@ -516,7 +516,7 @@ std::vector<size_t> BulletModel::collidingPoints(
 }
 
 bool BulletModel::updateElementWorldTransform(
-    const ElementId id, const Isometry3d& T_local_to_world) {
+    ElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
@@ -553,7 +553,7 @@ void BulletModel::updateModel() {
 }
 
 PointPair BulletModel::findClosestPointsBetweenElements(
-    const ElementId idA, const ElementId idB, bool use_margins) {
+    ElementId idA, ElementId idB, bool use_margins) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&

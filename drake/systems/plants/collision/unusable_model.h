@@ -18,7 +18,7 @@ class UnusableModel : public Model {
   void updateModel() override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,

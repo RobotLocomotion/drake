@@ -59,7 +59,7 @@ class BulletModel : public Model {
   ElementId addElement(const Element& element) override;
 
   bool updateElementWorldTransform(
-      const ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
   /**
    * Finds the points where each pair of the elements in ids_to_check are
@@ -150,7 +150,7 @@ class BulletModel : public Model {
    * returns false.
    */
   virtual PointPair findClosestPointsBetweenElements(
-      const ElementId idA, const ElementId idB, bool use_margins);
+      ElementId idA, ElementId idB, bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(

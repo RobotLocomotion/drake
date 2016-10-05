@@ -13,7 +13,7 @@ ElementId Model::addElement(const Element& element) {
   return id;
 }
 
-bool Model::removeElement(const ElementId& id) {
+bool Model::removeElement(ElementId id) {
   return elements.erase(id) > 0;
 }
 
@@ -45,7 +45,7 @@ void Model::getTerrainContactPoints(ElementId id0,
   }
 }
 
-bool Model::updateElementWorldTransform(const ElementId id,
+bool Model::updateElementWorldTransform(ElementId id,
                                         const Isometry3d& T_elem_to_world) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {

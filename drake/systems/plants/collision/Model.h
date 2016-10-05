@@ -25,7 +25,7 @@ class DRAKECOLLISION_EXPORT Model {
   */
   virtual ElementId addElement(const Element& element);
 
-  bool removeElement(const ElementId& id);
+  bool removeElement(ElementId id);
 
   /** \brief Get a read-only pointer to a collision element in this model.
    * \param id an ElementId corresponding to the desired collision element
@@ -59,7 +59,7 @@ class DRAKECOLLISION_EXPORT Model {
    * transform
    */
   virtual bool updateElementWorldTransform(
-      const ElementId id, const Eigen::Isometry3d& T_local_to_world);
+      ElementId id, const Eigen::Isometry3d& T_local_to_world);
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements drawn from a specified set of elements

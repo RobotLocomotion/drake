@@ -11,7 +11,7 @@ void UnusableModel::updateModel() {
 }
 
 bool UnusableModel::updateElementWorldTransform(
-    const ElementId, const Eigen::Isometry3d& T_local_to_world) {
+    ElementId, const Eigen::Isometry3d& T_local_to_world) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
