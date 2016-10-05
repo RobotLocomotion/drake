@@ -34,12 +34,12 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   }
 
   /**
-   * Integrator does not support accuracy estimation.
+   * The RK2 integrator does not support accuracy estimation.
    **/
   bool supports_accuracy_estimation() const override { return false; }
 
   /**
-   * Integrator does not support error control.
+   * The RK2 integrator does not support error control.
    **/
   bool supports_error_control() const override { return false; }
 

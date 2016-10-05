@@ -6,11 +6,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeSystemAnalysis_export.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/integrator_base.h"
-#include "drake/systems/framework/context.h"
 #include "drake/common/text_logging.h"
+#include "drake/drakeSystemAnalysis_export.h"
+#include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -126,7 +126,10 @@ class Simulator {
   }
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
-  The %Simulator will no longer contain a Context. **/
+   * The %Simulator will no longer contain a Context. The caller must not
+   * attempt to advance the simulator in time after that point,
+   * \sa reset_context()
+   **/
   std::unique_ptr<Context<T>> release_context() {
     integrator_->reset_context(nullptr);
     initialization_done_ = false;
@@ -149,31 +152,30 @@ class Simulator {
    */
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /** How many integration steps have been taken since the last Initialize()
-  call? **/
+  /** Gets the number of integration steps since the last Initialize() call. **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** How many difference equation updates have been performed since the last
+  /** Gets the number of difference equation updates performed since the last
   Initialize() call? **/
   int64_t get_num_updates() const { return num_updates_; }
   /**@}**/
 
   /**
-   *   Gets a pointer to the integrator.
+   *   Gets a pointer to the integrator used to advance the continuous aspects
+   *   of the system.
    */
-  const IntegratorBase<T>* get_integrator() const {
-    return integrator_.get(); }
+  const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
 
   /**
-   *   Gets a pointer to the mutable integrator.
+   *   Gets a pointer to the mutable integrator used to advance the continuous
+   *   aspects of the system.
    */
-  IntegratorBase<T>* get_mutable_integrator() {
-    return integrator_.get(); }
+  IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
 
   /**
-   *   Resets the integrator.
-   *   @param integrator a non-NULL pointer to an integrator; an exception
-   *          will be thrown if the integrator is null.
+   *   Resets the integrator with a new one. An example usage is:
+   *   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(sys, context,
+   *   DT);
    */
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
@@ -241,7 +243,6 @@ template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
-
   // TODO(edrumwri): remove default step size
   const double DT = 1e-3;
 
@@ -272,12 +273,13 @@ void Simulator<T>::Initialize() {
 }
 
 /**
+ * Steps the simulation to the specified time.
  * The simulation loop is as follows:
  * 1. Perform necessary difference variable updates.
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
- * @param final_time
+ * @param final_time The time to advance the context to.
  */
 template <typename T>
 void Simulator<T>::StepTo(const T& final_time) {
@@ -311,7 +313,7 @@ void Simulator<T>::StepTo(const T& final_time) {
             DRAKE_DEMAND(xd != nullptr);
             // First, compute the discrete updates into a temporary buffer.
             system_.EvalDifferenceUpdates(*context_, event,
-                                         discrete_updates_.get());
+                                          discrete_updates_.get());
             // Then, write them back into the context.
             xd->CopyFrom(*discrete_updates_);
             break;
@@ -326,8 +328,7 @@ void Simulator<T>::StepTo(const T& final_time) {
     }
 
     // Allow System a chance to produce some output.
-    if (publish_hit)
-      system_.Publish(*context_);
+    if (publish_hit) system_.Publish(*context_);
 
     // Remove old events
     update_actions.events.clear();
@@ -339,12 +340,12 @@ void Simulator<T>::StepTo(const T& final_time) {
     const T next_update_dt = next_update_time - step_start_time;
 
     // TODO(edrumwri): Get the next publish time when API available.
-    T next_publish_dt = (double) std::numeric_limits<double>::infinity();
+    T next_publish_dt = (double)std::numeric_limits<double>::infinity();
     T next_publish_time = step_start_time + next_publish_dt;
 
     // Attempt to integrate.
-    typename IntegratorBase<T>::StepResult result = integrator_->Step(
-        next_publish_dt, next_update_dt);
+    typename IntegratorBase<T>::StepResult result =
+        integrator_->Step(next_publish_dt, next_update_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
         update_hit = true;

@@ -55,7 +55,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // create the integrator
-  const double DT = 0.000097656;   // 1.0/1024
+  const double DT = 1.0/1024;
   const double INF = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
 

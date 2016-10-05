@@ -129,11 +129,14 @@ class IntegratorBase {
 
   /**
    *   Gets the target accuracy.
+   *   \sa get_accuracy_in_use()
    **/
   const T& get_target_accuracy() const { return target_accuracy_; }
 
   /**
-   * Gets the accuracy in use by the integrator.
+   * Gets the accuracy in use by the integrator. This number may differ from
+   * the target accuracy if, for example, the user has requested an accuracy
+   * not attainable or not recommended for the particular integrator.
    **/
   const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
@@ -167,8 +170,8 @@ class IntegratorBase {
   const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
-   *   Integrator must be initialized before being used. The pointer to the
-   *   context must be set before Initialize(.) is called.
+   *   An integrator must be initialized before being used. The pointer to the
+   *   context must be set before Initialize() is called.
    **/
   void Initialize() {
     if (!context_)
@@ -181,12 +184,13 @@ class IntegratorBase {
   }
 
   /** Request that the first attempted integration step have a particular size.
-   * Otherwise the integrator will estimate a suitable size for the initial step
-   * attempt. If the integrator does not support error control, this method
-   * will throw a std::logic_error (call supports_error_control() to verify
-   * before calling this method). For variable-step integration, the initial
-   * target will be treated as a maximum size subject to accuracy requirements
-   * and event occurrences. You can find out what size *actually* worked with
+   * If no attempt is specified, the integrator will estimate a suitable size
+   * for the initial step attempt. *If the integrator does not support error
+   * control*, this method will throw a std::logic_error (call
+   * supports_error_control() to verify before calling this method). For
+   * variable-step integration, the initial target will be treated as a maximum
+   * step size subject to accuracy requirements and event occurrences. You can
+   * find out what size *actually* worked with
    * `get_actual_initial_step_size_taken()`.
    * @throws std::logic_error if the integrator does not support error control
    **/
@@ -197,19 +201,15 @@ class IntegratorBase {
     req_initial_step_size_ = step_size;
   }
 
-  /** Get the first integration step target size. You can find out what size
-   * *actually* worked with `get_actual_initial_step_size_taken()`.
+  /** Gets the first integration target step size. You can find out what size
+   * *actually* was used with `get_actual_initial_step_size_taken()`.
    * @see request_initial_step_size_target()
    **/
   const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
 
-  /** Advance the System's trajectory by at most update_dt. Initialize() must
-   * be called before making any calls to Step(), or an exception will
-   * be thrown.
-   **/
-  virtual StepResult Step(const T& publish_dt, const T& update_dt);
+  StepResult Step(const T& publish_dt, const T& update_dt);
 
   /** Forget accumulated statistics. These are reset to the values they have
    * post construction or immediately after `Initialize()`.
@@ -221,27 +221,22 @@ class IntegratorBase {
     num_steps_taken_ = 0;
   }
 
-  /** What was the actual size of the successful first step? **/
+  /** The actual size of the successful first step. **/
   const T& get_actual_initial_step_size_taken() const {
     return actual_initial_step_size_taken_;
   }
 
-  /** What was the size of the smallest step taken since the last
-   * Initialize() call?
-   **/
+  /** The size of the smallest step taken since the last Initialize() call. **/
   const T& get_smallest_step_size_taken() const {
     return smallest_step_size_taken_;
   }
 
-  /** What was the size of the largest step taken since the last
-   * @return Initialize() call?
-   **/
+  /** The size of the largest step taken since the last Initialize() call. **/
   const T& get_largest_step_size_taken() const {
     return largest_step_size_taken_;
   }
 
-  /** How many integration steps have been taken since the last
-   * Initialize() call?
+  /** The number of integration steps taken since the last Initialize() call.
    **/
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
@@ -255,13 +250,13 @@ class IntegratorBase {
   }
 
   /** Returns a const reference to the internally-maintained Context holding
-   * the most recent step in the trajectory. This is suitable for publishing or
+   * the most recent state in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
    **/
   const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding
-   * the most recent step in the trajectory. **/
+   * the most recent state in the trajectory. **/
   Context<T>* get_mutable_context() { return context_; }
 
   /** Replace the pointer to the internally-maintained Context with a different
@@ -284,10 +279,15 @@ class IntegratorBase {
   bool is_initialized() const { return initialization_done_; }
 
  protected:
-  // Derived classes can override this method to initialize the integrator.
+  /** Derived classes can override this method to perform special
+   * initialization. This method is called during the Initialize() method.
+   */
   virtual void DoInitialize() { }
 
-  // Derived classes must implement this method.
+  /** Derived classes must implement this method to integrate the continuous
+   * portion of this system forward by a maximum step of dt. This method
+   * is called during the Step() method.
+   **/
   virtual void DoStep(const T& dt) = 0;
 
   // Sets the ideal next step size.
@@ -337,7 +337,7 @@ class IntegratorBase {
   // the next one.
   T ideal_next_step_size_{nan()};  // Indicates that the value is uninitialized.
 
-  // the accuracy being used.
+  // The accuracy being used.
   T accuracy_in_use_{nan()};
 
   // The maximum step size.
@@ -369,14 +369,15 @@ class IntegratorBase {
 
 /**
  * Integrates the system forward in time. Integrator must already have
- * been initialized or exception will be thrown. The
- * Step() method for the integrator will integrate forward
+ * been initialized or exception will be thrown. The context will be
+ * integrated forward *at most*
  * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
- * @param publish_dt the step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next publish will occur
- * @param update_dt the step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next update will occur
- * @return the reason for the integration step ending
+ * Error controlled integrators may take smaller steps.
+ * @param publish_dt The step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next publish will occur.
+ * @param update_dt The step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next update will occur.
+ * @return The reason for the integration step ending.
  */
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(

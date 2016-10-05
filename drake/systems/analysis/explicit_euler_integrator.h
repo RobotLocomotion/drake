@@ -18,7 +18,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
   virtual ~ExplicitEulerIntegrator() {}
 
   /**
-   * Constructs fixed-step integrator for a given system using the given
+   * Constructs a fixed-step integrator for a given system using the given
    * context for initial conditions.
    * @param system A reference to the system to be simulated
    * @param max_step_size The maximum (fixed) step size; the integrator will
@@ -37,12 +37,12 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
 
   /**
-   * Integrator does not support accuracy estimation.
+   * Explicit Euler integrator does not support accuracy estimation.
    **/
   bool supports_accuracy_estimation() const override { return false; }
 
   /**
-   * Integrator does not support error control.
+   * Explicit Euler ntegrator does not support error control.
    **/
   bool supports_error_control() const override { return false; }
 
@@ -51,7 +51,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
-};  // ExplictEulerIntegrator
+};
 
 /**
  * Integrates the system forward in time by dt.
