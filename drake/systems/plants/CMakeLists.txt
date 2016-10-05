@@ -51,7 +51,7 @@ pods_install_pkg_config_file(drake-rbm
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
-pods_find_pkg_config(snopt_c)
+
 add_subdirectory(shapes)
 add_subdirectory(collision)
 add_subdirectory(constraint)
@@ -172,6 +172,8 @@ if(MATLAB_FOUND)
     # These warnings are not worth fixing.
     target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()
+
+  find_package(snopt_c)
 
   if(snopt_c_FOUND)
     add_ik_mex(inverseKinmex)
