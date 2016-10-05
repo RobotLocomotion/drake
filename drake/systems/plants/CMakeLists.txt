@@ -20,7 +20,6 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   RigidBody.cpp
   RigidBodyTreeContact.cpp
   rigid_body_actuator.cc
-  rigid_body_collision_element.cc
   rigid_body_frame.cc
   rigid_body_loop.cc)
 target_link_libraries(drakeRBM
@@ -34,7 +33,6 @@ drake_install_headers(
   material_map.h
   pose_map.h
   rigid_body_actuator.h
-  rigid_body_collision_element.h
   RigidBodyFrame.h
   RigidBody.h
   RigidBodyTree.h

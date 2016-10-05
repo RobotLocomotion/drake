@@ -19,7 +19,6 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -561,7 +560,7 @@ class DRAKE_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBodyCollisionElement& element, RigidBody& body,
+      const DrakeCollision::Element& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
