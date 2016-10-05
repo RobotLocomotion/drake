@@ -160,17 +160,7 @@ class System {
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
-      // once abstract ports are implemented in 3164.
-      if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const InputPort* input_port = context.GetInputPort(i);
-        DRAKE_THROW_UNLESS(input_port != nullptr);
-        const BasicVector<T>* input_vector =
-            input_port->template get_vector_data<T>();
-        DRAKE_THROW_UNLESS(input_vector != nullptr);
-        DRAKE_THROW_UNLESS(input_vector->size() ==
-                           get_input_port(i).get_size());
-      }
+      context.VerifyInputPort(this->get_input_port(i));
     }
   }
 
