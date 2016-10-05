@@ -66,6 +66,12 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
   return 0;
 }
 
+int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
+  for(const auto& binding : prog.lorentz_cone_constraints()) {
+    
+  }
+}
+
 /*
  * Add quadratic or linear costs to the optimization problem.
  */

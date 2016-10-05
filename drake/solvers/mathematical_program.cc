@@ -26,13 +26,13 @@ AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 // Solver for Quadratic Programs (QPs); commented out until Gurobi is ready
 // to land.
 // AttributesSet kGurobiCapabilities = (
-//     kLinearEqualityConstraint | kLinearInequalityConstraint |
+//     kLinearEqualityConstraint | kLinearInequalityConstraint | kLorentzConeConstraint | kRotatedLorentzConeConstraint
 //     kLinearCost | kQuadraticCost);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities = (
     kGenericCost | kGenericConstraint |
-    kQuadraticCost | kQuadraticConstraint |
+    kQuadraticCost | kQuadraticConstraint | kLorentzConeConstraint | kRotatedLorentzConeConstraint |
     kLinearCost | kLinearConstraint | kLinearEqualityConstraint);
 
 // Returns true iff no capabilities are in required and not in available.
