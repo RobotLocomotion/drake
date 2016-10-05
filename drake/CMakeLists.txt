@@ -75,13 +75,6 @@ endfunction()
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(NOT APPLE)
-  # The linker on OS X likes to hide the typeinfo for template classes unless
-  # they are explicitly instantiated and exported, which causes dynamic_cast to
-  # fail across library boundaries.
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
   if(APPLE)

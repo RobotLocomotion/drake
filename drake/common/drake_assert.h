@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include "drake/drakeCommon_export.h"
-
 /// @file
 /// Provides Drake's assertion implementation.  This is intended to be used
 /// both within Drake and by other software.  Drake's asserts can be armed
@@ -70,7 +68,6 @@
 namespace drake {
 namespace detail {
 // Abort the program with an error message.
-DRAKECOMMON_EXPORT
 #if _MSC_VER
 __declspec(noreturn)
 #else /* gcc or clang --- gcc is ok with [[noreturn]], too; clang is not. */
