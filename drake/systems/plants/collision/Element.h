@@ -63,7 +63,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   /**
    * Full constructor.
    * @param[in] geometry            The colliding geometry.
-   * @param[in] T_element_to_local   The pose.
+   * @param[in] T_element_to_local  The pose.
    * @param[in] body                The associated rigid body.
    */
   Element(const DrakeShapes::Geometry& geometry,
