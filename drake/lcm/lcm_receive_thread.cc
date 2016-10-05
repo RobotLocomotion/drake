@@ -23,8 +23,7 @@ LcmReceiveThread::~LcmReceiveThread() {
   // TODO(liang.fok) Refactor to not employ a blocking destructor. Prefer to use
   // detach() after removing use of cross-thread bare pointers. Before this is
   // done, do NOT use Drake in a safety critical system!
-  if (!stop_)
-    Stop();
+  Stop();
 }
 
 namespace {

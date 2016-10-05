@@ -17,7 +17,7 @@ bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
     result = false;
   }
 
-  if (result && actual_message.timestamp != expected_message.timestamp) {
+  if (actual_message.timestamp != expected_message.timestamp) {
     drake::log()->warn("CompareLcmtDrakeSignalMessages: timestamps do "
         "not match ({} vs. {}).", actual_message.timestamp,
         expected_message.timestamp);
@@ -28,6 +28,11 @@ bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
       static_cast<int>(actual_message.val.size()));
   DRAKE_DEMAND(actual_message.dim ==
       static_cast<int>(actual_message.coord.size()));
+
+  DRAKE_DEMAND(expected_message.dim ==
+      static_cast<int>(expected_message.val.size()));
+  DRAKE_DEMAND(expected_message.dim ==
+      static_cast<int>(expected_message.coord.size()));
 
   for (int i = 0; i < expected_message.dim && result; ++i) {
     if (actual_message.val[i] != expected_message.val[i]) {

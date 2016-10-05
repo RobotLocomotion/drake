@@ -197,10 +197,12 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   // receiver will actually receive the message.
   while (!done && count++ < kMaxCount) {
     lcm->publish(channel_name, &message_);
-    // Gets the received message.
-    const drake::lcmt_drake_signal received_message =
-        handler.GetReceivedMessage();
-    done = CompareLcmtDrakeSignalMessages(received_message, message_);
+    if (handler.get_receive_channel() == channel_name) {
+      // Gets the received message.
+      const drake::lcmt_drake_signal received_message =
+          handler.GetReceivedMessage();
+      done = CompareLcmtDrakeSignalMessages(received_message, message_);
+    }
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 
