@@ -201,17 +201,17 @@ GTEST_TEST(SymFormulaTest, And2) {
 
   Formula const f1 = x + y > 0;
   Formula const f2 = x * y < 5;
-  Formula const f = f1 and f2;
+  Formula const f = f1 && f2;
 
   Environment const env1{{var_x, 1}, {var_y, 1}};
   Environment const env2{{var_x, 3}, {var_y, 4}};
   Environment const env3{{var_x, -2}, {var_y, -5}};
   Environment const env4{{var_x, -1}, {var_y, -1}};
 
-  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) and (1 * 1 < 5));
-  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) and (3 * 4 < 5));
-  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) and (-2 * -5 < 5));
-  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) and (-1 * -1 < 5));
+  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) && (1 * 1 < 5));
+  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) && (3 * 4 < 5));
+  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) && (-2 * -5 < 5));
+  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) && (-1 * -1 < 5));
 }
 
 GTEST_TEST(SymFormulaTest, Or2) {
@@ -222,26 +222,26 @@ GTEST_TEST(SymFormulaTest, Or2) {
 
   Formula const f1 = x + y > 0;
   Formula const f2 = x * y < 5;
-  Formula const f = f1 or f2;
+  Formula const f = f1 || f2;
 
   Environment const env1{{var_x, 1}, {var_y, 1}};
   Environment const env2{{var_x, 3}, {var_y, 4}};
   Environment const env3{{var_x, -2}, {var_y, -5}};
   Environment const env4{{var_x, -1}, {var_y, -1}};
 
-  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) or (1 * 1 < 5));
-  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) or (3 * 4 < 5));
-  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) or (-2 * -5 < 5));
-  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) or (-1 * -1 < 5));
+  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) || (1 * 1 < 5));
+  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) || (3 * 4 < 5));
+  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) || (-2 * -5 < 5));
+  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) || (-1 * -1 < 5));
 }
 
 GTEST_TEST(SymFormulaTest, Not1) {
   Formula const tt = Formula::True();
   Formula const ff = Formula::False();
-  EXPECT_TRUE(ff.EqualTo(not tt));
-  EXPECT_TRUE(tt.EqualTo(not ff));
-  EXPECT_TRUE(tt.EqualTo(not(not tt)));
-  EXPECT_TRUE(ff.EqualTo(not(not ff)));
+  EXPECT_TRUE(ff.EqualTo(!tt));
+  EXPECT_TRUE(tt.EqualTo(!ff));
+  EXPECT_TRUE(tt.EqualTo(!(!tt)));
+  EXPECT_TRUE(ff.EqualTo(!(!ff)));
 }
 
 GTEST_TEST(SymFormulaTest, Not2) {
@@ -252,18 +252,18 @@ GTEST_TEST(SymFormulaTest, Not2) {
 
   Formula const f1 = x + y > 0;
   Formula const f2 = x * y < 5;
-  Formula const f = f1 or f2;
-  Formula const not_f = not f;
+  Formula const f = f1 || f2;
+  Formula const not_f = !f;
 
   Environment const env1{{var_x, 1}, {var_y, 1}};
   Environment const env2{{var_x, 3}, {var_y, 4}};
   Environment const env3{{var_x, -2}, {var_y, -5}};
   Environment const env4{{var_x, -1}, {var_y, -1}};
 
-  EXPECT_EQ(not_f.Evaluate(env1), not((1 + 1 > 0) or (1 * 1 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env2), not((3 + 4 > 0) or (3 * 4 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env3), not((-2 + -5 > 0) or (-2 * -5 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env4), not((-1 + -1 > 0) or (-1 * -1 < 5)));
+  EXPECT_EQ(not_f.Evaluate(env1), !((1 + 1 > 0) || (1 * 1 < 5)));
+  EXPECT_EQ(not_f.Evaluate(env2), !((3 + 4 > 0) || (3 * 4 < 5)));
+  EXPECT_EQ(not_f.Evaluate(env3), !((-2 + -5 > 0) || (-2 * -5 < 5)));
+  EXPECT_EQ(not_f.Evaluate(env4), !((-1 + -1 > 0) || (-1 * -1 < 5)));
 }
 
 GTEST_TEST(SymFormulaTest, GetFreeVariables) {
@@ -276,7 +276,7 @@ GTEST_TEST(SymFormulaTest, GetFreeVariables) {
 
   Formula const f1 = x + y > 0;
   Formula const f2 = y * z < 5;
-  Formula const f3 = f1 or f2;
+  Formula const f3 = f1 || f2;
   Formula const f4 = forall({var_x, var_y}, f3);
 
   Variables const vars1 = f1.GetFreeVariables();  // {x, y}
@@ -310,13 +310,13 @@ GTEST_TEST(SymFormulaTest, output_operator) {
 
   Formula const f1 = x + y > 0;
   Formula const f2 = y * z < 5;
-  Formula const f3 = f1 or f2;
+  Formula const f3 = f1 || f2;
   Formula const f4 = forall({var_x, var_y}, f3);
 
   EXPECT_EQ(to_string(f1), "((x + y) > 0)");
   EXPECT_EQ(to_string(f2), "((y * z) < 5)");
-  EXPECT_EQ(to_string(f3), "(((x + y) > 0) or ((y * z) < 5))");
-  EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
+  EXPECT_EQ(to_string(f3), "(((x + y) > 0) || ((y * z) < 5))");
+  EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) || ((y * z) < 5)))");
 }
 }  // namespace
 }  // namespace test

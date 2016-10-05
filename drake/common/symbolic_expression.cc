@@ -98,7 +98,8 @@ Expression operator+(Expression lhs, Expression const& rhs) {
 }
 
 Expression operator+(double const lhs, Expression const& rhs) {
-  return Expression{lhs} + rhs;
+  // use () to avoid a conflict between cpplint and clang-format
+  return (Expression{lhs}) + rhs;
 }
 
 Expression operator+(Expression lhs, double const rhs) {
@@ -217,7 +218,8 @@ Expression operator*(Expression lhs, Expression const& rhs) {
 }
 
 Expression operator*(double const lhs, Expression const& rhs) {
-  return Expression{lhs} * rhs;
+  // use () to avoid a conflict between cpplint and clang-format
+  return (Expression{lhs}) * rhs;
 }
 
 Expression operator*(Expression lhs, double const rhs) {
