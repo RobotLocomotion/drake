@@ -10,8 +10,10 @@
 Overview
 ********
 
-Drake ("dragon" in Middle English) is a toolbox maintained by the
-`Robot Locomotion Group <http://groups.csail.mit.edu/locomotion/>`_ at the MIT Computer Science and Artificial Intelligence Lab (CSAIL). It is a collection of tools for analyzing the dynamics of our robots and building control systems for them in MATLAB and C++, with a heavy emphasis on optimization-based design/analysis.
+Drake ("dragon" in Middle English) is a toolbox started by the
+`Robot Locomotion Group <http://groups.csail.mit.edu/locomotion/>`_ at the MIT Computer Science and Artificial Intelligence Lab (CSAIL).  The :doc:`development team has now
+grown significantly </credits>`, with core development led by the `Toyota Research Institute <http://tri.global/>`_.
+It is a collection of tools for analyzing the dynamics of our robots and building control systems for them in MATLAB and C++, with a heavy emphasis on optimization-based design/analysis.
 
 While there are an increasing number of simulation tools available for robotics, most of them function like a black box: commands go in, sensors come out.  Drake aims to simulate even very complex dynamics of robots (e.g. including friction, contact, aerodynamics, ...), but always with an emphasis on exposing the structure in the governing equations (sparsity, analytical gradients, polynomial structure, uncertainty quantification, ...) and making this information available for advanced planning, control, and analysis algorithms.  Drake provides interfaces to high-level languages (MATLAB, Python, ...) to enable rapid-prototyping of new algorithms, and also aims to provide solid open-source implementations for many state-of-the-art algorithms.  Finally, we hope Drake provides many compelling examples that can help people get started and provide much needed benchmarks.   We are excited to accept user contributions to improve the coverage.
 
@@ -73,11 +75,17 @@ Citing Drake
 If you would like to cite Drake in your academic publications, we suggest the following BibTeX citation::
 
 	@misc{drake,
-	 author = "Russ Tedrake",
+	 author = "Russ Tedrake and the Drake Development Team",
 	 title = "Drake: A planning, control, and analysis toolbox for nonlinear dynamical systems",
-	 year = 2014,
+	 year = 2016,
 	 url = "http://drake.mit.edu"
 	}
+
+
+Acknowledgements
+================
+
+The Drake developers would like to acknowledge significant supported from the `Toyota Research Institute <http://tri.global>`_, `DARPA <http://www.darpa.mil/>`_, the `National Science Foundation <https://nsf.gov/>`_, the `Office of Naval Research <http://www.onr.navy.mil/>`_, `Amazon.com <https://www.amazon.com/>`_, and `The MathWorks <http://www.mathworks.com/>`_.
 
 
 Next steps
