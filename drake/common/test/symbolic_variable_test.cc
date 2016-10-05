@@ -1,39 +1,36 @@
 #include "drake/common/symbolic_variable.h"
-
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "drake/common/symbolic_expression.h"
 #include "gtest/gtest.h"
+
+#include <utility>
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
-using std::cerr;
-using std::endl;
-using std::equal_to;
-using std::ostringstream;
-using std::string;
-using std::to_string;
-using std::runtime_error;
+using std::move;
 
 GTEST_TEST(SymVariableTest, get_id) {
   Variable x{"x"};
-  Variable x_{"x"};
-  EXPECT_NE(x.get_id(), x_.get_id());
+  Variable x_prime{"x"};
+  EXPECT_NE(x.get_id(), x_prime.get_id());
 }
 
 GTEST_TEST(SymVariableTest, get_name) {
   Variable x{"x"};
-  Variable x_{"x"};
-  EXPECT_EQ(x.get_name(), x_.get_name());
+  Variable x_prime{"x"};
+  EXPECT_EQ(x.get_name(), x_prime.get_name());
+}
+
+GTEST_TEST(SymVariableTest, move_copy_preserve_id) {
+  Variable x{"x"};
+  size_t const x_id = x.get_id();
+  size_t const x_hash = x.get_hash();
+  Variable const x_copied{x};
+  Variable const x_moved{move(x)};
+  EXPECT_EQ(x_id, x_copied.get_id());
+  EXPECT_EQ(x_hash, x_copied.get_hash());
+  EXPECT_EQ(x_id, x_moved.get_id());
+  EXPECT_EQ(x_hash, x_moved.get_hash());
 }
 
 GTEST_TEST(SymVariableTest, operator_lt) {
@@ -96,14 +93,12 @@ GTEST_TEST(SymVariableTest, output_operator) {
   Variable z{"z"};
   Variable w{"w"};
 
-  EXPECT_EQ(to_string(x), "x");
-  EXPECT_EQ(to_string(y), "y");
-  EXPECT_EQ(to_string(z), "z");
-  EXPECT_EQ(to_string(w), "w");
+  EXPECT_EQ(x.to_string(), "x");
+  EXPECT_EQ(y.to_string(), "y");
+  EXPECT_EQ(z.to_string(), "z");
+  EXPECT_EQ(w.to_string(), "w");
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
