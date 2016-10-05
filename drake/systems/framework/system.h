@@ -233,8 +233,8 @@ class System {
   /// because the given @p event has arrived.  Dispatches to
   /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
   void EvalDifferenceUpdates(const Context<T>& context,
-                            const DiscreteEvent<T>& event,
-                            DifferenceState<T>* difference_state) const {
+                             const DiscreteEvent<T>& event,
+                             DifferenceState<T>* difference_state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
     if (event.do_update == nullptr) {
@@ -490,6 +490,28 @@ class System {
     DRAKE_ASSERT(input_vector != nullptr);
     DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
     return input_vector->get_value();
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
