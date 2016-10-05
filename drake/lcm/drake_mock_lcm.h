@@ -71,7 +71,6 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   bool receive_thread_started_{false};
 
   struct LastPublishedMessage {
-    std::string channel{};
     std::vector<uint8_t> data{};
   };
 

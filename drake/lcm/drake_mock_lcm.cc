@@ -32,7 +32,6 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
 
   DRAKE_DEMAND(saved_message);
 
-  saved_message->channel = channel;
   const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
   saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
 }
