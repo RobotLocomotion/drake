@@ -33,9 +33,9 @@ namespace systems {
  * constraints),
  * - a projection method for least-squares correction of violated higher-level
  * constraints (position and velocity level),
- * - a time-of-next-sample method that can be used to adjust the integrator
+ * - a time-of-next-update method that can be used to adjust the integrator
  * step size in preparation for a discrete update,
- * - a method that can update discrete variables when their sample time is
+ * - a method that can update discrete variables when their update time is
  * reached,
  * - witness (guard) functions for event isolation,
  * - event handlers (reset functions) for making appropriate changes to state
@@ -142,9 +142,9 @@ class Simulator {
   }
 
   /**
- * Gets the number of publishes made since the last Initialize() or
- * ResetStatistics() call.
- */
+   * Gets the number of publishes made since the last Initialize() or
+   * ResetStatistics() call.
+   */
   int64_t get_num_publishes() const { return num_publishes_; }
 
   /** How many integration steps have been taken since the last Initialize()
@@ -157,7 +157,7 @@ class Simulator {
   /**@}**/
 
   /**
-   *   Gets a pointer to the mutable integrator.
+   *   Gets a pointer to the integrator.
    */
   const IntegratorBase<T>* get_integrator() const {
     return integrator_.get(); }
@@ -177,7 +177,7 @@ class Simulator {
   U* reset_integrator(Args&&... args) {
     integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
     integrator_->Initialize();
-    return (U*) integrator_.get();
+    return integrator_.get();
   }
 
  private:
@@ -191,7 +191,7 @@ class Simulator {
                                                const T& next_update_time,
                                                const T& final_time);
 
-  // A pointer to the integrator
+  // A pointer to the integrator.
   std::unique_ptr<IntegratorBase<T>> integrator_;
 
   // TODO(sherm1) This a workaround for an apparent bug in clang 3.8 in which
@@ -271,7 +271,7 @@ void Simulator<T>::Initialize() {
 
 /**
  * The simulation loop is as follows:
- * 1. Perform necessary discrete updates.
+ * 1. Perform necessary difference variable updates.
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
@@ -390,7 +390,7 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
   // avoid a tiny sliver step before we have to do something discrete.
   const T step_stretch_time = step_end_time + kMaxStretch * ideal_step_size;
 
-  // The step may be limited or stretched either by final time or sample
+  // The step may be limited or stretched either by final time or update
   // time, whichever comes sooner.
   bool update_time_hit = false;
   if (next_update_time <= final_time) {

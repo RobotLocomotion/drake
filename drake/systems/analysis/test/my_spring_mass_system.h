@@ -69,7 +69,8 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int publish_count_{0};
   mutable int update_count_{0};
 };  // MySpringMassSystem
-}  // blank
+
+}  // namespace
 }  // systems
 }  // drake
 
