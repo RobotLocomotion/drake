@@ -18,6 +18,11 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
   int get_update_count() const { return update_count_; }
 
+  /** There are no difference variables in this system, but it does use
+   * a difference update with zero variables. In other words, this function
+   * is a kludge until difference variables are automatically allocated in
+   * a system.
+   */
   std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
     const override {
     return std::make_unique<DifferenceState<T>>();

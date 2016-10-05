@@ -11,27 +11,27 @@ namespace systems {
 namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
-  // create the spring-mass system
+  // Create the spring-mass system.
   MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
-  // setup integration step
+  // Setup integration step.
   const double DT  = 1e-3;
 
-  // create the integrator
+  // Create the integrator.
   RungeKutta2Integrator<double> integrator(spring_mass, DT);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
-  // create the mass spring system
+  // Create the mass spring system.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
 
-  // create a context
+  // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
-  // setup integration step
+  // Setup integration step.
   const double DT  = 1e-3;
 
-  // create the integrator
+  // Create the integrator
   RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
@@ -48,18 +48,18 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
-  // create the spring-mass system
+  // Create the spring-mass system
   SpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
 
-  // create a context
+  // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
-  // create the integrator
+  // Create the integrator.
   const double DT = 1.0/1024;
   const double INF = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> integrator(spring_mass, DT, context.get());
 
-  // setup the initial position and initial velocity
+  // Setup the initial position and initial velocity.
   const double kInitialPosition = 0.1;
   const double kInitialVelocity = 0.0;
   const double kOmega = std::sqrt(kSpring / kMass);
@@ -71,7 +71,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Take all the defaults.
   integrator.Initialize();
 
-  // setup c1 and c2 for ODE constants
+  // Setup c1 and c2 for ODE constants.
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
@@ -83,11 +83,11 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
-  // get the final position
+  // Get the final position.
   const double kXFinal = context->get_state().
       get_continuous_state()->get_state().GetAtIndex(0);
 
-  // check the solution
+  // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);
   EXPECT_NEAR(true_sol, kXFinal, 1e-5);
 }

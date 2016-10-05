@@ -54,7 +54,8 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 };
 
 /**
- * Integrates the system forward in time by dt.
+ * Integrates the system forward in time by dt. This value is determined
+ * by IntegratorBase::Step().
  **/
 template <class T>
 void ExplicitEulerIntegrator<T>::DoStep(const T& dt) {

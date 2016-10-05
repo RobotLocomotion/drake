@@ -51,7 +51,8 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 };  // ExplictEulerIntegrator
 
 /**
- * Integrates the system forward in time by dt.
+ * Integrates the system forward in time by dt. This value is determined
+ * by IntegratorBase::Step().
  **/
 template <class T>
 void RungeKutta2Integrator<T>::DoStep(const T& dt) {

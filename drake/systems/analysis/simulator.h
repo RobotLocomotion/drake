@@ -118,6 +118,9 @@ class Simulator {
    * current Context is deleted. This is useful for supplying a new set of
    * initial conditions. You should invoke Initialize() after replacing the
    * Context.
+   * @param context The new context, which may be null. If the context is
+   *                null, a new context must be set before attempting to step
+   *                the system forward.
    **/
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
@@ -175,12 +178,14 @@ class Simulator {
   /**
    *   Resets the integrator with a new one. An example usage is:
    *   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(sys, context,
-   *   DT);
+   *   DT). The integrator must be initialized (via
+   *   IntegratorBase::Initialize() function)
+   *   before being used. The simulator will call that function automatically
+   *   in its own Initialize() function.
    */
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
     integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
-    integrator_->Initialize();
     return static_cast<U*>(integrator_.get());
   }
 
@@ -261,6 +266,9 @@ template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
+
+  // initialize the integrator
+  integrator_->Initialize();
 
   // Do a publish before the simulation starts.
   system_.Publish(*context_);
