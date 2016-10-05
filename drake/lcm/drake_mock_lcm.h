@@ -11,28 +11,6 @@
 namespace drake {
 namespace lcm {
 
-/// @cond
-
-// This is a mock subscriber to an LCM channel. It simply passes the
-// serialized LCM message to the `DrakeLcmMessageHandlerInterface`
-// object.
-class DRAKELCM_EXPORT DrakeMockLcmSubscriber {
- public:
-  explicit DrakeMockLcmSubscriber(DrakeLcmMessageHandlerInterface*
-      drake_handler);
-
-  // Disables copy and assign.
-  DrakeMockLcmSubscriber(const DrakeMockLcmSubscriber&) = delete;
-  DrakeMockLcmSubscriber& operator=(const DrakeMockLcmSubscriber&) = delete;
-
-  DrakeLcmMessageHandlerInterface* get_subscriber();
-
- private:
-  DrakeLcmMessageHandlerInterface* drake_handler_;
-};
-
-/// @endcond
-
 /**
  * A *mock* LCM instance. This does not actually publish or subscribe to LCM
  * messages. It contains additional methods for accessing the most recent
@@ -104,7 +82,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   std::map<std::string, LastPublishedMessage> last_published_messages_;
 
   // Maps the channel name to the subscriber.
-  std::map<std::string, std::unique_ptr<DrakeMockLcmSubscriber>> subscriptions_;
+  std::map<std::string, DrakeLcmMessageHandlerInterface*> subscriptions_;
 };
 
 }  // namespace lcm
