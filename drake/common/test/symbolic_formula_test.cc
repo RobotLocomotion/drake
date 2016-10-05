@@ -315,8 +315,8 @@ GTEST_TEST(SymFormulaTest, output_operator) {
 
   EXPECT_EQ(to_string(f1), "((x + y) > 0)");
   EXPECT_EQ(to_string(f2), "((y * z) < 5)");
-  EXPECT_EQ(to_string(f3), "(((x + y) > 0) || ((y * z) < 5))");
-  EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) || ((y * z) < 5)))");
+  EXPECT_EQ(to_string(f3), "(((x + y) > 0) or ((y * z) < 5))");
+  EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
 }
 }  // namespace
 }  // namespace test
