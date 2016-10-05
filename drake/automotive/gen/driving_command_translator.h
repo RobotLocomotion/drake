@@ -1,12 +1,12 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/common/drake_export.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_driving_command_t.hpp"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace automotive {

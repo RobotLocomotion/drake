@@ -14,7 +14,7 @@ CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.7}
 gen () {
     title="$1"
     shift
-    $mydir/lcm_vector_gen.py \
+    $drake/tools/lcm_vector_gen.py \
         --lcmtype-dir=$drake/lcmtypes \
         --cxx-dir=$mydir/gen \
         --title="$title" "$@"

@@ -1,12 +1,12 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 #include "drake/automotive/gen/idm_with_trajectory_agent_state.h"
 #include "drake/common/drake_export.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
+#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
 namespace automotive {

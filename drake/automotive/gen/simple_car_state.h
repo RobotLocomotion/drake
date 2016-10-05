@@ -1,7 +1,7 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 #include <stdexcept>
 #include <string>
