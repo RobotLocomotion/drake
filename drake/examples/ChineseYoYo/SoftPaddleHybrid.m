@@ -295,6 +295,118 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         
     end
     
+    function [utraj,xtraj]=inContactTrajectory(obj)
+      zInitial = 4.5;
+      tStrike = sqrt(2/9.81)*sqrt(zInitial-4);
+      g = -9.81;
+      vStrike = g*tStrike;
+      xdrop = -0.5;
+      x0 =             [0; 0.1434; -0.5;  4; 0; 0; 0; vStrike];
+      xTargetInitial = [0; 0.14;    0.03; 4; 0; 0; 0; 0];
+      
+      % Get the desired xf in the inertial frame
+      
+      %         xf1_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [-0.5,0,1], obj.options);
+      %         xf2_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [0.5,0,1], obj.options);
+      
+      to_options.lambda_bound = 100; %ToDo Check this?
+      N = 21;
+      Tmin = 0.4;
+      Tmax = 1.2;
+      traj_opt = ConstrainedDircolTrajectoryOptimization(obj.in_contact,N,[Tmin Tmax],to_options);
+      
+      delta = 1e-3; % if x0 is correct
+      traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0-delta,x0+delta),1); % at the first time step constrain the state
+      
+      xLoadFinal_min = -0.51;
+      xLoadFinal_max = 0.51;
+      lb = [-0.02; 0.13; xLoadFinal_min; 3.9650; 0; 0; 0; 0];
+      ub = [0.02; 0.15; xLoadFinal_max; 4.0349; 0; 0; 0; 0];
+      
+      traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(lb,ub),N);   % end constraint
+      
+      tf0 = (Tmax+Tmin)/2; % initial guess
+      t_init = linspace(0,tf0,N);
+      u = 0*ones(1,length(t_init)); %randomness can help
+      %u = 40*cos(20*t_init);
+      traj_init.x = PPTrajectory(foh([0 tf0],[double(x0),double(xTargetInitial)]));   % Need to initialize well
+      %traj_init.x = PPTrajectory(foh(t_init,repmat(x0,1,N))); % same state all the way through
+      traj_init.u = PPTrajectory(foh(t_init,u));
+      traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
+      traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
+      traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);
+      traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
+      
+      % traj_opt = traj_opt.addConstraint(ConstantConstraint(u),traj_opt.u_inds);
+      
+      % traj_opt = traj_opt.setCheckGrad(true);
+      
+      traj_opt = traj_opt.addRunningCost(@running_cost_fun);
+      traj_opt = traj_opt.addFinalCost(@final_cost_fun);
+      
+      [xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+      
+      
+      function [f,df] = running_cost_fun(h,x,u)
+        R = 1;
+        f = h * u'*R*u;
+        df = [u'*R*u zeros(1,8) 2*h*u'*R];
+      end
+      
+      
+      function [f,df] = final_cost_fun(T,x)
+        
+        fixPoint = -0.029;
+        kx = 10;
+        kxd = 1;
+        
+        f = + kx*(x(3)-fixPoint)^2 + kxd*(x(7))^2;
+        df = [0 0 0 2*kx*(x(3)-fixPoint) 0 0 0 2*kxd*x(7) 0];
+      end
+      
+      
+      %       function [g,dg] = running_cost_fun(t,x,u)
+      %         R = 1;
+      %         g = sum((R*u).*u,1);
+      %         dg = [zeros(1,1+size(x,1)),2*u'*R];
+      %         return;
+      %
+      %         xd = repmat([pi;0;0;0],1,size(x,2));
+      %         xerr = x-xd;
+      %         xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;inContactTrajectory
+      %
+      %         Q = diag([10,10,1,1]);
+      %         R = 100;
+      %         g = sum((Q*xerr).*xerr + (R*u).*u,1);
+      %
+      %         if (nargout>1)
+      %           dgddt = 0;
+      %           dgdx = 2*xerr'*Q;
+      %           dgdu = 2*u'*R;
+      %           dg = [dgddt,dgdx,dgdu];
+      %         end
+      %       end
+      %
+      %       function [h,dh] = final_cost_fun(t,x)
+      %         %             h = t;
+      %         %             dh = [1,zeros(1,size(x,1))];
+      %         %             return;
+      %
+      %         %             xd = repmat([pi;0;0;0],1,size(x,2));
+      %         xerr = x-xd;
+      %         xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
+      %
+      %         Qf = 100*diag([10,10,1,1]);
+      %         h = sum((Qf*xerr).*xerr,1);
+      %         h = 10*(x(3)-0.03)^2  + x(7)^2;
+      %
+      %         if (nargout>1)
+      %           dh = [0, 2*xerr'*Qf];
+      %           dh = [0, 0, 0, 20*(x(3)-0.03), 0, 0, 2*x(7), 0];
+      %         end
+      %       end
+      %
+    end
   end
   
   methods (Static)
@@ -399,8 +511,11 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
 %         gradTest(@(q) (r.in_contact.position_constraints{1}.fcn.eval(q)),xDes((1:nq)+1));%,struct('input_names',{{'xDes'}},'output_name','dlength'));
 %         if(i== numtest)
           q = xDes((1:nq)+1);
+          v = rand(4,1);
           [l,dl, ddl] = geval(@(q) r.in_contact.position_constraints{1}.fcn.eval(q), q, struct('grad_method','','grad_level',1));
           [lH,dlH,ddlH] = eval(r.in_contact.position_constraints{1}.fcn,q);
+          [a,b,c,Jdotv,dJdotv] = evalWithJdot(r.in_contact.position_constraints{1}.fcn,q,v);
+
           ddl = reshape(ddl,4,[]);
           ddlH = reshape(ddlH,4,[]);
           if norm(dl-dlH) > 1e-10
@@ -421,7 +536,7 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         x0 = getInitialState(r);
       end
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 15],x0);
+      [ytraj,xtraj] = simulate(r,[0 1],x0);
       v.playback(ytraj,struct('slider',true));
 %       v.playbackAVI(ytraj,'soft_juggler_passive')
       save('sphtraj.mat','r','v','x0','ytraj','xtraj');
@@ -488,6 +603,24 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
         ylabel('$z$', 'Interpreter', 'LaTeX', 'FontSize', 15)
       end
+    end
+    function runConstraintDirCol()
+      
+      sph = SoftPaddleHybrid();
+      %newtraj={[ConstantTrajectory(1);xtraj.traj{1}],[ConstantTrajectory(2);xtraj.traj{2}]}
+      v = sph.constructVisualizer();
+      tic 
+      [utraj, xtraj] = sph.inContactTrajectory();
+      toc
+      newtraj = [ConstantTrajectory(2);xtraj]; %set mode to be 2
+      newtraj = newtraj.setOutputFrame(sph.getOutputFrame);
+      playback(v,newtraj,struct('slider','true'))
+      tt=getBreaks(xtraj);
+      T = tt(end);
+      t = linspace(0,T,1001);
+      x = eval(xtraj,t);
+      figure(1),clf
+      plot(t,x(3,:))
     end
   end
 end
