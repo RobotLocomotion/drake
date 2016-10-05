@@ -1,6 +1,6 @@
-*****************************************
-Binary installation (mac, linux, windows)
-*****************************************
+********************************
+Binary installation (mac, linux)
+********************************
 
 Note: This is still new and relatively untested.  Please report any issues you have.
 
@@ -24,15 +24,6 @@ Then ``cd`` into the examples directories and try some things out.  Here are a f
 * ``StateMachineControl.run()`` in the ``examples/PlanarMonopodHopper`` directory
 
 Please note that you will have to run `addpath_drake` each time you start MATLAB, or `add it to your startup.m <http://www.mathworks.com/help/matlab/ref/startup.html>`_.
-
-
-Windows Specific
-----------------
-
-In certain cases, Microsoft's redistributable C++ runtime libraries need to be installed for mex files to work correctly in Windows.  They can be found here: http://www.microsoft.com/en-us/download/details.aspx?id=40784 
-
-In order to use the Drake visualizer in Windows, the `drake_visualizer.bat` file must be executed from the `build/` folder within Drake.
-
 
 Linux Specific
 --------------

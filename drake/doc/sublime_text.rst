@@ -46,7 +46,7 @@ To change your custom user preferences, go to "Sublime Text", "Preferences",
 Full File Path Display
 ----------------------
 Note that this only needs to be done on OS X since the full path appears by
-default on Windows and Linux machines.
+default on Linux machines.
 
 To display the current file's full path in the title bar on OSX::
 

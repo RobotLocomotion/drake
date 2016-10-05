@@ -27,7 +27,7 @@ Running an On-Demand Build
 
 There are a number of Jenkins builds that do not normally run pre-merge, but
 do run post-merge or nightly.  The post-merge and nightly builds include
-long-running tests, lower-priority platforms (e.g. Windows MATLAB), and
+long-running tests, lower-priority platforms (e.g. Mac), and
 specialized options (e.g.
 `MemorySanitizer <https://github.com/google/sanitizers/wiki/MemorySanitizer>`_).
 Members of the RobotLocomotion organization can manually schedule these builds
