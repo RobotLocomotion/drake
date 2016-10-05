@@ -42,7 +42,7 @@ symbolic::Variables Formula::GetFreeVariables() const {
   return ptr_->GetFreeVariables();
 }
 
-bool Formula::EqualTo(Formula const& f) const {
+bool Formula::EqualTo(const Formula& f) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   DRAKE_ASSERT(f.ptr_ != nullptr);
   if (ptr_ == f.ptr_) {
@@ -59,9 +59,15 @@ bool Formula::EqualTo(Formula const& f) const {
   return ptr_->EqualTo(*(f.ptr_));
 }
 
-bool Formula::Evaluate(Environment const& env) const {
+bool Formula::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->Evaluate(env);
+}
+
+string Formula::to_string() const {
+  ostringstream oss;
+  oss << *this;
+  return oss.str();
 }
 
 Formula Formula::True() {
@@ -73,45 +79,45 @@ Formula Formula::False() {
   return ff;
 }
 
-Formula forall(Variables const& vars, Formula const& f) {
+Formula forall(const Variables& vars, const Formula& f) {
   return Formula{make_shared<FormulaForall>(vars, f)};
 }
 
-Formula operator&&(Formula const& f1, Formula const& f2) {
-  // ff && x = ff    x && ff == ff
+Formula operator&&(const Formula& f1, const Formula& f2) {
+  // ff && x => ff    x && ff => ff
   if (f1.get_kind() == FormulaKind::False ||
       f2.get_kind() == FormulaKind::False) {
     return Formula::False();
   }
-  // tt && f2 = f2
+  // tt && f2 => f2
   if (f1.get_kind() == FormulaKind::True) {
     return f2;
   }
-  // f1 && tt = f1
+  // f1 && tt => f1
   if (f2.get_kind() == FormulaKind::True) {
     return f1;
   }
   return Formula{make_shared<FormulaAnd>(f1, f2)};
 }
 
-Formula operator||(Formula const& f1, Formula const& f2) {
-  // tt || x = tt    x && tt == tt
+Formula operator||(const Formula& f1, const Formula& f2) {
+  // tt || x => tt    x && tt => tt
   if (f1.get_kind() == FormulaKind::True ||
       f2.get_kind() == FormulaKind::True) {
     return Formula::True();
   }
-  // ff && f2 = f2
+  // ff && f2 => f2
   if (f1.get_kind() == FormulaKind::False) {
     return f2;
   }
-  // f1 && ff = f1
+  // f1 && ff => f1
   if (f2.get_kind() == FormulaKind::False) {
     return f1;
   }
   return Formula{make_shared<FormulaOr>(f1, f2)};
 }
 
-Formula operator!(Formula const& f) {
+Formula operator!(const Formula& f) {
   if (f.get_kind() == FormulaKind::True) {
     return Formula::False();
   }
@@ -121,94 +127,94 @@ Formula operator!(Formula const& f) {
   return Formula{make_shared<FormulaNot>(f)};
 }
 
-ostream& operator<<(ostream& os, Formula const& e) {
+ostream& operator<<(ostream& os, const Formula& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
   return e.ptr_->Display(os);
 }
 
-Formula operator==(Expression const& e1, Expression const& e2) {
+Formula operator==(const Expression& e1, const Expression& e2) {
   // If e1 and e2 are structurally equal, simplify e1 == e2 to true.
   if (e1.EqualTo(e2)) {
     return Formula::True();
   }
   return Formula{make_shared<FormulaEq>(e1, e2)};
 }
-Formula operator==(double const v1, Expression const& e2) {
+Formula operator==(const double v1, const Expression& e2) {
   // use () to avoid a conflict between cpplint and clang-format
   return (Expression{v1}) == e2;
 }
-Formula operator==(Expression const& e1, double const v2) {
+Formula operator==(const Expression& e1, const double v2) {
   return e1 == Expression{v2};
 }
 
-Formula operator!=(Expression const& e1, Expression const& e2) {
+Formula operator!=(const Expression& e1, const Expression& e2) {
   // If e1 and e2 are structurally equal, simplify e1 != e2 to false.
   if (e1.EqualTo(e2)) {
     return Formula::False();
   }
   return Formula{make_shared<FormulaNeq>(e1, e2)};
 }
-Formula operator!=(double const v1, Expression const& e2) {
+Formula operator!=(const double v1, const Expression& e2) {
   // use () to avoid a conflict between cpplint and clang-format
   return (Expression{v1}) != e2;
 }
-Formula operator!=(Expression const& e1, double const v2) {
+Formula operator!=(const Expression& e1, const double v2) {
   return e1 != Expression{v2};
 }
 
-Formula operator<(Expression const& e1, Expression const& e2) {
+Formula operator<(const Expression& e1, const Expression& e2) {
   // simplification: E < E  -->  False
   if (e1.EqualTo(e2)) {
     return Formula::False();
   }
   return Formula{make_shared<FormulaLt>(e1, e2)};
 }
-Formula operator<(double const v1, Expression const& e2) {
+Formula operator<(const double v1, const Expression& e2) {
   return Expression{v1} < e2;
 }
-Formula operator<(Expression const& e1, double const v2) {
+Formula operator<(const Expression& e1, const double v2) {
   return e1 < Expression{v2};
 }
 
-Formula operator<=(Expression const& e1, Expression const& e2) {
+Formula operator<=(const Expression& e1, const Expression& e2) {
   // simplification: E <= E  -->  True
   if (e1.EqualTo(e2)) {
     return Formula::True();
   }
   return Formula{make_shared<FormulaLeq>(e1, e2)};
 }
-Formula operator<=(double const v1, Expression const& e2) {
+Formula operator<=(const double v1, const Expression& e2) {
   return Expression{v1} <= e2;
 }
-Formula operator<=(Expression const& e1, double const v2) {
+Formula operator<=(const Expression& e1, const double v2) {
   return e1 <= Expression{v2};
 }
 
-Formula operator>(Expression const& e1, Expression const& e2) {
+Formula operator>(const Expression& e1, const Expression& e2) {
   // simplification: E > E  -->  False
   if (e1.EqualTo(e2)) {
     return Formula::False();
   }
   return Formula{make_shared<FormulaGt>(e1, e2)};
 }
-Formula operator>(double const v1, Expression const& e2) {
+Formula operator>(const double v1, const Expression& e2) {
   return Expression{v1} > e2;
 }
-Formula operator>(Expression const& e1, double const v2) {
+Formula operator>(const Expression& e1, const double v2) {
   return e1 > Expression{v2};
 }
 
-Formula operator>=(Expression const& e1, Expression const& e2) {
+Formula operator>=(const Expression& e1, const Expression& e2) {
   // simplification: E >= E  -->  True
   if (e1.EqualTo(e2)) {
     return Formula::True();
   }
   return Formula{make_shared<FormulaGeq>(e1, e2)};
 }
-Formula operator>=(double const v1, Expression const& e2) {
+Formula operator>=(const double v1, const Expression& e2) {
   return Expression{v1} >= e2;
 }
-Formula operator>=(Expression const& e1, double const v2) {
+Formula operator>=(const Expression& e1, const double v2) {
   return e1 >= Expression{v2};
 }
 
@@ -222,11 +228,11 @@ symbolic::Variables FormulaTrue::GetFreeVariables() const {
   return symbolic::Variables{};
 }
 
-bool FormulaTrue::EqualTo(FormulaCell const& f) const {
+bool FormulaTrue::EqualTo(const FormulaCell& f) const {
   return get_kind() == f.get_kind();
 }
 
-bool FormulaTrue::Evaluate(Environment const& env) const { return true; }
+bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
 
 ostream& FormulaTrue::Display(ostream& os) const {
   os << "True";
@@ -240,18 +246,18 @@ symbolic::Variables FormulaFalse::GetFreeVariables() const {
   return symbolic::Variables{};
 }
 
-bool FormulaFalse::EqualTo(FormulaCell const& f) const {
+bool FormulaFalse::EqualTo(const FormulaCell& f) const {
   return get_kind() == f.get_kind();
 }
 
-bool FormulaFalse::Evaluate(Environment const& env) const { return false; }
+bool FormulaFalse::Evaluate(const Environment& env) const { return false; }
 
 ostream& FormulaFalse::Display(ostream& os) const {
   os << "False";
   return os;
 }
 
-FormulaEq::FormulaEq(Expression const& e1, Expression const& e2)
+FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Eq, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -263,15 +269,15 @@ symbolic::Variables FormulaEq::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaEq::EqualTo(FormulaCell const& f) const {
+bool FormulaEq::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaEq const& f_eq = static_cast<FormulaEq const&>(f);
+  const FormulaEq& f_eq{static_cast<const FormulaEq&>(f)};
   return e1_.EqualTo(f_eq.e1_) && e2_.EqualTo(f_eq.e2_);
 }
 
-bool FormulaEq::Evaluate(Environment const& env) const {
+bool FormulaEq::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) == e2_.Evaluate(env);
 }
 
@@ -280,7 +286,7 @@ ostream& FormulaEq::Display(ostream& os) const {
   return os;
 }
 
-FormulaNeq::FormulaNeq(Expression const& e1, Expression const& e2)
+FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Neq, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -292,24 +298,24 @@ symbolic::Variables FormulaNeq::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaNeq::EqualTo(FormulaCell const& f) const {
+bool FormulaNeq::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaNeq const& f_neq = static_cast<FormulaNeq const&>(f);
+  const FormulaNeq& f_neq{static_cast<const FormulaNeq&>(f)};
   return e1_.EqualTo(f_neq.e1_) && e2_.EqualTo(f_neq.e2_);
 }
 
-bool FormulaNeq::Evaluate(Environment const& env) const {
+bool FormulaNeq::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) != e2_.Evaluate(env);
 }
 
 ostream& FormulaNeq::Display(ostream& os) const {
-  os << "(" << e1_ << " = " << e2_ << ")";
+  os << "(" << e1_ << " != " << e2_ << ")";
   return os;
 }
 
-FormulaGt::FormulaGt(Expression const& e1, Expression const& e2)
+FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Gt, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -321,15 +327,15 @@ symbolic::Variables FormulaGt::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaGt::EqualTo(FormulaCell const& f) const {
+bool FormulaGt::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaGt const& f_gt = static_cast<FormulaGt const&>(f);
+  const FormulaGt& f_gt{static_cast<const FormulaGt&>(f)};
   return e1_.EqualTo(f_gt.e1_) && e2_.EqualTo(f_gt.e2_);
 }
 
-bool FormulaGt::Evaluate(Environment const& env) const {
+bool FormulaGt::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) > e2_.Evaluate(env);
 }
 
@@ -338,7 +344,7 @@ ostream& FormulaGt::Display(ostream& os) const {
   return os;
 }
 
-FormulaGeq::FormulaGeq(Expression const& e1, Expression const& e2)
+FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Geq, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -350,15 +356,15 @@ symbolic::Variables FormulaGeq::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaGeq::EqualTo(FormulaCell const& f) const {
+bool FormulaGeq::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaGeq const& f_geq = static_cast<FormulaGeq const&>(f);
+  const FormulaGeq& f_geq{static_cast<const FormulaGeq&>(f)};
   return e1_.EqualTo(f_geq.e1_) && e2_.EqualTo(f_geq.e2_);
 }
 
-bool FormulaGeq::Evaluate(Environment const& env) const {
+bool FormulaGeq::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) >= e2_.Evaluate(env);
 }
 
@@ -367,7 +373,7 @@ ostream& FormulaGeq::Display(ostream& os) const {
   return os;
 }
 
-FormulaLt::FormulaLt(Expression const& e1, Expression const& e2)
+FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Lt, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -379,15 +385,15 @@ symbolic::Variables FormulaLt::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaLt::EqualTo(FormulaCell const& f) const {
+bool FormulaLt::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaLt const& f_gt = static_cast<FormulaLt const&>(f);
+  const FormulaLt& f_gt{static_cast<const FormulaLt&>(f)};
   return e1_.EqualTo(f_gt.e1_) && e2_.EqualTo(f_gt.e2_);
 }
 
-bool FormulaLt::Evaluate(Environment const& env) const {
+bool FormulaLt::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) < e2_.Evaluate(env);
 }
 
@@ -396,7 +402,7 @@ ostream& FormulaLt::Display(ostream& os) const {
   return os;
 }
 
-FormulaLeq::FormulaLeq(Expression const& e1, Expression const& e2)
+FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
     : FormulaCell{FormulaKind::Leq, hash_combine(e1.get_hash(), e2.get_hash())},
       e1_{e1},
       e2_{e2} {}
@@ -408,15 +414,15 @@ symbolic::Variables FormulaLeq::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaLeq::EqualTo(FormulaCell const& f) const {
+bool FormulaLeq::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaLeq const& f_geq = static_cast<FormulaLeq const&>(f);
+  const FormulaLeq& f_geq{static_cast<const FormulaLeq&>(f)};
   return e1_.EqualTo(f_geq.e1_) && e2_.EqualTo(f_geq.e2_);
 }
 
-bool FormulaLeq::Evaluate(Environment const& env) const {
+bool FormulaLeq::Evaluate(const Environment& env) const {
   return e1_.Evaluate(env) <= e2_.Evaluate(env);
 }
 
@@ -425,7 +431,7 @@ ostream& FormulaLeq::Display(ostream& os) const {
   return os;
 }
 
-FormulaAnd::FormulaAnd(Formula const& f1, Formula const& f2)
+FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
     : FormulaCell{FormulaKind::And, hash_combine(f1.get_hash(), f2.get_hash())},
       f1_{f1},
       f2_{f2} {}
@@ -437,15 +443,15 @@ symbolic::Variables FormulaAnd::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaAnd::EqualTo(FormulaCell const& f) const {
+bool FormulaAnd::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaAnd const& f_and = static_cast<FormulaAnd const&>(f);
+  const FormulaAnd& f_and{static_cast<const FormulaAnd&>(f)};
   return f1_.EqualTo(f_and.f1_) && f2_.EqualTo(f_and.f2_);
 }
 
-bool FormulaAnd::Evaluate(Environment const& env) const {
+bool FormulaAnd::Evaluate(const Environment& env) const {
   return f1_.Evaluate(env) && f2_.Evaluate(env);
 }
 
@@ -454,7 +460,7 @@ ostream& FormulaAnd::Display(ostream& os) const {
   return os;
 }
 
-FormulaOr::FormulaOr(Formula const& f1, Formula const& f2)
+FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
     : FormulaCell{FormulaKind::Or, hash_combine(f1.get_hash(), f2.get_hash())},
       f1_{f1},
       f2_{f2} {}
@@ -466,15 +472,15 @@ symbolic::Variables FormulaOr::GetFreeVariables() const {
   return ret;
 }
 
-bool FormulaOr::EqualTo(FormulaCell const& f) const {
+bool FormulaOr::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaOr const& f_or = static_cast<FormulaOr const&>(f);
+  const FormulaOr& f_or{static_cast<const FormulaOr&>(f)};
   return f1_.EqualTo(f_or.f1_) && f2_.EqualTo(f_or.f2_);
 }
 
-bool FormulaOr::Evaluate(Environment const& env) const {
+bool FormulaOr::Evaluate(const Environment& env) const {
   return f1_.Evaluate(env) || f2_.Evaluate(env);
 }
 
@@ -483,22 +489,22 @@ ostream& FormulaOr::Display(ostream& os) const {
   return os;
 }
 
-FormulaNot::FormulaNot(Formula const& f)
+FormulaNot::FormulaNot(const Formula& f)
     : FormulaCell{FormulaKind::Not, f.get_hash()}, f_{f} {}
 
 symbolic::Variables FormulaNot::GetFreeVariables() const {
   return f_.GetFreeVariables();
 }
 
-bool FormulaNot::EqualTo(FormulaCell const& f) const {
+bool FormulaNot::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaNot const& f_not = static_cast<FormulaNot const&>(f);
+  const FormulaNot& f_not{static_cast<const FormulaNot&>(f)};
   return f_.EqualTo(f_not.f_);
 }
 
-bool FormulaNot::Evaluate(Environment const& env) const {
+bool FormulaNot::Evaluate(const Environment& env) const {
   return !f_.Evaluate(env);
 }
 
@@ -507,7 +513,7 @@ ostream& FormulaNot::Display(ostream& os) const {
   return os;
 }
 
-FormulaForall::FormulaForall(Variables const& vars, Formula const& f)
+FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
     : FormulaCell{FormulaKind::Forall,
                   hash_combine(vars.get_hash(), f.get_hash())},
       vars_{vars},
@@ -517,15 +523,15 @@ symbolic::Variables FormulaForall::GetFreeVariables() const {
   return f_.GetFreeVariables() - vars_;
 }
 
-bool FormulaForall::EqualTo(FormulaCell const& f) const {
+bool FormulaForall::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  FormulaForall const& f_forall = static_cast<FormulaForall const&>(f);
+  const FormulaForall& f_forall{static_cast<const FormulaForall&>(f)};
   return vars_ == f_forall.vars_ && f_.EqualTo(f_forall.f_);
 }
 
-bool FormulaForall::Evaluate(Environment const& env) const {
+bool FormulaForall::Evaluate(const Environment& env) const {
   // Given ∀ x1, ..., xn. F, check if there is a counterexample satisfying
   // ¬F. If exists, it returns false. Otherwise, return true.
   // That is, it returns !check(∃ x1, ..., xn. ¬F)
@@ -539,11 +545,3 @@ ostream& FormulaForall::Display(ostream& os) const {
 }
 }  // namespace symbolic
 }  // namespace drake
-
-namespace std {
-string to_string(drake::symbolic::Formula const& f) {
-  ostringstream oss;
-  oss << f;
-  return oss.str();
-}
-}  // namespace std
