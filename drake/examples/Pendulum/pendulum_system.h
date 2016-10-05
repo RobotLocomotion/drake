@@ -3,40 +3,13 @@
 #include <memory>
 
 #include "drake/common/drake_export.h"
+#include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
 namespace pendulum {
-
-/// The state of a one-dimensional pendulum system.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-template <typename T>
-class PendulumStateVector : public systems::BasicVector<T> {
- public:
-  PendulumStateVector(const T& initial_theta, const T& initial_thetadot);
-  PendulumStateVector();
-  ~PendulumStateVector() override;
-
-  T get_theta() const;
-  void set_theta(const T& theta);
-  T get_thetadot() const;
-  void set_thetadot(const T& thetadot);
-
-  explicit PendulumStateVector(const PendulumStateVector& other) = delete;
-  PendulumStateVector& operator=(const PendulumStateVector& other) = delete;
-  explicit PendulumStateVector(PendulumStateVector&& other) = delete;
-  PendulumStateVector& operator=(PendulumStateVector&& other) = delete;
-
- private:
-  PendulumStateVector<T>* DoClone() const override;
-};
 
 /// A model of a one-dimensional pendulum system, similar to the one
 /// described in Chapter 2 of Russ Tedrake. Underactuated Robotics:
