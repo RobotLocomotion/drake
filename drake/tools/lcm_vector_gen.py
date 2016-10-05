@@ -116,8 +116,7 @@ VECTOR_HH_PREAMBLE = """
 #include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
-namespace drake {
-namespace automotive {
+%(opening_namespace)s
 """
 
 VECTOR_CLASS_BEGIN = """
@@ -135,22 +134,19 @@ VECTOR_CLASS_END = """
 """
 
 VECTOR_HH_POSTAMBLE = """
-}  // namespace automotive
-}  // namespace drake
+%(closing_namespace)s
 """
 
 VECTOR_CC_PREAMBLE = """
-#include "drake/automotive/gen/%(snake)s.h"
+#include "%(relative_cxx_dir)s/%(snake)s.h"
 
 %(generated_code_warning)s
 
-namespace drake {
-namespace automotive {
+%(opening_namespace)s
 """
 
 VECTOR_CC_POSTAMBLE = """
-}  // namespace automotive
-}  // namespace drake
+%(closing_namespace)s
 """
 
 TRANSLATOR_HH_PREAMBLE = """
@@ -158,13 +154,12 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
-#include "drake/automotive/gen/%(snake)s.h"
+#include "%(relative_cxx_dir)s/%(snake)s.h"
 #include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_%(snake)s_t.hpp"
 
-namespace drake {
-namespace automotive {
+%(opening_namespace)s
 """
 
 TRANSLATOR_CLASS_DECL = """
@@ -187,12 +182,11 @@ class DRAKE_EXPORT %(camel)sTranslator
 """
 
 TRANSLATOR_HH_POSTAMBLE = """
-}  // namespace automotive
-}  // namespace drake
+%(closing_namespace)s
 """
 
 TRANSLATOR_CC_PREAMBLE = """
-#include "drake/automotive/gen/%(snake)s_translator.h"
+#include "%(relative_cxx_dir)s/%(snake)s_translator.h"
 
 %(generated_code_warning)s
 
@@ -200,13 +194,11 @@ TRANSLATOR_CC_PREAMBLE = """
 
 #include "drake/common/drake_assert.h"
 
-namespace drake {
-namespace automotive {
+%(opening_namespace)s
 """
 
 TRANSLATOR_CC_POSTAMBLE = """
-}  // namespace automotive
-}  // namespace drake
+%(closing_namespace)s
 """
 
 ALLOCATE_OUTPUT_VECTOR = """
@@ -298,19 +290,28 @@ def generate_code(args):
     lcmtype_dir = os.path.abspath(args.lcmtype_dir)
     drake_dist_dir = subprocess.check_output(
         "git rev-parse --show-toplevel".split()).strip()
+    relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
 
     title_phrase = args.title.split()
     camel = ''.join([x.capitalize() for x in title_phrase])
     snake = '_'.join([x.lower() for x in title_phrase])
     screaming_snake = '_'.join([x.upper() for x in title_phrase])
 
+    namespace = args.namespace.split("::")
+    opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
+    closing_namespace = "".join(["}  // namespace " + x + "\n" 
+                                 for x in reversed(namespace)])
+
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
     context = dict()
+    context.update(relative_cxx_dir = relative_cxx_dir)
     context.update(camel = camel)
     context.update(indices = camel + 'Indices')
     context.update(snake = snake)
     context.update(screaming_snake = screaming_snake)
+    context.update(opening_namespace = opening_namespace)
+    context.update(closing_namespace = closing_namespace)
 
     # This is a specially-formatted code block to warn users not to edit.
     # This disclaimer text is special-cased by our review tool, reviewable.io.
@@ -321,6 +322,7 @@ def generate_code(args):
         disclaimer, "// See " + generator + "."]))
 
     with open(os.path.join(cxx_dir, "%s.h" % snake), 'w') as hh:
+        print "generating %s" % hh.name
         put(hh, VECTOR_HH_PREAMBLE % context, 2)
         generate_indices(hh, context, args.fields)
         put(hh, VECTOR_CLASS_BEGIN % context, 2)
@@ -330,27 +332,34 @@ def generate_code(args):
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
     with open(os.path.join(cxx_dir, "%s.cc" % snake), 'w') as cc:
+        print "generating %s" % cc.name
         put(cc, VECTOR_CC_PREAMBLE % context, 2)
         generate_indices_storage(cc, context, args.fields)
         put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
-    with open(os.path.join(cxx_dir, "%s_translator.h" % snake), 'w') as hh:
-        put(hh, TRANSLATOR_HH_PREAMBLE % context, 2)
-        put(hh, TRANSLATOR_CLASS_DECL % context, 2)
-        put(hh, TRANSLATOR_HH_POSTAMBLE % context, 1)
+    if args.lcmtype_dir:
+        with open(os.path.join(cxx_dir, "%s_translator.h" % snake),
+                  'w') as hh:
+            put(hh, TRANSLATOR_HH_PREAMBLE % context, 2)
+            put(hh, TRANSLATOR_CLASS_DECL % context, 2)
+            put(hh, TRANSLATOR_HH_POSTAMBLE % context, 1)
 
-    with open(os.path.join(cxx_dir, "%s_translator.cc" % snake), 'w') as cc:
-        put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
-        generate_allocate_output_vector(cc, context, args.fields)
-        generate_deserialize(cc, context, args.fields)
-        generate_serialize(cc, context, args.fields)
-        put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
+        with open(os.path.join(cxx_dir, "%s_translator.cc" % snake),
+                  'w') as cc:
+            print "generating %s" % cc.name
+            put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
+            generate_allocate_output_vector(cc, context, args.fields)
+            generate_deserialize(cc, context, args.fields)
+            generate_serialize(cc, context, args.fields)
+            put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
 
-    with open(os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake), 'w') as lcm:
-        put(lcm, LCMTYPE_PREAMBLE % context, 2)
-        for field in args.fields:
-            put(lcm, "  double %s;" % field, 1)
-        put(lcm, LCMTYPE_POSTAMBLE % context, 1)
+        with open(os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake),
+                  'w') as lcm:
+            print "generating %s" % lcm.name
+            put(lcm, LCMTYPE_PREAMBLE % context, 2)
+            for field in args.fields:
+                put(lcm, "  double %s;" % field, 1)
+            put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
 
 def main():
@@ -360,7 +369,11 @@ def main():
     parser.add_argument(
         '--cxx-dir', help="output directory for cxx files", default=".")
     parser.add_argument(
-        '--lcmtype-dir', help="output directory for lcm file", default=".")
+        '--namespace', help="::-delimited enclosing namespace",
+        default="drake")
+    # By default, LCM output is disabled.
+    parser.add_argument(
+        '--lcmtype-dir', help="output directory for lcm file", default="")
     parser.add_argument(
         '--title', help="title phrase, from which type names will be made")
     parser.add_argument(
