@@ -8,6 +8,9 @@
 #include "sys2_qp.h"
 #include "sys2_plan_eval.h"
 
+#include "gtest/gtest.h"
+#include "drake/common/eigen_matrix_compare.h"
+
 using namespace drake;
 using namespace systems;
 
@@ -30,7 +33,7 @@ void const_acc_test() {
 
   // set initial state
   // probably should pass in sub context?
-  val_sim->set_initial_state(simulator.get_mutable_context());
+  val_sim->SetInitialCondition(simulator.get_mutable_context());
 
   simulator.request_initial_step_size_attempt(1e-2);
   simulator.Initialize();
@@ -38,70 +41,39 @@ void const_acc_test() {
   simulator.StepTo(0.1);
 }
 
-example::qp_inverse_dynamics::QPInput default_QP_input(const RigidBodyTree& r) {
-  example::qp_inverse_dynamics::QPInput input(r);
-  input.mutable_desired_comdd().setZero();
-  input.mutable_w_com() = 1e3;
-
-  input.mutable_desired_vd().setZero();
-  input.mutable_w_vd() = 1;
-
-  example::qp_inverse_dynamics:: DesiredBodyAcceleration pelvdd_d(*r.FindBody("pelvis"));
-  pelvdd_d.mutable_weight() = 1e1;
-  pelvdd_d.mutable_acceleration().setZero();
-  input.mutable_desired_body_accelerations().push_back(pelvdd_d);
-
-  example::qp_inverse_dynamics::DesiredBodyAcceleration torsodd_d(*r.FindBody("torso"));
-  torsodd_d.mutable_weight() = 1e1;
-  torsodd_d.mutable_acceleration().setZero();
-  input.mutable_desired_body_accelerations().push_back(torsodd_d);
-
-  input.mutable_w_basis_reg() = 1e-6;
-
-  // Make contact points.
-  example::qp_inverse_dynamics::ContactInformation left_foot_contact(
-      *r.FindBody("leftFoot"), 4);
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(0.2, 0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(0.2, -0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(-0.05, -0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(-0.05, 0.05, -0.09));
-
-  example::qp_inverse_dynamics::ContactInformation right_foot_contact(
-      *r.FindBody("rightFoot"), 4);
-  right_foot_contact.mutable_contact_points() =
-      left_foot_contact.contact_points();
-
-  input.mutable_contact_info().push_back(left_foot_contact);
-  input.mutable_contact_info().push_back(right_foot_contact);
-
-  return input;
-}
-
 void close_loop_test() {
-  example::qp_inverse_dynamics::QPInput input = default_QP_input(robot);
-
   DiagramBuilder<double> builder;
-  System2DummyValkyrieSim *val_sim = builder.AddSystem(std::make_unique<System2DummyValkyrieSim>(robot));
   System2QP *qp_con = builder.AddSystem(std::make_unique<System2QP>(robot));
-  ConstantValueSource<double> *const_qp_input = builder.AddSystem(std::make_unique<ConstantValueSource<double>>(std::unique_ptr<AbstractValue>(new Value<example::qp_inverse_dynamics::QPInput>(input))));
+  System2DummyValkyrieSim *val_sim = builder.AddSystem(std::make_unique<System2DummyValkyrieSim>(robot));
+  System2PlanEval *plan_eval = builder.AddSystem(std::make_unique<System2PlanEval>(robot));
 
-  builder.Connect(qp_con->get_output_port(0), val_sim->get_input_port(0));
-  builder.Connect(val_sim->get_output_port(0), qp_con->get_input_port(0));
-  builder.Connect(const_qp_input->get_output_port(0), qp_con->get_input_port(1));
+  builder.Connect(qp_con->get_output_port_qp_output(), val_sim->get_input_port_qp_output());
+  builder.Connect(val_sim->get_output_port_humanoid_status(), qp_con->get_input_port_humanoid_status());
+  builder.Connect(val_sim->get_output_port_humanoid_status(), plan_eval->get_input_port_humanoid_status());
+  builder.Connect(plan_eval->get_output_port_qp_input(), qp_con->get_input_port_qp_input());
 
   auto diagram = builder.Build();
 
   Simulator<double> simulator(*diagram);
   // probably should pass in sub context?
-  val_sim->set_initial_state(simulator.get_mutable_context());
+  std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs0 = val_sim->SetInitialCondition(simulator.get_mutable_context());
+  plan_eval->SetupDesired(*rs0);
+  val_sim->PerturbPosition("torsoPitch", 0.1, simulator.get_mutable_context());
 
-  simulator.request_initial_step_size_attempt(1e-2);
+  simulator.request_initial_step_size_attempt(4e-3);
   simulator.Initialize();
-  simulator.StepTo(1.0);
+  simulator.StepTo(2.0);
+
+  std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs1 = val_sim->GetHumanoidStatusFromContext(simulator.get_context());
+
+  EXPECT_TRUE(rs1->foot(Side::LEFT).velocity().norm() < 1e-6);
+  EXPECT_TRUE(rs1->foot(Side::RIGHT).velocity().norm() < 1e-6);
+
+  EXPECT_TRUE(drake::CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
+                                     drake::MatrixCompareType::absolute));
+  EXPECT_TRUE(drake::CompareMatrices(
+      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()), 1e-4,
+      drake::MatrixCompareType::absolute));
 }
 
 int main() {
