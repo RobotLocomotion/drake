@@ -16,7 +16,6 @@ namespace lcm {
  */
 class DRAKELCM_EXPORT DrakeLcmMessageHandlerInterface {
  public:
-
   virtual ~DrakeLcmMessageHandlerInterface() {}
 
   /**
