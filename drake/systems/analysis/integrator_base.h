@@ -129,7 +129,7 @@ class IntegratorBase {
 
   /**
    *   Gets the target accuracy.
-   *   \sa get_accuracy_in_use()
+   *   @sa get_accuracy_in_use()
    **/
   const T& get_target_accuracy() const { return target_accuracy_; }
 

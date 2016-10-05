@@ -86,7 +86,8 @@ class Simulator {
   void Initialize();
 
   // TODO(edrumwri): add ability to account for final time
-  /** Advance the System's trajectory until `final_time` is reached or some
+  /** Advance the System's trajectory until `boundary_time` is reached in
+   * the context or some
    * other termination condition occurs. A variety of `std::runtime_error`
    * conditions are possible here, as well as error conditions that may be
    * thrown by the System when it is asked to perform computations. Be sure to
@@ -99,7 +100,7 @@ class Simulator {
    * See documentation for `Initialize()` for the error conditions it might
    * produce.
    **/
-  void StepTo(const T& final_time);
+  void StepTo(const T& boundary_time);
 
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
@@ -131,7 +132,7 @@ class Simulator {
   /** Transfer ownership of this %Simulator's internal Context to the caller.
    * The %Simulator will no longer contain a Context. The caller must not
    * attempt to advance the simulator in time after that point,
-   * \sa reset_context()
+   * @sa reset_context()
    **/
   std::unique_ptr<Context<T>> release_context() {
     integrator_->reset_context(nullptr);
@@ -287,13 +288,13 @@ void Simulator<T>::Initialize() {
  * 2. Publish.
  * 3. Integrate the smooth system (the ODE or DAE)
  * 4. Perform post-step stabilization for DAEs (if desired).
- * @param final_time The time to advance the context to.
+ * @param boundary_time The time to advance the context to.
  */
 template <typename T>
-void Simulator<T>::StepTo(const T& final_time) {
+void Simulator<T>::StepTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
 
-  DRAKE_THROW_UNLESS(final_time >= context_->get_time());
+  DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Updates/publishes can be triggered throughout the integration process,
   // but are not active at the start of the step.
@@ -302,7 +303,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
   // Integrate until desired interval has completed.
   UpdateActions<T> update_actions;
-  while (context_->get_time() <= final_time) {
+  while (context_->get_time() <= boundary_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
     SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
@@ -409,7 +410,7 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
       step_end_time = next_update_time;
       update_time_hit = true;
     }
-  } else {  // final_time < next_update_time.
+  } else {  // boundary_time < next_update_time.
     if (final_time <= step_stretch_time) step_end_time = final_time;
   }
 
