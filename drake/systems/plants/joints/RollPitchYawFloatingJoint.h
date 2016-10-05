@@ -7,7 +7,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
+class DRAKE_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
  public:
   // disable copy construction and assignment

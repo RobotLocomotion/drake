@@ -5,15 +5,15 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeQP_export.h"
+#include "drake/common/drake_export.h"
 
-DRAKEQP_EXPORT int fastQPThatTakesQinv(
+DRAKE_EXPORT int fastQPThatTakesQinv(
   std::vector<Eigen::MatrixXd*> QinvblkDiag, const Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
   std::set<int>& active, Eigen::VectorXd& x);
 
-DRAKEQP_EXPORT int fastQP(
+DRAKE_EXPORT int fastQP(
   std::vector<Eigen::MatrixXd*> QblkDiag, const Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,

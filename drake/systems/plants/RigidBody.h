@@ -11,11 +11,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
-class DRAKERBM_EXPORT RigidBody {
+class DRAKE_EXPORT RigidBody {
  public:
   RigidBody();
 

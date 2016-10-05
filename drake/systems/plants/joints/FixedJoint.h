@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 
-class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
+class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   FixedJoint(const std::string& name,
              const Eigen::Isometry3d& transform_to_parent_body)

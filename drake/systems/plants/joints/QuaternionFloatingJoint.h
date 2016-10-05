@@ -6,7 +6,7 @@
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
+class DRAKE_EXPORT QuaternionFloatingJoint
     : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
   QuaternionFloatingJoint(const std::string& name,

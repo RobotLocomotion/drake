@@ -1,10 +1,10 @@
 #pragma once
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
-class DRAKERBM_EXPORT RigidBodyCollisionElement
+class DRAKE_EXPORT RigidBodyCollisionElement
     : public DrakeCollision::Element {
  public:
   RigidBodyCollisionElement(const RigidBodyCollisionElement& other);

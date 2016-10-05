@@ -6,14 +6,14 @@
 #include <fstream>
 #include <Eigen/SparseCore>
 
-#include "drake/drakeOptimization_export.h"
+#include "drake/common/drake_export.h"
 
 #include "mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
+class DRAKE_EXPORT MobyLCPSolver
     : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();

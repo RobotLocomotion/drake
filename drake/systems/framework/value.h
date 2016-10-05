@@ -5,7 +5,7 @@
 #include <string>
 #include <typeinfo>
 
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -19,7 +19,7 @@ class Value;
 /// Only Value<T> should inherit directly from AbstractValue. User-defined
 /// classes that define additional type-erased features should inherit from
 /// Value<T>.
-class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
+class DRAKE_EXPORT AbstractValue {
  public:
   AbstractValue() {}
   virtual ~AbstractValue();

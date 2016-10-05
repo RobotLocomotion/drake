@@ -6,7 +6,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeCollision_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
 // Forward declaration.
@@ -21,7 +21,7 @@ class RigidBody;
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
-class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
+class DRAKE_EXPORT Element : public DrakeShapes::Element {
  public:
   Element(const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
@@ -89,7 +89,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   /**
    * A toString method for this class.
    */
-  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                         const Element&);
 
  protected:

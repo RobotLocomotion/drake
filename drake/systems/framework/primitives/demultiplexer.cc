@@ -40,8 +40,8 @@ void Demultiplexer<T>::EvalOutput(const Context<T>& context,
   }
 }
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<double>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT Demultiplexer<AutoDiffXd>;
+template class DRAKE_EXPORT Demultiplexer<double>;
+template class DRAKE_EXPORT Demultiplexer<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
