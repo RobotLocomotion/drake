@@ -134,7 +134,8 @@ Formula operator==(Expression const& e1, Expression const& e2) {
   return Formula{make_shared<FormulaEq>(e1, e2)};
 }
 Formula operator==(double const v1, Expression const& e2) {
-  return Expression{v1} == e2;
+  // use () to avoid a conflict between cpplint and clang-format
+  return (Expression{v1}) == e2;
 }
 Formula operator==(Expression const& e1, double const v2) {
   return e1 == Expression{v2};
@@ -148,7 +149,8 @@ Formula operator!=(Expression const& e1, Expression const& e2) {
   return Formula{make_shared<FormulaNeq>(e1, e2)};
 }
 Formula operator!=(double const v1, Expression const& e2) {
-  return Expression{v1} != e2;
+  // use () to avoid a conflict between cpplint and clang-format
+  return (Expression{v1}) != e2;
 }
 Formula operator!=(Expression const& e1, double const v2) {
   return e1 != Expression{v2};
