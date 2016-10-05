@@ -87,7 +87,7 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   EXPECT_EQ(next_t, actions.time);
 
   // Check that the action is to update.
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   const DiscreteEvent<double>& event = actions.events[0];
   EXPECT_EQ(hold_.get(), event.recipient);
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, event.action);
@@ -106,7 +106,7 @@ TEST_F(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   EXPECT_EQ(next_t, actions.time);
 
   // Check that the action is to update.
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   const DiscreteEvent<double>& event = actions.events[0];
   EXPECT_EQ(hold_.get(), event.recipient);
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, event.action);

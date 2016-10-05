@@ -154,7 +154,7 @@ TEST_F(SystemTest, DiscretePublish) {
   UpdateActions<double> actions;
 
   system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
 
   system_.Publish(context_, actions.events[0]);
   EXPECT_EQ(1, system_.get_publish_count());
@@ -168,7 +168,7 @@ TEST_F(SystemTest, DiscreteUpdate) {
   UpdateActions<double> actions;
 
   system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
 
   std::unique_ptr<DifferenceState<double>> update =
       system_.AllocateDifferenceVariables();
@@ -183,10 +183,10 @@ TEST_F(SystemTest, CustomDiscretePublish) {
   UpdateActions<double> actions;
 
   system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
 
   system_.Publish(context_, actions.events[0]);
-  ASSERT_EQ(1, system_.get_published_numbers().size());
+  ASSERT_EQ(1u, system_.get_published_numbers().size());
   EXPECT_EQ(kNumberToPublish, system_.get_published_numbers()[0]);
 }
 
@@ -197,12 +197,12 @@ TEST_F(SystemTest, CustomDiscreteUpdate) {
   UpdateActions<double> actions;
 
   system_.CalcNextUpdateTime(context_, &actions);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
 
   std::unique_ptr<DifferenceState<double>> update =
       system_.AllocateDifferenceVariables();
   system_.EvalDifferenceUpdates(context_, actions.events[0], update.get());
-  ASSERT_EQ(1, system_.get_updated_numbers().size());
+  ASSERT_EQ(1u, system_.get_updated_numbers().size());
   EXPECT_EQ(kNumberToUpdate, system_.get_updated_numbers()[0]);
 }
 
