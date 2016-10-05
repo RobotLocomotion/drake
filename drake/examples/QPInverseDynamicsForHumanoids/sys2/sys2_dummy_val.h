@@ -52,9 +52,8 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
 
   void EvalTimeDerivatives(const Context<double>& context, ContinuousState<double>* derivatives) const override {
     // get acceleration from qpouput
-
-    const example::qp_inverse_dynamics::QPOutput &qpout = context.GetInputPort(0)->get_abstract_data()->GetValue<example::qp_inverse_dynamics::QPOutput>();
-    const Eigen::VectorXd &vd = qpout.vd();
+    const example::qp_inverse_dynamics::QPOutput *qpout = EvalInputValue<example::qp_inverse_dynamics::QPOutput>(context, 0);
+    const Eigen::VectorXd &vd = qpout->vd();
 
     // get current state
     const ContinuousState<double> &state = *context.get_state().get_continuous_state();
