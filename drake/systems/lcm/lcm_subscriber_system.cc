@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-using ::drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcmInterface;
 
 using std::make_unique;
 

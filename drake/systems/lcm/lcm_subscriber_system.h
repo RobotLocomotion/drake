@@ -21,7 +21,7 @@ namespace lcm {
  * decoded message, modulo any network or threading delays.
  */
 class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
-    public ::drake::lcm::DrakeLcmMessageHandlerInterface  {
+    public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
   /**
    * A constructor.
@@ -39,7 +39,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator& translator,
-                      ::drake::lcm::DrakeLcmInterface* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -54,7 +54,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmTranslatorDictionary& translator_dictionary,
-                      ::drake::lcm::DrakeLcmInterface* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
 
