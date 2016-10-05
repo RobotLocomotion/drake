@@ -356,8 +356,8 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         
         % The top line works for "testConstrainedDirCol.m", and the next
         % line works for "testConstrainedTrajOpt.m"
-%         kinsol = obj.plant.doKinematics(q, [], struct('compute_gradients', true));
-        kinsol = obj.plant.doKinematics(q); kinsol.q = q;
+        kinsol = obj.plant.doKinematics(q, [], struct('compute_gradients', true));
+%         kinsol = obj.plant.doKinematics(q); kinsol.q = q;
         [VqInv,dVqInv] = vToqdot(obj.plant,kinsol);
 %         [VqInv,dVqInv] = obj.plant.vToqdot(q);
         xdot = [VqInv*v;vdot];
