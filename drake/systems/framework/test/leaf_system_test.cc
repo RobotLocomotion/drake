@@ -50,7 +50,7 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   UpdateActions<double> actions;
   system_.CalcNextUpdateTime(context_, &actions);
   EXPECT_EQ(std::numeric_limits<double>::infinity(), actions.time);
-  EXPECT_EQ(0, actions.events.size());
+  EXPECT_EQ(0u, actions.events.size());
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -62,7 +62,7 @@ TEST_F(LeafSystemTest, OFfsetHasNotArrivedYet) {
   system_.CalcNextUpdateTime(context_, &actions);
 
   EXPECT_EQ(5.0, actions.time);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
@@ -75,7 +75,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   system_.CalcNextUpdateTime(context_, &actions);
 
   EXPECT_EQ(15.0, actions.time);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
@@ -88,7 +88,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   system_.CalcNextUpdateTime(context_, &actions);
 
   EXPECT_EQ(25.0, actions.time);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
@@ -101,7 +101,7 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   system_.CalcNextUpdateTime(context_, &actions);
 
   EXPECT_EQ(35.0, actions.time);
-  ASSERT_EQ(1, actions.events.size());
+  ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
 }
 
