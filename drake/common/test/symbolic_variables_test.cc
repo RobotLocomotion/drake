@@ -1,17 +1,9 @@
 #include "drake/common/symbolic_variables.h"
-
-#include "drake/common/symbolic_expression.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
-
-using std::cerr;
-using std::endl;
-using std::to_string;
 
 GTEST_TEST(SymVarsTest, hash_eq) {
   // - hash
@@ -331,15 +323,13 @@ GTEST_TEST(SymVarsTest, output_operator) {
   Variables const vars4{z, w, v};
   Variables const vars5{w, v};
 
-  EXPECT_EQ(to_string(vars0), "{}");
-  EXPECT_EQ(to_string(vars1), "{x, y, z, w, v}");
-  EXPECT_EQ(to_string(vars2), "{x, y}");
-  EXPECT_EQ(to_string(vars3), "{x, y, z}");
-  EXPECT_EQ(to_string(vars4), "{z, w, v}");
-  EXPECT_EQ(to_string(vars5), "{w, v}");
+  EXPECT_EQ(vars0.to_string(), "{}");
+  EXPECT_EQ(vars1.to_string(), "{x, y, z, w, v}");
+  EXPECT_EQ(vars2.to_string(), "{x, y}");
+  EXPECT_EQ(vars3.to_string(), "{x, y, z}");
+  EXPECT_EQ(vars4.to_string(), "{z, w, v}");
+  EXPECT_EQ(vars5.to_string(), "{w, v}");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
