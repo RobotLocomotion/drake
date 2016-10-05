@@ -158,7 +158,7 @@ end
     
     % check if this doesn't calculate the gradient
 %     [~,J,dJ] = obj.positionConstraints(q);
-    [phi,J,dJ,Jdotqd,dJdotqd] = obj.positionConstraintslWithJdot(q,qd);
+    [phi,J,dJ,Jdotqd,dJdotqd] = obj.positionConstraintsWithJdot(q,qd);
     dJ = reshape(dJ,numel(J),[]);
     if isempty(J)
       F = zeros(0,length(x));

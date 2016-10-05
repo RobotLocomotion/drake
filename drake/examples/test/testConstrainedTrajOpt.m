@@ -75,7 +75,6 @@ result.N = N;
 result.tt = tt;
 result.err = x_pt - xsim_pt;
 result.err_sum = sqrt(sum((x_pt - xsim_pt).*(x_pt - xsim_pt)));
-result.bound = options.lambda_bound;
 result.info = info;
 result.err_final = result.err_sum(end);
 data = [data;result];

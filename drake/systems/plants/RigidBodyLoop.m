@@ -16,25 +16,35 @@ classdef RigidBodyLoop < RigidBodyElement
       
       relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.frameA,obj.frameB,zeros(3,1));
 %      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
-      position_constraint = DrakeFunctionConstraint(zeros(3,1),zeros(3,1),relative_position_fun);
+      position_constraint = DrakeFunctionConstraint(zeros(model.dim,1),zeros(model.dim,1),relative_position_fun);
       position_constraint.grad_level = 2;
       % todo: naming logic should go into the constraint classes
       % todo: support 2D constraints for planar loops?
-      position_constraint = setName(position_constraint,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
+      if model.dim == 2
+        position_constraint = setName(position_constraint,{[obj.name,model.x_axis_label];[obj.name,model.y_axis_label]});
+      else
+        position_constraint = setName(position_constraint,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
+      end
       
-      % a second relative position constraint enforces the orientation
-      relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.frameA,obj.frameB,obj.axis);
-%      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
-      orientation_constraint = DrakeFunctionConstraint(obj.axis,obj.axis,relative_position_fun);
-      orientation_constraint.grad_level = 2;
-      orientation_constraint = setName(orientation_constraint,{[obj.name,'_ax'];[obj.name,'_ay'];[obj.name,'_az']});
+      if model.dim > 2
+        % a second relative position constraint enforces the orientation
+        relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.frameA,obj.frameB,obj.axis);
+        %      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
+        orientation_constraint = DrakeFunctionConstraint(obj.axis,obj.axis,relative_position_fun);
+        orientation_constraint.grad_level = 2;
+        orientation_constraint = setName(orientation_constraint,{[obj.name,'_ax'];[obj.name,'_ay'];[obj.name,'_az']});
+      end
             
       if isempty(obj.constraint_id)
         [model,obj.constraint_id(1)] = addPositionEqualityConstraint(model,position_constraint);
-        [model,obj.constraint_id(2)] = addPositionEqualityConstraint(model,orientation_constraint);
+        if model.dim > 2
+          [model,obj.constraint_id(2)] = addPositionEqualityConstraint(model,orientation_constraint);
+        end
       else
         model = updatePositionEqualityConstraint(model,obj.constraint_id(1),position_constraint);
-        model = updatePositionEqualityConstraint(model,obj.constraint_id(2),orientation_constraint);
+        if model.dim > 2
+          model = updatePositionEqualityConstraint(model,obj.constraint_id(2),orientation_constraint);
+        end
       end
     end
 
