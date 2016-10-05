@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
-#include <iostream>
+#include <ostream>
 #include <set>
 #include <string>
 
@@ -14,13 +14,14 @@ namespace drake {
 
 namespace symbolic {
 
-/** \brief Represent a set of symbolic variables.
+/** Represents a set of symbolic variables.
  *
- * On top of std::set<Variable>, this class provides set-union
- * (Variables::insert, operator+, operator+=), set-minus (Variables::erase,
- * operator-, operator-=), and subset/superset checking functions
- * (Variables::IsSubsetOf, Variables::IsSupersetOf, Variables::IsStrictSubsetOf,
- * Variables::IsStrictSupersetOf).
+ * This class is based on std::set<Variable>. The intent is to add
+ * things that we need including set-union (Variables::insert,
+ * operator+, operator+=), set-minus (Variables::erase, operator-,
+ * operator-=), and subset/superset checking functions
+ * (Variables::IsSubsetOf, Variables::IsSupersetOf,
+ * Variables::IsStrictSubsetOf, Variables::IsStrictSupersetOf).
  */
 
 class DRAKECOMMON_EXPORT Variables {
@@ -28,11 +29,6 @@ class DRAKECOMMON_EXPORT Variables {
   typedef typename drake::symbolic::Variable key_type;
   typedef typename drake::symbolic::Variable value_type;
   typedef typename std::set<key_type> set;
-
- private:
-  set vars_;
-
- public:
   typedef typename set::size_type size_type;
   typedef typename set::iterator iterator;
   typedef typename set::const_iterator const_iterator;
@@ -46,13 +42,13 @@ class DRAKECOMMON_EXPORT Variables {
   Variables(Variables&& e) = default;
 
   /** Copy-construct a set from an lvalue. */
-  Variables(Variables const& e) = default;
+  Variables(const Variables& e) = default;
 
   /** Move-assign a set from an rvalue. */
   Variables& operator=(Variables&& e) = default;
 
   /** Copy-assign a set from an lvalue. */
-  Variables& operator=(Variables const& e) = default;
+  Variables& operator=(const Variables& e) = default;
 
   /** List constructor. */
   Variables(std::initializer_list<value_type> init);
@@ -60,6 +56,9 @@ class DRAKECOMMON_EXPORT Variables {
   size_t get_hash() const;
 
   size_type size() const { return vars_.size(); }
+
+  /** Returns string representation of Variables. */
+  std::string to_string() const;
 
   iterator begin() { return vars_.begin(); }
   iterator end() { return vars_.end(); }
@@ -74,74 +73,73 @@ class DRAKECOMMON_EXPORT Variables {
   const_reverse_iterator crbegin() const { return vars_.crbegin(); }
   const_reverse_iterator crend() const { return vars_.crend(); }
 
-  /** Insert a variable \p var into a set */
-  void insert(value_type const& var) { vars_.insert(var); }
-  /** Insert variables in [\p first, \p last) into a set */
+  /** Inserts a variable \p var into a set. */
+  void insert(const value_type& var) { vars_.insert(var); }
+  /** Inserts variables in [\p first, \p last) into a set. */
   template <class InputIt>
   void insert(InputIt first, InputIt last) {
     vars_.insert(first, last);
   }
-  /** Insert variables in \p vars into a set */
-  void insert(Variables const& vars) { vars_.insert(vars.begin(), vars.end()); }
+  /** Inserts variables in \p vars into a set. */
+  void insert(const Variables& vars) { vars_.insert(vars.begin(), vars.end()); }
 
-  /** Erase \p key from a set. Return number of erased elements (0 or 1). */
-  size_type erase(key_type const& key) { return vars_.erase(key); }
+  /** Erases \p key from a set. Return number of erased elements (0 or 1). */
+  size_type erase(const key_type& key) { return vars_.erase(key); }
 
-  /** Erase variables in \p vars from a set. Return number of erased
-      elements ([0, vars.size()]) */
-  size_type erase(Variables const& vars);
+  /** Erases variables in \p vars from a set. Return number of erased
+      elements ([0, vars.size()]). */
+  size_type erase(const Variables& vars);
 
-  iterator find(key_type const& key) { return vars_.find(key); }
-  const_iterator find(key_type const& key) const { return vars_.find(key); }
-  bool include(key_type const& key) const { return find(key) != end(); }
+  iterator find(const key_type& key) { return vars_.find(key); }
+  const_iterator find(const key_type& key) const { return vars_.find(key); }
+  bool include(const key_type& key) const { return find(key) != end(); }
 
-  bool IsSubsetOf(Variables const& vars) const;
-  bool IsSupersetOf(Variables const& vars) const;
-  bool IsStrictSubsetOf(Variables const& vars) const;
-  bool IsStrictSupersetOf(Variables const& vars) const;
+  bool IsSubsetOf(const Variables& vars) const;
+  bool IsSupersetOf(const Variables& vars) const;
+  bool IsStrictSubsetOf(const Variables& vars) const;
+  bool IsStrictSupersetOf(const Variables& vars) const;
 
-  friend DRAKECOMMON_EXPORT bool operator==(Variables const& vars1,
-                                            Variables const& vars2);
+  friend DRAKECOMMON_EXPORT bool operator==(const Variables& vars1,
+                                            const Variables& vars2);
 
   friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream&,
-                                                     Variables const& vars);
+                                                     const Variables& vars);
+
+ private:
+  set vars_;
 };
 
-/** Update \p var1 with the result of set-union(\p var1, \p var2). */
+/** Updates \p var1 with the result of set-union(\p var1, \p var2). */
 DRAKECOMMON_EXPORT Variables operator+=(Variables& vars1,
-                                        Variables const& vars2);
-/** Update \p vars with the result of set-union(\p vars, { \p var }). */
-DRAKECOMMON_EXPORT Variables operator+=(Variables& vars, Variable const& var);
-/** Return set-union of \p var1 and \p var2 */
-DRAKECOMMON_EXPORT Variables operator+(Variables vars1, Variables const& vars2);
-/** Return set-union of \p vars and {\p var} */
-DRAKECOMMON_EXPORT Variables operator+(Variables vars, Variable const& var);
-/** Return set-union of {\p var} and \p vars */
-DRAKECOMMON_EXPORT Variables operator+(Variable const& var, Variables vars);
+                                        const Variables& vars2);
+/** Updates \p vars with the result of set-union(\p vars, { \p var }). */
+DRAKECOMMON_EXPORT Variables operator+=(Variables& vars, const Variable& var);
+/** Returns set-union of \p var1 and \p var2. */
+DRAKECOMMON_EXPORT Variables operator+(Variables vars1, const Variables& vars2);
+/** Returns set-union of \p vars and {\p var}. */
+DRAKECOMMON_EXPORT Variables operator+(Variables vars, const Variable& var);
+/** Returns set-union of {\p var} and \p vars. */
+DRAKECOMMON_EXPORT Variables operator+(const Variable& var, Variables vars);
 
-/** Update \p var1 with the result of set-minus(\p var1, \p var2). */
+/** Updates \p var1 with the result of set-minus(\p var1, \p var2). */
 DRAKECOMMON_EXPORT Variables operator-=(Variables& vars1,
-                                        Variables const& vars2);
-/** Update \p vars with the result of set-minus(\p vars, {\p var}). */
-DRAKECOMMON_EXPORT Variables operator-=(Variables& vars, Variable const& var);
-/** Return set-minus(\p var1, \p vars2). */
-DRAKECOMMON_EXPORT Variables operator-(Variables vars1, Variables const& vars2);
-/** Return set-minus(\p vars, { \p var }). */
-DRAKECOMMON_EXPORT Variables operator-(Variables vars, Variable const& var);
+                                        const Variables& vars2);
+/** Updates \p vars with the result of set-minus(\p vars, {\p var}). */
+DRAKECOMMON_EXPORT Variables operator-=(Variables& vars, const Variable& var);
+/** Returns set-minus(\p var1, \p vars2). */
+DRAKECOMMON_EXPORT Variables operator-(Variables vars1, const Variables& vars2);
+/** Returns set-minus(\p vars, { \p var }). */
+DRAKECOMMON_EXPORT Variables operator-(Variables vars, const Variable& var);
 
 }  // namespace symbolic
 }  // namespace drake
 
-/** Provide std::hash<drake::symbolic::Variable>. */
+/** Provides std::hash<drake::symbolic::Variable>. */
 namespace std {
 template <>
 struct hash<drake::symbolic::Variables> {
-  size_t operator()(drake::symbolic::Variables const& vars) const {
+  size_t operator()(const drake::symbolic::Variables& vars) const {
     return vars.get_hash();
   }
 };
-
-/** Provide std::to_string for drake::symbolic::Variables. */
-DRAKECOMMON_EXPORT std::string to_string(
-    drake::symbolic::Variables const& vars);
 }  // namespace std
