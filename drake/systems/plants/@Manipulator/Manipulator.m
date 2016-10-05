@@ -286,6 +286,24 @@ classdef Manipulator < DrakeSystem
         end
       end
     end
+        
+
+    function varargout = positionConstraintsWithJdot(obj,q,v)
+      % Calculations position constraints and Jdot
+      varargout = cell(1,nargout);
+      for i=1:length(obj.position_constraints)
+        outi = cell(1,max(nargout,1));
+        % This call will cause an error if the constraint isn't a function
+        % handle constraint,and the function isn't RelativePosition.
+        % I'm not sure how to properly handle this, given the class
+        % heirarchy structure.
+        [outi{:}] = obj.position_constraints{i}.fcn.evalWithJdot(q,v);
+        outi{1} = outi{1} - obj.position_constraints{i}.lb;  % center it around 0
+        for j=1:nargout
+          varargout{j} = vertcat(varargout{j},outi{j});
+        end
+      end
+    end    
 
     function varargout = velocityConstraints(obj,q,v)
       % Implements velocity constraints of the form psi(q,v) = 0
