@@ -30,7 +30,7 @@ enum class FormulaKind {
 
 class FormulaCell;
 
-/** \brief Represent a symbolic form of a firt-order logic formula.
+/** Represents a symbolic form of a firt-order logic formula.
 
 It has the following grammar:
 
@@ -71,118 +71,118 @@ class DRAKECOMMON_EXPORT Formula {
   Formula(Formula&& f) = default;
 
   /** Copy-construct a set from an lvalue. */
-  Formula(Formula const& f) = default;
+  Formula(const Formula& f) = default;
 
   /** Move-assign a set from an rvalue. */
   Formula& operator=(Formula&& f) = default;
 
   /** Copy-assign a set from an lvalue. */
-  Formula& operator=(Formula const& f) = default;
+  Formula& operator=(const Formula& f) = default;
 
   explicit Formula(std::shared_ptr<FormulaCell> const ptr);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;
-  /** Get free variables*/
+  /** Gets free variables (unquantified variables). */
   Variables GetFreeVariables() const;
-  /** Check structural equality*/
-  bool EqualTo(Formula const& f) const;
-  /** Evaluate under a given environment (by default, an empty environment)*/
-  bool Evaluate(Environment const& env = Environment{}) const;
+  /** Checks structural equality*/
+  bool EqualTo(const Formula& f) const;
+  /** Evaluates under a given environment (by default, an empty environment)*/
+  bool Evaluate(const Environment& env = Environment{}) const;
 
   static Formula True();
   static Formula False();
 
-  friend DRAKECOMMON_EXPORT Formula operator&&(Formula const& f1,
-                                               Formula const& f2);
-  friend DRAKECOMMON_EXPORT Formula operator||(Formula const& f1,
-                                               Formula const& f2);
-  friend DRAKECOMMON_EXPORT Formula operator!(Formula const& f);
-  friend DRAKECOMMON_EXPORT Formula operator==(Expression const& e1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator==(double const v1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator==(Expression const& e1,
-                                               double const v2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(Expression const& e1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(double const v1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(Expression const& e1,
-                                               double const v2);
-  friend DRAKECOMMON_EXPORT Formula operator<(Expression const& e1,
-                                              Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<(double const v1,
-                                              Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<(Expression const& e1,
-                                              double const v2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(Expression const& e1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(double const v1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(Expression const& e1,
-                                               double const v2);
-  friend DRAKECOMMON_EXPORT Formula operator>(Expression const& e1,
-                                              Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>(double const v1,
-                                              Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>(Expression const& e1,
-                                              double const v2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(Expression const& e1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(double const v1,
-                                               Expression const& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(Expression const& e1,
-                                               double const v2);
+  friend DRAKECOMMON_EXPORT Formula operator&&(const Formula& f1,
+                                               const Formula& f2);
+  friend DRAKECOMMON_EXPORT Formula operator||(const Formula& f1,
+                                               const Formula& f2);
+  friend DRAKECOMMON_EXPORT Formula operator!(const Formula& f);
+  friend DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator==(const double v1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+                                               const double v2);
+  friend DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator!=(const double v1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+                                               const double v2);
+  friend DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+                                              const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator<(const double v1,
+                                              const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+                                              const double v2);
+  friend DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator<=(const double v1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+                                               const double v2);
+  friend DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+                                              const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator>(const double v1,
+                                              const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+                                              const double v2);
+  friend DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator>=(const double v1,
+                                               const Expression& e2);
+  friend DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+                                               const double v2);
 
   friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream& os,
-                                                     Formula const& f);
+                                                     const Formula& f);
   friend DRAKECOMMON_EXPORT void swap(Formula& a, Formula& b) {
     std::swap(a.ptr_, b.ptr_);
   }
 };
 
-DRAKECOMMON_EXPORT Formula forall(Variables const& vars, Formula const& f);
+DRAKECOMMON_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
-DRAKECOMMON_EXPORT Formula operator==(Expression const& e1,
-                                      Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator==(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator==(Expression const& e1, double const v2);
-DRAKECOMMON_EXPORT Formula operator!=(Expression const& e1,
-                                      Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator!=(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator!=(Expression const& e1, double const v2);
-DRAKECOMMON_EXPORT Formula operator<(Expression const& e1,
-                                     Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator<(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator<(Expression const& e1, double const v2);
-DRAKECOMMON_EXPORT Formula operator<=(Expression const& e1,
-                                      Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator<=(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator<=(Expression const& e1, double const v2);
-DRAKECOMMON_EXPORT Formula operator>(Expression const& e1,
-                                     Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator>(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator>(Expression const& e1, double const v2);
-DRAKECOMMON_EXPORT Formula operator>=(Expression const& e1,
-                                      Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator>=(double const v1, Expression const& e2);
-DRAKECOMMON_EXPORT Formula operator>=(Expression const& e1, double const v2);
+DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+                                      const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator==(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator==(const Expression& e1, const double v2);
+DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+                                      const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator!=(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1, const double v2);
+DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+                                     const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator<(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator<(const Expression& e1, const double v2);
+DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+                                      const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator<=(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1, const double v2);
+DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+                                     const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator>(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator>(const Expression& e1, const double v2);
+DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+                                      const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator>=(const double v1, const Expression& e2);
+DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1, const double v2);
 
 class FormulaCell {
  protected:
-  FormulaKind kind_;
-  size_t hash_;
+  const FormulaKind kind_{};
+  const size_t hash_{};
 
  public:
   FormulaCell(FormulaKind const k, size_t const hash);
   FormulaKind get_kind() const { return kind_; }
   size_t get_hash() const { return hash_; }
   virtual Variables GetFreeVariables() const = 0;
-  /** Check structural equality*/
-  virtual bool EqualTo(FormulaCell const& c) const = 0;
-  /** Evaluate under a given environment (by default, an empty environment)*/
-  virtual bool Evaluate(Environment const& env) const = 0;
+  /** Checks structural equality. */
+  virtual bool EqualTo(const FormulaCell& c) const = 0;
+  /** Evaluates under a given environment (by default, an empty environment). */
+  virtual bool Evaluate(const Environment& env) const = 0;
   virtual std::ostream& Display(std::ostream& os) const = 0;
 };
 
@@ -190,8 +190,8 @@ class FormulaTrue : public FormulaCell {
  public:
   FormulaTrue();
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -199,8 +199,8 @@ class FormulaFalse : public FormulaCell {
  public:
   FormulaFalse();
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -210,10 +210,10 @@ class FormulaEq : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaEq(Expression const& e1, Expression const& e2);
+  FormulaEq(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -223,10 +223,10 @@ class FormulaNeq : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaNeq(Expression const& e1, Expression const& e2);
+  FormulaNeq(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -236,10 +236,10 @@ class FormulaGt : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaGt(Expression const& e1, Expression const& e2);
+  FormulaGt(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -249,10 +249,10 @@ class FormulaGeq : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaGeq(Expression const& e1, Expression const& e2);
+  FormulaGeq(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -262,10 +262,10 @@ class FormulaLt : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaLt(Expression const& e1, Expression const& e2);
+  FormulaLt(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -275,10 +275,10 @@ class FormulaLeq : public FormulaCell {
   Expression e2_;
 
  public:
-  FormulaLeq(Expression const& e1, Expression const& e2);
+  FormulaLeq(const Expression& e1, const Expression& e2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -288,10 +288,10 @@ class FormulaAnd : public FormulaCell {
   Formula f2_;
 
  public:
-  FormulaAnd(Formula const& f1, Formula const& f2);
+  FormulaAnd(const Formula& f1, const Formula& f2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -301,10 +301,10 @@ class FormulaOr : public FormulaCell {
   Formula f2_;
 
  public:
-  FormulaOr(Formula const& f1, Formula const& f2);
+  FormulaOr(const Formula& f1, const Formula& f2);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
@@ -313,48 +313,48 @@ class FormulaNot : public FormulaCell {
   Formula f_;
 
  public:
-  explicit FormulaNot(Formula const& f);
+  explicit FormulaNot(const Formula& f);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
 class FormulaForall : public FormulaCell {
  private:
-  Variables vars_; /** quantified variables*/
-  Formula f_;      /** quantified formula*/
+  Variables vars_; /** Quantified variables. */
+  Formula f_;      /** Quantified formula. */
 
  public:
-  FormulaForall(Variables const& vars, Formula const& f);
+  FormulaForall(const Variables& vars, const Formula& f);
   Variables GetFreeVariables() const override;
-  bool EqualTo(FormulaCell const& f) const override;
-  bool Evaluate(Environment const& env) const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 };
 
-std::ostream& operator<<(std::ostream& os, Formula const& e);
+std::ostream& operator<<(std::ostream& os, const Formula& e);
 }  // namespace drake
 }  // namespace symbolic
 
-/** Provide std::hash<drake::symbolic::Formula>. */
+/** Provides std::hash<drake::symbolic::Formula>. */
 namespace std {
 template <>
 struct hash<drake::symbolic::Formula> {
-  size_t operator()(drake::symbolic::Formula const& e) const {
+  size_t operator()(const drake::symbolic::Formula& e) const {
     return e.get_hash();
   }
 };
 
-/** Provide std::equal_to<drake::symbolic::Formula>. */
+/** Provides std::equal_to<drake::symbolic::Formula>. */
 template <>
 struct equal_to<drake::symbolic::Formula> {
-  bool operator()(drake::symbolic::Formula const& lhs,
-                  drake::symbolic::Formula const& rhs) const {
+  bool operator()(const drake::symbolic::Formula& lhs,
+                  const drake::symbolic::Formula& rhs) const {
     return lhs.EqualTo(rhs);
   }
 };
 
-/** Provide std::to_string for drake::symbolic::Formula. */
-DRAKECOMMON_EXPORT std::string to_string(drake::symbolic::Formula const& f);
+/** Provides std::to_string for drake::symbolic::Formula. */
+DRAKECOMMON_EXPORT std::string to_string(const drake::symbolic::Formula& f);
 }  // namespace std
