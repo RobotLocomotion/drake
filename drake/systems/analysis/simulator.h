@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeSystemAnalysis_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -300,8 +300,8 @@ class Simulator {
 extern template class Simulator<double>;
 extern template class Simulator<AutoDiffXd>;
 #else
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<double>;
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
+extern template class DRAKE_EXPORT Simulator<double>;
+extern template class DRAKE_EXPORT Simulator<AutoDiffXd>;
 #endif
 
 // TODO(sherm1) Move these implementations to an -inl.h file.

@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"

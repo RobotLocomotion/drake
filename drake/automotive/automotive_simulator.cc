@@ -11,7 +11,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -249,7 +249,7 @@ int AutomotiveSimulator<T>::allocate_vehicle_number() {
   return next_vehicle_number_++;
 }
 
-template class DRAKEAUTOMOTIVE_EXPORT AutomotiveSimulator<double>;
+template class DRAKE_EXPORT AutomotiveSimulator<double>;
 
 }  // namespace automotive
 }  // namespace drake

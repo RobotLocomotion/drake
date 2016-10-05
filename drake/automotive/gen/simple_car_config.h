@@ -8,14 +8,14 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a SimpleCarConfig.
-struct DRAKEAUTOMOTIVE_EXPORT SimpleCarConfigIndices {
+struct DRAKE_EXPORT SimpleCarConfigIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 7;
 

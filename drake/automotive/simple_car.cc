@@ -6,8 +6,8 @@ namespace drake {
 namespace automotive {
 
 // These instantiations must match the API documentation in simple_car.h.
-template class DRAKEAUTOMOTIVE_EXPORT SimpleCar<double>;
-template class DRAKEAUTOMOTIVE_EXPORT SimpleCar<drake::TaylorVarXd>;
+template class DRAKE_EXPORT SimpleCar<double>;
+template class DRAKE_EXPORT SimpleCar<drake::TaylorVarXd>;
 
 }  // namespace automotive
 }  // namespace drake

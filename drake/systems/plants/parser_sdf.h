@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
@@ -32,7 +32,7 @@ namespace sdf {
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const std::string& filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -58,7 +58,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const std::string& filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -82,7 +82,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfString(
     const std::string& sdf_string,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,

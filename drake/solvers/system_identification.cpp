@@ -478,5 +478,5 @@ std::tuple<const std::set<typename SystemIdentification<T>::VarType>,
 }  // namespace solvers
 }  // namespace drake
 
-template class DRAKEOPTIMIZATION_EXPORT
+template class DRAKE_EXPORT
 drake::solvers::SystemIdentification<double>;

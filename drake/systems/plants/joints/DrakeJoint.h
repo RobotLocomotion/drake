@@ -9,7 +9,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/gradient.h"
-#include "drake/drakeJoints_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
 // TODO(liang.Fok) Document these method once #3608 is resolved.
@@ -57,7 +57,7 @@
 /**
  * A joint defines a spatial relationship between two rigid bodies.
  */
-class DRAKEJOINTS_EXPORT DrakeJoint {
+class DRAKE_EXPORT DrakeJoint {
  public:
   /**
    * Defines the maximum number of position states a joint can have.

@@ -4,7 +4,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/drakeLCMSystem2_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -21,7 +21,7 @@ namespace lcm {
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
+class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
  public:
   /**
    * A constructor.

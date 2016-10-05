@@ -4,7 +4,7 @@ namespace drake {
 namespace systems {
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantValueSource<double>;
+template class DRAKE_EXPORT ConstantValueSource<double>;
 
 }  // namespace systems
 }  // namespace drake
