@@ -353,8 +353,13 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         dvdot = [zeros(nq,1),...
           -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
           +Hinv*dtau(:,1+nq:end), Hinv*B, Hinv*J'];
-
-        [VqInv,dVqInv] = obj.plant.vToqdot(q);
+        
+        % The top line works for "testConstrainedDirCol.m", and the next
+        % line works for "testConstrainedTrajOpt.m"
+%         kinsol = obj.plant.doKinematics(q, [], struct('compute_gradients', true));
+        kinsol = obj.plant.doKinematics(q); kinsol.q = q;
+        [VqInv,dVqInv] = vToqdot(obj.plant,kinsol);
+%         [VqInv,dVqInv] = obj.plant.vToqdot(q);
         xdot = [VqInv*v;vdot];
         dxdot = [...
           zeros(nq,1), matGradMult(dVqInv, v), VqInv, zeros(nq,nU+nC);
