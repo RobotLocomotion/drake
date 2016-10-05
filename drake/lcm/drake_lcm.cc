@@ -33,6 +33,9 @@ DrakeLcm::DrakeLcm() {
 
 DrakeLcm::~DrakeLcm() {
   receive_thread_.reset();
+  for (auto& subscriber : subscriptions_) {
+    delete subscriber;
+  }
 }
 
 void DrakeLcm::StartReceiveThread() {
@@ -50,17 +53,17 @@ void DrakeLcm::StopReceiveThread() {
 }
 
 void DrakeLcm::Publish(const std::string& channel, const void *data,
-                       int data_size) {
+                       int data_size) const {
   lcm_.publish(channel, data, data_size);
 }
 
 void DrakeLcm::Subscribe(const std::string& channel,
     DrakeLcmMessageHandlerInterface* handler) {
-  auto subscriber = std::make_unique<Subscriber>(handler);
+  Subscriber* subscriber = new Subscriber(handler);
   auto sub = lcm_.subscribe(channel, &Subscriber::LcmCallback,
-      subscriber.get());
+      subscriber);
   sub->setQueueCapacity(1);
-  subscriptions_.push_back(std::move(subscriber));
+  subscriptions_.push_back(subscriber);
 }
 
 }  // namespace lcm

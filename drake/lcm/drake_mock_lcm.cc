@@ -22,7 +22,7 @@ void DrakeMockLcm::StopReceiveThread() {
 }
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
-                           int data_size) {
+                           int data_size) const {
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
     last_published_messages_[channel] = LastPublishedMessage();
