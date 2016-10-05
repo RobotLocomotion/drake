@@ -18,7 +18,7 @@ bool UnusableModel::updateElementWorldTransform(
 }
 
 bool UnusableModel::closestPointsAllToAll(
-    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    const std::vector<ElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
@@ -26,14 +26,14 @@ bool UnusableModel::closestPointsAllToAll(
 }
 
 bool UnusableModel::ComputeMaximumDepthCollisionPoints(
-    const bool use_margins, std::vector<PointPair>& points) {
+    bool use_margins, std::vector<PointPair>& points) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
 bool UnusableModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
