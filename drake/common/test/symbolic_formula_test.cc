@@ -1,28 +1,14 @@
 #include "drake/common/symbolic_formula.h"
 
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-
+#include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
-
-using std::cerr;
-using std::endl;
-using std::equal_to;
-using std::ostringstream;
-using std::string;
-using std::to_string;
-using std::runtime_error;
 
 GTEST_TEST(SymFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
 
@@ -36,13 +22,13 @@ GTEST_TEST(SymFormulaTest, Eq) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 == e1);
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 == e1_);
+  Formula const f2 = (e1 == e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   Formula const f3 = (e1 == e3);
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
@@ -62,13 +48,13 @@ GTEST_TEST(SymFormulaTest, Neq) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 != e1);
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 != e1_);
+  Formula const f2 = (e1 != e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   Formula const f3 = (e1 != e3);
   EXPECT_FALSE(f3.EqualTo(Formula::False()));
@@ -88,13 +74,13 @@ GTEST_TEST(SymFormulaTest, Lt) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 < e1);
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 < e1_);
+  Formula const f2 = (e1 < e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   Formula const f3 = (e1 < e3);
   EXPECT_FALSE(f3.EqualTo(Formula::False()));
@@ -114,13 +100,13 @@ GTEST_TEST(SymFormulaTest, Gt) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 > e1);
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 > e1_);
+  Formula const f2 = (e1 > e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   Formula const f3 = (e1 > e3);
   EXPECT_FALSE(f3.EqualTo(Formula::False()));
@@ -140,13 +126,13 @@ GTEST_TEST(SymFormulaTest, Leq) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 <= e1);
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 <= e1_);
+  Formula const f2 = (e1 <= e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   Formula const f3 = (e1 <= e3);
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
@@ -166,13 +152,13 @@ GTEST_TEST(SymFormulaTest, Geq) {
   Expression const y{var_y};
   Expression const z{var_z};
   Expression const e1 = x + y;
-  Expression const e1_ = x + y;
+  Expression const e1_prime = x + y;
   Expression const e2 = x - y;
   Expression const e3 = x + z;
 
   Formula const f1 = (e1 >= e1);
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 >= e1_);
+  Formula const f2 = (e1 >= e1_prime);
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   Formula const f3 = (e1 >= e3);
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
@@ -313,13 +299,11 @@ GTEST_TEST(SymFormulaTest, output_operator) {
   Formula const f3 = f1 || f2;
   Formula const f4 = forall({var_x, var_y}, f3);
 
-  EXPECT_EQ(to_string(f1), "((x + y) > 0)");
-  EXPECT_EQ(to_string(f2), "((y * z) < 5)");
-  EXPECT_EQ(to_string(f3), "(((x + y) > 0) or ((y * z) < 5))");
-  EXPECT_EQ(to_string(f4), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
+  EXPECT_EQ(f1.to_string(), "((x + y) > 0)");
+  EXPECT_EQ(f2.to_string(), "((y * z) < 5)");
+  EXPECT_EQ(f3.to_string(), "(((x + y) > 0) or ((y * z) < 5))");
+  EXPECT_EQ(f4.to_string(), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
 }
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
