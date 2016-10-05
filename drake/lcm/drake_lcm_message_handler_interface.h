@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-#include "drake/drakeLcm_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace lcm {
@@ -14,7 +14,7 @@ namespace lcm {
  *
  * @see DrakeLcmInterface::Subscribe().
  */
-class DRAKELCM_EXPORT DrakeLcmMessageHandlerInterface {
+class DRAKE_EXPORT DrakeLcmMessageHandlerInterface {
  public:
   virtual ~DrakeLcmMessageHandlerInterface() {}
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/drakeLcm_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -17,7 +17,7 @@ namespace lcm {
  *
  * @return `true` if @p actual_message and @p expected_message are equal.
  */
-bool DRAKELCM_EXPORT CompareLcmtDrakeSignalMessages(
+bool DRAKE_EXPORT CompareLcmtDrakeSignalMessages(
     const lcmt_drake_signal& actual_message,
     const lcmt_drake_signal& expected_message);
 
