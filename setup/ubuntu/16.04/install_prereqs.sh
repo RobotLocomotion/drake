@@ -17,6 +17,13 @@ me="The Drake prerequisite set-up script"
 
 [[ $DISTRIB_RELEASE == "16.04" ]] || die "$me only supports Ubuntu 16.04."
 
+# Clang 3.9
+apt-get install --no-install-recommends lsb-core software-properties-common wget
+wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+add-apt-repository -y "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main"
+apt-get update
+apt-get upgrade
+
 # Install the APT dependencies.
 # TODO(david-german-tri): Can we remove libvtk-java, subversion?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
@@ -24,7 +31,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 autoconf
 automake
 bison
-clang
+clang-3.9
 cmake
 cmake-curses-gui
 default-jdk
