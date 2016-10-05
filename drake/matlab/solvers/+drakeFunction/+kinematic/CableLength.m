@@ -20,6 +20,17 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
       obj.pulley = horzcat(obj.pulley, p);
     end
     
+    function [length,dlength,dJdq,Jdotv,dJdotv] = evalWithJdot(obj,q,v)
+      [length,dlength,ddlength] = obj.eval(q);
+      [Jdotv,dJdotv] = geval(@(q,v) evalJdotv(obj,q,v),q,v,struct('grad_method','numerical'));
+      dJdq = reshape(ddlength, [],length(q));
+    end
+    
+    function [Jdotv] = evalJdotv(obj,q,v)
+      [~,~,ddlength] = obj.eval(q);
+      Jdotv=v'*reshape(ddlength,length(q),[])*v;
+    end
+    
     function [length,dlength,ddlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q,nargout>2);
       smallEps = 1e-16;
