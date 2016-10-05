@@ -1,7 +1,5 @@
 #pragma once
 
-// #include <lcm/lcm-cpp.hpp>
-
 #include "drake/drakeLCMSystem2_export.h"
 #include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
