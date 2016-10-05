@@ -11,8 +11,7 @@ namespace lcm {
  */
 class DRAKELCM_EXPORT DrakeLcmInterface {
  public:
-
-  virtual ~DrakeLcmInterface() {};
+  virtual ~DrakeLcmInterface() {}
 
   /**
    * Starts the receive thread. This must be called for subscribers to receive
