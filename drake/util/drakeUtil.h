@@ -17,7 +17,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/drakeUtil_export.h"
+#include "drake/common/drake_export.h"
 
 template <typename Key, typename T>
 using eigen_aligned_unordered_map
@@ -124,13 +124,13 @@ void addOffset(std::vector<T>& v, const T& offset) {
                  std::bind2nd(std::plus<double>(), offset));
 }
 
-DRAKEUTIL_EXPORT void baseZeroToBaseOne(std::vector<int>& vec);
+DRAKE_EXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
-DRAKEUTIL_EXPORT double angleAverage(double theta1, double theta2);
+DRAKE_EXPORT double angleAverage(double theta1, double theta2);
 
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
           typename DerivedPoint>
-DRAKEUTIL_EXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
+DRAKE_EXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
     const Eigen::MatrixBase<DerivedTorque>& torque,
     const Eigen::MatrixBase<DerivedForce>& force,
     const Eigen::MatrixBase<DerivedNormal>& normal,

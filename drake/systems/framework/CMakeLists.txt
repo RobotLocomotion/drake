@@ -4,11 +4,10 @@ set(sources
   cache.cc
   context.cc
   continuous_state.cc
+  difference_state.cc
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
-  examples/controlled_spring_mass_system.cc
-  examples/spring_mass_system.cc
   leaf_context.cc
   leaf_system.cc
   input_port_evaluator_interface.cc
@@ -23,6 +22,7 @@ set(sources
   primitives/pass_through.cc
   primitives/pid_controller.cc
   primitives/time_varying_polynomial_source.cc
+  primitives/zero_order_hold.cc
   state.cc
   subvector.cc
   supervector.cc
@@ -50,6 +50,7 @@ set(installed_headers
   diagram.h
   diagram_builder.h
   diagram_context.h
+  difference_state.h
   leaf_context.h
   leaf_system.h
   input_port_evaluator_interface.h
@@ -80,6 +81,6 @@ pods_install_pkg_config_file(drake-system-framework
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(examples)
+#add_subdirectory(examples)
 add_subdirectory(primitives)
 add_subdirectory(test)

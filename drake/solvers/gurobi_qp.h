@@ -7,7 +7,7 @@
 
 #include <gurobi_c++.h>
 
-#include "drake/drakeQP_export.h"
+#include "drake/common/drake_export.h"
 
 #define CGE(call, env)                                                  \
   {                                                                     \
@@ -17,7 +17,7 @@
       std::cerr << "Gurobi error " << GRBgeterrormsg(env) << std::endl; \
   }
 
-DRAKEQP_EXPORT GRBmodel* gurobiQP(
+DRAKE_EXPORT GRBmodel* gurobiQP(
   GRBenv* env, std::vector<Eigen::MatrixXd*> QblkDiag, Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
@@ -31,7 +31,7 @@ DRAKEQP_EXPORT GRBmodel* gurobiQP(
 // Eigen::MatrixBase<tE>& bin, Eigen::VectorXd& lb, Eigen::VectorXd& ub,
 // std::set<int>& active, Eigen::VectorXd& x);
 
-DRAKEQP_EXPORT GRBmodel* gurobiActiveSetQP(
+DRAKE_EXPORT GRBmodel* gurobiActiveSetQP(
   GRBenv* env, std::vector<Eigen::MatrixXd*> QblkDiag, Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,

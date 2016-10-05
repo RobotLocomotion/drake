@@ -8,7 +8,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "drake/lcmt_drake_signal.hpp"
 
-#include "drake/drakeLCMSystem_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
@@ -202,7 +202,7 @@ class LCMOutputSystem<
 
 // todo: template specialization for the CombinedVector case
 
-class DRAKELCMSYSTEM_EXPORT LCMLoop {
+class DRAKE_EXPORT LCMLoop {
  public:
   bool stop;
   lcm::LCM &lcm;

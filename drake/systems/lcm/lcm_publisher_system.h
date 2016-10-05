@@ -1,8 +1,9 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
+// #include <lcm/lcm-cpp.hpp>
 
 #include "drake/drakeLCMSystem2_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -16,7 +17,7 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
+class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
    * A constructor.
@@ -32,7 +33,7 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     ::drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.

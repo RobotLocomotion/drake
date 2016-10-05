@@ -5,7 +5,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/drakeSystemAnalysis_export.h"
+#include "drake/common/text_logging.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 
@@ -256,7 +257,7 @@ class Simulator {
       IntegratorType::RungeKutta2;
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
 
-  const System<T>& system_;                  // Just a reference; not owned.
+  const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
 
   // TODO(sherm1) These are pre-allocated temporaries for use by Integrators;
@@ -264,6 +265,9 @@ class Simulator {
   // needed varies for different integrators.
   std::unique_ptr<ContinuousState<T>> derivs0_;
   std::unique_ptr<ContinuousState<T>> derivs1_;
+
+  // Pre-allocated temporaries for updated difference states.
+  std::unique_ptr<DifferenceState<T>> discrete_updates_;
 
   // These are the caller's requests, if any.
   IntegratorType req_integrator_{IntegratorType::UseDefault};
@@ -296,8 +300,8 @@ class Simulator {
 extern template class Simulator<double>;
 extern template class Simulator<AutoDiffXd>;
 #else
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<double>;
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
+extern template class DRAKE_EXPORT Simulator<double>;
+extern template class DRAKE_EXPORT Simulator<AutoDiffXd>;
 #endif
 
 // TODO(sherm1) Move these implementations to an -inl.h file.
@@ -312,6 +316,8 @@ Simulator<T>::Simulator(const System<T>& system,
   // there are more of them.
   derivs0_ = system_.AllocateTimeDerivatives();
   derivs1_ = system_.AllocateTimeDerivatives();
+
+  discrete_updates_ = system_.AllocateDifferenceVariables();
 }
 
 template <typename T>
@@ -346,17 +352,42 @@ void Simulator<T>::StepTo(const T& final_time) {
       context_->get_mutable_continuous_state()->get_mutable_state();
 
   // TODO(sherm1) Invoke selected integrator.
-  SampleActions sample_actions;
+  UpdateActions<T> update_actions;
   bool sample_time_hit = false;
   while (context_->get_time() <= final_time) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
+    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
 
-    // First make any necessary discrete updates.
+    // First take any necessary discrete actions.
     if (sample_time_hit) {
-      system_.Update(context_.get(), sample_actions);
+      for (const DiscreteEvent<T>& event : update_actions.events) {
+        switch (event.action) {
+          case DiscreteEvent<T>::kPublishAction: {
+            system_.Publish(*context_, event);
+            break;
+          }
+          case DiscreteEvent<T>::kUpdateAction: {
+            DifferenceState<T>* xd = context_->get_mutable_difference_state();
+            // Systems with discrete update events must have difference state.
+            DRAKE_DEMAND(xd != nullptr);
+            // First, compute the discrete updates into a temporary buffer.
+            system_.EvalDifferenceUpdates(*context_, event,
+                                         discrete_updates_.get());
+            // Then, write them back into the context.
+            xd->CopyFrom(*discrete_updates_);
+            break;
+          }
+          default: {
+            DRAKE_ABORT_MSG("Unknown DiscreteEvent action.");
+            break;
+          }
+        }
+      }
       ++num_samples_taken_;
     }
+    // Once the discrete updates have been made, clean them up.
+    update_actions.events.clear();
 
     // Now we can calculate start-of-step time derivatives.
 
@@ -375,7 +406,7 @@ void Simulator<T>::StepTo(const T& final_time) {
 
     // How far can we go before we have to take a sampling break?
     const T next_sample_time =
-        system_.CalcNextSampleTime(*context_, &sample_actions);
+        system_.CalcNextUpdateTime(*context_, &update_actions);
     DRAKE_ASSERT(next_sample_time >= step_start_time);
 
     // Figure out the largest step we can reasonably take, and whether we had
@@ -447,8 +478,7 @@ std::pair<T, bool> Simulator<T>::ProposeStepEndTime(const T& step_start_time,
       sample_time_hit = true;
     }
   } else {  // final_time < next_sample_time.
-    if (final_time <= step_stretch_time)
-      step_end_time = final_time;
+    if (final_time <= step_stretch_time) step_end_time = final_time;
   }
 
   return std::make_pair(step_end_time, sample_time_hit);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/drakeRigidBodyPlant_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -37,7 +37,7 @@ namespace systems {
  *
  * @ingroup systems
  */
-class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
+class DRAKE_EXPORT RigidBodyTreeLcmPublisher
     : public LeafSystem<double> {
  public:
   /**

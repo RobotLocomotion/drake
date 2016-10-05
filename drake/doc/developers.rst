@@ -71,8 +71,7 @@ officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
 On Ubuntu and OS X, the "Unix Makefiles" and "Ninja" CMake generators are
-supported. On Windows, the "Visual Studio 14 2015",
-"Visual Studio 14 2015 Win64", and "Ninja" CMake generators are supported.
+supported.
 
 The supported version of MATLAB is R2015b.
 
@@ -97,26 +96,6 @@ and  ``WITH_GFLAGS``, which should be set to ``ON``.
 |                                         | | Clang 3.7        | Default           | Debug   |
 |                                         | | Java 1.7         |                   +---------+
 |                                         |                    |                   | Release |
-+-----------------------------------------+--------------------+-------------------+---------+
-| | Windows Server 2012 R2 or Windows 8.1 | | MSVC 14 32-bit   | Minimal           | Debug   |
-| | Visual Studio 2015 (any edition)      | | Java 1.7         |                   +---------+
-|                                         |                    |                   | Release |
-|                                         |                    +-------------------+---------+
-|                                         |                    | Default           | Debug   |
-|                                         |                    |                   +---------+
-|                                         |                    |                   | Release |
-|                                         |                    +-------------------+---------+
-|                                         |                    | Default + MATLAB  | Release |
-|                                         +--------------------+-------------------+---------+
-|                                         | | MSVC 14 64-bit   | Minimal           | Debug   |
-|                                         | | Java 1.7         |                   +---------+
-|                                         |                    |                   | Release |
-|                                         |                    +-------------------+---------+
-|                                         |                    | Default           | Debug   |
-|                                         |                    |                   +---------+
-|                                         |                    |                   | Release |
-|                                         |                    +-------------------+---------+
-|                                         |                    | Default + MATLAB  | Release |
 +-----------------------------------------+--------------------+-------------------+---------+
 | OS X 10.10                              | | Apple Clang 7.0  | Minimal           | Debug   |
 |                                         | | Java 1.8         |                   +---------+

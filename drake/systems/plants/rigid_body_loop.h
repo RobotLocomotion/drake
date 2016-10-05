@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 
 /**
@@ -15,7 +15,7 @@
  * are only allowed to rotate relative to each other along the axis of
  * rotation).
  */
-class DRAKERBM_EXPORT RigidBodyLoop {
+class DRAKE_EXPORT RigidBodyLoop {
  public:
   /**
    * Constructs a kinematic loop by fully constraining the origins and partially

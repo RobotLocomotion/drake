@@ -9,7 +9,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -65,7 +65,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
  */
-class DRAKERBM_EXPORT RigidBodyTree {
+class DRAKE_EXPORT RigidBodyTree {
  public:
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
@@ -940,7 +940,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * A toString method for this class.
    */
-  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                   const RigidBodyTree&);
 
   /**
@@ -952,8 +952,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * RigidBodyTree::body.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
+   * @return A bare, unowned pointer to the @p body.
    */
-  void add_rigid_body(std::unique_ptr<RigidBody> body);
+  RigidBody* add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
@@ -1071,7 +1072,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKERBM_EXPORT on windows (due
+  // The following was required for building w/ DRAKE_EXPORT on windows (due
   // to the unique_ptrs).  See
   // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:

@@ -18,7 +18,7 @@ double angleDiff(double phi1, double phi2) {
   return d;
 }
 
-DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type) {
+DRAKE_EXPORT int rotationRepresentationSize(int rotation_type) {
   switch (rotation_type) {
     case 0:
       return 0;

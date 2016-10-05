@@ -91,9 +91,9 @@ useful:
 
 Configuration
 =============
-An issue may have configuration ``linux``, ``windows``, and/or ``mac``. It may
-additionally have configuration ``matlab``.  If no ``configuration`` label is
-present, the issue is assumed to affect all configurations.
+An issue may have configuration ``linux`` or ``mac``. It may additionally have
+configuration ``matlab``.  If no ``configuration`` label is present, the issue
+is assumed to affect all configurations.
 
 Status
 ======

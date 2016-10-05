@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/drakePendulumSystem_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 

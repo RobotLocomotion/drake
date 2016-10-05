@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -24,7 +24,7 @@ namespace detail {
 ///
 /// @tparam T A mathematical type that is a valid Eigen scalar.
 template <typename T>
-class DRAKESYSTEMFRAMEWORK_EXPORT InputPortEvaluatorInterface {
+class DRAKE_EXPORT InputPortEvaluatorInterface {
  public:
   virtual ~InputPortEvaluatorInterface() {}
 

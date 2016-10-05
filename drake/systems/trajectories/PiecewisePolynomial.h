@@ -6,7 +6,7 @@
 #include <vector>
 #include <random>
 #include <limits>
-#include "drake/drakeTrajectories_export.h"
+#include "drake/common/drake_export.h"
 
 /// A scalar multi-variate piecewise polynomial.
 /**
@@ -35,7 +35,7 @@
  * under division.
  */
 template <typename CoefficientType = double>
-class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
+class DRAKE_EXPORT PiecewisePolynomial
     : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;

@@ -7,7 +7,7 @@
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/system1_vector.h"
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/cascade_system.h"
@@ -22,7 +22,7 @@ namespace automotive {
 /// Compatibility class for System 1 code.
 // TODO(jwnimmer-tri) Remove me.
 template <typename T>
-class DRAKEAUTOMOTIVE_EXPORT DrivingCommand1 :
+class DRAKE_EXPORT DrivingCommand1 :
     public System1Vector<DrivingCommand<T>, T> {
  public:
   DrivingCommand1() {}
@@ -41,7 +41,7 @@ class DRAKEAUTOMOTIVE_EXPORT DrivingCommand1 :
 /**
  * Prints the usage instructions to std::cout.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 void PrintUsageInstructions(const std::string& executable_name);
 
 /**
@@ -77,7 +77,7 @@ void PrintUsageInstructions(const std::string& executable_name);
  *
  * @return A shared pointer to a rigid body system.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
     int argc, const char* argv[], double* duration,
     drake::parsers::ModelInstanceIdTable* model_instance_id_table);
@@ -94,7 +94,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
  * @throws std::runtime_error if "--duration" exists in @p argv but is not
  * followed by a double value.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 double ParseDuration(int argc, const char* argv[]);
 
 /**
@@ -102,7 +102,7 @@ double ParseDuration(int argc, const char* argv[]);
  *
  * @param[in] rigid_body_sys The rigid body system to modify.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 
 /**
@@ -124,7 +124,7 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 void AddFlatTerrainToWorld(
     const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
     double box_size = 1000, double box_depth = 10);
@@ -137,7 +137,7 @@ void AddFlatTerrainToWorld(
  * @param[in] rigid_body_sys The rigid body system.
  * @return The resulting vehicle system.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
@@ -149,7 +149,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  *
  * @return The default car simulation options.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 SimulationOptions GetCarSimulationDefaultOptions();
 
 /**
@@ -158,7 +158,7 @@ SimulationOptions GetCarSimulationDefaultOptions();
  * @param[in] rigid_body_sys The rigid body system being simulated.
  * @return The initial state of the system.
  */
-DRAKEAUTOMOTIVE_EXPORT
+DRAKE_EXPORT
 Eigen::VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys);
 
 /// Compatibility function for System 1 code.

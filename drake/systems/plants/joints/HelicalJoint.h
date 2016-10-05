@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 
-class DRAKEJOINTS_EXPORT HelicalJoint
+class DRAKE_EXPORT HelicalJoint
     : public FixedAxisOneDoFJoint<HelicalJoint> {
   // disable copy construction and assignment
   // HelicalJoint(const HelicalJoint&) = delete;

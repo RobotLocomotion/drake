@@ -13,7 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/drakeGeometryUtil_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
@@ -31,7 +31,7 @@ const int SPACE_DIMENSION = 3;
 DRAKE_DEPRECATED("Use drake::kRotmatSize instead.")
 const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
 
-DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
+DRAKE_EXPORT double angleDiff(double phi1, double phi2);
 
 // NOTE: not reshaping second derivative to Matlab geval output format!
 template <typename Derived>
@@ -69,7 +69,7 @@ void normalizeVec(
   }
 }
 
-DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
+DRAKE_EXPORT int rotationRepresentationSize(int rotation_type);
 
 /*
  * rotation conversion gradient functions

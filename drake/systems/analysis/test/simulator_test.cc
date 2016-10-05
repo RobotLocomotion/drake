@@ -7,8 +7,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -22,11 +22,19 @@ class MySpringMassSystem : public SpringMassSystem<double> {
  public:
   // Pass through to SpringMassSystem, except add sample rate in samples/s.
   MySpringMassSystem(double stiffness, double mass, double sample_rate)
-      : SpringMassSystem<double>(stiffness, mass, false /*no input force*/),
-        sample_rate_(sample_rate) {}
+      : SpringMassSystem<double>(stiffness, mass, false /*no input force*/) {
+    this->DeclareUpdatePeriodSec(1.0 / sample_rate);
+  }
 
   int get_publish_count() const { return publish_count_; }
   int get_update_count() const { return update_count_; }
+
+ protected:
+  // Returns an empty difference state so that updates are possible.
+  std::unique_ptr<DifferenceState<double>> AllocateDifferenceState()
+      const override {
+    return std::make_unique<DifferenceState<double>>();
+  }
 
  private:
   // Publish t q u to standard output.
@@ -34,36 +42,11 @@ class MySpringMassSystem : public SpringMassSystem<double> {
     ++publish_count_;
   }
 
-  void DoUpdate(Context<double>* context,
-                const SampleActions& actions) const override {
+  void DoEvalDifferenceUpdates(
+      const Context<double>& context,
+      DifferenceState<double>* difference_state) const override {
     ++update_count_;
   }
-
-  // Force a sample at the next multiple of the sample rate. If the current
-  // time is exactly at a sample time, we assume the sample has already been
-  // done and return the following sample time. That means we don't get a
-  // sample at 0 but will get one at the end.
-  void DoCalcNextSampleTime(const Context<double>& context,
-                            SampleActions* actions) const override {
-    if (sample_rate_ <= 0.) {
-      actions->time = std::numeric_limits<double>::infinity();
-      return;
-    }
-
-    // For reliable behavior, convert floating point times into integer
-    // sample counts. We want the ceiling unless it is the same as the floor.
-    const int prev =
-        static_cast<int>(std::floor(context.get_time() * sample_rate_));
-    const int next =
-        static_cast<int>(std::ceil(context.get_time() * sample_rate_));
-    const int which = next == prev ? next + 1 : next;
-
-    // Convert the next sample count back to a time to return.
-    const double next_sample = which / sample_rate_;
-    actions->time = next_sample;
-  }
-
-  double sample_rate_{0.};  // Default is "don't sample".
 
   mutable int publish_count_{0};
   mutable int update_count_{0};
@@ -197,8 +180,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   const double kd = 2.0 * kMass * w0 * zeta;
   const double x_target = 0.0;
 
-  PidControlledSpringMassSystem<double> spring_mass(
-      kSpring, kMass, kp, ki, kd, x_target);
+  PidControlledSpringMassSystem<double> spring_mass(kSpring, kMass, kp, ki, kd,
+                                                    x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Sets initial conditions to zero.
@@ -212,14 +195,14 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   simulator.Initialize();
 
   EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-      IntegratorType::RungeKutta2);
+              IntegratorType::RungeKutta2);
 
   // Computes analytical solution.
   // 1) Roots of the characteristic equation.
   complexd lambda1 = -zeta * w0 + w0 * std::sqrt(complexd(zeta * zeta - 1));
   complexd lambda2 = -zeta * w0 - w0 * std::sqrt(complexd(zeta * zeta - 1));
 
-  // Roots should be the complex conjugate of each other.
+// Roots should be the complex conjugate of each other.
 #ifdef __APPLE__
   // The factor of 20 is needed for OS X builds where the comparison needs a
   // looser tolerance, see #3636.
@@ -227,7 +210,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 #else
   auto abs_error = NumTraits<double>::epsilon();
 #endif
-  EXPECT_NEAR(lambda1.real(),  lambda2.real(), abs_error);
+  EXPECT_NEAR(lambda1.real(), lambda2.real(), abs_error);
   EXPECT_NEAR(lambda1.imag(), -lambda2.imag(), abs_error);
 
   // The damped frequency corresponds to the absolute value of the imaginary
@@ -242,14 +225,15 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   // Velocity is computed using AutoDiffScalar.
   double final_time = 0.2;
   double x_final{}, v_final{};
-  { // At the end of this local scope x_final and v_final are properly
+  {
+    // At the end of this local scope x_final and v_final are properly
     // initialized.
     // Auxiliary AutoDiffScalar variables are confined to this local scope so
     // that we don't pollute the test's scope with them.
     SingleVarAutoDiff time(final_time);
     time.derivatives() << 1.0;
-    auto x = exp(-zeta * w0 * time) * (
-        C1 * cos(wd * time) + C2 * sin(wd * time));
+    auto x =
+        exp(-zeta * w0 * time) * (C1 * cos(wd * time) + C2 * sin(wd * time));
     x_final = x.value();
     v_final = x.derivatives()[0];
   }

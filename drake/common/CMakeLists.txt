@@ -25,6 +25,7 @@ set(installed_headers
   constants.h
   drake_assert.h
   drake_deprecated.h
+  drake_export.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
@@ -32,6 +33,7 @@ set(installed_headers
   eigen_types.h
   functional_form.h
   nice_type_name.h
+  number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
   text_logging.h
@@ -43,8 +45,7 @@ set(installed_headers
 set(private_headers
   )
 
-# Create the library target and note its dependencies. Also generates
-# a header defining DRAKECOMMON_EXPORT for dealing with .dlls on Windows.
+# Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon threads)

@@ -14,7 +14,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct DRAKEAUTOMOTIVE_EXPORT %(indices)s {
+struct DRAKE_EXPORT %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -113,7 +113,7 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -159,7 +159,7 @@ TRANSLATOR_HH_PREAMBLE = """
 %(generated_code_warning)s
 
 #include "drake/automotive/gen/%(snake)s.h"
-#include "drake/drakeAutomotiveLcm_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_%(snake)s_t.hpp"
 
@@ -172,7 +172,7 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKEAUTOMOTIVELCM_EXPORT %(camel)sTranslator
+class DRAKE_EXPORT %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()

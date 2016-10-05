@@ -65,7 +65,7 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKERIGIDBODYPLANT_EXPORT KinematicsResults<double>;
+template class DRAKE_EXPORT KinematicsResults<double>;
 
 }  // namespace systems
 }  // namespace drake

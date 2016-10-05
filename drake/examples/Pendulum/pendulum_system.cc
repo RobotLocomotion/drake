@@ -51,8 +51,8 @@ PendulumStateVector<T>* PendulumStateVector<T>::DoClone() const {
   return new PendulumStateVector<T>(get_theta(), get_thetadot());
 }
 
-template class DRAKEPENDULUMSYSTEM_EXPORT PendulumStateVector<double>;
-template class DRAKEPENDULUMSYSTEM_EXPORT PendulumStateVector<AutoDiffXd>;
+template class DRAKE_EXPORT PendulumStateVector<double>;
+template class DRAKE_EXPORT PendulumStateVector<AutoDiffXd>;
 
 template <typename T>
 PendulumSystem<T>::PendulumSystem() {
@@ -121,8 +121,8 @@ void PendulumSystem<T>::EvalTimeDerivatives(
        b_ * state.get_thetadot()) / I_);
 }
 
-template class DRAKEPENDULUMSYSTEM_EXPORT PendulumSystem<double>;
-template class DRAKEPENDULUMSYSTEM_EXPORT PendulumSystem<AutoDiffXd>;
+template class DRAKE_EXPORT PendulumSystem<double>;
+template class DRAKE_EXPORT PendulumSystem<AutoDiffXd>;
 
 }  // namespace pendulum
 }  // namespace examples

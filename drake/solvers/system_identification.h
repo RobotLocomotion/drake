@@ -8,7 +8,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/trig_poly.h"
 
-#include "drake/drakeOptimization_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace solvers {
@@ -36,7 +36,7 @@ namespace solvers {
  * those parameters based on empirical data.
  */
 template <typename CoefficientType>
-class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
+class DRAKE_EXPORT SystemIdentification {
  public:
   typedef ::Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::Monomial MonomialType;

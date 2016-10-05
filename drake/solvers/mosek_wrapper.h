@@ -31,7 +31,7 @@ program.  Specifically, the program options:
  It is created by a MosekSolver object.
  Use the strictest constraint and variable bounds available, unbounded precision
  precision varies from bounded precision by about 10^-3.  **/
-class DRAKEOPTIMIZATION_EXPORT MosekWrapper {
+class DRAKE_EXPORT MosekWrapper {
  public:
   /** Create a Mosek linear programming environment using a constraint matrix
   Takes the number of variables and constraints, the linear eqn to
