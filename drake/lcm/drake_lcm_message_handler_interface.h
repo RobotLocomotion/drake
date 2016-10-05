@@ -8,11 +8,16 @@ namespace drake {
 namespace lcm {
 
 /**
- * Defines the message handler interface to implemented by all of Drake's LCM
- * subscriptions. This avoids DrakeLcmInterface from needing to be templated.
+ * Defines a message handler interface that must be implemented by all LCM
+ * subscribers within Drake.
+ *
+ * @see DrakeLcmInterface::Subscribe().
  */
 class DRAKELCM_EXPORT DrakeLcmMessageHandlerInterface {
  public:
+
+  virtual ~DrakeLcmMessageHandlerInterface() {}
+
   /**
    * This method is called when an LCM message arrives over the subscribed
    * channel.

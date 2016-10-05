@@ -34,16 +34,15 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
   LastPublishedMessage* saved_message{nullptr};
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
-    last_published_messages_[channel] =
-        std::make_unique<LastPublishedMessage>();
+    last_published_messages_[channel] = LastPublishedMessage();
   }
-  saved_message = last_published_messages_[channel].get();
+  saved_message = &last_published_messages_[channel];
 
   DRAKE_DEMAND(saved_message);
 
   saved_message->channel = channel;
-  saved_message->data.resize(data_size);
-  std::memcpy(&saved_message->data[0], data, data_size);
+  const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
+  saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
   saved_message->data_size = data_size;
 }
 
@@ -54,7 +53,7 @@ bool DrakeMockLcm::get_last_published_message(const std::string& channel,
       last_published_messages_.end()) {
     result = false;
   } else {
-    LastPublishedMessage* message = last_published_messages_[channel].get();
+    LastPublishedMessage* message = &last_published_messages_[channel];
     DRAKE_DEMAND(message);
     *data = &message->data[0];
     *data_size = message->data_size;

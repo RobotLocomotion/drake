@@ -101,8 +101,7 @@ class DRAKELCM_EXPORT DrakeMockLcm : public DrakeLcmInterface {
     int data_size{};
   };
 
-  std::map<std::string, std::unique_ptr<LastPublishedMessage>>
-    last_published_messages_;
+  std::map<std::string, LastPublishedMessage> last_published_messages_;
 
   // Maps the channel name to the subscriber.
   std::map<std::string, std::unique_ptr<DrakeMockLcmSubscriber>> subscriptions_;
