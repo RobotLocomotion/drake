@@ -19,6 +19,7 @@ drake_setup_git_hooks()
 # External Projects that are ON by default
 ##########################################
 option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
+option(WITH_FCL "proximity queries between triangle meshes" ON)
 option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
 option(WITH_GFLAGS "required c++ command-line library.  only disable if you have it already." ON)
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
@@ -26,6 +27,7 @@ option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ lib
 option(WITH_BULLET "used for collision detection" ON)
 option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
+option(WITH_LIBCCD "collision detection between convex shapes" ON)
 option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
 if(WIN32)
   option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
@@ -35,6 +37,7 @@ else()
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
+  option(WITH_OCTOMAP "provides oct-tree data structures" ON)
   # IPOPT is currently disabled on Mac due to MATLAB compatibility
   # issues: https://github.com/RobotLocomotion/drake/issues/2578
   if (NOT APPLE)
@@ -85,7 +88,6 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-  option(WITH_OCTOMAP "provides oct-tree data structures")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
   option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 endif()
@@ -218,9 +220,21 @@ drake_add_external(snopt CMAKE
 drake_add_external(spotless PUBLIC CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
 
+# libccd
+drake_add_external(libccd PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DENABLE_DOUBLE_PRECISION=ON)
+
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
   SOURCE_SUBDIR octomap)
+
+# fcl
+drake_add_external(fcl PUBLIC CMAKE
+  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
+  DEPENDS eigen libccd octomap)
 
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
@@ -355,6 +369,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     director
     dreal
     eigen
+    fcl
     gflags
     gloptipoly
     google_styleguide
@@ -365,6 +380,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     iris
     lcm
     libbot
+    libccd
     meshconverters
     mosek
     nlopt
