@@ -1,28 +1,16 @@
 #include "drake/common/symbolic_environment.h"
 
-#include <cmath>
-#include <iostream>
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_variable.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
-namespace core {
-namespace test {
 namespace {
 
-using std::cerr;
-using std::endl;
-using std::equal_to;
-using std::ostringstream;
 using std::string;
-using std::to_string;
-using std::runtime_error;
 
 GTEST_TEST(SymEnvTest, empty_size) {
   Environment const env1{};
@@ -70,14 +58,12 @@ GTEST_TEST(SymEnvTest, output_opreator) {
   Expression const z{var_z};
   Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
 
-  string const out{to_string(env)};
-  EXPECT_TRUE(out.find("x -> 2") != std::string::npos);
-  EXPECT_TRUE(out.find("y -> 3") != std::string::npos);
-  EXPECT_TRUE(out.find("z -> 3") != std::string::npos);
+  string const out{env.to_string()};
+  EXPECT_TRUE(out.find("x -> 2") != string::npos);
+  EXPECT_TRUE(out.find("y -> 3") != string::npos);
+  EXPECT_TRUE(out.find("z -> 3") != string::npos);
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace core
 }  // namespace symbolic
 }  // namespace drake
