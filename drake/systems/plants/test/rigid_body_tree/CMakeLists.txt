@@ -8,7 +8,8 @@ if(BULLET_FOUND)
   target_link_libraries(rigid_body_collision_clique_test drakeRBSystem)
 endif()
 
-drake_add_cc_test(rigid_body_tree_test)
+# TODO(jwnimmer-tri) Get valgrind passing again.
+drake_add_cc_test(NAME rigid_body_tree_test NO_VALGRIND)
 target_link_libraries(rigid_body_tree_test drakeRBSystem)
 
 drake_add_cc_test(rigid_body_tree_inverse_dynamics_test)

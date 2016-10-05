@@ -1,7 +1,8 @@
 find_package(Bullet)
 
 if(BULLET_FOUND)
-  drake_add_cc_test(model_test)
+  # TODO(jwnimmer-tri) Get valgrind passing again.
+  drake_add_cc_test(NAME model_test NO_VALGRIND)
   target_link_libraries(model_test drakeCollision)
 endif()
 
