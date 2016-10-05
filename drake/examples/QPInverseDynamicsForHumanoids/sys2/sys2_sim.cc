@@ -1,10 +1,12 @@
 #include "drake/systems/analysis/simulator.h"
-#include "sys2_dummy_val.h"
-#include "sys2_qp.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/framework/diagram_builder.h"
+
+#include "sys2_dummy_val.h"
+#include "sys2_qp.h"
+#include "sys2_plan_eval.h"
 
 using namespace drake;
 using namespace systems;
