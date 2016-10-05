@@ -1,10 +1,8 @@
 #pragma once
 
-#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/lcmt_drake_signal.hpp"
 
-#include "../qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
 namespace drake {
 namespace systems {
