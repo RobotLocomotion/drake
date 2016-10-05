@@ -9,7 +9,7 @@ namespace lcm {
 // serialized LCM message and passes it to the `DrakeLcmMessageHandlerInterface`
 // object. A single type of subscriber is used to avoid DrakeLcm from being
 // templated on the subscriber type.
-class DRAKELCM_EXPORT Subscriber {
+class DRAKELCM_EXPORT DrakeLcm::Subscriber {
  public:
   explicit Subscriber(DrakeLcmMessageHandlerInterface* drake_handler)
       : drake_handler_(drake_handler) { }

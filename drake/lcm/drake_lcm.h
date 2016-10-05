@@ -12,8 +12,6 @@
 namespace drake {
 namespace lcm {
 
-class Subscriber;
-
 /**
  * A wrapper around a *real* LCM instance.
  */
@@ -48,9 +46,10 @@ class DRAKELCM_EXPORT DrakeLcm : public DrakeLcmInterface {
       DrakeLcmMessageHandlerInterface* handler) override;
 
  private:
+  class Subscriber;
   ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
-  std::vector<std::unique_ptr<Subscriber>> subscriptions_{};
+  std::vector<std::unique_ptr<DrakeLcm::Subscriber>> subscriptions_{};
 };
 
 }  // namespace lcm
