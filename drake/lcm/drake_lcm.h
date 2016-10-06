@@ -49,7 +49,7 @@ class DRAKE_EXPORT DrakeLcm : public DrakeLcmInterface {
   class Subscriber;
   ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
-  std::vector<DrakeLcm::Subscriber*> subscriptions_{};
+  std::vector<std::unique_ptr<Subscriber>> subscriptions_{};
 };
 
 }  // namespace lcm

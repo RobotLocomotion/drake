@@ -14,9 +14,10 @@ class DRAKE_EXPORT DrakeLcm::Subscriber {
   explicit Subscriber(DrakeLcmMessageHandlerInterface* drake_handler)
       : drake_handler_(drake_handler) { }
 
-  // Disables copy and assign.
+  // Disables copy, assign, and move.
   Subscriber(const Subscriber&) = delete;
   Subscriber& operator=(const Subscriber&) = delete;
+  Subscriber(Subscriber&& ) = delete;
 
   void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
                    const std::string& channel) {
@@ -33,9 +34,6 @@ DrakeLcm::DrakeLcm() {
 
 DrakeLcm::~DrakeLcm() {
   receive_thread_.reset();
-  for (auto& subscriber : subscriptions_) {
-    delete subscriber;
-  }
 }
 
 void DrakeLcm::StartReceiveThread() {
@@ -59,11 +57,11 @@ void DrakeLcm::Publish(const std::string& channel, const void *data,
 
 void DrakeLcm::Subscribe(const std::string& channel,
     DrakeLcmMessageHandlerInterface* handler) {
-  Subscriber* subscriber = new Subscriber(handler);
+  auto subscriber = std::make_unique<Subscriber>(handler);
   auto sub = lcm_.subscribe(channel, &Subscriber::LcmCallback,
-      subscriber);
+      subscriber.get());
   sub->setQueueCapacity(1);
-  subscriptions_.push_back(subscriber);
+  subscriptions_.push_back(std::move(subscriber));
 }
 
 }  // namespace lcm
