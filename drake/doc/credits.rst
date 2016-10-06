@@ -22,7 +22,9 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * David German
 * Lucy Gibson
 * Grant Gould
+* Bill Hoffman
 * Greg Izatt
+* Brad King
 * Twan Koolen
 * Soonho Kong
 * Scott Kuindersma
@@ -31,9 +33,12 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Lucas Manuelli
 * Matt Marjanovic
 * Pat Marion
+* Betsy McPhail
 * Jeremy Nimmer
 * Michael Posa
 * Rick Poyner
 * Michael Sherman
+* Jamie Snape
 * `Russ Tedrake <http://people.csail.mit.edu/russt/>`_
 * Andres Valenzuela
+* Matthew Woehlke
