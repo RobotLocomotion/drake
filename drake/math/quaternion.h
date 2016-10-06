@@ -13,24 +13,23 @@
 
 namespace drake {
 namespace math {
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
   Vector4<typename Derived::Scalar> q_conj;
   q_conj << q(0), -q(1), -q(2), -q(3);
   return q_conj;
 }
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+
 template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatProduct(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
 
@@ -44,13 +43,13 @@ Vector4<typename Derived1::Scalar> quatProduct(
 
   return r;
 }
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+
 template <typename DerivedQ, typename DerivedV>
 Vector3<typename DerivedV::Scalar> quatRotateVec(
     const Eigen::MatrixBase<DerivedQ>& q,
     const Eigen::MatrixBase<DerivedV>& v) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   static_assert(DerivedQ::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(DerivedV::SizeAtCompileTime == 3, "Wrong size.");
 
@@ -62,33 +61,33 @@ Vector3<typename DerivedV::Scalar> quatRotateVec(
   Vector3<typename DerivedV::Scalar> r = v_rot.template bottomRows<3>();
   return r;
 }
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+
 template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatDiff(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   return quatProduct(quatConjugate(q1), q2);
 }
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+
 template <typename Derived1, typename Derived2, typename DerivedU>
 typename Derived1::Scalar quatDiffAxisInvar(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2,
     const Eigen::MatrixBase<DerivedU>& u) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   static_assert(DerivedU::SizeAtCompileTime == 3, "Wrong size.");
   auto r = quatDiff(q1, q2);
   return -2.0 + 2 * r(0) * r(0) +
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+
 template <typename Derived>
 typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   using std::acos;
   return acos(q(0));
 }
@@ -107,13 +106,13 @@ typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
  * 2004 IEEE International Conference on , vol.4, no., pp.3993, 3998 Vol.4,
  * April 26-May 1, 2004
  * doi: 10.1109/ROBOT.2004.1308895
- *
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived1, typename Derived2, typename Scalar>
 Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
                       const Eigen::MatrixBase<Derived2>& q2,
                       const Scalar& interpolation_parameter) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   using std::acos;
   using std::sin;
 
@@ -157,12 +156,12 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
  * has unit length.
  * The cost of this function is roughly one atan2, one sqrt, and one divide
  * (about 100 flops)
- *
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& quaternion) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   using std::sqrt;
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   using Scalar = typename Derived::Scalar;
@@ -200,12 +199,12 @@ Vector4<typename Derived::Scalar> quat2axis(
  * Compute the rotation matrix from quaternion representation.
  * @param quaternion A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
  * @return A 3 x 3 rotation matrix
- *
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& quaternion) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   auto q_normalized = quaternion.normalized();
   auto w = q_normalized(0);
@@ -240,35 +239,36 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  * When the pitch angle is close to PI/2 or -PI/2, this function is not very
  * accurate. For pitch = PI/2 - 1E-6, the error can be in the order of 1E-7.
  * The error gets larger when the pitch gets closer to PI/2 or -PI/2.
- * TODO (mitiguy@tri.global) replace this method with the high-precision method.
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
+  // TODO (mitiguy@tri.global) replace this method with the high-precision
+  // method
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return rotmat2rpy(quat2rotmat(quaternion));
 }
 
-/**
- * TODO (hongkai.dai@tri.global). Switch to Eigen's Quaternion class
- */
+// The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
+// x, y, z) ordering, just as we do.
+// HOWEVER: when the constructor is called on a 4-element Vector, the elements
+// must be in (x, y, z, w) order.
+// So, the following two calls will give you the SAME quaternion:
+// Quaternion<double>(q(0), q(1), q(2), q(3));
+// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+// which is gross and will cause you much pain.
+// see:
+// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
+//
+// This method takes a nice, normal (w, x, y, z) order vector and gives you
+// the Quaternion you expect.
 template <typename Derived>
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
     const Eigen::MatrixBase<Derived>& q) {
-  // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
-  // x, y, z) ordering, just as we do.
-  // HOWEVER: when the constructor is called on a 4-element Vector, the elements
-  // must be in (x, y, z, w) order.
-  // So, the following two calls will give you the SAME quaternion:
-  // Quaternion<double>(q(0), q(1), q(2), q(3));
-  // Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-  // which is gross and will cause you much pain.
-  // see:
-  // http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
-  //
-  // This method takes a nice, normal (w, x, y, z) order vector and gives you
-  // the Quaternion you expect.
+  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // the range problem in Eigen
   return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
 }
 
