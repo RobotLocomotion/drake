@@ -1,7 +1,9 @@
 add_library(drakeQPController qp_controller.cc rigid_body_tree_utils.cc humanoid_status.cc)
 target_link_libraries(drakeQPController drakeRBSystem drakeOptimization drakeSide)
 
-drake_add_cc_test(test_gravity_compensation_for_valkyrie test_gravity_compensation_for_valkyrie.cc)
+drake_add_cc_test(
+  NAME test_gravity_compensation_for_valkyrie
+  SIZE large)
 target_link_libraries(test_gravity_compensation_for_valkyrie drakeQPController)
 
 add_subdirectory(sys2)
