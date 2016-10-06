@@ -55,10 +55,11 @@ GTEST_TEST(testFastQP, unitBallExample) {
 
     SolutionResult result = SolutionResult::kUnknownError;
 
-    ASSERT_NO_THROW(result =
-                        prog.Solve());  // todo: call fastQP solver explicitly
+    ASSERT_NO_THROW(result = prog.Solve());  // TODO(russt) call fastQP solver
+                                             // explicitly
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    // todo: assert that fastQP only falls back on the expected iterations
+    // TODO(russt) assert that fastQP only falls back on the expected
+    // iterations
 
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
                                 MatrixCompareType::absolute));
