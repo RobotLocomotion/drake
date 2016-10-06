@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/drake_export.h"
-#include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 
 namespace drake {
@@ -19,7 +18,6 @@ namespace pendulum {
  * between @p x0 and @p xG).
  */
 void DRAKE_EXPORT AddSwingUpTrajectoryParams(
-    std::shared_ptr<Pendulum>,
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
     solvers::DircolTrajectoryOptimization*);
