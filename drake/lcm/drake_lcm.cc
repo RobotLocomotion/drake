@@ -18,6 +18,7 @@ class DRAKE_EXPORT DrakeLcm::Subscriber {
   Subscriber(const Subscriber&) = delete;
   Subscriber& operator=(const Subscriber&) = delete;
   Subscriber(Subscriber&& ) = delete;
+  Subscriber& operator=(Subscriber&&) = delete;
 
   void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
                    const std::string& channel) {
