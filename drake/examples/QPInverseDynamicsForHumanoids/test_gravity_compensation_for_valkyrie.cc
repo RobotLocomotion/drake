@@ -122,7 +122,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
                                   Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
 
   // Perturb initial condition
-  v[robot_status.joint_name_to_position_index().at("torsoPitch")] += 0.1;
+  v[robot_status.name_to_velocity_index().at("torsoPitch")] += 0.1;
   robot_status.Update(
       0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());

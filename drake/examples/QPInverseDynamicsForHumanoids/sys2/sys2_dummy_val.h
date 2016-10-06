@@ -44,7 +44,7 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const {
+      const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     example::qp_inverse_dynamics::HumanoidStatus rs(robot_);
@@ -94,20 +94,9 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     for (int i = 0; i < new_vd->size(); i++) new_vd->SetAtIndex(i, vd(i));
   }
 
-  void DoPublish(const Context<double>& context) const override {
-    /*
-    const ContinuousState<double> &state =
-    *context.get_state().get_continuous_state();
-    Eigen::VectorXd q = state.get_generalized_position().CopyToVector();
-    Eigen::VectorXd v = state.get_generalized_velocity().CopyToVector();
-    std::cout << "time: " << context.get_time() << std::endl;
-    std::cout << "pos: " << q << std::endl;
-    std::cout << "vel: " << v << std::endl;
-    */
-  }
-
   /**
    * Setup the initial condition: time = 0, q = Valkyrie's nominal q, and v = 0.
+   * @return A humanoid status unique pointer with the same q and v.
    */
   std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus>
   SetInitialCondition(Context<double>* context) {
@@ -146,7 +135,7 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     VectorBase<double>* q = state.get_mutable_generalized_position();
 
     example::qp_inverse_dynamics::HumanoidStatus rs(robot_);
-    int idx = rs.joint_name_to_position_index().at(position_name);
+    int idx = rs.name_to_position_index().at(position_name);
     q->SetAtIndex(idx, q->GetAtIndex(idx) + perturbation);
   }
 
@@ -163,13 +152,13 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     VectorBase<double>* v = state.get_mutable_generalized_velocity();
 
     example::qp_inverse_dynamics::HumanoidStatus rs(robot_);
-    int idx = rs.joint_name_to_position_index().at(velocity_name);
+    int idx = rs.name_to_velocity_index().at(velocity_name);
     v->SetAtIndex(idx, v->GetAtIndex(idx) + perturbation);
   }
 
   /**
    * @param context, system context
-   * @return A humanoid status from \p context
+   * @return A humanoid status pointer from \p context
    */
   std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus>
   GetHumanoidStatusFromContext(const Context<double>& context) {

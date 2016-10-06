@@ -14,8 +14,7 @@ class System2PlanEval : public LeafSystem<double> {
    * A system2 plan eval block that generates qp input for the qp inverse
    * dynamics controller.
    * The controller assume the robot is in double support, and the desired set
-   * point is
-   * set by SetupDesired.
+   * point is set by SetupDesired.
    * Input: humanoid status
    * Output: qp input
    */
@@ -74,11 +73,9 @@ class System2PlanEval : public LeafSystem<double> {
         (Kp_joints_.array() * (desired_q_ - robot_status->position()).array() -
          Kd_joints_.array() * robot_status->velocity().array())
             .matrix();
-
     input.mutable_w_vd() = vd_weight_;
 
     // Setup tracking for various body parts.
-
     example::qp_inverse_dynamics::DesiredBodyAcceleration pelvdd_d(
         *robot_status->robot().FindBody("pelvis"));
     pelvdd_d.mutable_weight() = pelvisdd_weight_;
@@ -109,7 +106,7 @@ class System2PlanEval : public LeafSystem<double> {
     left_foot_contact.mutable_contact_points().push_back(
         Eigen::Vector3d(-0.05, 0.05, -0.09));
 
-    // Mirror left foot.
+    // Mirror the left foot.
     example::qp_inverse_dynamics::ContactInformation right_foot_contact(
         *robot_status->robot().FindBody("rightFoot"), 4);
     right_foot_contact.mutable_contact_points() =
@@ -120,7 +117,7 @@ class System2PlanEval : public LeafSystem<double> {
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const {
+      const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     example::qp_inverse_dynamics::QPInput qpinput(robot_);
