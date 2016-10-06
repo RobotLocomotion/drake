@@ -121,8 +121,9 @@ class IntegratorBase {
   //                 below the minimum step size
   void set_target_accuracy(const T& accuracy) {
     if (!supports_accuracy_estimation())
-      throw std::logic_error("Integrator does not support accuracy estimation "
-                                 "and user has requested error control");
+      throw std::logic_error(
+          "Integrator does not support accuracy estimation "
+          "and user has requested error control");
     target_accuracy_ = accuracy;
     accuracy_in_use_ = accuracy;
   }
@@ -177,8 +178,7 @@ class IntegratorBase {
    * @throws std::logic_error If the context has not been set.
    */
   void Initialize() {
-    if (!context_)
-      throw std::logic_error("Context has not been set.");
+    if (!context_) throw std::logic_error("Context has not been set.");
 
     // Call the derived integrator initialization routine (if any)
     DoInitialize();
@@ -187,7 +187,7 @@ class IntegratorBase {
   }
 
   /** Request that the first attempted integration step have a particular size.
-   * If no requested is made, the integrator will estimate a suitable size
+   * If no request is made, the integrator will estimate a suitable size
    * for the initial step attempt. *If the integrator does not support error
    * control*, this method will throw a std::logic_error (call
    * supports_error_control() to verify before calling this method). For
@@ -199,8 +199,9 @@ class IntegratorBase {
    */
   void request_initial_step_size_target(const T& step_size) {
     if (!supports_error_control())
-      throw std::logic_error("Integrator does not support error control and "
-                             "user has initial step size target");
+      throw std::logic_error(
+          "Integrator does not support error control and "
+          "user has initial step size target");
     req_initial_step_size_ = step_size;
   }
 
@@ -213,19 +214,19 @@ class IntegratorBase {
   }
 
   /**
- * Integrates the system forward in time. Integrator must already have
- * been initialized or an exception will be thrown. The context will be
- * integrated forward *at most*
- * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
- * Error controlled integrators may take smaller steps.
- * @param publish_dt The step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next publish will occur.
- * @param update_dt The step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next update will occur.
- * @throws std::logic_error If the integrator has not been initialized or one
- *                          of publish_dt or update_dt is negative.
- * @return The reason for the integration step ending.
- */
+   * Integrates the system forward in time. Integrator must already have
+   * been initialized or an exception will be thrown. The context will be
+   * integrated forward *at most*
+   * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
+   * Error controlled integrators may take smaller steps.
+   * @param publish_dt The step size, >= 0.0 (exception will be thrown
+   *        if this is not the case) at which the next publish will occur.
+   * @param update_dt The step size, >= 0.0 (exception will be thrown
+   *        if this is not the case) at which the next update will occur.
+   * @throws std::logic_error If the integrator has not been initialized or one
+   *                          of publish_dt or update_dt is negative.
+   * @return The reason for the integration step ending.
+   */
   StepResult Step(const T& publish_dt, const T& update_dt);
 
   /** Forget accumulated statistics. These are reset to the values they have
@@ -262,9 +263,7 @@ class IntegratorBase {
    * integrators; will change as the simulation progresses) or using the fixed
    * step for fixed step integrators.
    */
-  const T& get_ideal_next_step_size() const {
-    return ideal_next_step_size_;
-  }
+  const T& get_ideal_next_step_size() const { return ideal_next_step_size_; }
 
   /** Returns a const reference to the internally-maintained Context holding
    * the most recent state in the trajectory. This is suitable for publishing or
@@ -299,7 +298,7 @@ class IntegratorBase {
   /** Derived classes can override this method to perform special
    * initialization. This method is called during the Initialize() method.
    */
-  virtual void DoInitialize() { }
+  virtual void DoInitialize() {}
 
   /** Derived classes must implement this method to integrate the continuous
    * portion of this system forward by a maximum step of dt. This method
@@ -315,11 +314,13 @@ class IntegratorBase {
 
   // Sets the actual initial step size taken.
   void set_actual_initial_step_size_taken(const T& dt) {
-    actual_initial_step_size_taken_ = dt; }
+    actual_initial_step_size_taken_ = dt;
+  }
 
   // Sets the smallest step size taken
   void set_smallest_step_size_taken(const T& dt) {
-    smallest_step_size_taken_ = dt; }
+    smallest_step_size_taken_ = dt;
+  }
 
   // Sets the largest step size taken
   void set_largest_step_size_taken(const T& dt) {
@@ -337,13 +338,10 @@ class IntegratorBase {
       set_smallest_step_size_taken(dt);
       set_largest_step_size_taken(dt);
     } else {
-      if (dt < get_smallest_step_size_taken())
-        set_smallest_step_size_taken(dt);
-      if (dt > get_largest_step_size_taken())
-        set_largest_step_size_taken(dt);
+      if (dt < get_smallest_step_size_taken()) set_smallest_step_size_taken(dt);
+      if (dt > get_largest_step_size_taken()) set_largest_step_size_taken(dt);
     }
   }
-
 
  private:
   // Reference to the system being simulated.
@@ -398,23 +396,20 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
   // the update step, then the publish step, then the maximum step size.
   const int64_t kDTs = 3;  // number of dt values to evaluate
   const T& max_step_size = IntegratorBase<T>::get_maximum_step_size();
-  const T* stop_dts[kDTs] = { &update_dt, &publish_dt,  &max_step_size};
-  std::stable_sort(stop_dts, stop_dts+kDTs,
+  const T* stop_dts[kDTs] = {&update_dt, &publish_dt, &max_step_size};
+  std::stable_sort(stop_dts, stop_dts + kDTs,
                    [](const T* t1, const T* t2) { return *t1 < *t2; });
 
   // Set dt and take the step.
   const T& dt = *stop_dts[0];
-  if (dt < 0.0)
-    throw std::logic_error("Negative dt.");
+  if (dt < 0.0) throw std::logic_error("Negative dt.");
   bool result = DoStep(dt);
 
   // Return depending on the step taken.
   if (!result || &dt == &max_step_size)
     return IntegratorBase<T>::kTimeHasAdvanced;
-  if (&dt == &publish_dt)
-    return IntegratorBase<T>::kReachedPublishTime;
-  if (&dt == &update_dt)
-    return IntegratorBase<T>::kReachedUpdateTime;
+  if (&dt == &publish_dt) return IntegratorBase<T>::kReachedPublishTime;
+  if (&dt == &update_dt) return IntegratorBase<T>::kReachedUpdateTime;
   DRAKE_ABORT_MSG("Never should have reached here.");
 }
 
