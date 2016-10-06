@@ -13,7 +13,7 @@ namespace math {
  * This implementation is adapted from simbody
  * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
  * Notice that there are two quaternions corresponding to the same rotation,
- * namely \f$ q \f$ and \f$ -q \f$ represent the same rotation.
+ * namely `q` and `-q` represent the same rotation.
  * @param M A 3 x 3 rotation matrix.
  * @return a 4 x 1 unit length vector, the quaternion corresponding to the
  * rotation matrix.
