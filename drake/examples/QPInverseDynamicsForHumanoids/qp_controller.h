@@ -445,7 +445,7 @@ class QPInput {
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
-          r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     }
     desired_vd_.resize(r.get_num_velocities());
   }
@@ -560,7 +560,7 @@ class QPOutput {
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
-          r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     }
     vd_.resize(r.get_num_velocities());
     joint_torque_.resize(r.actuators.size());
