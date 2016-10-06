@@ -23,7 +23,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     function [length,dlength,dJdq,Jdotv,dJdotv] = evalWithJdot(obj,q,v)
       [length,dlength,ddlength] = obj.eval(q);
       [Jdotv,dJdotv] = geval(@(q,v) evalJdotv(obj,q,v),q,v,struct('grad_method','numerical'));
-      dJdq = reshape(ddlength, [],length(q));
+      dJdq = reshape(ddlength, [],size(q,1));
     end
     
     function [Jdotv] = evalJdotv(obj,q,v)
