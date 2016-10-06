@@ -40,14 +40,14 @@ class DRAKE_EXPORT DrakeLcm : public DrakeLcmInterface {
   ::lcm::LCM* get_lcm_instance();
 
   void Publish(const std::string& channel, const void *data,
-               int data_size) const override;
+               int data_size) override;
 
   void Subscribe(const std::string& channel,
       DrakeLcmMessageHandlerInterface* handler) override;
 
  private:
   class Subscriber;
-  mutable ::lcm::LCM lcm_;
+  ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
   std::vector<DrakeLcm::Subscriber*> subscriptions_{};
 };

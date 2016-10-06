@@ -29,7 +29,7 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
   void StopReceiveThread() override;
 
   void Publish(const std::string& channel, const void *data, int data_size)
-      const override;
+      override;
 
   /**
    * Obtains the most recently "published" message on a particular channel.
@@ -74,7 +74,7 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
     std::vector<uint8_t> data{};
   };
 
-  mutable std::map<std::string, LastPublishedMessage> last_published_messages_;
+  std::map<std::string, LastPublishedMessage> last_published_messages_;
 
   // Maps the channel name to the subscriber.
   std::map<std::string, DrakeLcmMessageHandlerInterface*> subscriptions_;

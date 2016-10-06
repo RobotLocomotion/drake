@@ -19,7 +19,7 @@ class DRAKE_EXPORT DrakeLcm::Subscriber {
   Subscriber& operator=(const Subscriber&) = delete;
 
   void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
-      const std::string& channel) {
+                   const std::string& channel) {
     drake_handler_->HandleMessage(channel, rbuf->data, rbuf->data_size);
   }
 
@@ -53,7 +53,7 @@ void DrakeLcm::StopReceiveThread() {
 }
 
 void DrakeLcm::Publish(const std::string& channel, const void *data,
-                       int data_size) const {
+                       int data_size) {
   lcm_.publish(channel, data, data_size);
 }
 
