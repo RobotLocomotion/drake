@@ -139,6 +139,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
         GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_q,
                         Kp_joints, Kd_joints, desired_pelvis, desired_torso);
     int status = con.Control(robot_status, input, &output);
+
     if (status) break;
 
     // Dummy integration.
@@ -161,8 +162,6 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(drake::CompareMatrices(
       v, Eigen::VectorXd::Zero(robot_status.robot().get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
-
-  std::cout << output;
 }
 
 }  // end namespace qp_inverse_dynamics

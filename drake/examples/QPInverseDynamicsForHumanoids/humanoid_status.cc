@@ -1,5 +1,5 @@
-#include "humanoid_status.h"
 #include <iostream>
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 
 namespace drake {
 namespace example {
