@@ -6,7 +6,6 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
