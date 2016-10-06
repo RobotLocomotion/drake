@@ -35,7 +35,7 @@ namespace systems {
  * this phase is `lcmt_viewer_draw` and the channel name is
  * "DRAKE_VIEWER_DRAW".
  *
- * @ingroup systems
+ * @ingroup rigid_body_systems
  */
 class DRAKE_EXPORT RigidBodyTreeLcmPublisher
     : public LeafSystem<double> {
