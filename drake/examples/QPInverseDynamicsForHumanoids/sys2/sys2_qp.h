@@ -56,7 +56,7 @@ class System2QP : public LeafSystem<double> {
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const {
+      const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     example::qp_inverse_dynamics::QPOutput out(robot_);

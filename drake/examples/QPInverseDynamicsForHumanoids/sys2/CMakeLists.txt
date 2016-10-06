@@ -1,2 +1,2 @@
-add_executable(sys2_qp_test sys2_sim.cc)
-target_link_libraries(sys2_qp_test drakeQPController drakeSystemAnalysis ${GTEST_BOTH_LIBRARIES})
+drake_add_cc_test(test_sys2_qp)
+target_link_libraries(test_sys2_qp drakeQPController drakeSystemAnalysis)
