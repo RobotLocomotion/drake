@@ -287,8 +287,11 @@ class IntegratorBase {
   /** Derived classes must implement this method to integrate the continuous
    * portion of this system forward by a maximum step of dt. This method
    * is called during the Step() method.
+   * @param dt The maximum integration step to take.
+   * @returns *false* if the integrator does not take the full step of dt;
+   *           otherwise, should return *true*
    **/
-  virtual void DoStep(const T& dt) = 0;
+  virtual bool DoStep(const T& dt) = 0;
 
   // Sets the ideal next step size.
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
@@ -398,10 +401,10 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
   const T& dt = *stop_dts[0];
   if (dt < 0.0)
     throw std::logic_error("Negative dt.");
-  DoStep(dt);
+  bool result = DoStep(dt);
 
   // Return depending on the step taken.
-  if (&dt == &max_step_size)
+  if (!result || &dt == &max_step_size)
     return IntegratorBase<T>::kTimeHasAdvanced;
   if (&dt == &publish_dt)
     return IntegratorBase<T>::kReachedPublishTime;
