@@ -7,6 +7,10 @@ namespace drake {
 namespace systems {
 namespace qp_inverse_dynamics {
 
+// TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
+// constraint for EvalOutput. It is because qp controller needs to allocate
+// mutable workspace (MathematicalProgram, temporary matrices for doing math,
+// etc), and I want to avoid allocating these repeatedly.
 static example::qp_inverse_dynamics::QPController qp_controller__;
 
 class System2QP : public LeafSystem<double> {
