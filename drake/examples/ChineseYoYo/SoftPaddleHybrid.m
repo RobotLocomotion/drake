@@ -167,11 +167,11 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % give a feasible initial state, otherwise the constraint solver will
       % barf
       x0 = Point(getStateFrame(obj));
-      x0.m = 1;
+      x0.m = 2;
       x0.load_x = -0.02905;  % was -0.029
-      x0.load_z = 5;
+      x0.load_z = 3.99999;
       x0 = double(x0);
-      x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
+      x0(2:end) = resolveConstraints(obj.in_contact,x0(2:end));
     end
     
     function xDes = calcStateInContact(obj,x_load,z_load,paddle_angle)
@@ -294,40 +294,47 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         end
         
     end
-    
+
     function [utraj,xtraj]=inContactTrajectory(obj)
       zInitial = 4.5;
       tStrike = sqrt(2/9.81)*sqrt(zInitial-4);
       g = -9.81;
       vStrike = g*tStrike;
       xdrop = -0.5;
-      x0 =             [0; 0.1434; -0.5;  4; 0; 0; 0; vStrike];
-      xTargetInitial = [0; 0.14;    0.03; 4; 0; 0; 0; 0];
+      x0 =             [ 0; 0.1434; -0.5;  3.9; 0; 0; 0; vStrike];
+      xTargetInitial = [ 0; 0.14;    0.03; 3.9; 0; 0; 0; 0];
       
       % Get the desired xf in the inertial frame
       
       %         xf1_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [-0.5,0,1], obj.options);
       %         xf2_in_inertial = forwardKin(obj, kinsol, obj.paddleId, [0.5,0,1], obj.options);
       
-      to_options.lambda_bound = 100; %ToDo Check this?
-      N = 21;
-      Tmin = 0.4;
+      to_options.lambda_bound = 21; %ToDo Check this?
+      N = 11;
+      Tmin = 0.1;
       Tmax = 1.2;
       traj_opt = ConstrainedDircolTrajectoryOptimization(obj.in_contact,N,[Tmin Tmax],to_options);
       
       delta = 1e-3; % if x0 is correct
       traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0-delta,x0+delta),1); % at the first time step constrain the state
       
-      xLoadFinal_min = -0.51;
+      xLoadFinal_min = -0.3;
       xLoadFinal_max = 0.51;
-      lb = [-0.02; 0.13; xLoadFinal_min; 3.9650; 0; 0; 0; 0];
-      ub = [0.02; 0.15; xLoadFinal_max; 4.0349; 0; 0; 0; 0];
+      lb = [-0.5; -0.2; xLoadFinal_min; 3.9650; 0; 0; 0; 0];
+      ub = [0.5; 1; xLoadFinal_max; 4.0349; 0; 0; 0; 0];
       
       traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(lb,ub),N);   % end constraint
+      q = x0(1:4);
+      qp = x0(5:8);
+      [H,C,B] = manipulatorDynamics(obj.no_contact, q, qp);
+            
+      %ubegin_min = C(1)-100;
+      %ubegin_max = C(1);
+      %traj_opt = traj_opt.addInputConstraint(BoundingBoxConstraint(ubegin_min,ubegin_max),ceil(N/5));
       
       tf0 = (Tmax+Tmin)/2; % initial guess
       t_init = linspace(0,tf0,N);
-      u = 0*ones(1,length(t_init)); %randomness can help
+      u = -60*ones(1,length(t_init)); %randomness can help
       %u = 40*cos(20*t_init);
       traj_init.x = PPTrajectory(foh([0 tf0],[double(x0),double(xTargetInitial)]));   % Need to initialize well
       %traj_init.x = PPTrajectory(foh(t_init,repmat(x0,1,N))); % same state all the way through
@@ -337,7 +344,6 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);
       traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
       
-      % traj_opt = traj_opt.addConstraint(ConstantConstraint(u),traj_opt.u_inds);
       
       % traj_opt = traj_opt.setCheckGrad(true);
       
@@ -349,8 +355,13 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       
       function [f,df] = running_cost_fun(h,x,u)
         R = 1;
-        f = h * u'*R*u;
-        df = [u'*R*u zeros(1,8) 2*h*u'*R];
+        fixPoint = -0.029;
+        kx = 90;
+        kpsi = 5;
+        kpsid = 1;
+        fMult = ( (u+50)'*R*(u+50) + kpsi* x(1)'*x(1)+ kpsid* x(5)'*x(5) + kx*(x(3)-fixPoint)^2 );
+        f = h * fMult;
+        df = [fMult 2*h*kpsi*x(1) 0 2*h*kx*(x(3)-fixPoint) 0 2*h*kpsid*x(5) zeros(1,3) 2*h*(u+50)'*R];
       end
       
       
@@ -358,9 +369,9 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
         
         fixPoint = -0.029;
         kx = 10;
-        kxd = 1;
+        kxd = 0;
         
-        f = + kx*(x(3)-fixPoint)^2 + kxd*(x(7))^2;
+        f = kx*(x(3)-fixPoint)^2 + kxd*(x(7))^2;
         df = [0 0 0 2*kx*(x(3)-fixPoint) 0 0 0 2*kxd*x(7) 0];
       end
       
@@ -618,9 +629,29 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       tt=getBreaks(xtraj);
       T = tt(end);
       t = linspace(0,T,1001);
-      x = eval(xtraj,t);
+      x = eval(xtraj,tt);
+      u = eval(utraj,tt);
       figure(1),clf
-      plot(t,x(3,:))
+      subplot(3,2,1)
+      plot(tt,x(1,:))
+      axis('tight')
+      ylabel('$\psi$','Interpreter','LaTeX')
+      subplot(3,2,2)
+      plot(tt,x(2,:))
+      axis('tight')
+      ylabel('$\theta$','Interpreter','LaTeX')
+      subplot(3,2,3)
+      plot(tt,x(3,:))
+      axis('tight')
+      ylabel('$x$','Interpreter','LaTeX')
+      subplot(3,2,4)
+      plot(tt,x(4,:))
+      axis('tight')
+      ylabel('$z$','Interpreter','LaTeX')
+      subplot(3,2,5:6)
+      plot(tt,u(:))
+      axis('tight')
+      ylabel('$u$','Interpreter','LaTeX')
     end
   end
 end
