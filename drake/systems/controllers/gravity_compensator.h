@@ -22,6 +22,7 @@ namespace systems {
 /// If used on an underactuated system, gravity compensation will not be
 /// achieved.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @ingroup control_systems
 template <typename T>
 class DRAKE_EXPORT GravityCompensator : public LeafSystem<T> {
  public:

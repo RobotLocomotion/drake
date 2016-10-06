@@ -24,7 +24,6 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
-/// @ingroup systems
 template <typename T>
 class DRAKE_EXPORT SpringMassStateVector
     : public BasicVector<T> {
@@ -72,7 +71,7 @@ class DRAKE_EXPORT SpringMassStateVector
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 ///
-/// @ingroup systems
+/// @ingroup rigid_body_systems
 template <typename T>
 class DRAKE_EXPORT SpringMassSystem
     : public LeafSystem<T> {

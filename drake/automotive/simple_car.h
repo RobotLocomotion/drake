@@ -44,6 +44,7 @@ namespace automotive {
 ///
 /// To use other unusual ScalarType substitutions,
 /// see http://drake.mit.edu/cxx_inl.html.
+/// @ingroup automotive_systems
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:
