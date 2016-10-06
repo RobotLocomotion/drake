@@ -5,7 +5,7 @@
 #pragma warning(disable : 4800 4275)
 #endif
 
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 #include <memory>
 

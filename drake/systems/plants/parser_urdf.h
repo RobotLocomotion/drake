@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_deprecated.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -41,7 +41,7 @@ namespace urdf {
  * @throws std::runtime_error if the rigid body to which the new
  * `RigidBodyFrame` is attached is not found.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name,
@@ -64,7 +64,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * @return A table mapping the names of the models whose instances were just
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree* tree);
 
@@ -72,7 +72,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
   DRAKE_DEPRECATED(
       "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
 #endif
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     RigidBodyTree* tree);
@@ -104,7 +104,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT ModelInstanceIdTable
+DRAKE_EXPORT ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string,
     std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
@@ -112,7 +112,7 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
 #ifndef SWIG
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
@@ -142,7 +142,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -184,7 +184,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     const std::string& urdf_string, PackageMap& ros_package_map,
     const std::string& root_dir,
@@ -194,7 +194,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, PackageMap& ros_package_map,
     const std::string& root_dir,
@@ -218,7 +218,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename, RigidBodyTree* tree);
 
@@ -242,7 +242,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -271,7 +271,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -304,7 +304,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     std::map<std::string, std::string>& ros_package_map,

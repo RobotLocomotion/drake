@@ -9,7 +9,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -19,7 +19,6 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -65,7 +64,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
  */
-class DRAKERBM_EXPORT RigidBodyTree {
+class DRAKE_EXPORT RigidBodyTree {
  public:
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
@@ -561,7 +560,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBodyCollisionElement& element, RigidBody& body,
+      const DrakeCollision::Element& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
@@ -940,7 +939,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * A toString method for this class.
    */
-  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                   const RigidBodyTree&);
 
   /**
@@ -1072,7 +1071,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKERBM_EXPORT on windows (due
+  // The following was required for building w/ DRAKE_EXPORT on windows (due
   // to the unique_ptrs).  See
   // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:

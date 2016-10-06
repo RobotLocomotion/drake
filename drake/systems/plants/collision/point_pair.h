@@ -2,13 +2,13 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeCollision_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/Element.h"
 
 namespace DrakeCollision {
 
 /** Structure containing the results of a collision query. **/
-struct DRAKECOLLISION_EXPORT PointPair {
+struct DRAKE_EXPORT PointPair {
   PointPair() {}
 
   PointPair(const Element* elementA_in, const Element* elementB_in,

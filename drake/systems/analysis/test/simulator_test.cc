@@ -4,12 +4,11 @@
 
 #include <unsupported/Eigen/AutoDiff>
 
-#include "gtest/gtest.h"
-
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
-#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "gtest/gtest.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -18,7 +17,6 @@ using std::complex;
 namespace drake {
 namespace systems {
 namespace {
-
 
 GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem<double> spring_mass(1., 1., 0.);
@@ -125,8 +123,8 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
   // create the integrator and initialize it
-  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-      (spring_mass, DT, context);
+  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
+      spring_mass, DT, context);
   integrator->Initialize();
 
   // set the integrator and initialize the simulator

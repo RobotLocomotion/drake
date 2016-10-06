@@ -7,7 +7,7 @@
 /**
  * A prismatic joint moves linearly along one axis.
  */
-class DRAKEJOINTS_EXPORT PrismaticJoint
+class DRAKE_EXPORT PrismaticJoint
     : public FixedAxisOneDoFJoint<PrismaticJoint> {
   // disable copy construction and assignment
   // PrismaticJoint(const PrismaticJoint&) = delete;

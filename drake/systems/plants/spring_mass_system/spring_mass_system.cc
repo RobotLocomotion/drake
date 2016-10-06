@@ -1,4 +1,4 @@
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -186,10 +186,14 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
 
-template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector<double>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassStateVector<AutoDiffXd>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<double>;
-template class DRAKESYSTEMFRAMEWORK_EXPORT SpringMassSystem<AutoDiffXd>;
+template class DRAKE_EXPORT
+SpringMassStateVector<double>;
+template class DRAKE_EXPORT
+SpringMassStateVector<AutoDiffXd>;
+template class DRAKE_EXPORT
+SpringMassSystem<double>;
+template class DRAKE_EXPORT
+SpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

@@ -421,7 +421,7 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 }
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
-    const RigidBodyCollisionElement& element, RigidBody& body,
+    const DrakeCollision::Element& element, RigidBody& body,
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model_->addElement(element);
   if (id != 0) {
@@ -2398,25 +2398,25 @@ int RigidBodyTree::get_number_of_model_instances() const {
 }
 
 // Explicit template instantiations for massMatrix.
-template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
+template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
     AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&) const;
-template DRAKERBM_EXPORT MatrixX<AutoDiffXd>
+template DRAKE_EXPORT MatrixX<AutoDiffXd>
 RigidBodyTree::massMatrix<AutoDiffXd>(KinematicsCache<AutoDiffXd>&) const;
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::massMatrix<double>(KinematicsCache<double>&) const;
 
 // Explicit template instantiations for centerOfMass.
-template DRAKERBM_EXPORT Vector3<AutoDiffUpTo73d> RigidBodyTree::centerOfMass<
+template DRAKE_EXPORT Vector3<AutoDiffUpTo73d> RigidBodyTree::centerOfMass<
     AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&,
                      set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT Vector3<AutoDiffXd> RigidBodyTree::centerOfMass<
+template DRAKE_EXPORT Vector3<AutoDiffXd> RigidBodyTree::centerOfMass<
     AutoDiffXd>(KinematicsCache<AutoDiffXd>&,
                 set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT Vector3d RigidBodyTree::centerOfMass<double>(
+template DRAKE_EXPORT Vector3d RigidBodyTree::centerOfMass<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for dynamicsBiasTerm.
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
@@ -2425,7 +2425,7 @@ RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
         Eigen::aligned_allocator<pair<RigidBody const* const,
                                       WrenchVector<AutoDiffUpTo73d>>>> const&,
     bool) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<
@@ -2434,7 +2434,7 @@ RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
         Eigen::aligned_allocator<
             pair<RigidBody const* const, WrenchVector<AutoDiffXd>>>> const&,
     bool) const;
-template DRAKERBM_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
+template DRAKE_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
     KinematicsCache<double>&,
     unordered_map<RigidBody const*, WrenchVector<double>,
                   hash<RigidBody const*>, equal_to<RigidBody const*>,
@@ -2443,161 +2443,161 @@ template DRAKERBM_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
     bool) const;
 
 // Explicit template instantiations for geometricJacobian.
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
+template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
 RigidBodyTree::geometricJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int, bool,
     vector<int, allocator<int>>*) const;
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
+template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
 RigidBodyTree::geometricJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int, bool,
     vector<int, allocator<int>>*) const;
-template DRAKERBM_EXPORT TwistMatrix<double>
+template DRAKE_EXPORT TwistMatrix<double>
 RigidBodyTree::geometricJacobian<double>(KinematicsCache<double> const&, int,
                                          int, int, bool,
                                          vector<int, allocator<int>>*) const;
 
 // Explicit template instantiations for relativeTransform.
-template DRAKERBM_EXPORT Eigen::Transform<AutoDiffUpTo73d, 3, 1, 0>
+template DRAKE_EXPORT Eigen::Transform<AutoDiffUpTo73d, 3, 1, 0>
 RigidBodyTree::relativeTransform<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
-template DRAKERBM_EXPORT Eigen::Transform<AutoDiffXd, 3, 1, 0>
+template DRAKE_EXPORT Eigen::Transform<AutoDiffXd, 3, 1, 0>
 RigidBodyTree::relativeTransform<AutoDiffXd>(KinematicsCache<AutoDiffXd> const&,
                                              int, int) const;
-template DRAKERBM_EXPORT Eigen::Transform<double, 3, 1, 0>
+template DRAKE_EXPORT Eigen::Transform<double, 3, 1, 0>
 RigidBodyTree::relativeTransform<double>(KinematicsCache<double> const&, int,
                                          int) const;
 
 // Explicit template instantiations for centerOfMassJacobian.
-template DRAKERBM_EXPORT Matrix3X<AutoDiffUpTo73d>
+template DRAKE_EXPORT Matrix3X<AutoDiffUpTo73d>
 RigidBodyTree::centerOfMassJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
-template DRAKERBM_EXPORT Matrix3X<AutoDiffXd>
+template DRAKE_EXPORT Matrix3X<AutoDiffXd>
 RigidBodyTree::centerOfMassJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
-template DRAKERBM_EXPORT Matrix3Xd RigidBodyTree::centerOfMassJacobian<double>(
+template DRAKE_EXPORT Matrix3Xd RigidBodyTree::centerOfMassJacobian<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
 
 // Explicit template instantiations for centroidalMomentumMatrix.
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
+template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
 RigidBodyTree::centroidalMomentumMatrix<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
+template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
 RigidBodyTree::centroidalMomentumMatrix<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
-template DRAKERBM_EXPORT TwistMatrix<double>
+template DRAKE_EXPORT TwistMatrix<double>
 RigidBodyTree::centroidalMomentumMatrix<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
 
 // Explicit template instantiations for forwardKinPositionGradient.
-template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d>
+template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
 RigidBodyTree::forwardKinPositionGradient<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;
-template DRAKERBM_EXPORT MatrixX<AutoDiffXd>
+template DRAKE_EXPORT MatrixX<AutoDiffXd>
 RigidBodyTree::forwardKinPositionGradient<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int) const;
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::forwardKinPositionGradient<double>(
     KinematicsCache<double> const&, int, int, int) const;
 
 // Explicit template instantiations for geometricJacobianDotTimesV.
-template DRAKERBM_EXPORT TwistVector<AutoDiffUpTo73d>
+template DRAKE_EXPORT TwistVector<AutoDiffUpTo73d>
 RigidBodyTree::geometricJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;
-template DRAKERBM_EXPORT TwistVector<AutoDiffXd>
+template DRAKE_EXPORT TwistVector<AutoDiffXd>
 RigidBodyTree::geometricJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int) const;
-template DRAKERBM_EXPORT TwistVector<double>
+template DRAKE_EXPORT TwistVector<double>
 RigidBodyTree::geometricJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int, int) const;
 
 // Explicit template instantiations for centerOfMassJacobianDotTimesV.
-template DRAKERBM_EXPORT Vector3<AutoDiffUpTo73d>
+template DRAKE_EXPORT Vector3<AutoDiffUpTo73d>
 RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT Vector3<AutoDiffXd>
+template DRAKE_EXPORT Vector3<AutoDiffXd>
 RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT Vector3d
+template DRAKE_EXPORT Vector3d
 RigidBodyTree::centerOfMassJacobianDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for centroidalMomentumMatrixDotTimesV.
-template DRAKERBM_EXPORT TwistVector<AutoDiffUpTo73d>
+template DRAKE_EXPORT TwistVector<AutoDiffUpTo73d>
 RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT TwistVector<AutoDiffXd>
+template DRAKE_EXPORT TwistVector<AutoDiffXd>
 RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT TwistVector<double>
+template DRAKE_EXPORT TwistVector<double>
 RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
-template DRAKERBM_EXPORT VectorXd RigidBodyTree::positionConstraints<double>(
+template DRAKE_EXPORT VectorXd RigidBodyTree::positionConstraints<double>(
     KinematicsCache<double> const&) const;
 
 // Explicit template instantiations for positionConstraintsJacobian.
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::positionConstraintsJacobian<double>(
     KinematicsCache<double> const&, bool) const;
 
 // Explicit template instantiations for positionConstraintsJacDotTimesV.
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::positionConstraintsJacDotTimesV<double>(
     KinematicsCache<double> const&) const;
-template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<
+template DRAKE_EXPORT void RigidBodyTree::jointLimitConstraints<
     VectorXd, VectorXd, MatrixXd>(Eigen::MatrixBase<VectorXd> const&,
                                   Eigen::MatrixBase<VectorXd>&,
                                   Eigen::MatrixBase<MatrixXd>&) const;
 
 // Explicit template instantiations for relativeTwist.
-template DRAKERBM_EXPORT TwistVector<double>
+template DRAKE_EXPORT TwistVector<double>
 RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int,
                                      int) const;
 
 // Explicit template instantiations for worldMomentumMatrix.
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffUpTo73d>
+template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
 RigidBodyTree::worldMomentumMatrix<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
-template DRAKERBM_EXPORT TwistMatrix<AutoDiffXd>
+template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
 RigidBodyTree::worldMomentumMatrix<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
-template DRAKERBM_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
+template DRAKE_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
     double>(KinematicsCache<double>&,
             set<int, less<int>, allocator<int>> const&, bool) const;
 
 // Explicit template instantiations for worldMomentumMatrixDotTimesV.
-template DRAKERBM_EXPORT TwistVector<double>
+template DRAKE_EXPORT TwistVector<double>
 RigidBodyTree::worldMomentumMatrixDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for transformSpatialAcceleration.
-template DRAKERBM_EXPORT TwistVector<double>
+template DRAKE_EXPORT TwistVector<double>
 RigidBodyTree::transformSpatialAcceleration<double>(
     KinematicsCache<double> const&, TwistVector<double> const&, int, int, int,
     int) const;
 
 // Explicit template instantiations for frictionTorques
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::frictionTorques(
     Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const& v) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
+template DRAKE_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
     Eigen::MatrixBase<VectorX<AutoDiffXd>> const& v) const;
-template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
+template DRAKE_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
     Eigen::MatrixBase<VectorX<double>> const& v) const;
 
 // Explicit template instantiations for inverseDynamics.
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
@@ -2606,7 +2606,7 @@ RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
         Eigen::aligned_allocator<
             pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
     VectorX<AutoDiffUpTo73d> const&, bool) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::inverseDynamics<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
@@ -2614,7 +2614,7 @@ RigidBodyTree::inverseDynamics<AutoDiffXd>(
                   Eigen::aligned_allocator<pair<
                       RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
     VectorX<AutoDiffXd> const&, bool) const;
-template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
+template DRAKE_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     KinematicsCache<double>&,
     unordered_map<RigidBody const*, WrenchVector<double>,
                   hash<RigidBody const*>, equal_to<RigidBody const*>,
@@ -2623,14 +2623,14 @@ template DRAKERBM_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     VectorX<double> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.
-template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<
+template DRAKE_EXPORT void RigidBodyTree::jointLimitConstraints<
     Eigen::Map<VectorXd>, Eigen::Map<VectorXd>, Eigen::Map<MatrixXd>>(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd>>&,
     Eigen::MatrixBase<Eigen::Map<MatrixXd>>&) const;
 
 // Explicit template instantiations for resolveCenterOfPressure.
-template DRAKERBM_EXPORT pair<Vector3d, double>
+template DRAKE_EXPORT pair<Vector3d, double>
 RigidBodyTree::resolveCenterOfPressure<Vector3d, Vector3d>(
     KinematicsCache<double> const&,
     vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&,
@@ -2638,163 +2638,163 @@ RigidBodyTree::resolveCenterOfPressure<Vector3d, Vector3d>(
     Eigen::MatrixBase<Vector3d> const&) const;
 
 // Explicit template instantiations for transformPointsJacobian.
-template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d>
+template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
 RigidBodyTree::transformPointsJacobian<AutoDiffUpTo73d, Matrix3Xd>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Matrix3Xd> const&, int, int, bool) const;
-template DRAKERBM_EXPORT MatrixX<AutoDiffXd>
+template DRAKE_EXPORT MatrixX<AutoDiffXd>
 RigidBodyTree::transformPointsJacobian<AutoDiffXd, Matrix3Xd>(
     KinematicsCache<AutoDiffXd> const&, Eigen::MatrixBase<Matrix3Xd> const&,
     int, int, bool) const;
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::transformPointsJacobian<double, Matrix3Xd>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Matrix3Xd> const&, int,
     int, bool) const;
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::transformPointsJacobian<double, Vector3d>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Vector3d> const&, int,
     int, bool) const;
-template DRAKERBM_EXPORT MatrixXd RigidBodyTree::transformPointsJacobian<
+template DRAKE_EXPORT MatrixXd RigidBodyTree::transformPointsJacobian<
     double, Eigen::Block<Matrix3Xd, 3, 1, true>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Block<Matrix3Xd, 3, 1, true>> const&, int, int,
     bool) const;
-template DRAKERBM_EXPORT MatrixX<AutoDiffUpTo73d>
+template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
 RigidBodyTree::transformPointsJacobian<AutoDiffUpTo73d,
                                        Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
-template DRAKERBM_EXPORT MatrixX<AutoDiffXd>
+template DRAKE_EXPORT MatrixX<AutoDiffXd>
 RigidBodyTree::transformPointsJacobian<AutoDiffXd, Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffXd> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
-template DRAKERBM_EXPORT MatrixXd
+template DRAKE_EXPORT MatrixXd
 RigidBodyTree::transformPointsJacobian<double, Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
 
 // Explicit template instantiations for transformPointsJacobianDotTimesV.
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::transformPointsJacobianDotTimesV<double, Matrix3Xd>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Matrix3Xd> const&, int,
     int) const;
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::transformPointsJacobianDotTimesV<double, Vector3d>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Vector3d> const&, int,
     int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::transformPointsJacobianDotTimesV<AutoDiffUpTo73d,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::transformPointsJacobianDotTimesV<AutoDiffXd,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffXd> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::transformPointsJacobianDotTimesV<double,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
 
 // Explicit template instantiations for relativeQuaternionJacobian.
-template DRAKERBM_EXPORT Matrix4Xd
+template DRAKE_EXPORT Matrix4Xd
 RigidBodyTree::relativeQuaternionJacobian<double>(
     KinematicsCache<double> const&, int, int, bool) const;
-template DRAKERBM_EXPORT Matrix4X<AutoDiffUpTo73d>
+template DRAKE_EXPORT Matrix4X<AutoDiffUpTo73d>
 RigidBodyTree::relativeQuaternionJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, bool) const;
-template DRAKERBM_EXPORT Matrix4X<AutoDiffXd>
+template DRAKE_EXPORT Matrix4X<AutoDiffXd>
 RigidBodyTree::relativeQuaternionJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, bool) const;
 
 // Explicit template instantiations for relativeRollPitchYawJacobian.
-template DRAKERBM_EXPORT Matrix3Xd
+template DRAKE_EXPORT Matrix3Xd
 RigidBodyTree::relativeRollPitchYawJacobian<double>(
     KinematicsCache<double> const&, int, int, bool) const;
-template DRAKERBM_EXPORT Matrix3X<AutoDiffUpTo73d>
+template DRAKE_EXPORT Matrix3X<AutoDiffUpTo73d>
 RigidBodyTree::relativeRollPitchYawJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, bool) const;
-template DRAKERBM_EXPORT Matrix3X<AutoDiffXd>
+template DRAKE_EXPORT Matrix3X<AutoDiffXd>
 RigidBodyTree::relativeRollPitchYawJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, bool) const;
 
 // Explicit template instantiations for relativeRollPitchYawJacobianDotTimesV.
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
 
 // Explicit template instantiations for relativeQuaternionJacobianDotTimesV.
-template DRAKERBM_EXPORT VectorXd
+template DRAKE_EXPORT VectorXd
 RigidBodyTree::relativeQuaternionJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffUpTo73d>
+template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
-template DRAKERBM_EXPORT VectorX<AutoDiffXd>
+template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
 
 // Explicit template instantiations for doKinematics(cache).
-template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree::doKinematics(
     KinematicsCache<double>&, bool) const;
-template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree::doKinematics(
     KinematicsCache<AutoDiffXd>&, bool) const;
-template DRAKERBM_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree::doKinematics(
     KinematicsCache<AutoDiffUpTo73d>&, bool) const;
 
 // Explicit template instantiations for doKinematics(q).
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<VectorXd> const&) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<MatrixXd const, -1, 1, true>> const&) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<MatrixXd, -1, 1, true>> const&) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&) const;
-template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
+template DRAKE_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(
     Eigen::MatrixBase<VectorX<AutoDiffXd>> const&) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&) const;
 
 // Explicit template instantiations for doKinematics(q, v).
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<VectorXd> const&, Eigen::MatrixBase<VectorXd> const&,
     bool) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     bool) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&, bool) const;
-template DRAKERBM_EXPORT KinematicsCache<AutoDiffXd>
+template DRAKE_EXPORT KinematicsCache<AutoDiffXd>
 RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
                             Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
                             bool) const;
-template DRAKERBM_EXPORT KinematicsCache<AutoDiffUpTo73d>
+template DRAKE_EXPORT KinematicsCache<AutoDiffUpTo73d>
 RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
                             Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
                             bool) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&, bool) const;
-template DRAKERBM_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
 
 // Explicit template instantiations for parseBodyOrFrameID.
-template DRAKERBM_EXPORT int RigidBodyTree::parseBodyOrFrameID(
+template DRAKE_EXPORT int RigidBodyTree::parseBodyOrFrameID(
     const int body_or_frame_id,
     Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;

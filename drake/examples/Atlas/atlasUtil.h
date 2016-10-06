@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/drakeAtlasUtil_export.h"
+#include "drake/common/drake_export.h"
 
 namespace Atlas {
 /*
@@ -9,6 +9,6 @@ namespace Atlas {
  * ankleCloseToLimits will return true if any row of
  * A*[akx;aky]-b is greater than -tol
  */
-DRAKEATLASUTIL_EXPORT bool ankleCloseToLimits(double akx, double aky,
+DRAKE_EXPORT bool ankleCloseToLimits(double akx, double aky,
                                               double tol);
 }

@@ -2,7 +2,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/drakeRigidBodyPlant_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -36,9 +36,9 @@ namespace systems {
  * this phase is `lcmt_viewer_draw` and the channel name is
  * "DRAKE_VIEWER_DRAW".
  *
- * @ingroup systems
+ * @ingroup rigid_body_systems
  */
-class DRAKERIGIDBODYPLANT_EXPORT RigidBodyTreeLcmPublisher
+class DRAKE_EXPORT RigidBodyTreeLcmPublisher
     : public LeafSystem<double> {
  public:
   /**

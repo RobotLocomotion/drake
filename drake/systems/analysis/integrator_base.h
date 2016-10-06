@@ -292,7 +292,7 @@ class IntegratorBase {
   // Gets a reference to the system.
   const System<T>& get_system() const { return system_; }
 
-  // Has the integrator been initialized?
+  // Indicates whether the integrator been initialized.
   bool is_initialized() const { return initialization_done_; }
 
  protected:
@@ -329,9 +329,9 @@ class IntegratorBase {
   // Sets the number of steps taken.
   void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
-  // Updates the integrator statistics
+  // Updates the integrator statistics.
   void UpdateStatistics(const T& dt) {
-    // handle first step specially
+    // Handle first step specially.
     if (++num_steps_taken_ == 1) {
       set_actual_initial_step_size_taken(dt);
       set_smallest_step_size_taken(dt);

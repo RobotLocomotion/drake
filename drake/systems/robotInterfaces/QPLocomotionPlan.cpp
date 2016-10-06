@@ -7,7 +7,7 @@
 #include <string>
 
 #include "drake/common/constants.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
+#include "drake/common/drake_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -885,14 +885,14 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   return joint_indices;
 }
 
-template DRAKEQPLOCOMOTIONPLAN_EXPORT drake::lcmt_qp_controller_input
+template DRAKE_EXPORT drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Matrix<double, -1, 1, 0, -1, 1>,
   Matrix<double, -1, 1, 0, -1, 1>>(
       double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       std::vector<bool, std::allocator<bool>> const&);
-template DRAKEQPLOCOMOTIONPLAN_EXPORT drake::lcmt_qp_controller_input
+template DRAKE_EXPORT drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>,
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>>(

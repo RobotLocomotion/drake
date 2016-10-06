@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/drakeSplineGeneration_export.h"
+#include "drake/common/drake_export.h"
 
-class DRAKESPLINEGENERATION_EXPORT ValueConstraint {
+class DRAKE_EXPORT ValueConstraint {
  public:
   ValueConstraint(int derivative_order, double time, double value);
   int getDerivativeOrder() const;

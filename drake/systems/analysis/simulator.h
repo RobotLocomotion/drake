@@ -4,8 +4,8 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/text_logging.h"
 #include "drake/common/text_logging.h"
 #include "drake/drakeSystemAnalysis_export.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -131,7 +131,7 @@ class Simulator {
 
   /** Transfer ownership of this %Simulator's internal Context to the caller.
    * The %Simulator will no longer contain a Context. The caller must not
-   * attempt to advance the simulator in time after that point,
+   * attempt to advance the simulator in time after that point.
    * @sa reset_context()
    **/
   std::unique_ptr<Context<T>> release_context() {
@@ -242,8 +242,8 @@ class Simulator {
 extern template class Simulator<double>;
 extern template class Simulator<AutoDiffXd>;
 #else
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<double>;
-extern template class DRAKESYSTEMANALYSIS_EXPORT Simulator<AutoDiffXd>;
+extern template class DRAKE_EXPORT Simulator<double>;
+extern template class DRAKE_EXPORT Simulator<AutoDiffXd>;
 #endif
 
 template <typename T>
@@ -269,7 +269,7 @@ void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
-  // initialize the integrator
+  // Initialize the integrator.
   integrator_->Initialize();
 
   // Do a publish before the simulation starts.

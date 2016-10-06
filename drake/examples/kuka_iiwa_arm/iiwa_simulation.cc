@@ -40,7 +40,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 
@@ -62,7 +62,7 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
   return visualizer;
 }
 
-DRAKEKUKAIIWAARM_EXPORT
+DRAKE_EXPORT
 Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   const int kStateDimension = 14;  // Fixed for the IIWA Arm.
   const int kNumDof = 7;  // Fixed for the IIWA Arm.

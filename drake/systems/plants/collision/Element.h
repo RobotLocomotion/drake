@@ -6,7 +6,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeCollision_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
 // Forward declaration.
@@ -21,14 +21,53 @@ class RigidBody;
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
-class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
+/**
+ * The underyling primitive class used for collision analysis.  Collisions
+ * between `RigidBody` instances are determined by performing geometry analysis
+ * on the `RigidBody` instances' corresponding collision `Element`s.  As such,
+ * The `Element` combines three pieces of data:
+ * - the geometric definition of the element's colliding shape (a `Geometry`
+ *   instance referred to as its "geometry").
+ * - the transform `T_element_to_local` (T_LE) giving the pose of the element's
+ *   frame E in the body's local frame L, with the sense that p_L = T_LE * p_E
+ *   for points measured and expressed in frames L and E, respectively.
+ * - the `RigidBody` instance to which this element belongs (its "body").  A
+ *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
+ *   can only belong to a single `RigidBody`.
+ */
+class DRAKE_EXPORT Element : public DrakeShapes::Element {
  public:
-  Element(const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity());
+  /**
+   * Default constructor.
+   * The element's pose will be the identity with no geometry or rigid body.
+   */
+  Element();
 
+  /**
+   * Geometry constructor. Defines geometry and pose but no body.
+   * @param[in] geometry                The colliding geometry.
+   * @param[in] T_element_to_local      The pose (defaults to identity).
+   */
   Element(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local =
-              Eigen::Isometry3d::Identity());
+          Eigen::Isometry3d::Identity());
+
+  /**
+   * Body constructor. Defines body and pose but no geometry.
+   * @param[in] T_element_to_local      The pose (defaults to identity).
+   * @param[in] body                    The associated rigid body.
+   */
+  Element(const Eigen::Isometry3d& T_element_to_local,
+          const RigidBody* body);
+
+  /**
+   * Full constructor.
+   * @param[in] geometry            The colliding geometry.
+   * @param[in] T_element_to_local  The pose.
+   * @param[in] body                The associated rigid body.
+   */
+  Element(const DrakeShapes::Geometry& geometry,
+          const Eigen::Isometry3d& T_element_to_local, const RigidBody* body);
 
   virtual ~Element() {}
 
@@ -79,17 +118,17 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    */
   const std::vector<int>& collision_cliques() const;
 
-  /** Returns a pointer to the const RigidBody to which this CollisionElement
+  /** Returns a pointer to the `RigidBody` to which this `Element`
   is attached. **/
   const RigidBody* get_body() const;
 
-  /** Sets the rigid body this collision element is attached to. **/
+  /** Sets the `RigidBody` this collision element is attached to. **/
   void set_body(const RigidBody *body);
 
   /**
    * A toString method for this class.
    */
-  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                         const Element&);
 
  protected:

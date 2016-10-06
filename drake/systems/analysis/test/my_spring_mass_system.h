@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
 namespace systems {

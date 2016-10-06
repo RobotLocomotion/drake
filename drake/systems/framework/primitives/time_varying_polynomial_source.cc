@@ -25,7 +25,7 @@ void TimeVaryingPolynomialSource<T>::EvalOutput(const Context<T>& context,
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKESYSTEMFRAMEWORK_EXPORT TimeVaryingPolynomialSource<double>;
+template class DRAKE_EXPORT TimeVaryingPolynomialSource<double>;
 
 }  // namespace systems
 }  // namespace drake

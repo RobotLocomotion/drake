@@ -67,6 +67,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
+ - [#3685][] Remove support for the Windows platform.
  - [#2610][] RigidBodyTree::getContactPositions and ::getContactPositionsJac are removed.
  - [#2102][] Macports and Cygwin are no longer supported.
  - [#2067][] `core/Core.h` is removed.
@@ -142,3 +143,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3246]: https://github.com/RobotLocomotion/drake/issues/3246
 [#3276]: https://github.com/RobotLocomotion/drake/issues/3276
 [#3566]: https://github.com/RobotLocomotion/drake/issues/3276
+[#3685]: https://github.com/RobotLocomotion/drake/issues/3685

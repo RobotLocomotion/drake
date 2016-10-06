@@ -10,10 +10,11 @@ endif()
 add_mex(lqrmex lqrmex.cpp)
 target_link_libraries(lqrmex drakeUtil)
 
-pods_find_pkg_config(snopt_c)
+find_package(snopt_c)
+
 if(snopt_c_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
-  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+  target_link_libraries(NonlinearProgramSnoptmex snopt_c)
 
   # These warnings are not worth fixing.
   target_compile_options(NonlinearProgramSnoptmex PRIVATE

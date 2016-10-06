@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
@@ -47,13 +48,6 @@ class Context {
   /// subcontexts.
   /// Throws std::out_of_range if @p index is out of range.
   virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
-
-  /// Returns the InputPort at the given @p index, which may be nullptr if
-  /// it has never been set with SetInputPort.
-  /// Throws std::out_of_range if @p index is out of range.
-  ///
-  /// This is a framework implementation detail. User code should not call it.
-  virtual const InputPort* GetInputPort(int index) const = 0;
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
@@ -202,6 +196,22 @@ class Context {
     parent_ = parent;
   }
 
+  // Throws an exception unless the given @p descriptor matches this context.
+  void VerifyInputPort(const SystemPortDescriptor<T>& descriptor) const {
+    const int i = descriptor.get_index();
+    const InputPort* port = GetInputPort(i);
+    DRAKE_THROW_UNLESS(port != nullptr);
+    // TODO(david-german-tri, sherm1): Consider checking sampling here.
+
+    // In the vector-valued case, check the size.
+    if (descriptor.get_data_type() == kVectorValued) {
+      const BasicVector<T>* input_vector = port->template get_vector_data<T>();
+      DRAKE_THROW_UNLESS(input_vector != nullptr);
+      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.get_size());
+    }
+    // In the abstract-valued case, there is nothing else to check.
+  }
+
  protected:
   /// Contains the return-type-covariant implementation of Clone().
   virtual Context<T>* DoClone() const = 0;
@@ -214,6 +224,18 @@ class Context {
   /// TODO(david-german-tri) Invalidate all cached time- and step-dependent
   /// computations.
   StepInfo<T>* get_mutable_step_info() { return &step_info_; }
+
+  /// Returns the InputPort at the given @p index, which may be nullptr if
+  /// it has never been set with SetInputPort.
+  /// Throws std::out_of_range if @p index is out of range.
+  virtual const InputPort* GetInputPort(int index) const = 0;
+
+  /// Returns the InputPort at the given @p index from the given @p context.
+  /// Returns nullptr if the given port has never been set with SetInputPort.
+  /// Throws std::out_of_range if @p index is out of range.
+  static const InputPort* GetInputPort(const Context<T>& context, int index) {
+    return context.GetInputPort(index);
+  }
 
  private:
   // Current time and step information.
