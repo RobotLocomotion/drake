@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -20,7 +20,7 @@ namespace internal {
 
 /// A single cached piece of data, its validity bit, and the set of other cache
 /// entries that depend on it.
-class DRAKESYSTEMFRAMEWORK_EXPORT CacheEntry {
+class DRAKE_EXPORT CacheEntry {
  public:
   CacheEntry();
   ~CacheEntry();
@@ -76,7 +76,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT CacheEntry {
 /// needs access to a cached value; it must not hold the returned pointer.
 ///
 /// Cache is not thread-safe. It is copyable, assignable, and movable.
-class DRAKESYSTEMFRAMEWORK_EXPORT Cache {
+class DRAKE_EXPORT Cache {
  public:
   Cache();
   ~Cache();

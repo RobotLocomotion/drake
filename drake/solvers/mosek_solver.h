@@ -10,7 +10,7 @@
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT MosekSolver :
+class DRAKE_EXPORT MosekSolver :
     public MathematicalProgramSolverInterface {
  public:
   /** available()

@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace parsers {
@@ -32,7 +32,7 @@ typedef std::map<std::string, int> ModelInstanceIdTable;
  * Adds the model instances in @p source_table to @p dest_table. Throws a
  * `std::runtime_error` if there is a collision in the model names.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 void AddModelInstancesToTable(
     const drake::parsers::ModelInstanceIdTable& source_table,
     drake::parsers::ModelInstanceIdTable* dest_table);

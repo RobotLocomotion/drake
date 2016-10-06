@@ -3,7 +3,7 @@
 #include <limits>
 #include <string>
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 
 class RigidBody;
 
@@ -12,7 +12,7 @@ class RigidBody;
  * transmission) that operates on a joint. This class assumes the actuator
  * has a single DOF.
  */
-class DRAKERBM_EXPORT RigidBodyActuator {
+class DRAKE_EXPORT RigidBodyActuator {
  public:
   /**
    * The constructor.

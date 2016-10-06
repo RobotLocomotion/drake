@@ -6,7 +6,7 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/drakeLCMSystem2_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace systems {
@@ -16,7 +16,7 @@ namespace lcm {
  * Maintains a thread that receives LCM messages and dispatches the messages to
  * the appropriate message handlers.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmReceiveThread {
+class DRAKE_EXPORT LcmReceiveThread {
  public:
   /**
    * A constructor that instantiates the thread.

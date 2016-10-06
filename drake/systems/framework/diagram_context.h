@@ -227,18 +227,6 @@ class DiagramContext : public Context<T> {
     return static_cast<int>(input_ids_.size());
   }
 
-  /// Returns the input port at the given @p index, which of course belongs
-  /// to the subsystem whose input was exposed at that index.
-  const InputPort* GetInputPort(int index) const override {
-    if (index < 0 || index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    const PortIdentifier& id = input_ids_[index];
-    SystemIndex system_index = id.first;
-    PortIndex port_index = id.second;
-    return GetSubsystemContext(system_index)->GetInputPort(port_index);
-  }
-
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
@@ -291,6 +279,19 @@ class DiagramContext : public Context<T> {
     *clone->get_mutable_step_info() = this->get_step_info();
 
     return clone;
+  }
+
+  /// Returns the input port at the given @p index, which of course belongs
+  /// to the subsystem whose input was exposed at that index.
+  const InputPort* GetInputPort(int index) const override {
+    if (index < 0 || index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    const PortIdentifier& id = input_ids_[index];
+    SystemIndex system_index = id.first;
+    PortIndex port_index = id.second;
+    return Context<T>::GetInputPort(*GetSubsystemContext(system_index),
+                                    port_index);
   }
 
  private:

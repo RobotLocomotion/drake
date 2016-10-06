@@ -112,7 +112,6 @@ drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
-drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC CMAKE)
@@ -197,6 +196,23 @@ drake_add_external(nlopt PUBLIC CMAKE
 # sedumi
 drake_add_external(sedumi CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+
+# snopt
+if(NOT DISABLE_MATLAB AND matlab)
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=ON
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+else()
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=OFF)
+endif()
+
+drake_add_external(snopt CMAKE
+  CMAKE_ARGS
+    -DBUILD_SNOPT_CPP=OFF
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    ${SNOPT_EXTRA_CMAKE_ARGS})
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE

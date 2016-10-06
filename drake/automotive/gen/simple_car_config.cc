@@ -1,7 +1,7 @@
 #include "drake/automotive/gen/simple_car_config.h"
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 namespace drake {
 namespace automotive {

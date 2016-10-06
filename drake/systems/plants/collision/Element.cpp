@@ -9,14 +9,26 @@ using namespace std;
 using drake::SortedVectorsHaveIntersection;
 
 namespace DrakeCollision {
-Element::Element(const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(T_element_to_local) {
+
+Element::Element()
+    : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local)
-    : DrakeShapes::Element(geometry, T_element_to_local) {
+    : DrakeShapes::Element(geometry, T_element_to_local), body_(nullptr) {
+  id = (ElementId) this;
+}
+
+Element::Element(const Isometry3d& T_element_to_link, const RigidBody* body)
+    : DrakeShapes::Element(T_element_to_link), body_(body) {
+  id = (ElementId) this;
+}
+
+Element::Element(const DrakeShapes::Geometry& geometry,
+                 const Isometry3d& T_element_to_link, const RigidBody* body)
+    : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
 
@@ -26,7 +38,8 @@ Element::Element(const Element& other)
       // In addition casting to an int is a bad idea.
       // Issue #2662 tracks the resolution of these problems.
       id(reinterpret_cast<ElementId>(this)),
-      is_static_(other.is_static_), body_(other.body_),
+      is_static_(other.is_static_),
+      body_(other.body_),
       collision_cliques_(other.collision_cliques_) {}
 
 Element* Element::clone() const { return new Element(*this); }

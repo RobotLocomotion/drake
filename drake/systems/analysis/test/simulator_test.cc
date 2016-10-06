@@ -7,8 +7,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/systems/framework/examples/controlled_spring_mass_system.h"
-#include "drake/systems/framework/examples/spring_mass_system.h"
+#include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;

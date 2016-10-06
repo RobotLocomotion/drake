@@ -7,9 +7,7 @@
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
-#define DRAKEIK_EXPORT
-#define DRAKEIKOPTIONS_EXPORT
-#define DRAKERIGIDBODYCONSTRAINT_EXPORT
+#define DRAKE_EXPORT
 
 %{
 #ifdef SWIGPYTHON

@@ -1,21 +1,21 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 #include <stdexcept>
 #include <string>
 
 #include <Eigen/Core>
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a EulerFloatingJointState.
-struct DRAKEAUTOMOTIVE_EXPORT EulerFloatingJointStateIndices {
+struct DRAKE_EXPORT EulerFloatingJointStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 

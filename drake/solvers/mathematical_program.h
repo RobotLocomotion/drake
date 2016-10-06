@@ -11,7 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/drakeOptimization_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/solvers/Function.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -169,7 +169,7 @@ enum ProgramAttributes {
 typedef uint32_t AttributesSet;
 
 /// Interface used by implementations of individual solvers.
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
+class DRAKE_EXPORT MathematicalProgramSolverInterface {
  public:
   virtual ~MathematicalProgramSolverInterface() = default;
 
@@ -183,7 +183,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 };
 
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
+class DRAKE_EXPORT MathematicalProgram {
   /** Binding
    * @brief A binding on constraint type C is a mapping of the decision
    * variables onto the inputs of C.  This allows the constraint to operate
