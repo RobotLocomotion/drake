@@ -3,6 +3,7 @@
 #include <tuple>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
@@ -160,7 +161,6 @@ class Simulator {
   /** Gets the number of difference equation updates performed since the last
   Initialize() call? */
   int64_t get_num_updates() const { return num_updates_; }
-  /**@}*/
 
   /**
    *   Gets a pointer to the integrator used to advance the continuous aspects
