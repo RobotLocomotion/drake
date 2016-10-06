@@ -95,7 +95,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   const LcmAndVectorBaseTranslator& translator_;
 
   // A pointer to the LCM subsystem.
-  const drake::lcm::DrakeLcmInterface* lcm_;
+  const drake::lcm::DrakeLcmInterface* const lcm_;
 
   // The most recent message bytes; mutable is ok because it only affects the
   // GetMessage() results, which are not part of the System contract.
