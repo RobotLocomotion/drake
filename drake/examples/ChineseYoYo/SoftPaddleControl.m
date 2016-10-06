@@ -12,7 +12,7 @@ classdef SoftPaddleControl < DrakeSystem
             obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
-            obj.kp = 200;
+            obj.kp = 1000;
             obj.kd = 2*sqrt(obj.kp);
             obj.plant = plant;
             
@@ -21,7 +21,7 @@ classdef SoftPaddleControl < DrakeSystem
 %             c = tvlqr(plant,xtraj,utraj,Q,R,Qf);
             obj.numerically_stable = false;
         end
-        
+       
         function u = output(obj,t,~,x)
             m = x(1);
             q = x(2:5);
@@ -44,15 +44,15 @@ classdef SoftPaddleControl < DrakeSystem
             uE = -10*qp(1)*Etilde;
             
             epsilon = 0.5;
-            psid = -0.001*q(3)-0.005*qp(3);
+            %psid = -0.001*q(3)-0.005*qp(3);
 %             psid = -0.0001*q(3)-0.0001*qp(3);
-            %psid = 0;
+            psid = 0;
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
             if m == 2
                 if(obj.numerically_stable)
                      u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
                 else
-                    psid = -0.0005*q(3)-0.001*qp(3);
+                    %psid = -0.0005*q(3)-0.001*qp(3);
 %                     if psid > 0.01
 %                         psid = 0.01;
 %                     elseif psid < -0.01
@@ -75,24 +75,38 @@ classdef SoftPaddleControl < DrakeSystem
     methods (Static)
         function run()
             p = SoftPaddleHybrid();
+            porig = p;
             plantSim = SimulinkModel(p.getModel());
             % take the frames from the simulink model and use those for the simulation of plant and controller 
             p = setOutputFrame(p, getOutputFrame(plantSim));
             p = setInputFrame(p, getInputFrame(plantSim));
             
             c = SoftPaddleControl(p);
-                       
-            sys = feedback(plantSim,c);
-            v = p.constructVisualizer();
+                      
+            output_select(1).system = 1;
+            output_select(1).output = plantSim.getOutputFrame();
+            output_select(2).system = 2;
+            output_select(2).output = c.getOutputFrame();
+            
+            sys = mimoFeedback(plantSim,c,[],[],[],output_select);
             
             x0 = p.getInitialState();
-            v.drawWrapper(0,x0);
-            tic
-            [ytraj,xtraj] = simulate(sys,[0 50],x0);
-            toc
-            v.playback(ytraj,struct('slider',true));
             
-            r=p;
+            tic
+            [ytraj,xtraj] = simulate(sys,[0 1.02],x0);
+            toc
+            
+            utraj = ytraj(10);
+            utraj = utraj.setOutputFrame(getInputFrame(porig));
+            xtraj = xtraj.setOutputFrame(getOutputFrame(porig));
+            v = porig.constructVisualizer();
+            v.drawWrapper(0,x0);
+            
+            v.playback(xtraj,struct('slider',true));
+
+            tt=getBreaks(xtraj);
+
+            save('trajectorytoStabilizeShort.mat','utraj','xtraj','tt');
             
             if (1)
                 % energy / cable length plotting
@@ -101,32 +115,38 @@ classdef SoftPaddleControl < DrakeSystem
                 % the pulley effectively hits a hard-stop.  this is due to the fact
                 % that phidot>0 during the in_contact phase.  it's hard to tell if
                 % this is numerical artifact or a bad gradient in CableLength.
-                tt=getBreaks(xtraj);
+                
                 E=tt;
                 cl=tt;
-                nq=getNumPositions(r.no_contact);
+                nq=getNumPositions(porig.no_contact);
                 dcl=zeros(length(tt),1,nq);
                 ddcl=zeros(length(tt),1,nq*nq);
                 for i=1:length(tt)
                     x = xtraj.eval(tt(i));
-                    %           if i >= length(tt)/20 keyboard; end
-                    [T,U] = energy(r,x);
+                    
+                    %           if i 50>= length(tt)/20 keyboard; end
+                    [T,U] = energy(porig,x);
                     E(i)= T+U;
                     if (x(1)==1) %flight mode
-                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.no_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=porig.no_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
                     else
-                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=r.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
+                        [cl(i),dcl(i,1,:),ddcl(i,1,:)]=porig.in_contact.position_constraints{1}.fcn.eval(x((1:nq)+1));
                     end
                 end
+                y = ytraj.eval(tt);
                 figure(1); clf;
-                subplot(2,1,1); plot(tt,E, 'LineWidth', 2);
+                subplot(3,1,1); plot(tt,E, 'LineWidth', 2);
                 axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\mathcal{H}$', 'Interpreter', 'LaTeX', 'FontSize', 15)
-                subplot(2,1,2); plot(tt,cl, 'LineWidth', 2);
+                subplot(3,1,2); plot(tt,cl, 'LineWidth', 2);
                 axis tight
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\phi(q)$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                subplot(3,1,3); plot(tt,y(10,:), 'LineWidth', 2);
+                axis tight
+                xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                ylabel('$u$', 'Interpreter', 'LaTeX', 'FontSize', 15)
 
                 figure(3); clf;
                 subplot(3,1,1); plot(tt,cl, 'LineWidth', 2);
@@ -168,6 +188,6 @@ classdef SoftPaddleControl < DrakeSystem
                 
             end
         end
-    
+        
     end
 end
