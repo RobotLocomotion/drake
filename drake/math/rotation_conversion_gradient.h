@@ -10,8 +10,8 @@
 namespace drake {
 namespace math {
 /**
- * Compute the gradient of the function that converts a unit length quaternion
- * to a rotation matrix
+ * Computes the gradient of the function that converts a unit length quaternion
+ * to a rotation matrix.
  * @param quaternion A unit length quaternion [w;x;y;z]
  * @return The gradient
  */
@@ -42,7 +42,7 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& quaternion) {
 }
 
 /**
- * Compute the gradient of the function that converts a rotation matrix to
+ * Computes the gradient of the function that converts a rotation matrix to
  * body-fixed z-y'-x'' Euler angles.
  * @param R A 3 x 3 rotation matrix
  * @param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x(j)
@@ -103,7 +103,7 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 }
 
 /**
- * Compute the gradient of the function that converts rotation matrix to
+ * Computes the gradient of the function that converts rotation matrix to
  * quaternion.
  * @param R A 3 x 3 rotation matrix
  * @param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x_var(j)

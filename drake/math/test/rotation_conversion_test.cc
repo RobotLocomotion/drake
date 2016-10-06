@@ -44,7 +44,7 @@ bool check_rpy_range(const Vector3d& rpy) {
 // Note that we are not comparing the axis-angle directly. This is because the
 // axis-angle has singularities around 0 degree rotation and 180 degree rotation
 // So two axis-angles that are slightly different when the angle is close to 0,
-// their equivalent rotation matrices are almost the same
+// their equivalent rotation matrices are almost the same.
 bool AreAngleAxisForSameOrientation(const AngleAxisd& a1,
                                     const AngleAxisd& a2) {
   return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
@@ -53,12 +53,12 @@ bool AreAngleAxisForSameOrientation(const AngleAxisd& a1,
 bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
                                       double precision = 1E-12) {
   // The same orientation is described by both a quaternion and the negative of
-  // that quaternion
+  // that quaternion.
   return q1.isApprox(q2, precision) | q1.isApprox(-q2, precision);
 }
 Quaterniond BodyZYXAnglesToEigenQuaternion(const Vector3d bodyZYX_angles) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''.
-  // Uses Eigen functionality (including overloaded operators *, etc)
+  // Uses Eigen functionality (including overloaded operators *, etc).
   return AngleAxisd(bodyZYX_angles(0), Vector3d::UnitZ()) *
          AngleAxisd(bodyZYX_angles(1), Vector3d::UnitY()) *
          AngleAxisd(bodyZYX_angles(2), Vector3d::UnitX());
@@ -82,7 +82,7 @@ bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
   // w.r.t Euler angle is very big, so relax the tolerance to accomodate the
   // numeric error.
   // If better algorithm is implemented for calculating roll, pitch yaw angles,
-  // the precision should probably be 1E-12 (independent of pitch = +- PI/2)
+  // the precision should probably be 1E-12 (independent of pitch = +- PI/2).
   double precision = 1E-12;
   if (std::abs(rpy1(1) - M_PI / 2) < 1E-5 ||
       std::abs(rpy1(1) + M_PI / 2) < 1E-5) {
@@ -99,37 +99,37 @@ Vector4d EigenAngleAxisToDrakeAxisAngle(const AngleAxisd& eigenAngleAxis) {
 }
 
 Matrix3d CalcRotationMatrixAboutZ(double a) {
-  // returns 3 x 3 R_AB matrix where vA = R_AB*v_B
+  // Returns 3 x 3 R_AB matrix where vA = R_AB*v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
-  // basis B is obtained by rotating basis A about Z axis by angle a
+  // basis B is obtained by rotating basis A about Z axis by angle a.
   Matrix3d ret;
   ret << cos(a), -sin(a), 0, sin(a), cos(a), 0, 0, 0, 1;
   return ret;
 }
 
 Matrix3d CalcRotationMatrixAboutY(double b) {
-  // returns 3 x 3 R_AB matrix where vA = R_AB*v_B
+  // Feturns 3 x 3 R_AB matrix where vA = R_AB*v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
-  // basis B is obtained by rotating basis A about Y axis by angle b
+  // basis B is obtained by rotating basis A about Y axis by angle b.
   Matrix3d ret;
   ret << cos(b), 0, sin(b), 0, 1, 0, -sin(b), 0, cos(b);
   return ret;
 }
 
 Matrix3d CalcRotationMatrixAboutX(double c) {
-  // returns 3 x 3 R_AB matrix where vA = R_AB*v_B
+  // Feturns 3 x 3 R_AB matrix where vA = R_AB*v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
-  // basis B is obtained by rotating basis A about X axis by angle c
+  // basis B is obtained by rotating basis A about X axis by angle c.
   Matrix3d ret;
   ret << 1, 0, 0, 0, cos(c), -sin(c), 0, sin(c), cos(c);
   return ret;
 }
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
   // Verify ea = Eigen::eulerAngles(0, 1, 2) returns Euler angles about
-  // Body-fixed x-y'-z'' axes by [ea(0), ea(1), ea(2)]
+  // Body-fixed x-y'-z'' axes by [ea(0), ea(1), ea(2)].
   Vector3d input_angles(0.5, 0.4, 0.3);
   Matrix3d bodyXYZ_rotmat = CalcRotationMatrixAboutX(input_angles(0)) *
                             CalcRotationMatrixAboutY(input_angles(1)) *
@@ -143,7 +143,7 @@ GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
 
 GTEST_TEST(EigenEulerAngleTest, BodyZYX) {
   // Verify ea = Eigen::eulerAngles(2, 1, 0) returns Euler angles about
-  // Body-fixed z-y'-x'' axes by [ea(0), ea(1), ea(2)]
+  // Body-fixed z-y'-x'' axes by [ea(0), ea(1), ea(2)].
   Vector3d input_angles(0.5, 0.4, 0.3);
   Matrix3d bodyZYX_rotmat = CalcRotationMatrixAboutZ(input_angles(0)) *
                             CalcRotationMatrixAboutY(input_angles(1)) *
@@ -157,7 +157,7 @@ GTEST_TEST(EigenEulerAngleTest, BodyZYX) {
 
 GTEST_TEST(EigenEulerAngleTest, BodyZYZ) {
   // Verify ea = Eigen::eulerAngles(2, 1, 0) returns Euler angles about
-  // Body-fixed z-y'-z'' axes by [ea(0), ea(1), ea(2)]
+  // Body-fixed z-y'-z'' axes by [ea(0), ea(1), ea(2)].
   Vector3d input_angles(0.5, 0.4, 0.3);
   Matrix3d bodyZYZ_angles = CalcRotationMatrixAboutZ(input_angles(0)) *
                             CalcRotationMatrixAboutY(input_angles(1)) *
@@ -184,13 +184,13 @@ class RotationConversionTest : public ::testing::Test {
     // Set up a variety of specific tests for angles that may cause numerical
     // problems as well as a sweep of values to test general functionality.
     // Singularity issue associated with the second angle = pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // in Euler Body-fixed z-y'-x'' rotation sequence.
     // Singularity issue associated with the second angle = -pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // in Euler Body-fixed z-y'-x'' rotation sequence.
     // Singularity issue associated with the second angle close to pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // in Euler Body-fixed z-y'-x'' rotation sequence.
     // Singularity issue associated with the second angle close to -pi/2
-    // in Euler Body-fixed z-y'-x'' rotation sequence
+    // in Euler Body-fixed z-y'-x'' rotation sequence.
 
     // pitch = pi/2
     rpy_test_cases_.push_back(Vector3d(M_PI / 4, M_PI / 2, M_PI / 3));

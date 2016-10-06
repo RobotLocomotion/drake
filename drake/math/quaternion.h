@@ -16,7 +16,7 @@ namespace math {
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
   Vector4<typename Derived::Scalar> q_conj;
@@ -28,7 +28,7 @@ template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatProduct(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
@@ -48,7 +48,7 @@ template <typename DerivedQ, typename DerivedV>
 Vector3<typename DerivedV::Scalar> quatRotateVec(
     const Eigen::MatrixBase<DerivedQ>& q,
     const Eigen::MatrixBase<DerivedV>& v) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   static_assert(DerivedQ::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(DerivedV::SizeAtCompileTime == 3, "Wrong size.");
@@ -66,7 +66,7 @@ template <typename Derived1, typename Derived2>
 Vector4<typename Derived1::Scalar> quatDiff(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   return quatProduct(quatConjugate(q1), q2);
 }
@@ -76,7 +76,7 @@ typename Derived1::Scalar quatDiffAxisInvar(
     const Eigen::MatrixBase<Derived1>& q1,
     const Eigen::MatrixBase<Derived2>& q2,
     const Eigen::MatrixBase<DerivedU>& u) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   static_assert(DerivedU::SizeAtCompileTime == 3, "Wrong size.");
   auto r = quatDiff(q1, q2);
@@ -86,7 +86,7 @@ typename Derived1::Scalar quatDiffAxisInvar(
 
 template <typename Derived>
 typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   using std::acos;
   return acos(q(0));
@@ -111,7 +111,7 @@ template <typename Derived1, typename Derived2, typename Scalar>
 Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
                       const Eigen::MatrixBase<Derived2>& q2,
                       const Scalar& interpolation_parameter) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   using std::acos;
   using std::sin;
@@ -160,7 +160,7 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   using std::sqrt;
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
@@ -180,7 +180,7 @@ Vector4<typename Derived::Scalar> quat2axis(
     // (or equivalent rotation angle) is close to zero.
     Scalar angle = 2 * std::atan2(abs_sin_half_angle, quaternion(0));
 
-    // Since sa2>=0, atan2 returns a value between 0 and pi, which is then
+    // Since sa2 >= 0, atan2 returns a value between 0 and pi, which is then
     // multiplied by 2 which means the angle is between 0 and 2pi.
     // We want an angle in the range:  -pi < angle <= pi range.
     // E.g., instead of rotating 359 degrees clockwise, rotate -1 degree
@@ -196,14 +196,14 @@ Vector4<typename Derived::Scalar> quat2axis(
 }
 
 /**
- * Compute the rotation matrix from quaternion representation.
+ * Computes the rotation matrix from quaternion representation.
  * @param quaternion A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
  * @return A 3 x 3 rotation matrix
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   auto q_normalized = quaternion.normalized();
@@ -231,7 +231,7 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 }
 
 /**
- * Compute the Euler angles from quaternion representation
+ * Computes the Euler angles from quaternion representation.
  * @param quaternion A 4 x 1 unit length vector @p q=[w;x;y;z]
  * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
  * rpy(1), rpy(0)]
@@ -243,9 +243,9 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
-  // TODO (mitiguy@tri.global) replace this method with the high-precision
+  // TODO(mitiguy@tri.global): replace this method with the high-precision
   // method
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return rotmat2rpy(quat2rotmat(quaternion));
@@ -267,7 +267,7 @@ Vector3<typename Derived::Scalar> quat2rpy(
 template <typename Derived>
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
     const Eigen::MatrixBase<Derived>& q) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
   return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
 }

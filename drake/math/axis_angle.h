@@ -13,7 +13,7 @@
 namespace drake {
 namespace math {
 /**
- * Converts the Drake axis-angle representation to Eigen's AngleAxis object
+ * Converts Drake's axis-angle representation to Eigen's AngleAxis object.
  * @param axis_angle A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis. angle is within [-PI, PI].
  * @return An Eigen::AngleAxis object.
@@ -21,7 +21,7 @@ namespace math {
 template <typename Derived>
 Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
     const Eigen::MatrixBase<Derived>& axis_angle) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return Eigen::AngleAxis<typename Derived::Scalar>(
@@ -29,7 +29,7 @@ Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
 }
 
 /**
- * Converts the axis-angle representation to quaternion representation.
+ * Converts Drake's axis-angle representation to quaternion representation.
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI].
  * @return A 4 x 1 column vector, the unit length quaternion [w; x; y; z].
@@ -37,7 +37,7 @@ Eigen::AngleAxis<typename Derived::Scalar> axisToEigenAngleAxis(
 template <typename Derived>
 Vector4<typename Derived::Scalar> axis2quat(
     const Eigen::MatrixBase<Derived>& axis_angle) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
   // the range problem in Eigen
   using std::cos;
   using std::sin;
@@ -53,7 +53,7 @@ Vector4<typename Derived::Scalar> axis2quat(
 }
 
 /**
- * Converts the axis-angle representation to rotation matrix.
+ * Converts Drake's axis-angle representation to rotation matrix.
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI].
  * @return A 3 x 3 rotation matrix.
@@ -61,7 +61,7 @@ Vector4<typename Derived::Scalar> axis2quat(
 template <typename Derived>
 Matrix3<typename Derived::Scalar> axis2rotmat(
     const Eigen::MatrixBase<Derived>& axis_angle) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
   // the range problem in Eigen
   using std::cos;
   using std::sin;
@@ -84,7 +84,8 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
 }
 
 /**
- * Converts the axis-angle representation to body fixed z-y'-x'' Euler angles,
+ * Converts Drake's axis-angle representation to body fixed z-y'-x'' Euler
+ * angles,
  * or equivalently space fixed x-y-z Euler angles.
  * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
  * length rotation axis, angle is within [-PI, PI]
@@ -94,7 +95,7 @@ Matrix3<typename Derived::Scalar> axis2rotmat(
 template <typename Derived>
 Vector3<typename Derived::Scalar> axis2rpy(
     const Eigen::MatrixBase<Derived>& axis_angle) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return rotmat2rpy(axis2rotmat(axis_angle));

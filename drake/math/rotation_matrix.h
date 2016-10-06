@@ -9,7 +9,8 @@
 
 namespace drake {
 namespace math {
-/** Computes one of the quaternion from a rotation matrix.
+/**
+ * Computes one of the quaternion from a rotation matrix.
  * This implementation is adapted from simbody
  * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
  * Notice that there are two quaternions corresponding to the same rotation,
@@ -55,7 +56,8 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   return q;
 }
 
-/** Computes the angle axis representation from a rotation matrix.
+/**
+ * Computes the angle axis representation from a rotation matrix.
  * @param R  the 3 x 3 rotation matrix.
  * @return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
  * axis [x;y;z] has unit length, the angle satisfies -PI <= angle <= PI.
@@ -71,7 +73,7 @@ Vector4<typename Derived::Scalar> rotmat2axis(
 }
 
 /**
- * Compute the Euler angles from rotation matrix
+ * Computes the Euler angles from rotation matrix.
  * @param R A 3 x 3 rotation matrix
  * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
  * rpy(1), rpy(0)]
@@ -109,16 +111,16 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   Scalar plusMinus = -1;
   Scalar minusPlus = 1;
 
-  // Calculate theta2 using lots of information in the rotation matrix
+  // Calculates theta2 using lots of information in the rotation matrix.
   Scalar Rsum = sqrt((R(i, i) * R(i, i) + R(i, j) * R(i, j) +
                       R(j, k) * R(j, k) + R(k, k) * R(k, k)) /
                      2);
 
-  // Rsum = abs(cos(theta2)) is inherently positive
+  // Rsum = abs(cos(theta2)) is inherently positive.
   Scalar theta2 = atan2(plusMinus * R(i, k), Rsum);
   Scalar theta1, theta3;
 
-  // There is a singularity when cos(theta2) == 0
+  // There is a singularity when cos(theta2) == 0.
   if (Rsum > 4 * Eigen::NumTraits<Scalar>::epsilon()) {
     theta1 = atan2(minusPlus * R(j, k), R(k, k));
     theta3 = atan2(minusPlus * R(i, j), R(i, i));

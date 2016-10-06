@@ -10,7 +10,7 @@
 namespace drake {
 namespace math {
 /**
- * Compute the quaternion representation from Euler angles
+ * Computes the quaternion representation from Euler angles.
  * @param rpy A 3 x 1 vector. The Euler angles about Body-fixed z-y'-x'' axes
  * by angles [rpy(2), rpy(1), rpy(0)].
  * @return A 4 x 1 unit length quaternion @p a=[w;x;y;z]
@@ -19,7 +19,7 @@ namespace math {
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2quat(
     const Eigen::MatrixBase<Derived>& rpy) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
   auto rpy_2 = (rpy / 2.0).array();
@@ -35,7 +35,7 @@ Vector4<typename Derived::Scalar> rpy2quat(
 }
 
 /**
- * Compute angle-axis representation from Euler angles
+ * Computes angle-axis representation from Euler angles.
  * @param rpy A 3 x 1 vector. The Euler angles about Body-fixed z-y'-x'' axes
  * by angles [rpy(2), rpy(1), rpy(0)].
  * @return A 4 x 1 angle-axis representation `a`, with `a.head<3>()` being the
@@ -45,12 +45,13 @@ Vector4<typename Derived::Scalar> rpy2quat(
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2axis(
     const Eigen::MatrixBase<Derived>& rpy) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix
   // the range problem in Eigen
   return quat2axis(rpy2quat(rpy));
 }
 
-/** We use an extrinsic rotation about Space-fixed x-y-z axes by angles [rpy(0),
+/**
+ * We use an extrinsic rotation about Space-fixed x-y-z axes by angles [rpy(0),
  * rpy(1), rpy(2)].
  * Or equivalently, we use an intrinsic
  * rotation about Body-fixed z-y'-x'' axes by angles [rpy(2), rpy(1), rpy(0)].
@@ -71,7 +72,7 @@ Vector4<typename Derived::Scalar> rpy2axis(
 template <typename Derived>
 Matrix3<typename Derived::Scalar> rpy2rotmat(
     const Eigen::MatrixBase<Derived>& rpy) {
-  // TODO (hongkai.dai@tri.global). Switch to Eigen's EulerAngles when we fix
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
   auto rpy_array = rpy.array();

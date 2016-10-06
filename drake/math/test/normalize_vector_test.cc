@@ -13,7 +13,7 @@ namespace drake {
 namespace math {
 namespace {
 
-// Test the value and the gradient of NormalizeVector function
+// Tests the value and the gradient of NormalizeVector function.
 template<int nx>
 void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   Eigen::Matrix<double, nx, 1> x_normalized;
@@ -21,7 +21,7 @@ void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   typename Gradient<Eigen::Matrix<double, nx, 1>, nx, 2>::type ddx_normalized;
   NormalizeVector(x, x_normalized, &dx_normalized, &ddx_normalized);
 
-  // now computes the gradient from autodiff
+  // Now computes the gradient from autodiff.
   auto x_autodiff = initializeAutoDiff(x);
   auto x_norm = x_autodiff.norm();
   auto x_normalized_autodiff = x_autodiff / x_norm;
