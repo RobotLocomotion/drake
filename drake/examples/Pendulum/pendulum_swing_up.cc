@@ -3,8 +3,11 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
+#include "drake/examples/Pendulum/pendulum_system.h"
 #include "drake/solvers/Function.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
@@ -25,9 +28,8 @@ namespace {
 class PendulumRunningCost {
  public:
   static size_t numInputs() {
-    DRAKE_ASSERT(PendulumState<double>::RowsAtCompileTime !=
-                 Eigen::Dynamic);
-    return PendulumState<double>::RowsAtCompileTime + 2; }
+    return PendulumStateVectorIndices::kNumCoordinates + 2;
+  }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
@@ -51,9 +53,8 @@ class PendulumRunningCost {
 class PendulumFinalCost {
  public:
   static size_t numInputs() {
-    DRAKE_ASSERT(PendulumState<double>::RowsAtCompileTime !=
-                 Eigen::Dynamic);
-    return PendulumState<double>::RowsAtCompileTime + 1; }
+    return PendulumStateVectorIndices::kNumCoordinates + 1;
+  }
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
@@ -67,7 +68,6 @@ class PendulumFinalCost {
 }  // anon namespace
 
 void AddSwingUpTrajectoryParams(
-    std::shared_ptr<Pendulum> pendulum,
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
     solvers::DircolTrajectoryOptimization* dircol_traj) {
@@ -88,7 +88,8 @@ void AddSwingUpTrajectoryParams(
   dircol_traj->AddFinalCostFunc(PendulumFinalCost());
   dircol_traj->AddDynamicConstraint(
       std::make_shared<
-      drake::systems::SystemDirectCollocationConstraint<Pendulum>>(pendulum));
+      drake::systems::System2DirectCollocationConstraint>(
+          std::make_unique<PendulumSystem<AutoDiffXd>>()));
 }
 
 }  // pendulum

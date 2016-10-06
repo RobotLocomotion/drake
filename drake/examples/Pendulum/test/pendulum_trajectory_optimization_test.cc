@@ -5,7 +5,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
 
 using drake::solvers::SolutionResult;
@@ -19,8 +18,6 @@ namespace {
 
 GTEST_TEST(PendulumTrajectoryOptimization,
            PendulumTrajectoryOptimizationTest) {
-  auto p = make_shared<Pendulum>();
-
   const int kNumTimeSamples = 21;
   const int kTrajectoryTimeLowerBound = 2;
   const int kTrajectoryTimeUpperBound = 6;
@@ -29,10 +26,10 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   const Eigen::Vector2d xG(M_PI, 0);
 
   solvers::DircolTrajectoryOptimization dircol_traj(
-      getNumInputs(*p), getNumStates(*p),
+      1 /* num inputs */, 2 /* num_states */,
       kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  AddSwingUpTrajectoryParams(p, kNumTimeSamples, x0, xG, &dircol_traj);
+  AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);
 
   const double timespan_init = 4;
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
