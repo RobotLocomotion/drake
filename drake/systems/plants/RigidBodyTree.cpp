@@ -421,7 +421,7 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 }
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
-    const RigidBodyCollisionElement& element, RigidBody& body,
+    const DrakeCollision::Element& element, RigidBody& body,
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model_->addElement(element);
   if (id != 0) {
