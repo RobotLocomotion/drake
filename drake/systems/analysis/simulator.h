@@ -186,6 +186,7 @@ class Simulator {
    */
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
+    initialization_done_ = false;
     integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
     return static_cast<U*>(integrator_.get());
   }

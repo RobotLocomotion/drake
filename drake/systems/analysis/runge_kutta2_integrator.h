@@ -48,7 +48,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
-};  // ExplictEulerIntegrator
+};
 
 /**
  * Integrates the system forward in time by dt. This value is determined

@@ -170,8 +170,11 @@ class IntegratorBase {
   const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
-   *   An integrator must be initialized before being used. The pointer to the
-   *   context must be set before Initialize() is called.
+   * An integrator must be initialized before being used. The pointer to the
+   * context must be set before Initialize() is called (or an std::logic_error
+   * will be thrown). If Initialize() is not called, an exception will be
+   * thrown when attempting to call Step().
+   * @throws std::logic_error If the context has not been set.
    **/
   void Initialize() {
     if (!context_)
@@ -192,7 +195,7 @@ class IntegratorBase {
    * step size subject to accuracy requirements and event occurrences. You can
    * find out what size *actually* worked with
    * `get_actual_initial_step_size_taken()`.
-   * @throws std::logic_error if the integrator does not support error control
+   * @throws std::logic_error If the integrator does not support error control.
    **/
   void request_initial_step_size_target(const T& step_size) {
     if (!supports_error_control())
@@ -366,13 +369,13 @@ class IntegratorBase {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  T target_accuracy_{nan()};      // means "unspecified, use default"
-  T req_initial_step_size_{0.0};  // means "unspecified, use default"
+  T target_accuracy_{nan()};        // means "unspecified, use default"
+  T req_initial_step_size_{nan()};  // means "unspecified, use default"
 };
 
 /**
  * Integrates the system forward in time. Integrator must already have
- * been initialized or exception will be thrown. The context will be
+ * been initialized or an exception will be thrown. The context will be
  * integrated forward *at most*
  * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
  * Error controlled integrators may take smaller steps.
@@ -380,6 +383,8 @@ class IntegratorBase {
  *        if this is not the case) at which the next publish will occur.
  * @param update_dt The step size, >= 0.0 (exception will be thrown
  *        if this is not the case) at which the next update will occur.
+ * @throws std::logic_error If the integrator has not been initialized or one
+ *                          of publish_dt or update_dt is negative.
  * @return The reason for the integration step ending.
  */
 template <class T>
