@@ -11,7 +11,7 @@ namespace systems {
  * <pre>
  * x(t+h) = x(t) + dx/dt * h
  * </pre>
- **/
+ */
 template <class T>
 class ExplicitEulerIntegrator : public IntegratorBase<T> {
  public:
@@ -27,7 +27,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    *                must set a non-null context before Initialize()-ing the
    *                integrator).
    * @sa Initialize()
-   **/
+   */
   ExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
                           Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
@@ -38,12 +38,12 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
   /**
    * Explicit Euler integrator does not support accuracy estimation.
-   **/
+   */
   bool supports_accuracy_estimation() const override { return false; }
 
   /**
    * Explicit Euler ntegrator does not support error control.
-   **/
+   */
   bool supports_error_control() const override { return false; }
 
  private:
@@ -56,7 +56,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 /**
  * Integrates the system forward in time by dt. This value is determined
  * by IntegratorBase::Step().
- **/
+ */
 template <class T>
 bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // Find the continuous state xc within the Context, just once.

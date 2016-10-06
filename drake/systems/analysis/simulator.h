@@ -3,11 +3,9 @@
 #include <tuple>
 #include <utility>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeSystemAnalysis_export.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/context.h"
@@ -55,7 +53,7 @@ namespace systems {
  * - AutoDiffXd
  *
  * Other instantiations are permitted but take longer to compile.
- **/
+ */
 // TODO(sherm1) When API stabilizes, should list the methods above in addition
 // to describing them.
 template <typename T>
@@ -73,7 +71,7 @@ class Simulator {
    * of the trajectory values. You may optionally provide a Context that will be
    * used as the initial condition for the simulation; otherwise the %Simulator
    * will obtain a default Context from `system`.
-   **/
+   */
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
@@ -82,7 +80,7 @@ class Simulator {
    * of the continuous state variables to satisfy the constraints. This method
    * will throw `std::logic_error` if the combination of options doesn't make
    * sense, and `std::runtime_error` if it is unable to find a
-   * constraint-satisfying initial condition. **/
+   * constraint-satisfying initial condition. */
   void Initialize();
 
   // TODO(edrumwri): add ability to account for final time
@@ -99,20 +97,20 @@ class Simulator {
    * time you attempt a step, possibly resulting in unexpected error conditions.
    * See documentation for `Initialize()` for the error conditions it might
    * produce.
-   **/
+   */
   void StepTo(const T& boundary_time);
 
   /** Returns a const reference to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
-   **/
+   */
   const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding the
    * most recent step in the trajectory. This is suitable for use in updates,
    * sampling operations, event handlers, and constraint projection. You can
    * also modify this prior to calling Initialize() to set initial conditions.
-   **/
+   */
   Context<T>* get_mutable_context() { return context_.get(); }
 
   /** Replace the internally-maintained Context with a different one. The
@@ -122,7 +120,7 @@ class Simulator {
    * @param context The new context, which may be null. If the context is
    *                null, a new context must be set before attempting to step
    *                the system forward.
-   **/
+   */
   void reset_context(std::unique_ptr<Context<T>> context) {
     context_ = std::move(context);
     integrator_->reset_context(context_.get());
@@ -133,7 +131,7 @@ class Simulator {
    * The %Simulator will no longer contain a Context. The caller must not
    * attempt to advance the simulator in time after that point.
    * @sa reset_context()
-   **/
+   */
   std::unique_ptr<Context<T>> release_context() {
     integrator_->reset_context(nullptr);
     initialization_done_ = false;
@@ -142,7 +140,7 @@ class Simulator {
 
   /** Forget accumulated statistics. Statistics are reset to the values they
    * have post construction or immediately after `Initialize()`.
-   **/
+   */
   void ResetStatistics() {
     integrator_->ResetStatistics();
     num_steps_taken_ = 0;
@@ -156,13 +154,13 @@ class Simulator {
    */
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /** Gets the number of integration steps since the last Initialize() call. **/
+  /** Gets the number of integration steps since the last Initialize() call. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
   /** Gets the number of difference equation updates performed since the last
-  Initialize() call? **/
+  Initialize() call? */
   int64_t get_num_updates() const { return num_updates_; }
-  /**@}**/
+  /**@}*/
 
   /**
    *   Gets a pointer to the integrator used to advance the continuous aspects

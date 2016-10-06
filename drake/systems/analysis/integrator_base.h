@@ -24,7 +24,7 @@ solution, so must be avoided.
 /**
  * An abstract class for an integrator for ODEs and DAEs.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
- **/
+ */
 template <class T>
 class IntegratorBase {
  public:
@@ -38,27 +38,27 @@ class IntegratorBase {
    *
    * Note: the simulation step must always end at an update time but can end
    * after a publish time.
-   **/
+   */
   // TODO(edrumwri): incorporate kReachedZeroCrossing into the simulator.
   enum StepResult {
     /**
      * Indicates a publish time has been reached but not an update time.
-     **/
+     */
     kReachedPublishTime = 1,
     /**
      * Localized an event; this is the *before* state (interpolated).
-     **/
+     */
     kReachedZeroCrossing = 2,
     /**
      * Indicates that integration terminated at an update time.
-     **/
+     */
     kReachedUpdateTime = 3,
     /**
      * User requested control whenever an internal step is successful.
-     **/
+     */
     kTimeHasAdvanced = 4,
     /** Took maximum number of steps without finishing integrating over the
-     * interval. **/
+     * interval. */
     kReachedStepLimit = 5,
   };
 
@@ -74,7 +74,7 @@ class IntegratorBase {
    *                the pointer to this context. The pointer to the context will
    *                be maintained internally. The integrator must not outlive
    *                the context.
-   **/
+   */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
       : system_(system), context_(context) {
@@ -84,14 +84,14 @@ class IntegratorBase {
   /**
    * Indicates whether an integrator supports accuracy estimation.
    * Without accuracy estimation, target accuracy will be unused.
-   **/
+   */
   virtual bool supports_accuracy_estimation() const = 0;
 
   /**
    * Indicates whether an integrator supports stepping with error control.
    * Without stepping with error control, initial step size targets will be
    * unused.
-   **/
+   */
   virtual bool supports_error_control() const = 0;
 
   /** Request that the integrator attempt to achieve a particular accuracy for
@@ -116,7 +116,7 @@ class IntegratorBase {
    * Section 3.3.
    * http://dx.doi.org/10.1016/j.piutam.2011.04.023
    * @throws std::logic_error if integrator does not support accuracy estimation
-   **/
+   */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(const T& accuracy) {
@@ -130,21 +130,21 @@ class IntegratorBase {
   /**
    *   Gets the target accuracy.
    *   @sa get_accuracy_in_use()
-   **/
+   */
   const T& get_target_accuracy() const { return target_accuracy_; }
 
   /**
    * Gets the accuracy in use by the integrator. This number may differ from
    * the target accuracy if, for example, the user has requested an accuracy
    * not attainable or not recommended for the particular integrator.
-   **/
+   */
   const T& get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
    * Sets the maximum step size for this integrator. For fixed step integrators
    * all steps will be taken at the maximum step size *unless* an event would
    * be missed.
-   **/
+   */
   void set_maximum_step_size(const T& max_step_size) {
     DRAKE_ASSERT(max_step_size >= 0.0);
     max_step_size_ = max_step_size;
@@ -152,13 +152,13 @@ class IntegratorBase {
 
   /**
    * Gets the maximum step size for this integrator.
-   **/
+   */
   const T& get_maximum_step_size() const { return max_step_size_; }
 
   /**
    * Sets the minimum step size for this integrator. All integration steps
    * will be at least this large.
-   **/
+   */
   void set_minimum_step_size(const T& min_step_size) {
     DRAKE_ASSERT(min_step_size >= 0.0);
     min_step_size_ = min_step_size;
@@ -166,7 +166,7 @@ class IntegratorBase {
 
   /**
    * Gets the minimum step size for this integrator
-   **/
+   */
   const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
@@ -175,7 +175,7 @@ class IntegratorBase {
    * will be thrown). If Initialize() is not called, an exception will be
    * thrown when attempting to call Step().
    * @throws std::logic_error If the context has not been set.
-   **/
+   */
   void Initialize() {
     if (!context_)
       throw std::logic_error("Context has not been set.");
@@ -196,7 +196,7 @@ class IntegratorBase {
    * find out what size *actually* worked with
    * `get_actual_initial_step_size_taken()`.
    * @throws std::logic_error If the integrator does not support error control.
-   **/
+   */
   void request_initial_step_size_target(const T& step_size) {
     if (!supports_error_control())
       throw std::logic_error("Integrator does not support error control and "
@@ -207,7 +207,7 @@ class IntegratorBase {
   /** Gets the first integration target step size. You can find out what size
    * *actually* was used with `get_actual_initial_step_size_taken()`.
    * @see request_initial_step_size_target()
-   **/
+   */
   const T& get_initial_step_size_target() const {
     return req_initial_step_size_;
   }
@@ -230,7 +230,7 @@ class IntegratorBase {
 
   /** Forget accumulated statistics. These are reset to the values they have
    * post construction or immediately after `Initialize()`.
-   **/
+   */
   void ResetStatistics() {
     actual_initial_step_size_taken_ = nan();
     smallest_step_size_taken_ = nan();
@@ -238,30 +238,30 @@ class IntegratorBase {
     num_steps_taken_ = 0;
   }
 
-  /** The actual size of the successful first step. **/
+  /** The actual size of the successful first step. */
   const T& get_actual_initial_step_size_taken() const {
     return actual_initial_step_size_taken_;
   }
 
-  /** The size of the smallest step taken since the last Initialize() call. **/
+  /** The size of the smallest step taken since the last Initialize() call. */
   const T& get_smallest_step_size_taken() const {
     return smallest_step_size_taken_;
   }
 
-  /** The size of the largest step taken since the last Initialize() call. **/
+  /** The size of the largest step taken since the last Initialize() call. */
   const T& get_largest_step_size_taken() const {
     return largest_step_size_taken_;
   }
 
   /** The number of integration steps taken since the last Initialize() call.
-   **/
+   */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
   /** Return the step size the integrator would like to take next, based
    * primarily on the integrator's accuracy prediction (variable step
    * integrators; will change as the simulation progresses) or using the fixed
    * step for fixed step integrators.
-   **/
+   */
   const T& get_ideal_next_step_size() const {
     return ideal_next_step_size_;
   }
@@ -269,11 +269,11 @@ class IntegratorBase {
   /** Returns a const reference to the internally-maintained Context holding
    * the most recent state in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
-   **/
+   */
   const Context<T>& get_context() const { return *context_; }
 
   /** Returns a mutable pointer to the internally-maintained Context holding
-   * the most recent state in the trajectory. **/
+   * the most recent state in the trajectory. */
   Context<T>* get_mutable_context() { return context_; }
 
   /** Replace the pointer to the internally-maintained Context with a different
@@ -283,7 +283,7 @@ class IntegratorBase {
    * context is null.
    * @param context The pointer to the new context or nullptr to wipe out
    *                the current context without replacing it with another.
-   **/
+   */
   void reset_context(Context<T>* context) {
     context_ = context;
     initialization_done_ = false;
@@ -307,7 +307,7 @@ class IntegratorBase {
    * @param dt The maximum integration step to take.
    * @returns *false* if the integrator does not take the full step of dt;
    *           otherwise, should return *true*
-   **/
+   */
   virtual bool DoStep(const T& dt) = 0;
 
   // Sets the ideal next step size.

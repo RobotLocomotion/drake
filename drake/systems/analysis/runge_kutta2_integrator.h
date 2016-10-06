@@ -8,7 +8,7 @@ namespace systems {
 
 /**
  * A second-order, explicit Runge Kutta integrator.
- **/
+ */
 template <class T>
 class RungeKutta2Integrator : public IntegratorBase<T> {
  public:
@@ -24,7 +24,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
    *                must set a non-null context before Initialize()-ing the
    *                integrator).
    * @sa Initialize()
- **/
+ */
   RungeKutta2Integrator(const System<T>& system, const T& max_step_size,
                         Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {
@@ -35,12 +35,12 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 
   /**
    * The RK2 integrator does not support accuracy estimation.
-   **/
+   */
   bool supports_accuracy_estimation() const override { return false; }
 
   /**
    * The RK2 integrator does not support error control.
-   **/
+   */
   bool supports_error_control() const override { return false; }
 
  private:
@@ -53,7 +53,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
 /**
  * Integrates the system forward in time by dt. This value is determined
  * by IntegratorBase::Step().
- **/
+ */
 template <class T>
 bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   // Find the continuous state xc within the Context, just once.
