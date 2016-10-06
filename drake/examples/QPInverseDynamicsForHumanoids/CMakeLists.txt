@@ -1,4 +1,7 @@
-add_executable(test_gravity_compensation_for_valkyrie test_gravity_compensation_for_valkyrie.cc qp_controller.cc rigid_body_tree_utils.cc humanoid_status.cc)
-target_link_libraries(test_gravity_compensation_for_valkyrie drakeRBSystem drakeOptimization drakeSide ${GTEST_BOTH_LIBRARIES})
+add_library(drakeQPController qp_controller.cc rigid_body_tree_utils.cc humanoid_status.cc)
+target_link_libraries(drakeQPController drakeRBSystem drakeOptimization drakeSide)
+
+add_executable(test_gravity_compensation_for_valkyrie test_gravity_compensation_for_valkyrie.cc)
+target_link_libraries(test_gravity_compensation_for_valkyrie drakeQPController ${GTEST_BOTH_LIBRARIES})
 
 add_subdirectory(sys2)
