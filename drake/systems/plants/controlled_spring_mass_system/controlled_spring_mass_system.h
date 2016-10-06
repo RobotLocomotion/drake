@@ -26,7 +26,7 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
-/// @ingroup systems
+/// @ingroup rigid_body_system
 template <typename T>
 class DRAKE_EXPORT
 PidControlledSpringMassSystem : public Diagram<T> {
