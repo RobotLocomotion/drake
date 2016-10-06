@@ -187,7 +187,7 @@ class IntegratorBase {
   }
 
   /** Request that the first attempted integration step have a particular size.
-   * If no attempt is specified, the integrator will estimate a suitable size
+   * If no requested is made, the integrator will estimate a suitable size
    * for the initial step attempt. *If the integrator does not support error
    * control*, this method will throw a std::logic_error (call
    * supports_error_control() to verify before calling this method). For
@@ -212,6 +212,20 @@ class IntegratorBase {
     return req_initial_step_size_;
   }
 
+  /**
+ * Integrates the system forward in time. Integrator must already have
+ * been initialized or an exception will be thrown. The context will be
+ * integrated forward *at most*
+ * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
+ * Error controlled integrators may take smaller steps.
+ * @param publish_dt The step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next publish will occur.
+ * @param update_dt The step size, >= 0.0 (exception will be thrown
+ *        if this is not the case) at which the next update will occur.
+ * @throws std::logic_error If the integrator has not been initialized or one
+ *                          of publish_dt or update_dt is negative.
+ * @return The reason for the integration step ending.
+ */
   StepResult Step(const T& publish_dt, const T& update_dt);
 
   /** Forget accumulated statistics. These are reset to the values they have
@@ -373,20 +387,6 @@ class IntegratorBase {
   T req_initial_step_size_{nan()};  // means "unspecified, use default"
 };
 
-/**
- * Integrates the system forward in time. Integrator must already have
- * been initialized or an exception will be thrown. The context will be
- * integrated forward *at most*
- * by the minimum of { `publish_dt`, `update_dt`, `get_maximum_step_size()` }.
- * Error controlled integrators may take smaller steps.
- * @param publish_dt The step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next publish will occur.
- * @param update_dt The step size, >= 0.0 (exception will be thrown
- *        if this is not the case) at which the next update will occur.
- * @throws std::logic_error If the integrator has not been initialized or one
- *                          of publish_dt or update_dt is negative.
- * @return The reason for the integration step ending.
- */
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
     const T& publish_dt, const T& update_dt) {
