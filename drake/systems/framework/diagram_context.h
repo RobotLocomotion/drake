@@ -29,8 +29,11 @@ class DiagramContinuousState : public ContinuousState<T> {
   /// which are not owned by this object and must outlive it. Some of the
   /// subsystem states may be nullptr if the system is stateless.
   ///
-  /// The DiagramContinuousState vector will have the same order as the
-  /// @p states parameter, which should be the sort order of the Diagram itself.
+  /// The DiagramContinuousState vector xc = [q v z] will have the same
+  /// order as the @p substates parameter, which should be the sort order of
+  /// the Diagram itself. This fact is an implementation detail that should
+  /// only be of interest to framework authors. Everyone else can just use
+  /// Diagram<T>::GetMutableSubsystemState.
   explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
       : ContinuousState<T>(
             Span(substates, x_selector), Span(substates, q_selector),
@@ -297,7 +300,11 @@ class DiagramContext : public Context<T> {
  private:
   std::vector<PortIdentifier> input_ids_;
 
+  // The outputs are stored in SystemIndex order, and outputs_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<SystemOutput<T>>> outputs_;
+  // The contexts are stored in SystemIndex order, and contexts_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;
 
   // A map from the input ports of constituent systems, to the output ports of

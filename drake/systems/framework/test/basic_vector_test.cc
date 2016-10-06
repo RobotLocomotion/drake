@@ -69,6 +69,16 @@ GTEST_TEST(BasicVectorTest, SetWholeVector) {
   EXPECT_EQ(next_value, vec.get_value());
 }
 
+// Tests that the BasicVector can be set from another BasicVector.
+GTEST_TEST(BasicVectorTest, SetFromOther) {
+  BasicVector<int> vec(2);
+  vec.get_mutable_value() << 1, 2;
+  BasicVector<int> next_value(2);
+  next_value.get_mutable_value() << 3, 4;
+  vec.SetFrom(next_value);
+  EXPECT_EQ(next_value.get_value(), vec.get_value());
+}
+
 // Tests that when BasicVector is cloned, its data is preserved.
 GTEST_TEST(BasicVectorTest, Clone) {
   BasicVector<int> vec(2);
