@@ -15,7 +15,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/pid_controller.h"
+#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
