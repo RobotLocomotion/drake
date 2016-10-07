@@ -1,5 +1,7 @@
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 
+#include <iostream>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
@@ -26,11 +28,13 @@ bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
     result = false;
   }
 
-  DRAKE_DEMAND(n == static_cast<int>(actual_message.val.size()));
-  DRAKE_DEMAND(n == static_cast<int>(actual_message.coord.size()));
+  if (result) {
+    DRAKE_DEMAND(n == static_cast<int>(actual_message.val.size()));
+    DRAKE_DEMAND(n == static_cast<int>(actual_message.coord.size()));
 
-  DRAKE_DEMAND(n == static_cast<int>(expected_message.val.size()));
-  DRAKE_DEMAND(n == static_cast<int>(expected_message.coord.size()));
+    DRAKE_DEMAND(n == static_cast<int>(expected_message.val.size()));
+    DRAKE_DEMAND(n == static_cast<int>(expected_message.coord.size()));
+  }
 
   for (int i = 0; i < n && result; ++i) {
     if (actual_message.val[i] != expected_message.val[i]) {
