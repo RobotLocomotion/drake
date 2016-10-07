@@ -19,7 +19,7 @@
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-// #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 // Includes for the planner.
 // #include "drake/systems/plants/IKoptions.h"
@@ -42,13 +42,13 @@ using parsers::sdf::AddModelInstancesFromSdfFile;
 // using systems::Adder;
 using systems::Context;
 // using systems::Demultiplexer;
-// using systems::Diagram;
-// using systems::DiagramBuilder;
+using systems::Diagram;
+using systems::DiagramBuilder;
 // using systems::Gain;
 // using systems::GravityCompensator;
 // using systems::PidController;
-// using systems::RigidBodyPlant;
-// using systems::RigidBodyTreeLcmPublisher;
+using systems::RigidBodyPlant;
+using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
 // using systems::TimeVaryingPolynomialSource;
 using systems::plants::joints::kQuaternion;
@@ -81,22 +81,22 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     // // The top of the box is at z = 0.
     // T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
 
-    // RigidBody& world = rigid_body_tree->world();
+    // RigidBody& world = tree->world();
     // Eigen::Vector4d color;
     // // Ground color in RGBA format.
     // color << 0.9297, 0.7930, 0.6758, 1;
     // world.AddVisualElement(
     //     DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    // rigid_body_tree->addCollisionElement(
+    // tree->addCollisionElement(
     //     DrakeCollision::Element(geom, T_element_to_link, &world), world,
     //     "terrain");
-    // rigid_body_tree->updateStaticCollisionElements();
+    // tree->updateStaticCollisionElements();
 
-    // DiagramBuilder<T> builder;
+    DiagramBuilder<T> builder;
 
-    // // Instantiates a RigidBodyPlant from an MBD model of the world.
-    // plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
-    //     move(rigid_body_tree));
+    // Instantiates a RigidBodyPlant from the MBD model of the world.
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
+        move(tree));
 
     // state_minus_target_ = builder.template AddSystem<Adder<T>>
     //     (2 /*number of inputs*/, plant_->get_num_states() /* size */);
@@ -137,9 +137,9 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     // desired_plan_ = builder.template AddSystem<TimeVaryingPolynomialSource<T>>(
     //     *poly_trajectory_);
 
-    // // Creates and adds LCM publisher for visualization.
-    // viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
-    //     plant_->get_rigid_body_tree(), &lcm_);
+    // Creates and adds LCM publisher for visualization.
+    viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+        plant_->get_rigid_body_tree(), &lcm_);
 
     // // Generates an error signal for the PID controller by subtracting the
     // // desired plan state from the RigidBodyPlant's (iiwa arm) state.
@@ -179,12 +179,12 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     // builder.Connect(gcomp_minus_pid_->get_output_port(),
     //                 plant_->get_input_port(0));
 
-    // // Connects to publisher for visualization.
-    // builder.Connect(plant_->get_output_port(0),
-    //                 viz_publisher_->get_input_port(0));
+    // Connects to publisher for visualization.
+    builder.Connect(plant_->get_output_port(0),
+                    viz_publisher_->get_input_port(0));
 
-    // builder.ExportOutput(plant_->get_output_port(0));
-    // builder.BuildInto(this);
+    builder.ExportOutput(plant_->get_output_port(0));
+    builder.BuildInto(this);
   }
 
   // const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
@@ -194,13 +194,13 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     //     this->GetMutableSubsystemContext(context, controller_);
     // controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
 
-    // Context<T>* plant_context =
-    //     this->GetMutableSubsystemContext(context, plant_);
-    // plant_->SetZeroConfiguration(plant_context);
+    Context<T>* plant_context =
+        this->GetMutableSubsystemContext(context, plant_);
+    plant_->SetZeroConfiguration(plant_context);
   }
 
  private:
-  // RigidBodyPlant<T>* plant_;
+  RigidBodyPlant<T>* plant_;
   // PidController<T>* controller_;
   // Demultiplexer<T>* error_demux_;
   // Demultiplexer<T>* rbp_state_demux_;
@@ -211,8 +211,8 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
   // Adder<T>* gcomp_minus_pid_;
   // TimeVaryingPolynomialSource<T>* desired_plan_;
   // std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
-  // RigidBodyTreeLcmPublisher* viz_publisher_;
-  // ::lcm::LCM lcm_;
+  RigidBodyTreeLcmPublisher* viz_publisher_;
+  ::lcm::LCM lcm_;
 };
 
 int main() {
