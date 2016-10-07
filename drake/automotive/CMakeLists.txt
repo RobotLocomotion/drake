@@ -74,4 +74,12 @@ if(lcm_FOUND)
   target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
   drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
+
+  add_executable(car_sim_lcm2 car_sim_lcm2.cc)
+  target_link_libraries(car_sim_lcm2
+      drakeAutomotiveLcm
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers
+      drakeLCMSystem2)
 endif()
