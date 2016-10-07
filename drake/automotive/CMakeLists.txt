@@ -65,13 +65,13 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
 
-  add_executable(car_sim_lcm car_sim_lcm.cc)
+  add_executable(car_sim_lcm1 car_sim_lcm1.cc)
   # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
-  target_link_libraries(car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
+  target_link_libraries(car_sim_lcm1 drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
-  add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
+  add_executable(multi_car_sim_lcm1 multi_car_sim_lcm1.cc)
   # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
-  target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
+  target_link_libraries(multi_car_sim_lcm1 drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
-  drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
+  drake_add_test(NAME multi_car_sim_lcm1 COMMAND multi_car_sim_lcm1 --duration 0.05)
 endif()
