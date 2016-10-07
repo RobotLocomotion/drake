@@ -99,7 +99,7 @@ Vector4d EigenAngleAxisToDrakeAxisAngle(const AngleAxisd& eigenAngleAxis) {
 }
 
 Matrix3d CalcRotationMatrixAboutZ(double a) {
-  // Returns 3 x 3 R_AB matrix where vA = R_AB*v_B.
+  // Returns 3 x 3 R_AB matrix where vA = R_AB * v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
   // basis B is obtained by rotating basis A about Z axis by angle a.
@@ -109,7 +109,7 @@ Matrix3d CalcRotationMatrixAboutZ(double a) {
 }
 
 Matrix3d CalcRotationMatrixAboutY(double b) {
-  // Feturns 3 x 3 R_AB matrix where vA = R_AB*v_B.
+  // Returns 3 x 3 R_AB matrix where vA = R_AB * v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
   // basis B is obtained by rotating basis A about Y axis by angle b.
@@ -119,7 +119,7 @@ Matrix3d CalcRotationMatrixAboutY(double b) {
 }
 
 Matrix3d CalcRotationMatrixAboutX(double c) {
-  // Feturns 3 x 3 R_AB matrix where vA = R_AB*v_B.
+  // Returns 3 x 3 R_AB matrix where vA = R_AB * v_B.
   // vB is a vector expressed in basis B and vA is the equivalent vector, but
   // expressed in basis A.
   // basis B is obtained by rotating basis A about X axis by angle c.
