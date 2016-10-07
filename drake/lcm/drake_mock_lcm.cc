@@ -8,8 +8,7 @@
 namespace drake {
 namespace lcm {
 
-DrakeMockLcm::DrakeMockLcm() {
-}
+DrakeMockLcm::DrakeMockLcm() {}
 
 void DrakeMockLcm::StartReceiveThread() {
   DRAKE_DEMAND(!receive_thread_started_);
@@ -40,8 +39,10 @@ const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
     const std::string& channel) const {
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
-    throw std::runtime_error("DrakeMockLcm::get_last_published_message: ERROR: "
-        "No message was previous published on channel \"" + channel + "\".");
+    throw std::runtime_error(
+        "DrakeMockLcm::get_last_published_message: ERROR: "
+        "No message was previous published on channel \"" +
+        channel + "\".");
   }
 
   const LastPublishedMessage* message = &last_published_messages_.at(channel);
@@ -51,21 +52,25 @@ const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
 }
 
 void DrakeMockLcm::Subscribe(const std::string& channel,
-    DrakeLcmMessageHandlerInterface* handler) {
+                             DrakeLcmMessageHandlerInterface* handler) {
   if (subscriptions_.find(channel) == subscriptions_.end()) {
     subscriptions_[channel] = handler;
   } else {
-    throw std::runtime_error("DrakeMockLcm::Subscribe: Subscription to "
-        "channel \"" + channel + "\" already exists.");
+    throw std::runtime_error(
+        "DrakeMockLcm::Subscribe: Subscription to "
+        "channel \"" +
+        channel + "\" already exists.");
   }
 }
 
 void DrakeMockLcm::InduceSubsciberCallback(const std::string& channel,
-    const void* data, int data_size) {
+                                           const void* data, int data_size) {
   if (receive_thread_started_) {
     if (subscriptions_.find(channel) == subscriptions_.end()) {
-      throw std::runtime_error("DrakeMockLcm::InduceSubsciberCallback: No "
-          "subscription to channel \"" + channel + "\".");
+      throw std::runtime_error(
+          "DrakeMockLcm::InduceSubsciberCallback: No "
+          "subscription to channel \"" +
+          channel + "\".");
     } else {
       subscriptions_[channel]->HandleMessage(channel, data, data_size);
     }

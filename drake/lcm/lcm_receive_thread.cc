@@ -61,8 +61,9 @@ void LcmReceiveThread::LoopWithSelect() {
 
     if (lcm_ready) {
       if (lcm_->handle() != 0) {
-        drake::log()->trace("LcmReceiverThread::LoopWithSelect: lcm->handle() "
-                            "returned non-zero value.");
+        drake::log()->trace(
+            "LcmReceiverThread::LoopWithSelect: lcm->handle() "
+            "returned non-zero value.");
         return;
       }
     }

@@ -39,11 +39,11 @@ class DRAKE_EXPORT DrakeLcm : public DrakeLcmInterface {
    */
   ::lcm::LCM* get_lcm_instance();
 
-  void Publish(const std::string& channel, const void *data,
+  void Publish(const std::string& channel, const void* data,
                int data_size) override;
 
   void Subscribe(const std::string& channel,
-      DrakeLcmMessageHandlerInterface* handler) override;
+                 DrakeLcmMessageHandlerInterface* handler) override;
 
  private:
   class Subscriber;

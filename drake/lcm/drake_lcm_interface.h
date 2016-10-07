@@ -57,7 +57,7 @@ class DRAKE_EXPORT DrakeLcmInterface {
    * @param[in] handler A class instance whose callback method will be invoked.
    */
   virtual void Subscribe(const std::string& channel,
-      DrakeLcmMessageHandlerInterface* handler) = 0;
+                         DrakeLcmMessageHandlerInterface* handler) = 0;
 };
 
 }  // namespace lcm

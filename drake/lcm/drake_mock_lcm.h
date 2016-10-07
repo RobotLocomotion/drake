@@ -28,8 +28,8 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
 
   void StopReceiveThread() override;
 
-  void Publish(const std::string& channel, const void *data, int data_size)
-      override;
+  void Publish(const std::string& channel, const void* data,
+               int data_size) override;
 
   /**
    * Obtains the most recently "published" message on a particular channel.
@@ -41,8 +41,8 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    *
    * @pre A message was previously published on channel @p channel.
    */
-  const std::vector<uint8_t>& get_last_published_message(const std::string&
-      channel) const;
+  const std::vector<uint8_t>& get_last_published_message(
+      const std::string& channel) const;
 
   /**
    * Creates a subscription. Only one subscription per channel name is
@@ -50,7 +50,7 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    * the same channel name is attempted.
    */
   void Subscribe(const std::string& channel,
-      DrakeLcmMessageHandlerInterface* handler) override;
+                 DrakeLcmMessageHandlerInterface* handler) override;
 
   /**
    * Fakes a callback. This will only work if StartReceivedThread() was already
@@ -65,7 +65,7 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    * @param[in] data_size The length of @data in bytes.
    */
   void InduceSubsciberCallback(const std::string& channel, const void* data,
-      int data_size);
+                               int data_size);
 
  private:
   bool receive_thread_started_{false};
