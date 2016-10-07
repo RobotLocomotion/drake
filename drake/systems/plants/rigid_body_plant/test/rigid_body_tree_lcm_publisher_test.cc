@@ -488,6 +488,8 @@ GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
+  // TODO(liang.fok) Update the following tests to obtain the last published
+  // message from the mock LCM object.
   VerifyLoadMessage(dut.get_load_message());
   VerifyDrawMessage(dut.get_draw_message_bytes());
 }
