@@ -3,6 +3,8 @@
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/normalize_vector.h"
+#include "drake/math/rotation_conversion_gradient.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -81,7 +83,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
     typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
                                    drake::kQuaternionSize,
                                    1>::type dquattildedquat;
-    normalizeVec(quat, quattilde, &dquattildedquat);
+    drake::math::NormalizeVector(quat, quattilde, &dquattildedquat);
     auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
     qdot_to_v.template block<3, 3>(0, 0).setZero();
     qdot_to_v.template block<3, 4>(0, 3).noalias() =
@@ -106,7 +108,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
 
     Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
     if (dv_to_qdot) {
-      auto dR = dquat2rotmat(quat);
+      auto dR = drake::math::dquat2rotmat(quat);
       typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
                                      1>::type dM;
       angularvel2quatdotMatrix(quat, M, &dM);
