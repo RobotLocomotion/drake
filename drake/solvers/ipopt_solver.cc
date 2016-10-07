@@ -450,9 +450,11 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-8;
+  const double tol = 1e-8;  // note: SNOPT is only 1e-6
   app->Options()->SetNumericValue("tol", tol);
-  app->Options()->SetNumericValue("constr_viol_tol", 1e-6);  // match SNOPT
+  app->Options()->SetNumericValue("constr_viol_tol", tol);
+  app->Options()->SetNumericValue("acceptable_tol", tol);
+  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
