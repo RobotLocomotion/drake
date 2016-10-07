@@ -13,6 +13,14 @@
 
 namespace drake {
 namespace math {
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+// Forward prototype for rpy2rotmat (which is defined in roll_pitch_yaw.h").
+template <typename Derived>
+Matrix3<typename Derived::Scalar> rpy2rotmat(
+    const Eigen::MatrixBase<Derived>& rpy);
+#endif
+
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
@@ -232,23 +240,71 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 
 /**
  * Computes the Euler angles from quaternion representation.
- * @param quaternion A 4 x 1 unit length vector @p q=[w;x;y;z]
- * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
- * rpy(1), rpy(0)]
+ * @param quaternion 4x1 unit length vector @p q=[w;x;y;z].
+ * @return 3x1 BodyZYX Euler angles with order [rpy(2), rpy(1), rpy(0)].
  * @see rpy2rotmat
- * When the pitch angle is close to PI/2 or -PI/2, this function is not very
- * accurate. For pitch = PI/2 - 1E-6, the error can be in the order of 1E-7.
- * The error gets larger when the pitch gets closer to PI/2 or -PI/2.
+ * This accurate algorithm avoids numerical round-off issues encountered by some
+ * algorithms when rpy(1) is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
   // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
-  // TODO(mitiguy@tri.global): replace this method with the high-precision
-  // method
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  return rotmat2rpy(quat2rotmat(quaternion));
+  Eigen::Matrix3d R = quat2rotmat(quaternion);
+  using Scalar = typename Derived::Scalar;
+
+  using std::atan2;
+  using std::sqrt;
+  using std::abs;
+
+  int i = 2;
+  int j = 1;
+  int k = 0;
+
+  // Scalar plusMinus = -1;
+  // Scalar minusPlus =  1;
+
+  // Calculate theta2 using lots of information in the rotation matrix.
+  Scalar Rii = R(i, i);
+  Scalar Rij = R(i, j);
+  Scalar Rjk = R(j, k);
+  Scalar Rkk = R(k, k);
+  Scalar Rsum = sqrt((Rii * Rii + Rij * Rij + Rjk * Rjk + Rkk * Rkk) / 2);
+
+  // Rsum = abs(cos(theta2)) is inherently positive.
+  Scalar Rik = R(i, k);
+  Scalar theta2 = atan2(-Rik, Rsum);
+  Scalar e0 = quaternion(0);
+  Scalar e1 = quaternion(1);
+  Scalar e2 = quaternion(2);
+  Scalar e3 = quaternion(3);
+  Scalar yA = e1 + e3;
+  Scalar xA = e0 - e2;
+  Scalar yB = e3 - e1;
+  Scalar xB = e0 + e2;
+  Scalar epsilon = 5.0 * Eigen::NumTraits<Scalar>::epsilon();
+  bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
+  bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
+  Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
+  Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
+  Scalar theta1 = zA + zB;  // First angle in rotation sequence.
+  Scalar theta3 = zA - zB;  // Third angle in rotation sequence.
+  if (theta1 > M_PI) theta1 = theta1 - 2 * M_PI;
+  if (theta1 < -M_PI) theta1 = theta1 + 2 * M_PI;
+  if (theta3 > M_PI) theta3 = theta3 - 2 * M_PI;
+  if (theta3 < -M_PI) theta3 = theta3 + 2 * M_PI;
+
+  Vector3<Scalar> roll_pitch_yaw_angles(theta3, theta2, theta1);
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  const Matrix3<Scalar> rotmat_quaternion = quat2rotmat(quaternion);
+  const Matrix3<Scalar> rotmat_rollPitchYaw = rpy2rotmat(roll_pitch_yaw_angles);
+  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_rollPitchYaw, 1.0E-11));
+#endif
+
+  return roll_pitch_yaw_angles;
 }
 
 // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,

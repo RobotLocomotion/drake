@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/quaternion.h"
 
 namespace drake {
 namespace math {
@@ -98,7 +98,7 @@ Vector3<typename Derived::Scalar> axis2rpy(
   // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  return rotmat2rpy(axis2rotmat(axis_angle));
+  return quat2rpy(axis2quat(axis_angle));
 }
 
 }  // namespace math
