@@ -1,4 +1,5 @@
-set(source_files kinematics_results.cc rigid_body_plant.cc)
+set(source_files kinematics_results.cc rigid_body_plant.cc
+    contact_detail.cc)
 
 # The following variables are necessary to conditionally include
 # RigidBodyTreeLcmPublisher in libdrakeRigidBodyPlant.so if LCM exists.
