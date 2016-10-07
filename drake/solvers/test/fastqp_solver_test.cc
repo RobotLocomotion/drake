@@ -69,7 +69,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
     // TODO(russt) assert that fastQP only falls back on the expected
     // iterations
 
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
                                 MatrixCompareType::absolute));
   }
 
@@ -88,7 +88,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
     ASSERT_NO_THROW(result = prog.Solve());
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
                                 MatrixCompareType::absolute));
   }
 }
