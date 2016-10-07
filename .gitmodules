@@ -4,9 +4,6 @@
 [submodule "externals/googletest"]
 	path = externals/googletest
 	url = https://github.com/google/googletest.git
-[submodule "externals/gtk"]
-	path = externals/gtk
-	url = https://github.com/RobotLocomotion/gtk-pod.git
 [submodule "externals/lcm"]
 	path = externals/lcm
 	url = https://github.com/lcm-proj/lcm.git
