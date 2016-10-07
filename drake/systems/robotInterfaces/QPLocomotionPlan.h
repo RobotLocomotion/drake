@@ -16,7 +16,7 @@
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/zmpUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"
+#include "drake/common/drake_export.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
@@ -144,8 +144,8 @@ struct QPLocomotionPlanSettings {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
-          if (joint.getName().find(*joint_name_it) != std::string::npos) {
-            for (int i = 0; i < joint.getNumPositions(); i++) {
+          if (joint.get_name().find(*joint_name_it) != std::string::npos) {
+            for (int i = 0; i < joint.get_num_positions(); i++) {
               ret.push_back(body.get_position_start_index() + i);
             }
             break;
@@ -157,7 +157,7 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
+class DRAKE_EXPORT QPLocomotionPlan {
  private:
   RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;

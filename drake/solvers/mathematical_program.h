@@ -11,7 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/drakeOptimization_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/solvers/Function.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -169,7 +169,7 @@ enum ProgramAttributes {
 typedef uint32_t AttributesSet;
 
 /// Interface used by implementations of individual solvers.
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
+class DRAKE_EXPORT MathematicalProgramSolverInterface {
  public:
   virtual ~MathematicalProgramSolverInterface() = default;
 
@@ -183,7 +183,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 };
 
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
+class DRAKE_EXPORT MathematicalProgram {
   /** Binding
    * @brief A binding on constraint type C is a mapping of the decision
    * variables onto the inputs of C.  This allows the constraint to operate
@@ -207,6 +207,19 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
     std::shared_ptr<C> const& constraint() const { return constraint_; }
 
     VariableList const& variable_list() const { return variable_list_; }
+
+    /**
+     * @return A Eigen::VectorXd for all the variables in the variable list.
+     */
+    Eigen::VectorXd VariableListToVectorXd() const {
+      size_t dim = 0;
+      Eigen::VectorXd X(GetNumElements());
+      for (auto& var : variable_list_) {
+        X.segment(dim, var.size()) = var.value();
+        dim += var.size();
+      }
+      return X;
+    }
 
     /** Covers()
      * @brief returns true iff the given @p index of the enclosing
@@ -310,6 +323,19 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
         0.1 * Eigen::VectorXd::Random(num_new_vars);
 
     return variable_views_.back();
+  }
+
+  /**
+   * @param name of the variable
+   * @return The DecisionVariableView of first variable that matches
+   * \param name.
+   */
+  const DecisionVariableView GetVariable(const std::string& name) const {
+    for (auto& var : variable_views_) {
+      if (name.compare(var.name()) == 0)
+        return var;
+    }
+    throw std::runtime_error("unable to find variable: " + name);
   }
 
   //    const DecisionVariable& AddIntegerVariables(size_t num_new_vars,
@@ -887,6 +913,21 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
 
   size_t num_vars() const { return num_vars_; }
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
+
+  /**
+   * Returns the solution in a flat Eigen::VectorXd. The caller needs to
+   * compute the solution first by calling Solve.
+   * @return a flat Eigen vector that represents the solution.
+   */
+  const Eigen::VectorXd GetSolutionVectorValues() const {
+    Eigen::VectorXd solution(num_vars_);
+    int start_index = 0;
+    for (auto& var : variables_) {
+      solution.segment(start_index, var.size()) = var.value();
+      start_index += var.size();
+    }
+    return solution;
+  }
 
  private:
   // note: use std::list instead of std::vector because realloc in std::vector

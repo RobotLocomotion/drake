@@ -1,12 +1,13 @@
 #pragma once
 
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -15,7 +16,6 @@
 
 namespace drake {
 namespace systems {
-
 
 /** @defgroup systems Modeling Dynamical Systems
  * @{
@@ -31,17 +31,41 @@ namespace systems {
  * @}
  */
 
+/// A description of a discrete-time event, which is passed from the simulator
+/// to the recipient System's HandleEvent method.
+template <typename T>
+struct DiscreteEvent {
+  enum ActionType {
+    kUnknownAction = 0,  // A default value that causes the handler to abort.
+    kPublishAction = 1,  // On a publish action, state does not change.
+    kUpdateAction = 2,   // On an update action, discrete state may change.
+  };
 
+  /// The system that receives the event.
+  const System<T>* recipient = nullptr;
+  /// The type of action the system must take in response to the event.
+  ActionType action = kUnknownAction;
 
-/// This information is returned along with the next update/sample/event time
-/// and is provided back to the System when that time is reached to ensure that
-/// the correct sampling actions are taken.
-struct SampleActions {
-  /// When the next discrete action is required.
-  double time{std::numeric_limits<double>::quiet_NaN()};
-  // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is
-  // supposed to happen at that time and providing O(1) access to the
-  // appropriate update/sampler/event handler method.
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kPublishAction. If nullptr, Publish will be used.
+  std::function<void(const Context<T>&)> do_publish = nullptr;
+
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
+  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update =
+      nullptr;
+};
+
+/// A token that identifies the next sample time at which a System must
+/// perform some actions, and the actions that must be performed.
+template <typename T>
+struct UpdateActions {
+  /// When the System next requires a discrete action. If the System is
+  /// not discrete, time should be set to infinity.
+  T time{std::numeric_limits<T>::quiet_NaN()};
+
+  /// The events that should occur when the sample time arrives.
+  std::vector<DiscreteEvent<T>> events;
 };
 
 /// A superclass template for systems that receive input, maintain state, and
@@ -136,17 +160,7 @@ class System {
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
-      // once abstract ports are implemented in 3164.
-      if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const InputPort* input_port = context.GetInputPort(i);
-        DRAKE_THROW_UNLESS(input_port != nullptr);
-        const BasicVector<T>* input_vector =
-            input_port->template get_vector_data<T>();
-        DRAKE_THROW_UNLESS(input_vector != nullptr);
-        DRAKE_THROW_UNLESS(input_vector->size() ==
-                           get_input_port(i).get_size());
-      }
+      context.VerifyInputPort(this->get_input_port(i));
     }
   }
 
@@ -169,19 +183,25 @@ class System {
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const = 0;
 
-  /// This method is invoked by a Simulator at designated meaningful points
-  /// along a trajectory, to allow the executing System a chance to take some
-  /// kind of output action. Typical actions may include terminal output,
-  /// visualization, logging, plotting, and sending messages. Other than
-  /// computational cost, publishing has no effect on the progress of a
-  /// simulation (but see note below).
+  /// Generates side-effect outputs such as terminal output, visualization,
+  /// logging, plotting, and network messages. Other than computational cost,
+  /// publishing has no effect on the progress of a simulation.
+  /// Dispatches to DoPublish.
   ///
-  /// By default Publish() will be called at the start of each continuous
+  /// This method is invoked by the Simulator at the start of each continuous
   /// integration step, after discrete variables have been updated to the values
-  /// they will hold throughout the step. However, a Simulator may allow control
-  /// over the publication rate. Publish() will always be called at the start of
-  /// the first step of a simulation (after initialization) and after the final
-  /// simulation step (after a final update to discrete variables).
+  /// they will hold throughout the step. It will always be called at the start
+  /// of the first step of a simulation (after initialization) and after the
+  /// final simulation step (after a final update to discrete variables).
+  void Publish(const Context<T>& context) const {
+    DiscreteEvent<T> event;
+    event.action = DiscreteEvent<T>::kPublishAction;
+    Publish(context, event);
+  }
+
+  /// Generates the particular side-effect outputs requested by @p event,
+  /// because the sample time requested by @p event has arrived. Dispatches to
+  /// DoPublish by default, or to `event.do_publish` if provided.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -189,37 +209,44 @@ class System {
   /// so that a step begins exactly at the next publication time. In the latter
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
-  // TODO(sherm1) Provide sample rate option for Publish().
-  void Publish(const Context<T>& context) const {
+  void Publish(const Context<T>& context, const DiscreteEvent<T>& event) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DoPublish(context);
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kPublishAction);
+    if (event.do_publish == nullptr) {
+      DoPublish(context);
+    } else {
+      event.do_publish(context);
+    }
   }
 
-  /// This method is called to perform discrete updates to the Context, with
-  /// the particular actions to take supplied in `actions`.
-  // TODO(sherm1) Per great suggestion from David German in #3202, this method
-  // should be modified to take a const context and provide a non-const
-  // reference to only the part that is allowed to change. This will likely
-  // require splitting into several APIs since different sample/update/event
-  // actions permit different modifications.
-  void Update(Context<T>* context, const SampleActions& actions) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(*context));
-    DoUpdate(context, actions);
+  /// This method is called to update discrete variables in the @p context
+  /// because the given @p event has arrived.  Dispatches to
+  /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
+  void EvalDifferenceUpdates(const Context<T>& context,
+                             const DiscreteEvent<T>& event,
+                             DifferenceState<T>* difference_state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
+    if (event.do_update == nullptr) {
+      DoEvalDifferenceUpdates(context, difference_state);
+    } else {
+      event.do_update(context, difference_state);
+    }
   }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
-  /// ought to be in the given SampleActions object, which must not be null.
+  /// ought to be in the given UpdateActions object, which must not be null.
   /// Upon reaching that time, the Simulator invokes either a publication
   /// action (with a const Context) or an update action (with a mutable
-  /// Context). The SampleAction object is retained and returned to the System
+  /// Context). The UpdateAction object is retained and returned to the System
   /// when it is time to take the action.
-  double CalcNextSampleTime(const Context<T>& context,
-                            SampleActions* actions) const {
-    // TODO(sherm1) Validate context (at least in Debug).
+  T CalcNextUpdateTime(const Context<T>& context,
+                       UpdateActions<T>* actions) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(actions != nullptr);
-    DoCalcNextSampleTime(context, actions);
+    DoCalcNextUpdateTime(context, actions);
     return actions->time;
   }
 
@@ -265,12 +292,22 @@ class System {
   }
 
   /// Returns a ContinuousState of the same size as the continuous_state
-  /// allocated in CreateDefaultContext. Solvers will provide this state as the
-  /// output argument to EvalTimeDerivatives.
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to EvalTimeDerivatives.
   ///
   /// By default, allocates no derivatives. Systems with continuous state
   /// variables should override.
   virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
+    return nullptr;
+  }
+
+  /// Returns a DifferenceState of the same dimensions as the difference_state
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to Update.
+  /// By default, allocates nothing. Systems with discrete state variables
+  /// should override.
+  virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+      const {
     return nullptr;
   }
 
@@ -383,8 +420,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
                                                   SamplingSpec sampling) {
     int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, type,
-                              size, sampling);
+    input_ports_.emplace_back(this, kInputPort, port_number, type, size,
+                              sampling);
     return input_ports_.back();
   }
 
@@ -409,8 +446,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
                                                    SamplingSpec sampling) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(
-        this, kOutputPort, port_number, type, size, sampling);
+    output_ports_.emplace_back(this, kOutputPort, port_number, type, size,
+                               sampling);
     return output_ports_.back();
   }
 
@@ -445,6 +482,28 @@ class System {
     return input_vector->get_value();
   }
 
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
+  }
+
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
@@ -468,22 +527,30 @@ class System {
   /// been validated before it is passed to you here.
   virtual void DoPublish(const Context<T>& context) const {}
 
-  /// Implement this method if your System has any difference variables xd,
-  /// mode variables, or sampled input or output ports. The `actions` argument
-  /// specifies what to do and may include difference variable updates, port
-  /// sampling, or execution of event handlers that may make arbitrary changes
-  /// to the Context.
-  virtual void DoUpdate(Context<T>* context,
-                        const SampleActions& actions) const {}
+  /// Updates the @p difference_state on sample events.
+  /// Override it, along with DoCalcNextUpdateTime, if your System has any
+  /// difference variables.
+  ///
+  /// @p difference_state is not a pointer into @p context. It is a separate
+  /// buffer, which the Simulator is responsible for writing back to the @p
+  /// context later.
+  virtual void DoEvalDifferenceUpdates(
+      const Context<T>& context, DifferenceState<T>* difference_state) const {}
 
-  /// Implement this method if your System has any discrete actions which must
+  /// Computes the next time at which this System must perform a discrete
+  /// action.
+  ///
+  /// Override this method if your System has any discrete actions which must
   /// interrupt the continuous simulation. You may assume that the context
-  /// has already been validated and the `actions` pointer is not null.
-  /// The default implemention returns with `actions` having a next sample
-  /// time of Infinity and no actions to take.
-  virtual void DoCalcNextSampleTime(const Context<T>& context,
-                                    SampleActions* actions) const {
-    actions->time = std::numeric_limits<double>::infinity();
+  /// has already been validated and the `actions` pointer is not nullptr.
+  ///
+  /// The default implementation returns with `actions` having a next sample
+  /// time of Infinity and no actions to take.  If you declare actions, you may
+  /// specify custom do_publish and do_update handlers.  If you do not,
+  /// DoPublish and DoEvalDifferenceUpdates will be used by default.
+  virtual void DoCalcNextUpdateTime(const Context<T>& context,
+                                    UpdateActions<T>* actions) const {
+    actions->time = std::numeric_limits<T>::infinity();
   }
 
   /// Causes an InputPort in the @p context to become up-to-date, delegating to

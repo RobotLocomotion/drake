@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
 #include "drake/systems/plants/shapes/Geometry.h"
@@ -459,7 +460,7 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
 // Tests the basic functionality of the RigidBodyTreeLcmPublisher.
 GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
-  ::lcm::LCM lcm;
+  drake::lcm::DrakeMockLcm lcm;
   RigidBodyTreeLcmPublisher dut(*tree, &lcm);
 
   EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
@@ -487,6 +488,8 @@ GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
   dut.Publish(*context.get());
 
   // Verifies that the correct messages were actually transmitted.
+  // TODO(liang.fok) Update the following tests to obtain the last published
+  // message from the mock LCM object.
   VerifyLoadMessage(dut.get_load_message());
   VerifyDrawMessage(dut.get_draw_message_bytes());
 }

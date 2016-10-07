@@ -5,7 +5,7 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/drakeRigidBodyPlant_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigid_body_plant/kinematics_results.h"
@@ -66,9 +66,9 @@ namespace systems {
 /// where `N(q)` is a transformation matrix only dependent on the positions.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
-/// @ingroup systems
+/// @ingroup rigid_body_systems
 template <typename T>
-class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.
@@ -121,10 +121,16 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
-  void SetZeroConfiguration(Context<T> *context) const {
+  void SetZeroConfiguration(Context<T>* context) const {
+    // Extract a pointer to continuous state from the context.
+    DRAKE_DEMAND(context != nullptr);
+    ContinuousState<T>* xc = context->get_mutable_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+
+    // Write the zero configuration into the continuous state.
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) = tree_->getZeroConfiguration();
-    context->get_mutable_continuous_state()->SetFromVector(x0);
+    xc->SetFromVector(x0);
   }
 
   // System<T> overrides.

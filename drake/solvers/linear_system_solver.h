@@ -1,13 +1,13 @@
 #pragma once
 
-#include "drake/drakeOptimization_export.h"
+#include "drake/common/drake_export.h"
 
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT LinearSystemSolver
+class DRAKE_EXPORT LinearSystemSolver
     : public MathematicalProgramSolverInterface {
  public:
   bool available() const override;

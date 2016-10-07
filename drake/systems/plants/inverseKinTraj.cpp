@@ -11,7 +11,7 @@ using drake::systems::plants::inverseKinTrajBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE, typename DerivedF>
-DRAKEIK_EXPORT void inverseKinTraj(
+DRAKE_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<DerivedA>& qdot0_seed, const MatrixBase<DerivedB>& q_seed,
     const MatrixBase<DerivedC>& q_nom, const int num_constraints,
@@ -29,7 +29,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
                         info, infeasible_constraint);
 }
 
-template DRAKEIK_EXPORT void inverseKinTraj(
+template DRAKE_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<Map<VectorXd>>& qdot0_seed,
     const MatrixBase<Map<MatrixXd>>& q_seed,
@@ -39,7 +39,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<Map<MatrixXd>>* qdot_sol,
     MatrixBase<Map<MatrixXd>>* qddot_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
-template DRAKEIK_EXPORT void inverseKinTraj(
+template DRAKE_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<VectorXd>& qdot0_seed, const MatrixBase<MatrixXd>& q_seed,
     const MatrixBase<MatrixXd>& q_nom, const int num_constraints,
@@ -48,7 +48,7 @@ template DRAKEIK_EXPORT void inverseKinTraj(
     MatrixBase<MatrixXd>* qdot_sol, MatrixBase<MatrixXd>* qddot_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
 
-DRAKEIK_EXPORT IKResults inverseKinTrajSimple(
+DRAKE_EXPORT IKResults inverseKinTrajSimple(
     RigidBodyTree* model,
     const Eigen::VectorXd& t,
     const Eigen::MatrixXd& q_seed,

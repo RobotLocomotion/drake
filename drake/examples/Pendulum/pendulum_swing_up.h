@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/drakePendulum_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 
@@ -18,7 +18,7 @@ namespace pendulum {
  * the DircolTrajectoryOptimization (and is the number of samples
  * between @p x0 and @p xG).
  */
-void DRAKEPENDULUM_EXPORT AddSwingUpTrajectoryParams(
+void DRAKE_EXPORT AddSwingUpTrajectoryParams(
     std::shared_ptr<Pendulum>,
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,

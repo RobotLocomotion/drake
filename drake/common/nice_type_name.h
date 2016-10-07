@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/drakeCommon_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 
@@ -55,7 +55,7 @@ class NiceTypeName {
   name as returned by `typeid(T).name()`, with the result hopefully suitable for
   meaningful display to a human. The result is compiler-dependent.
   @see Canonicalize() **/
-  DRAKECOMMON_EXPORT
+  DRAKE_EXPORT
   static std::string Demangle(const char* typeid_name);
 
   /** Given a compiler-dependent demangled type name string as returned by
@@ -64,7 +64,7 @@ class NiceTypeName {
   "class" and "struct" are removed. The NiceTypeName::Get<T>() method
   uses this function to produce a human-friendly type name that is the same on
   any platform. **/
-  DRAKECOMMON_EXPORT
+  DRAKE_EXPORT
   static std::string Canonicalize(const std::string& demangled_name);
 
  private:

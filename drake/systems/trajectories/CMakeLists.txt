@@ -16,21 +16,19 @@ find_package(Bullet)
 
 if(BULLET_FOUND AND MATLAB_FOUND)
   find_package(BLAS)
-  pods_find_pkg_config(snopt_c)
+  find_package(snopt_c)
 
   if(BLAS_FOUND AND snopt_c_FOUND)
     add_mex(replanFunnels_mex replanFunnels_mex.cpp)
-    pods_use_pkg_config_packages(replanFunnels_mex snopt_c)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
-    target_link_libraries(replanFunnels_mex drakeMexUtil
+    target_link_libraries(replanFunnels_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
     set_property(TARGET replanFunnels_mex APPEND_STRING PROPERTY
       LINK_FLAGS "${BLAS_LINKER_FLAGS}")
 
     add_mex(shiftFunnel_snopt_mex shiftFunnel_snopt_mex.cpp)
-    pods_use_pkg_config_packages(shiftFunnel_snopt_mex snopt_c)
     target_include_directories(shiftFunnel_snopt_mex PRIVATE ${BULLET_INCLUDE_DIRS})
-    target_link_libraries(shiftFunnel_snopt_mex drakeMexUtil
+    target_link_libraries(shiftFunnel_snopt_mex drakeMexUtil snopt_c
       ${BLAS_LIBRARIES} ${BULLET_LIBRARIES})
     set_property(TARGET shiftFunnel_snopt_mex APPEND_STRING PROPERTY
       LINK_FLAGS "${BLAS_LINKER_FLAGS}")

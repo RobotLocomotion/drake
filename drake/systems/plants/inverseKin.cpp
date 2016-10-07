@@ -9,7 +9,7 @@ using Eigen::VectorXd;
 using drake::systems::plants::inverseKinBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKin(
+DRAKE_EXPORT void inverseKin(
     RigidBodyTree *model,
     const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom,
@@ -24,7 +24,7 @@ DRAKEIK_EXPORT void inverseKin(
                     infeasible_constraint);
 }
 
-template DRAKEIK_EXPORT void inverseKin(
+template DRAKE_EXPORT void inverseKin(
     RigidBodyTree *model, const MatrixBase<VectorXd>& q_seed,
     const MatrixBase<VectorXd>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
@@ -32,7 +32,7 @@ template DRAKEIK_EXPORT void inverseKin(
     MatrixBase<VectorXd>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
 
-template DRAKEIK_EXPORT void inverseKin(
+template DRAKE_EXPORT void inverseKin(
     RigidBodyTree *model, const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,

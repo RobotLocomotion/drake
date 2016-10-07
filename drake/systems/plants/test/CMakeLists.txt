@@ -38,7 +38,7 @@ if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-pods_find_pkg_config(snopt_c)
+find_package(snopt_c)
 pods_find_pkg_config(ipopt)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
@@ -65,33 +65,27 @@ if(MATLAB_FOUND)
 endif()
 
 if(BULLET_FOUND)
-  add_executable(bullet_collision_zero_rad_sphere_test bullet_collision_zero_rad_sphere_test.cpp)
+  drake_add_cc_test(bullet_collision_zero_rad_sphere_test EXTENSION cpp)
   target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
-  drake_add_test(NAME bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zero_rad_sphere_test)
 endif()
 
 if(lcm_FOUND)
-  add_executable(testMassSpringDamper testMassSpringDamper.cpp)
-  target_link_libraries(testMassSpringDamper drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)
+  drake_add_cc_test(testMassSpringDamper EXTENSION cpp)
+  target_link_libraries(testMassSpringDamper drakeRBSystem)
 
   if(BULLET_FOUND AND bot2-core_FOUND)
-    add_executable(lidarTest lidarTest.cpp)
-    target_link_libraries(lidarTest drakeRBSystem drakeLCMTypes lcmtypes_bot2-core-cpp lcm ${GTEST_BOTH_LIBRARIES})
-    drake_add_test(NAME lidarTest COMMAND lidarTest)
+    drake_add_cc_test(lidarTest EXTENSION cpp)
+    target_link_libraries(lidarTest drakeRBSystem drakeLCMTypes lcmtypes_bot2-core-cpp lcm)
   endif()
 
-  add_executable(testAccelerometer testAccelerometer.cpp)
-  target_link_libraries(testAccelerometer drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME testAccelerometer COMMAND testAccelerometer)
+  drake_add_cc_test(NAME testAccelerometer EXTENSION cpp)
+  target_link_libraries(testAccelerometer drakeRBSystem)
 
-  add_executable(testGyroscope testGyroscope.cpp)
-  target_link_libraries(testGyroscope drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME testGyroscope COMMAND testGyroscope)
+  drake_add_cc_test(NAME testGyroscope EXTENSION cpp)
+  target_link_libraries(testGyroscope drakeRBSystem)
 
-  add_executable(testMagnetometer testMagnetometer.cpp)
-  target_link_libraries(testMagnetometer drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME testMagnetometer COMMAND testMagnetometer)
+  drake_add_cc_test(testMagnetometer EXTENSION cpp)
+  target_link_libraries(testMagnetometer drakeRBSystem)
 
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
   target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
@@ -105,15 +99,17 @@ if(lcm_FOUND)
   target_link_libraries(load_model_test drakeRBSystem)
 endif()
 
-add_executable(testXmlUtil testXmlUtil.cpp)
-target_link_libraries(testXmlUtil drakeXMLUtil ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME testXmlUtil COMMAND testXmlUtil)
+drake_add_cc_test(NAME testXmlUtil EXTENSION cpp)
+target_link_libraries(testXmlUtil drakeXMLUtil)
 
 drake_add_cc_test(urdf_parser_test)
 target_link_libraries(urdf_parser_test drakeRBM)
 
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBSystem)
+
+find_package(avl)
+find_package(xfoil)
 
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)
@@ -208,5 +204,13 @@ drake_add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj SIZ
 drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame)
 drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust)
 
+add_subdirectory(drake_joint)
 add_subdirectory(rigid_body_system)
 add_subdirectory(rigid_body_tree)
+
+# System2.0 Tests
+drake_add_cc_test(spring_mass_system_test)
+target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
+
+drake_add_cc_test(controlled_spring_mass_system_test)
+target_link_libraries(controlled_spring_mass_system_test drakeControlledSpringMassSystemPlant drakeSystemFramework)

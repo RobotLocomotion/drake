@@ -253,7 +253,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBodyCollisionElement element(
+  DrakeCollision::Element element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.

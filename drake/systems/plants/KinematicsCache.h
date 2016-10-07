@@ -101,9 +101,9 @@ class KinematicsCache {
     for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
-          body.has_parent_body() ? body.getJoint().getNumPositions() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
-          body.has_parent_body() ? body.getJoint().getNumVelocities() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(
                                   num_positions_joint, num_velocities_joint)});
       bodies.push_back(&body);
@@ -179,11 +179,11 @@ class KinematicsCache {
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() =
-            mat.middleCols(mat_col_start, joint.getNumVelocities()) *
+        ret.middleCols(ret_col_start, joint.get_num_positions()).noalias() =
+            mat.middleCols(mat_col_start, joint.get_num_velocities()) *
             element.qdot_to_v;
-        ret_col_start += joint.getNumPositions();
-        mat_col_start += joint.getNumVelocities();
+        ret_col_start += joint.get_num_positions();
+        mat_col_start += joint.get_num_velocities();
       }
     }
     return ret;
@@ -203,11 +203,11 @@ class KinematicsCache {
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() =
-            mat.middleCols(mat_col_start, joint.getNumPositions()) *
+        ret.middleCols(ret_col_start, joint.get_num_velocities()).noalias() =
+            mat.middleCols(mat_col_start, joint.get_num_positions()) *
             element.v_to_qdot;
-        ret_col_start += joint.getNumVelocities();
-        mat_col_start += joint.getNumPositions();
+        ret_col_start += joint.get_num_velocities();
+        mat_col_start += joint.get_num_positions();
       }
     }
     return ret;
@@ -271,13 +271,13 @@ class KinematicsCache {
   // used on initialization. The RigidBodyTree should have this value stored so
   // that KinematicsCache can request it when needed. See the KinematicsCache
   // constructor where this request is made.
-  // See TODO for getNumVelocities.
+  // See TODO for get_num_velocities.
   static int get_num_positions(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->has_parent_body()
-                 ? result + body_ptr->getJoint().getNumPositions()
+                 ? result + body_ptr->getJoint().get_num_positions()
                  : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
@@ -289,7 +289,7 @@ class KinematicsCache {
     auto add_num_velocities = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->has_parent_body()
-                 ? result + body_ptr->getJoint().getNumVelocities()
+                 ? result + body_ptr->getJoint().get_num_velocities()
                  : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);

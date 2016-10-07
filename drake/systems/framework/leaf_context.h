@@ -29,13 +29,6 @@ class LeafContext : public Context<T> {
   LeafContext() {}
   virtual ~LeafContext() {}
 
-  const InputPort* GetInputPort(int index) const override {
-    if (index < 0 || index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
-    return inputs_[index].get();
-  }
-
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
     if (index < 0 || index >= get_num_input_ports()) {
       throw std::out_of_range("Input port out of range.");
@@ -140,6 +133,13 @@ class LeafContext : public Context<T> {
     *context->get_mutable_step_info() = this->get_step_info();
     context->cache_ = this->cache_;
     return context;
+  }
+
+  const InputPort* GetInputPort(int index) const override {
+    if (index < 0 || index >= get_num_input_ports()) {
+      throw std::out_of_range("Input port out of range.");
+    }
+    return inputs_[index].get();
   }
 
  private:

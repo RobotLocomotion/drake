@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/drakeSplineGeneration_export.h"
+#include "drake/common/drake_export.h"
 
-class DRAKESPLINEGENERATION_EXPORT ContinuityConstraint {
+class DRAKE_EXPORT ContinuityConstraint {
  public:
   ContinuityConstraint(int first_spline_index, int second_spline_index,
                        int derivative_order);

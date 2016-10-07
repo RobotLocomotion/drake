@@ -15,13 +15,16 @@ namespace solvers {
 /**
  * A constraint is a function + lower and upper bounds.
  *
+ * Solver interfaces must acknowledge that these constraints are mutable.
+ * Parameters can change after the constraint is constructed and before the
+ * call to Solve().
+ *
  * Some thoughts:
  * It should support evaluating the constraint, adding it to an optimization
- *problem,
- * and have support for constraints that require slack variables (adding
- *additional decision variables to the problem).  There
+ * problem, and have support for constraints that require slack variables
+ * (adding additional decision variables to the problem).  There
  * should also be some notion of parameterized constraints:  e.g. the
- *acceleration constraints in the rigid body dynamics are constraints
+ * acceleration constraints in the rigid body dynamics are constraints
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
@@ -64,10 +67,35 @@ class Constraint {
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
   size_t num_constraints() const { return lower_bound_.size(); }
 
- protected:
-  void set_bounds(const Eigen::VectorXd& lower_bound,
-                  const Eigen::VectorXd& upper_bound) {
-    DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
+  template <typename Derived> void UpdateLowerBound(
+      const Eigen::MatrixBase<Derived>& new_lb) {
+    set_bounds(new_lb, upper_bound_);
+  }
+
+  template <typename Derived> void UpdateUpperBound(
+      const Eigen::MatrixBase<Derived>& new_ub) {
+    set_bounds(lower_bound_, new_ub);
+  }
+
+  inline void set_description(const std::string& description) {
+    description_ = description;
+  }
+  inline const std::string& get_description() const { return description_; }
+
+  /**
+   * Set the upper and lower bounds of the constraint.
+   * @param lower_bound. A num_constraint() x 1 vector.
+   * @param upper_bound. A num_constraint() x 1 vector.
+   */
+  template <typename DerivedL, typename DerivedU> void set_bounds(
+      const Eigen::MatrixBase<DerivedL>& lower_bound,
+      const Eigen::MatrixBase<DerivedU>& upper_bound) {
+    if (lower_bound.rows() != upper_bound.rows() ||
+        lower_bound.cols() != 1 ||
+        upper_bound.cols() != 1) {
+      throw std::runtime_error("New constraints have invalid dimensions.");
+    }
+
     lower_bound_ = lower_bound;
     upper_bound_ = upper_bound;
   }
@@ -75,6 +103,7 @@ class Constraint {
  private:
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+  std::string description_;
 };
 
 /**
@@ -83,7 +112,7 @@ class Constraint {
 class QuadraticConstraint : public Constraint {
  public:
   static const int kNumConstraints = 1;
-  // TODO(naveenoid) : ASSERT check on dimensions of Q and b.
+
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
@@ -91,7 +120,10 @@ class QuadraticConstraint : public Constraint {
       : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
-        b_(b) {}
+        b_(b) {
+    DRAKE_ASSERT(Q_.rows() == Q_.cols());
+    DRAKE_ASSERT(Q_.cols() == b_.rows());
+  }
 
   ~QuadraticConstraint() override {}
 
@@ -110,6 +142,28 @@ class QuadraticConstraint : public Constraint {
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
+
+  /**
+   * Updates the quadratic and linear term of the constraint. The new
+   * matrices need to have the same dimension as before.
+   * @param new_Q new quadratic term
+   * @param new_b new linear term
+   */
+  template <typename DerivedQ, typename DerivedB>
+    void UpdateQuadraticAndLinearTerms(const Eigen::MatrixBase<DerivedQ>& new_Q,
+      const Eigen::MatrixBase<DerivedB>& new_b) {
+    if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
+        new_b.cols() != 1) {
+      throw std::runtime_error("New constraints have invalid dimensions");
+    }
+
+    if (new_b.rows() != b_.rows()) {
+      throw std::runtime_error("Can't change the number of decision variables");
+    }
+
+    Q_ = new_Q;
+    b_ = new_b;
+  }
 
  private:
   Eigen::MatrixXd Q_;
@@ -148,7 +202,6 @@ class SemidefiniteConstraint : public Constraint {
     throw std::runtime_error(
         "Eval is not implemented in SemidefiniteConstraint.");
   };
-
 
   virtual const Eigen::MatrixXd& G() const { return G_; }
 
@@ -211,8 +264,7 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, TaylorVarXd>
-      taylor_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,
@@ -254,6 +306,33 @@ class LinearConstraint : public Constraint {
     return A_;
   }
 
+  /**
+   * Updates the linear term, upper and lower bounds in the linear constraint.
+   * The updated constraint is:
+   * new_lb <= new_A * x <= new_ub
+   * Note that the size of constraints (number of rows) can change, but the
+   * number of variables (number of cols) cannot.
+   * @param new_A new linear term
+   * @param new_lb new lower bound
+   * @param new_up new upper bound
+   */
+  template <typename DerivedA, typename DerivedL, typename DerivedU>
+    void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& new_A,
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
+    if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
+        new_lb.cols() != 1 || new_ub.cols() != 1) {
+      throw std::runtime_error("New constraints have invalid dimensions");
+    }
+
+    if (new_A.cols() != A_.cols()) {
+      throw std::runtime_error("Can't change the number of decision variables");
+    }
+
+    A_ = new_A;
+    set_bounds(new_lb, new_ub);
+  }
+
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 };
@@ -270,7 +349,7 @@ class LinearEqualityConstraint : public LinearConstraint {
 
   ~LinearEqualityConstraint() override {}
 
-  /* updateConstraint
+  /*
    * @brief change the parameters of the constraint (A and b), but not the
    *variable associations
    *
@@ -280,12 +359,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   template <typename DerivedA, typename DerivedB>
   void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                         const Eigen::MatrixBase<DerivedB>& beq) {
-    DRAKE_ASSERT(Aeq.rows() == beq.rows());
-    if (Aeq.cols() != A_.cols())
-      throw std::runtime_error("Can't change the number of decision variables");
-    A_.resize(Aeq.rows(), Eigen::NoChange);
-    A_ = Aeq;
-    set_bounds(beq, beq);
+    LinearConstraint::UpdateConstraint(Aeq, beq, beq);
   }
 };
 

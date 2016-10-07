@@ -9,7 +9,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -19,7 +19,6 @@
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_actuator.h"
-#include "drake/systems/plants/rigid_body_collision_element.h"
 #include "drake/systems/plants/rigid_body_loop.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -65,7 +64,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
  */
-class DRAKERBM_EXPORT RigidBodyTree {
+class DRAKE_EXPORT RigidBodyTree {
  public:
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
@@ -142,6 +141,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // This method is not thread safe!
   int add_model_instance();
 
+  // This method is not thread safe.
+  int get_next_clique_id() { return next_available_clique_++; }
+
   /**
    * Returns the number of model instances in the tree.
    */
@@ -181,9 +183,40 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::VectorXd getRandomConfiguration(
       std::default_random_engine& generator) const;
 
-  // akin to the coordinateframe names in matlab
+  /**
+   * Returns the name of the position state at index @p position_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] position_num An index value between zero and
+   * number_of_positions().
+   *
+   * @return The name of the position value at index @p position_num.
+   */
+  std::string get_position_name(int position_num) const;
+
+  /**
+   * Returns the name of the velocity state at index @p velocity_num
+   * within this `RigidBodyTree`'s state vector.
+   *
+   * @param[in] velocity_num An index value between number_of_positions() and
+   * number_of_veocities().
+   *
+   * @return The name of the velocity value at index @p velocity_num.
+   */
+  std::string get_velocity_name(int velocity_num) const;
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_position_name.")
+#endif
   std::string getPositionName(int position_num) const;
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_velocity_name.")
+#endif
   std::string getVelocityName(int velocity_num) const;
+
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
@@ -527,7 +560,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBodyCollisionElement& element, RigidBody& body,
+      const DrakeCollision::Element& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
@@ -891,8 +924,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
       RigidBody& body = *bodies[*it];
-      int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions()
-                                         : body.getJoint().getNumVelocities();
+      int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
+                                         : body.getJoint().get_num_velocities();
       int col_start =
           in_terms_of_qdot ? body.get_position_start_index() :
               body.get_velocity_start_index();
@@ -906,7 +939,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * A toString method for this class.
    */
-  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                   const RigidBodyTree&);
 
   /**
@@ -918,8 +951,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * RigidBodyTree::body.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
+   * @return A bare, unowned pointer to the @p body.
    */
-  void add_rigid_body(std::unique_ptr<RigidBody> body);
+  RigidBody* add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
@@ -1008,6 +1042,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // See RigidBodyTree::compile
   void SortTree();
 
+  // Defines a number of collision cliques to be used by DrakeCollision::Model.
+  // Collision cliques are defined so that:
+  // - There is one clique per RigidBody: and so CollisionElement's attached to
+  // a RigidBody do not collide.
+  // - There is one clique per pair of RigidBodies that are not meant to
+  // collide. These are determined according to the policy provided by
+  // RigidBody::CanCollideWith.
+  //
+  // Collision cliques provide a simple mechanism to omit pairs of collision
+  // elements from collision tests. The collision element pair (A, B) will not
+  // be tested for collision if A and B belong to the same clique.
+  // This particular method implements a default heuristics to create cliques
+  // for a RigidBodyTree which are in accordance to the policy implemented by
+  // RigidBody::CanCollideWith().
+  //
+  // @see RigidBody::CanCollideWith.
+  void CreateCollisionCliques();
+
   // collision_model maintains a collection of the collision geometry in the
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
@@ -1019,7 +1071,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKERBM_EXPORT on windows (due
+  // The following was required for building w/ DRAKE_EXPORT on windows (due
   // to the unique_ptrs).  See
   // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:
@@ -1028,4 +1080,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
   bool initialized_{false};
+
+  int next_available_clique_ = 0;
 };

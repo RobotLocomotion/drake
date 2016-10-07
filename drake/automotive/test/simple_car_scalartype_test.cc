@@ -5,7 +5,10 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_assert.h"
+#include "drake/common/number_traits.h"
+#include "drake/common/drake_export.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace {
 /// An expression of the minimal ScalarType (MST) concept for SimpleCar.
@@ -30,10 +33,20 @@ MST tan(const MST&) { return MST{}; }
 }  // namespace
 
 namespace drake {
+
+// Override the is_numeric trait, since there are no rounding operations
+// on MST.
+template<> struct DRAKE_EXPORT is_numeric<MST> {
+  static constexpr bool value = false;
+};
+
 namespace automotive {
-template class DRAKEAUTOMOTIVE_EXPORT SimpleCar<MST>;
+
+template class DRAKE_EXPORT SimpleCar<MST>;
+
 namespace {
 
+// Tests that we can compile a SimpleCar based on the MST.
 GTEST_TEST(SimpleCarScalarTypeTest, CompileTest) {
   const SimpleCar<MST> dut;
 

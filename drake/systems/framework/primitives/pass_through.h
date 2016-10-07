@@ -32,7 +32,7 @@ namespace systems {
 /// - AutoDiffXd
 ///
 /// They are already available to link against in libdrakeSystemFramework.
-/// @ingroup systems
+/// @ingroup primitive_systems
 
 template <typename T>
 class PassThrough : public LeafSystem<T> {

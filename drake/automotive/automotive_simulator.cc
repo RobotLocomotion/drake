@@ -1,7 +1,5 @@
 #include "drake/automotive/automotive_simulator.h"
 
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
@@ -11,14 +9,15 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "drake/drakeAutomotive_export.h"
+
+#include "drake/common/drake_export.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
@@ -28,13 +27,23 @@ namespace drake {
 namespace automotive {
 
 template <typename T>
-AutomotiveSimulator<T>::AutomotiveSimulator() {}
+AutomotiveSimulator<T>::AutomotiveSimulator()
+    : AutomotiveSimulator(std::make_unique<lcm::DrakeLcm>()) {}
 
 template <typename T>
-AutomotiveSimulator<T>::~AutomotiveSimulator() {}
+AutomotiveSimulator<T>::AutomotiveSimulator(
+    std::unique_ptr<lcm::DrakeLcmInterface> lcm) :
+    lcm_(std::move(lcm)) {}
 
 template <typename T>
-lcm::LCM* AutomotiveSimulator<T>::get_lcm() {
+AutomotiveSimulator<T>::~AutomotiveSimulator() {
+  // Forces the LCM instance to be destroyed before any of the subscribers are
+  // destroyed.
+  lcm_.reset();
+}
+
+template <typename T>
+lcm::DrakeLcmInterface* AutomotiveSimulator<T>::get_lcm() {
   return lcm_.get();
 }
 
@@ -228,8 +237,7 @@ void AutomotiveSimulator<T>::Start() {
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
-  lcm_receive_thread_ =
-      std::make_unique<systems::lcm::LcmReceiveThread>(lcm_.get());
+  lcm_->StartReceiveThread();
 
   simulator_->Initialize();
 
@@ -249,7 +257,7 @@ int AutomotiveSimulator<T>::allocate_vehicle_number() {
   return next_vehicle_number_++;
 }
 
-template class DRAKEAUTOMOTIVE_EXPORT AutomotiveSimulator<double>;
+template class DRAKE_EXPORT AutomotiveSimulator<double>;
 
 }  // namespace automotive
 }  // namespace drake

@@ -446,7 +446,7 @@ void ParseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* tree,
     throw runtime_error("ERROR: Link " + body->get_name() +
                         " has a collision element without geometry");
 
-  RigidBodyCollisionElement element(T_element_to_link, body);
+  DrakeCollision::Element element(T_element_to_link, body);
   // By default all collision elements added to the world from an URDF file are
   // flagged as static.
   // We would also like to flag as static bodies connected to the world with a
@@ -785,7 +785,7 @@ void ParseTransmission(RigidBodyTree* tree, XMLElement* transmission_node,
   int body_index = tree->FindIndexOfChildBodyOfJoint(joint_name,
                                                      model_instance_id);
 
-  if (tree->bodies[body_index]->getJoint().getNumPositions() == 0) {
+  if (tree->bodies[body_index]->getJoint().get_num_positions() == 0) {
     cerr << "RigidBodyTreeURDF.cpp: ParseTransmission: WARNING: Skipping "
             "transmission since it's attached to a fixed joint \""
          << joint_name << "\"." << endl;

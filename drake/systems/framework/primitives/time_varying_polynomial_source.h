@@ -21,6 +21,7 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+/// @ingroup primitive_systems
 template <typename T>
 class TimeVaryingPolynomialSource : public LeafSystem<T> {
  public:

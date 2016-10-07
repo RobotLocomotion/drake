@@ -24,13 +24,11 @@ option(WITH_GFLAGS "required c++ command-line library.  only disable if you have
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
-option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
-if(WIN32)
-  option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
-else()
+if(NOT WIN32)
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+  option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
@@ -112,7 +110,6 @@ drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
-drake_add_external(snopt CMAKE)
 drake_add_external(spdlog PUBLIC CMAKE)
 drake_add_external(swigmake PUBLIC CMAKE)
 drake_add_external(yalmip PUBLIC CMAKE)
@@ -198,6 +195,23 @@ drake_add_external(nlopt PUBLIC CMAKE
 drake_add_external(sedumi CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
 
+# snopt
+if(NOT DISABLE_MATLAB AND matlab)
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=ON
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+else()
+  set(SNOPT_EXTRA_CMAKE_ARGS
+    -DBUILD_SNOPT_C_MEX=OFF)
+endif()
+
+drake_add_external(snopt CMAKE
+  CMAKE_ARGS
+    -DBUILD_SNOPT_CPP=OFF
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    ${SNOPT_EXTRA_CMAKE_ARGS})
+
 # spotless
 drake_add_external(spotless PUBLIC CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
@@ -215,14 +229,22 @@ drake_add_external(swig_matlab PUBLIC
   INSTALL_COMMAND ${MAKE_COMMAND} install)
 
 # textbook
-drake_add_external(textbook PUBLIC
+if(NOT DISABLE_MATLAB AND matlab)
+  set(TEXTBOOK_CMAKE_ARGS
+    -DBUILD_TESTING=ON
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+else()
+  set(TEXTBOOK_CMAKE_ARGS -DBUILD_TESTING=OFF)
+endif()
+
+drake_add_external(textbook PUBLIC CMAKE
+  CMAKE_ARGS ${TEXTBOOK_CMAKE_ARGS}
+  INSTALL_COMMAND :
   REQUIRES PythonInterp
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook
-  BUILD_COMMAND \@PYTHON_EXECUTABLE\@
-    extract_examples.py underactuated.html ./examples)
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
 # yaml_cpp
-if(APPLE OR WIN32)
+if(WIN32)
   drake_add_external(yaml_cpp PUBLIC CMAKE
     CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF)
 else()
@@ -231,35 +253,19 @@ else()
 endif()
 
 # iris
-drake_add_external(iris PUBLIC
-  CONFIGURE_COMMAND ${MAKE_COMMAND} configure-cdd-only
+drake_add_external(iris PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DIRIS_WITH_CDD=ON
+    -DIRIS_WITH_EIGEN=OFF
+    -DIRIS_WITH_MOSEK=OFF
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
   DEPENDS eigen mosek)
 
-# lcm (and gtk)
-if(WIN32)
-  # On Windows, always build LCM in Release mode for compatibility with the
-  # Python libraries.
-  if(CMAKE_CONFIGURATION_TYPES)
-    # If using a multi-configuration generator, replace the default build
-    # commands to force the Release configuration to be built.
-    set(lcm_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Release)
-    set(lcm_FORCE_RELEASE_BUILD_COMMANDS
-      BUILD_COMMAND ${lcm_BUILD_COMMAND}
-      INSTALL_COMMAND ${lcm_BUILD_COMMAND} --target install)
-  endif()
 
-  drake_add_external(gtk PUBLIC CMAKE)
-  drake_add_external(lcm PUBLIC CMAKE
-    ${lcm_FORCE_RELEASE_BUILD_COMMANDS}
-    CMAKE_ARGS
-      -DBUILD_SHARED_LIBS=ON # Because LCM has no ABI decoration
-      -DCMAKE_BUILD_TYPE=Release # See above
-      -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3
-    DEPENDS gtk)
-else()
-  drake_add_external(lcm PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+# lcm
+drake_add_external(lcm PUBLIC CMAKE
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
 
 # libbot
 drake_add_external(libbot PUBLIC CMAKE
@@ -330,7 +336,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     gloptipoly
     google_styleguide
     googletest
-    gtk
     gurobi
     ipopt
     iris

@@ -146,8 +146,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     for (auto const& b : tree->bodies) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
-      if (joint.getNumPositions() == 1 &&
-          joint.getNumVelocities() ==
+      if (joint.get_num_positions() == 1 &&
+          joint.get_num_velocities() ==
               1) {  // taking advantage of only single-axis joints having joint
                     // limits makes things easier/faster here
         double qmin = joint.getJointLimitMin()(0),
@@ -296,7 +296,7 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+DRAKE_EXPORT RigidBodySystem::StateVector<double> getInitialState(
     const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->get_num_positions() +
               sys.tree->get_num_velocities());
@@ -735,7 +735,7 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
     const ModelInstanceIdTable& model_instance_id_table) {
 
   if (!node->Attribute("name"))
-    throw runtime_error("Error: your robot must have a name attribute");
+    throw runtime_error("Error: the model must have a name attribute");
   string model_name = node->Attribute("name");
 
   // Obtains the model instance ID. Throws an exception if the model instance ID

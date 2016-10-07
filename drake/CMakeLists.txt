@@ -46,10 +46,8 @@ function(drake_install_headers)
   install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
-# set up automatic export header generation
-# export headers will be installed to build/include/drake, but are created in ${PROJECT_BINARY_DIR}/exports/drake
-# This means that export headers can be included as drake/bla_export.h
-include(GenerateExportHeader)
+# A compatibility shim function that declares a library, with a built-in
+# default of SHARED.
 function(add_library_with_exports)
   set(options STATIC)
   set(oneValueArgs LIB_NAME)
@@ -58,21 +56,12 @@ function(add_library_with_exports)
 
   if(parsed_args_STATIC)
     add_library(${parsed_args_LIB_NAME} STATIC ${parsed_args_SOURCE_FILES})
-    # Add a public preprocessor macro definition for LIB_NAME_STATIC_DEFINE,
-    # which suppresses platform-specific shared library export declarations
-    # in this target and all targets that depend on it.
-    string(TOUPPER ${parsed_args_LIB_NAME} capitalized_lib_name)
-    set(static_define ${capitalized_lib_name}_STATIC_DEFINE)
-    target_compile_definitions(${parsed_args_LIB_NAME} PUBLIC ${static_define})
   else()
     add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
   endif()
-
-  set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
-  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_abs_path})
-  install(FILES ${exports_abs_path} DESTINATION include/drake/)
 endfunction()
-include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
+
+# This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 if(NOT APPLE)
@@ -141,8 +130,13 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
     mex_setup()
 
     # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test
-    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
+    # matlab_add_unit_test and matlab_add_mex
+    find_package(Matlab REQUIRED
+      COMPONENTS
+        MAIN_PROGRAM
+        MEX_COMPILER
+        MX_LIBRARY
+        SIMULINK)
   endif()
 endif()
 
@@ -230,6 +224,7 @@ endif()
 include_directories(thirdParty/bsd/spruce/include)
 
 add_subdirectory(common)
+add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)

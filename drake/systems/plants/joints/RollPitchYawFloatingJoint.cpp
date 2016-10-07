@@ -10,7 +10,7 @@ using Eigen::Map;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-std::string RollPitchYawFloatingJoint::getPositionName(int index) const {
+std::string RollPitchYawFloatingJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
       return name + "_x";
@@ -30,7 +30,7 @@ std::string RollPitchYawFloatingJoint::getPositionName(int index) const {
 }
 
 VectorXd RollPitchYawFloatingJoint::zeroConfiguration() const {
-  return VectorXd::Zero(getNumPositions());
+  return VectorXd::Zero(get_num_positions());
 }
 
 VectorXd RollPitchYawFloatingJoint::randomConfiguration(
@@ -46,4 +46,10 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   Map<Vector3d> rpy(&q[3]);
   rpy = drake::math::UniformlyRandomRPY(generator);
   return q;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+std::string RollPitchYawFloatingJoint::getPositionName(int index)
+    const {
+  return get_position_name(index);
 }

@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 
 namespace {
 /// An expression of the minimal ScalarType (MST) concept for
@@ -32,8 +32,15 @@ MST operator*(double, const MST&) { return MST{}; }
 }  // namespace
 
 namespace drake {
+
+// Override the is_numeric trait, since there are no rounding operations
+// on the minimal ScalarType declared above.
+template<> struct DRAKE_EXPORT is_numeric<MST> {
+  static constexpr bool value = false;
+};
+
 namespace automotive {
-template class DRAKEAUTOMOTIVE_EXPORT IdmWithTrajectoryAgent<MST>;
+template class DRAKE_EXPORT IdmWithTrajectoryAgent<MST>;
 namespace {
 
 GTEST_TEST(IdmWithTrajectoryAgentScalarTypeTest, CompileTest) {

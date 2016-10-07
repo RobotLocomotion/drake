@@ -1,13 +1,10 @@
 if(lcm_FOUND)
-  add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem drakeLCMSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
+  drake_add_cc_test(pendulum_urdf_dynamics_test)
+  target_link_libraries(pendulum_urdf_dynamics_test drakeRBSystem drakeLCMSystem)
 
-  add_executable(pendulum_dynamic_constraint_test pendulum_dynamic_constraint_test.cc)
+  drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test
-    drakeDynamicConstraint drakeLCMSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME pendulum_dynamic_constraint_test
-    COMMAND pendulum_dynamic_constraint_test)
+    drakePendulumSystem drakeDynamicConstraint)
 
   add_executable(pendulum_trajectory_optimization_test
     pendulum_trajectory_optimization_test.cc)
@@ -16,6 +13,8 @@ if(lcm_FOUND)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
   find_package(NLopt)
+  find_package(snopt_c)
+
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
     drake_add_test(NAME pendulum_trajectory_optimization_test
       COMMAND pendulum_trajectory_optimization_test)
