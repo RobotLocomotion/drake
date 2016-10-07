@@ -1,4 +1,5 @@
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
@@ -54,8 +55,8 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   val_sim->PerturbVelocity("torsoPitch", 0.1, val_sim_context);
 
   // Simulation.
-  simulator.request_initial_step_size_attempt(4e-3);
-  simulator.set_integrator_type(IntegratorType::ExplicitEuler);
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
+      *diagram, 4e-3, simulator.get_mutable_context());
   simulator.Initialize();
   simulator.StepTo(2.0);
 
