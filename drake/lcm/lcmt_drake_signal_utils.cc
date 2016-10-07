@@ -1,7 +1,5 @@
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 
-#include <iostream>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 
