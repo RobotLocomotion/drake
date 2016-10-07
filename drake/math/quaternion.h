@@ -11,16 +11,12 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
-namespace drake {
-namespace math {
-
 #ifdef DRAKE_ASSERT_IS_ARMED
-// Forward prototype for rpy2rotmat (which is defined in roll_pitch_yaw.h").
-template <typename Derived>
-Matrix3<typename Derived::Scalar> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy);
+#include "drake/math/roll_pitch_yaw_independent_quaternion.h"
 #endif
 
+namespace drake {
+namespace math {
 template <typename Derived>
 Vector4<typename Derived::Scalar> quatConjugate(
     const Eigen::MatrixBase<Derived>& q) {
@@ -296,15 +292,16 @@ Vector3<typename Derived::Scalar> quat2rpy(
   if (theta3 > M_PI) theta3 = theta3 - 2 * M_PI;
   if (theta3 < -M_PI) theta3 = theta3 + 2 * M_PI;
 
-  Vector3<Scalar> roll_pitch_yaw_angles(theta3, theta2, theta1);
+  // Returns in roll-pitch-yaw order.
+  Vector3<Scalar> bodyZYX_angles(theta3, theta2, theta1);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   const Matrix3<Scalar> rotmat_quaternion = quat2rotmat(quaternion);
-  const Matrix3<Scalar> rotmat_rollPitchYaw = rpy2rotmat(roll_pitch_yaw_angles);
-  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_rollPitchYaw, 1.0E-11));
+  const Matrix3<Scalar> rotmat_bodyZYX = rpy2rotmat(bodyZYX_angles);
+  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_bodyZYX, 1.0E-11));
 #endif
 
-  return roll_pitch_yaw_angles;
+  return bodyZYX_angles;
 }
 
 // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
