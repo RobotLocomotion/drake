@@ -10,7 +10,7 @@ namespace lcm {
 bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
                                     const lcmt_drake_signal& expected_message) {
   bool result = true;
-  int n = actual_message.dim;
+  const int n = actual_message.dim;
 
   if (n != expected_message.dim) {
     drake::log()->trace(
