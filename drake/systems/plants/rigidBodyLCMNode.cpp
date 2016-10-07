@@ -49,7 +49,7 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-int do_main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("[options] full_path_to_urdf_or_sdf_file");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (argc < 2) {
@@ -118,5 +118,5 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::systems::plants::do_main(argc, argv);
+  return drake::systems::plants::main(argc, argv);
 }

@@ -131,7 +131,7 @@ class PriusToGolfCartSensorConverter {
   ::ros::Subscriber sub_rear_right_laser;
 };
 
-int DoMain(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   // Defines the frequency in Hz of publishing golfcart transforms.
   const double kCycleFrequency = 100.0;
 
@@ -241,5 +241,5 @@ int DoMain(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::ros::automotive::DoMain(argc, argv);
+  return drake::ros::automotive::main(argc, argv);
 }
