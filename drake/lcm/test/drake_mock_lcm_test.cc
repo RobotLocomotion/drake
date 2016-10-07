@@ -88,7 +88,7 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
     message_bytes[i] = i;
   }
 
-  dut.InduceSubsciberCallback(kChannelName, &message_bytes[0], kMessageSize);
+  dut.InduceSubscriberCallback(kChannelName, &message_bytes[0], kMessageSize);
 
   EXPECT_EQ(kChannelName, handler.get_channel());
   EXPECT_EQ(kMessageSize, handler.get_buffer_size());
@@ -103,7 +103,7 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
   std::vector<uint8_t> message_bytes2;
   message_bytes2.push_back(128);
 
-  dut.InduceSubsciberCallback("foo_channel", &message_bytes2[0],
+  dut.InduceSubscriberCallback("foo_channel", &message_bytes2[0],
       message_bytes2.size());
 
   // Verifies that the original message is returned, not the one that was

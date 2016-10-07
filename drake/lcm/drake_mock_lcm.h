@@ -54,8 +54,8 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
 
   /**
    * Fakes a callback. This will only work if StartReceivedThread() was already
-   * called. The callback is executed by the same thread as the one calling this
-   * method.
+   * called, otherwise this method will do nothing. The callback is executed by
+   * the same thread as the one calling this method.
    *
    * @param[in] channel The channel on which to publish the message.
    *
@@ -64,7 +64,7 @@ class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    */
-  void InduceSubsciberCallback(const std::string& channel, const void* data,
+  void InduceSubscriberCallback(const std::string& channel, const void* data,
                                int data_size);
 
  private:

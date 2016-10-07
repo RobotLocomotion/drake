@@ -37,7 +37,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   EXPECT_EQ(message.encode(&buffer[0], 0, message.getEncodedSize()),
             message.getEncodedSize());
 
-  lcm->InduceSubsciberCallback(dut->get_channel_name(), &buffer[0],
+  lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
       message.getEncodedSize());
 
   dut->EvalOutput(*context.get(), output.get());

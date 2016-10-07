@@ -10,45 +10,38 @@ namespace lcm {
 bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
                                     const lcmt_drake_signal& expected_message) {
   bool result = true;
+  int n = actual_message.dim;
 
-  if (actual_message.dim != expected_message.dim) {
-    drake::log()->warn(
-        "CompareLcmtDrakeSignalMessages: Dimensions do "
-        "not match ({} vs. {}).",
-        actual_message.dim, expected_message.dim);
+  if (n != expected_message.dim) {
+    drake::log()->trace(
+        "CompareLcmtDrakeSignalMessages: Dimensions mismatch ({} vs. {}).",
+        n, expected_message.dim);
     result = false;
   }
 
   if (actual_message.timestamp != expected_message.timestamp) {
-    drake::log()->warn(
-        "CompareLcmtDrakeSignalMessages: timestamps do "
-        "not match ({} vs. {}).",
+    drake::log()->trace(
+        "CompareLcmtDrakeSignalMessages: timestamps mismatch ({} vs. {}).",
         actual_message.timestamp, expected_message.timestamp);
     result = false;
   }
 
-  DRAKE_DEMAND(actual_message.dim ==
-               static_cast<int>(actual_message.val.size()));
-  DRAKE_DEMAND(actual_message.dim ==
-               static_cast<int>(actual_message.coord.size()));
+  DRAKE_DEMAND(n == static_cast<int>(actual_message.val.size()));
+  DRAKE_DEMAND(n == static_cast<int>(actual_message.coord.size()));
 
-  DRAKE_DEMAND(expected_message.dim ==
-               static_cast<int>(expected_message.val.size()));
-  DRAKE_DEMAND(expected_message.dim ==
-               static_cast<int>(expected_message.coord.size()));
+  DRAKE_DEMAND(n == static_cast<int>(expected_message.val.size()));
+  DRAKE_DEMAND(n == static_cast<int>(expected_message.coord.size()));
 
-  for (int i = 0; i < expected_message.dim && result; ++i) {
+  for (int i = 0; i < n && result; ++i) {
     if (actual_message.val[i] != expected_message.val[i]) {
-      drake::log()->warn(
-          "CompareLcmtDrakeSignalMessages: val {} does "
-          "not match ({} vs. {}).",
+      drake::log()->trace(
+          "CompareLcmtDrakeSignalMessages: val {} mismatch ({} vs. {}).",
           i, actual_message.val[i], expected_message.val[i]);
       result = false;
     }
     if (actual_message.coord[i] != expected_message.coord[i]) {
-      drake::log()->warn(
-          "CompareLcmtDrakeSignalMessages: coord {} does "
-          "not match ({} vs. {}).",
+      drake::log()->trace(
+          "CompareLcmtDrakeSignalMessages: coord {} mismatch ({} vs. {}).",
           i, actual_message.coord[i], expected_message.coord[i]);
       result = false;
     }
