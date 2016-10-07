@@ -9,7 +9,7 @@ const int kPortIndex = 0;
 }  // namespace
 
 RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
-    const RigidBodyTree& tree, ::lcm::LCM* lcm) :
+    const RigidBodyTree& tree, drake::lcm::DrakeLcmInterface* lcm) :
     lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
   set_name("rigid_body_tree_visualizer_lcm");
@@ -51,12 +51,18 @@ void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
       context.get_time(), *input_vector, &draw_message_bytes_);
 
   // Publishes onto the specified LCM channel.
-  lcm_->publish("DRAKE_VIEWER_DRAW", draw_message_bytes_.data(),
+  lcm_->Publish("DRAKE_VIEWER_DRAW", draw_message_bytes_.data(),
       draw_message_bytes_.size());
 }
 
 void RigidBodyTreeLcmPublisher::PublishLoadRobot() const {
-  lcm_->publish("DRAKE_VIEWER_LOAD_ROBOT", &load_message_);
+  const int lcm_message_length = load_message_.getEncodedSize();
+  std::vector<uint8_t> lcm_message_bytes{};
+  lcm_message_bytes.resize(lcm_message_length);
+  load_message_.encode(lcm_message_bytes.data(), 0, lcm_message_length);
+
+  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
+      lcm_message_length);
   sent_load_robot_ = true;
 }
 

@@ -3,13 +3,11 @@
 #include <atomic>
 #include <thread>
 
-
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_export.h"
 
 namespace drake {
-namespace systems {
 namespace lcm {
 
 /**
@@ -58,5 +56,4 @@ class DRAKE_EXPORT LcmReceiveThread {
 };
 
 }  // namespace lcm
-}  // namespace systems
 }  // namespace drake

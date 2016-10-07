@@ -62,6 +62,7 @@ void LcmtDrakeSignalTranslator::Serialize(double time,
 
   for (int i = 0; i < message.dim; ++i) {
     message.val[i] = vector_base.GetAtIndex(i);
+    message.coord[i] = "";
   }
 
   // Serializes the LCM message into a vector of bytes.
