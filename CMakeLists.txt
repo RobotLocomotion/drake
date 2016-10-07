@@ -24,13 +24,11 @@ option(WITH_GFLAGS "required c++ command-line library.  only disable if you have
 option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
-option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
-if(WIN32)
-  option(WITH_GTK "precompiled gtk binaries/headers for Windows" ON)  # needed for lcm on windows
-else()
+if(NOT WIN32)
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+  option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
@@ -264,31 +262,10 @@ drake_add_external(iris PUBLIC CMAKE
     -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
   DEPENDS eigen mosek)
 
-# lcm (and gtk)
-if(WIN32)
-  # On Windows, always build LCM in Release mode for compatibility with the
-  # Python libraries.
-  if(CMAKE_CONFIGURATION_TYPES)
-    # If using a multi-configuration generator, replace the default build
-    # commands to force the Release configuration to be built.
-    set(lcm_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Release)
-    set(lcm_FORCE_RELEASE_BUILD_COMMANDS
-      BUILD_COMMAND ${lcm_BUILD_COMMAND}
-      INSTALL_COMMAND ${lcm_BUILD_COMMAND} --target install)
-  endif()
 
-  drake_add_external(gtk PUBLIC CMAKE)
-  drake_add_external(lcm PUBLIC CMAKE
-    ${lcm_FORCE_RELEASE_BUILD_COMMANDS}
-    CMAKE_ARGS
-      -DBUILD_SHARED_LIBS=ON # Because LCM has no ABI decoration
-      -DCMAKE_BUILD_TYPE=Release # See above
-      -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/externals/gtk/gtk3
-    DEPENDS gtk)
-else()
-  drake_add_external(lcm PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+# lcm
+drake_add_external(lcm PUBLIC CMAKE
+  CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
 
 # libbot
 drake_add_external(libbot PUBLIC CMAKE
@@ -359,7 +336,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     gloptipoly
     google_styleguide
     googletest
-    gtk
     gurobi
     ipopt
     iris
