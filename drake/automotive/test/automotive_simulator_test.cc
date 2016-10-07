@@ -67,7 +67,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_GT(joint_value.x(), 1.0);
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
-  // messages fields are checked.
+  // message's fields are checked.
   lcm::DrakeMockLcm* mock_lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(nullptr, mock_lcm);
