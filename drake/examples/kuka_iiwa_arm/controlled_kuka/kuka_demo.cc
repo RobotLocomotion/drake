@@ -349,11 +349,7 @@ int DoMain() {
   model.get_kuka_plant().set_state_vector(
       simulator.get_mutable_context(), desired_state);
 
-  simulator.request_initial_step_size_attempt(0.001);
   simulator.Initialize();
-
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-      systems::IntegratorType::RungeKutta2);
 
   // Simulate for 20 seconds.
   simulator.StepTo(20.0);

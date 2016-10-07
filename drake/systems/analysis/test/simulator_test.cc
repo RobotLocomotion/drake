@@ -1,14 +1,14 @@
 #include "drake/systems/analysis/simulator.h"
-
 #include <cmath>
 #include <complex>
 
 #include <unsupported/Eigen/AutoDiff>
 
-#include "gtest/gtest.h"
-
+#include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/plants/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "gtest/gtest.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
@@ -18,67 +18,45 @@ namespace drake {
 namespace systems {
 namespace {
 
-class MySpringMassSystem : public SpringMassSystem<double> {
- public:
-  // Pass through to SpringMassSystem, except add sample rate in samples/s.
-  MySpringMassSystem(double stiffness, double mass, double sample_rate)
-      : SpringMassSystem<double>(stiffness, mass, false /*no input force*/) {
-    this->DeclareUpdatePeriodSec(1.0 / sample_rate);
-  }
-
-  int get_publish_count() const { return publish_count_; }
-  int get_update_count() const { return update_count_; }
-
- protected:
-  // Returns an empty difference state so that updates are possible.
-  std::unique_ptr<DifferenceState<double>> AllocateDifferenceState()
-      const override {
-    return std::make_unique<DifferenceState<double>>();
-  }
-
- private:
-  // Publish t q u to standard output.
-  void DoPublish(const Context<double>& context) const override {
-    ++publish_count_;
-  }
-
-  void DoEvalDifferenceUpdates(
-      const Context<double>& context,
-      DifferenceState<double>* difference_state) const override {
-    ++update_count_;
-  }
-
-  mutable int publish_count_{0};
-  mutable int update_count_{0};
-};
-
 GTEST_TEST(SimulatorTest, MiscAPI) {
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  simulator.set_integrator_type(IntegratorType::ExplicitEuler);
-  simulator.set_accuracy(1e-6);
-  simulator.request_initial_step_size_attempt(1e-8);
+  // set the integrator default step size
+  const double DT = 1e-3;
 
+  // create a context
+  auto context = simulator.get_mutable_context();
+
+  // create the integrator
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
+
+  // initialize the simulator first
   simulator.Initialize();
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::ExplicitEuler);
-  EXPECT_EQ(simulator.get_accuracy_in_use(), 1e-6);
-  EXPECT_EQ(simulator.get_initial_step_size_attempt_in_use(), 1e-8);
-
-  EXPECT_EQ(simulator.get_ideal_next_step_size(), 1e-8);
 }
 
 GTEST_TEST(SimulatorTest, ContextAccess) {
-  MySpringMassSystem spring_mass(1., 1., 0.);
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // set the integrator default step size
+  const double DT = 1e-3;
+
+  // get the context
+  auto context = simulator.get_mutable_context();
+
+  // create the integrator
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
+
+  // initialize the simulator first
+  simulator.Initialize();
 
   simulator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(simulator.get_context().get_time(), 3.);
-
-  auto context = simulator.release_context();
+  simulator.release_context();
   EXPECT_TRUE(simulator.get_mutable_context() == nullptr);
-  EXPECT_EQ(context->get_time(), 3.);
 }
 
 // Try a purely continuous system with no sampling.
@@ -86,30 +64,32 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
-  MySpringMassSystem spring_mass(kSpring, kMass, 0.);
+  // set the integrator default step size
+  const double DT = 1e-3;
+
+  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  // Take all the defaults.
-  simulator.Initialize();
+  // get the context
+  auto context = simulator.get_mutable_context();
 
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::RungeKutta2);
+  // create the integrator
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
+                                                              context);
+
+  // set the integrator and initialize the simulator
+  simulator.Initialize();
 
   // Simulate for 1 second.
   simulator.StepTo(1.);
 
-  const auto& context = simulator.get_context();
-  EXPECT_EQ(context.get_time(), 1.);  // Should be exact.
-
+  EXPECT_NEAR(context->get_time(), 1., 1e-8);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_samples_taken(), 0);
-  EXPECT_LE(simulator.get_smallest_step_size_taken(),
-            simulator.get_largest_step_size_taken());
+  EXPECT_EQ(simulator.get_num_updates(), 0);
 
-  // Publish() should get called at start and finish.
   EXPECT_EQ(spring_mass.get_publish_count(), 1001);
   EXPECT_EQ(spring_mass.get_update_count(), 0);
 
@@ -124,26 +104,37 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
-  MySpringMassSystem spring_mass(kSpring, kMass, 30.);
+  // set the integrator default step size
+  const double DT = 1e-3;
 
+  // create the mass spring system and the simulator
+  MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // get the context
+  auto context = simulator.get_mutable_context();
+
+  // TODO(edrumwri): remove this when discrete state has been created
+  // automatically
+  // Create the discrete state
+  context->set_difference_state(std::make_unique<DifferenceState<double>>());
 
   // Set initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  simulator.request_initial_step_size_attempt(1e-3);
-  simulator.set_integrator_type(IntegratorType::RungeKutta2);
+  // create the integrator and initialize it
+  auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
+      spring_mass, DT, context);
+  integrator->Initialize();
+
+  // set the integrator and initialize the simulator
   simulator.Initialize();
 
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::RungeKutta2);
-
+  // simulate up to one second
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
-  EXPECT_EQ(simulator.get_num_samples_taken(), 30);
-  EXPECT_LE(simulator.get_smallest_step_size_taken(),
-            simulator.get_largest_step_size_taken());
+  EXPECT_EQ(simulator.get_num_updates(), 30);
 
   // We're calling Publish() every step, and extra steps have to be taken
   // since the step size doesn't divide evenly into the sample rate. Shouldn't
@@ -194,9 +185,6 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   // Takes all the defaults for the simulator.
   simulator.Initialize();
 
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-              IntegratorType::RungeKutta2);
-
   // Computes analytical solution.
   // 1) Roots of the characteristic equation.
   complexd lambda1 = -zeta * w0 + w0 * std::sqrt(complexd(zeta * zeta - 1));
@@ -242,12 +230,9 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   simulator.StepTo(final_time);
 
   EXPECT_EQ(simulator.get_num_steps_taken(), 200);
-  EXPECT_NEAR(simulator.get_smallest_step_size_taken(),
-              simulator.get_largest_step_size_taken(),
-              NumTraits<double>::epsilon());
 
   const auto& context = simulator.get_context();
-  EXPECT_EQ(context.get_time(), final_time);  // Should be exact.
+  EXPECT_NEAR(context.get_time(), final_time, 1e-8);
 
   // Compares with analytical solution (to numerical integration error).
   EXPECT_NEAR(spring_mass.get_position(context), x_final, 3.0e-6);

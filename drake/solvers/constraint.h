@@ -15,13 +15,16 @@ namespace solvers {
 /**
  * A constraint is a function + lower and upper bounds.
  *
+ * Solver interfaces must acknowledge that these constraints are mutable.
+ * Parameters can change after the constraint is constructed and before the
+ * call to Solve().
+ *
  * Some thoughts:
  * It should support evaluating the constraint, adding it to an optimization
- *problem,
- * and have support for constraints that require slack variables (adding
- *additional decision variables to the problem).  There
+ * problem, and have support for constraints that require slack variables
+ * (adding additional decision variables to the problem).  There
  * should also be some notion of parameterized constraints:  e.g. the
- *acceleration constraints in the rigid body dynamics are constraints
+ * acceleration constraints in the rigid body dynamics are constraints
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
@@ -79,7 +82,6 @@ class Constraint {
   }
   inline const std::string& get_description() const { return description_; }
 
- protected:
   /**
    * Set the upper and lower bounds of the constraint.
    * @param lower_bound. A num_constraint() x 1 vector.
@@ -110,7 +112,7 @@ class Constraint {
 class QuadraticConstraint : public Constraint {
  public:
   static const int kNumConstraints = 1;
-  // TODO(naveenoid) : ASSERT check on dimensions of Q and b.
+
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
@@ -118,7 +120,10 @@ class QuadraticConstraint : public Constraint {
       : Constraint(kNumConstraints, drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
         Q_(Q),
-        b_(b) {}
+        b_(b) {
+    DRAKE_ASSERT(Q_.rows() == Q_.cols());
+    DRAKE_ASSERT(Q_.cols() == b_.rows());
+  }
 
   ~QuadraticConstraint() override {}
 
@@ -198,7 +203,6 @@ class SemidefiniteConstraint : public Constraint {
         "Eval is not implemented in SemidefiniteConstraint.");
   };
 
-
   virtual const Eigen::MatrixXd& G() const { return G_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
@@ -260,8 +264,7 @@ class PolynomialConstraint : public Constraint {
 
   /// To avoid repeated allocation, reuse a map for the evaluation point.
   mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, TaylorVarXd>
-      taylor_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,

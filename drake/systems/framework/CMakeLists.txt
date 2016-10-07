@@ -8,6 +8,7 @@ set(sources
   diagram.cc
   diagram_builder.cc
   diagram_context.cc
+  diagram_continuous_state.cc
   leaf_context.cc
   leaf_system.cc
   input_port_evaluator_interface.cc
@@ -50,6 +51,7 @@ set(installed_headers
   diagram.h
   diagram_builder.h
   diagram_context.h
+  diagram_continuous_state.h
   difference_state.h
   leaf_context.h
   leaf_system.h

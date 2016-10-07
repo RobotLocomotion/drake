@@ -222,7 +222,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
       // Only for single-axis joints.
-      if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
+      if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
         // Limits makes things easier/faster here.
         T qmin = joint.getJointLimitMin()(0),
             qmax = joint.getJointLimitMax()(0);
