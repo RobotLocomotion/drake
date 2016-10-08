@@ -2,14 +2,13 @@
 
 #include <mutex>
 
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/common/drake_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/lcm/lcm_receive_thread.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 
 namespace drake {
@@ -21,7 +20,8 @@ namespace lcm {
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
-class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
+class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
+    public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
   /**
    * A constructor.
@@ -39,7 +39,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator& translator,
-                      ::lcm::LCM* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -54,7 +54,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmTranslatorDictionary& translator_dictionary,
-                      ::lcm::LCM* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
 
@@ -63,9 +63,12 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
   /// Returns the default name for a system that subscribes to @p channel.
   static std::string get_name(const std::string& channel);
 
+  const std::string& get_channel_name() const;
+
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Sets the `message_bytes` that will provide the value for `EvalOutput`;
    * typically only used for unit testing.
@@ -80,6 +83,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
    */
   void SetMessage(std::vector<uint8_t> message_bytes);
 
+  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
    * Sets the message vector that will provide the value for `EvalOutput`;
    * typically only used for unit testing.  The value will come translating the
@@ -102,8 +106,8 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double> {
 
  private:
   // Callback entry point from LCM into this class.
-  void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
-                     const std::string& channel);
+  void HandleMessage(const std::string& channel, const void* message_buffer,
+      int message_size) override;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
