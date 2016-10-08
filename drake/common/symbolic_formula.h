@@ -6,27 +6,27 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
-#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace symbolic {
 enum class FormulaKind {
-  True,   // ⊤
-  False,  // ⊥
-  Eq,     // =
-  Neq,    // !=
-  Gt,     // >
-  Geq,    // >=
-  Lt,     // <
-  Leq,    // <=
-  And,    // Conjunction (∧)
-  Or,     // Disjunction (∨)
-  Not,    // Negation (¬)
-  Forall  // Universal quantification (∀)
+  True,   ///< ⊤
+  False,  ///< ⊥
+  Eq,     ///< =
+  Neq,    ///< !=
+  Gt,     ///< >
+  Geq,    ///< >=
+  Lt,     ///< <
+  Leq,    ///< <=
+  And,    ///< Conjunction (∧)
+  Or,     ///< Disjunction (∨)
+  Not,    ///< Negation (¬)
+  Forall  ///< Universal quantification (∀)
 };
 
 class FormulaCell;
@@ -94,50 +94,38 @@ class DRAKE_EXPORT Formula {
   static Formula True();
   static Formula False();
 
-  friend DRAKE_EXPORT Formula operator&&(const Formula& f1,
-                                               const Formula& f2);
-  friend DRAKE_EXPORT Formula operator||(const Formula& f1,
-                                               const Formula& f2);
+  friend DRAKE_EXPORT Formula operator&&(const Formula& f1, const Formula& f2);
+  friend DRAKE_EXPORT Formula operator||(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator!(const Formula& f);
+  friend DRAKE_EXPORT bool operator==(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator==(const Expression& e1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(const double v1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(const Expression& e1,
-                                               const double v2);
+                                         const Expression& e2);
+  friend DRAKE_EXPORT Formula operator==(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator==(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT bool operator!=(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(const double v1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
-                                               const double v2);
+                                         const Expression& e2);
+  friend DRAKE_EXPORT Formula operator!=(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator!=(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Formula operator<(const Expression& e1,
-                                              const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(const double v1,
-                                              const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(const Expression& e1,
-                                              const double v2);
+                                        const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(const double v1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
-                                               const double v2);
+                                         const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<=(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<=(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Formula operator>(const Expression& e1,
-                                              const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(const double v1,
-                                              const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(const Expression& e1,
-                                              const double v2);
+                                        const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(const double v1,
-                                               const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
-                                               const double v2);
+                                         const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>=(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
-                                                     const Formula& f);
+                                               const Formula& f);
   friend DRAKE_EXPORT void swap(Formula& a, Formula& b) {
     std::swap(a.ptr_, b.ptr_);
   }
@@ -148,28 +136,22 @@ class DRAKE_EXPORT Formula {
 
 DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
-DRAKE_EXPORT Formula operator==(const Expression& e1,
-                                      const Expression& e2);
+DRAKE_EXPORT Formula operator==(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator==(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator==(const Expression& e1, const double v2);
-DRAKE_EXPORT Formula operator!=(const Expression& e1,
-                                      const Expression& e2);
+DRAKE_EXPORT Formula operator!=(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator!=(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator!=(const Expression& e1, const double v2);
-DRAKE_EXPORT Formula operator<(const Expression& e1,
-                                     const Expression& e2);
+DRAKE_EXPORT Formula operator<(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator<(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator<(const Expression& e1, const double v2);
-DRAKE_EXPORT Formula operator<=(const Expression& e1,
-                                      const Expression& e2);
+DRAKE_EXPORT Formula operator<=(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator<=(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator<=(const Expression& e1, const double v2);
-DRAKE_EXPORT Formula operator>(const Expression& e1,
-                                     const Expression& e2);
+DRAKE_EXPORT Formula operator>(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator>(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator>(const Expression& e1, const double v2);
-DRAKE_EXPORT Formula operator>=(const Expression& e1,
-                                      const Expression& e2);
+DRAKE_EXPORT Formula operator>=(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator>=(const double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
 
@@ -181,11 +163,11 @@ class FormulaCell {
   virtual Variables GetFreeVariables() const = 0;
   /** Checks structural equality. */
   virtual bool EqualTo(const FormulaCell& c) const = 0;
-  /** Evaluates under a given environment (by default, an empty environment). */
+  /** Evaluates under a given environment. */
   virtual bool Evaluate(const Environment& env) const = 0;
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
- protected:
+ private:
   const FormulaKind kind_{};
   const size_t hash_{};
 };

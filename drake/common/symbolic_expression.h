@@ -9,38 +9,38 @@
 
 #include <eigen3/Eigen/Core>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
-#include "drake/common/drake_export.h"
 
 namespace drake {
 
 namespace symbolic {
 
 enum class ExpressionKind {
-  Var,
-  Constant,
-  Neg,    // unary minus
-  Add,    // addition (+)
-  Sub,    // subtraction (-)
-  Mul,    // multiplication (*)
-  Div,    // division (/)
-  Log,    // logarithms
-  Abs,    // absolute value function
-  Exp,    // exponentiation
-  Sqrt,   // square root
-  Pow,    // power function
-  Sin,    // sine
-  Cos,    // cosine
-  Tan,    // tangent
-  Asin,   // arcsine
-  Acos,   // arccosine
-  Atan,   // arctangent
-  Atan2,  // arctangent2 (atan2(y,x) = atan(y/x))
-  Sinh,   // hyperbolic sine
-  Cosh,   // hyperbolic cosine
-  Tanh,   // hyperbolic tangent
+  Var,       ///< variable
+  Constant,  ///< constant (double)
+  Neg,       ///< unary minus
+  Add,       ///< addition (+)
+  Sub,       ///< subtraction (-)
+  Mul,       ///< multiplication (*)
+  Div,       ///< division (/)
+  Log,       ///< logarithms
+  Abs,       ///< absolute value function
+  Exp,       ///< exponentiation
+  Sqrt,      ///< square root
+  Pow,       ///< power function
+  Sin,       ///< sine
+  Cos,       ///< cosine
+  Tan,       ///< tangent
+  Asin,      ///< arcsine
+  Acos,      ///< arccosine
+  Atan,      ///< arctangent
+  Atan2,     ///< arctangent2 (atan2(y,x) = atan(y/x))
+  Sinh,      ///< hyperbolic sine
+  Cosh,      ///< hyperbolic cosine
+  Tanh,      ///< hyperbolic tangent
   // TODO(soonho): add Integral
 };
 
@@ -57,12 +57,10 @@ Its syntax tree is as follows:
 \endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
-to
-ExpressionCell class which is a super-class of different kinds of symbolic
-expressions
-(i.e. ExpressionAdd, ExpressionSub, ExpressionLog, ExpressionSin). Note that it
-includes a shared
-pointer, not a unique pointer, to allow sharing sub-expressions.
+to ExpressionCell class which is a super-class of different kinds of symbolic
+expressions (i.e. ExpressionAdd, ExpressionSub, ExpressionLog,
+ExpressionSin). Note that it includes a shared pointer, not a unique pointer, to
+allow sharing sub-expressions.
 
 \note The sharing of sub-expressions is not yet implemented.
 
@@ -122,7 +120,6 @@ class DRAKE_EXPORT Expression {
   explicit Expression(const double d);
   /** Constructs a variable. */
   explicit Expression(const Variable& name);
-  explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
   ExpressionKind get_kind() const;
   size_t get_hash() const;
   /** Collects variables in expression. */
@@ -146,15 +143,13 @@ class DRAKE_EXPORT Expression {
   static Expression E();
 
   friend DRAKE_EXPORT Expression operator+(Expression lhs,
-                                                 const Expression& rhs);
+                                           const Expression& rhs);
   friend DRAKE_EXPORT Expression operator+(const double lhs,
-                                                 const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator+(Expression lhs,
-                                                 const double rhs);
+                                           const Expression& rhs);
+  friend DRAKE_EXPORT Expression operator+(Expression lhs, const double rhs);
   friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
-                                                   const Expression& rhs);
-  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
-                                                   const double rhs);
+                                             const Expression& rhs);
+  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs, const double rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
@@ -162,15 +157,13 @@ class DRAKE_EXPORT Expression {
   Expression operator++(int);
 
   friend DRAKE_EXPORT Expression operator-(Expression lhs,
-                                                 const Expression& rhs);
+                                           const Expression& rhs);
   friend DRAKE_EXPORT Expression operator-(const double lhs,
-                                                 const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator-(Expression lhs,
-                                                 const double rhs);
+                                           const Expression& rhs);
+  friend DRAKE_EXPORT Expression operator-(Expression lhs, const double rhs);
   friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
-                                                   const Expression& rhs);
-  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
-                                                   const double rhs);
+                                             const Expression& rhs);
+  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs, const double rhs);
 
   /** Provides unary minus operator. */
   friend DRAKE_EXPORT Expression operator-(Expression e);
@@ -180,37 +173,31 @@ class DRAKE_EXPORT Expression {
   Expression operator--(int);
 
   friend DRAKE_EXPORT Expression operator*(Expression lhs,
-                                                 const Expression& rhs);
+                                           const Expression& rhs);
   friend DRAKE_EXPORT Expression operator*(const double lhs,
-                                                 const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator*(Expression lhs,
-                                                 const double rhs);
+                                           const Expression& rhs);
+  friend DRAKE_EXPORT Expression operator*(Expression lhs, const double rhs);
   friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
-                                                   const Expression& rhs);
-  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
-                                                   const double rhs);
+                                             const Expression& rhs);
+  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs, const double rhs);
 
   friend DRAKE_EXPORT Expression operator/(Expression lhs,
-                                                 const Expression& rhs);
+                                           const Expression& rhs);
   friend DRAKE_EXPORT Expression operator/(const double lhs,
-                                                 const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator/(Expression lhs,
-                                                 const double rhs);
+                                           const Expression& rhs);
+  friend DRAKE_EXPORT Expression operator/(Expression lhs, const double rhs);
   friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
-                                                   const Expression& rhs);
-  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
-                                                   const double rhs);
+                                             const Expression& rhs);
+  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs, const double rhs);
 
   friend DRAKE_EXPORT Expression log(const Expression& e);
   friend DRAKE_EXPORT Expression abs(const Expression& e);
   friend DRAKE_EXPORT Expression exp(const Expression& e);
   friend DRAKE_EXPORT Expression sqrt(const Expression& e);
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                           const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const double v1,
-                                           const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                           const double v2);
+                                     const Expression& e2);
+  friend DRAKE_EXPORT Expression pow(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression pow(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Expression sin(const Expression& e);
   friend DRAKE_EXPORT Expression cos(const Expression& e);
   friend DRAKE_EXPORT Expression tan(const Expression& e);
@@ -218,23 +205,22 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT Expression acos(const Expression& e);
   friend DRAKE_EXPORT Expression atan(const Expression& e);
   friend DRAKE_EXPORT Expression atan2(const Expression& e1,
-                                             const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(const double v1,
-                                             const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(const Expression& e1,
-                                             const double v2);
+                                       const Expression& e2);
+  friend DRAKE_EXPORT Expression atan2(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression atan2(const Expression& e1, const double v2);
   friend DRAKE_EXPORT Expression sinh(const Expression& e);
   friend DRAKE_EXPORT Expression cosh(const Expression& e);
   friend DRAKE_EXPORT Expression tanh(const Expression& e);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
-                                                     const Expression& e);
+                                               const Expression& e);
   friend DRAKE_EXPORT void swap(Expression& a, Expression& b) {
     std::swap(a.ptr_, b.ptr_);
   }
 
  private:
   std::shared_ptr<ExpressionCell> ptr_;
+  explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
 };
 
 /** Represents an abstract class which is the base of concrete
@@ -245,18 +231,35 @@ class DRAKE_EXPORT Expression {
  */
 class ExpressionCell {
  public:
-  ExpressionCell(const ExpressionKind k, size_t const hash);
   ExpressionKind get_kind() const { return kind_; }
   size_t get_hash() const { return hash_; }
   /** Collects variables in expression. */
   virtual Variables GetVariables() const = 0;
   /** Checks structural equality. */
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
-  /** Evaluates under a given environment (by default, an empty environment). */
+  /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
+  /** default constructor. */
+  ExpressionCell() = default;
+
+  /** Move-construct a set from an rvalue. */
+  ExpressionCell(ExpressionCell&& e) = default;
+
+  /** Copy-construct a set from an lvalue. */
+  ExpressionCell(const ExpressionCell& e) = default;
+
+  /** Move-assign a set from an rvalue. */
+  ExpressionCell& operator=(ExpressionCell&& e) = default;
+
+  /** Copy-assign a set from an lvalue. */
+  ExpressionCell& operator=(const ExpressionCell& e) = default;
+
+  ExpressionCell(const ExpressionKind k, size_t const hash);
+
+ private:
   const ExpressionKind kind_{};
   const size_t hash_{};
 };
@@ -371,7 +374,7 @@ class ExpressionLog : public ExpressionCell {
 
  private:
   const Expression e_;
-  /** Throws std::domain_error if v ∉ [0, +oo). */
+  /* Throws std::domain_error if v ∉ [0, +oo). */
   static void check_domain(const double v);
 };
 
@@ -417,7 +420,7 @@ class ExpressionSqrt : public ExpressionCell {
 
  private:
   const Expression e_;
-  /** Throws std::domain_error if v ∉ [0, +oo). */
+  /* Throws std::domain_error if v ∉ [0, +oo). */
   static void check_domain(const double v);
 };
 
@@ -431,17 +434,15 @@ class ExpressionPow : public ExpressionCell {
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                           const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const double v1,
-                                           const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                           const double v2);
+                                     const Expression& e2);
+  friend DRAKE_EXPORT Expression pow(const double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression pow(const Expression& e1, const double v2);
 
  private:
   const Expression e1_;
   const Expression e2_;
-  /** Throws std::domain_error if v1 is finite negative and v2 is
-      finite non-integer. */
+  /* Throws std::domain_error if v1 is finite negative and v2 is finite
+     non-integer. */
   static void check_domain(const double v1, const double v2);
 };
 
@@ -497,7 +498,7 @@ class ExpressionAsin : public ExpressionCell {
 
  private:
   const Expression e_;
-  /** Throws std::domain_error if v ∉ [-1.0, +1.0]. */
+  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
   static void check_domain(const double v);
 };
 
@@ -514,7 +515,7 @@ class ExpressionAcos : public ExpressionCell {
 
  private:
   const Expression e_;
-  /** Throws std::domain_error if v ∉ [-1.0, +1.0]. */
+  /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
   static void check_domain(const double v);
 };
 
@@ -531,8 +532,8 @@ class ExpressionAtan : public ExpressionCell {
   const Expression e_;
 };
 
-/** Symbolic expression representing atan2 function (arctangent function
- * with two arguments). */
+/** Symbolic expression representing atan2 function (arctangent function with
+ * two arguments). atan2(y, x) is defined as atan(y/x). */
 class ExpressionAtan2 : public ExpressionCell {
  public:
   explicit ExpressionAtan2(const Expression& e1, const Expression& e2);
