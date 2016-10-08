@@ -35,11 +35,6 @@ else()
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
-  # IPOPT is currently disabled on Mac due to MATLAB compatibility
-  # issues: https://github.com/RobotLocomotion/drake/issues/2578
-  if (NOT APPLE)
-    option(WITH_IPOPT "nonlinear optimization solver" ON)
-  endif()
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -74,6 +69,12 @@ cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization toob
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+
+
+# IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB compatibility
+# issues: https://github.com/RobotLocomotion/drake/issues/2578
+cmake_dependent_option(WITH_IPOPT "nonlinear optimization solver" ON "NOT APPLE OR DISABLE_MATLAB" OFF)
+
 
 ###########################################
 # External Projects that are OFF by default
