@@ -133,7 +133,7 @@ DRAKE_EXPORT Variables operator-(Variables vars, const Variable& var);
 }  // namespace symbolic
 }  // namespace drake
 
-/** Provides std::hash<drake::symbolic::Variable>. */
+/** Provides std::hash<drake::symbolic::Variables>. */
 namespace std {
 template <>
 struct hash<drake::symbolic::Variables> {
