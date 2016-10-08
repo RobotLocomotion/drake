@@ -1,25 +1,20 @@
 #include "drake/common/symbolic_variables.h"
 
 #include <algorithm>
-#include <cmath>
-#include <functional>
-#include <iostream>
 #include <iterator>
-#include <memory>
 #include <numeric>
+#include <ostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-#include <unordered_map>
 
 #include "drake/common/hash_combine.h"
 
 using std::accumulate;
 using std::includes;
-using std::string;
-using std::ostringstream;
-using std::ostream_iterator;
 using std::ostream;
+using std::ostream_iterator;
+using std::ostringstream;
+using std::string;
 
 namespace drake {
 namespace symbolic {
@@ -27,7 +22,7 @@ namespace symbolic {
 Variables::Variables(std::initializer_list<value_type> init) : vars_(init) {}
 
 size_t Variables::get_hash() const {
-  // combine hashes of the variables in a set
+  // Combines hashes of the variables in a set.
   return accumulate(vars_.begin(), vars_.end(), 0,
                     [](const size_t h, const Variable& var) {
                       return hash_combine(h, var.get_hash());
