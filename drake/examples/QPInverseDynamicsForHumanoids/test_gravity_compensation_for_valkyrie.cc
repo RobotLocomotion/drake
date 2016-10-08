@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 QPInput GenerateQPInput(

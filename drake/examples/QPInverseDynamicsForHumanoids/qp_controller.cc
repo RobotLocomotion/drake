@@ -5,7 +5,7 @@
 #include "drake/math/cross_product.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;

@@ -17,7 +17,7 @@
   </ul>
   <li>Algorithms</li>
   <ul>
-    <li><a href="group__simulation.html">Simulation</a></li>
+    <li><a href="classdrake_1_1systems_1_1_simulator.html">Simulation</a></li>
     <li>Analysis</li>
     <li>Planning</li>
     <li>Feedback Control Design</li>
@@ -26,8 +26,7 @@
   </ul>
 </ul>
 <p>For more general information, you can also visit the <a
-  href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake
-  documentation main page</a></p>
+  href="http:/drake.mit.edu">Drake documentation main page</a>.</p>
 </p>
 
 <p>Drake's C++ libraries use a small amount of template metaprogramming to
@@ -49,9 +48,8 @@ apt-get install doxygen</i> on Ubuntu).</p>
 <p><a href="https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html">Check
 out the Doxygen C++ documentation</a></p>
 
-<p>Drake's Doxygen documentation for the master branch is automatically updated
-on every push to the <a href="https://github.com/RobotLocomotion/drake">github
-repository</a>, so it should always be up to date.</p>
+<p>Drake's Doxygen documentation is
+<a href="http://drake.mit.edu">hosted online</a> for the master branch, but is 
+only updated nightly.</p>
 
 */
-

@@ -8,7 +8,7 @@
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 /**

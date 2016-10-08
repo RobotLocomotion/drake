@@ -4,7 +4,7 @@
 #include "rigid_body_tree_utils.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 /**

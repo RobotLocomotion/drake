@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 // TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they

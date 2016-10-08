@@ -8,7 +8,7 @@ typedef Matrix<double, 6, 1> Vector6d;
 }
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 // TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
 
