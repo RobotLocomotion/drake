@@ -13,7 +13,7 @@ classdef PolynomialProgram < NonlinearProgram
 %         Aeq*x <= beq
 %         lb <= x <= ub
 %
-% @option solver can be 'gloptipoly','snopt' (more coming soon)
+% @option solver can be 'bertini','snopt' (more coming soon)
 % @option x0 initial guess
 
 % todo: implement all of the techniques from http://arxiv.org/pdf/math/0103170.pdf
@@ -85,9 +85,6 @@ classdef PolynomialProgram < NonlinearProgram
 
     function [x,objval,exitflag,infeasible_constraint_name] = solve(obj,x0)
       switch lower(obj.solver)
-        case 'gloptipoly'
-          [x,objval,exitflag] = gloptipoly(obj);
-          [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
         case 'bertini'
           [x,objval,exitflag] = bertini(obj);
           [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
@@ -98,7 +95,7 @@ classdef PolynomialProgram < NonlinearProgram
 
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<2, x0 = randn(obj.num_vars,1); end
-      if nargin<3, solvers = {'gloptipoly','bertini','snopt','fmincon'}; end
+      if nargin<3, solvers = {'bertini','snopt','fmincon'}; end
       [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
     end
 
@@ -151,24 +148,17 @@ classdef PolynomialProgram < NonlinearProgram
     end
 
     function obj = setSolver(obj,solver)
-      % @param solver   -- 'gloptipoly' or 'bertini' or 'default' or the solvers in
-      % NonlinearProgram. The default solver is gloptipoly
+      % @param solver   -- 'bertini' or 'default' or the solvers in
+      % NonlinearProgram. The default solver is bertini
       typecheck(solver,'char');
       switch(lower(solver))
-        case 'gloptipoly'
-          if(~checkDependency('gloptipoly3'))
-            error('Drake:PolynomialProgram:UnsupportedSolver',' Gloptipoly3 not found.');
-          end
-          obj.solver = 'gloptipoly';
         case 'bertini'
           if(~checkDependency('bertini'))
             error('Drake:PolynomialProgram:UnsupportedSolver',' Bertini not found.');
           end
           obj.solver = 'bertini';
         case 'default'
-          if(checkDependency('gloptipoly3'))
-            obj = setSolver(obj,'gloptipoly');
-          elseif(checkDependency('bertini'))
+          if(checkDependency('bertini'))
             obj = setSolver(obj,'bertini');
           else
             obj = setSolver@NonlinearProgram(obj,'default');
