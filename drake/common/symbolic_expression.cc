@@ -2,7 +2,9 @@
 
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -24,11 +26,13 @@ using std::invalid_argument;
 using std::make_shared;
 using std::ostream;
 using std::ostringstream;
+using std::prev;
 using std::runtime_error;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
-using std::prev;
+using std::setprecision;
+using std::numeric_limits;
 
 Expression::Expression(const Variable& name)
     : ptr_{make_shared<ExpressionVar>(name)} {}
@@ -104,7 +108,7 @@ Expression operator+(Expression lhs, const Expression& rhs) {
 }
 
 Expression operator+(const double lhs, const Expression& rhs) {
-  // use () to avoid a conflict between cpplint and clang-format
+  // Uses () to avoid a conflict between cpplint and clang-format.
   return (Expression{lhs}) + rhs;
 }
 
@@ -115,14 +119,12 @@ Expression operator+(Expression lhs, const double rhs) {
 
 Expression& operator+=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : 0 + x => x
-  if (lhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value() == 0.0) {
+  if (lhs.EqualTo(Expression::Zero())) {
     lhs = rhs;
     return lhs;
   }
   // simplification #2 : x + 0 => x
-  if (rhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value() == 0.0) {
+  if (rhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
   // simplification #3 : Expression(c1) + Expression(c2) => Expression(c1 + c2)
@@ -149,7 +151,6 @@ Expression& Expression::operator++() {
   return *this;
 }
 
-/// Postfix increment
 Expression Expression::operator++(int) {
   Expression copy(*this);
   ++*this;
@@ -211,7 +212,6 @@ Expression& Expression::operator--() {
   return *this;
 }
 
-/// Postfix increment
 Expression Expression::operator--(int) {
   Expression const copy(*this);
   --*this;
@@ -224,7 +224,7 @@ Expression operator*(Expression lhs, const Expression& rhs) {
 }
 
 Expression operator*(double const lhs, const Expression& rhs) {
-  // use () to avoid a conflict between cpplint and clang-format
+  // Uses () to avoid a conflict between cpplint and clang-format.
   return (Expression{lhs}) * rhs;
 }
 
@@ -235,25 +235,21 @@ Expression operator*(Expression lhs, double const rhs) {
 
 Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : 1 * x => x
-  if (lhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value() == 1.0) {
+  if (lhs.EqualTo(Expression::One())) {
     lhs = rhs;
     return lhs;
   }
   // simplification #2 : x * 1 => x
-  if (rhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value() == 1.0) {
+  if (rhs.EqualTo(Expression::One())) {
     return lhs;
   }
   // simplification #3 : 0 * x => 0
-  if (lhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value() == 0.0) {
+  if (lhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
   // simplification #4 : x * 0 => 0
-  if (rhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value() == 0.0) {
-    lhs = Expression{0.0};
+  if (rhs.EqualTo(Expression::Zero())) {
+    lhs = Expression::Zero();
     return lhs;
   }
   // simplification #5 : Expression(c1) * Expression(c2) => Expression(c1 * c2)
@@ -266,7 +262,6 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     lhs = Expression{v1 * v2};
     return lhs;
   }
-
   lhs.ptr_ = make_shared<ExpressionMul>(lhs, rhs);
   return lhs;
 }
@@ -375,7 +370,9 @@ bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
 double ExpressionConstant::Evaluate(const Environment& env) const { return v_; }
 
 ostream& ExpressionConstant::Display(ostream& os) const {
-  os << v_;
+  ostringstream oss;
+  oss << setprecision(numeric_limits<double>::max_digits10) << v_;
+  os << oss.str();
   return os;
 }
 
@@ -646,7 +643,7 @@ ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 static bool is_int(double const v) {
-  static double intpart;  // dummy variable
+  double intpart;  // dummy variable
   return modf(v, &intpart) == 0.0;
 }
 
