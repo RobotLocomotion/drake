@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "drake/common/symbolic_variable.h"
-#include "drake/drakeCommon_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 
@@ -15,7 +15,7 @@ namespace symbolic {
 /** Represent a symbolic form of an environment (mapping from a variable
  * to a value).
  */
-class DRAKECOMMON_EXPORT Environment {
+class DRAKE_EXPORT Environment {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
@@ -60,7 +60,7 @@ class DRAKECOMMON_EXPORT Environment {
 
   std::string to_string() const;
 
-  friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream& os,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                      const Environment& env);
 
  private:
