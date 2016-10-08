@@ -450,7 +450,7 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-8;  // note: SNOPT is only 1e-6
+  const double tol = 1e-10;  // note: SNOPT is only 1e-6
   app->Options()->SetNumericValue("tol", tol);
   app->Options()->SetNumericValue("constr_viol_tol", tol);
   app->Options()->SetNumericValue("acceptable_tol", tol);
