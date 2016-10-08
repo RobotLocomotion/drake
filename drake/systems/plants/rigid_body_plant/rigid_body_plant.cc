@@ -173,6 +173,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  DRAKE_DEMAND(input);
 
   // The input vector of actuation values.
   auto u = input->get_value();
