@@ -67,7 +67,6 @@ cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATL
 ## The following projects are default OFF when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
@@ -103,7 +102,6 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(bertini CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
@@ -302,7 +300,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
-    -DWITH_BERTINI:BOOL=${WITH_BERTINI}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
@@ -323,7 +320,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
   DEPENDS
     avl
-    bertini
     bot_core_lcmtypes
     bullet
     director

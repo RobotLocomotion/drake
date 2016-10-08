@@ -299,18 +299,6 @@ else % then try to evaluate the dependency now...
         disp(' fastqp not found. fastqp support will be disabled.');
       end
 
-    case 'bertini'
-      conf.bertini_enabled = logical(exist('bertini','file'));
-      if (~conf.bertini_enabled)
-        conf.bertini_enabled = pod_pkg_config('bertini');
-      end
-
-      if ~conf.bertini_enabled && nargout<1
-        disp(' ');
-        disp(' Bertini not found.');
-        disp(' ');
-      end
-
     case 'cplex'
       conf.cplex_enabled = logical(exist('cplexlp','file'));
       if ~conf.cplex_enabled && nargout<1
