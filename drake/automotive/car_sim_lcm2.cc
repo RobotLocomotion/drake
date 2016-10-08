@@ -6,6 +6,7 @@
 #include "drake/automotive/car_simulation.h"
 #include "drake/common/drake_path.h"
 // #include "drake/math/roll_pitch_yaw.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 // #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
@@ -21,6 +22,9 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
+// TODO(liang.fok) Temporary! Remove once actual input can be provided to
+// RigidBodyPlant!
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 // Includes for the planner.
 // #include "drake/systems/plants/IKoptions.h"
 // #include "drake/systems/plants/RigidBodyIK.h"
@@ -39,7 +43,9 @@ namespace drake {
 using parsers::ModelInstanceIdTable;
 using parsers::sdf::AddModelInstancesFromSdfFile;
 
+using lcm::DrakeLcm;
 // using systems::Adder;
+using systems::ConstantVectorSource;
 using systems::Context;
 // using systems::Demultiplexer;
 using systems::Diagram;
@@ -95,8 +101,14 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
-    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
-        move(tree));
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
+
+    // TODO(liang.fok) Temporary placeholder. Remove when actual inputs can be
+    // wired to RigidBodyPlant.
+    VectorX<T> constant_value(plant_->get_input_size());
+    constant_value.setZero();
+    const_source_ = builder.template AddSystem<ConstantVectorSource<T>>(
+        constant_value);
 
     // state_minus_target_ = builder.template AddSystem<Adder<T>>
     //     (2 /*number of inputs*/, plant_->get_num_states() /* size */);
@@ -179,6 +191,11 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
     // builder.Connect(gcomp_minus_pid_->get_output_port(),
     //                 plant_->get_input_port(0));
 
+    // TODO(liang.fok) Remove this once actual inputs an be provided to
+    // RigidBodyPlant.
+    builder.Connect(const_source_->get_output_port(),
+                    plant_->get_input_port(0));
+
     // Connects to publisher for visualization.
     builder.Connect(plant_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
@@ -212,7 +229,9 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
   // TimeVaryingPolynomialSource<T>* desired_plan_;
   // std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
   RigidBodyTreeLcmPublisher* viz_publisher_;
-  ::lcm::LCM lcm_;
+  DrakeLcm lcm_;
+
+  ConstantVectorSource<T>* const_source_;
 };
 
 int main() {
@@ -222,7 +241,7 @@ int main() {
   // Zeroes the state and initializes controller state.
   model.SetDefaultState(simulator.get_mutable_context());
 
-  VectorX<double> desired_state = VectorX<double>::Zero(14);
+  // VectorX<double> desired_state = VectorX<double>::Zero(14);
   // model.get_kuka_plant().set_state_vector(
   //     simulator.get_mutable_context(), desired_state);
 
