@@ -21,6 +21,7 @@ namespace automotive {
 /// - TarlorVarXd
 ///
 /// They are already available to link against in libdrakeAutomotive.
+/// @ingroup automotive_systems
 template <typename T>
 class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
  public:

@@ -18,7 +18,7 @@ namespace systems {
 /// They are already available to link against in `libdrakeSystemsFramework`.
 /// Currently, no other values for `T` are supported.
 ///
-/// @ingroup systems
+/// @ingroup primitive_systems
 template <typename T>
 class Multiplexer : public LeafSystem<T> {
  public:

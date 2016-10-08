@@ -25,6 +25,7 @@ namespace automotive {
 ///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
+/// @ingroup automotive_systems
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:

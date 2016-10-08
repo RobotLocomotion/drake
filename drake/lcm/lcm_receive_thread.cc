@@ -1,4 +1,4 @@
-#include "drake/systems/lcm/lcm_receive_thread.h"
+#include "drake/lcm/lcm_receive_thread.h"
 
 #include <iostream>
 
@@ -12,7 +12,6 @@
 #include "drake/common/text_logging.h"
 
 namespace drake {
-namespace systems {
 namespace lcm {
 
 LcmReceiveThread::LcmReceiveThread(::lcm::LCM* lcm) : lcm_(lcm) {
@@ -62,8 +61,9 @@ void LcmReceiveThread::LoopWithSelect() {
 
     if (lcm_ready) {
       if (lcm_->handle() != 0) {
-        drake::log()->trace("LcmReceiverThread::LoopWithSelect: lcm->handle() "
-                            "returned non-zero value.");
+        drake::log()->trace(
+            "LcmReceiverThread::LoopWithSelect: lcm->handle() "
+            "returned non-zero value.");
         return;
       }
     }
@@ -71,10 +71,11 @@ void LcmReceiveThread::LoopWithSelect() {
 }
 
 void LcmReceiveThread::Stop() {
-  stop_ = true;
-  lcm_thread_.join();
+  if (!stop_) {
+    stop_ = true;
+    lcm_thread_.join();
+  }
 }
 
 }  // namespace lcm
-}  // namespace systems
 }  // namespace drake

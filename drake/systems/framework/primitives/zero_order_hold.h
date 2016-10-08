@@ -10,6 +10,7 @@ namespace systems {
 
 /// A ZeroOrderHold block with input `u`, which may be discrete or continuous,
 /// and discrete output `y`, where the y is sampled from u with a fixed period.
+/// @ingroup primitive_systems
 template <typename T>
 class ZeroOrderHold : public LeafSystem<T> {
  public:

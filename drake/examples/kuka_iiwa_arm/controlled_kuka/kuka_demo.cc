@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
@@ -334,7 +335,7 @@ class KukaDemo : public systems::Diagram<T> {
   TimeVaryingPolynomialSource<T>* desired_plan_;
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
   RigidBodyTreeLcmPublisher* viz_publisher_;
-  ::lcm::LCM lcm_;
+  drake::lcm::DrakeLcm lcm_;
 };
 
 int DoMain() {
@@ -348,11 +349,7 @@ int DoMain() {
   model.get_kuka_plant().set_state_vector(
       simulator.get_mutable_context(), desired_state);
 
-  simulator.request_initial_step_size_attempt(0.001);
   simulator.Initialize();
-
-  EXPECT_TRUE(simulator.get_integrator_type_in_use() ==
-      systems::IntegratorType::RungeKutta2);
 
   // Simulate for 20 seconds.
   simulator.StepTo(20.0);

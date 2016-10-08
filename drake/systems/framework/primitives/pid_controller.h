@@ -30,7 +30,7 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
-/// @ingroup systems
+/// @ingroup primitive_systems
 template <typename T>
 class PidController : public Diagram<T> {
  public:
