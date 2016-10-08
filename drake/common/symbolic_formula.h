@@ -10,7 +10,7 @@
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
-#include "drake/drakeCommon_export.h"
+#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace symbolic {
@@ -60,7 +60,7 @@ The following simple simplifications are implemented:
 \endverbatim
 */
 
-class DRAKECOMMON_EXPORT Formula {
+class DRAKE_EXPORT Formula {
  public:
   /** Default constructor. */
   Formula() = default;
@@ -94,51 +94,51 @@ class DRAKECOMMON_EXPORT Formula {
   static Formula True();
   static Formula False();
 
-  friend DRAKECOMMON_EXPORT Formula operator&&(const Formula& f1,
+  friend DRAKE_EXPORT Formula operator&&(const Formula& f1,
                                                const Formula& f2);
-  friend DRAKECOMMON_EXPORT Formula operator||(const Formula& f1,
+  friend DRAKE_EXPORT Formula operator||(const Formula& f1,
                                                const Formula& f2);
-  friend DRAKECOMMON_EXPORT Formula operator!(const Formula& f);
-  friend DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator!(const Formula& f);
+  friend DRAKE_EXPORT Formula operator==(const Expression& e1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator==(const double v1,
+  friend DRAKE_EXPORT Formula operator==(const double v1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator==(const Expression& e1,
                                                const double v2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(const double v1,
+  friend DRAKE_EXPORT Formula operator!=(const double v1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
                                                const double v2);
-  friend DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator<(const Expression& e1,
                                               const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<(const double v1,
+  friend DRAKE_EXPORT Formula operator<(const double v1,
                                               const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator<(const Expression& e1,
                                               const double v2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(const double v1,
+  friend DRAKE_EXPORT Formula operator<=(const double v1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
                                                const double v2);
-  friend DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator>(const Expression& e1,
                                               const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>(const double v1,
+  friend DRAKE_EXPORT Formula operator>(const double v1,
                                               const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator>(const Expression& e1,
                                               const double v2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(const double v1,
+  friend DRAKE_EXPORT Formula operator>=(const double v1,
                                                const Expression& e2);
-  friend DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+  friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
                                                const double v2);
 
-  friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream& os,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                      const Formula& f);
-  friend DRAKECOMMON_EXPORT void swap(Formula& a, Formula& b) {
+  friend DRAKE_EXPORT void swap(Formula& a, Formula& b) {
     std::swap(a.ptr_, b.ptr_);
   }
 
@@ -146,32 +146,32 @@ class DRAKECOMMON_EXPORT Formula {
   std::shared_ptr<FormulaCell> ptr_;
 };
 
-DRAKECOMMON_EXPORT Formula forall(const Variables& vars, const Formula& f);
+DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
-DRAKECOMMON_EXPORT Formula operator==(const Expression& e1,
+DRAKE_EXPORT Formula operator==(const Expression& e1,
                                       const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator==(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator==(const Expression& e1, const double v2);
-DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1,
+DRAKE_EXPORT Formula operator==(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator==(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator!=(const Expression& e1,
                                       const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator!=(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator!=(const Expression& e1, const double v2);
-DRAKECOMMON_EXPORT Formula operator<(const Expression& e1,
+DRAKE_EXPORT Formula operator!=(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator!=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator<(const Expression& e1,
                                      const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator<(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator<(const Expression& e1, const double v2);
-DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1,
+DRAKE_EXPORT Formula operator<(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator<(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator<=(const Expression& e1,
                                       const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator<=(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator<=(const Expression& e1, const double v2);
-DRAKECOMMON_EXPORT Formula operator>(const Expression& e1,
+DRAKE_EXPORT Formula operator<=(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator<=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator>(const Expression& e1,
                                      const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator>(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator>(const Expression& e1, const double v2);
-DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1,
+DRAKE_EXPORT Formula operator>(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator>(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator>=(const Expression& e1,
                                       const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator>=(const double v1, const Expression& e2);
-DRAKECOMMON_EXPORT Formula operator>=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator>=(const double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
 
 class FormulaCell {
  public:
