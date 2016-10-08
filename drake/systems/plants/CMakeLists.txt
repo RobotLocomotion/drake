@@ -141,21 +141,20 @@ if(gurobi_FOUND)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
 endif()
 
-if(drakeIK_SRC_FILES)
-  add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
-  if(drakeIK_PODS_PKG)
-    pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
-  endif()
-  target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
-  pods_install_libraries(drakeIK)
-  pods_install_libraries(drakeIKoptions)
-  drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
-    inverseKinBackend.h)
-  pods_install_pkg_config_file(drake-ik
-    LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-    REQUIRES drake-rbm
-    VERSION 0.0.1)
+
+add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
+if(drakeIK_PODS_PKG)
+  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
 endif()
+target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
+pods_install_libraries(drakeIK)
+pods_install_libraries(drakeIKoptions)
+drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
+  inverseKinBackend.h)
+pods_install_pkg_config_file(drake-ik
+  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
+  REQUIRES drake-rbm
+  VERSION 0.0.1)
 
 if(MATLAB_FOUND)
   if(gurobi_FOUND)
