@@ -55,10 +55,10 @@ GTEST_TEST(ExpressionTest, Constant) {
   Expression const c2{1.0};
   Expression const c3{3.14159};
   Expression const c4{-2.718};
-  EXPECT_EQ(c1.to_string(), "0");
-  EXPECT_EQ(c2.to_string(), "1");
-  EXPECT_EQ(c3.to_string(), "3.14159");
-  EXPECT_EQ(c4.to_string(), "-2.718");
+  EXPECT_EQ(c1.Evaluate(), 0);
+  EXPECT_EQ(c2.Evaluate(), 1);
+  EXPECT_EQ(c3.Evaluate(), 3.14159);
+  EXPECT_EQ(c4.Evaluate(), -2.718);
 }
 
 GTEST_TEST(ExpressionTest, StaticConstant) {
@@ -167,9 +167,9 @@ GTEST_TEST(ExpressionTest, ADD1) {
   EXPECT_TRUE(equal_to<Expression>{}(c1 + c2, Expression{3.14159 + -2.718}));
   EXPECT_EQ((c1 + c2).to_string(), Expression{3.14159 + -2.718}.to_string());
   EXPECT_TRUE(equal_to<Expression>{}(c1 + x, 3.14159 + x));
-  EXPECT_EQ((c1 + x).to_string(), "(3.14159 + x)");
+  EXPECT_EQ((c1 + x).to_string(), (3.14159 + x).to_string());
   EXPECT_TRUE(equal_to<Expression>{}(x + c1, x + 3.14159));
-  EXPECT_EQ((x + c1).to_string(), "(x + 3.14159)");
+  EXPECT_EQ((x + c1).to_string(), (x + 3.14159).to_string());
 }
 
 GTEST_TEST(ExpressionTest, ADD2) {
@@ -239,14 +239,13 @@ GTEST_TEST(ExpressionTest, SUB1) {
   Expression const c2{-2.718};
 
   EXPECT_EQ((c1 - zero).to_string(), c1.to_string());
-  EXPECT_EQ((zero - c1).to_string(), "-3.14159");
-  EXPECT_EQ((0.0 - c1).to_string(), "-3.14159");
+  EXPECT_EQ((zero - c1).to_string(), Expression{-3.14159}.to_string());
+  EXPECT_EQ((0.0 - c1).to_string(), Expression{-3.14159}.to_string());
   EXPECT_EQ((0.0 - c1).to_string(), (-1 * c1).to_string());
   EXPECT_EQ((c1 - 0.0).to_string(), c1.to_string());
-
   EXPECT_EQ((c1 - c2).to_string(), Expression{3.14159 - -2.718}.to_string());
-  EXPECT_EQ((c1 - x).to_string(), "(3.14159 - x)");
-  EXPECT_EQ((x - c1).to_string(), "(x - 3.14159)");
+  EXPECT_EQ((c1 - x).to_string(), (3.14159 - x).to_string());
+  EXPECT_EQ((x - c1).to_string(), (x - 3.14159).to_string());
 }
 
 GTEST_TEST(ExpressionTest, SUB2) {
@@ -343,8 +342,8 @@ GTEST_TEST(ExpressionTest, MUL1) {
   EXPECT_EQ((c1 * 1.0).to_string(), c1.to_string());
 
   EXPECT_EQ((c1 * c2).to_string(), Expression{3.14159 * -2.718}.to_string());
-  EXPECT_EQ((c1 * x).to_string(), "(3.14159 * x)");
-  EXPECT_EQ((x * c1).to_string(), "(x * 3.14159)");
+  EXPECT_EQ((c1 * x).to_string(), (3.14159 * x).to_string());
+  EXPECT_EQ((x * c1).to_string(), (x * 3.14159).to_string());
 }
 
 GTEST_TEST(ExpressionTest, MUL2) {
@@ -387,8 +386,8 @@ GTEST_TEST(ExpressionTest, DIV1) {
   EXPECT_EQ((c1 / 1.0).to_string(), c1.to_string());
 
   EXPECT_EQ((c1 / c2).to_string(), Expression{3.14159 / -2.718}.to_string());
-  EXPECT_EQ((c1 / x).to_string(), "(3.14159 / x)");
-  EXPECT_EQ((x / c1).to_string(), "(x / 3.14159)");
+  EXPECT_EQ((c1 / x).to_string(), (3.14159 / x).to_string());
+  EXPECT_EQ((x / c1).to_string(), (x / 3.14159).to_string());
 }
 
 GTEST_TEST(ExpressionTest, DIV2) {

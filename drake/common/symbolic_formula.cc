@@ -101,16 +101,15 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
 }
 
 Formula operator||(const Formula& f1, const Formula& f2) {
-  // tt || x => tt    x && tt => tt
-  if (f1.get_kind() == FormulaKind::True ||
-      f2.get_kind() == FormulaKind::True) {
+  // tt || x => tt    x || tt => tt
+  if (f1 == Formula::True() || f2.get_kind() == FormulaKind::True) {
     return Formula::True();
   }
-  // ff && f2 => f2
+  // ff || f2 => f2
   if (f1.get_kind() == FormulaKind::False) {
     return f2;
   }
-  // f1 && ff => f1
+  // f1 || ff => f1
   if (f2.get_kind() == FormulaKind::False) {
     return f1;
   }
@@ -132,6 +131,8 @@ ostream& operator<<(ostream& os, const Formula& e) {
   return e.ptr_->Display(os);
 }
 
+bool operator==(const Formula& f1, const Formula& f2) { return f1.EqualTo(f2); }
+
 Formula operator==(const Expression& e1, const Expression& e2) {
   // If e1 and e2 are structurally equal, simplify e1 == e2 to true.
   if (e1.EqualTo(e2)) {
@@ -139,13 +140,17 @@ Formula operator==(const Expression& e1, const Expression& e2) {
   }
   return Formula{make_shared<FormulaEq>(e1, e2)};
 }
+
 Formula operator==(const double v1, const Expression& e2) {
-  // use () to avoid a conflict between cpplint and clang-format
+  // Uses () to avoid a conflict between cpplint and clang-format.
   return (Expression{v1}) == e2;
 }
+
 Formula operator==(const Expression& e1, const double v2) {
   return e1 == Expression{v2};
 }
+
+bool operator!=(const Formula& f1, const Formula& f2) { return !(f1 == f2); }
 
 Formula operator!=(const Expression& e1, const Expression& e2) {
   // If e1 and e2 are structurally equal, simplify e1 != e2 to false.
@@ -155,7 +160,7 @@ Formula operator!=(const Expression& e1, const Expression& e2) {
   return Formula{make_shared<FormulaNeq>(e1, e2)};
 }
 Formula operator!=(const double v1, const Expression& e2) {
-  // use () to avoid a conflict between cpplint and clang-format
+  // Uses () to avoid a conflict between cpplint and clang-format.
   return (Expression{v1}) != e2;
 }
 Formula operator!=(const Expression& e1, const double v2) {
@@ -418,8 +423,8 @@ bool FormulaLeq::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  const FormulaLeq& f_geq{static_cast<const FormulaLeq&>(f)};
-  return e1_.EqualTo(f_geq.e1_) && e2_.EqualTo(f_geq.e2_);
+  const FormulaLeq& f_leq{static_cast<const FormulaLeq&>(f)};
+  return e1_.EqualTo(f_leq.e1_) && e2_.EqualTo(f_leq.e2_);
 }
 
 bool FormulaLeq::Evaluate(const Environment& env) const {

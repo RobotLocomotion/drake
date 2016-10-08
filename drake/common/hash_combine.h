@@ -5,8 +5,8 @@
 
 namespace drake {
 
-/// Combines two hash values into one. The following code is in public domain
-/// according to http://www.burtleburtle.net/bob/hash/doobs.html
+/// Combines two hash values into one. The following code is public domain
+/// according to http://www.burtleburtle.net/bob/hash/doobs.html.
 template <class T>
 inline size_t hash_combine(size_t seed, const T& v) {
   std::hash<T> hasher;

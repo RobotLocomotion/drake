@@ -9,8 +9,8 @@ namespace symbolic {
 
 using std::endl;
 using std::ostream;
-using std::string;
 using std::ostringstream;
+using std::string;
 
 Environment::Environment(std::initializer_list<value_type> init) : map_(init) {}
 
