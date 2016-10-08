@@ -7,8 +7,8 @@
 #include <set>
 #include <string>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_variable.h"
-#include "drake/drakeCommon_export.h"
 
 namespace drake {
 
@@ -16,15 +16,14 @@ namespace symbolic {
 
 /** Represents a set of symbolic variables.
  *
- * This class is based on std::set<Variable>. The intent is to add
- * things that we need including set-union (Variables::insert,
- * operator+, operator+=), set-minus (Variables::erase, operator-,
- * operator-=), and subset/superset checking functions
- * (Variables::IsSubsetOf, Variables::IsSupersetOf,
+ * This class is based on std::set<Variable>. The intent is to add things that
+ * we need including set-union (Variables::insert, operator+, operator+=),
+ * set-minus (Variables::erase, operator-, operator-=), and subset/superset
+ * checking functions (Variables::IsSubsetOf, Variables::IsSupersetOf,
  * Variables::IsStrictSubsetOf, Variables::IsStrictSupersetOf).
  */
 
-class DRAKECOMMON_EXPORT Variables {
+class DRAKE_EXPORT Variables {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef typename drake::symbolic::Variable value_type;
@@ -99,10 +98,10 @@ class DRAKECOMMON_EXPORT Variables {
   bool IsStrictSubsetOf(const Variables& vars) const;
   bool IsStrictSupersetOf(const Variables& vars) const;
 
-  friend DRAKECOMMON_EXPORT bool operator==(const Variables& vars1,
+  friend DRAKE_EXPORT bool operator==(const Variables& vars1,
                                             const Variables& vars2);
 
-  friend DRAKECOMMON_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Variables& vars);
 
  private:
@@ -110,26 +109,26 @@ class DRAKECOMMON_EXPORT Variables {
 };
 
 /** Updates \p var1 with the result of set-union(\p var1, \p var2). */
-DRAKECOMMON_EXPORT Variables operator+=(Variables& vars1,
+DRAKE_EXPORT Variables operator+=(Variables& vars1,
                                         const Variables& vars2);
 /** Updates \p vars with the result of set-union(\p vars, { \p var }). */
-DRAKECOMMON_EXPORT Variables operator+=(Variables& vars, const Variable& var);
+DRAKE_EXPORT Variables operator+=(Variables& vars, const Variable& var);
 /** Returns set-union of \p var1 and \p var2. */
-DRAKECOMMON_EXPORT Variables operator+(Variables vars1, const Variables& vars2);
+DRAKE_EXPORT Variables operator+(Variables vars1, const Variables& vars2);
 /** Returns set-union of \p vars and {\p var}. */
-DRAKECOMMON_EXPORT Variables operator+(Variables vars, const Variable& var);
+DRAKE_EXPORT Variables operator+(Variables vars, const Variable& var);
 /** Returns set-union of {\p var} and \p vars. */
-DRAKECOMMON_EXPORT Variables operator+(const Variable& var, Variables vars);
+DRAKE_EXPORT Variables operator+(const Variable& var, Variables vars);
 
 /** Updates \p var1 with the result of set-minus(\p var1, \p var2). */
-DRAKECOMMON_EXPORT Variables operator-=(Variables& vars1,
+DRAKE_EXPORT Variables operator-=(Variables& vars1,
                                         const Variables& vars2);
 /** Updates \p vars with the result of set-minus(\p vars, {\p var}). */
-DRAKECOMMON_EXPORT Variables operator-=(Variables& vars, const Variable& var);
+DRAKE_EXPORT Variables operator-=(Variables& vars, const Variable& var);
 /** Returns set-minus(\p var1, \p vars2). */
-DRAKECOMMON_EXPORT Variables operator-(Variables vars1, const Variables& vars2);
+DRAKE_EXPORT Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(\p vars, { \p var }). */
-DRAKECOMMON_EXPORT Variables operator-(Variables vars, const Variable& var);
+DRAKE_EXPORT Variables operator-(Variables vars, const Variable& var);
 
 }  // namespace symbolic
 }  // namespace drake
