@@ -4,6 +4,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -57,7 +58,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 };
 
 int do_main(int argc, char* argv[]) {
-  lcm::LCM lcm;
+  lcm::DrakeLcm lcm;
   RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
                      systems::plants::joints::kFixed);
 
