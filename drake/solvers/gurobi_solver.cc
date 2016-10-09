@@ -68,18 +68,39 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 
 int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
   for(const auto& binding : prog.lorentz_cone_constraints()) {
-    // We will build a matrix Q = diag([1;1;...;1;-1], and we will use
+    // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
     // qrow to store the row    indices of the non-zero entries of Q
     // qcol to store the column indices of the non-zero entries of Q
     // qval to store the value          of the non-zero entries of Q
     std::vector<int> qrow;
     std::vector<int> qcol;
-    std::vector<int> qval;
+    std::vector<double> qval;
+    int error;
     int row_num = 0;
-    for(const DecisionVariableView& var: binding.variable_list()) {
-      for()
+    for(const DecisionVariableView& variable : binding.variable_list()) {
+      for(int i = 0; i < static_cast<int>(variable.size()); i++) {
+        qrow.push_back(row_num);
+        qcol.push_back(static_cast<int>(variable.index()) + i);
+        if(row_num == 0) {
+          qval.push_back(-1.0);
+          // Also adds the constraint that the variable is non-negative.
+          error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, 0, 0.0);
+          if(error) {
+            return error;
+          }
+        }
+        else {
+          qval.push_back(1.0);
+        }
+        row_num ++;
+      }
+    }
+    error = GRBaddqconstr(model, 0, nullptr, nullptr, row_num + 1, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    if(error) {
+      return error;
     }
   }
+  return 0;
 }
 
 /*
@@ -219,6 +240,11 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
         return error;
       }
     }
+  }
+
+  const int error = AddLorentzConeConstraints(model, prog);
+  if(error) {
+    return error;
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
