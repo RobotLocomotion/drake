@@ -29,9 +29,6 @@ class SimpleCTSystem : public systems::LeafSystem<T> {
                   systems::SystemOutput<T>* output) const override {
     output->GetMutableVectorData(0)->set_value(
         context.get_continuous_state()->get_state().CopyToVector());
-    std::cout << "y(" << context.get_time() << ") = "
-              << context.get_continuous_state()->get_state().GetAtIndex(0)
-              << std::endl;
   }
 
   // xdot = -x + x^3
@@ -43,7 +40,6 @@ class SimpleCTSystem : public systems::LeafSystem<T> {
     const T x = context.get_continuous_state()->get_state().GetAtIndex(0);
     T xdot = -x + std::pow(x, 3.0);
     derivatives->get_mutable_state()->SetAtIndex(0, xdot);
-    std::cout << "x(" << context.get_time() << ") = " << x << std::endl;
   }
 
  protected:
