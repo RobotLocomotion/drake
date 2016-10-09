@@ -8,17 +8,19 @@ namespace drake {
 namespace examples {
 
 /// Simple Continuous Time System Example
-///     \dot{x} = -x + x^3
+/// \begin{gather*}
+///     \dot{x} = -x + x^3 \\
 ///     y = x
+/// \end{gather*}
 template <typename T>
-class SimpleCTSystem : public systems::LeafSystem<T> {
+class SimpleContinuousTimeSystem : public systems::LeafSystem<T> {
  public:
-  SimpleCTSystem() {
+  SimpleContinuousTimeSystem() {
     this->DeclareOutputPort(systems::kVectorValued,
                             1,  // dimension of output (y) = 1
                             systems::kContinuousSampling);
   };
-  ~SimpleCTSystem() override{};
+  ~SimpleContinuousTimeSystem() override{};
 
   /// the output does not depend on any of the inputs directly (because there
   /// are no inputs to this system)
@@ -56,7 +58,7 @@ class SimpleCTSystem : public systems::LeafSystem<T> {
 
 int main(int argc, char* argv[]) {
   // create the simple system
-  auto system = std::make_unique<drake::examples::SimpleCTSystem<double>>();
+  auto system = std::make_unique<drake::examples::SimpleContinuousTimeSystem<double>>();
 
   // create the simulator
   drake::systems::Simulator<double> simulator(*system);
