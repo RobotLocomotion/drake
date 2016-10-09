@@ -166,6 +166,24 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
         CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
   });
 }
+GTEST_TEST(testMathematicalProgram, addLinearConstraintTest) {
+  // Test the simple QP
+  // min x(0)^2 + x(1)^2 + x(2)^2
+  // s.t x(0) +   x(1) = 1
+  //     x(0) + 2*x(2) = 2
+  // The optimal solution should be
+  // x(0) = 2/3, x(1) = 1/3, x(2) = 2/3
+  MathematicalProgram prog;
+
+  auto x = prog.AddContinuousVariables(3);
+
+  prog.AddLinearEqualityConstraint(Vector2d(1, 1).transpose(), Vector1d::Constant(1), {x(0), x(1)});
+  prog.AddLinearEqualityConstraint(Vector2d(1, 2).transpose(), Vector1d::Constant(2), {x(0), x(2)});
+
+  auto result = prog.Solve();
+  EXPECT_EQ(result, kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(Vector3d(2/3, 1/3, 2/3), x.value(), 1e-10, MatrixCompareType::absolute));
+}
 
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;

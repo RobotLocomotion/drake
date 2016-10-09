@@ -68,7 +68,17 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 
 int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
   for(const auto& binding : prog.lorentz_cone_constraints()) {
-    
+    // We will build a matrix Q = diag([1;1;...;1;-1], and we will use
+    // qrow to store the row    indices of the non-zero entries of Q
+    // qcol to store the column indices of the non-zero entries of Q
+    // qval to store the value          of the non-zero entries of Q
+    std::vector<int> qrow;
+    std::vector<int> qcol;
+    std::vector<int> qval;
+    int row_num = 0;
+    for(const DecisionVariableView& var: binding.variable_list()) {
+      for()
+    }
   }
 }
 
