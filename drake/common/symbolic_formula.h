@@ -14,6 +14,8 @@
 
 namespace drake {
 namespace symbolic {
+
+/** Kinds of symbolic formulas. */
 enum class FormulaKind {
   True,   ///< ⊤
   False,  ///< ⊥
@@ -31,39 +33,39 @@ enum class FormulaKind {
 
 class FormulaCell;
 
-/** Represents a symbolic form of a firt-order logic formula.
+/** Represents a symbolic form of a first-order logic formula.
 
 It has the following grammar:
 
 \verbatim
     F := ⊤ | ⊥ | E = E | E ≠ E | E > E | E ≥ E | E < E | E ≤ E
-       | E ∧ E | E ∨ E | ¬E | ∀ x₁, ..., xn. F
+       | E ∧ E | E ∨ E | ¬F | ∀ x₁, ..., xn. F
 \endverbatim
 
-In the implementation, Formula is a simple wrapper including a shared pointer to
-FormulaCell class which is a super-class of different kinds of symbolic formulas
-(i.e. FormulaAnd, FormulaOr, FormulaEq). Note that it includes a shared pointer,
-not a unique pointer, to allow sharing sub-expressions.
+In the implementation, Formula is a simple wrapper including a shared
+pointer to FormulaCell class which is a super-class of different kinds
+of symbolic formulas (i.e. FormulaAnd, FormulaOr, FormulaEq). Note
+that it includes a shared pointer, not a unique pointer, to allow
+sharing sub-expressions.
 
 \note The sharing of sub-expressions is not yet implemented.
 
 The following simple simplifications are implemented:
 \verbatim
-    E1 = E2        ->  True    (if E1 and E2 are structually equal)
-    E1 ≠ E2        ->  False   (if E1 and E2 are structually equal)
-    E1 > E2        ->  False   (if E1 and E2 are structually equal)
-    E1 ≥ E2        ->  True    (if E1 and E2 are structually equal)
-    E1 < E2        ->  False   (if E1 and E2 are structually equal)
-    E1 ≤ E2        ->  True    (if E1 and E2 are structually equal)
+    E1 = E2        ->  True    (if E1 and E2 are structurally equal)
+    E1 ≠ E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 > E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 ≥ E2        ->  True    (if E1 and E2 are structurally equal)
+    E1 < E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 ≤ E2        ->  True    (if E1 and E2 are structurally equal)
     F1 ∧ F2        ->  False   (if either F1 or F2 is False)
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
 */
-
 class DRAKE_EXPORT Formula {
  public:
-  /** Default constructor. */
-  Formula() = default;
+  /** Default constructor (deleted). */
+  Formula() = delete;
 
   /** Move-construct a set from an rvalue. */
   Formula(Formula&& f) = default;
@@ -77,7 +79,7 @@ class DRAKE_EXPORT Formula {
   /** Copy-assign a set from an lvalue. */
   Formula& operator=(const Formula& f) = default;
 
-  explicit Formula(std::shared_ptr<FormulaCell> const ptr);
+  explicit Formula(const std::shared_ptr<FormulaCell> ptr);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;
@@ -100,29 +102,29 @@ class DRAKE_EXPORT Formula {
   friend DRAKE_EXPORT bool operator==(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator==(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
   friend DRAKE_EXPORT bool operator!=(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator!=(const Expression& e1, double v2);
   friend DRAKE_EXPORT Formula operator<(const Expression& e1,
                                         const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator<(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<(const Expression& e1, double v2);
   friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator<=(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator<=(const Expression& e1, double v2);
   friend DRAKE_EXPORT Formula operator>(const Expression& e1,
                                         const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator>(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>(const Expression& e1, double v2);
   friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(const double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
+  friend DRAKE_EXPORT Formula operator>=(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                const Formula& f);
@@ -134,30 +136,37 @@ class DRAKE_EXPORT Formula {
   std::shared_ptr<FormulaCell> ptr_;
 };
 
+/** Returns a formula \p f, universally quantified by variables \p vars. */
 DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
 DRAKE_EXPORT Formula operator==(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator==(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator==(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
 DRAKE_EXPORT Formula operator!=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator!=(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator!=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator!=(const Expression& e1, double v2);
 DRAKE_EXPORT Formula operator<(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator<(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator<(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator<(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator<(const Expression& e1, double v2);
 DRAKE_EXPORT Formula operator<=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator<=(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator<=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator<=(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator<=(const Expression& e1, double v2);
 DRAKE_EXPORT Formula operator>(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator>(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator>(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator>(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator>(const Expression& e1, double v2);
 DRAKE_EXPORT Formula operator>=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator>=(const double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
+DRAKE_EXPORT Formula operator>=(double v1, const Expression& e2);
+DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
 
+/** Represents an abstract class which is the base of concrete symbolic-formula
+ * classes (i.e. symbolic::FormulaAnd, symbolic::FormulaEq).
+ *
+ * \note It provides virtual function, FormulaCell::Display,
+ * because operator<< is not allowed to be a virtual function.
+ */
 class FormulaCell {
  public:
-  FormulaCell(FormulaKind const k, size_t const hash);
+  FormulaCell(FormulaKind k, size_t hash);
   FormulaKind get_kind() const { return kind_; }
   size_t get_hash() const { return hash_; }
   virtual Variables GetFreeVariables() const = 0;
@@ -172,6 +181,7 @@ class FormulaCell {
   const size_t hash_{};
 };
 
+/** Symbolic formula representing true. */
 class FormulaTrue : public FormulaCell {
  public:
   FormulaTrue();
@@ -181,6 +191,7 @@ class FormulaTrue : public FormulaCell {
   std::ostream& Display(std::ostream& os) const override;
 };
 
+/** Symbolic formula representing false. */
 class FormulaFalse : public FormulaCell {
  public:
   FormulaFalse();
@@ -190,6 +201,7 @@ class FormulaFalse : public FormulaCell {
   std::ostream& Display(std::ostream& os) const override;
 };
 
+/** Symbolic formula representing equality (e1 = e2). */
 class FormulaEq : public FormulaCell {
  public:
   FormulaEq(const Expression& e1, const Expression& e2);
@@ -203,6 +215,7 @@ class FormulaEq : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing disequality (e1 ≠ e2). */
 class FormulaNeq : public FormulaCell {
  public:
   FormulaNeq(const Expression& e1, const Expression& e2);
@@ -216,6 +229,7 @@ class FormulaNeq : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing 'greater-than' (e1 > e2). */
 class FormulaGt : public FormulaCell {
  public:
   FormulaGt(const Expression& e1, const Expression& e2);
@@ -229,6 +243,7 @@ class FormulaGt : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing 'greater-than-or-equal-to' (e1 ≥ e2). */
 class FormulaGeq : public FormulaCell {
  public:
   FormulaGeq(const Expression& e1, const Expression& e2);
@@ -242,6 +257,7 @@ class FormulaGeq : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing 'less-than' (e1 < e2). */
 class FormulaLt : public FormulaCell {
  public:
   FormulaLt(const Expression& e1, const Expression& e2);
@@ -255,6 +271,7 @@ class FormulaLt : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing 'less-than-or-equal-to' (e1 ≤ e2). */
 class FormulaLeq : public FormulaCell {
  public:
   FormulaLeq(const Expression& e1, const Expression& e2);
@@ -268,6 +285,7 @@ class FormulaLeq : public FormulaCell {
   const Expression e2_;
 };
 
+/** Symbolic formula representing conjunctions (f1 ∧ f2). */
 class FormulaAnd : public FormulaCell {
  public:
   FormulaAnd(const Formula& f1, const Formula& f2);
@@ -281,6 +299,7 @@ class FormulaAnd : public FormulaCell {
   const Formula f2_;
 };
 
+/** Symbolic formula representing disjunctions (f1 ∨ f2). */
 class FormulaOr : public FormulaCell {
  public:
   FormulaOr(const Formula& f1, const Formula& f2);
@@ -294,6 +313,7 @@ class FormulaOr : public FormulaCell {
   const Formula f2_;
 };
 
+/** Symbolic formula representing negations (¬f). */
 class FormulaNot : public FormulaCell {
  public:
   explicit FormulaNot(const Formula& f);
@@ -306,6 +326,8 @@ class FormulaNot : public FormulaCell {
   const Formula f_;
 };
 
+/** Symbolic formula representing universal quantifications (∀ x₁, ...,
+ * xn. F). */
 class FormulaForall : public FormulaCell {
  public:
   FormulaForall(const Variables& vars, const Formula& f);
@@ -323,8 +345,8 @@ std::ostream& operator<<(std::ostream& os, const Formula& e);
 }  // namespace drake
 }  // namespace symbolic
 
-/** Provides std::hash<drake::symbolic::Formula>. */
 namespace std {
+/* Provides std::hash<drake::symbolic::Formula>. */
 template <>
 struct hash<drake::symbolic::Formula> {
   size_t operator()(const drake::symbolic::Formula& e) const {
@@ -332,7 +354,7 @@ struct hash<drake::symbolic::Formula> {
   }
 };
 
-/** Provides std::equal_to<drake::symbolic::Formula>. */
+/* Provides std::equal_to<drake::symbolic::Formula>. */
 template <>
 struct equal_to<drake::symbolic::Formula> {
   bool operator()(const drake::symbolic::Formula& lhs,
