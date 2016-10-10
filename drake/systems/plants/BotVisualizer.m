@@ -219,7 +219,7 @@ classdef BotVisualizer < RigidBodyVisualizer
     end
     
     function playbackMovie(obj,xtraj,filename,options)
-      ffmpeg = getCMakeParam('ffmpeg');
+      ffmpeg = getCMakeParam('FFMPEG_EXECUTABLE');
       if isempty(ffmpeg)
         error('need ffmpeg.  rerun make configure from the prompt to help find it');
       end
