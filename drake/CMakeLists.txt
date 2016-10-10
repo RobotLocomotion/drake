@@ -275,9 +275,9 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/get_drake_install_dir.m
   "end\n"
   "\n")
 
-find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(ffmpeg ffmpeg)
+find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(FFMPEG_EXECUTABLE ffmpeg)
 
 if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
