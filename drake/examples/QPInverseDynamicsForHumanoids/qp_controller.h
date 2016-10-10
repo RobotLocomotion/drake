@@ -750,6 +750,6 @@ class QPController {
   static const double kUpperBoundForContactBasis;
 };
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace examples
+}  // end namespace drake

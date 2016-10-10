@@ -60,6 +60,6 @@ Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
     const RigidBody& body,
     const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace examples
+}  // end namespace drake

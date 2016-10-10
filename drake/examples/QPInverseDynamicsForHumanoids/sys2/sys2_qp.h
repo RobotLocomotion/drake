@@ -11,7 +11,7 @@ namespace qp_inverse_dynamics {
 // constraint for EvalOutput. It is because qp controller needs to allocate
 // mutable workspace (MathematicalProgram, temporary matrices for doing math,
 // etc), and I want to avoid allocating these repeatedly.
-static example::qp_inverse_dynamics::QPController qp_controller__;
+static examples::qp_inverse_dynamics::QPController qp_controller__;
 
 class System2QP : public LeafSystem<double> {
  public:
@@ -37,18 +37,18 @@ class System2QP : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
     // Get robot status.
-    const example::qp_inverse_dynamics::HumanoidStatus* rs =
-        EvalInputValue<example::qp_inverse_dynamics::HumanoidStatus>(
+    const examples::qp_inverse_dynamics::HumanoidStatus* rs =
+        EvalInputValue<examples::qp_inverse_dynamics::HumanoidStatus>(
             context, input_port_num_humanoid_status_);
 
     // Get qp input.
-    const example::qp_inverse_dynamics::QPInput* qp_input =
-        EvalInputValue<example::qp_inverse_dynamics::QPInput>(
+    const examples::qp_inverse_dynamics::QPInput* qp_input =
+        EvalInputValue<examples::qp_inverse_dynamics::QPInput>(
             context, input_port_num_qp_input_);
 
-    example::qp_inverse_dynamics::QPOutput& qp_output =
+    examples::qp_inverse_dynamics::QPOutput& qp_output =
         output->GetMutableData(output_port_num_qp_input_)
-            ->GetMutableValue<example::qp_inverse_dynamics::QPOutput>();
+            ->GetMutableValue<examples::qp_inverse_dynamics::QPOutput>();
 
     if (qp_controller__.Control(*rs, *qp_input, &qp_output) < 0) {
       throw std::runtime_error("System2QP: QP canot solve\n");
@@ -59,9 +59,9 @@ class System2QP : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    example::qp_inverse_dynamics::QPOutput out(robot_);
+    examples::qp_inverse_dynamics::QPOutput out(robot_);
     output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<example::qp_inverse_dynamics::QPOutput>(out)));
+        new Value<examples::qp_inverse_dynamics::QPOutput>(out)));
     return std::unique_ptr<SystemOutput<double>>(output.release());
   }
 
@@ -96,5 +96,5 @@ class System2QP : public LeafSystem<double> {
 };
 
 }  // end namespace qp_inverse_dynamics
-}  // end namespace example
+}  // end namespace system
 }  // end namespace drake

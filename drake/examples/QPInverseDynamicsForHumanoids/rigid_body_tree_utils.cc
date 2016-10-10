@@ -85,6 +85,6 @@ Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
   return Jdv;
 }
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace examples
+}  // end namespace drake

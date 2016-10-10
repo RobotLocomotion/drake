@@ -56,7 +56,7 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   Context<double>* val_sim_context = diagram->GetMutableSubsystemContext(
       simulator.get_mutable_context(), val_sim);
   // Set initial state.
-  std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs0 =
+  std::unique_ptr<examples::qp_inverse_dynamics::HumanoidStatus> rs0 =
       val_sim->SetInitialCondition(val_sim_context);
   // Set plan eval's desired to the initial state.
   plan_eval->SetupDesired(*rs0);
@@ -76,7 +76,7 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   // they should have no velocity after simulation.
   // Thus, the tolerances on feet velocities are smaller than those for the
   // generalized position and velocity.
-  std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs1 =
+  std::unique_ptr<examples::qp_inverse_dynamics::HumanoidStatus> rs1 =
       val_sim->GetHumanoidStatusFromContext(*val_sim_context);
 
   EXPECT_TRUE(rs1->foot(Side::LEFT).velocity().norm() < 1e-6);

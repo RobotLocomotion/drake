@@ -109,6 +109,6 @@ void HumanoidStatus::Update(
          (Fz[Side::LEFT] + Fz[Side::RIGHT]);
 }
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake
+}  // end namespace qp_inverse_dynamics
+}  // end namespace examples
+}  // end namespace drake
