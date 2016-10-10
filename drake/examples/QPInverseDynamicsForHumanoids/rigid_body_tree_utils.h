@@ -8,7 +8,7 @@ typedef Matrix<double, 6, 1> Vector6d;
 }
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 // TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
 
@@ -60,6 +60,6 @@ Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
     const RigidBody& body,
     const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

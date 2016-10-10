@@ -5,7 +5,7 @@
 #include "drake/math/cross_product.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;
@@ -485,6 +485,6 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   return out;
 }
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake
