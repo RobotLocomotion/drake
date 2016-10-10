@@ -169,6 +169,11 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
     return T(NAN);
   }
 
+  /// Compute the force exerted by a joint limit.  Exposed for unit testing of
+  /// the formula.
+  static T JointLimitForce(const DrakeJoint& joint,
+                           const T& position, const T& velocity);
+
  protected:
   // LeafSystem<T> override
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
