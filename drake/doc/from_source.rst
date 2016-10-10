@@ -83,7 +83,6 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    fedora
     homebrew
     ubuntu_trusty
     ubuntu_xenial
