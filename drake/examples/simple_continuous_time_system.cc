@@ -22,7 +22,7 @@ class SimpleContinuousTimeSystem : public systems::LeafSystem<double> {
     this->DeclareOutputPort(systems::kVectorValued,
                             1,  // dimension of output (y) = 1
                             systems::kContinuousSampling);
-  };
+  }
   ~SimpleContinuousTimeSystem() override{};
 
   // xdot = -x + x^3
@@ -43,7 +43,7 @@ class SimpleContinuousTimeSystem : public systems::LeafSystem<double> {
 
  protected:
   // allocate a basic vector of dimension 1
-  virtual std::unique_ptr<systems::ContinuousState<double>>
+  std::unique_ptr<systems::ContinuousState<double>>
   AllocateContinuousState() const override {
     return std::make_unique<systems::ContinuousState<double>>(
         std::make_unique<systems::BasicVector<double>>(1));
