@@ -1,4 +1,5 @@
 
+/// @file simple_continuous_time_system.cc
 /// Simple Continuous Time System Example
 ///
 /// This is meant to be a sort of "hello world" example for the
@@ -67,8 +68,7 @@ int main(int argc, char* argv[]) {
   // make sure the simulation converges to the stable fixed point at x=0
   DRAKE_ASSERT(std::abs(simulator.get_context()
                             .get_continuous_state()
-                            ->CopyToVector()
-                            .value()) < 1.0e-4);
+                            ->get_state().GetAtIndex(0)) < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory (using vtk?)
 
