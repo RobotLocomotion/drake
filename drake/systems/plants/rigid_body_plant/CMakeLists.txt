@@ -2,6 +2,7 @@ set(source_files kinematics_results.cc rigid_body_plant.cc
     contact_force.cc
     contact_resultant_force_calculator.cc
     contact_detail.cc
+    contact_manifold.cc
     )
 
 # The following variables are necessary to conditionally include
@@ -38,7 +39,8 @@ target_link_libraries(drakeRigidBodyPlant
 
 drake_install_headers(
     ${lcm_dependent_header_files}
-    kinematics_results.h rigid_body_plant.h)
+    kinematics_results.h rigid_body_plant.h contact_manifold.h contact_detail.h
+    contact_results.h)
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rigid-body-plant
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
