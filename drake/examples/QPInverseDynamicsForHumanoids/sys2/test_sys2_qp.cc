@@ -16,6 +16,15 @@ namespace drake {
 namespace systems {
 namespace qp_inverse_dynamics {
 
+// In this test, the Valkyrie robot is initialized to a nominal configuration
+// with zero velocities, and the qp controller is setup to track this
+// state. The robot is then perturbed in velocity for the Torso Pitch joint.
+// The test forward simulates the closed loop system for 2 seconds.
+// The simulation does not perform forward dynamics computation, instead, it
+// integrates the computed acceleration from the controller. This dummy
+// simulation should be replaced later with real simulation.
+// The controller should drive the position and velocity close to zero in 2
+// seconds.
 GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   std::string urdf =
       drake::GetDrakePath() +
@@ -55,12 +64,18 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   val_sim->PerturbVelocity("torsoPitch", 0.1, val_sim_context);
 
   // Simulation.
+  // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
+  // reasonable amount of time.
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
       *diagram, 4e-3, simulator.get_mutable_context());
   simulator.Initialize();
   simulator.StepTo(2.0);
 
   // Check final state.
+  // Since the feet have equality constraints set to 0 in the qp controller,
+  // they should have no velocity after simulation.
+  // Thus, the tolerances on feet velocities are smaller than those for the
+  // generalized position and velocity.
   std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs1 =
       val_sim->GetHumanoidStatusFromContext(*val_sim_context);
 

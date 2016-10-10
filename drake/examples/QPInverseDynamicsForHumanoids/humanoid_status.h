@@ -293,16 +293,16 @@ class HumanoidStatus {
 
   /// Nominal position for the robot.
   /// TODO(siyuan.feng@tri.global): should read this from the model file
-  /// eventually
+  /// eventually.
   Eigen::VectorXd nominal_position_;
 
-  /// Maps body name to its index
+  /// Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
-  /// Maps potiion name to its index
+  /// Map position name to its index.
   std::unordered_map<std::string, int> name_to_position_index_;
-  /// Maps velocity name to its index
+  /// Map velocity name to its index.
   std::unordered_map<std::string, int> name_to_velocity_index_;
-  /// Maps actuator name to its index
+  /// Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
 
   double time_;

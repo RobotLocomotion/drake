@@ -13,7 +13,7 @@ namespace qp_inverse_dynamics {
 class System2DummyValkyrieSim : public LeafSystem<double> {
  public:
   /**
-   * A sysmtem2 dummy dynamics simulator for Valkyrie.
+   * A System2 dummy dynamics simulator for Valkyrie.
    * Time derivative is actually computed in the qp controller.
    * Input: qp output
    * Output: humanoid status
@@ -60,7 +60,7 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     Eigen::VectorXd q = state.get_generalized_position().CopyToVector();
     Eigen::VectorXd v = state.get_generalized_velocity().CopyToVector();
 
-    // set output
+    // Set output.
     example::qp_inverse_dynamics::HumanoidStatus& rs =
         output->GetMutableData(output_port_num_humanoid_status_)
             ->GetMutableValue<example::qp_inverse_dynamics::HumanoidStatus>();
@@ -71,13 +71,13 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
   void EvalTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
-    // get acceleration from qpouput
+    // Get the acceleration from qpouput.
     const example::qp_inverse_dynamics::QPOutput* qpout =
         EvalInputValue<example::qp_inverse_dynamics::QPOutput>(
             context, input_port_num_qp_output_);
     const Eigen::VectorXd& vd = qpout->vd();
 
-    // get current state
+    // Get the current state.
     const ContinuousState<double>& state =
         *context.get_state().get_continuous_state();
     const VectorBase<double>& state_v = state.get_generalized_velocity();
@@ -85,13 +85,17 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     VectorBase<double>* new_v = derivatives->get_mutable_generalized_position();
     VectorBase<double>* new_vd =
         derivatives->get_mutable_generalized_velocity();
-    if (new_v->size() != state_v.size() || new_vd->size() != vd.size())
+    if (new_v->size() != state_v.size() || new_vd->size() != vd.size()) {
       throw std::runtime_error("time deriv dimension mismatch.");
+    }
 
-    for (int i = 0; i < new_v->size(); i++)
+    for (int i = 0; i < new_v->size(); i++) {
       new_v->SetAtIndex(i, state_v.GetAtIndex(i));
+    }
 
-    for (int i = 0; i < new_vd->size(); i++) new_vd->SetAtIndex(i, vd(i));
+    for (int i = 0; i < new_vd->size(); i++) {
+      new_vd->SetAtIndex(i, vd(i));
+    }
   }
 
   /**
@@ -114,7 +118,9 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
     std::unique_ptr<example::qp_inverse_dynamics::HumanoidStatus> rs(
         new example::qp_inverse_dynamics::HumanoidStatus(robot_));
     q->SetFromVector(rs->GetNominalPosition());
-    for (int i = 0; i < v->size(); i++) v->SetAtIndex(i, 0.);
+    for (int i = 0; i < v->size(); i++) {
+      v->SetAtIndex(i, 0.);
+    }
 
     rs->Update(context->get_time(), q->CopyToVector(), v->CopyToVector(),
                zero_torque_, Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
@@ -181,14 +187,14 @@ class System2DummyValkyrieSim : public LeafSystem<double> {
   }
 
   /**
-   * @return port number that corresponds to the input: qp_output.
+   * @return the port number that corresponds to the input: qp_output.
    */
   inline const SystemPortDescriptor<double>& get_input_port_qp_output() const {
     return get_input_port(input_port_num_qp_output_);
   }
 
   /**
-   * @return port number that corresponds to the output: humanoid status.
+   * @return the port number that corresponds to the output: humanoid status.
    */
   inline const SystemPortDescriptor<double>& get_output_port_humanoid_status()
       const {

@@ -16,7 +16,7 @@ static example::qp_inverse_dynamics::QPController qp_controller__;
 class System2QP : public LeafSystem<double> {
  public:
   /**
-   * A system2 wrapper around the qp inverse dynamics controller.
+   * A System2 wrapper around the qp inverse dynamics controller.
    * Input: humanoid status, qp input
    * Output: qp outout
    */
@@ -36,12 +36,12 @@ class System2QP : public LeafSystem<double> {
 
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
-    // get robot status
+    // Get robot status.
     const example::qp_inverse_dynamics::HumanoidStatus* rs =
         EvalInputValue<example::qp_inverse_dynamics::HumanoidStatus>(
             context, input_port_num_humanoid_status_);
 
-    // get qp input
+    // Get qp input.
     const example::qp_inverse_dynamics::QPInput* qp_input =
         EvalInputValue<example::qp_inverse_dynamics::QPInput>(
             context, input_port_num_qp_input_);
@@ -66,7 +66,7 @@ class System2QP : public LeafSystem<double> {
   }
 
   /**
-   * return input port number that corresponds to: humanoid status
+   * @return the input port number that corresponds to: humanoid status.
    */
   inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
       const {
@@ -74,14 +74,14 @@ class System2QP : public LeafSystem<double> {
   }
 
   /**
-   * return input port number that corresponds to: qp input
+   * @return the input port number that corresponds to: qp input.
    */
   inline const SystemPortDescriptor<double>& get_input_port_qp_input() const {
     return get_input_port(input_port_num_qp_input_);
   }
 
   /**
-   * return output port number that corresponds to: qp output
+   * @return the output port number that corresponds to: qp output.
    */
   inline const SystemPortDescriptor<double>& get_output_port_qp_output() const {
     return get_output_port(output_port_num_qp_input_);
