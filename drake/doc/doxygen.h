@@ -40,8 +40,8 @@
 
 <p>
 If you want to make your own Doxygen locally, run
-<b><i>make documentation</i></b> in
-the build/drake directory.  You may need to install Doxygen (e.g., with <i>sudo
+<b><i>make documentation</i></b> or <b><i>ninja documentation</i></b> in
+the <code>drake-distro/build/drake</code> directory.  You may need to install Doxygen (e.g., with <i>sudo
 apt-get install doxygen</i> on Ubuntu).</p>
 <p>
 
