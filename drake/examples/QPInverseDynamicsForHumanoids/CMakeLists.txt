@@ -6,4 +6,4 @@ drake_add_cc_test(
   SIZE large)
 target_link_libraries(test_gravity_compensation_for_valkyrie drakeQPController)
 
-add_subdirectory(sys2)
+add_subdirectory(system)

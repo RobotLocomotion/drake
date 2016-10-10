@@ -5,15 +5,21 @@
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/sys2/sys2_dummy_val.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/sys2/sys2_qp.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/sys2/sys2_plan_eval.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 
 #include "gtest/gtest.h"
 #include "drake/common/eigen_matrix_compare.h"
 
 namespace drake {
-namespace systems {
+
+using systems::DiagramBuilder;
+using systems::Diagram;
+using systems::Simulator;
+using systems::ExplicitEulerIntegrator;
+
+namespace examples {
 namespace qp_inverse_dynamics {
 
 // In this test, the Valkyrie robot is initialized to a nominal configuration
@@ -27,18 +33,19 @@ namespace qp_inverse_dynamics {
 // seconds.
 GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   std::string urdf =
-      drake::GetDrakePath() +
+      GetDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
   RigidBodyTree robot(urdf);
 
   // Build diagram.
   DiagramBuilder<double> builder;
-  System2QP* qp_con = builder.AddSystem(std::make_unique<System2QP>(robot));
-  System2DummyValkyrieSim* val_sim =
-      builder.AddSystem(std::make_unique<System2DummyValkyrieSim>(robot));
-  System2PlanEval* plan_eval =
-      builder.AddSystem(std::make_unique<System2PlanEval>(robot));
+  QPControllerSystem* qp_con =
+      builder.AddSystem(std::make_unique<QPControllerSystem>(robot));
+  ValkyrieSystem* val_sim =
+      builder.AddSystem(std::make_unique<ValkyrieSystem>(robot));
+  PlanEvalSystem* plan_eval =
+      builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
 
   builder.Connect(qp_con->get_output_port_qp_output(),
                   val_sim->get_input_port_qp_output());
@@ -53,8 +60,9 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
 
   // Setup simulation.
   Simulator<double> simulator(*diagram);
-  Context<double>* val_sim_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), val_sim);
+  systems::Context<double>* val_sim_context =
+      diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
+                                          val_sim);
   // Set initial state.
   std::unique_ptr<examples::qp_inverse_dynamics::HumanoidStatus> rs0 =
       val_sim->SetInitialCondition(val_sim_context);
@@ -82,13 +90,13 @@ GTEST_TEST(testSys2QPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(rs1->foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(rs1->foot(Side::RIGHT).velocity().norm() < 1e-6);
 
-  EXPECT_TRUE(drake::CompareMatrices(rs1->position(), rs1->GetNominalPosition(),
-                                     1e-4, drake::MatrixCompareType::absolute));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
       rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()),
-      1e-4, drake::MatrixCompareType::absolute));
+      1e-4, MatrixCompareType::absolute));
 }
 
 }  // end namespace qp_inverse_dynamics
-}  // end namespace example
+}  // end namespace examples
 }  // end namespace drake

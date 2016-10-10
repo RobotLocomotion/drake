@@ -127,36 +127,24 @@ class HumanoidStatus {
     // should be included in the model file or loaded from a separate config
     // file.
     nominal_position_[name_to_position_index().at("rightHipRoll")] = 0.01;
-    nominal_position_[name_to_position_index().at("rightHipPitch")] =
-        -0.5432;
-    nominal_position_[name_to_position_index().at("rightKneePitch")] =
-        1.2195;
-    nominal_position_[name_to_position_index().at("rightAnklePitch")] =
-        -0.7070;
-    nominal_position_[name_to_position_index().at("rightAnkleRoll")] =
-        -0.0069;
+    nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.5432;
+    nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.2195;
+    nominal_position_[name_to_position_index().at("rightAnklePitch")] = -0.7070;
+    nominal_position_[name_to_position_index().at("rightAnkleRoll")] = -0.0069;
 
     nominal_position_[name_to_position_index().at("leftHipRoll")] = -0.01;
-    nominal_position_[name_to_position_index().at("leftHipPitch")] =
-        -0.5432;
-    nominal_position_[name_to_position_index().at("leftKneePitch")] =
-        1.2195;
-    nominal_position_[name_to_position_index().at("leftAnklePitch")] =
-        -0.7070;
-    nominal_position_[name_to_position_index().at("leftAnkleRoll")] =
-        0.0069;
+    nominal_position_[name_to_position_index().at("leftHipPitch")] = -0.5432;
+    nominal_position_[name_to_position_index().at("leftKneePitch")] = 1.2195;
+    nominal_position_[name_to_position_index().at("leftAnklePitch")] = -0.7070;
+    nominal_position_[name_to_position_index().at("leftAnkleRoll")] = 0.0069;
 
-    nominal_position_[name_to_position_index().at("rightShoulderRoll")] =
-        1;
-    nominal_position_[name_to_position_index().at("rightShoulderYaw")] =
-        0.5;
+    nominal_position_[name_to_position_index().at("rightShoulderRoll")] = 1;
+    nominal_position_[name_to_position_index().at("rightShoulderYaw")] = 0.5;
     nominal_position_[name_to_position_index().at("rightElbowPitch")] =
         M_PI / 2.;
 
-    nominal_position_[name_to_position_index().at("leftShoulderRoll")] =
-        -1;
-    nominal_position_[name_to_position_index().at("leftShoulderYaw")] =
-        0.5;
+    nominal_position_[name_to_position_index().at("leftShoulderRoll")] = -1;
+    nominal_position_[name_to_position_index().at("leftShoulderYaw")] = 0.5;
     nominal_position_[name_to_position_index().at("leftElbowPitch")] =
         -M_PI / 2.;
   }
@@ -204,12 +192,12 @@ class HumanoidStatus {
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
   }
-  inline const std::unordered_map<std::string, int>&
-  name_to_position_index() const {
+  inline const std::unordered_map<std::string, int>& name_to_position_index()
+      const {
     return name_to_position_index_;
   }
-  inline const std::unordered_map<std::string, int>&
-  name_to_velocity_index() const {
+  inline const std::unordered_map<std::string, int>& name_to_velocity_index()
+      const {
     return name_to_position_index_;
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()

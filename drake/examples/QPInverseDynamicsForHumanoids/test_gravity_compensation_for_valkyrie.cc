@@ -24,15 +24,13 @@ QPInput GenerateQPInput(
   // Setup a PD tracking law for center of mass.
   input.mutable_desired_comdd() =
       (Kp_com.array() * (desired_com - robot_status.com()).array() -
-       Kd_com.array() * robot_status.comd().array())
-          .matrix();
+       Kd_com.array() * robot_status.comd().array()).matrix();
   input.mutable_w_com() = 1e3;
 
   // Minimize acceleration in the generalized coordinates.
   input.mutable_desired_vd() =
       (Kp_joints.array() * (desired_joints - robot_status.position()).array() -
-       Kd_joints.array() * robot_status.velocity().array())
-          .matrix();
+       Kd_joints.array() * robot_status.velocity().array()).matrix();
   input.mutable_w_vd() = 1;
 
   // Setup tracking for various body parts.

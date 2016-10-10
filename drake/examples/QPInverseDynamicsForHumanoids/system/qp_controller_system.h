@@ -4,29 +4,22 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
 namespace drake {
-namespace systems {
+namespace examples {
 namespace qp_inverse_dynamics {
 
-// TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
-// constraint for EvalOutput. It is because qp controller needs to allocate
-// mutable workspace (MathematicalProgram, temporary matrices for doing math,
-// etc), and I want to avoid allocating these repeatedly.
-static examples::qp_inverse_dynamics::QPController qp_controller__;
-
-class System2QP : public LeafSystem<double> {
+class QPControllerSystem : public systems::LeafSystem<double> {
  public:
   /**
-   * A System2 wrapper around the qp inverse dynamics controller.
    * Input: humanoid status, qp input
    * Output: qp outout
    */
-  explicit System2QP(const RigidBodyTree& robot) : robot_(robot) {
+  explicit QPControllerSystem(const RigidBodyTree& robot) : robot_(robot) {
     input_port_num_humanoid_status_ =
-        DeclareAbstractInputPort(kInheritedSampling).get_index();
+        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     input_port_num_qp_input_ =
-        DeclareAbstractInputPort(kInheritedSampling).get_index();
+        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_num_qp_input_ =
-        DeclareAbstractOutputPort(kInheritedSampling).get_index();
+        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
 
     DRAKE_ASSERT(this->get_num_input_ports() == 2);
     DRAKE_ASSERT(this->get_num_output_ports() == 1);
@@ -37,20 +30,17 @@ class System2QP : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
     // Get robot status.
-    const examples::qp_inverse_dynamics::HumanoidStatus* rs =
-        EvalInputValue<examples::qp_inverse_dynamics::HumanoidStatus>(
-            context, input_port_num_humanoid_status_);
+    const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
+        context, input_port_num_humanoid_status_);
 
     // Get qp input.
-    const examples::qp_inverse_dynamics::QPInput* qp_input =
-        EvalInputValue<examples::qp_inverse_dynamics::QPInput>(
-            context, input_port_num_qp_input_);
+    const QPInput* qp_input =
+        EvalInputValue<QPInput>(context, input_port_num_qp_input_);
 
-    examples::qp_inverse_dynamics::QPOutput& qp_output =
-        output->GetMutableData(output_port_num_qp_input_)
-            ->GetMutableValue<examples::qp_inverse_dynamics::QPOutput>();
+    QPOutput& qp_output = output->GetMutableData(output_port_num_qp_input_)
+                              ->GetMutableValue<QPOutput>();
 
-    if (qp_controller__.Control(*rs, *qp_input, &qp_output) < 0) {
+    if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
       throw std::runtime_error("System2QP: QP canot solve\n");
     }
   }
@@ -59,10 +49,9 @@ class System2QP : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    examples::qp_inverse_dynamics::QPOutput out(robot_);
-    output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<examples::qp_inverse_dynamics::QPOutput>(out)));
-    return std::unique_ptr<SystemOutput<double>>(output.release());
+    QPOutput out(robot_);
+    output->add_port(std::unique_ptr<AbstractValue>(new Value<QPOutput>(out)));
+    return std::move(output);
   }
 
   /**
@@ -90,11 +79,17 @@ class System2QP : public LeafSystem<double> {
  private:
   const RigidBodyTree& robot_;
 
+  // TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
+  // constraint for EvalOutput. It is because qp controller needs to allocate
+  // mutable workspace (MathematicalProgram, temporary matrices for doing math,
+  // etc), and I want to avoid allocating these repeatedly.
+  mutable QPController qp_controller_;
+
   int input_port_num_humanoid_status_;
   int input_port_num_qp_input_;
   int output_port_num_qp_input_;
 };
 
 }  // end namespace qp_inverse_dynamics
-}  // end namespace system
+}  // end namespace examples
 }  // end namespace drake

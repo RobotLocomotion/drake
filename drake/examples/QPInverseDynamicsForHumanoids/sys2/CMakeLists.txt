@@ -1,2 +1,0 @@
-drake_add_cc_test(NAME test_sys2_qp SIZE large)
-target_link_libraries(test_sys2_qp drakeQPController drakeSystemAnalysis)

@@ -5,24 +5,25 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
 namespace drake {
-namespace systems {
+
+namespace examples {
 namespace qp_inverse_dynamics {
 
-class System2PlanEval : public LeafSystem<double> {
+class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
   /**
-   * A simple System2 PlanEval block that generates qp input for the qp inverse
+   * A simple PlanEval block that generates qp input for the qp inverse
    * dynamics controller.
    * The controller assume the robot is in double support, and the desired set
    * point is set by SetupDesired.
    * Input: humanoid status
    * Output: qp input
    */
-  explicit System2PlanEval(const RigidBodyTree& robot) : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
     input_port_num_humanoid_status_ =
-        DeclareAbstractInputPort(kInheritedSampling).get_index();
+        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_num_qp_input_ =
-        DeclareAbstractOutputPort(kInheritedSampling).get_index();
+        DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
 
     set_name("plan_eval");
 
@@ -50,14 +51,12 @@ class System2PlanEval : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {
     // input: humanoid status
-    const examples::qp_inverse_dynamics::HumanoidStatus* robot_status =
-        EvalInputValue<examples::qp_inverse_dynamics::HumanoidStatus>(
-            context, input_port_num_humanoid_status_);
+    const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
+        context, input_port_num_humanoid_status_);
 
     // output: qp input
-    examples::qp_inverse_dynamics::QPInput& input =
-        output->GetMutableData(output_port_num_qp_input_)
-            ->GetMutableValue<examples::qp_inverse_dynamics::QPInput>();
+    QPInput& input = output->GetMutableData(output_port_num_qp_input_)
+                         ->GetMutableValue<QPInput>();
     input.mutable_desired_body_accelerations().clear();
     input.mutable_contact_info().clear();
 
@@ -66,27 +65,23 @@ class System2PlanEval : public LeafSystem<double> {
     // Setup tracking for center of mass acceleration.
     input.mutable_desired_comdd() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array())
-            .matrix();
+         Kd_com_.array() * robot_status->comd().array()).matrix();
     input.mutable_w_com() = comdd_weight_;
 
     // Setup tracking for generalized accelerations.
     input.mutable_desired_vd() =
         (Kp_joints_.array() * (desired_q_ - robot_status->position()).array() -
-         Kd_joints_.array() * robot_status->velocity().array())
-            .matrix();
+         Kd_joints_.array() * robot_status->velocity().array()).matrix();
     input.mutable_w_vd() = vd_weight_;
 
     // Setup tracking for various body parts.
-    examples::qp_inverse_dynamics::DesiredBodyAcceleration pelvdd_d(
-        *robot_status->robot().FindBody("pelvis"));
+    DesiredBodyAcceleration pelvdd_d(*robot_status->robot().FindBody("pelvis"));
     pelvdd_d.mutable_weight() = pelvisdd_weight_;
     pelvdd_d.mutable_acceleration() = desired_pelvis_.ComputeTargetAcceleration(
         robot_status->pelvis().pose(), robot_status->pelvis().velocity());
     input.mutable_desired_body_accelerations().push_back(pelvdd_d);
 
-    examples::qp_inverse_dynamics::DesiredBodyAcceleration torsodd_d(
-        *robot_status->robot().FindBody("torso"));
+    DesiredBodyAcceleration torsodd_d(*robot_status->robot().FindBody("torso"));
     torsodd_d.mutable_weight() = torsodd_weight_;
     torsodd_d.mutable_acceleration() = desired_torso_.ComputeTargetAcceleration(
         robot_status->torso().pose(), robot_status->torso().velocity());
@@ -96,7 +91,7 @@ class System2PlanEval : public LeafSystem<double> {
     input.mutable_w_basis_reg() = basis_weight_;
 
     // Make contact points for the left foot.
-    examples::qp_inverse_dynamics::ContactInformation left_foot_contact(
+    ContactInformation left_foot_contact(
         *robot_status->robot().FindBody("leftFoot"), 4);
     left_foot_contact.mutable_contact_points().push_back(
         Eigen::Vector3d(0.2, 0.05, -0.09));
@@ -108,7 +103,7 @@ class System2PlanEval : public LeafSystem<double> {
         Eigen::Vector3d(-0.05, 0.05, -0.09));
 
     // Mirror the left foot.
-    examples::qp_inverse_dynamics::ContactInformation right_foot_contact(
+    ContactInformation right_foot_contact(
         *robot_status->robot().FindBody("rightFoot"), 4);
     right_foot_contact.mutable_contact_points() =
         left_foot_contact.contact_points();
@@ -121,18 +116,17 @@ class System2PlanEval : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    examples::qp_inverse_dynamics::QPInput qpinput(robot_);
-    output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<examples::qp_inverse_dynamics::QPInput>(qpinput)));
-    return std::unique_ptr<SystemOutput<double>>(output.release());
+    QPInput qpinput(robot_);
+    output->add_port(
+        std::unique_ptr<AbstractValue>(new Value<QPInput>(qpinput)));
+    return std::move(output);
   }
 
   /**
    * Set the set point for tracking.
    * @param robot_status, desired robot state
    */
-  void SetupDesired(
-      const examples::qp_inverse_dynamics::HumanoidStatus& robot_status) {
+  void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
     desired_q_ = robot_status.position();
     desired_pelvis_.mutable_desired_pose() = robot_status.pelvis().pose();
@@ -160,8 +154,8 @@ class System2PlanEval : public LeafSystem<double> {
   int input_port_num_humanoid_status_;
   int output_port_num_qp_input_;
 
-  examples::qp_inverse_dynamics::CartesianSetPoint desired_pelvis_;
-  examples::qp_inverse_dynamics::CartesianSetPoint desired_torso_;
+  CartesianSetPoint desired_pelvis_;
+  CartesianSetPoint desired_torso_;
   Eigen::Vector3d desired_com_;
   Eigen::VectorXd desired_q_;
 
@@ -178,5 +172,5 @@ class System2PlanEval : public LeafSystem<double> {
 };
 
 }  // end namespace qp_inverse_dynamics
-}  // end namespace system
+}  // end namespace examples
 }  // end namespace drake
