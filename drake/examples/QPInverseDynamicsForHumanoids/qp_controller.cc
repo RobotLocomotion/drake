@@ -485,6 +485,6 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   return out;
 }
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake
