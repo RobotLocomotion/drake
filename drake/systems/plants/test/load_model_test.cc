@@ -280,6 +280,21 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
       << "Expected:\n" << Eigen::Isometry3d::Identity().matrix();
 }
 
+GTEST_TEST(LoadSDFTest, TestJointLimitParams) {
+  // Test that joint limit parameters are correctly loaded from an SDF file.
+  RigidBodySystem rbs;
+  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
+                               "/systems/plants/test/models/"
+                               "cylindrical_1dof_robot.sdf",
+                               kFixed);
+  const DrakeJoint& joint =
+      rbs.getRigidBodyTree()->FindChildBodyOfJoint("joint1")->getJoint();
+  EXPECT_NEAR(joint.getJointLimitMin()(0), -1.5708, 1e-6);
+  EXPECT_NEAR(joint.getJointLimitMax()(0), 1.5708, 1e-6);
+  EXPECT_NEAR(joint.get_joint_limit_stiffness()(0), 1, 1e-6);
+  EXPECT_NEAR(joint.get_joint_limit_dissipation()(0), 1, 1e-6);
+}
+
 class ModelToWorldTransformTestParams {
  public:
   ModelToWorldTransformTestParams(std::string urdf_path,
