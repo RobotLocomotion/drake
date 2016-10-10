@@ -49,7 +49,7 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon threads)
+target_link_libraries(drakeCommon Threads::Threads)
 if(NOT WIN32)
   target_link_libraries(drakeCommon gflags)
 endif()
