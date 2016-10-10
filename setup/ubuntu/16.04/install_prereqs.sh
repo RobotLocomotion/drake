@@ -19,7 +19,10 @@ me="The Drake prerequisite set-up script"
 
 # Install Clang 3.9
 while true; do
-  echo "Adding repository 'deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main'"
+  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default. To install \
+  Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
+  echo "This script will add the repository
+    'deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main'"
   read -p "Do you want to continue? [Y/n] " yn
   case $yn in
     [Yy]*)
