@@ -16,13 +16,12 @@ Install the prerequisites::
     wget -q https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
     sudo rpm -U epel-release-latest-7.noarch.rpm
 
-    sudo yum install autoconf automake bison clang cmake doxygen flex \
+    sudo yum install autoconf automake clang cmake doxygen \
       freeglut-devel gcc-c++ gcc-gfortran git graphviz gtk2-devel \
       java-*-openjdk-devel libjpeg-turbo-devel libpng-devel libtool make \
-      mpfr-devel mpich numpy perl perl-HTML-Form perl-libwww-perl \
-      perl-TermReadKey pkgconfig pygtk2 python-beautifulsoup4 python-devel \
-      python-html5lib python-pip python-sphinx qt-devel qwt-devel subversion \
-      swig unzip valgrind vtk-devel
+      mpfr-devel numpy perl perl-HTML-Form perl-libwww-perl perl-TermReadKey \
+      pkgconfig pygtk2 python-beautifulsoup4 python-devel python-html5lib \
+      python-pip python-sphinx qt-devel qwt-devel unzip valgrind vtk-devel
 
     # CentOS and Red Hat Enterprise Linux
     sudo yum install devtoolset-3-gcc-c++ devtoolset-3-gcc-gfortran \
@@ -34,11 +33,5 @@ On CentOS and Red Hat Enterprise Linux, add the line::
     source /opt/rh/devtoolset-3/enable
 
 to your ``.bash_profile`` or ``.bashrc``.
-
-Download the external dependencies::
-
-    cd drake-distro
-    make options  # use the GUI to choose which externals you want, then press 'c' to configure, then 'g' to generate makefiles and exit
-    make download-all
 
 When you are done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.

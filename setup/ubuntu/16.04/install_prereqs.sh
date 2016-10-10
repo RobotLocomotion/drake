@@ -39,17 +39,15 @@ while true; do
 done
 
 # Install the APT dependencies.
-# TODO(david-german-tri): Can we remove libvtk-java, subversion?
+# TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 autoconf
 automake
-bison
 cmake
 cmake-curses-gui
 default-jdk
 doxygen
-flex
 g++-5
 g++-5-multilib
 gdb
@@ -82,8 +80,6 @@ python-html5lib
 python-numpy
 python-sphinx
 python-vtk
-subversion
-swig
 unzip
 valgrind
 
