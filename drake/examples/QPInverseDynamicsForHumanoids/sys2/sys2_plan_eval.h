@@ -11,7 +11,7 @@ namespace qp_inverse_dynamics {
 class System2PlanEval : public LeafSystem<double> {
  public:
   /**
-   * A system2 plan eval block that generates qp input for the qp inverse
+   * A simple System2 PlanEval block that generates qp input for the qp inverse
    * dynamics controller.
    * The controller assume the robot is in double support, and the desired set
    * point is set by SetupDesired.
@@ -28,7 +28,7 @@ class System2PlanEval : public LeafSystem<double> {
 
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
-    // Setup gains
+    // Setup gains.
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
     Kp_joints_ = Eigen::VectorXd::Constant(robot.get_num_positions(), 20);
@@ -39,7 +39,7 @@ class System2PlanEval : public LeafSystem<double> {
     desired_torso_.mutable_Kp() = Eigen::Vector6d::Constant(20);
     desired_torso_.mutable_Kd() = Eigen::Vector6d::Constant(8);
 
-    // Setup weights
+    // Setup weights.
     comdd_weight_ = 1e3;
     pelvisdd_weight_ = 1e1;
     torsodd_weight_ = 1e1;
@@ -61,6 +61,8 @@ class System2PlanEval : public LeafSystem<double> {
     input.mutable_desired_body_accelerations().clear();
     input.mutable_contact_info().clear();
 
+    // Weights are set arbitrarily by the control designer, these typically
+    // require tuning.
     // Setup tracking for center of mass acceleration.
     input.mutable_desired_comdd() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
@@ -68,7 +70,7 @@ class System2PlanEval : public LeafSystem<double> {
             .matrix();
     input.mutable_w_com() = comdd_weight_;
 
-    // Setup tracking for generalized acceleration.
+    // Setup tracking for generalized accelerations.
     input.mutable_desired_vd() =
         (Kp_joints_.array() * (desired_q_ - robot_status->position()).array() -
          Kd_joints_.array() * robot_status->velocity().array())
@@ -90,11 +92,10 @@ class System2PlanEval : public LeafSystem<double> {
         robot_status->torso().pose(), robot_status->torso().velocity());
     input.mutable_desired_body_accelerations().push_back(torsodd_d);
 
-    // Weights are set arbitrarily by the control designer, these typically
-    // require tuning.
+    // Set weight for the basis regularization term.
     input.mutable_w_basis_reg() = basis_weight_;
 
-    // Make contact points.
+    // Make contact points for the left foot.
     example::qp_inverse_dynamics::ContactInformation left_foot_contact(
         *robot_status->robot().FindBody("leftFoot"), 4);
     left_foot_contact.mutable_contact_points().push_back(
@@ -139,7 +140,7 @@ class System2PlanEval : public LeafSystem<double> {
   }
 
   /**
-   * return input port number that corresponds to: humanoid status
+   * @return the input port number that corresponds to: humanoid status.
    */
   inline const SystemPortDescriptor<double>& get_input_port_humanoid_status()
       const {
@@ -147,7 +148,7 @@ class System2PlanEval : public LeafSystem<double> {
   }
 
   /**
-   * return output port number that corresponds to: qp input
+   * @return the output port number that corresponds to: qp input.
    */
   inline const SystemPortDescriptor<double>& get_output_port_qp_input() const {
     return get_output_port(output_port_num_qp_input_);
