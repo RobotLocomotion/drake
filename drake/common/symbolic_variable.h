@@ -38,7 +38,7 @@ class DRAKE_EXPORT Variable {
   std::string to_string() const;
 
   DRAKE_EXPORT friend std::ostream& operator<<(std::ostream& os,
-                                                     const Variable& var);
+                                               const Variable& var);
 
  private:
   const size_t id_{};       // Unique identifier.
@@ -56,8 +56,8 @@ DRAKE_EXPORT bool operator==(const Variable& lhs, const Variable& rhs);
 }  // namespace symbolic
 }  // namespace drake
 
-/** Provides std::hash<drake::symbolic::Variable>. */
 namespace std {
+/* Provides std::hash<drake::symbolic::Variable>. */
 template <>
 struct hash<drake::symbolic::Variable> {
   size_t operator()(const drake::symbolic::Variable& v) const {
