@@ -338,6 +338,6 @@ class HumanoidStatus {
   Eigen::Vector6d foot_wrench_raw_[2];
 };
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake
