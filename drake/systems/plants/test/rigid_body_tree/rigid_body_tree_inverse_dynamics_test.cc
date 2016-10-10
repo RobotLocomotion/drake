@@ -86,7 +86,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd_dynamic_num_rows = MatrixXd(qd);
   auto q_time_autodiff =
       initializeAutoDiffGivenGradientMatrix(q, qd_dynamic_num_rows);
-  typedef decltype(q_time_autodiff)::Scalar TimeADScalar;
+  typedef typename decltype(q_time_autodiff)::Scalar TimeADScalar;
   auto qd_time_autodiff = qd.cast<TimeADScalar>();
   KinematicsCache<TimeADScalar> kinematics_cache_time_autodiff(
       tree_rpy_->bodies);
@@ -324,7 +324,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));
   auto v_time_autodiff = initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vd));
-  typedef decltype(q_time_autodiff)::Scalar ADScalar;
+  typedef typename decltype(q_time_autodiff)::Scalar ADScalar;
   KinematicsCache<ADScalar> kinematics_cache_autodiff(tree.bodies);
   kinematics_cache_autodiff.initialize(q_time_autodiff, v_time_autodiff);
   tree.doKinematics(kinematics_cache_autodiff);

@@ -12,9 +12,6 @@ target_link_libraries(moby_lcp_solver_test drakeOptimization)
 drake_add_cc_test(NAME system_identification_test SIZE medium)
 target_link_libraries(system_identification_test drakeOptimization)
 
-drake_add_cc_test(NAME fastqp_solver_test)
-target_link_libraries(fastqp_solver_test drakeOptimization)
-
 add_executable(gurobi_solver_test gurobi_solver_test.cc)
 target_link_libraries(gurobi_solver_test drakeOptimization
   ${GTEST_BOTH_LIBRARIES})
