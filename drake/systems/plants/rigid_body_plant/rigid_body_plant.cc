@@ -228,14 +228,16 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
         T qmin = joint.getJointLimitMin()(0),
             qmax = joint.getJointLimitMax()(0);
         // tau = k * (qlimit-q) - b(qdot)
+        const double joint_stiffness = joint.get_joint_limit_stiffness()(0);
+        const double joint_damping = joint.get_joint_limit_dissipation()(0);
         if (q(b->get_position_start_index()) < qmin)
           right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmin - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
+              joint_stiffness * (qmin - q(b->get_position_start_index()))
+                  - joint_damping * v(b->get_velocity_start_index());
         else if (q(b->get_position_start_index()) > qmax)
           right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmax - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
+              joint_stiffness * (qmax - q(b->get_position_start_index()))
+                  - joint_damping * v(b->get_velocity_start_index());
       }
     }
   }
