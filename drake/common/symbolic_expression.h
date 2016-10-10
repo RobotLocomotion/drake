@@ -18,6 +18,7 @@ namespace drake {
 
 namespace symbolic {
 
+/** Kinds of symbolic expressions. */
 enum class ExpressionKind {
   Var,       ///< variable
   Constant,  ///< constant (double)
@@ -217,6 +218,7 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT void swap(Expression& a, Expression& b) {
     std::swap(a.ptr_, b.ptr_);
   }
+  static void check_nan(const double v);
 
  private:
   std::shared_ptr<ExpressionCell> ptr_;

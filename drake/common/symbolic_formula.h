@@ -14,6 +14,8 @@
 
 namespace drake {
 namespace symbolic {
+
+/** Kinds of symbolic formulas. */
 enum class FormulaKind {
   True,   ///< ⊤
   False,  ///< ⊥
@@ -31,7 +33,7 @@ enum class FormulaKind {
 
 class FormulaCell;
 
-/** Represents a symbolic form of a firt-order logic formula.
+/** Represents a symbolic form of a first-order logic formula.
 
 It has the following grammar:
 
@@ -40,26 +42,26 @@ It has the following grammar:
        | E ∧ E | E ∨ E | ¬E | ∀ x₁, ..., xn. F
 \endverbatim
 
-In the implementation, Formula is a simple wrapper including a shared pointer to
-FormulaCell class which is a super-class of different kinds of symbolic formulas
-(i.e. FormulaAnd, FormulaOr, FormulaEq). Note that it includes a shared pointer,
-not a unique pointer, to allow sharing sub-expressions.
+In the implementation, Formula is a simple wrapper including a shared
+pointer to FormulaCell class which is a super-class of different kinds
+of symbolic formulas (i.e. FormulaAnd, FormulaOr, FormulaEq). Note
+that it includes a shared pointer, not a unique pointer, to allow
+sharing sub-expressions.
 
 \note The sharing of sub-expressions is not yet implemented.
 
 The following simple simplifications are implemented:
 \verbatim
-    E1 = E2        ->  True    (if E1 and E2 are structually equal)
-    E1 ≠ E2        ->  False   (if E1 and E2 are structually equal)
-    E1 > E2        ->  False   (if E1 and E2 are structually equal)
-    E1 ≥ E2        ->  True    (if E1 and E2 are structually equal)
-    E1 < E2        ->  False   (if E1 and E2 are structually equal)
-    E1 ≤ E2        ->  True    (if E1 and E2 are structually equal)
+    E1 = E2        ->  True    (if E1 and E2 are structurally equal)
+    E1 ≠ E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 > E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 ≥ E2        ->  True    (if E1 and E2 are structurally equal)
+    E1 < E2        ->  False   (if E1 and E2 are structurally equal)
+    E1 ≤ E2        ->  True    (if E1 and E2 are structurally equal)
     F1 ∧ F2        ->  False   (if either F1 or F2 is False)
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
 */
-
 class DRAKE_EXPORT Formula {
  public:
   /** Default constructor. */
@@ -77,7 +79,7 @@ class DRAKE_EXPORT Formula {
   /** Copy-assign a set from an lvalue. */
   Formula& operator=(const Formula& f) = default;
 
-  explicit Formula(std::shared_ptr<FormulaCell> const ptr);
+  explicit Formula(const std::shared_ptr<FormulaCell> ptr);
 
   FormulaKind get_kind() const;
   size_t get_hash() const;
@@ -157,7 +159,7 @@ DRAKE_EXPORT Formula operator>=(const Expression& e1, const double v2);
 
 class FormulaCell {
  public:
-  FormulaCell(FormulaKind const k, size_t const hash);
+  FormulaCell(const FormulaKind k, const size_t hash);
   FormulaKind get_kind() const { return kind_; }
   size_t get_hash() const { return hash_; }
   virtual Variables GetFreeVariables() const = 0;
