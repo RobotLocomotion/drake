@@ -33,6 +33,7 @@ if(NOT WIN32)
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
+  option(WITH_OCTOMAP "provides oct-tree data structures" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -82,7 +83,6 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-  option(WITH_OCTOMAP "provides oct-tree data structures")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
   option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 endif()
@@ -215,6 +215,7 @@ drake_add_external(spotless PUBLIC CMAKE
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
+  CMAKE_ARGS -DBUILD_TESTING=OFF
   SOURCE_SUBDIR octomap)
 
 # swig_matlab
