@@ -38,7 +38,7 @@ Expression::Expression(const Variable& name)
     : ptr_{make_shared<ExpressionVar>(name)} {}
 Expression::Expression(const double d)
     : ptr_{make_shared<ExpressionConstant>(d)} {}
-Expression::Expression(shared_ptr<ExpressionCell> const ptr) : ptr_{ptr} {}
+Expression::Expression(const shared_ptr<ExpressionCell> ptr) : ptr_{ptr} {}
 
 ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -50,22 +50,22 @@ size_t Expression::get_hash() const {
 }
 
 Expression Expression::Zero() {
-  static Expression const zero{0.0};
+  static const Expression zero{0.0};
   return zero;
 }
 
 Expression Expression::One() {
-  static Expression const one{1.0};
+  static const Expression one{1.0};
   return one;
 }
 
 Expression Expression::Pi() {
-  static Expression const pi{M_PI};
+  static const Expression pi{M_PI};
   return pi;
 }
 
 Expression Expression::E() {
-  static Expression const e{M_E};
+  static const Expression e{M_E};
   return e;
 }
 
@@ -93,7 +93,9 @@ bool Expression::EqualTo(const Expression& e) const {
 
 double Expression::Evaluate(const Environment& env) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Evaluate(env);
+  const double res{ptr_->Evaluate(env)};
+  check_nan(res);
+  return res;
 }
 
 string Expression::to_string() const {
@@ -147,7 +149,7 @@ Expression& operator+=(Expression& lhs, const double rhs) {
 }
 
 Expression& Expression::operator++() {
-  *this += Expression{1.0};
+  *this += Expression::One();
   return *this;
 }
 
@@ -180,8 +182,7 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
     return lhs;
   }
   // simplification #2 : x - 0 => x
-  if (rhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value() == 0.0) {
+  if (rhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
   // simplification #2 : Expression(c1) - Expression(c2) => Expression(c1 - c2)
@@ -208,12 +209,12 @@ Expression operator-(Expression e) {
 }
 
 Expression& Expression::operator--() {
-  *this -= Expression{1.0};
+  *this -= Expression::One();
   return *this;
 }
 
 Expression Expression::operator--(int) {
-  Expression const copy(*this);
+  const Expression copy(*this);
   --*this;
   return copy;
 }
@@ -289,8 +290,7 @@ Expression operator/(Expression lhs, double const rhs) {
 
 Expression& operator/=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : x / 1 => x
-  if (rhs.get_kind() == ExpressionKind::Constant &&
-      static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value() == 1.0) {
+  if (rhs.EqualTo(Expression::One())) {
     return lhs;
   }
   // simplification #2 : Expression(c1) / Expression(c2) => Expression(c1 / c2)
@@ -325,6 +325,12 @@ Expression& operator/=(Expression& lhs, double const rhs) {
 ExpressionCell::ExpressionCell(ExpressionKind const k, size_t const hash)
     : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
 
+void Expression::check_nan(const double v) {
+  if (std::isnan(v)) {
+    throw runtime_error("NaN is detected during Symbolic computation.");
+  }
+}
+
 ExpressionVar::ExpressionVar(const Variable& v)
     : ExpressionCell{ExpressionKind::Var, hash<Variable>{}(v)}, var_{v} {}
 
@@ -340,6 +346,7 @@ bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
 double ExpressionVar::Evaluate(const Environment& env) const {
   Environment::const_iterator const it{env.find(var_)};
   if (it != env.cend()) {
+    DRAKE_ASSERT(!std::isnan(it->second));
     return it->second;
   } else {
     ostringstream oss;
@@ -356,7 +363,9 @@ ostream& ExpressionVar::Display(ostream& os) const {
 }
 
 ExpressionConstant::ExpressionConstant(double const v)
-    : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {}
+    : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {
+  Expression::check_nan(v_);
+}
 
 Variables ExpressionConstant::GetVariables() const { return Variables{}; }
 
@@ -367,7 +376,10 @@ bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
   return v_ == static_cast<const ExpressionConstant&>(e).v_;
 }
 
-double ExpressionConstant::Evaluate(const Environment& env) const { return v_; }
+double ExpressionConstant::Evaluate(const Environment& env) const {
+  DRAKE_ASSERT(!std::isnan(v_));
+  return v_;
+}
 
 ostream& ExpressionConstant::Display(ostream& os) const {
   ostringstream oss;
@@ -405,7 +417,7 @@ ExpressionAdd::ExpressionAdd(const Expression& e1, const Expression& e2)
 
 Variables ExpressionAdd::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -435,7 +447,7 @@ ExpressionSub::ExpressionSub(const Expression& e1, const Expression& e2)
 
 Variables ExpressionSub::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -465,7 +477,7 @@ ExpressionMul::ExpressionMul(const Expression& e1, const Expression& e2)
 
 Variables ExpressionMul::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -495,7 +507,7 @@ ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
 
 Variables ExpressionDiv::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -660,7 +672,7 @@ void ExpressionPow::check_domain(double const v1, double const v2) {
 
 Variables ExpressionPow::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -847,7 +859,7 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
 
 Variables ExpressionAtan2::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  Variables const res_from_e2{e2_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
