@@ -1,11 +1,18 @@
 if(lcm_FOUND)
-  add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
-  target_link_libraries(run_kuka_iiwa_arm_dynamics
-    drakeKukaIiwaArm
-    drakeRBSystem
-    drakeLCMSystem)
-  drake_add_test(NAME run_kuka_iiwa_arm_dynamics COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
+  add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
+          iiwa_common.cc)
+  target_link_libraries(drakeKukaIiwaArmCommon
+    drakeRBM)
+  pods_install_libraries(drakeKukaIiwaArmCommon)
+  drake_install_headers(
+          iiwa_simulation.h)
+  pods_install_pkg_config_file(drake-kuka-iiwa-arm-common
+          LIBS -ldrakeKukaIiwaArmCommon
+          REQUIRES
+          VERSION 0.0.1)
 
+  # TODO(liang.fok) Remove this library once all System 1.0-based KUKA iiwa
+  # demos that are removed.
   add_library_with_exports(LIB_NAME drakeKukaIiwaArm SOURCE_FILES
           iiwa_simulation.cc)
   target_link_libraries(drakeKukaIiwaArm
@@ -21,6 +28,17 @@ if(lcm_FOUND)
           LIBS -ldrakeKukaIiwaArm
           REQUIRES
           VERSION 0.0.1)
+
+  add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
+  target_link_libraries(run_kuka_iiwa_arm_dynamics
+      drakeKukaIiwaArmCommon
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers
+      drakeLCMSystem2
+      gflags)
+  drake_add_test(NAME run_kuka_iiwa_arm_dynamics
+                 COMMAND run_kuka_iiwa_arm_dynamics --duration 0.5)
 
   add_executable(kuka_lcm_visualizer kuka_lcm_visualizer.cc)
   target_link_libraries(kuka_lcm_visualizer
