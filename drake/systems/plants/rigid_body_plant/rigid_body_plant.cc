@@ -224,20 +224,27 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
       auto const& joint = b->getJoint();
       // Only for single-axis joints.
       if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
-        // Limits makes things easier/faster here.
-        T qmin = joint.getJointLimitMin()(0),
-            qmax = joint.getJointLimitMax()(0);
-        // tau = k * (qlimit-q) - b(qdot)
-        const double joint_stiffness = joint.get_joint_limit_stiffness()(0);
-        const double joint_damping = joint.get_joint_limit_dissipation()(0);
-        if (q(b->get_position_start_index()) < qmin)
-          right_hand_side(b->get_velocity_start_index()) -=
-              joint_stiffness * (qmin - q(b->get_position_start_index()))
-                  - joint_damping * v(b->get_velocity_start_index());
-        else if (q(b->get_position_start_index()) > qmax)
-          right_hand_side(b->get_velocity_start_index()) -=
-              joint_stiffness * (qmax - q(b->get_position_start_index()))
-                  - joint_damping * v(b->get_velocity_start_index());
+        // Joint stop formula (and definition of "dissipation") from:
+        // https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
+        const T qmin = joint.getJointLimitMin()(0);
+        const T qmax = joint.getJointLimitMax()(0);
+        const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
+        const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
+        const T position = q(b->get_position_start_index());
+        const T velocity = v(b->get_velocity_start_index());
+        T limit_force = 0.;
+        if (position > qmax) {
+          const T violation = position - qmax;
+          const T raw_limit_force = (-joint_stiffness * violation *
+                                     (1 + joint_dissipation * velocity));
+          if (raw_limit_force < 0) limit_force = raw_limit_force;
+        } else if (position < qmin) {
+          const T violation = position - qmin;
+          const T raw_limit_force = (-joint_stiffness * violation *
+                                     (1 - joint_dissipation * velocity));
+          if (raw_limit_force > 0) limit_force = raw_limit_force;
+        }
+        right_hand_side(b->get_velocity_start_index()) += limit_force;
       }
     }
   }

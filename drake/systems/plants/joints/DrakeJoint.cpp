@@ -15,7 +15,7 @@ DrakeJoint::DrakeJoint(const std::string& _name,
       joint_limit_stiffness_(VectorXd::Constant(
           _num_positions, 150. /* Historic default from RigidBodyPlant. */)),
       joint_limit_dissipation_(VectorXd::Constant(
-          _num_positions, 15. /* Historic default from RigidBodyPlant. */)),
+          _num_positions, 1. /* Arbitrary, reasonable default. */)),
       transform_to_parent_body(_transform_to_parent_body),
       num_positions(_num_positions),
       num_velocities(_num_velocities) {
