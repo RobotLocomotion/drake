@@ -1,11 +1,12 @@
 if(lcm_FOUND)
+  # Defines a shared library for use by KUKA iiwa demos based on System 2.0.
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
           iiwa_common.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
     drakeRBM)
   pods_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
-          iiwa_simulation.h)
+          iiwa_common.h)
   pods_install_pkg_config_file(drake-kuka-iiwa-arm-common
           LIBS -ldrakeKukaIiwaArmCommon
           REQUIRES
@@ -45,6 +46,7 @@ if(lcm_FOUND)
     drakeKukaIiwaArm
     drake_lcmtypes
     threads)
+
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo drakeIK
     drakeTrajectories
