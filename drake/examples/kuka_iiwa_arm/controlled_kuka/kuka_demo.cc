@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
@@ -196,24 +197,7 @@ class KukaDemo : public systems::Diagram<T> {
         drake::systems::plants::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    // Adds the ground.
-    const double kBoxWidth = 3;
-    const double kBoxDepth = 0.2;
-    DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    // The top of the box is at z = 0.
-    T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
-
-    RigidBody& world = rigid_body_tree->world();
-    Eigen::Vector4d color;
-    // Ground color in RGBA format.
-    color << 0.9297, 0.7930, 0.6758, 1;
-    world.AddVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    rigid_body_tree->addCollisionElement(
-        DrakeCollision::Element(geom, T_element_to_link, &world), world,
-        "terrain");
-    rigid_body_tree->updateStaticCollisionElements();
+    AddGround(rigid_body_tree.get());
 
     DiagramBuilder<T> builder;
 
