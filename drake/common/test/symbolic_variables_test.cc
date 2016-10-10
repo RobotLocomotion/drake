@@ -1,5 +1,8 @@
 #include "drake/common/symbolic_variables.h"
+
 #include "gtest/gtest.h"
+
+#include "drake/common/symbolic_variable.h"
 
 namespace drake {
 namespace symbolic {
@@ -8,21 +11,21 @@ namespace {
 GTEST_TEST(SymVarsTest, hash_eq) {
   // - hash
   // - list constructors
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
 
-  Variables const vars1{x, y, z};
-  Variables const vars2{z, y, x};
+  const Variables vars1{x, y, z};
+  const Variables vars2{z, y, x};
 
   EXPECT_EQ(vars1.get_hash(), vars2.get_hash());
   EXPECT_EQ(vars1, vars2);
 }
 
 GTEST_TEST(SymVarsTest, insert_size) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
 
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
@@ -34,11 +37,11 @@ GTEST_TEST(SymVarsTest, insert_size) {
 }
 
 GTEST_TEST(SymVarsTest, operator_plus) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
@@ -61,10 +64,10 @@ GTEST_TEST(SymVarsTest, operator_plus) {
 }
 
 GTEST_TEST(SymVarsTest, erase) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"z"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"z"};
 
   Variables vars1{x, y, z};
   Variables vars2{y, z, w};
@@ -82,11 +85,11 @@ GTEST_TEST(SymVarsTest, erase) {
 }
 
 GTEST_TEST(SymVarsTest, operator_minus) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
@@ -105,8 +108,8 @@ GTEST_TEST(SymVarsTest, operator_minus) {
   EXPECT_FALSE(vars1.include(z));
   EXPECT_EQ(vars1.size(), 0u);
 
-  Variables vars2 = {x, y, z};
-  Variables vars3 = {y, z, w};
+  Variables vars2{x, y, z};
+  const Variables vars3{y, z, w};
   EXPECT_EQ(vars2.size(), 3u);
   vars2 -= vars3;
   EXPECT_EQ(vars2.size(), 1u);
@@ -114,17 +117,17 @@ GTEST_TEST(SymVarsTest, operator_minus) {
 }
 
 GTEST_TEST(SymVarsTest, IsSubsetOf) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
-  Variables const vars1 = {x, y, z, w, v};
-  Variables const vars2 = {x, y};
-  Variables const vars3 = {x, y, z};
-  Variables const vars4 = {z, w, v};
-  Variables const vars5 = {w, v};
+  const Variables vars1{x, y, z, w, v};
+  const Variables vars2{x, y};
+  const Variables vars3{x, y, z};
+  const Variables vars4{z, w, v};
+  const Variables vars5{w, v};
 
   // vars1 = {x, y, z, w, v}
   EXPECT_TRUE(vars1.IsSubsetOf(vars1));
@@ -163,17 +166,17 @@ GTEST_TEST(SymVarsTest, IsSubsetOf) {
 }
 
 GTEST_TEST(SymVarsTest, IsStrictSubsetOf) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
-  Variables const vars1 = {x, y, z, w, v};
-  Variables const vars2 = {x, y};
-  Variables const vars3 = {x, y, z};
-  Variables const vars4 = {z, w, v};
-  Variables const vars5 = {w, v};
+  const Variables vars1{x, y, z, w, v};
+  const Variables vars2{x, y};
+  const Variables vars3{x, y, z};
+  const Variables vars4{z, w, v};
+  const Variables vars5{w, v};
 
   // vars1 = {x, y, z, w, v}
   EXPECT_FALSE(vars1.IsStrictSubsetOf(vars1));
@@ -212,17 +215,17 @@ GTEST_TEST(SymVarsTest, IsStrictSubsetOf) {
 }
 
 GTEST_TEST(SymVarsTest, IsSuperSetOf) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
-  Variables const vars1 = {x, y, z, w, v};
-  Variables const vars2 = {x, y};
-  Variables const vars3 = {x, y, z};
-  Variables const vars4 = {z, w, v};
-  Variables const vars5 = {w, v};
+  const Variables vars1{x, y, z, w, v};
+  const Variables vars2{x, y};
+  const Variables vars3{x, y, z};
+  const Variables vars4{z, w, v};
+  const Variables vars5{w, v};
 
   // vars1 = {x, y, z, w, v}
   EXPECT_TRUE(vars1.IsSupersetOf(vars1));
@@ -261,17 +264,17 @@ GTEST_TEST(SymVarsTest, IsSuperSetOf) {
 }
 
 GTEST_TEST(SymVarsTest, IsStrictSuperSetOf) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
-  Variables const vars1 = {x, y, z, w, v};
-  Variables const vars2 = {x, y};
-  Variables const vars3 = {x, y, z};
-  Variables const vars4 = {z, w, v};
-  Variables const vars5 = {w, v};
+  const Variables vars1{x, y, z, w, v};
+  const Variables vars2{x, y};
+  const Variables vars3{x, y, z};
+  const Variables vars4{z, w, v};
+  const Variables vars5{w, v};
 
   // vars1 = {x, y, z, w, v}
   EXPECT_FALSE(vars1.IsStrictSupersetOf(vars1));
@@ -310,18 +313,18 @@ GTEST_TEST(SymVarsTest, IsStrictSuperSetOf) {
 }
 
 GTEST_TEST(SymVarsTest, output_operator) {
-  Variable const x{"x"};
-  Variable const y{"y"};
-  Variable const z{"z"};
-  Variable const w{"w"};
-  Variable const v{"v"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
 
-  Variables const vars0{};
-  Variables const vars1{x, y, z, w, v};
-  Variables const vars2{x, y};
-  Variables const vars3{x, y, z};
-  Variables const vars4{z, w, v};
-  Variables const vars5{w, v};
+  const Variables vars0{};
+  const Variables vars1{x, y, z, w, v};
+  const Variables vars2{x, y};
+  const Variables vars3{x, y, z};
+  const Variables vars4{z, w, v};
+  const Variables vars5{w, v};
 
   EXPECT_EQ(vars0.to_string(), "{}");
   EXPECT_EQ(vars1.to_string(), "{x, y, z, w, v}");

@@ -25,7 +25,7 @@ using std::runtime_error;
 using std::shared_ptr;
 using std::string;
 
-Formula::Formula(shared_ptr<FormulaCell> const ptr) : ptr_{ptr} {}
+Formula::Formula(const shared_ptr<FormulaCell> ptr) : ptr_{ptr} {}
 
 FormulaKind Formula::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -85,16 +85,15 @@ Formula forall(const Variables& vars, const Formula& f) {
 
 Formula operator&&(const Formula& f1, const Formula& f2) {
   // ff && x => ff    x && ff => ff
-  if (f1.get_kind() == FormulaKind::False ||
-      f2.get_kind() == FormulaKind::False) {
+  if (f1 == Formula::False() || f2 == Formula::False()) {
     return Formula::False();
   }
   // tt && f2 => f2
-  if (f1.get_kind() == FormulaKind::True) {
+  if (f1 == Formula::True()) {
     return f2;
   }
   // f1 && tt => f1
-  if (f2.get_kind() == FormulaKind::True) {
+  if (f2 == Formula::True()) {
     return f1;
   }
   return Formula{make_shared<FormulaAnd>(f1, f2)};
@@ -102,25 +101,25 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
 
 Formula operator||(const Formula& f1, const Formula& f2) {
   // tt || x => tt    x || tt => tt
-  if (f1 == Formula::True() || f2.get_kind() == FormulaKind::True) {
+  if (f1 == Formula::True() || f2 == Formula::True()) {
     return Formula::True();
   }
   // ff || f2 => f2
-  if (f1.get_kind() == FormulaKind::False) {
+  if (f1 == Formula::False()) {
     return f2;
   }
   // f1 || ff => f1
-  if (f2.get_kind() == FormulaKind::False) {
+  if (f2 == Formula::False()) {
     return f1;
   }
   return Formula{make_shared<FormulaOr>(f1, f2)};
 }
 
 Formula operator!(const Formula& f) {
-  if (f.get_kind() == FormulaKind::True) {
+  if (f == Formula::True()) {
     return Formula::False();
   }
-  if (f.get_kind() == FormulaKind::False) {
+  if (f == Formula::False()) {
     return Formula::True();
   }
   return Formula{make_shared<FormulaNot>(f)};
@@ -223,18 +222,18 @@ Formula operator>=(const Expression& e1, const double v2) {
   return e1 >= Expression{v2};
 }
 
-FormulaCell::FormulaCell(FormulaKind const k, size_t const hash)
+FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
     : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
 
 FormulaTrue::FormulaTrue()
     : FormulaCell{FormulaKind::True, hash<string>{}("True")} {}
 
 symbolic::Variables FormulaTrue::GetFreeVariables() const {
-  return symbolic::Variables{};
+  return Variables{};
 }
 
 bool FormulaTrue::EqualTo(const FormulaCell& f) const {
-  return get_kind() == f.get_kind();
+  return f.get_kind() == f.get_kind();
 }
 
 bool FormulaTrue::Evaluate(const Environment& env) const { return true; }
@@ -248,7 +247,7 @@ FormulaFalse::FormulaFalse()
     : FormulaCell{FormulaKind::False, hash<string>{}("False")} {}
 
 symbolic::Variables FormulaFalse::GetFreeVariables() const {
-  return symbolic::Variables{};
+  return Variables{};
 }
 
 bool FormulaFalse::EqualTo(const FormulaCell& f) const {
@@ -268,8 +267,8 @@ FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaEq::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -297,8 +296,8 @@ FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaNeq::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -326,8 +325,8 @@ FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaGt::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -355,8 +354,8 @@ FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaGeq::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -384,8 +383,8 @@ FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaLt::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -413,8 +412,8 @@ FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
       e2_{e2} {}
 
 symbolic::Variables FormulaLeq::GetFreeVariables() const {
-  symbolic::Variables ret{e1_.GetVariables()};
-  symbolic::Variables const res_from_e2{e2_.GetVariables()};
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
   ret.insert(res_from_e2.begin(), res_from_e2.end());
   return ret;
 }
@@ -442,8 +441,8 @@ FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
       f2_{f2} {}
 
 symbolic::Variables FormulaAnd::GetFreeVariables() const {
-  symbolic::Variables ret{f1_.GetFreeVariables()};
-  symbolic::Variables const res_from_f2{f2_.GetFreeVariables()};
+  Variables ret{f1_.GetFreeVariables()};
+  const Variables res_from_f2{f2_.GetFreeVariables()};
   ret.insert(res_from_f2.begin(), res_from_f2.end());
   return ret;
 }
@@ -471,8 +470,8 @@ FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
       f2_{f2} {}
 
 symbolic::Variables FormulaOr::GetFreeVariables() const {
-  symbolic::Variables ret{f1_.GetFreeVariables()};
-  symbolic::Variables const res_from_f2{f2_.GetFreeVariables()};
+  Variables ret{f1_.GetFreeVariables()};
+  const Variables res_from_f2{f2_.GetFreeVariables()};
   ret.insert(res_from_f2.begin(), res_from_f2.end());
   return ret;
 }

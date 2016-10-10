@@ -41,21 +41,32 @@ class DRAKE_EXPORT Environment {
   /** List constructor. */
   Environment(std::initializer_list<value_type> init);
 
+  /** Returns an iterator to the beginning. */
   iterator begin() { return map_.begin(); }
+  /** Returns an iterator to the end. */
   iterator end() { return map_.end(); }
+  /** Returns a const iterator to the beginning. */
   const_iterator begin() const { return map_.cbegin(); }
+  /** Returns a const iterator to the end. */
   const_iterator end() const { return map_.cend(); }
+  /** Returns a const iterator to the beginning. */
   const_iterator cbegin() const { return map_.cbegin(); }
+  /** Returns a const iterator to the end. */
   const_iterator cend() const { return map_.cend(); }
 
+  /** Inserts a pair (\p key, \p elem). */
   void insert(const key_type& key, const mapped_type& elem);
-
+  /** Checks whether the container is empty.  */
   bool empty() const { return map_.empty(); }
+  /** Returns the number of elements. */
   size_t size() const { return map_.size(); }
 
+  /** Finds element with specific key. */
   iterator find(const key_type& key) { return map_.find(key); }
+  /** Finds element with specific key. */
   const_iterator find(const key_type& key) const { return map_.find(key); }
 
+  /** Returns string representation. */
   std::string to_string() const;
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,

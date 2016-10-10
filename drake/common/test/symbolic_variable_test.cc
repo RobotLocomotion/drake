@@ -1,7 +1,8 @@
 #include "drake/common/symbolic_variable.h"
-#include "gtest/gtest.h"
 
 #include <utility>
+
+#include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
@@ -10,23 +11,23 @@ namespace {
 using std::move;
 
 GTEST_TEST(SymVariableTest, get_id) {
-  Variable x{"x"};
-  Variable x_prime{"x"};
+  const Variable x{"x"};
+  const Variable x_prime{"x"};
   EXPECT_NE(x.get_id(), x_prime.get_id());
 }
 
 GTEST_TEST(SymVariableTest, get_name) {
-  Variable x{"x"};
-  Variable x_prime{"x"};
+  const Variable x{"x"};
+  const Variable x_prime{"x"};
   EXPECT_EQ(x.get_name(), x_prime.get_name());
 }
 
 GTEST_TEST(SymVariableTest, move_copy_preserve_id) {
   Variable x{"x"};
-  size_t const x_id = x.get_id();
-  size_t const x_hash = x.get_hash();
-  Variable const x_copied{x};
-  Variable const x_moved{move(x)};
+  const size_t x_id{x.get_id()};
+  const size_t x_hash{x.get_hash()};
+  const Variable x_copied{x};
+  const Variable x_moved{move(x)};
   EXPECT_EQ(x_id, x_copied.get_id());
   EXPECT_EQ(x_hash, x_copied.get_hash());
   EXPECT_EQ(x_id, x_moved.get_id());
@@ -34,10 +35,10 @@ GTEST_TEST(SymVariableTest, move_copy_preserve_id) {
 }
 
 GTEST_TEST(SymVariableTest, operator_lt) {
-  Variable x{"x"};
-  Variable y{"y"};
-  Variable z{"z"};
-  Variable w{"w"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
 
   EXPECT_FALSE(x < x);
   EXPECT_TRUE(x < y);
@@ -61,10 +62,10 @@ GTEST_TEST(SymVariableTest, operator_lt) {
 }
 
 GTEST_TEST(SymVariableTest, operator_eq) {
-  Variable x{"x"};
-  Variable y{"y"};
-  Variable z{"z"};
-  Variable w{"w"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
 
   EXPECT_TRUE(x == x);
   EXPECT_FALSE(x == y);
@@ -88,10 +89,10 @@ GTEST_TEST(SymVariableTest, operator_eq) {
 }
 
 GTEST_TEST(SymVariableTest, output_operator) {
-  Variable x{"x"};
-  Variable y{"y"};
-  Variable z{"z"};
-  Variable w{"w"};
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
 
   EXPECT_EQ(x.to_string(), "x");
   EXPECT_EQ(y.to_string(), "y");
