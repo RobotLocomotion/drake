@@ -40,5 +40,18 @@ class DRAKE_EXPORT ContactDetail {
   /** The contact Force expressed in the world frame. */
   WrenchVector<T> wrench_{};
 };
+
+
+template<typename T>
+ContactDetail<T>::ContactDetail() {}
+
+template<typename T>
+ContactDetail<T>::ContactDetail(const Vector3 <T> &point,
+                                const WrenchVector <T> &wrench)
+    : application_point_(point), wrench_(wrench) {}
+
+
+extern template class DRAKE_EXPORT ContactDetail<double>;
 }
 }
+
