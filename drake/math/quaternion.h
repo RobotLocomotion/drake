@@ -235,15 +235,16 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 }
 
 /**
- * Computes the Euler angles from quaternion representation.
- * @param quaternion 4x1 unit length vector @p q=[w;x;y;z].
- * @return 3x1 BodyZYX Euler angles with order [rpy(2), rpy(1), rpy(0)].
+ * Computes SpaceXYZ Euler angles from quaternion representation.
+ * @param quaternion 4x1 unit length vector @p q = [ w; x; y; z ].
+ * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
  * @see rpy2rotmat
+ * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
  * This accurate algorithm avoids numerical round-off issues encountered by some
- * algorithms when rpy(1) is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
+ * algorithms when pitch is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
  */
 template <typename Derived>
-Vector3<typename Derived::Scalar> quat2rpy(
+Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
     const Eigen::MatrixBase<Derived>& quaternion) {
   // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
@@ -255,36 +256,36 @@ Vector3<typename Derived::Scalar> quat2rpy(
   using std::sqrt;
   using std::abs;
 
-  int i = 2;
-  int j = 1;
-  int k = 0;
-
-  // Scalar plusMinus = -1;
-  // Scalar minusPlus =  1;
+  // This algorithm is specific to BodyZYX order (equivalent to SpaceXYZ),
+  // e.g., i=2, j=1, k=0; the given formulas (below) for xA, yA,  xB, yB;
+  // and the returned quantities are specific to SpaceXYZ Euler sequence.
+  const int i = 2;
+  const int j = 1;
+  const int k = 0;
 
   // Calculate theta2 using lots of information in the rotation matrix.
-  Scalar Rii = R(i, i);
-  Scalar Rij = R(i, j);
-  Scalar Rjk = R(j, k);
-  Scalar Rkk = R(k, k);
-  Scalar Rsum = sqrt((Rii * Rii + Rij * Rij + Rjk * Rjk + Rkk * Rkk) / 2);
+  const Scalar Rii = R(i, i);
+  const Scalar Rij = R(i, j);
+  const Scalar Rjk = R(j, k);
+  const Scalar Rkk = R(k, k);
+  const Scalar Rsum = sqrt((Rii * Rii + Rij * Rij + Rjk * Rjk + Rkk * Rkk) / 2);
 
   // Rsum = abs(cos(theta2)) is inherently positive.
-  Scalar Rik = R(i, k);
-  Scalar theta2 = atan2(-Rik, Rsum);
-  Scalar e0 = quaternion(0);
-  Scalar e1 = quaternion(1);
-  Scalar e2 = quaternion(2);
-  Scalar e3 = quaternion(3);
-  Scalar yA = e1 + e3;
-  Scalar xA = e0 - e2;
-  Scalar yB = e3 - e1;
-  Scalar xB = e0 + e2;
-  Scalar epsilon = 5.0 * Eigen::NumTraits<Scalar>::epsilon();
-  bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
-  bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
-  Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
-  Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
+  const Scalar Rik = R(i, k);
+  const Scalar theta2 = atan2(-Rik, Rsum);
+  const Scalar e0 = quaternion(0);
+  const Scalar e1 = quaternion(1);
+  const Scalar e2 = quaternion(2);
+  const Scalar e3 = quaternion(3);
+  const Scalar yA = e1 + e3;
+  const Scalar xA = e0 - e2;
+  const Scalar yB = e3 - e1;
+  const Scalar xB = e0 + e2;
+  const Scalar epsilon = 4.0 * Eigen::NumTraits<Scalar>::epsilon();
+  const bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
+  const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
+  const Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
+  const Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
   Scalar theta1 = zA + zB;  // First angle in rotation sequence.
   Scalar theta3 = zA - zB;  // Third angle in rotation sequence.
   if (theta1 > M_PI) theta1 = theta1 - 2 * M_PI;
@@ -292,16 +293,34 @@ Vector3<typename Derived::Scalar> quat2rpy(
   if (theta3 > M_PI) theta3 = theta3 - 2 * M_PI;
   if (theta3 < -M_PI) theta3 = theta3 + 2 * M_PI;
 
-  // Returns in roll-pitch-yaw order.
-  Vector3<Scalar> bodyZYX_angles(theta3, theta2, theta1);
+  // Returns in SpaceXYZ (roll-pitch-yaw) order rather
+  // than BodyZYX theta1, theta2, theta3 order.
+  Vector3<Scalar> spaceXYZ_angles(theta3, theta2, theta1);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   const Matrix3<Scalar> rotmat_quaternion = quat2rotmat(quaternion);
-  const Matrix3<Scalar> rotmat_bodyZYX = rpy2rotmat(bodyZYX_angles);
-  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_bodyZYX, 1.0E-11));
+  const Matrix3<Scalar> rotmat_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
+  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_spaceXYZ, 1.0E-11));
 #endif
 
-  return bodyZYX_angles;
+  return spaceXYZ_angles;
+}
+
+/**
+ * Computes SpaceXYZ Euler angles from quaternion representation.
+ * @param quaternion 4x1 unit length vector @p q = [ w; x; y; z ].
+ * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
+ * @see rpy2rotmat
+ * This accurate algorithm avoids numerical round-off issues encountered by some
+ * algorithms when pitch is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
+ */
+template <typename Derived>
+Vector3<typename Derived::Scalar> quat2rpy(
+    const Eigen::MatrixBase<Derived>& quaternion) {
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
+  // the range problem in Eigen
+
+  return QuaternionToSpaceXYZ(quaternion);
 }
 
 // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,

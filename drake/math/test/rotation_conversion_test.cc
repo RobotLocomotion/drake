@@ -83,12 +83,11 @@ bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
                                        const Vector3d& rpy2) {
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
-  // When pitch is close to PI/2 or -PI/2, the derivative of rotation matrix
-  // w.r.t Euler angle is very big, so relax the tolerance to accomodate the
-  // numeric error.
-  // With new algorithm implemented for calculating roll, pitch yaw angles,
+  // Note: When pitch is close to PI/2 or -PI/2, the derivative of rotation
+  // matrix w.r.t Euler angle is very big.  To account for this sensitivity,
+  // a new algorithm was implemented for calculating roll, pitch yaw angles,
   // the precision improves to 1E-13 (independent of pitch = +- PI/2).
-  double precision = 1E-13;
+  const double precision = 1E-13;
   return AreEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
                                           precision);
 }
