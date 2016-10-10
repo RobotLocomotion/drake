@@ -52,24 +52,38 @@ class DRAKE_EXPORT Variables {
   /** List constructor. */
   Variables(std::initializer_list<value_type> init);
 
+  /** Returns hash value. */
   size_t get_hash() const;
 
+  /** Returns the number of elements. */
   size_type size() const { return vars_.size(); }
 
   /** Returns string representation of Variables. */
   std::string to_string() const;
 
+  /** Returns an iterator to the beginning. */
   iterator begin() { return vars_.begin(); }
+  /** Returns an iterator to the end. */
   iterator end() { return vars_.end(); }
+  /** Returns an iterator to the beginning. */
   const_iterator begin() const { return vars_.cbegin(); }
+  /** Returns an iterator to the end. */
   const_iterator end() const { return vars_.cend(); }
+  /** Returns a const iterator to the beginning. */
   const_iterator cbegin() const { return vars_.cbegin(); }
+  /** Returns a const iterator to the end. */
   const_iterator cend() const { return vars_.cend(); }
+  /** Returns a reverse iterator to the beginning. */
   reverse_iterator rbegin() { return vars_.rbegin(); }
+  /** Returns a reverse iterator to the end. */
   reverse_iterator rend() { return vars_.rend(); }
+  /** Returns a reverse iterator to the beginning. */
   const_reverse_iterator rbegin() const { return vars_.crbegin(); }
+  /** Returns a reverse iterator to the end. */
   const_reverse_iterator rend() const { return vars_.crend(); }
+  /** Returns a const reverse-iterator to the beginning. */
   const_reverse_iterator crbegin() const { return vars_.crbegin(); }
+  /** Returns a const reverse-iterator to the end. */
   const_reverse_iterator crend() const { return vars_.crend(); }
 
   /** Inserts a variable \p var into a set. */
@@ -89,28 +103,34 @@ class DRAKE_EXPORT Variables {
       elements ([0, vars.size()]). */
   size_type erase(const Variables& vars);
 
+  /** Finds element with specific key. */
   iterator find(const key_type& key) { return vars_.find(key); }
   const_iterator find(const key_type& key) const { return vars_.find(key); }
+
+  /** Return true if \p key is included in the Variables. */
   bool include(const key_type& key) const { return find(key) != end(); }
 
+  /** Return true if \p vars is a subset of the Variables. */
   bool IsSubsetOf(const Variables& vars) const;
+  /** Return true if \p vars is a superset of the Variables. */
   bool IsSupersetOf(const Variables& vars) const;
+  /** Return true if \p vars is a strict subset of the Variables. */
   bool IsStrictSubsetOf(const Variables& vars) const;
+  /** Return true if \p vars is a strict superset of the Variables. */
   bool IsStrictSupersetOf(const Variables& vars) const;
 
   friend DRAKE_EXPORT bool operator==(const Variables& vars1,
-                                            const Variables& vars2);
+                                      const Variables& vars2);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
-                                                     const Variables& vars);
+                                               const Variables& vars);
 
  private:
   set vars_;
 };
 
 /** Updates \p var1 with the result of set-union(\p var1, \p var2). */
-DRAKE_EXPORT Variables operator+=(Variables& vars1,
-                                        const Variables& vars2);
+DRAKE_EXPORT Variables operator+=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-union(\p vars, { \p var }). */
 DRAKE_EXPORT Variables operator+=(Variables& vars, const Variable& var);
 /** Returns set-union of \p var1 and \p var2. */
@@ -121,8 +141,7 @@ DRAKE_EXPORT Variables operator+(Variables vars, const Variable& var);
 DRAKE_EXPORT Variables operator+(const Variable& var, Variables vars);
 
 /** Updates \p var1 with the result of set-minus(\p var1, \p var2). */
-DRAKE_EXPORT Variables operator-=(Variables& vars1,
-                                        const Variables& vars2);
+DRAKE_EXPORT Variables operator-=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-minus(\p vars, {\p var}). */
 DRAKE_EXPORT Variables operator-=(Variables& vars, const Variable& var);
 /** Returns set-minus(\p var1, \p vars2). */
@@ -133,8 +152,8 @@ DRAKE_EXPORT Variables operator-(Variables vars, const Variable& var);
 }  // namespace symbolic
 }  // namespace drake
 
-/** Provides std::hash<drake::symbolic::Variables>. */
 namespace std {
+/* Provides std::hash<drake::symbolic::Variables>. */
 template <>
 struct hash<drake::symbolic::Variables> {
   size_t operator()(const drake::symbolic::Variables& vars) const {

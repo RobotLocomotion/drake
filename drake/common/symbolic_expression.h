@@ -18,6 +18,7 @@ namespace drake {
 
 namespace symbolic {
 
+/** Kinds of symbolic expressions. */
 enum class ExpressionKind {
   Var,       ///< variable
   Constant,  ///< constant (double)
@@ -101,7 +102,9 @@ symbolic::Expression may also be used as the scalar type of Eigen types.
 */
 class DRAKE_EXPORT Expression {
  public:
-  /** default constructor. */
+  /** Default constructor. This is enabled only to make symbolic::Expression
+   * compatible with the Eigen data types. Expression() will construct a dummy
+   * symbolic expression and therefore should not be explicitly called.  */
   Expression() = default;
 
   /** Move-construct a set from an rvalue. */
@@ -218,6 +221,10 @@ class DRAKE_EXPORT Expression {
     std::swap(a.ptr_, b.ptr_);
   }
 
+  /** Checks whether \p v is NaN or not. If \p is NaN, it throws a std::runtime
+   * exception. */
+  static void check_nan(const double v);
+
  private:
   std::shared_ptr<ExpressionCell> ptr_;
   explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
@@ -242,7 +249,7 @@ class ExpressionCell {
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
-  /** default constructor. */
+  /** Default constructor. */
   ExpressionCell() = default;
 
   /** Move-construct a set from an rvalue. */
@@ -591,8 +598,8 @@ std::ostream& operator<<(std::ostream& os, const Expression& e);
 }  // namespace drake
 }  // namespace symbolic
 
-/** Provides std::hash<drake::symbolic::Expression>. */
 namespace std {
+/* Provides std::hash<drake::symbolic::Expression>. */
 template <>
 struct hash<drake::symbolic::Expression> {
   size_t operator()(const drake::symbolic::Expression& e) const {
@@ -600,7 +607,7 @@ struct hash<drake::symbolic::Expression> {
   }
 };
 
-/** Provides std::equal_to<drake::symbolic::Expression>. */
+/* Provides std::equal_to<drake::symbolic::Expression>. */
 template <>
 struct equal_to<drake::symbolic::Expression> {
   bool operator()(const drake::symbolic::Expression& lhs,
