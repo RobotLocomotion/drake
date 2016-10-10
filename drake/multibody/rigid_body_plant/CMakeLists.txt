@@ -3,6 +3,7 @@ set(source_files kinematics_results.cc rigid_body_plant.cc
     contact_resultant_force_calculator.cc
     contact_detail.cc
     contact_manifold.cc
+    sampled_contact_manifold.cc
     )
 
 # The following variables are necessary to conditionally include
