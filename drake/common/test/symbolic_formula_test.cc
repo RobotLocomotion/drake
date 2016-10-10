@@ -1,10 +1,11 @@
 #include "drake/common/symbolic_formula.h"
 
+#include "gtest/gtest.h"
+
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace symbolic {
@@ -14,165 +15,179 @@ GTEST_TEST(SymFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
 
 GTEST_TEST(SymFormulaTest, False) { EXPECT_FALSE(Formula::False().Evaluate()); }
 
-GTEST_TEST(SymFormulaTest, Eq) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+GTEST_TEST(SymFormulaTest, EqualTo) {}
 
-  Formula const f1 = (e1 == e1);
+GTEST_TEST(SymFormulaTest, Eq) {
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
+
+  const Formula f1{e1 == e1};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 == e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::False()));
+  const Formula f2{e1 == e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
-  Formula const f3 = (e1 == e3);
+  EXPECT_FALSE(f2.EqualTo(Formula::False()));
+  const Formula f3{e1 == e3};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  Formula const f4 = (e2 == e3);
+  const Formula f4{e2 == e3};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) == (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) == (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, Neq) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
 
-  Formula const f1 = (e1 != e1);
+  const Formula f1{e1 != e1};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 != e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::True()));
+  const Formula f2{e1 != e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
-  Formula const f3 = (e1 != e3);
+  EXPECT_FALSE(f2.EqualTo(Formula::True()));
+  const Formula f3{e1 != e3};
   EXPECT_FALSE(f3.EqualTo(Formula::False()));
-  Formula const f4 = (e2 != e3);
+  const Formula f4{e2 != e3};
   EXPECT_FALSE(f4.EqualTo(Formula::False()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) != (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) != (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, Lt) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
 
-  Formula const f1 = (e1 < e1);
+  const Formula f1{e1 < e1};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 < e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::True()));
+  const Formula f2{e1 < e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
-  Formula const f3 = (e1 < e3);
-  EXPECT_FALSE(f3.EqualTo(Formula::False()));
-  Formula const f4 = (e2 < e3);
-  EXPECT_FALSE(f4.EqualTo(Formula::False()));
+  EXPECT_FALSE(f2.EqualTo(Formula::True()));
+  const Formula f3{e1 < e3};
+  EXPECT_FALSE(f3.EqualTo(Formula::True()));
+  const Formula f4{e2 < e3};
+  EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) < (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) < (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, Gt) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
 
-  Formula const f1 = (e1 > e1);
+  const Formula f1{e1 > e1};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
-  Formula const f2 = (e1 > e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::True()));
+  const Formula f2{e1 > e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
-  Formula const f3 = (e1 > e3);
-  EXPECT_FALSE(f3.EqualTo(Formula::False()));
-  Formula const f4 = (e2 > e3);
-  EXPECT_FALSE(f4.EqualTo(Formula::False()));
+  EXPECT_FALSE(f2.EqualTo(Formula::True()));
+  const Formula f3{e1 > e3};
+  EXPECT_FALSE(f3.EqualTo(Formula::True()));
+  const Formula f4{e2 > e3};
+  EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) > (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) > (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, Leq) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
 
-  Formula const f1 = (e1 <= e1);
+  const Formula f1{e1 <= e1};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 <= e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::False()));
+  const Formula f2{e1 <= e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
-  Formula const f3 = (e1 <= e3);
+  EXPECT_FALSE(f2.EqualTo(Formula::False()));
+  const Formula f3{e1 <= e3};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  Formula const f4 = (e2 <= e3);
+  const Formula f4{e2 <= e3};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) <= (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) <= (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, Geq) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
-  Expression const e1 = x + y;
-  Expression const e1_prime = x + y;
-  Expression const e2 = x - y;
-  Expression const e3 = x + z;
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
+  const Expression e1{x + y};
+  const Expression e1_prime{x + y};
+  const Expression e2{x - y};
+  const Expression e3{x + z};
 
-  Formula const f1 = (e1 >= e1);
+  const Formula f1{e1 >= e1};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
-  Formula const f2 = (e1 >= e1_prime);
+  EXPECT_FALSE(f1.EqualTo(Formula::False()));
+  const Formula f2{e1 >= e1_prime};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
-  Formula const f3 = (e1 >= e3);
+  EXPECT_FALSE(f2.EqualTo(Formula::False()));
+  const Formula f3{e1 >= e3};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  Formula const f4 = (e2 >= e3);
+  const Formula f4{e2 >= e3};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
-  Environment const env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
+  const Environment env{{var_x, 2}, {var_y, 3}, {var_z, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) >= (2 + 3));
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) >= (2 + 3));
 }
 
 GTEST_TEST(SymFormulaTest, And1) {
-  Formula const tt = Formula::True();
-  Formula const ff = Formula::False();
+  const Formula tt{Formula::True()};
+  const Formula ff{Formula::False()};
   EXPECT_TRUE(tt.EqualTo(tt && tt));
   EXPECT_TRUE(ff.EqualTo(ff && tt));
   EXPECT_TRUE(ff.EqualTo(tt && ff));
@@ -180,19 +195,19 @@ GTEST_TEST(SymFormulaTest, And1) {
 }
 
 GTEST_TEST(SymFormulaTest, And2) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Expression const x{var_x};
-  Expression const y{var_y};
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Expression x{var_x};
+  const Expression y{var_y};
 
-  Formula const f1 = x + y > 0;
-  Formula const f2 = x * y < 5;
-  Formula const f = f1 && f2;
+  const Formula f1{x + y > 0};
+  const Formula f2{x * y < 5};
+  const Formula f{f1 && f2};
 
-  Environment const env1{{var_x, 1}, {var_y, 1}};
-  Environment const env2{{var_x, 3}, {var_y, 4}};
-  Environment const env3{{var_x, -2}, {var_y, -5}};
-  Environment const env4{{var_x, -1}, {var_y, -1}};
+  const Environment env1{{var_x, 1}, {var_y, 1}};
+  const Environment env2{{var_x, 3}, {var_y, 4}};
+  const Environment env3{{var_x, -2}, {var_y, -5}};
+  const Environment env4{{var_x, -1}, {var_y, -1}};
 
   EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) && (1 * 1 < 5));
   EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) && (3 * 4 < 5));
@@ -201,19 +216,19 @@ GTEST_TEST(SymFormulaTest, And2) {
 }
 
 GTEST_TEST(SymFormulaTest, Or2) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Expression const x{var_x};
-  Expression const y{var_y};
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Expression x{var_x};
+  const Expression y{var_y};
 
-  Formula const f1 = x + y > 0;
-  Formula const f2 = x * y < 5;
-  Formula const f = f1 || f2;
+  const Formula f1{x + y > 0};
+  const Formula f2{x * y < 5};
+  const Formula f{f1 || f2};
 
-  Environment const env1{{var_x, 1}, {var_y, 1}};
-  Environment const env2{{var_x, 3}, {var_y, 4}};
-  Environment const env3{{var_x, -2}, {var_y, -5}};
-  Environment const env4{{var_x, -1}, {var_y, -1}};
+  const Environment env1{{var_x, 1}, {var_y, 1}};
+  const Environment env2{{var_x, 3}, {var_y, 4}};
+  const Environment env3{{var_x, -2}, {var_y, -5}};
+  const Environment env4{{var_x, -1}, {var_y, -1}};
 
   EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) || (1 * 1 < 5));
   EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) || (3 * 4 < 5));
@@ -222,8 +237,8 @@ GTEST_TEST(SymFormulaTest, Or2) {
 }
 
 GTEST_TEST(SymFormulaTest, Not1) {
-  Formula const tt = Formula::True();
-  Formula const ff = Formula::False();
+  const Formula tt = Formula::True();
+  const Formula ff = Formula::False();
   EXPECT_TRUE(ff.EqualTo(!tt));
   EXPECT_TRUE(tt.EqualTo(!ff));
   EXPECT_TRUE(tt.EqualTo(!(!tt)));
@@ -231,20 +246,20 @@ GTEST_TEST(SymFormulaTest, Not1) {
 }
 
 GTEST_TEST(SymFormulaTest, Not2) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Expression const x{var_x};
-  Expression const y{var_y};
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Expression x{var_x};
+  const Expression y{var_y};
 
-  Formula const f1 = x + y > 0;
-  Formula const f2 = x * y < 5;
-  Formula const f = f1 || f2;
-  Formula const not_f = !f;
+  const Formula f1{x + y > 0};
+  const Formula f2{x * y < 5};
+  const Formula f{f1 || f2};
+  const Formula not_f{!f};
 
-  Environment const env1{{var_x, 1}, {var_y, 1}};
-  Environment const env2{{var_x, 3}, {var_y, 4}};
-  Environment const env3{{var_x, -2}, {var_y, -5}};
-  Environment const env4{{var_x, -1}, {var_y, -1}};
+  const Environment env1{{var_x, 1}, {var_y, 1}};
+  const Environment env2{{var_x, 3}, {var_y, 4}};
+  const Environment env3{{var_x, -2}, {var_y, -5}};
+  const Environment env4{{var_x, -1}, {var_y, -1}};
 
   EXPECT_EQ(not_f.Evaluate(env1), !((1 + 1 > 0) || (1 * 1 < 5)));
   EXPECT_EQ(not_f.Evaluate(env2), !((3 + 4 > 0) || (3 * 4 < 5)));
@@ -253,51 +268,51 @@ GTEST_TEST(SymFormulaTest, Not2) {
 }
 
 GTEST_TEST(SymFormulaTest, GetFreeVariables) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
 
-  Formula const f1 = x + y > 0;
-  Formula const f2 = y * z < 5;
-  Formula const f3 = f1 || f2;
-  Formula const f4 = forall({var_x, var_y}, f3);
+  const Formula f1{x + y > 0};
+  const Formula f2{y * z < 5};
+  const Formula f3{f1 || f2};
+  const Formula f4{forall({var_x, var_y}, f3)};
 
-  Variables const vars1 = f1.GetFreeVariables();  // {x, y}
+  const Variables vars1{f1.GetFreeVariables()};  // {x, y}
   EXPECT_EQ(vars1.size(), 2u);
   EXPECT_TRUE(vars1.include(var_x));
   EXPECT_TRUE(vars1.include(var_y));
 
-  Variables const vars2 = f2.GetFreeVariables();  // {y, z}
+  const Variables vars2{f2.GetFreeVariables()};  // {y, z}
   EXPECT_EQ(vars2.size(), 2u);
   EXPECT_TRUE(vars2.include(var_y));
   EXPECT_TRUE(vars2.include(var_z));
 
-  Variables const vars3 = f3.GetFreeVariables();  // {x, y, z}
+  const Variables vars3{f3.GetFreeVariables()};  // {x, y, z}
   EXPECT_EQ(vars3.size(), 3u);
   EXPECT_TRUE(vars3.include(var_x));
   EXPECT_TRUE(vars3.include(var_y));
   EXPECT_TRUE(vars3.include(var_z));
 
-  Variables const vars4 = f4.GetFreeVariables();  // {z}
+  const Variables vars4{f4.GetFreeVariables()};  // {z}
   EXPECT_EQ(vars4.size(), 1u);
   EXPECT_TRUE(vars4.include(var_z));
 }
 
 GTEST_TEST(SymFormulaTest, output_operator) {
-  Variable const var_x{"x"};
-  Variable const var_y{"y"};
-  Variable const var_z{"z"};
-  Expression const x{var_x};
-  Expression const y{var_y};
-  Expression const z{var_z};
+  const Variable var_x{"x"};
+  const Variable var_y{"y"};
+  const Variable var_z{"z"};
+  const Expression x{var_x};
+  const Expression y{var_y};
+  const Expression z{var_z};
 
-  Formula const f1 = x + y > 0;
-  Formula const f2 = y * z < 5;
-  Formula const f3 = f1 || f2;
-  Formula const f4 = forall({var_x, var_y}, f3);
+  const Formula f1{x + y > 0};
+  const Formula f2{y * z < 5};
+  const Formula f3{f1 || f2};
+  const Formula f4{forall({var_x, var_y}, f3)};
 
   EXPECT_EQ(f1.to_string(), "((x + y) > 0)");
   EXPECT_EQ(f2.to_string(), "((y * z) < 5)");
