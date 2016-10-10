@@ -8,7 +8,7 @@
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
@@ -736,6 +736,6 @@ class QPController {
   static const double kUpperBoundForContactBasis;
 };
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake
