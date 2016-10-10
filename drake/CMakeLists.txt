@@ -160,10 +160,7 @@ set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-# set up pseudo-target for threads
-find_package(Threads)
-add_library(threads INTERFACE)
-target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+find_package(Threads REQUIRED)
 
 # set up and build lcm types
 find_package(lcm)
