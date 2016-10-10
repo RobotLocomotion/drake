@@ -11,15 +11,21 @@ namespace drake {
 namespace systems {
 
 /**
- The base class which defines a single point of contact and its corresponding
- Force.
+ The contact manifold represents, abstractly, the domain of contact between
+ two bodies and the Forces generated.  The actual representation of that
+ contact can vary based on the nature of the simulatin parameters.
 
- The point of contact and Force are defined in the world frame.
+ However, all manifolds support the concept of a "net" applied force which is
+ the accumulated affect of the underlying contact details into a single Force
+ applied at a single point (@see ContactDetail).
+
+ Individual /contact details/ can be examined (if they exist).  The underlying
+ representation will include, at least, the contact point and contact Force.
+ However, sub-classes may also include additional data.
  */
 template <typename T>
 class DRAKE_EXPORT ContactManifold {
  public:
-  ContactManifold();
 
   /**
    Computes a single contact detail -- Force and application point -- which
@@ -31,7 +37,7 @@ class DRAKE_EXPORT ContactManifold {
   /**
    Reports the number of distinct contact details for this manifold.
    */
-  size_t get_num_contacts() const { return contact_details_.size(); }
+  virtual size_t get_num_contacts() const = 0;
 
   /**
    Access the ith contact detail in this manifold.
@@ -40,37 +46,8 @@ class DRAKE_EXPORT ContactManifold {
    @returns  A pointer to the ith contact detail (or null for invalid index
              values.
    */
-  const ContactDetail<T>* get_ith_contact(size_t i) const;
-
-  /**
-   Add a new contact detail to the manifold.
-   @param[in] detail    The contact detail to add.
-   */
-  void AddContactDetail(std::unique_ptr<ContactDetail<T>> detail);
-
- private:
-  std::set<std::unique_ptr<ContactDetail<T>>> contact_details_;
+  virtual const ContactDetail<T>* get_ith_contact(size_t i) const = 0;
 };
-
-template <typename T>
-ContactManifold<T>::ContactManifold() {}
-
-template <typename T>
-const ContactDetail<T>* ContactManifold<T>::get_ith_contact(size_t i) const {
-  if ( i < contact_details_.size()) {
-    auto itr = contact_details_.begin();
-    std::advance(itr, i);
-    return (*itr).get();
-  }
-  return nullptr;
-}
-
-template <typename T>
-void ContactManifold<T>::AddContactDetail(std::unique_ptr<ContactDetail<T>> detail) {
-  contact_details_.insert(move(detail));
-}
-
-extern template class DRAKE_EXPORT ContactManifold<double>;
 
 } // namespace systems
 } // namespace drake
