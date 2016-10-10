@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 QPInput GenerateQPInput(
@@ -165,6 +165,6 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   std::cout << output;
 }
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

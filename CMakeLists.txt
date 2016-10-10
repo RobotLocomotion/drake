@@ -33,11 +33,6 @@ if(NOT WIN32)
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
-  # IPOPT is currently disabled on Mac due to MATLAB compatibility
-  # issues: https://github.com/RobotLocomotion/drake/issues/2578
-  if (NOT APPLE)
-    option(WITH_IPOPT "nonlinear optimization solver" ON)
-  endif()
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -67,11 +62,15 @@ cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATL
 ## The following projects are default OFF when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
 ## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-cmake_dependent_option(WITH_BERTINI "solve polynomial equations; free but pod requires permissions (can't redistribute)" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_GLOPTIPOLY "free global polynomial optimization tooblox" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
 cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+
+
+# IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB compatibility
+# issues: https://github.com/RobotLocomotion/drake/issues/2578
+cmake_dependent_option(WITH_IPOPT "nonlinear optimization solver" ON "NOT APPLE OR DISABLE_MATLAB" OFF)
+
 
 ###########################################
 # External Projects that are OFF by default
@@ -104,9 +103,7 @@ endif()
 # BEGIN external projects
 
 # External projects in order of dependencies; 'trivial' ones first
-drake_add_external(bertini CMAKE)
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gloptipoly CMAKE)
 drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
@@ -304,11 +301,9 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
-    -DWITH_BERTINI:BOOL=${WITH_BERTINI}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
-    -DWITH_GLOPTIPOLY:BOOL=${WITH_GLOPTIPOLY}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
@@ -326,14 +321,12 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
   DEPENDS
     avl
-    bertini
     bot_core_lcmtypes
     bullet
     director
     dreal
     eigen
     gflags
-    gloptipoly
     google_styleguide
     googletest
     gurobi
