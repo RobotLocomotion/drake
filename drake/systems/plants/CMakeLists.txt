@@ -192,7 +192,7 @@ pods_install_pkg_config_file(drake-rbsystem
 
 if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem threads)
+  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
   pods_install_executables(rigidBodyLCMNode)
   drake_install_headers(BotVisualizer.h)
 endif()

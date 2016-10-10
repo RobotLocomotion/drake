@@ -17,7 +17,7 @@ target_link_libraries(fastqp_solver_test drakeOptimization)
 
 add_executable(gurobi_solver_test gurobi_solver_test.cc)
 target_link_libraries(gurobi_solver_test drakeOptimization
-  ${GTEST_BOTH_LIBRARIES})
+  GTest::GTest GTest::Main)
 if(gurobi_FOUND)
   drake_add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
 endif()
