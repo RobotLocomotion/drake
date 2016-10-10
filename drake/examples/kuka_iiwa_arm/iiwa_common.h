@@ -13,7 +13,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 /**
- * Adds a ground plane to @p tree.
+ * Adds a ground plane to @p tree. The ground is represented as a box-shaped
+ * visual and collision element.
  *
  * @param[in] tree The RigidBodyTree to which to add the ground plane.
  */

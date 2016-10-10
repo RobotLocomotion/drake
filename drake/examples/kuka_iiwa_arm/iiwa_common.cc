@@ -5,7 +5,6 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 void AddGround(RigidBodyTree* tree) {
-  // Adds the ground.
   double kBoxWidth = 3;
   double kBoxDepth = 0.2;
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
@@ -15,8 +14,7 @@ void AddGround(RigidBodyTree* tree) {
 
   RigidBody& world = tree->world();
   Eigen::Vector4d color;
-  color << 0.9297, 0.7930, 0.6758,
-      1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
+  color << 0.9297, 0.7930, 0.6758, 1;
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(

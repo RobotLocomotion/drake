@@ -39,7 +39,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-DEFINE_double(duration, 5, "Total duration of the simualation in seconds.");
+DEFINE_double(duration, 5, "Total duration of the simulation in seconds.");
 
 // A demo of an uncontrolled KUKA iiwa arm.
 template<typename T>
@@ -111,7 +111,7 @@ int exec(int argc, char* argv[]) {
   KukaIiwaArmDynamicsSim<double> model;
   Simulator<double> simulator(model);
 
-  // Zeroes the state and initializes the controller state.
+  // Initializes the controller state and system state to be all zero.
   model.SetDefaultState(simulator.get_mutable_context());
 
   simulator.Initialize();
