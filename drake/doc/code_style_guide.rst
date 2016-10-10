@@ -202,6 +202,12 @@ Additional Rules
     `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_ and
     `#3355 <https://github.com/RobotLocomotion/drake/issues/3355>`_.
 
+* The ``main()`` method should be as brief as possible since it exists outside
+  of namespace ``drake``. It should simply call another ``main()`` that is
+  appropriately namespaced within namespace ``drake``. The method can be called
+  "``main()``" since it is allowed by the style guide's
+  `exceptions to naming rules <https://google.github.io/styleguide/cppguide.html#Exceptions_to_Naming_Rules>`_.
+
 .. _code-style-guide-matlab:
 
 MATLAB Style
