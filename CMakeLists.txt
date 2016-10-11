@@ -256,7 +256,11 @@ drake_add_external(iris PUBLIC CMAKE
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DLCM_ENABLE_EXAMPLES=OFF
+    -DLCM_ENABLE_LUA=OFF
+    -DLCM_INSTALL_M4MACROS=OFF)
 
 # libbot
 drake_add_external(libbot PUBLIC CMAKE
