@@ -37,7 +37,6 @@ if(NOT WIN32)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)" ON)
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 ##############################################################
@@ -359,24 +358,3 @@ drake_add_example(LittleDog OFF
 
 # END examples
 ###############################################################################
-
-## grab and install precompiled snopt
-
-# TODO: look for snopt_c
-if(snopt_c_FOUND OR WITH_SNOPT)
-  set(WITH_SNOPT_PRECOMPILED OFF)
-endif()
-if(WITH_SNOPT_PRECOMPILED)
-  message(STATUS "Preparing to install precompiled snopt")
-  ExternalProject_Add(download-snopt-precompiled
-    URL "https://s3.amazonaws.com/drake-provisioning/drakeSnopt.zip"
-    URL_MD5 "7b36168cba2fb9a56b2fd6117427fc4a"
-    SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND cmake -E copy_directory
-      ${CMAKE_BINARY_DIR}/snopt-precompiled/
-      ${PROJECT_SOURCE_DIR}/drake/matlab/solvers/
-    INSTALL_COMMAND "")
-  add_dependencies(download-all download-snopt-precompiled)
-  add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
-endif()
