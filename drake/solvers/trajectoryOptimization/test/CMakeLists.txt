@@ -1,6 +1,6 @@
 add_executable(trajectory_optimization_test trajectory_optimization_test.cc)
 target_link_libraries(trajectory_optimization_test drakeTrajectoryOptimization
-  ${GTEST_BOTH_LIBRARIES})
+  GTest::GTest GTest::Main)
 # TODO(Lucy-tri) There is currently no non-linear solver on Windows: see
 # issues #2352, #2569.
 find_package(NLopt)

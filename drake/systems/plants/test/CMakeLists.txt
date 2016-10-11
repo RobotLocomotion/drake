@@ -30,7 +30,7 @@ endmacro()
 macro(add_ik_gtest)
   add_executable(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK
-    ${GTEST_BOTH_LIBRARIES})
+    GTest::GTest GTest::Main)
   drake_add_test(NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
@@ -88,7 +88,7 @@ if(lcm_FOUND)
   target_link_libraries(testMagnetometer drakeRBSystem)
 
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
-  target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(compareRigidBodySystems drakeRBSystem GTest::GTest GTest::Main)
   drake_add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 
   if(snopt_c_FOUND)
