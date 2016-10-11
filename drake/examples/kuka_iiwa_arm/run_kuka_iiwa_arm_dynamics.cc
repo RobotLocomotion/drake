@@ -21,7 +21,7 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-int DoMain(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   // Initializes LCM.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
@@ -154,5 +154,5 @@ int DoMain(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }
