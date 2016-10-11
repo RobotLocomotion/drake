@@ -125,8 +125,7 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.h++
 RECURSIVE              = YES
-EXCLUDE                = "@drake_SOURCE_DIR@/examples" \
-                         "@drake_BINARY_DIR@" \
+EXCLUDE                = "@drake_BINARY_DIR@" \
                          "@drake_SOURCE_DIR@/thirdParty"
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =

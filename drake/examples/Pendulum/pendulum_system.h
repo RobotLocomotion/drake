@@ -55,6 +55,15 @@ class PendulumSystem : public systems::LeafSystem<T> {
   void EvalTimeDerivatives(const MyContext& context,
                            MyContinuousState* derivatives) const override;
 
+  /// Pendulum mass in kg
+  T m() const { return m_; }
+  /// Pendulum length in meters
+  T l() const { return l_; }
+  /// Damping torque in kg m^2 / s
+  T b() const { return b_; }
+  /// Gravity in m/s^2
+  T g() const { return g_; }
+
   explicit PendulumSystem(const PendulumSystem& other) = delete;
   PendulumSystem& operator=(const PendulumSystem& other) = delete;
   explicit PendulumSystem(PendulumSystem&& other) = delete;

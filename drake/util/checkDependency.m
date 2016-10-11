@@ -42,7 +42,7 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
-      
+
     case 'distcomp'
       v=ver('distcomp');
       conf.distcomp_enabled = ~isempty(v);
@@ -51,7 +51,7 @@ else % then try to evaluate the dependency now...
       elseif verLessThan('distcomp','6.3') && matlabpool('size')==0
         % start a matlab pool (if none exists).  this approximates the
         % now default behavior in newer versions of distcomp.
-        matlabpool; 
+        matlabpool;
       end
 
     case 'spotless'
@@ -168,13 +168,13 @@ else % then try to evaluate the dependency now...
 
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
-      
+
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
         disp(' ');
       end
-      
+
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -228,7 +228,7 @@ else % then try to evaluate the dependency now...
       if (~conf.mosek_enabled)
         conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
       end
-      
+
       if (conf.mosek_enabled)
         % Check for license issues
         try
@@ -238,7 +238,7 @@ else % then try to evaluate the dependency now...
           disp(getReport(ex,'extended'));
         end
       end
-      
+
       if ~conf.mosek_enabled && nargout<1
         disp(' ');
         disp(' Mosek not found or not working. Mosek support will be disabled.');
@@ -247,7 +247,7 @@ else % then try to evaluate the dependency now...
         disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
         disp(' ');
       end
-      
+
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
       if (~conf.gurobi_enabled)
@@ -293,34 +293,10 @@ else % then try to evaluate the dependency now...
 
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
-      
+
       if ~conf.fastqp_enabled && nargout<1
         disp(' ');
         disp(' fastqp not found. fastqp support will be disabled.');
-      end
-      
-    case 'bertini'
-      conf.bertini_enabled = logical(exist('bertini','file'));
-      if (~conf.bertini_enabled)
-        conf.bertini_enabled = pod_pkg_config('bertini');
-      end
-
-      if ~conf.bertini_enabled && nargout<1
-        disp(' ');
-        disp(' Bertini not found.');
-        disp(' ');
-      end
-
-    case 'gloptipoly3'
-      conf.gloptipoly3_enabled = logical(exist('gloptipolyversion','file'));
-      if (~conf.gloptipoly3_enabled)
-        conf.gloptipoly3_enabled = pod_pkg_config('gloptipoly3');
-      end
-
-      if ~conf.gloptipoly3_enabled && nargout<1
-        disp(' ');
-        disp(' Gloptipoly3 not found.');
-        disp(' ');
       end
 
     case 'cplex'
@@ -360,8 +336,8 @@ else % then try to evaluate the dependency now...
 
     case 'avl'
       if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('avl');
-        if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
+        path_to_avl = getCMakeParam('AVL_EXECUTABLE');
+        if isempty(path_to_avl) || strcmp(path_to_avl,'AVL_EXECUTABLE-NOTFOUND')
           if nargout<1
             disp(' ');
             disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
@@ -376,8 +352,8 @@ else % then try to evaluate the dependency now...
 
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('xfoil');
-        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
+        path_to_xfoil = getCMakeParam('XFOIL_EXECUTABLE');
+        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'XFOIL_EXECUTABLE-NOTFOUND')
           if nargout<1
             disp(' ');
             disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
@@ -409,7 +385,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
       end
       end
-      
+
     case 'lsqlin'
       conf.lsqlin_enabled = logical(exist('lsqlin.m','file'));
       if(~conf.lsqlin_enabled)
@@ -419,7 +395,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
         end
       end
-      
+
     case 'nonlinearprogramsnoptmex'
       conf.nonlinearprogramsnoptmex_enabled = logical(exist('NonlinearProgramSnoptmex','file')==3);
       if(~conf.nonlinearprogramsnoptmex_enabled)
@@ -431,7 +407,7 @@ else % then try to evaluate the dependency now...
       end
 
     case 'iris'
-      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file'));
       if (~conf.iris_enabled)
         conf.iris_enabled = pod_pkg_config('iris');
       end

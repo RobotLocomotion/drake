@@ -39,7 +39,7 @@ using drake::ros::systems::SensorPublisherOdometry;
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
  */
-int do_main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "single_car_in_stata_garage");
 
   // Initializes the communication layer.
@@ -117,5 +117,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::automotive::do_main(argc, argv);
+  return drake::ros::automotive::main(argc, argv);
 }

@@ -40,13 +40,6 @@
 [submodule "externals/yalmip"]
 	path = externals/yalmip
 	url = https://github.com/RobotLocomotion/yalmip.git
-[submodule "externals/gloptipoly"]
-	path = externals/gloptipoly
-	url = git@github.com:RobotLocomotion/gloptipoly3.git
-[submodule "externals/bertini"]
-	path = externals/bertini
-	url = git@github.com:RobotLocomotion/bertini.git
-	ignore = untracked
 [submodule "externals/sedumi"]
 	path = externals/sedumi
 	url = git@github.com:RobotLocomotion/sedumi.git

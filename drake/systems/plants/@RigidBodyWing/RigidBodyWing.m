@@ -168,7 +168,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       function runAvl()
         checkDependency('avl');
-        avlpath = deblank(getCMakeParam('avl'));
+        avlpath = deblank(getCMakeParam('AVL_EXECUTABLE'));
 
         avlfile = fileread(which('avlblank.avl'));
         avlfile = regexprep(avlfile, '\$airfoil', avlprofile);
@@ -257,8 +257,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       function runXfoil()
         checkDependency('xfoil');
-        xfoilpath = deblank(getCMakeParam('xfoil'));
-        
+        xfoilpath = deblank(getCMakeParam('XFOIL_EXECUTABLE'));
+
         % Reads template Xfoil commands file and fills in appropriate values
         xfoilfile = fileread(which('xfoilblank.txt'));
         filename = tempname;

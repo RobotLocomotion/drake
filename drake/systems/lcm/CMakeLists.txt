@@ -11,9 +11,6 @@ if(lcm_FOUND)
     drakeLCMTypes
     drakeLcm
     ${CMAKE_THREAD_LIBS_INIT})
-  if(WIN32)
-    target_link_libraries(drakeLCMSystem2 ws2_32)
-  endif()
 
   pods_install_libraries(drakeLCMSystem2)
   drake_install_headers(

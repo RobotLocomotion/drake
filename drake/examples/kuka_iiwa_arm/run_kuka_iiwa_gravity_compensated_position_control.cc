@@ -27,7 +27,7 @@ DEFINE_double(duration, 0.75, "Simulation duration");
 // run_kuka_iiwa_gravity_compensated_torque_control into a class
 // with a common method.
 
-int DoMain(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   std::shared_ptr<RigidBodySystem> iiwa_system = CreateKukaIiwaSystem();
 
   double kDuration = 0.75;
@@ -88,5 +88,5 @@ int DoMain(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }
