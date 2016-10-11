@@ -24,6 +24,8 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       % @param c simple msspoly or char to represent cos(q)
       % @param n the length of q  (optional if q is an msspoly, otherwise required)
 
+      disp('********** SPOTLESS **********')
+
       if ~logical(exist('msspoly','class'))
         error('you must have spotless in your path (e.g. via checkDependency(''spotless'')) before using TrigPoly');
         % calling checkDependency here doesn't work because the inferior to msspoly class logic
@@ -32,6 +34,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       if (nargin<4) n=-1; end
 
       function a=msspolyArg(a,varname)
+        disp('********** SPOTLESS **********')
         % note: can see/modify n from constructor
         if (isa(a,'msspoly'))
           if (~issimple(a)) error([varname, ' must be a simple msspoly']); end
@@ -55,10 +58,12 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function p=getmsspoly(obj)
+      disp('********** SPOTLESS **********')
       p=obj.p;
     end
 
     function p=getsym(obj)
+      disp('********** SPOTLESS **********')
       qs = sym('q',[length(obj.q),1]);
       ss = sym('s',[length(obj.s),1]);
       cs = sym('c',[length(obj.c),1]);
@@ -71,18 +76,22 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function q = getVar(obj)
+      disp('********** SPOTLESS **********')
       q = obj.q;
     end
 
     function s = getSin(obj)
+      disp('********** SPOTLESS **********')
       s = obj.s;
     end
 
     function c = getCos(obj)
+      disp('********** SPOTLESS **********')
       c = obj.c;
     end
 
     function b=isTrigOrPoly(a)
+      disp('********** SPOTLESS **********')
       % returns true if the TrigPoly object a has
       % contributions from q(i) OR s(i),c(i), but not both.
 
@@ -95,6 +104,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function v=getTrigPolyBasis(a)
+      disp('********** SPOTLESS **********')
       v = a; v.p=[];
       for i=1:length(a.q)
         if (deg(a.p,a.s(i))+deg(a.p,a.c(i)))>0
@@ -110,6 +120,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function val=eval(a,q0)
+      disp('********** SPOTLESS **********')
       % evaluate the trig poly at q=q0
       val = msubs(a.p,[a.q;a.s;a.c],[q0;sin(q0);cos(q0)]);
     end
@@ -124,11 +135,13 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=clean(a,tol)
+      disp('********** SPOTLESS **********')
       if nargin<2, a.p = clean(a.p);
       else a.p=clean(a.p,tol); end
     end
 
     function a=sin(a)
+      disp('********** SPOTLESS **********')
       for i=1:prod(size(a.p))  % handle one element at a time (for now).  could be vectorized.
         if (deg(a.p(i))==0) a.p(i)=sin(double(a.p(i))); return; end % return constant
         if (deg(a.p(i))>1) error('sin(p) with deg(p)>1 is not allowed'); end
@@ -165,6 +178,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=cos(a)
+      disp('********** SPOTLESS **********')
       for i=1:prod(size(a.p))  % handle one element at a time (for now).  could be vectorized.
         if (deg(a.p(i))==0) a.p(i)=cos(double(a.p(i))); return; end % return constant
         if (deg(a.p(i))>1) error('cos(p) with deg(p)>1 is not allowed'); end
@@ -201,6 +215,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=diff(a,z)
+      disp('********** SPOTLESS **********')
       a_mss = getmsspoly(a);
       if isa(z,'TrigPoly'), z = getmsspoly(z); end;
       %a_mss = a;
@@ -213,24 +228,29 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function i=end(a,k,n)
+      disp('********** SPOTLESS **********')
       % I don't think I should have to overload this, but it's not working
       % like (size(x,k)) should be.  see 'doc end'
       i=size(a,k);
     end
 
     function a=ctranspose(a)
+      disp('********** SPOTLESS **********')
       a.p=ctranspose(a.p);
     end
 
     function a=diag(a)
+      disp('********** SPOTLESS **********')
       a.p=diag(a.p);
     end
 
     function display(a)
+      disp('********** SPOTLESS **********')
       display(a.p);
     end
 
     function a=horzcat(varargin)
+      disp('********** SPOTLESS **********')
       ind=find(cellfun('isclass',varargin,'TrigPoly'),1);
       a=varargin{ind};
       for i=ind-1:-1:1
@@ -246,10 +266,12 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function b=isempty(a)
+      disp('********** SPOTLESS **********')
       b=isempty(a.p);
     end
 
     function b=isequal(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           b=isequal(a.p,b.p);
@@ -262,14 +284,17 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function b=isscalar(a)
+      disp('********** SPOTLESS **********')
       b=isscalar(a.p);
     end
 
     function n=length(a)
+      disp('********** SPOTLESS **********')
       n=length(a.p);
     end
 
     function a=minus(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=minus(a.p,b.p);
@@ -283,10 +308,12 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=mpower(a,n)
+      disp('********** SPOTLESS **********')
       a.p=mpower(a.p,n);
     end
 
     function a=power(a,n)
+      disp('********** SPOTLESS **********')
       if ~isnumeric(n) || any(size(n) ~= 1)
         error('Power only supports constant exponents')
       end
@@ -294,6 +321,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=mrdivide(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=mrdivide(a.p,b.p);
@@ -307,6 +335,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=mldivide(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=mldivide(a.p,b.p);
@@ -320,6 +349,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=mtimes(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=mtimes(a.p,b.p);
@@ -333,6 +363,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=plus(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=plus(a.p,b.p);
@@ -346,23 +377,28 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=repmat(a,m,n)
+      disp('********** SPOTLESS **********')
       a.p=repmat(a.p,m,n);
     end
 
     function a=reshape(a,m,n)
+      disp('********** SPOTLESS **********')
       a.p=reshape(a.p,m,n);
     end
 
     function varargout=size(a,varargin)
+      disp('********** SPOTLESS **********')
       varargout=cell(1,nargout);
       [varargout{:}]=size(a.p,varargin{:});
     end
 
     function a=sparse(a)
+      disp('********** SPOTLESS **********')
       a.p=sparse(a.p);
     end
 
     function a=subsasgn(a,s,b)
+      disp('********** SPOTLESS **********')
       if (isa(b,'TrigPoly'))
         a.p=subsasgn(a.p,s,b.p);
       else
@@ -371,6 +407,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=subsref(a,s)
+      disp('********** SPOTLESS **********')
       switch s.type
         case '()'
           a.p=subsref(a.p,s);
@@ -381,6 +418,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=sum(a,dim)
+      disp('********** SPOTLESS **********')
       if nargin<2
         a.p = sum(a.p);
       else
@@ -389,6 +427,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=times(a,b)
+      disp('********** SPOTLESS **********')
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))
           a.p=times(a.p,b.p);
@@ -402,22 +441,27 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
 
     function a=trace(a)
+      disp('********** SPOTLESS **********')
       a.p=trace(a.p);
     end
 
     function a=transpose(a)
+      disp('********** SPOTLESS **********')
       a.p=transpose(a.p);
     end
 
     function a=uminus(a)
+      disp('********** SPOTLESS **********')
       a.p=uminus(a.p);
     end
 
     function a=uplus(a)
+      disp('********** SPOTLESS **********')
       a.p=uplus(a.p);
     end
 
     function a=vertcat(varargin)
+      disp('********** SPOTLESS **********')
       ind=find(cellfun('isclass',varargin,'TrigPoly'),1);
       a=varargin{ind};
       for i=ind-1:-1:1
