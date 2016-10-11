@@ -42,16 +42,16 @@ Clarifications
   possibly could (e.g. sparsity of the gradients).
 * For the `Exceptions
   <https://google.github.io/styleguide/cppguide.html#Exceptions>`_ style rule,
-  we clarify as follows. Use exceptions for error handling.  Essential control
-  loops must be exception safe.
+  we clarify as follows. Throwing exceptions is permitted and encouraged for
+  error handling. Unit tests may catch exceptions using
+  `EXPECT_THROW <https://github.com/google/googletest/blob/master/googletest/docs/AdvancedGuide.md#exception-assertions>`_
+  if the exception is documented in the API. Otherwise, catching exceptions is
+  forbidden. For more context, see
+  `PR #3759 <https://github.com/robotlocomotion/drake/pull/3759>`_.
 
-  * Throwing exceptions is permitted. Unit tests may catch exceptions using
-    `EXPECT_THROW <https://github.com/google/googletest/blob/master/googletest/docs/AdvancedGuide.md#exception-assertions>`_
-    if the exception is documented in the API. Otherwise, catching exceptions is
-    forbidden. We allow exceptions to be thrown because it enables a more
-    detailed description of the error to be provided relative to an assert
-    statement. For more context, see
-    `PR #3759 <https://github.com/robotlocomotion/drake/pull/3759>`_.
+  * We allow exceptions to be thrown because it enables a more detailed
+    description of the error to be provided relative to an assert statement.
+
 * No dynamic allocation in the inner simulation/control loops.  Code should be
   still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using
