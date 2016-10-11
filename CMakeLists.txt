@@ -37,7 +37,6 @@ if(NOT WIN32)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)" ON)
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 ##############################################################
@@ -58,6 +57,7 @@ endif()
 
 ## The following projects are default ON when MATLAB is present and enabled.
 ## Otherwise, they are hidden and default OFF.
+cmake_dependent_option(WITH_SNOPT_PRECOMPILED "precompiled MEX files for SNOPT; the source requires a license (will be disabled if WITH_SNOPT=ON)" ON "NOT DISABLE_MATLAB;matlab" OFF)
 cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
 ## The following projects are default OFF when MATLAB is present and enabled.
@@ -367,15 +367,21 @@ if(snopt_c_FOUND OR WITH_SNOPT)
   set(WITH_SNOPT_PRECOMPILED OFF)
 endif()
 if(WITH_SNOPT_PRECOMPILED)
-  message(STATUS "Preparing to install precompiled snopt")
+  # TODO(jamiesnape): Use Matlab_MEX_EXTENSION from FindMatlab instead
+  if(APPLE)
+    set(SNOPT_PRECOMPILED_MEX_EXT mexmaci64)
+  else()
+    set(SNOPT_PRECOMPILED_MEX_EXT mexa64)
+  endif()
+  message(STATUS "Preparing to install precompiled SNOPT MEX files")
   ExternalProject_Add(download-snopt-precompiled
-    URL "https://s3.amazonaws.com/drake-provisioning/drakeSnopt.zip"
-    URL_MD5 "7b36168cba2fb9a56b2fd6117427fc4a"
+    URL https://s3.amazonaws.com/drake-provisioning/snopt/snopt-precompiled.tar.gz
+    URL_HASH SHA256=80c017505d8ed462a64ee5578e45e11de22ae4c0c6aead063fc1f469e61fdc5f
     SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
     CONFIGURE_COMMAND ""
-    BUILD_COMMAND cmake -E copy_directory
-      ${CMAKE_BINARY_DIR}/snopt-precompiled/
-      ${PROJECT_SOURCE_DIR}/drake/matlab/solvers/
+    BUILD_COMMAND cmake -E copy_if_different
+      "${CMAKE_BINARY_DIR}/snopt-precompiled/NonlinearProgramSnoptmex.${SNOPT_PRECOMPILED_MEX_EXT}"
+      "${PROJECT_SOURCE_DIR}/drake/matlab/solvers/NonlinearProgramSnoptmex.${SNOPT_PRECOMPILED_MEX_EXT}"
     INSTALL_COMMAND "")
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
