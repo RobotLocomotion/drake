@@ -169,10 +169,11 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
     return T(NAN);
   }
 
-  /// Computes the force exerted by the stop when a joint hits its limit.
+  /// Computes the force exerted by the stop when a joint hits its limit,
+  /// using a linear stiffness model.
   /// Exposed for unit testing of the formula.
   ///
-  /// Joint stop formula (and definition of "dissipation") from:
+  /// Linear stiffness formula (and definition of "dissipation") from:
   /// https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);

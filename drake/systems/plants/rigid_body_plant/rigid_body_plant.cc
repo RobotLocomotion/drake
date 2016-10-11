@@ -375,18 +375,21 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
                                      const T& position, const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
+  DRAKE_DEMAND(qmin < qmax);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
+  DRAKE_DEMAND(joint_stiffness >= 0);
   const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
+  DRAKE_DEMAND(joint_dissipation >= 0);
   if (position > qmax) {
     const T violation = position - qmax;
     const T limit_force = (-joint_stiffness * violation *
                            (1 + joint_dissipation * velocity));
-    if (limit_force < 0) return limit_force;
+    return std::min(limit_force, 0.);
   } else if (position < qmin) {
     const T violation = position - qmin;
     const T limit_force = (-joint_stiffness * violation *
                            (1 - joint_dissipation * velocity));
-    if (limit_force > 0) return limit_force;
+    return std::max(limit_force, 0.);
   }
   return 0;
 }

@@ -399,8 +399,12 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
             0);
   EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - delta, 0),
               0, epsilon);
+  EXPECT_GT(RBP::JointLimitForce(joint, lower_limit - delta, 0),
+            0);
   EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + delta, 0),
               0, epsilon);
+  EXPECT_LT(RBP::JointLimitForce(joint, upper_limit + delta, 0),
+            0);
   EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit, 0),
             0);
   EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit - delta, 0),
