@@ -25,6 +25,7 @@ option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
 option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET "used for collision detection" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
+option(WITH_CCD "collision detection between convex shapes" ON)
 option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
 if(NOT WIN32)
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
@@ -137,9 +138,16 @@ drake_add_external(bullet PUBLIC CMAKE
     -DUSE_DOUBLE_PRECISION=ON
     ${BULLET_EXTRA_CMAKE_ARGS})
 
+# ccd
+drake_add_external(ccd PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DENABLE_DOUBLE_PRECISION=ON)
+
 # dreal
 drake_add_external(dreal PUBLIC CMAKE
-  CMAKE_ARGS -DUSE_NLOPT=OFF
+  CMAKE_ARGS -DUSE_NLOPT=OFF -DBUILD_TESTING=OFF
   SOURCE_SUBDIR src)
 
 # gflags
@@ -302,6 +310,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
+    -DWITH_CCD:BOOL=${WITH_CCD}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
@@ -323,6 +332,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     avl
     bot_core_lcmtypes
     bullet
+    ccd
     director
     dreal
     eigen

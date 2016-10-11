@@ -44,6 +44,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 autoconf
 automake
+bison
 cmake
 cmake-curses-gui
 default-jdk

@@ -22,8 +22,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
-    tree_(move(tree)) {
+RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
+    : tree_(move(tree)) {
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
