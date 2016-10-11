@@ -1,10 +1,5 @@
 #pragma once
 
-#include <memory>
-
-#include <Eigen/Geometry>
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
