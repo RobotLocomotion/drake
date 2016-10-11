@@ -336,8 +336,8 @@ else % then try to evaluate the dependency now...
 
     case 'avl'
       if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('avl');
-        if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
+        path_to_avl = getCMakeParam('AVL_EXECUTABLE');
+        if isempty(path_to_avl) || strcmp(path_to_avl,'AVL_EXECUTABLE-NOTFOUND')
           if nargout<1
             disp(' ');
             disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
@@ -352,8 +352,8 @@ else % then try to evaluate the dependency now...
 
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('xfoil');
-        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
+        path_to_xfoil = getCMakeParam('XFOIL_EXECUTABLE');
+        if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'XFOIL_EXECUTABLE-NOTFOUND')
           if nargout<1
             disp(' ');
             disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
