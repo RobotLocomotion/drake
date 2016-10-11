@@ -4,7 +4,7 @@ if(lcm_FOUND)
 endif()
 
 drake_add_matlab_test(NAME examples/Acrobot/test/dHtest OPTIONAL bullet COMMAND dHtest)
-drake_add_matlab_test(NAME examples/Acrobot/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+drake_add_matlab_test(NAME examples/Acrobot/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest REQUIRES spotless)
 drake_add_matlab_test(NAME examples/Acrobot/test/lqrTest REQUIRES spotless OPTIONAL mosek sedumi COMMAND lqrTest)
 drake_add_matlab_test(NAME examples/Acrobot/test/paramEstSyntheticData REQUIRES spotless OPTIONAL snopt COMMAND paramEstSyntheticData)
 drake_add_matlab_test(NAME examples/Acrobot/test/paramExtractFromURDF REQUIRES spotless OPTIONAL bullet COMMAND paramExtractFromURDF)

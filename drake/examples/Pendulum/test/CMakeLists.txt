@@ -22,7 +22,7 @@ if(lcm_FOUND)
 endif()
 
 drake_add_matlab_test(NAME examples/Pendulum/test/coordinateTest OPTIONAL bullet COMMAND coordinateTest)
-drake_add_matlab_test(NAME examples/Pendulum/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+drake_add_matlab_test(NAME examples/Pendulum/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest REQUIRES spotless)
 drake_add_matlab_test(NAME examples/Pendulum/test/polyFeedback REQUIRES spotless OPTIONAL lcm COMMAND polyFeedback)
 drake_add_matlab_test(NAME examples/Pendulum/test/runPendLCMControl REQUIRES lcm COMMAND runPendLCMControl)
 drake_add_matlab_test(NAME examples/Pendulum/test/testFeedback REQUIRES spotless OPTIONAL lcm COMMAND testFeedback)

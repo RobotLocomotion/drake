@@ -1,2 +1,2 @@
-drake_add_matlab_test(NAME examples/CompassGait/test/collisionDynamicsGradientsTest COMMAND collisionDynamicsGradientsTest)
-drake_add_matlab_test(NAME examples/CompassGait/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+drake_add_matlab_test(NAME examples/CompassGait/test/collisionDynamicsGradientsTest COMMAND collisionDynamicsGradientsTest REQUIRES spotless)
+drake_add_matlab_test(NAME examples/CompassGait/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest REQUIRES spotless)
