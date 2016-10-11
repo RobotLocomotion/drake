@@ -46,7 +46,7 @@ if(lcm_FOUND)
   target_link_libraries(kuka_lcm_visualizer
       drakeKukaIiwaArm
       drake_lcmtypes
-      threads)
+      Threads::Threads)
 
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
   target_link_libraries(kuka_ik_demo drakeIK

@@ -74,12 +74,13 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// the world in @p tree.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree);
 
-  /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
-  /// the world in @p tree.
-  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree,
-    T penetration_stiffness, T penetration_damping, T friction_coefficient);
-
   ~RigidBodyPlant() override;
+
+  // TODO(liang.fok) Remove this method once a more advanced contact modeling
+  // framework is available.
+  /// Sets the contact parameters.
+  void set_contact_parameters(double penetration_stiffness,
+      double penetration_damping, double friction_coefficient);
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.

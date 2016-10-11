@@ -149,6 +149,8 @@ macro(drake_add_cmake_external PROJECT)
   # Set arguments for cache propagation
   set(_ext_LIST_SEPARATOR "!")
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+    CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY
     CMAKE_PREFIX_PATH
     CMAKE_INSTALL_PREFIX
     CMAKE_BUILD_TYPE

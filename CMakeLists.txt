@@ -33,6 +33,7 @@ if(NOT WIN32)
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_DREAL "nonlinear SMT solver" OFF)
   option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
+  option(WITH_OCTOMAP "provides oct-tree data structures" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
@@ -82,7 +83,6 @@ if(NOT WIN32) # many of these might work on win32 with little or no work... they
   option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
   option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
   option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-  option(WITH_OCTOMAP "provides oct-tree data structures")
   option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
   option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 endif()
@@ -143,16 +143,10 @@ drake_add_external(dreal PUBLIC CMAKE
   SOURCE_SUBDIR src)
 
 # gflags
-if(WIN32)
-  # We can't figure out how to get gflags shared libraries working on Windows
-  # (see #3345), so here we build it with static libraries only.  Code that
-  # lives in Drake's shared libraries must be conditionalized to avoid using
-  # gflags on Windows.
-  drake_add_external(gflags PUBLIC CMAKE)
-else()
-  drake_add_external(gflags PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+drake_add_external(gflags PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON)
 
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
@@ -215,6 +209,9 @@ drake_add_external(spotless PUBLIC CMAKE
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
 
 # swig_matlab
@@ -241,13 +238,12 @@ drake_add_external(textbook PUBLIC CMAKE
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
 # yaml_cpp
-if(WIN32)
-  drake_add_external(yaml_cpp PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF)
-else()
-  drake_add_external(yaml_cpp PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+drake_add_external(yaml_cpp PUBLIC CMAKE
+ CMAKE_ARGS
+   -DBUILD_SHARED_LIBS=ON
+   -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
+   -DYAML_CPP_BUILD_CONTRIB=OFF
+   -DYAML_CPP_BUILD_TOOLS=OFF)
 
 # iris
 drake_add_external(iris PUBLIC CMAKE
@@ -262,7 +258,11 @@ drake_add_external(iris PUBLIC CMAKE
 
 # lcm
 drake_add_external(lcm PUBLIC CMAKE
-  CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DLCM_ENABLE_EXAMPLES=OFF
+    -DLCM_ENABLE_LUA=OFF
+    -DLCM_INSTALL_M4MACROS=OFF)
 
 # libbot
 drake_add_external(libbot PUBLIC CMAKE

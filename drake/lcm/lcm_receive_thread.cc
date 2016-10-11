@@ -2,11 +2,7 @@
 
 #include <iostream>
 
-#if defined(_WIN32)
-#include <Winsock2.h>
-#else
 #include <sys/select.h>
-#endif
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

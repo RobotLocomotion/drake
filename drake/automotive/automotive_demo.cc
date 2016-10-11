@@ -13,7 +13,7 @@ namespace drake {
 namespace automotive {
 namespace {
 
-int do_main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   // TODO(jwnimmer-tri) Allow for multiple simple cars.
@@ -49,5 +49,5 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::automotive::do_main(argc, argv);
+  return drake::automotive::main(argc, argv);
 }

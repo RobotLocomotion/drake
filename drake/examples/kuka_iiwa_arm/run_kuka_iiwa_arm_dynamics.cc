@@ -60,9 +60,9 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
-    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree),
-        3000 /* penetration stiffness */, 0 /* penetration damping */,
-        1.0 /* friction coefficient */);
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
+    plant_->set_contact_parameters(3000 /* penetration stiffness */,
+        0 /* penetration damping */, 1.0 /* friction coefficient */);
 
     // Feed in constant inputs of zero into the RigidBodyPlant.
     VectorX<T> constant_value(plant_->get_input_size());
@@ -105,7 +105,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
   ConstantVectorSource<T>* const_source_;
 };
 
-int exec(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   KukaIiwaArmDynamicsSim<double> model;
@@ -126,13 +126,13 @@ int exec(int argc, char* argv[]) {
   const VectorBase<double>& position_vector = state->get_generalized_position();
   const VectorBase<double>& velocity_vector = state->get_generalized_velocity();
 
-  const int num_p = position_vector.size();
+  const int num_q = position_vector.size();
   const int num_v = velocity_vector.size();
 
   // Ensures the sizes of the position and velocity vectors are correct.
-  if (num_p != rigid_body_plant.get_num_positions()) {
+  if (num_q != rigid_body_plant.get_num_positions()) {
     throw std::runtime_error(
-        "ERROR: Size of position vector (" + std::to_string(num_p) + ") does "
+        "ERROR: Size of position vector (" + std::to_string(num_q) + ") does "
         "not match number of positions in RigidBodyTree (" +
         std::to_string(rigid_body_plant.get_num_positions()) + ").");
   }
@@ -145,9 +145,9 @@ int exec(int argc, char* argv[]) {
   }
 
   // Ensures the number of position states equals the number of velocity states.
-  if (num_p != num_v) {
+  if (num_q != num_v) {
     throw std::runtime_error(
-        "ERROR: Number of positions (" + std::to_string(num_p) + ") does not "
+        "ERROR: Number of positions (" + std::to_string(num_q) + ") does not "
         "match the number of velocities (" + std::to_string(num_v) + ").");
   }
 
@@ -196,5 +196,5 @@ int exec(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::exec(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }

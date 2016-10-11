@@ -8,7 +8,7 @@ if(lcm_FOUND)
       drakeSystemControllers
       drakeLCMSystem2
       drakeTrajectories
-      ${GTEST_BOTH_LIBRARIES})
+      GTest::GTest GTest::Main)
   # NLopt isn't sufficient to run the kuka_demo, as it is unable to
   # find a solution.  See
   # https://github.com/RobotLocomotion/drake/issues/3710

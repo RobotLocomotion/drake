@@ -23,16 +23,7 @@ namespace systems {
 
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
-    : RigidBodyPlant(std::move(tree), 150.0 /* penetration stiffness */,
-      15.0 /* penetration damping */, 1.0 /*friction coefficient */) {
-}
-
-template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree,
-    T penetration_stiffness, T penetration_damping, T friction_coefficient)
-    : penetration_stiffness_(penetration_stiffness),
-    penetration_damping_(penetration_damping),
-    friction_coefficient_(friction_coefficient), tree_(move(tree)) {
+    : tree_(move(tree)) {
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
@@ -49,6 +40,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree,
 
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() { }
+
+template <typename T>
+void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
+  double penetration_damping, double friction_coefficient) {
+  penetration_stiffness_ = penetration_stiffness;
+  penetration_damping_ = penetration_damping;
+  friction_coefficient_ = friction_coefficient;
+}
 
 template <typename T>
 bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
