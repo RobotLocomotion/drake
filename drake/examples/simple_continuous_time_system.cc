@@ -3,7 +3,7 @@
 /// Simple Continuous Time System Example
 ///
 /// This is meant to be a sort of "hello world" example for the
-/// drake::system classes.  It defines a very simple continous time system,
+/// drake::system classes.  It defines a very simple continuous time system,
 /// simulates it from a given initial condition, and plots the result.
 
 #include "drake/systems/analysis/simulator.h"
