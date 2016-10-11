@@ -139,7 +139,7 @@ drake_add_external(bullet PUBLIC CMAKE
 
 # dreal
 drake_add_external(dreal PUBLIC CMAKE
-  CMAKE_ARGS -DUSE_NLOPT=OFF
+  CMAKE_ARGS -DUSE_NLOPT=OFF -DBUILD_TESTING=OFF
   SOURCE_SUBDIR src)
 
 # gflags
