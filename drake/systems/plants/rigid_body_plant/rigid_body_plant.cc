@@ -373,8 +373,6 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
 template <typename T>
 T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
                                      const T& position, const T& velocity) {
-  // Joint stop formula (and definition of "dissipation") from:
-  // https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
   const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
