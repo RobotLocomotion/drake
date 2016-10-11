@@ -3,6 +3,7 @@
 
 // #include <gtest/gtest.h>
 
+#include "drake/automotive/automotive_common.h"
 #include "drake/automotive/car_simulation.h"
 #include "drake/common/drake_path.h"
 // #include "drake/math/roll_pitch_yaw.h"
@@ -102,6 +103,8 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
     plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
+    plant_->set_contact_parameters(5000.0 /*penetration_stiffness*/,
+      500 /* penetration_damping */, 10 /* friction_coefficient */);
 
     // TODO(liang.fok) Temporary placeholder. Remove when actual inputs can be
     // wired to RigidBodyPlant.

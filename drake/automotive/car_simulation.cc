@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 
+#include "drake/automotive/automotive_common.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 

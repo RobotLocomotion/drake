@@ -2,6 +2,7 @@ add_subdirectory(gen)
 add_subdirectory(test)
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
+  automotive_common.cc
   create_trajectory_params.cc
   curve2.cc
   gen/driving_command.cc
@@ -22,6 +23,7 @@ target_link_libraries(drakeAutomotive
   )
 pods_install_libraries(drakeAutomotive)
 drake_install_headers(
+  automotive_common.h
   create_trajectory_params.h
   curve2.h
   simple_car.h
