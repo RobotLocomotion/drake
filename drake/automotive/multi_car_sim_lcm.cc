@@ -15,7 +15,7 @@ namespace {
 
 using Eigen::VectorXd;
 
-int do_main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
@@ -85,5 +85,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::automotive::do_main(argc, argv);
+  return drake::automotive::main(argc, argv);
 }

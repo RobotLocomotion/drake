@@ -56,13 +56,13 @@ Other Prerequisites
 Other prerequisites may be installed as follows::
 
     sudo apt-get update
-    sudo apt-get install --no-install-recommends autoconf automake default-jdk \
-      doxygen freeglut3-dev git graphviz libgtk2.0-dev libhtml-form-perl \
-      libjpeg-dev libmpfr-dev libpng-dev libqt4-dev libqt4-opengl-dev \
-      libqwt-dev libterm-readkey-perl libtool libvtk-java libvtk5-dev \
-      libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config python-bs4 \
-      python-dev python-gtk2 python-html5lib python-numpy python-pip \
-      python-sphinx python-vtk unzip valgrind
+    sudo apt-get install --no-install-recommends autoconf automake bison \
+      default-jdk doxygen freeglut3-dev git graphviz libgtk2.0-dev \
+      libhtml-form-perl libjpeg-dev libmpfr-dev libpng-dev libqt4-dev \
+      libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
+      libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
+      python-bs4 python-dev python-gtk2 python-html5lib python-numpy
+      python-pip python-sphinx python-vtk unzip valgrind
 
 Environment
 -----------

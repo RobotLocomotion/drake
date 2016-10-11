@@ -9,7 +9,7 @@ if(lcm_FOUND)
   add_executable(pendulum_trajectory_optimization_test
     pendulum_trajectory_optimization_test.cc)
   target_link_libraries(pendulum_trajectory_optimization_test
-    drakePendulum drakeTrajectoryOptimization ${GTEST_BOTH_LIBRARIES})
+    drakePendulum drakeTrajectoryOptimization GTest::GTest GTest::Main)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
   find_package(NLopt)
