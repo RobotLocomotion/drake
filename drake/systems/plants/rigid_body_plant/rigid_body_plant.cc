@@ -22,8 +22,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
-    tree_(move(tree)) {
+RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
+    : tree_(move(tree)) {
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
@@ -40,6 +40,16 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
 
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() { }
+
+// TODO(liang.fok) Remove this method once a more advanced contact modeling
+// framework is available.
+template <typename T>
+void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
+  double penetration_damping, double friction_coefficient) {
+  penetration_stiffness_ = penetration_stiffness;
+  penetration_damping_ = penetration_damping;
+  friction_coefficient_ = friction_coefficient;
+}
 
 template <typename T>
 bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {

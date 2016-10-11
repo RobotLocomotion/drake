@@ -76,6 +76,12 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
 
   ~RigidBodyPlant() override;
 
+  // TODO(liang.fok) Remove this method once a more advanced contact modeling
+  // framework is available.
+  /// Sets the contact parameters.
+  void set_contact_parameters(double penetration_stiffness,
+      double penetration_damping, double friction_coefficient);
+
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
   const RigidBodyTree& get_rigid_body_tree() const;
