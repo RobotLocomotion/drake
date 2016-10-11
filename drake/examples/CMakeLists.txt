@@ -25,11 +25,16 @@ drake_add_matlab_test(NAME examples/commonLyapunovForLinearSystems REQUIRES mose
 drake_add_matlab_test(NAME examples/DoubleIntegrator.runValueIteration COMMAND DoubleIntegrator.runValueIteration SIZE large)
 drake_add_matlab_test(NAME examples/VanDerPol.particleDemo COMMAND VanDerPol.particleDemo SIZE large)
 
+add_executable(simple_continuous_time_system simple_continuous_time_system.cc)
+target_link_libraries(simple_continuous_time_system
+    drakeSystemAnalysis)
+drake_add_test(NAME simple_continuous_time_system COMMAND simple_continuous_time_system)
 
 # recurse into all example subdirectories
-# note: the GLOB workflow is typically not recommended due to the fact that CMake will not be able
-# to detect changes, but we currently support users adding contributed examples by installing
-# directly into examples/MY_EXAMPLE. See #1939.
+# Note: the GLOB workflow is typically not recommended due to the fact that
+# CMake will not be able to detect changes, but we currently support users
+# adding contributed examples by installing directly into
+# examples/MY_EXAMPLE. See #1939.
 file(GLOB children *)
 foreach(child ${children})
   if(EXISTS ${child}/CMakeLists.txt)
