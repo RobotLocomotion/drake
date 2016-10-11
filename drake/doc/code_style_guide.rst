@@ -51,6 +51,9 @@ Clarifications
 
   * We allow exceptions to be thrown because it enables a more detailed
     description of the error to be provided relative to an assert statement.
+  * **Note:** This is a work-in-progress rule, but captures our
+    currently-in-effect style. We are open to discussion on additional uses for
+    exceptions if and when the need arises.
 
 * No dynamic allocation in the inner simulation/control loops.  Code should be
   still be thread-safe (e.g. be careful with pre-allocations).
