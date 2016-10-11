@@ -1,6 +1,10 @@
 #include "gurobi_solver.h"
 
+#include <vector>
+
 #include <Eigen/Core>
+#include <Eigen/Sparse>
+
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
@@ -64,6 +68,53 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 /// Splits out the quadratic costs and makes calls to add them individually.
 int AddCosts(GRBmodel* model, MathematicalProgram& prog,
              double sparseness_threshold) {
+  typedef Eigen::Triplet<double> T;
+  using std::abs;
+  // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x
+  std::vector<T> Q_nonzero_coefs;
+  std::vector<T> b_nonzero_coefs;
+  for(const auto& binding : prog.quadratic_costs()) {
+    const auto& constraint = binding.constraint();
+    const int constraint_variable_dimension = binding.GetNumElements();
+    Eigen::MatrixXd Q = constraint->Q();
+    Eigen::VectorXd b = constraint->b();
+
+    DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
+
+    // constraint_variable_index[i] is the index of the i'th decision variable
+    // binding.VariableListToVectorXd(i)
+    std::vector<int> constraint_variable_index(constraint_variable_dimension);
+    int constraint_variable_count = 0;
+    for(const DecisionVariableView& var : binding.variable_list()) {
+      for(int i = 0; i < var.size(); i++) {
+        constraint_variable_index[constraint_variable_count] = var.index() + i;
+        constraint_variable_count++;
+      }
+    }
+    for(int i = 0; i < Q.rows(); i++) {
+      const double Qii = 0.5 * Q(i, i);
+      if(abs(Qii) > sparseness_threshold) {
+        Q_nonzero_coefs.push_back(T(constraint_variable_index[i], constraint_variable_index[i], Qii));
+      }
+      for(int j = i+1; j < Q.cols(); j++) {
+        const double Qij = 0.5 * (Q(i, j) + Q(j, i));
+        if(abs(Qij) > sparseness_threshold) {
+          Q_nonzero_coefs.push_back(T(constraint_variable_index[i], constraint_variable_index[j], Qij));
+        }
+      }
+    }
+
+    for(int i = 0; i < b.size(); i++) {
+      if(abs(b(i)) > sparseness_threshold) {
+        b_nonzero_coefs.push_back(T(constraint_variable_index[i], 0, b(i)));
+      }
+    }
+    Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
+    Eigen::SparseMatrix<double> linear_terms(prog.num_vars(), 1);
+    Q_all.setFromTriplets(Q_nonzero_coefs.begin(), Q_nonzero_coefs.end());
+    linear_terms.setFromTriplets(b_nonzero_coefs.begin(), b_nonzero_coefs.end());
+
+  }
   int start_row = 0;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
