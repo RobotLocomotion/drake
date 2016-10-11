@@ -7,6 +7,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/plants/joints/PrismaticJoint.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
@@ -374,6 +375,60 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   EXPECT_TRUE(rbs1->get_num_positions() == rbs2->get_num_positions());
   EXPECT_TRUE(rbs1->get_num_velocities() == rbs2->get_num_velocities());
   EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
+}
+
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
+  typedef RigidBodyPlant<double> RBP;
+  const double left_limit = 10.;
+  const double right_limit = 20.;
+  const double stiffness = 10.;
+  const double dissipation = 0.5;
+  const double delta = 1e-6;  // Perturbation used for continuity tests.
+  const double epsilon = 1e-4;
+
+  // The joint limit force formula is quite complex.  This test checks each of
+  // its modes, to ensure that we didn't flip a sign somewhere.
+  PrismaticJoint joint("test_joint", Isometry3d::Identity(), Vector3d(1, 0, 0));
+  joint.setJointLimits(left_limit, right_limit);
+  joint.SetJointLimitDynamics(stiffness, dissipation);
+
+  // Force should be continuously near zero at the limit.
+  EXPECT_EQ(RBP::JointLimitForce(joint, left_limit + delta, 0),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, left_limit, 0),
+            0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, left_limit - delta, 0),
+              0, epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, right_limit + delta, 0),
+              0, epsilon);
+  EXPECT_EQ(RBP::JointLimitForce(joint, right_limit, 0),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, right_limit - delta, 0),
+            0);
+
+  // At zero velocity, expect a spring force law.
+  EXPECT_NEAR(RBP::JointLimitForce(joint, left_limit - 1, 0),
+              stiffness, epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, right_limit + 1, 0),
+              -stiffness, epsilon);
+
+  // At outward velocity, a much stiffer counterforce (ie, not "squishy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, left_limit - 1, -1),
+              stiffness * (1 + dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, right_limit + 1, 1),
+              -stiffness * (1 + dissipation), epsilon);
+
+  // At inward velocity, a looser counterforce (ie, not "bouncy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, left_limit - 1, 1),
+              stiffness * (1 - dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, right_limit + 1, -1),
+              -stiffness * (1 - dissipation), epsilon);
+
+  // At rapid inward velocity, no negative counterforce (ie, not "sticky").
+  EXPECT_EQ(RBP::JointLimitForce(joint, left_limit - 1, 10),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, right_limit + 1, -10),
+            0);
 }
 
 }  // namespace
