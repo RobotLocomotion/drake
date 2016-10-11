@@ -11,7 +11,7 @@
 
 /// Simple Continuous Time System
 /// \begin{gather*}
-///     \dot{x} = -x + x^3 \\
+///     \dot{x} = -x + x^3 \newline
 ///     y = x
 /// \end{gather*}
 class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
