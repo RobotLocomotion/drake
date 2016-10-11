@@ -41,6 +41,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() { }
 
+// TODO(liang.fok) Remove this method once a more advanced contact modeling
+// framework is available.
 template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
   double penetration_damping, double friction_coefficient) {
