@@ -143,16 +143,10 @@ drake_add_external(dreal PUBLIC CMAKE
   SOURCE_SUBDIR src)
 
 # gflags
-if(WIN32)
-  # We can't figure out how to get gflags shared libraries working on Windows
-  # (see #3345), so here we build it with static libraries only.  Code that
-  # lives in Drake's shared libraries must be conditionalized to avoid using
-  # gflags on Windows.
-  drake_add_external(gflags PUBLIC CMAKE)
-else()
-  drake_add_external(gflags PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+drake_add_external(gflags PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON)
 
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
@@ -215,7 +209,9 @@ drake_add_external(spotless PUBLIC CMAKE
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
-  CMAKE_ARGS -DBUILD_TESTING=OFF
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
   SOURCE_SUBDIR octomap)
 
 # swig_matlab
@@ -242,13 +238,10 @@ drake_add_external(textbook PUBLIC CMAKE
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
 # yaml_cpp
-if(WIN32)
-  drake_add_external(yaml_cpp PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF)
-else()
-  drake_add_external(yaml_cpp PUBLIC CMAKE
-    CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
+drake_add_external(yaml_cpp PUBLIC CMAKE
+  CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON)
 
 # iris
 drake_add_external(iris PUBLIC CMAKE
