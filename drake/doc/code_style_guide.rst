@@ -105,6 +105,18 @@ Clarifications
   <https://google.github.io/styleguide/cppguide.html#Use_of_const>`_ style rule,
   we clarify that a class member variable must be declared ``const`` if it
   is not modified after the class is constructed.
+* For the `Exceptions
+  <https://google.github.io/styleguide/cppguide.html#Exceptions>`_ style rule,
+  we clarify as follows:
+
+  1. Any code can throw.
+  2. Unit tests can
+     `EXPECT_THROW <https://github.com/google/googletest/blob/master/googletest/docs/AdvancedGuide.md#exception-assertions>`_
+     but only if the exception is documented in the API.
+  3. Non-test code cannot catch.
+
+  We allow exceptions to be thrown because it allows a more detailed description
+  of the error to be provided relative to an assert statement.
 
 .. _code-style-guide-cpp-exceptions:
 
