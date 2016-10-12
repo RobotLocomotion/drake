@@ -129,7 +129,7 @@ drake_add_matlab_test(NAME systems/plants/test/contactNormalsTest OPTIONAL bulle
 drake_add_matlab_test(NAME systems/plants/test/contactSensorTest OPTIONAL gurobi snopt COMMAND contactSensorTest)
 drake_add_matlab_test(NAME systems/plants/test/coordinateSystemTest OPTIONAL bullet gurobi COMMAND coordinateSystemTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/fallingBrickLCP OPTIONAL bullet gurobi snopt COMMAND fallingBrickLCP)
-drake_add_matlab_test(NAME systems/plants/test/fallingCapsulesTest OPTIONAL bullet gurobi snopt COMMAND fallingCapsulesTest SIZE large)
+drake_add_matlab_test(NAME systems/plants/test/fallingCapsulesTest REQUIRES snopt OPTIONAL bullet gurobi COMMAND fallingCapsulesTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/test/ignoreSelfCollisionsTest OPTIONAL bullet COMMAND ignoreSelfCollisionsTest)
 drake_add_matlab_test(NAME systems/plants/test/linearize_test COMMAND linearize_test)
 drake_add_matlab_test(NAME systems/plants/test/momentumTest OPTIONAL gurobi COMMAND momentumTest)
