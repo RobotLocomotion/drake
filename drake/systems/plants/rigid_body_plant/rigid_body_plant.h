@@ -151,10 +151,6 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
 
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const VectorBase<T>& generalized_velocity,
-      VectorBase<T>* positions_derivative) const override;
-
   // System<T> overrides to track energy conservation.
   // TODO(amcastro-tri): provide proper implementations for these methods to
   // track energy conservation.
@@ -185,8 +181,14 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
                            const T& position, const T& velocity);
 
  protected:
-  // LeafSystem<T> override
+  // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+
+  // System<T> override.
+  void DoMapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* positions_derivative) const override;
 
  private:
   // Some parameters defining the contact.

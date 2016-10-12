@@ -226,7 +226,11 @@ class DiagramContext : public Context<T> {
  private:
   std::vector<PortIdentifier> input_ids_;
 
+  // The outputs are stored in SystemIndex order, and outputs_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<SystemOutput<T>>> outputs_;
+  // The contexts are stored in SystemIndex order, and contexts_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;
 
   // A map from the input ports of constituent systems, to the output ports of
