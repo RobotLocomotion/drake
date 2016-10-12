@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <set>
+#include <vector>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
@@ -61,7 +61,7 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   void AddContactDetail(std::unique_ptr<ContactDetail<T>> detail);
 
  private:
-  std::set<std::unique_ptr<ContactDetail<T>>> contact_details_;
+  std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;
 };
 
 template <typename T>
@@ -71,11 +71,9 @@ template <typename T>
 SampledContactManifold<T>::SampledContactManifold(
     const SampledContactManifold<T>& other)
 {
-  typename std::set<std::unique_ptr<ContactDetail<T>>>::const_iterator itr;
-  for ( itr = other.contact_details_.begin();
-        itr != other.contact_details_.end(); ++itr) {
-    std::unique_ptr<ContactDetail<T>> copy((*itr)->clone());
-    contact_details_.insert(std::move(copy));
+  for (const auto & detail : other.contact_details_) {
+    std::unique_ptr<ContactDetail<T>> copy(detail->clone());
+    contact_details_.push_back(std::move(copy));
   }
 }
 
@@ -124,9 +122,7 @@ template <typename T>
 const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
     size_t i) const {
   if ( i < contact_details_.size()) {
-    auto itr = contact_details_.begin();
-    std::advance(itr, i);
-    return (*itr).get();
+    return contact_details_[i].get();
   }
   return nullptr;
 }
@@ -134,7 +130,7 @@ const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
 template <typename T>
 void SampledContactManifold<T>::AddContactDetail(
     std::unique_ptr<ContactDetail<T>> detail) {
-  contact_details_.insert(move(detail));
+  contact_details_.push_back(move(detail));
 }
 
 template <typename T>
