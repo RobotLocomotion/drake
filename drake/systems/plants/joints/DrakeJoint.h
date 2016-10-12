@@ -206,6 +206,10 @@ class DRAKE_EXPORT DrakeJoint {
 
   virtual const Eigen::VectorXd& getJointLimitMax() const;
 
+  virtual const Eigen::VectorXd& get_joint_limit_stiffness() const;
+
+  virtual const Eigen::VectorXd& get_joint_limit_dissipation() const;
+
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(AutoDiffFixedMaxSize)
@@ -219,6 +223,8 @@ class DRAKE_EXPORT DrakeJoint {
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
+  Eigen::VectorXd joint_limit_stiffness_;
+  Eigen::VectorXd joint_limit_dissipation_;
 
  private:
   const Eigen::Isometry3d transform_to_parent_body;

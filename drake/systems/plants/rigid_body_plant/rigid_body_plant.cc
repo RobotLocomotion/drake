@@ -232,20 +232,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     for (auto const& b : tree_->bodies) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
-      // Only for single-axis joints.
+      // Joint limit forces are only implemented for single-axis joints.
       if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
-        // Limits makes things easier/faster here.
-        T qmin = joint.getJointLimitMin()(0),
-            qmax = joint.getJointLimitMax()(0);
-        // tau = k * (qlimit-q) - b(qdot)
-        if (q(b->get_position_start_index()) < qmin)
-          right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmin - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
-        else if (q(b->get_position_start_index()) > qmax)
-          right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmax - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
+        const T limit_force = JointLimitForce(joint,
+                                              q(b->get_position_start_index()),
+                                              v(b->get_velocity_start_index()));
+        right_hand_side(b->get_velocity_start_index()) += limit_force;
       }
     }
   }
@@ -387,6 +379,31 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
       kinsol.transformPositionDotMappingToVelocityMapping(
           MatrixX<T>::Identity(nq, nq)) * v);
 }
+
+template <typename T>
+T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
+                                     const T& position, const T& velocity) {
+  const T qmin = joint.getJointLimitMin()(0);
+  const T qmax = joint.getJointLimitMax()(0);
+  DRAKE_DEMAND(qmin < qmax);
+  const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
+  DRAKE_DEMAND(joint_stiffness >= 0);
+  const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
+  DRAKE_DEMAND(joint_dissipation >= 0);
+  if (position > qmax) {
+    const T violation = position - qmax;
+    const T limit_force = (-joint_stiffness * violation *
+                           (1 + joint_dissipation * velocity));
+    return std::min(limit_force, 0.);
+  } else if (position < qmin) {
+    const T violation = position - qmin;
+    const T limit_force = (-joint_stiffness * violation *
+                           (1 - joint_dissipation * velocity));
+    return std::max(limit_force, 0.);
+  }
+  return 0;
+}
+
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_EXPORT RigidBodyPlant<double>;
