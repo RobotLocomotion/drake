@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 #include "drake/systems/robotInterfaces/Side.h"
-#include "rigid_body_tree_utils.h"
 
 namespace drake {
 namespace examples {
@@ -111,9 +111,13 @@ class HumanoidStatus {
       body_name_to_id_[(*it)->get_name()] = it - robot_.bodies.begin();
     }
 
-    joint_name_to_position_index_ = std::unordered_map<std::string, int>();
+    name_to_position_index_ = std::unordered_map<std::string, int>();
     for (int i = 0; i < robot_.get_num_positions(); i++) {
-      joint_name_to_position_index_[robot_.get_position_name(i)] = i;
+      name_to_position_index_[robot_.get_position_name(i)] = i;
+    }
+    name_to_velocity_index_ = std::unordered_map<std::string, int>();
+    for (int i = 0; i < robot_.get_num_velocities(); i++) {
+      name_to_velocity_index_[robot_.get_velocity_name(i)] = i;
     }
     for (int i = 0; i < static_cast<int>(robot_.actuators.size()); i++) {
       actuator_name_to_actuator_index_[robot_.actuators.at(i).name_] = i;
@@ -122,38 +126,26 @@ class HumanoidStatus {
     // TODO(siyuan.feng@tri.global): these are hard coded for Valkyrie, and they
     // should be included in the model file or loaded from a separate config
     // file.
-    nominal_position_[joint_name_to_position_index().at("rightHipRoll")] = 0.01;
-    nominal_position_[joint_name_to_position_index().at("rightHipPitch")] =
-        -0.5432;
-    nominal_position_[joint_name_to_position_index().at("rightKneePitch")] =
-        1.2195;
-    nominal_position_[joint_name_to_position_index().at("rightAnklePitch")] =
-        -0.7070;
-    nominal_position_[joint_name_to_position_index().at("rightAnkleRoll")] =
-        -0.0069;
+    nominal_position_[name_to_position_index().at("rightHipRoll")] = 0.01;
+    nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.5432;
+    nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.2195;
+    nominal_position_[name_to_position_index().at("rightAnklePitch")] = -0.7070;
+    nominal_position_[name_to_position_index().at("rightAnkleRoll")] = -0.0069;
 
-    nominal_position_[joint_name_to_position_index().at("leftHipRoll")] = -0.01;
-    nominal_position_[joint_name_to_position_index().at("leftHipPitch")] =
-        -0.5432;
-    nominal_position_[joint_name_to_position_index().at("leftKneePitch")] =
-        1.2195;
-    nominal_position_[joint_name_to_position_index().at("leftAnklePitch")] =
-        -0.7070;
-    nominal_position_[joint_name_to_position_index().at("leftAnkleRoll")] =
-        0.0069;
+    nominal_position_[name_to_position_index().at("leftHipRoll")] = -0.01;
+    nominal_position_[name_to_position_index().at("leftHipPitch")] = -0.5432;
+    nominal_position_[name_to_position_index().at("leftKneePitch")] = 1.2195;
+    nominal_position_[name_to_position_index().at("leftAnklePitch")] = -0.7070;
+    nominal_position_[name_to_position_index().at("leftAnkleRoll")] = 0.0069;
 
-    nominal_position_[joint_name_to_position_index().at("rightShoulderRoll")] =
-        1;
-    nominal_position_[joint_name_to_position_index().at("rightShoulderYaw")] =
-        0.5;
-    nominal_position_[joint_name_to_position_index().at("rightElbowPitch")] =
+    nominal_position_[name_to_position_index().at("rightShoulderRoll")] = 1;
+    nominal_position_[name_to_position_index().at("rightShoulderYaw")] = 0.5;
+    nominal_position_[name_to_position_index().at("rightElbowPitch")] =
         M_PI / 2.;
 
-    nominal_position_[joint_name_to_position_index().at("leftShoulderRoll")] =
-        -1;
-    nominal_position_[joint_name_to_position_index().at("leftShoulderYaw")] =
-        0.5;
-    nominal_position_[joint_name_to_position_index().at("leftElbowPitch")] =
+    nominal_position_[name_to_position_index().at("leftShoulderRoll")] = -1;
+    nominal_position_[name_to_position_index().at("leftShoulderYaw")] = 0.5;
+    nominal_position_[name_to_position_index().at("leftElbowPitch")] =
         -M_PI / 2.;
   }
 
@@ -200,9 +192,13 @@ class HumanoidStatus {
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
   }
-  inline const std::unordered_map<std::string, int>&
-  joint_name_to_position_index() const {
-    return joint_name_to_position_index_;
+  inline const std::unordered_map<std::string, int>& name_to_position_index()
+      const {
+    return name_to_position_index_;
+  }
+  inline const std::unordered_map<std::string, int>& name_to_velocity_index()
+      const {
+    return name_to_position_index_;
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
@@ -285,14 +281,16 @@ class HumanoidStatus {
 
   /// Nominal position for the robot.
   /// TODO(siyuan.feng@tri.global): should read this from the model file
-  /// eventually
+  /// eventually.
   Eigen::VectorXd nominal_position_;
 
-  /// Maps body name to its index
+  /// Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
-  /// Maps joint name to its index
-  std::unordered_map<std::string, int> joint_name_to_position_index_;
-  /// Maps actuator name to its index
+  /// Map position name to its index.
+  std::unordered_map<std::string, int> name_to_position_index_;
+  /// Map velocity name to its index.
+  std::unordered_map<std::string, int> name_to_velocity_index_;
+  /// Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
 
   double time_;

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "humanoid_status.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
 
@@ -80,6 +80,20 @@ class CartesianSetPoint {
 
     return qdd;
   }
+
+  // Getters
+  inline const Eigen::Isometry3d& desired_pose() const { return pose_d_; }
+  inline const Eigen::Vector6d& desired_velocity() const { return vel_d_; }
+  inline const Eigen::Vector6d& desired_acceleration() const { return acc_d_; }
+  inline const Eigen::Vector6d& Kp() const { return Kp_; }
+  inline const Eigen::Vector6d& Kd() const { return Kd_; }
+
+  // Setters
+  inline Eigen::Isometry3d& mutable_desired_pose() { return pose_d_; }
+  inline Eigen::Vector6d& mutable_desired_velocity() { return vel_d_; }
+  inline Eigen::Vector6d& mutable_desired_acceleration() { return acc_d_; }
+  inline Eigen::Vector6d& mutable_Kp() { return Kp_; }
+  inline Eigen::Vector6d& mutable_Kd() { return Kd_; }
 
  private:
   Eigen::Isometry3d pose_d_;  ///< Desired pose

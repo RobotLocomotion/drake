@@ -1,9 +1,9 @@
+#include "gtest/gtest.h"
+
 #include "drake/common/drake_path.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-
-#include "drake/common/eigen_matrix_compare.h"
-#include "gtest/gtest.h"
 
 namespace drake {
 namespace examples {
@@ -21,18 +21,16 @@ QPInput GenerateQPInput(
   // These represent the desired motions for the robot, and are typically
   // outputs of motion planner or hand-crafted behavior state machines.
 
-  // Setup a PD tracking law for center of mass
+  // Setup a PD tracking law for center of mass.
   input.mutable_desired_comdd() =
       (Kp_com.array() * (desired_com - robot_status.com()).array() -
-       Kd_com.array() * robot_status.comd().array())
-          .matrix();
+       Kd_com.array() * robot_status.comd().array()).matrix();
   input.mutable_w_com() = 1e3;
 
   // Minimize acceleration in the generalized coordinates.
   input.mutable_desired_vd() =
       (Kp_joints.array() * (desired_joints - robot_status.position()).array() -
-       Kd_joints.array() * robot_status.velocity().array())
-          .matrix();
+       Kd_joints.array() * robot_status.velocity().array()).matrix();
   input.mutable_w_vd() = 1;
 
   // Setup tracking for various body parts.
@@ -75,6 +73,15 @@ QPInput GenerateQPInput(
   return input;
 }
 
+// In this test, the Valkyrie robot is initialized to a nominal configuration
+// with zero velocities, and the qp controller is setup to track this
+// state. The robot is then perturbed in velocity for the Torso Pitch joint.
+// The test forward simulates the closed loop system for 2 seconds.
+// The simulation does not perform forward dynamics computation, instead, it
+// integrates the computed acceleration from the controller. This dummy
+// simulation should be replaced later with real simulation.
+// The controller should drive the position and velocity close to zero in 2
+// seconds.
 GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   // Loads model.
   std::string urdf =
@@ -121,16 +128,18 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
                                   Eigen::Vector6d::Zero(),
                                   Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
 
-  // Perturb initial condition
-  v[robot_status.joint_name_to_position_index().at("torsoPitch")] += 0.1;
+  // Perturb initial condition.
+  v[robot_status.name_to_velocity_index().at("torsoPitch")] += 0.1;
   robot_status.Update(
       0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
+  // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
+  // reasonable amount of time.
   double dt = 4e-3;
   double time = 0;
 
-  // Feet should be stationary
+  // Feet should be stationary.
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-10);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-10);
 
@@ -139,6 +148,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
         GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_q,
                         Kp_joints, Kd_joints, desired_pelvis, desired_torso);
     int status = con.Control(robot_status, input, &output);
+
     if (status) break;
 
     // Dummy integration.
@@ -152,7 +162,11 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
   }
 
-  // Robot should be stabilized.
+  // Check final state.
+  // Since the feet have equality constraints set to 0 in the qp controller,
+  // they should have no velocity after simulation.
+  // Thus, the tolerances on feet velocities are smaller than those for the
+  // generalized position and velocity.
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
 
@@ -161,8 +175,6 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(drake::CompareMatrices(
       v, Eigen::VectorXd::Zero(robot_status.robot().get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
-
-  std::cout << output;
 }
 
 }  // namespace qp_inverse_dynamics

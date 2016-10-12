@@ -1,8 +1,7 @@
-#include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/gurobi_solver.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
-#include "qp_controller.h"
 #include "drake/math/cross_product.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace examples {

@@ -1,4 +1,4 @@
-#include "rigid_body_tree_utils.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 
 namespace drake {
 namespace examples {
