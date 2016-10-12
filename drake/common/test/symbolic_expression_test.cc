@@ -30,13 +30,33 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-GTEST_TEST(ExpressionTest, Variable) {
+// Provides common variables that are used by the following tests.
+class SymbolicExpressionTest : public ::testing::Test {
+ protected:
   const Variable var_x{"x"};
   const Variable var_y{"y"};
   const Variable var_z{"z"};
   const Expression x{var_x};
   const Expression y{var_y};
   const Expression z{var_z};
+
+  const Expression x_plus_y{x + y};
+
+  const Expression zero{0.0};
+  const Expression one{1.0};
+  const Expression two{2.0};
+  const Expression neg_one{-one};
+  const Expression pi{3.141592};
+  const Expression neg_pi{-pi};
+  const Expression e{2.718};
+
+  const Expression c1{0.0};
+  const Expression c2{1.0};
+  const Expression c3{3.14159};
+  const Expression c4{-2.718};
+};
+
+TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x.to_string(), var_x.get_name());
   EXPECT_EQ(y.to_string(), var_y.get_name());
   EXPECT_EQ(z.to_string(), var_z.get_name());
@@ -51,11 +71,7 @@ GTEST_TEST(ExpressionTest, Variable) {
   EXPECT_TRUE(z.EqualTo(z));
 }
 
-GTEST_TEST(ExpressionTest, Constant) {
-  const Expression c1{0.0};
-  const Expression c2{1.0};
-  const Expression c3{3.14159};
-  const Expression c4{-2.718};
+TEST_F(SymbolicExpressionTest, Constant) {
   EXPECT_EQ(c1.Evaluate(), 0);
   EXPECT_EQ(c2.Evaluate(), 1);
   EXPECT_EQ(c3.Evaluate(), 3.14159);
@@ -63,15 +79,14 @@ GTEST_TEST(ExpressionTest, Constant) {
   EXPECT_THROW(Expression{NAN}, runtime_error);
 }
 
-GTEST_TEST(ExpressionTest, StaticConstant) {
+TEST_F(SymbolicExpressionTest, StaticConstant) {
   EXPECT_DOUBLE_EQ(Expression::Zero().Evaluate(), 0.0);
   EXPECT_DOUBLE_EQ(Expression::One().Evaluate(), 1.0);
   EXPECT_NEAR(Expression::Pi().Evaluate(), 3.141592, 0.000001);
   EXPECT_NEAR(Expression::E().Evaluate(), 2.718281828, 0.000000001);
 }
 
-GTEST_TEST(ExpressionTest, HASH1) {
-  const Variable var_x{"x"};
+TEST_F(SymbolicExpressionTest, Hash) {
   Expression x{var_x};
   const Expression x_prime(x);
   EXPECT_EQ(x.get_hash(), x_prime.get_hash());
@@ -79,13 +94,7 @@ GTEST_TEST(ExpressionTest, HASH1) {
   EXPECT_NE(x.get_hash(), x_prime.get_hash());
 }
 
-GTEST_TEST(ExpressionTest, HASH_BINARY) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression x_plus_y{x + y};
-
+TEST_F(SymbolicExpressionTest, HashBinary) {
   const Expression e1{x_plus_y + x_plus_y};
   const Expression e2{x_plus_y - x_plus_y};
   const Expression e3{x_plus_y * x_plus_y};
@@ -102,13 +111,7 @@ GTEST_TEST(ExpressionTest, HASH_BINARY) {
   EXPECT_EQ(hash_set.size(), 6u);
 }
 
-GTEST_TEST(ExpressionTest, HASH_UNARY) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression x_plus_y{x + y};
-
+TEST_F(SymbolicExpressionTest, HashUnary) {
   const Expression e0{log(x_plus_y)};
   const Expression e1{abs(x_plus_y)};
   const Expression e2{exp(x_plus_y)};
@@ -133,52 +136,33 @@ GTEST_TEST(ExpressionTest, HASH_UNARY) {
   EXPECT_EQ(hash_set.size(), 13u);
 }
 
-GTEST_TEST(ExpressionTest, UNARY_MINUS) {
-  const Expression c1{3.14159};
-  EXPECT_FALSE(c1.EqualTo(-c1));
-  EXPECT_DOUBLE_EQ(c1.Evaluate(), -(-c1).Evaluate());
-  // c1 and -(-c1) are structurally different
-  EXPECT_FALSE(c1.EqualTo(-(-c1)));
+TEST_F(SymbolicExpressionTest, UnaryMinus) {
+  EXPECT_FALSE(c3.EqualTo(-c3));
+  EXPECT_DOUBLE_EQ(c3.Evaluate(), -(-c3).Evaluate());
+  // c3 and -(-c3) are structurally different
+  EXPECT_FALSE(c3.EqualTo(-(-c3)));
   // but their evaluations should be the same.
-  EXPECT_DOUBLE_EQ(c1.Evaluate(), (-(-c1)).Evaluate());
+  EXPECT_DOUBLE_EQ(c3.Evaluate(), (-(-c3)).Evaluate());
 }
 
-GTEST_TEST(ExpressionTest, ADD1) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression zero{0.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
-  EXPECT_TRUE((c1 + zero).EqualTo(c1));
-  EXPECT_EQ((c1 + zero).to_string(), c1.to_string());
-  EXPECT_TRUE((zero + c1).EqualTo(c1));
-  EXPECT_EQ((zero + c1).to_string(), c1.to_string());
-  EXPECT_TRUE((0.0 + c1).EqualTo(c1));
-  EXPECT_EQ((0.0 + c1).to_string(), c1.to_string());
-  EXPECT_TRUE((c1 + 0.0).EqualTo(c1));
-  EXPECT_EQ((c1 + 0.0).to_string(), c1.to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(c1 + c2, Expression{3.14159 + -2.718}));
-  EXPECT_EQ((c1 + c2).to_string(), Expression{3.14159 + -2.718}.to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(c1 + x, 3.14159 + x));
-  EXPECT_EQ((c1 + x).to_string(), (3.14159 + x).to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(x + c1, x + 3.14159));
-  EXPECT_EQ((x + c1).to_string(), (x + 3.14159).to_string());
+TEST_F(SymbolicExpressionTest, Add1) {
+  EXPECT_TRUE((c3 + zero).EqualTo(c3));
+  EXPECT_EQ((c3 + zero).to_string(), c3.to_string());
+  EXPECT_TRUE((zero + c3).EqualTo(c3));
+  EXPECT_EQ((zero + c3).to_string(), c3.to_string());
+  EXPECT_TRUE((0.0 + c3).EqualTo(c3));
+  EXPECT_EQ((0.0 + c3).to_string(), c3.to_string());
+  EXPECT_TRUE((c3 + 0.0).EqualTo(c3));
+  EXPECT_EQ((c3 + 0.0).to_string(), c3.to_string());
+  EXPECT_TRUE(equal_to<Expression>{}(c3 + c4, Expression{3.14159 + -2.718}));
+  EXPECT_EQ((c3 + c4).to_string(), Expression{3.14159 + -2.718}.to_string());
+  EXPECT_TRUE(equal_to<Expression>{}(c3 + x, 3.14159 + x));
+  EXPECT_EQ((c3 + x).to_string(), (3.14159 + x).to_string());
+  EXPECT_TRUE(equal_to<Expression>{}(x + c3, x + 3.14159));
+  EXPECT_EQ((x + c3).to_string(), (x + 3.14159).to_string());
 }
 
-GTEST_TEST(ExpressionTest, ADD2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-  const Expression zero{0.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
+TEST_F(SymbolicExpressionTest, Add2) {
   Expression e1{x + y};
   Expression e2{e1 + e1};
   EXPECT_EQ(e1.to_string(), "(x + y)");
@@ -188,12 +172,10 @@ GTEST_TEST(ExpressionTest, ADD2) {
   EXPECT_EQ(e2.to_string(), "((x + y) + (x + y))");  // e2 doesn't change.
 }
 
-GTEST_TEST(ExpressionTest, INC1) {
+TEST_F(SymbolicExpressionTest, Inc1) {
   // Prefix increment
-  const Variable var_x{"x"};
   Expression x{var_x};
   Expression x_prime{var_x};
-
   EXPECT_TRUE(x.EqualTo(x_prime));
   EXPECT_TRUE(x++.EqualTo(x_prime));
   EXPECT_FALSE(x.EqualTo(x_prime));
@@ -201,9 +183,8 @@ GTEST_TEST(ExpressionTest, INC1) {
   EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
-GTEST_TEST(ExpressionTest, INC2) {
+TEST_F(SymbolicExpressionTest, Inc2) {
   // Postfix increment
-  const Variable var_x{"x"};
   Expression x{var_x};
   Expression x_prime{var_x};
 
@@ -214,7 +195,7 @@ GTEST_TEST(ExpressionTest, INC2) {
   EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
-GTEST_TEST(ExpressionTest, INC3) {
+TEST_F(SymbolicExpressionTest, Inc3) {
   // Pre/Post increments
   Expression c1{3.1415};
   EXPECT_DOUBLE_EQ((c1++).Evaluate(), 3.1415);
@@ -225,39 +206,21 @@ GTEST_TEST(ExpressionTest, INC3) {
   EXPECT_DOUBLE_EQ(c2.Evaluate(), 3.1415 + 1.0);
 }
 
-GTEST_TEST(ExpressionTest, SUB1) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression zero{0.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
-  EXPECT_EQ((c1 - zero).to_string(), c1.to_string());
-  EXPECT_EQ((zero - c1).to_string(), Expression{-3.14159}.to_string());
-  EXPECT_EQ((0.0 - c1).to_string(), Expression{-3.14159}.to_string());
-  EXPECT_EQ((0.0 - c1).to_string(), (-1 * c1).to_string());
-  EXPECT_EQ((c1 - 0.0).to_string(), c1.to_string());
-  EXPECT_EQ((c1 - c2).to_string(), Expression{3.14159 - -2.718}.to_string());
-  EXPECT_EQ((c1 - x).to_string(), (3.14159 - x).to_string());
-  EXPECT_EQ((x - c1).to_string(), (x - 3.14159).to_string());
+TEST_F(SymbolicExpressionTest, Sub1) {
+  EXPECT_EQ((c3 - zero).to_string(), c3.to_string());
+  EXPECT_EQ((zero - c3).to_string(), Expression{-3.14159}.to_string());
+  EXPECT_EQ((0.0 - c3).to_string(), Expression{-3.14159}.to_string());
+  EXPECT_EQ((0.0 - c3).to_string(), (-1 * c3).to_string());
+  EXPECT_EQ((c3 - 0.0).to_string(), c3.to_string());
+  EXPECT_EQ((c3 - c4).to_string(), Expression{3.14159 - -2.718}.to_string());
+  EXPECT_EQ((c3 - x).to_string(), (3.14159 - x).to_string());
+  EXPECT_EQ((x - c3).to_string(), (x - 3.14159).to_string());
 }
 
-GTEST_TEST(ExpressionTest, SUB2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-  const Expression zero{0.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
+TEST_F(SymbolicExpressionTest, Sub2) {
   Expression e1{x - y};
-  Expression e2{x - z};
-  Expression e3{e1 - e2};
+  const Expression e2{x - z};
+  const Expression e3{e1 - e2};
   EXPECT_EQ(e1.to_string(), "(x - y)");
   EXPECT_EQ(e2.to_string(), "(x - z)");
   EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");
@@ -266,23 +229,17 @@ GTEST_TEST(ExpressionTest, SUB2) {
   EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");  // e3 doesn't change.
 }
 
-GTEST_TEST(ExpressionTest, SUB3) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-
-  Expression e1{x - y};
-  Expression e2{x - y};
-  Expression e3{e1 - e2};
+TEST_F(SymbolicExpressionTest, Sub3) {
+  const Expression e1{x - y};
+  const Expression e2{x - y};
+  const Expression e3{e1 - e2};
   EXPECT_EQ(e1.to_string(), "(x - y)");
   EXPECT_EQ(e2.to_string(), "(x - y)");
   EXPECT_EQ(e3.to_string(), "0");  // simplified
 }
 
-GTEST_TEST(ExpressionTest, DEC1) {
+TEST_F(SymbolicExpressionTest, Dec1) {
   // Postfix decrement.
-  const Variable var_x{"x"};
   Expression x{var_x};
   Expression x_prime{var_x};
 
@@ -293,9 +250,8 @@ GTEST_TEST(ExpressionTest, DEC1) {
   EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
-GTEST_TEST(ExpressionTest, DEC2) {
+TEST_F(SymbolicExpressionTest, Dec2) {
   // Prefix decrement.
-  const Variable var_x{"x"};
   Expression x{var_x};
   Expression x_prime{var_x};
 
@@ -306,7 +262,7 @@ GTEST_TEST(ExpressionTest, DEC2) {
   EXPECT_TRUE(x.EqualTo(x_prime));
 }
 
-GTEST_TEST(ExpressionTest, DEC3) {
+TEST_F(SymbolicExpressionTest, Dec3) {
   // Pre/Postfix decrements.
   Expression c1{3.1415};
   EXPECT_DOUBLE_EQ((c1--).Evaluate(), 3.1415);
@@ -317,43 +273,23 @@ GTEST_TEST(ExpressionTest, DEC3) {
   EXPECT_DOUBLE_EQ(c2.Evaluate(), 3.1415 - 1.0);
 }
 
-GTEST_TEST(ExpressionTest, MUL1) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression zero{0.0};
-  const Expression one{1.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
+TEST_F(SymbolicExpressionTest, MUL1) {
+  EXPECT_EQ((c3 * zero).to_string(), zero.to_string());
+  EXPECT_EQ((zero * c3).to_string(), zero.to_string());
+  EXPECT_EQ((c3 * 0.0).to_string(), zero.to_string());
+  EXPECT_EQ((0.0 * c3).to_string(), zero.to_string());
 
-  EXPECT_EQ((c1 * zero).to_string(), zero.to_string());
-  EXPECT_EQ((zero * c1).to_string(), zero.to_string());
-  EXPECT_EQ((c1 * 0.0).to_string(), zero.to_string());
-  EXPECT_EQ((0.0 * c1).to_string(), zero.to_string());
+  EXPECT_EQ((c3 * one).to_string(), c3.to_string());
+  EXPECT_EQ((one * c3).to_string(), c3.to_string());
+  EXPECT_EQ((1.0 * c3).to_string(), c3.to_string());
+  EXPECT_EQ((c3 * 1.0).to_string(), c3.to_string());
 
-  EXPECT_EQ((c1 * one).to_string(), c1.to_string());
-  EXPECT_EQ((one * c1).to_string(), c1.to_string());
-  EXPECT_EQ((1.0 * c1).to_string(), c1.to_string());
-  EXPECT_EQ((c1 * 1.0).to_string(), c1.to_string());
-
-  EXPECT_EQ((c1 * c2).to_string(), Expression{3.14159 * -2.718}.to_string());
-  EXPECT_EQ((c1 * x).to_string(), (3.14159 * x).to_string());
-  EXPECT_EQ((x * c1).to_string(), (x * 3.14159).to_string());
+  EXPECT_EQ((c3 * c4).to_string(), Expression{3.14159 * -2.718}.to_string());
+  EXPECT_EQ((c3 * x).to_string(), (3.14159 * x).to_string());
+  EXPECT_EQ((x * c3).to_string(), (x * 3.14159).to_string());
 }
 
-GTEST_TEST(ExpressionTest, MUL2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-  const Expression zero{0.0};
-  const Expression one{1.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
+TEST_F(SymbolicExpressionTest, MUL2) {
   Expression e1{x * y};
   Expression e2{e1 * e1};
   EXPECT_EQ(e1.to_string(), "(x * y)");
@@ -363,44 +299,24 @@ GTEST_TEST(ExpressionTest, MUL2) {
   EXPECT_EQ(e2.to_string(), "((x * y) * (x * y))");  // e2 doesn't change.
 }
 
-GTEST_TEST(ExpressionTest, DIV1) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression zero{0.0};
-  const Expression one{1.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
+TEST_F(SymbolicExpressionTest, Div1) {
+  EXPECT_THROW(c3 / zero, runtime_error);
+  EXPECT_EQ((zero / c3).to_string(), zero.to_string());
+  EXPECT_THROW(c3 / 0.0, runtime_error);
+  EXPECT_EQ((0.0 / c3).to_string(), zero.to_string());
 
-  EXPECT_THROW(c1 / zero, runtime_error);
-  EXPECT_EQ((zero / c1).to_string(), zero.to_string());
-  EXPECT_THROW(c1 / 0.0, runtime_error);
-  EXPECT_EQ((0.0 / c1).to_string(), zero.to_string());
+  EXPECT_EQ((c3 / one).to_string(), c3.to_string());
+  EXPECT_EQ((c3 / 1.0).to_string(), c3.to_string());
 
-  EXPECT_EQ((c1 / one).to_string(), c1.to_string());
-  EXPECT_EQ((c1 / 1.0).to_string(), c1.to_string());
-
-  EXPECT_EQ((c1 / c2).to_string(), Expression{3.14159 / -2.718}.to_string());
-  EXPECT_EQ((c1 / x).to_string(), (3.14159 / x).to_string());
-  EXPECT_EQ((x / c1).to_string(), (x / 3.14159).to_string());
+  EXPECT_EQ((c3 / c4).to_string(), Expression{3.14159 / -2.718}.to_string());
+  EXPECT_EQ((c3 / x).to_string(), (3.14159 / x).to_string());
+  EXPECT_EQ((x / c3).to_string(), (x / 3.14159).to_string());
 }
 
-GTEST_TEST(ExpressionTest, DIV2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-  const Expression zero{0.0};
-  const Expression one{1.0};
-  const Expression c1{3.14159};
-  const Expression c2{-2.718};
-
+TEST_F(SymbolicExpressionTest, Div2) {
   Expression e1{x / y};
-  Expression e2{x / z};
-  Expression e3{e1 / e2};
+  const Expression e2{x / z};
+  const Expression e3{e1 / e2};
   EXPECT_EQ(e1.to_string(), "(x / y)");
   EXPECT_EQ(e2.to_string(), "(x / z)");
   EXPECT_EQ(e3.to_string(), "((x / y) / (x / z))");
@@ -409,15 +325,10 @@ GTEST_TEST(ExpressionTest, DIV2) {
   EXPECT_EQ(e3.to_string(), "((x / y) / (x / z))");  // e2 doesn't change.
 }
 
-GTEST_TEST(ExpressionTest, DIV3) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-
-  Expression e1{x / y};
-  Expression e2{x / y};
-  Expression e3{e1 / e2};
+TEST_F(SymbolicExpressionTest, Div3) {
+  const Expression e1{x / y};
+  const Expression e2{x / y};
+  const Expression e3{e1 / e2};
   EXPECT_EQ(e1.to_string(), "(x / y)");
   EXPECT_EQ(e2.to_string(), "(x / y)");
   EXPECT_EQ(e3.to_string(), "1");  // simplified
@@ -425,7 +336,7 @@ GTEST_TEST(ExpressionTest, DIV3) {
 
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_set.
-GTEST_TEST(ExpressionTest, compatible_with_unordered_set) {
+GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
   unordered_set<Expression> uset;
   uset.emplace(Expression{Variable{"a"}});
   uset.emplace(Expression{Variable{"b"}});
@@ -433,74 +344,43 @@ GTEST_TEST(ExpressionTest, compatible_with_unordered_set) {
 
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_map.
-GTEST_TEST(ExpressionTest, compatible_with_unordered_map) {
+GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
   unordered_map<Expression, Expression> umap;
   umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
 // This test checks whether symbolic::Expression is compatible with
 // std::vector.
-GTEST_TEST(ExpressionTest, compatible_with_vector) {
+GTEST_TEST(ExpressionTest, CompatibleWithVector) {
   vector<Expression> vec;
   vec.push_back(Expression{123.0});
 }
 
-GTEST_TEST(ExpressionTest, log) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Log) {
   EXPECT_DOUBLE_EQ(log(pi).Evaluate(), std::log(3.141592));
   EXPECT_DOUBLE_EQ(log(one).Evaluate(), std::log(1.0));
   EXPECT_DOUBLE_EQ(log(zero).Evaluate(), std::log(0.0));
   EXPECT_THROW(log(neg_one).Evaluate(), domain_error);
   EXPECT_THROW(log(neg_pi).Evaluate(), domain_error);
-
   const Expression e{log(x * y * pi) + log(x) + log(y)};
   const Environment env{{var_x, 2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::log(2 * 3.2 * 3.141592) + std::log(2) + std::log(3.2));
 }
 
-GTEST_TEST(ExpressionTest, abs) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Abs) {
   EXPECT_DOUBLE_EQ(abs(pi).Evaluate(), std::fabs(3.141592));
   EXPECT_DOUBLE_EQ(abs(one).Evaluate(), std::fabs(1.0));
   EXPECT_DOUBLE_EQ(abs(zero).Evaluate(), std::fabs(0.0));
   EXPECT_DOUBLE_EQ(abs(neg_one).Evaluate(), std::fabs(-1.0));
   EXPECT_DOUBLE_EQ(abs(neg_pi).Evaluate(), std::fabs(-3.141592));
-
   const Expression e{abs(x * y * pi) + abs(x) + abs(y)};
   const Environment env{{var_x, -2}, {var_y, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::fabs(-2 * 3.2 * 3.141592) +
                                         std::fabs(-2.0) + std::fabs(3.2));
 }
 
-GTEST_TEST(ExpressionTest, exp) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
+TEST_F(SymbolicExpressionTest, Exp) {
   EXPECT_DOUBLE_EQ(exp(pi).Evaluate(), std::exp(3.141592));
   EXPECT_DOUBLE_EQ(exp(one).Evaluate(), std::exp(1));
   EXPECT_DOUBLE_EQ(exp(zero).Evaluate(), std::exp(0));
@@ -513,16 +393,7 @@ GTEST_TEST(ExpressionTest, exp) {
                                         std::exp(2.0) + std::exp(3.2));
 }
 
-GTEST_TEST(ExpressionTest, sqrt) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
+TEST_F(SymbolicExpressionTest, Sqrt) {
   EXPECT_DOUBLE_EQ(sqrt(pi).Evaluate(), std::sqrt(3.141592));
   EXPECT_DOUBLE_EQ(sqrt(one).Evaluate(), std::sqrt(1.0));
   EXPECT_DOUBLE_EQ(sqrt(zero).Evaluate(), std::sqrt(0.0));
@@ -535,17 +406,7 @@ GTEST_TEST(ExpressionTest, sqrt) {
                                         std::sqrt(2.0) + std::sqrt(3.2));
 }
 
-GTEST_TEST(ExpressionTest, pow) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
+TEST_F(SymbolicExpressionTest, Pow) {
   EXPECT_DOUBLE_EQ(pow(pi, pi).Evaluate(), std::pow(3.141592, 3.141592));
   EXPECT_DOUBLE_EQ(pow(pi, one).Evaluate(), std::pow(3.141592, 1));
   EXPECT_DOUBLE_EQ(pow(pi, two).Evaluate(), std::pow(3.141592, 2));
@@ -594,18 +455,7 @@ GTEST_TEST(ExpressionTest, pow) {
                    std::pow(2 * 3.2 * 3.141592, 2 + 3.2 + 3.141592));
 }
 
-GTEST_TEST(ExpressionTest, sin) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Sin) {
   EXPECT_DOUBLE_EQ(sin(pi).Evaluate(), std::sin(3.141592));
   EXPECT_DOUBLE_EQ(sin(one).Evaluate(), std::sin(1));
   EXPECT_DOUBLE_EQ(sin(two).Evaluate(), std::sin(2));
@@ -619,18 +469,7 @@ GTEST_TEST(ExpressionTest, sin) {
                    std::sin(2 * 3.2 * 3.141592) + std::sin(2) + std::sin(3.2));
 }
 
-GTEST_TEST(ExpressionTest, cos) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Cos) {
   EXPECT_DOUBLE_EQ(cos(pi).Evaluate(), std::cos(3.141592));
   EXPECT_DOUBLE_EQ(cos(one).Evaluate(), std::cos(1));
   EXPECT_DOUBLE_EQ(cos(two).Evaluate(), std::cos(2));
@@ -643,18 +482,7 @@ GTEST_TEST(ExpressionTest, cos) {
                    std::cos(2 * 3.2 * 3.141592) + std::cos(2) + std::cos(3.2));
 }
 
-GTEST_TEST(ExpressionTest, tan) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Tan) {
   EXPECT_DOUBLE_EQ(tan(pi).Evaluate(), std::tan(3.141592));
   EXPECT_DOUBLE_EQ(tan(one).Evaluate(), std::tan(1));
   EXPECT_DOUBLE_EQ(tan(two).Evaluate(), std::tan(2));
@@ -668,18 +496,7 @@ GTEST_TEST(ExpressionTest, tan) {
                    std::tan(2 * 3.2 * 3.141592) + std::tan(2) + std::tan(3.2));
 }
 
-GTEST_TEST(ExpressionTest, asin) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Asin) {
   EXPECT_THROW(asin(pi).Evaluate(), domain_error);
   EXPECT_DOUBLE_EQ(asin(one).Evaluate(), std::asin(1));
   EXPECT_THROW(asin(two).Evaluate(), domain_error);
@@ -693,18 +510,7 @@ GTEST_TEST(ExpressionTest, asin) {
                                         std::asin(0.2) + std::asin(0.3));
 }
 
-GTEST_TEST(ExpressionTest, acos) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Acos) {
   EXPECT_THROW(acos(pi).Evaluate(), domain_error);
   EXPECT_DOUBLE_EQ(acos(one).Evaluate(), std::acos(1));
   EXPECT_THROW(acos(two).Evaluate(), domain_error);
@@ -718,18 +524,7 @@ GTEST_TEST(ExpressionTest, acos) {
                                         std::acos(0.2) + std::acos(0.3));
 }
 
-GTEST_TEST(ExpressionTest, atan) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Atan) {
   EXPECT_DOUBLE_EQ(atan(pi).Evaluate(), std::atan(3.141592));
   EXPECT_DOUBLE_EQ(atan(one).Evaluate(), std::atan(1));
   EXPECT_DOUBLE_EQ(atan(two).Evaluate(), std::atan(2));
@@ -743,17 +538,7 @@ GTEST_TEST(ExpressionTest, atan) {
                                         std::atan(0.2) + std::atan(0.3));
 }
 
-GTEST_TEST(ExpressionTest, atan2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
+TEST_F(SymbolicExpressionTest, Atan2) {
   EXPECT_DOUBLE_EQ(atan2(pi, pi).Evaluate(), std::atan2(3.141592, 3.141592));
   EXPECT_DOUBLE_EQ(atan2(pi, one).Evaluate(), std::atan2(3.141592, 1));
   EXPECT_DOUBLE_EQ(atan2(pi, two).Evaluate(), std::atan2(3.141592, 2));
@@ -807,18 +592,7 @@ GTEST_TEST(ExpressionTest, atan2) {
                    std::atan2(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
 }
 
-GTEST_TEST(ExpressionTest, sinh) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Sinh) {
   EXPECT_DOUBLE_EQ(sinh(pi).Evaluate(), std::sinh(3.141592));
   EXPECT_DOUBLE_EQ(sinh(one).Evaluate(), std::sinh(1));
   EXPECT_DOUBLE_EQ(sinh(two).Evaluate(), std::sinh(2));
@@ -832,18 +606,7 @@ GTEST_TEST(ExpressionTest, sinh) {
                                         std::sinh(2) + std::sinh(3.2));
 }
 
-GTEST_TEST(ExpressionTest, cosh) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Cosh) {
   EXPECT_DOUBLE_EQ(cosh(pi).Evaluate(), std::cosh(3.141592));
   EXPECT_DOUBLE_EQ(cosh(one).Evaluate(), std::cosh(1));
   EXPECT_DOUBLE_EQ(cosh(two).Evaluate(), std::cosh(2));
@@ -857,18 +620,7 @@ GTEST_TEST(ExpressionTest, cosh) {
                                         std::cosh(2) + std::cosh(3.2));
 }
 
-GTEST_TEST(ExpressionTest, tanh) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Tanh) {
   EXPECT_DOUBLE_EQ(tanh(pi).Evaluate(), std::tanh(3.141592));
   EXPECT_DOUBLE_EQ(tanh(one).Evaluate(), std::tanh(1));
   EXPECT_DOUBLE_EQ(tanh(two).Evaluate(), std::tanh(2));
@@ -882,15 +634,7 @@ GTEST_TEST(ExpressionTest, tanh) {
                                         std::tanh(2) + std::tanh(3.2));
 }
 
-GTEST_TEST(ExpressionTest, GetVariables) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-
+TEST_F(SymbolicExpressionTest, GetVariables) {
   Variables const vars1 = (x + y * log(x + y)).GetVariables();
   EXPECT_TRUE(vars1.include(var_x));
   EXPECT_TRUE(vars1.include(var_y));
@@ -905,20 +649,7 @@ GTEST_TEST(ExpressionTest, GetVariables) {
   EXPECT_EQ(vars2.size(), 3u);
 }
 
-GTEST_TEST(ExpressionTest, swap) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-  const Expression pi{3.141592};
-  const Expression one{1};
-  const Expression two{2};
-  const Expression zero{0};
-  const Expression neg_one{-one};
-  const Expression neg_pi{-pi};
-
+TEST_F(SymbolicExpressionTest, Swap) {
   Expression e1 = sin(x + y * z);
   Expression e2 = cos(x * x + pow(y, 2) * z);
   const Expression e1_copy{e1};
@@ -935,14 +666,7 @@ GTEST_TEST(ExpressionTest, swap) {
   EXPECT_TRUE(e2.EqualTo(e1_copy));
 }
 
-GTEST_TEST(ExpressionTest, output_operator) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-
+TEST_F(SymbolicExpressionTest, ToString) {
   const Expression e1 = sin(x + y * z);
   const Expression e2 = cos(x * x + pow(y, 2) * z);
 
