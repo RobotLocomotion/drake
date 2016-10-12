@@ -29,6 +29,7 @@ namespace {
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
   auto pendulum = std::make_unique<PendulumSystem<double>>();
+  PendulumSystem<double>* pendulum_p = pendulum.get();
 
   // This is a fairly small number of time samples for this system,
   // and it winds up making the controller do a lot of the work when
@@ -98,6 +99,14 @@ int do_main(int argc, char* argv[]) {
 
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
+
+  systems::Context<double>* pendulum_context =
+      controller->GetMutableSubsystemContext(controller_context, pendulum_p);
+  auto state_vec =
+      pendulum_context->get_continuous_state()->CopyToVector();
+  if (!CompareMatrices(state_vec, xG, 1e-3, MatrixCompareType::absolute)) {
+    throw std::runtime_error("Did not reach trajectory target.");
+  }
   return 0;
 }
 
