@@ -27,6 +27,10 @@ class DRAKE_EXPORT AbstractValue {
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
+  /// Copies the value in @p other to this value, or throws if the types
+  /// are incompatible.
+  virtual void SetFrom(const AbstractValue& other) = 0;
+
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, std::bad_cast will be
@@ -89,7 +93,7 @@ class DRAKE_EXPORT AbstractValue {
 /// A container class for an arbitrary type T. User-defined classes that
 /// require additional type-erased features should subclass Value<T>, taking
 /// care to define the copy constructors and override Clone().
-/// @tparam T Must be copy-constructible, and therefore not abstract.
+/// @tparam T Must be copy-constructible and assignable.
 template <typename T>
 class Value : public AbstractValue {
  public:
@@ -104,6 +108,10 @@ class Value : public AbstractValue {
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::make_unique<Value<T>>(*this);
+  }
+
+  void SetFrom(const AbstractValue& other) override {
+    value_ = other.GetValue<T>();
   }
 
   /// Returns a const reference to the stored value.

@@ -144,13 +144,6 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
   EXPECT_EQ(256, ReadVectorInputPort(*context_, 1)->get_value()[0]);
 }
 
-// Tests that an exception is thrown when setting or getting input ports that
-// don't exist.
-TEST_F(DiagramContextTest, InvalidInputPorts) {
-  EXPECT_THROW(context_->SetInputPort(2, nullptr), std::out_of_range);
-  EXPECT_THROW(ReadVectorInputPort(*context_, 2), std::out_of_range);
-}
-
 TEST_F(DiagramContextTest, Clone) {
   context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
                     {1 /* adder1_ */, 1 /* port 1 */});

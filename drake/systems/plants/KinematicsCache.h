@@ -81,8 +81,8 @@ class KinematicsCache {
 
   RigidBodyToKCacheElementMap elements;
   std::vector<RigidBody const*> bodies;
-  const int num_positions;
-  const int num_velocities;
+  int num_positions;
+  int num_velocities;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;

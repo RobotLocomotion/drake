@@ -139,7 +139,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   {
     auto kinematics_results =
         make_unique<Value<KinematicsResults<T>>>(
-            KinematicsResults<T>(*tree_));
+            KinematicsResults<T>(tree_.get()));
     output->add_port(move(kinematics_results));
   }
 
