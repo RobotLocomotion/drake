@@ -29,7 +29,7 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
       MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
 
-  Eigen::MatrixXd Q = Eigen::Matrix<double, 3, 3>::Identity();
+  Eigen::MatrixXd Q = 2 * Eigen::Matrix<double, 3, 3>::Identity();
   Q(0, 1) = 1;
   Q(1, 2) = 1;
   Q(1, 0) = 1;
