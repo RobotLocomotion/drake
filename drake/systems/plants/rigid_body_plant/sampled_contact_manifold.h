@@ -21,6 +21,11 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
  public:
+  /** Default constructor */
+  SampledContactManifold();
+
+  /** Copy constructor */
+  SampledContactManifold(const SampledContactManifold& other);
 
   /**
    Computes a single contact detail -- Force and application point -- which
@@ -43,6 +48,8 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
    */
   const ContactDetail<T>* get_ith_contact(size_t i) const override;
 
+  ContactManifold<T>* clone() const override;
+
   /**
    Add a new contact detail to the manifold.
    @param[in] detail    The contact detail to add.
@@ -56,6 +63,21 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
  private:
   std::set<std::unique_ptr<ContactDetail<T>>> contact_details_;
 };
+
+template <typename T>
+SampledContactManifold<T>::SampledContactManifold() {}
+
+template <typename T>
+SampledContactManifold<T>::SampledContactManifold(
+    const SampledContactManifold<T>& other)
+{
+  typename std::set<std::unique_ptr<ContactDetail<T>>>::const_iterator itr;
+  for ( itr = other.contact_details_.begin();
+        itr != other.contact_details_.end(); ++itr) {
+    std::unique_ptr<ContactDetail<T>> copy((*itr)->clone());
+    contact_details_.insert(std::move(copy));
+  }
+}
 
 template <typename T>
 ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
@@ -111,6 +133,11 @@ template <typename T>
 void SampledContactManifold<T>::AddContactDetail(
     std::unique_ptr<ContactDetail<T>> detail) {
   contact_details_.insert(move(detail));
+}
+
+template <typename T>
+ContactManifold<T>* SampledContactManifold<T>::clone() const {
+  return new SampledContactManifold(*this);
 }
 
 extern template class DRAKE_EXPORT SampledContactManifold<double>;
