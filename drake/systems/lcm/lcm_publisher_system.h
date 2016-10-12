@@ -72,19 +72,10 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override {}
 
-  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
-   * Gets the most recently published message bytes; typically only used for
-   * unit testing.
+   * Returns the translator used by this publisher.
    */
-  std::vector<uint8_t> GetMessage() const;
-
-  // TODO(liang.fok) Remove this method once #3643 is merged.
-  /**
-   * Gets the most recently published message bytes, and converts them to into
-   * vector form using the translator; typically only used for unit testing.
-   */
-  void GetMessage(BasicVector<double>* message_vector) const;
+  const LcmAndVectorBaseTranslator& get_translator() const;
 
  private:
   // The channel on which to publish LCM messages.
@@ -96,10 +87,6 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   // A pointer to the LCM subsystem.
   drake::lcm::DrakeLcmInterface* const lcm_;
-
-  // The most recent message bytes; mutable is ok because it only affects the
-  // GetMessage() results, which are not part of the System contract.
-  mutable std::vector<uint8_t> message_bytes_;
 };
 
 }  // namespace lcm
