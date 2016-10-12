@@ -1,4 +1,4 @@
-#include "drake/systems/framework/state.h"
+#include "drake/systems/framework/continuous_state.h"
 
 #include <memory>
 
