@@ -13,3 +13,6 @@ if(BULLET_FOUND)
       drakeRigidBodyPlant)
   endif()
 endif()
+
+drake_add_cc_test(contact_result_test)
+target_link_libraries(contact_result_test drakeRigidBodyPlant drakeRBSystem)
