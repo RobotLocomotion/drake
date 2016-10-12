@@ -51,6 +51,12 @@ add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon gflags Threads::Threads)
 
+find_package(spdlog)
+if(spdlog_FOUND)
+  target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
+  target_link_libraries(drakeCommon spdlog::spdlog)
+endif()
+
 # Install all externally-visible headers.
 drake_install_headers(${installed_headers})
 
