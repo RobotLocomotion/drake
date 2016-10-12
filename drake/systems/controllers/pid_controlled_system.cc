@@ -18,7 +18,15 @@ PidControlledSystem<T>::PidControlledSystem(
   DRAKE_ASSERT(system_->get_num_output_ports() >= 1);
   const int num_positions = system_->get_input_port(0).get_size();
   const int num_states = num_positions * 2;
-  DRAKE_ASSERT(system_->get_output_port(0).get_size() >= num_states);
+
+  // TODO(sam.creasey) It would be nice to be able to handle the
+  // existence of extra values in the output port which are discarded
+  // because they're not relevant to the control we're applying here
+  // (see PidControlledSpringMassSystem which discards the energy
+  // information from the spring mass system).  Unfortunately, I can't
+  // find an easy way to do this now, and the current implementation
+  // is sufficient for most uses (including RigidBodyPlant).
+  DRAKE_ASSERT(system_->get_output_port(0).get_size() == num_states);
 
   state_minus_target_ = builder.template AddSystem<Adder<T>>(
       2, num_states);

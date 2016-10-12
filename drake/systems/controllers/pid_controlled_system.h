@@ -22,10 +22,9 @@ namespace systems {
 /// * The first input port must be all of the control inputs to the
 /// * system (size N).
 ///
-/// * The first output port must be of at least size N * 2, where the
-/// * first N elements are the positions of the elements of the
-/// * controlled system, and the second N elements are the velocities.
-/// * Additional elements will be ignored.
+/// * The first output port must be of size N * 2, where the first N
+/// * elements are the positions of the elements of the controlled
+/// * system, and the second N elements are the velocities.
 ///
 /// The resulting PidControlledSystem has two input ports and one
 /// output port with the following properties:
