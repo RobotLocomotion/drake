@@ -212,5 +212,3 @@ add_subdirectory(rigid_body_tree)
 drake_add_cc_test(spring_mass_system_test)
 target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
 
-drake_add_cc_test(controlled_spring_mass_system_test)
-target_link_libraries(controlled_spring_mass_system_test drakeControlledSpringMassSystemPlant drakeSystemFramework)

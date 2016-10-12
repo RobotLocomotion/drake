@@ -21,7 +21,6 @@ set(sources
   primitives/integrator.cc
   primitives/multiplexer.cc
   primitives/pass_through.cc
-  primitives/pid_controller.cc
   primitives/time_varying_polynomial_source.cc
   primitives/zero_order_hold.cc
   state.cc
