@@ -8,6 +8,7 @@
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/eigen_sparse_triplet.h"
 
 namespace drake {
 namespace solvers {
@@ -86,7 +87,7 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
     for(const DecisionVariableView& var : binding.variable_list()) {
-      for(int i = 0; i < var.size(); i++) {
+      for(int i = 0; i < static_cast<int>(var.size()); i++) {
         constraint_variable_index[constraint_variable_count] = var.index() + i;
         constraint_variable_count++;
       }
@@ -109,12 +110,35 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
         b_nonzero_coefs.push_back(T(constraint_variable_index[i], 0, b(i)));
       }
     }
-    Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
-    Eigen::SparseMatrix<double> linear_terms(prog.num_vars(), 1);
-    Q_all.setFromTriplets(Q_nonzero_coefs.begin(), Q_nonzero_coefs.end());
-    linear_terms.setFromTriplets(b_nonzero_coefs.begin(), b_nonzero_coefs.end());
-
   }
+
+  Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
+  Eigen::SparseMatrix<double> linear_terms(prog.num_vars(), 1);
+  Q_all.setFromTriplets(Q_nonzero_coefs.begin(), Q_nonzero_coefs.end());
+  linear_terms.setFromTriplets(b_nonzero_coefs.begin(), b_nonzero_coefs.end());
+
+  std::vector<int> Q_all_row;
+  std::vector<int> Q_all_col;
+  std::vector<double> Q_all_val;
+  drake::math::SparseMatrixToRowColumnValueVectors(Q_all, Q_all_row, Q_all_col, Q_all_val);
+
+  std::vector<int> linear_row;
+  std::vector<int> linear_col;
+  std::vector<double> linear_val;
+  drake::math::SparseMatrixToRowColumnValueVectors(linear_terms, linear_row, linear_col, linear_val);
+
+  const int error1 = GRBaddqpterms(model, static_cast<int>(Q_all_row.size()),
+                                   Q_all_row.data(), Q_all_col.data(), Q_all_val.data());
+  if(error1) {
+    return error1;
+  }
+  for(int i = 0; i < static_cast<int>(linear_row.size()); i++) {
+    const int error = GRBsetdblattrarray(model, "Obj", linear_row[i], 1, linear_val.data() + i);
+    if(error) {
+      return error;
+    }
+  }
+  /*
   int start_row = 0;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
@@ -160,7 +184,7 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
     // Verify that the start_row does not exceed the total possible
     // dimension of the decision variable.
     DRAKE_ASSERT(start_row <= static_cast<int>(prog.num_vars()));
-  }
+  }*/
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
 }
