@@ -42,18 +42,18 @@ struct DiscreteEvent {
   };
 
   /// The system that receives the event.
-  const System<T>* recipient = nullptr;
+  const System<T>* recipient{nullptr};
   /// The type of action the system must take in response to the event.
-  ActionType action = kUnknownAction;
+  ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kPublishAction. If nullptr, Publish will be used.
-  std::function<void(const Context<T>&)> do_publish = nullptr;
+  std::function<void(const Context<T>&)> do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
-  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update =
-      nullptr;
+  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
+    nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -593,7 +593,7 @@ class System {
   std::string name_;
   std::vector<SystemPortDescriptor<T>> input_ports_;
   std::vector<SystemPortDescriptor<T>> output_ports_;
-  const detail::InputPortEvaluatorInterface<T>* parent_ = nullptr;
+  const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 };
 
 }  // namespace systems
