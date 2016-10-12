@@ -80,25 +80,6 @@ class CarSimLcm2Demo : public systems::Diagram<T> {
 
     AddFlatTerrainToWorld(tree.get());
 
-    // // Adds the ground.
-    // const double kBoxWidth = 3;
-    // const double kBoxDepth = 0.2;
-    // DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
-    // Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    // // The top of the box is at z = 0.
-    // T_element_to_link.translation() << 0, 0, -kBoxDepth / 2.0;
-
-    // RigidBody& world = tree->world();
-    // Eigen::Vector4d color;
-    // // Ground color in RGBA format.
-    // color << 0.9297, 0.7930, 0.6758, 1;
-    // world.AddVisualElement(
-    //     DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    // tree->addCollisionElement(
-    //     DrakeCollision::Element(geom, T_element_to_link, &world), world,
-    //     "terrain");
-    // tree->updateStaticCollisionElements();
-
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from the MBD model of the world.
