@@ -1,1 +1,1 @@
-drake_add_matlab_test(NAME examples/CartPole/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+drake_add_matlab_test(NAME examples/CartPole/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest REQUIRES spotless)
