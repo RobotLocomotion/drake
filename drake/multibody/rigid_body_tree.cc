@@ -759,6 +759,56 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
+bool RigidBodyTree<T>::collisionDetectElements(
+    const KinematicsCache<double>& cache,
+     Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
+     Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
+     std::vector<const DrakeCollision::Element*>& elA_idx,
+     std::vector<const DrakeCollision::Element*>& elB_idx,
+     bool use_margins)
+{
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (auto body_iter = bodies.begin(); body_iter != bodies.end();
+       ++body_iter) {
+    (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
+  }
+  return collisionDetect(cache, phi, normal, xA, xB, elA_idx, elB_idx,
+                         ids_to_check, use_margins);
+}
+
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect (
+    const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    Matrix3Xd& xA, Matrix3Xd& xB,
+    std::vector<const DrakeCollision::Element*>& elA_idx,
+    std::vector<const DrakeCollision::Element*>& elB_idx,
+    const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
+  updateDynamicCollisionElements(cache);
+
+  vector<DrakeCollision::PointPair> points;
+  bool points_found =
+      collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
+                                              points);
+
+  xA = MatrixXd::Zero(3, points.size());
+  xB = MatrixXd::Zero(3, points.size());
+  normal = MatrixXd::Zero(3, points.size());
+  phi = VectorXd::Zero(points.size());
+
+  for (size_t i = 0; i < points.size(); ++i) {
+    xA.col(i) = points[i].ptA;
+    xB.col(i) = points[i].ptB;
+    normal.col(i) = points[i].normal;
+    phi[i] = points[i].distance;
+    const DrakeCollision::Element* elementA = points[i].elementA;
+    elA_idx.push_back(elementA);
+    const DrakeCollision::Element* elementB = points[i].elementB;
+    elB_idx.push_back(elementB);
+  }
+  return points_found;
+}
+
+template <typename T>
 std::vector<DrakeCollision::PointPair>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {

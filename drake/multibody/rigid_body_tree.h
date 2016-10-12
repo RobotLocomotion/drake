@@ -20,6 +20,7 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/collision/drake_collision.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/pose_map.h"
 #include "drake/multibody/rigid_body_actuator.h"
@@ -778,6 +779,42 @@ class DRAKE_EXPORT RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<int>& bodyB_idx,
       bool use_margins = true);
+
+  /**
+   * Special case of collision detection which returns collision elements
+   * instead of body ids.
+   *
+   * The results represent a struct of arrays.  The ith element in each of the
+   * output parameters represents the data for a single contact.
+   *
+   * @param[in] cache           The dynamic pose data for the tree.
+   * @param[out] phi            The signed distance function
+   * @param[out] normal         The contact normal pointing out of element B.
+   * @param[out] xA             The contact point on element A (in world
+   *                            coordinates.)
+   * @param[out] xB             The contact point on element B (in world
+   *                            coordinates.)
+   * @param[out] elA_idx        Pointer to the first colliding object (A).
+   * @param[out] elB_idx        Pointer to the second colliding object (B).
+   * @param[out] use_margins    If true, geometry with margins are used.
+   * @return    True if the method ran successfully.
+   */
+  bool collisionDetectElements(const KinematicsCache<double>& cache,
+                       Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
+                       Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
+                       std::vector<const DrakeCollision::Element*>& elA_idx,
+                       std::vector<const DrakeCollision::Element*>& elB_idx,
+                       bool use_margins = true);
+
+  bool collisionDetect(
+      const KinematicsCache<double>& cache, Eigen::VectorXd& phi,
+      Eigen::Matrix3Xd& normal, Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
+      std::vector<const DrakeCollision::Element*>& elA_idx,
+      std::vector<const DrakeCollision::Element*>& elB_idx,
+      const std::vector<DrakeCollision::ElementId>& ids_to_check,
+      bool use_margins);
+
+
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.

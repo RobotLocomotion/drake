@@ -500,23 +500,25 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
   VectorX<T> phi;
   Matrix3X<T> normal, xA, xB;
-  vector<int> bodyA_idx, bodyB_idx;
+  vector<const DrakeCollision::Element*> elA_idx, elB_idx;
 
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
   // TODO(SeanCurtis-TRI): Use the version that provides element data.
-  const_cast<RigidBodyTree*>(tree_.get())->collisionDetect(
-      kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+  const_cast<RigidBodyTree*>(tree_.get())->collisionDetectElements(
+      kinsol, phi, normal, xA, xB, elA_idx, elB_idx);
 
   VectorX<T> contact_force(v.rows(), 1);
   contact_force.setZero();
   for (int i = 0; i < phi.rows(); i++) {
     if (phi(i) < 0.0) {  // There is contact.
+      int bodyA_idx = elA_idx[i]->get_body()->get_body_index();
+      int bodyB_idx = elB_idx[i]->get_body()->get_body_index();
       auto JA = tree_->transformPointsJacobian(
-          kinsol, xA.col(i), bodyA_idx[i], 0, false);
+          kinsol, xA.col(i), bodyA_idx, 0, false);
       auto JB = tree_->transformPointsJacobian(
-          kinsol, xB.col(i), bodyB_idx[i], 0, false);
+          kinsol, xB.col(i), bodyB_idx, 0, false);
       Vector3<T> this_normal = normal.col(i);
 
       // Computes a local surface coordinate frame with the local z axis
@@ -573,7 +575,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           wrench.tail(3).setZero();
 
           // TODO(SeanCurtis-TRI): Get real elemetn ids.
-          contacts->AddContact((ElementId)0, (ElementId)0, point, wrench);
+          contacts->AddContact(elA_idx[i]->getId(), elB_idx[i]->getId(),
+              point, wrench);
         }
       }
     }
