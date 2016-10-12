@@ -4,6 +4,8 @@ set(source_files kinematics_results.cc rigid_body_plant.cc
     contact_detail.cc
     contact_manifold.cc
     sampled_contact_manifold.cc
+    contact_results.cc
+    contact_info.cc
     )
 
 # The following variables are necessary to conditionally include
@@ -42,7 +44,9 @@ drake_install_headers(
     ${lcm_dependent_header_files}
     kinematics_results.h rigid_body_plant.h 
     contact_manifold.h contact_detail.h
-    contact_results.h)
+    contact_results.h
+    contact_info.h
+    )
 
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rigid-body-plant
