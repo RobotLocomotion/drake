@@ -18,6 +18,15 @@ namespace drake {
 namespace systems {
 namespace {
 
+GTEST_TEST(SimulatorTest, SecondConstructor) {
+  // Create the spring-mass sytem and context.
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  auto context = spring_mass.CreateDefaultContext();
+
+  /// Construct the simulator with the created context.
+  Simulator<double> simulator(spring_mass, std::move(context));
+}
+
 GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
