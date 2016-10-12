@@ -450,9 +450,9 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
 
   auto context = rigid_body_sys.CreateDefaultContext();
   rigid_body_sys.SetZeroConfiguration(context.get());
-    context->get_mutable_continuous_state()
-        ->get_mutable_generalized_position()
-        ->SetAtIndex(0, position);
+  context->get_mutable_continuous_state()
+      ->get_mutable_generalized_position()
+      ->SetAtIndex(0, position);
 
   // Apply a constant force on the input.
   Vector1d input;
@@ -471,7 +471,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
 
 GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
   // Test that joint limit forces are applied correctly in the rigid body
-  // tree.  This tests for a sign error at rigid_body_plant.cc:240.
+  // tree.  This tests for a sign error at rigid_body_plant.cc@417b03e:240.
 
   // Past the lower limit, acceleration should be upward.
   EXPECT_GT(GetPrismaticJointLimitAccel(-1.05, 0.), 0.);
