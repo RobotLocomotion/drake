@@ -76,6 +76,7 @@ GTEST_TEST(testGurobi, convexQPExample) {
   VectorXd Qdiag = VectorXd::Constant(5, 0.0);
   Qdiag << 5.5, 6.5, 6.0, 5.3, 7.5;
   Q = Qdiag.asDiagonal();
+  Q(2,3) = 0.2;
 
   Eigen::VectorXd b = VectorXd::Constant(5, 0.0);
 
@@ -84,7 +85,10 @@ GTEST_TEST(testGurobi, convexQPExample) {
   prog.AddQuadraticCost(Q, b);
 
   // Exact solution.
-  VectorXd expected = -Q.colPivHouseholderQr().solve(b);
+  MatrixXd Q_transpose = Q;
+  Q_transpose.transposeInPlace();
+  MatrixXd Q_symmetric = 0.5 * (Q + Q_transpose);
+  VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
   RunQuadraticProgram(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
@@ -103,12 +107,14 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   VectorXd Q1diag = VectorXd::Constant(3, 0.0);
   Q1diag << 5.5, 6.5, 6.0;
   Q1 = Q1diag.asDiagonal();
+  Q1(1, 2) = 0.1;
 
   const DecisionVariableView x2 = prog.AddContinuousVariables(3, "x2");
   MatrixXd Q2 = MatrixXd::Constant(3, 3, 0.0);
   VectorXd Q2diag = VectorXd::Constant(3, 0.0);
   Q2diag << 7.0, 2.2, 1.1;
   Q2 = Q2diag.asDiagonal();
+  Q2(0, 2) = -0.02;
 
   VectorXd b1 = VectorXd::Constant(3, 0.0);
   b1 << 3.1, -1.4, -5.6;
@@ -121,6 +127,9 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   MatrixXd Q = Eigen::MatrixXd::Constant(6, 6, 0.0);
   Q.topLeftCorner(3, 3) = Q1;
   Q.bottomRightCorner(3, 3) = Q2;
+  MatrixXd Q_transpose = Q;
+  Q_transpose.transposeInPlace();
+  Q = 0.5 * (Q + Q_transpose);
 
   VectorXd b = VectorXd::Constant(6, 0.0);
   b.topRows(3) = b1;
