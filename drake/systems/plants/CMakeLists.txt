@@ -200,7 +200,7 @@ endif()
 add_subdirectory(rigid_body_plant)
 add_subdirectory(test)
 
-#System2.0 Plants
+# System2.0 Plants
 add_subdirectory(spring_mass_system)
 add_subdirectory(controlled_spring_mass_system)
 add_subdirectory(affine_linear_system)
