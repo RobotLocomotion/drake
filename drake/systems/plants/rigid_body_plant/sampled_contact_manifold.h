@@ -102,9 +102,11 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
     point += contactPoint * weight;
   }
 
-  point /= scale;
+  // TODO(SeanCurtis-TRI): Figure out where this epislon definition belongs.
+  const double kEpsilon = 1e-10;
+  if (scale > kEpsilon) point /= scale;
 
-  for ( const auto & detail : contact_details_ ) {
+  for (const auto & detail : contact_details_) {
     const Vector3<T>& contactPoint = detail->get_application_point();
     const WrenchVector<T>& contactWrench = detail->get_force();
     Vector3<T> contactForce;
