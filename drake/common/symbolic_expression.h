@@ -10,6 +10,7 @@
 #include <eigen3/Eigen/Core>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
@@ -591,8 +592,14 @@ class ExpressionTanh : public ExpressionCell {
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
-}  // namespace drake
 }  // namespace symbolic
+
+/** Specializes is_numeric to be false for symbolic::Expression type. */
+template <>
+struct DRAKE_EXPORT is_numeric<symbolic::Expression> {
+  static constexpr bool value = false;
+};
+}  // namespace drake
 
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
