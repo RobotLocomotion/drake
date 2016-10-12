@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/pid_controller.h"
+#include "drake/systems/controllers/pid_controller.h"
 
 #include <memory>
 

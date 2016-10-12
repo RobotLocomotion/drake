@@ -144,7 +144,7 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 
   EXPECT_THROW(system_.MapVelocityToConfigurationDerivatives(
                    context_, *state_vec1, &state_vec2),
-               std::out_of_range);
+               std::runtime_error);
 }
 
 // Tests that the default DoPublish is invoked when no other handler is

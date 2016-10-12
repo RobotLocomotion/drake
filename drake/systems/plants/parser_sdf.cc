@@ -348,6 +348,12 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
     parseScalarValue(limit_node, "lower", lower);
     parseScalarValue(limit_node, "upper", upper);
     fjoint->setJointLimits(lower, upper);
+
+    double stiffness = fjoint->get_joint_limit_stiffness()(0);
+    double dissipation = fjoint->get_joint_limit_dissipation()(0);
+    parseScalarValue(limit_node, "stiffness", stiffness);
+    parseScalarValue(limit_node, "dissipation", dissipation);
+    fjoint->SetJointLimitDynamics(stiffness, dissipation);
   }
 }
 

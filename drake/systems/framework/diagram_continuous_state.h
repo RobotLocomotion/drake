@@ -17,8 +17,11 @@ class DiagramContinuousState : public ContinuousState<T> {
   /// which are not owned by this object and must outlive it. Some of the
   /// subsystem states may be nullptr if the system is stateless.
   ///
-  /// The DiagramContinuousState vector will have the same order as the
-  /// @p states parameter, which should be the sort order of the Diagram itself.
+  /// The DiagramContinuousState vector xc = [q v z] will have the same
+  /// ordering as the @p substates parameter, which should be the sort order of
+  /// the Diagram itself. This fact is an implementation detail that should
+  /// only be of interest to framework authors. Everyone else can just use
+  /// Diagram<T>::GetMutableSubsystemState.
   explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
       : ContinuousState<T>(
             Span(substates, x_selector), Span(substates, q_selector),
