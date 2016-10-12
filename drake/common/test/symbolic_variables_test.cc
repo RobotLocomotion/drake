@@ -8,25 +8,24 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-GTEST_TEST(SymVarsTest, hash_eq) {
-  // - hash
-  // - list constructors
+// Provides common variables that are used by the following tests.
+class SymbolicVariablesTest : public ::testing::Test {
+ protected:
   const Variable x{"x"};
   const Variable y{"y"};
   const Variable z{"z"};
+  const Variable w{"w"};
+  const Variable v{"v"};
+};
 
+TEST_F(SymbolicVariablesTest, HashEq) {
   const Variables vars1{x, y, z};
   const Variables vars2{z, y, x};
-
   EXPECT_EQ(vars1.get_hash(), vars2.get_hash());
   EXPECT_EQ(vars1, vars2);
 }
 
-GTEST_TEST(SymVarsTest, insert_size) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-
+TEST_F(SymbolicVariablesTest, InsertSize) {
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
 
@@ -36,13 +35,7 @@ GTEST_TEST(SymVarsTest, insert_size) {
   EXPECT_EQ(vars1.size(), 3u);
 }
 
-GTEST_TEST(SymVarsTest, operator_plus) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, Plus) {
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
   EXPECT_TRUE(vars1.include(x));
@@ -63,12 +56,7 @@ GTEST_TEST(SymVarsTest, operator_plus) {
   EXPECT_TRUE(vars1.include(z));
 }
 
-GTEST_TEST(SymVarsTest, erase) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"z"};
-
+TEST_F(SymbolicVariablesTest, Erase) {
   Variables vars1{x, y, z};
   Variables vars2{y, z, w};
   EXPECT_EQ(vars1.size(), 3u);
@@ -84,13 +72,7 @@ GTEST_TEST(SymVarsTest, erase) {
   EXPECT_FALSE(vars1.include(z));
 }
 
-GTEST_TEST(SymVarsTest, operator_minus) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, Minus) {
   Variables vars1{x, y, z};
   EXPECT_EQ(vars1.size(), 3u);
   EXPECT_TRUE(vars1.include(x));
@@ -116,13 +98,7 @@ GTEST_TEST(SymVarsTest, operator_minus) {
   EXPECT_TRUE(vars2.include(x));
 }
 
-GTEST_TEST(SymVarsTest, IsSubsetOf) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, IsSubsetOf) {
   const Variables vars1{x, y, z, w, v};
   const Variables vars2{x, y};
   const Variables vars3{x, y, z};
@@ -165,13 +141,7 @@ GTEST_TEST(SymVarsTest, IsSubsetOf) {
   EXPECT_TRUE(vars5.IsSubsetOf(vars5));
 }
 
-GTEST_TEST(SymVarsTest, IsStrictSubsetOf) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, IsStrictSubsetOf) {
   const Variables vars1{x, y, z, w, v};
   const Variables vars2{x, y};
   const Variables vars3{x, y, z};
@@ -214,13 +184,7 @@ GTEST_TEST(SymVarsTest, IsStrictSubsetOf) {
   EXPECT_FALSE(vars5.IsStrictSubsetOf(vars5));
 }
 
-GTEST_TEST(SymVarsTest, IsSuperSetOf) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, IsSuperSetOf) {
   const Variables vars1{x, y, z, w, v};
   const Variables vars2{x, y};
   const Variables vars3{x, y, z};
@@ -263,13 +227,7 @@ GTEST_TEST(SymVarsTest, IsSuperSetOf) {
   EXPECT_TRUE(vars5.IsSupersetOf(vars5));
 }
 
-GTEST_TEST(SymVarsTest, IsStrictSuperSetOf) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, IsStrictSuperSetOf) {
   const Variables vars1{x, y, z, w, v};
   const Variables vars2{x, y};
   const Variables vars3{x, y, z};
@@ -312,13 +270,7 @@ GTEST_TEST(SymVarsTest, IsStrictSuperSetOf) {
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars5));
 }
 
-GTEST_TEST(SymVarsTest, output_operator) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-  const Variable v{"v"};
-
+TEST_F(SymbolicVariablesTest, ToString) {
   const Variables vars0{};
   const Variables vars1{x, y, z, w, v};
   const Variables vars2{x, y};
