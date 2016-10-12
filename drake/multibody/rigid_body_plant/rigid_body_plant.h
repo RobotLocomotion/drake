@@ -9,6 +9,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/plants/rigid_body_plant/contact_results.h"
 
 namespace drake {
 namespace systems {
@@ -197,6 +198,30 @@ void DoMapQDotToVelocity(
       VectorBase<T> *generalized_velocity) const override;
 
  private:
+
+  /**
+   * Computes the contact results for the output port
+   * @param[in]     context     The system context.
+   * @param[in,out] contacts    The contact result port data
+   */
+  void ComputeContactResults(const Context<T>& context,
+                             ContactResults<T> * contacts) const;
+
+  /**
+   * Computes the generalized forces on all bodies due to contact.
+   *
+   * @param kinsol      The kinematics of the rigid body system at the time of
+   *                    contact evaluation.
+   * @param v           The velocities for the bodies in the rigid body tree.
+   * @param contacts    The optional contact results.  If non-null, stores the
+   *                    contact information for consuming on the output port.
+   * @return            The generalized forces across all the bodies due to
+   *                    contact response.
+   */
+  VectorX<T> ComputeContactForce(const KinematicsCache<T> &kinsol,
+                                 const VectorX<T> &v,
+                                 ContactResults<T> * contacts) const;
+
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
@@ -206,6 +231,8 @@ void DoMapQDotToVelocity(
   std::unique_ptr<const RigidBodyTree<T>> tree_;
   int state_output_port_id_;
   int kinematics_output_port_id_;
+  int contact_output_port_id_;
+
 };
 
 }  // namespace systems

@@ -10,12 +10,15 @@
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/plants/collision/Element.h"
 
 using std::make_unique;
 using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+
+using DrakeCollision::ElementId;
 
 namespace drake {
 namespace systems {
@@ -38,6 +41,8 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
           .get_index();
   // Declares an abstract valued port for kinematics results.
   kinematics_output_port_id_ =
+      this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
+  contact_output_port_id_ =
       this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
 }
 
@@ -145,6 +150,16 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     output->add_port(move(kinematics_results));
   }
 
+  // Allocates an output for the RigidBodyPlant contact results
+  // (output port 2).
+  {
+    auto contact_results =
+        make_unique<Value<ContactResults<T>>>(
+            ContactResults<T>());
+
+    output->add_port(move(contact_results));
+  }
+
   return std::unique_ptr<SystemOutput<T>>(output.release());
 }
 
@@ -179,6 +194,12 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
       output->GetMutableData(kinematics_output_port_id_)
           ->template GetMutableValue<KinematicsResults<T>>();
   kinematics_results.UpdateFromContext(context);
+
+  // Evaluates the contact results output port.
+  auto& contact_results =
+      output->GetMutableData(contact_output_port_id_)->
+          template GetMutableValue<ContactResults<T>>();
+  ComputeContactResults(context, &contact_results);
 }
 
 template <typename T>
@@ -247,6 +268,11 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     }
   }
 
+  // TODO(SeanCurtis-TRI): Confirm that both sides produce the same answer.
+
+#if 0
+  right_hand_side -= ComputeContactForces(kinsol, v);
+#else
   // Applies contact forces.
   // TODO(amcastro-tri): Maybe move to RBT::ComputeGeneralizedContactForces(C)?
   {
@@ -317,6 +343,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
       }
     }
   }
+#endif
 
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
@@ -441,6 +468,118 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
   }
   return 0;
 }
+
+template <typename T>
+void RigidBodyPlant<T>::ComputeContactResults(const Context<T>& context,
+                                              ContactResults<T>* contacts) const
+{
+  // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
+  // because the data is not properly accessible in the cache.  This is
+  // boilerplate drawn from EvalDerivatives.  See that code for further
+  // comments
+  auto x = dynamic_cast<const BasicVector<T>&>(
+      context.get_continuous_state()->get_state()).get_value();
+
+  const int nq = get_num_positions();
+  const int nv = get_num_velocities();
+  VectorX<T> q = x.topRows(nq);
+  VectorX<T> v = x.bottomRows(nv);
+  auto kinsol = tree_->doKinematics(q, v);
+
+  ComputeContactForce(kinsol, v, contacts);
+}
+
+template <typename T>
+VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
+    const KinematicsCache<T> &kinsol, const VectorX<T> &v,
+    ContactResults<T> * contacts) const {
+
+  if ( contacts != nullptr) {
+    contacts->Clear();
+  }
+
+  VectorX<T> phi;
+  Matrix3X<T> normal, xA, xB;
+  vector<int> bodyA_idx, bodyB_idx;
+
+  // TODO(amcastro-tri): get rid of this const_cast.
+  // Unfortunately collisionDetect() modifies the collision model in the RBT
+  // when updating the collision element poses.
+  // TODO(SeanCurtis-TRI): Use the version that provides element data.
+  const_cast<RigidBodyTree*>(tree_.get())->collisionDetect(
+      kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
+
+  VectorX<T> contact_force(v.rows(), 1);
+  contact_force.setZero();
+  for (int i = 0; i < phi.rows(); i++) {
+    if (phi(i) < 0.0) {  // There is contact.
+      auto JA = tree_->transformPointsJacobian(
+          kinsol, xA.col(i), bodyA_idx[i], 0, false);
+      auto JB = tree_->transformPointsJacobian(
+          kinsol, xB.col(i), bodyB_idx[i], 0, false);
+      Vector3<T> this_normal = normal.col(i);
+
+      // Computes a local surface coordinate frame with the local z axis
+      // aligned with the surface's normal. The other two axes are arbitrarily
+      // chosen to complete a right handed triplet.
+      Vector3<T> tangent1;
+      if (1.0 - this_normal(2) < EPSILON) {
+        // Handles the unit-normal case. Since it's unit length, just check z.
+        tangent1 << 1.0, 0.0, 0.0;
+      } else if (1 + this_normal(2) < EPSILON) {
+        tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
+      } else {                       // Now the general case.
+        tangent1 << this_normal(1), -this_normal(0), 0.0;
+        tangent1 /= sqrt(this_normal(1) * this_normal(1) +
+            this_normal(0) * this_normal(0));
+      }
+      Vector3<T> tangent2 = this_normal.cross(tangent1);
+      // Transformation from world frame to local surface frame.
+      Matrix3<T> R;
+      R.row(0) = tangent1;
+      R.row(1) = tangent2;
+      R.row(2) = this_normal;
+      auto J = R * (JA - JB);          // J = [ D1; D2; n ]
+      auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
+
+      {
+        // Spring law for normal force:  fA_normal = -k * phi - b * phidot
+        // and damping for tangential force:  fA_tangent = -b * tangentdot
+        // (bounded by the friction cone).
+        Vector3<T> fA;
+        fA(2) = std::max<T>(
+            -penetration_stiffness_ * phi(i) -
+                penetration_damping_ * relative_velocity(2), 0.0);
+        fA.head(2) =
+            -std::min<T>(
+                penetration_damping_,
+                friction_coefficient_ * fA(2) /
+                    (relative_velocity.head(2).norm() + EPSILON)) *
+                relative_velocity.head(2);  // Epsilon avoids divide by zero.
+
+        // fB is equal and opposite to fA: fB = -fA.
+        // Therefore the generalized forces tau_c due to contact are:
+        // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
+        // With J computed as above: J = R * (JA - JB).
+        // Since right_hand_side has a negative sign when on the RHS of the
+        // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
+        // this term needs to be subtracted.
+        contact_force += J.transpose() * fA;
+        if ( contacts != nullptr) {
+          Vector3<T> point = (xA.col(i) + xB.col(i)) * 0.5;
+
+          WrenchVector<T> wrench;
+          wrench.head(3) = R.transpose() * fA;
+          wrench.tail(3).setZero();
+
+          // TODO(SeanCurtis-TRI): Get real elemetn ids.
+          contacts->AddContact((ElementId)0, (ElementId)0, point, wrench);
+        }
+      }
+    }
+  }
+  return contact_force;
+};
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyPlant<double>;
