@@ -10,6 +10,16 @@
 namespace drake {
 namespace systems {
 
+// The intention is that this will be sub-classed to support contact manifolds
+// defined with alternate algorithms/criteria.
+//
+// FOr example: Hertzian contact.  The Force will still be applied at a single
+// point, but the manifold includes the information of the size of the contact
+// ellipse which can be used for debugging/visualization.
+//
+// Similarly, contact with soft bodies will produce a contact manifold
+// consisting of a patch on the deformable mesh.  That would be another kind of
+// contact manifold.
 /**
  The contact manifold represents, abstractly, the domain of contact between
  two bodies and the Forces generated.  The actual representation of that
@@ -22,6 +32,9 @@ namespace systems {
  Individual /contact details/ can be examined (if they exist).  The underlying
  representation will include, at least, the contact point and contact Force.
  However, sub-classes may also include additional data.
+
+ Sub-classes must by copy-constructable.  They must override the clone method as
+ well as defining the copy constructor.
  */
 template <typename T>
 class DRAKE_EXPORT ContactManifold {
@@ -47,6 +60,8 @@ class DRAKE_EXPORT ContactManifold {
              values.
    */
   virtual const ContactDetail<T>* get_ith_contact(size_t i) const = 0;
+
+  virtual ContactManifold<T>* clone() const = 0;
 };
 
 } // namespace systems
