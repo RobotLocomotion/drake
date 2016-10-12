@@ -66,12 +66,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Shortly after starting, we should have not have moved much.
   simulator->StepBy(0.01);
   EulerFloatingJointState<double> joint_value;
-
   GetLastPublishedJointValue(kJointStateChannelName,
       state_pub.get_translator(),
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm()), &joint_value);
-
-  // state_pub.GetMessage(&joint_value);
   EXPECT_GT(joint_value.x(), 0.0);
   EXPECT_LT(joint_value.x(), 0.001);
 
@@ -83,7 +80,6 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   GetLastPublishedJointValue(kJointStateChannelName,
       state_pub.get_translator(),
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm()), &joint_value);
-  // state_pub.GetMessage(&joint_value);
   EXPECT_GT(joint_value.x(), 1.0);
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
