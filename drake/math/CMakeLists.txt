@@ -5,6 +5,7 @@ set(sources
   axis_angle.cc
   cross_product.cc
   cylindrical.cc
+  eigen_sparse_triplet.cc
   expmap.cc
   gradient.cc
   normalize_vector.cc
@@ -22,6 +23,7 @@ set(installed_headers
   axis_angle.h
   cross_product.h
   cylindrical.h
+  eigen_sparse_triplet.h
   expmap.h
   gradient.h
   normalize_vector.h
