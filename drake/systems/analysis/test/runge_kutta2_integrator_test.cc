@@ -19,6 +19,11 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
   // Create the integrator.
   RungeKutta2Integrator<double> integrator(spring_mass, DT);
+
+  // Test that setting the target accuracy fails.
+  EXPECT_THROW(integrator.set_target_accuracy(1.0), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(1.0),
+               std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
