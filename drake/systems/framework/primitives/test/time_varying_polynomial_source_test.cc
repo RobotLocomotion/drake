@@ -66,7 +66,7 @@ TEST_F(TimeVaryingPolynomialSourceTest, ShouldNotBePossibleToConnectInputs) {
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(TimeVaryingPolynomialSourceTest, ConstantVectorSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

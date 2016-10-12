@@ -14,8 +14,7 @@ template <typename T>
 class DiagramContinuousState : public ContinuousState<T> {
  public:
   /// Constructs a ContinuousState that is composed of other ContinuousStates,
-  /// which are not owned by this object and must outlive it. Some of the
-  /// subsystem states may be nullptr if the system is stateless.
+  /// which are not owned by this object and must outlive it.
   ///
   /// The DiagramContinuousState vector xc = [q v z] will have the same
   /// ordering as the @p substates parameter, which should be the sort order of
@@ -32,15 +31,15 @@ class DiagramContinuousState : public ContinuousState<T> {
 
   int get_num_substates() const { return static_cast<int>(substates_.size()); }
 
-  /// Returns the continuous state at the given @p index, or nullptr if that
-  /// system is stateless. Aborts if @p index is out-of-bounds.
+  /// Returns the continuous state at the given @p index. Aborts if @p index is
+  /// out-of-bounds.
   const ContinuousState<T>* get_substate(int index) const {
     DRAKE_DEMAND(index >= 0 && index < get_num_substates());
     return substates_[index];
   }
 
-  /// Returns the continuous state at the given @p index, or nullptr if that
-  /// system is stateless. Aborts if @p index is out-of-bounds.
+  /// Returns the continuous state at the given @p index. Aborts if @p index is
+  /// out-of-bounds.
   ContinuousState<T>* get_mutable_substate(int index) {
     DRAKE_DEMAND(index >= 0 && index < get_num_substates());
     return substates_[index];
@@ -54,9 +53,8 @@ class DiagramContinuousState : public ContinuousState<T> {
       std::function<VectorBase<T>*(ContinuousState<T>&)> selector) {
     std::vector<VectorBase<T>*> sub_xs;
     for (const auto& substate : substates) {
-      if (substate != nullptr) {
-        sub_xs.push_back(selector(*substate));
-      }
+      DRAKE_DEMAND(substate != nullptr);
+      sub_xs.push_back(selector(*substate));
     }
     return std::make_unique<Supervector<T>>(sub_xs);
   }

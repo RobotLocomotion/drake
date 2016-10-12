@@ -102,7 +102,7 @@ TEST_F(GravityCompensatorTest, OutputTest) {
 
 // Tests that Gain allocates no state variables in the context.
 TEST_F(GravityCompensatorTest, GravityCompensatorIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

@@ -283,11 +283,12 @@ TEST_F(DiagramTest, Clone) {
 }
 
 // Tests that, when asked for the state derivatives of Systems that are
-// stateless, Diagram returns nullptr.
-TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+// stateless, Diagram returns an empty state.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
-  EXPECT_EQ(nullptr, diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
+  EXPECT_EQ(0,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0())->size());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {

@@ -106,7 +106,7 @@ class LeafContext : public Context<T> {
   Context<T>* DoClone() const override {
     LeafContext<T>* context = new LeafContext<T>();
 
-    // Make a deep copy of the state using BasicVector::Clone().
+    // Make a deep copy of the continuous state using BasicVector::Clone().
     if (this->get_continuous_state() != nullptr) {
       const ContinuousState<T>& xc = *this->get_continuous_state();
       const int num_q = xc.get_generalized_position().size();
@@ -117,6 +117,10 @@ class LeafContext : public Context<T> {
       context->set_continuous_state(std::make_unique<ContinuousState<T>>(
           xc_vector.Clone(), num_q, num_v, num_z));
     }
+
+    // Make deep copies of the difference and modal states.
+    context->set_difference_state(get_state().get_difference_state()->Clone());
+    context->set_modal_state(get_state().get_modal_state()->Clone());
 
     // Make deep copies of the inputs into FreestandingInputPorts.
     // TODO(david-german-tri): Preserve version numbers as well.

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -88,7 +89,14 @@ class ContinuousState {
     DRAKE_ASSERT(num_v <= num_q);
   }
 
+  /// Constructs an empty ContinuousState.
+  ContinuousState()
+      : ContinuousState(std::make_unique<BasicVector<T>>(0)) {}
+
   virtual ~ContinuousState() {}
+
+  /// Returns the size of the entire state vector.
+  int size() const { return get_state().size(); }
 
   /// Returns the entire state vector.
   const VectorBase<T>& get_state() const { return *state_; }

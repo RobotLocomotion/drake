@@ -33,6 +33,9 @@ class Context {
  public:
   virtual ~Context() {}
 
+  // =========================================================================
+  // Accessors and Mutators for Time.
+
   /// Returns the current time in seconds.
   const T& get_time() const { return get_step_info().time_sec; }
 
@@ -41,16 +44,8 @@ class Context {
     get_mutable_step_info()->time_sec = time_sec;
   }
 
-  /// Connects the input port @p port to this Context at the given @p index.
-  /// Disconnects whatever input port was previously there, and deregisters
-  /// it from the output port on which it depends.  In some Context
-  /// implementations, may require a recursive search through a tree of
-  /// subcontexts.
-  /// Throws std::out_of_range if @p index is out of range.
-  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
-
-  /// Returns the number of input ports.
-  virtual int get_num_input_ports() const = 0;
+  // =========================================================================
+  // Accessors and Mutators for State.
 
   virtual const State<T>& get_state() const = 0;
   virtual State<T>* get_mutable_state() = 0;
@@ -60,14 +55,17 @@ class Context {
     get_mutable_state()->set_continuous_state(std::move(xc));
   }
 
-  /// Returns a mutable pointer to the continuous component of the state,
-  /// or nullptr if there is no continuous state.
+  /// Returns a mutable pointer to the continuous component of the state.
   ContinuousState<T>* get_mutable_continuous_state() {
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
-  /// Returns a mutable pointer to the difference component of the state, or
-  /// nullptr if there is no difference state.
+  /// Returns a const pointer to the continuous component of the state.
+  const ContinuousState<T>* get_continuous_state() const {
+    return get_state().get_continuous_state();
+  }
+
+  /// Returns a mutable pointer to the difference component of the state.
   DifferenceState<T>* get_mutable_difference_state() {
     return get_mutable_state()->get_mutable_difference_state();
   }
@@ -93,18 +91,47 @@ class Context {
     return xd->get_difference_state(index);
   }
 
-  /// Returns a const pointer to the continuous component of the state,
-  /// or nullptr if there is no continuous state.
-  const ContinuousState<T>* get_continuous_state() const {
-    return get_state().get_continuous_state();
+  /// Returns a mutable pointer to the modal component of the state.
+  ModalState* get_mutable_modal_state() {
+    return get_mutable_state()->get_mutable_modal_state();
   }
 
-  /// Returns a deep copy of this Context. The clone's input ports will
-  /// hold deep copies of the data that appears on this context's input ports
-  /// at the time the clone is created.
-  std::unique_ptr<Context<T>> Clone() const {
-    return std::unique_ptr<Context<T>>(DoClone());
+  /// Returns a mutable pointer to element @p index of the modal state.
+  /// Asserts if there is no modal state, or if @p index doesn't exist.
+  template <typename U>
+  U& get_mutable_modal_state(int index) {
+    ModalState* xd = get_mutable_modal_state();
+    DRAKE_ASSERT(xd != nullptr);
+    return xd->get_mutable_modal_state(index).GetMutableValue<U>();
   }
+
+  /// Sets the modal state to @p xm, deleting whatever was there before.
+  void set_modal_state(std::unique_ptr<ModalState> xd) {
+    get_mutable_state()->set_modal_state(std::move(xd));
+  }
+
+  /// Returns a const pointer to the discrete modal component of the
+  /// state at @p index.
+  template <typename U>
+  const U& get_modal_state(int index) const {
+    const ModalState* xm = get_state().get_modal_state();
+    DRAKE_ASSERT(xm != nullptr);
+    return xm->get_modal_state(index).GetValue<U>();
+  }
+
+  // =========================================================================
+  // Accessors and Mutators for Input.
+
+  /// Connects the input port @p port to this Context at the given @p index.
+  /// Disconnects whatever input port was previously there, and deregisters
+  /// it from the output port on which it depends.  In some Context
+  /// implementations, may require a recursive search through a tree of
+  /// subcontexts.
+  /// Throws std::out_of_range if @p index is out of range.
+  virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
+
+  /// Returns the number of input ports.
+  virtual int get_num_input_ports() const = 0;
 
   /// Evaluates and returns the input port identified by @p descriptor,
   /// using the given @p evaluator, which should be the Diagram containing
@@ -181,6 +208,16 @@ class Context {
     const AbstractValue* value = EvalAbstractInput(evaluator, descriptor);
     if (value == nullptr) return nullptr;
     return &(value->GetValue<V>());
+  }
+
+  // =========================================================================
+  // Miscellaneous Public Methods
+
+  /// Returns a deep copy of this Context. The clone's input ports will
+  /// hold deep copies of the data that appears on this context's input ports
+  /// at the time the clone is created.
+  std::unique_ptr<Context<T>> Clone() const {
+    return std::unique_ptr<Context<T>>(DoClone());
   }
 
   /// Declares that @p parent is the context of the enclosing Diagram. The

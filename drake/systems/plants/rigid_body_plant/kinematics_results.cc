@@ -7,13 +7,13 @@ namespace drake {
 namespace systems {
 
 template<typename T>
-KinematicsResults<T>::KinematicsResults(const RigidBodyTree &tree) :
-    tree_(tree), kinematics_cache_(tree_.bodies) {
+KinematicsResults<T>::KinematicsResults(const RigidBodyTree* tree) :
+    tree_(tree), kinematics_cache_(tree_->bodies) {
 }
 
 template<typename T>
 int KinematicsResults<T>::get_num_bodies() const {
-  return tree_.get_num_bodies();
+  return tree_->get_num_bodies();
 }
 
 template<typename T>
@@ -29,7 +29,7 @@ int KinematicsResults<T>::get_num_velocities() const {
 template<typename T>
 Quaternion<T> KinematicsResults<T>::get_body_orientation(int body_index) const {
   Isometry3<T>
-      pose = tree_.relativeTransform(kinematics_cache_, 0, body_index);
+      pose = tree_->relativeTransform(kinematics_cache_, 0, body_index);
   Vector4<T> quat_vector = drake::math::rotmat2quat(pose.linear());
   // Note that Eigen quaternion elements are not laid out in memory in the
   // same way Drake currently aligns them. See issue #3470.
@@ -40,7 +40,7 @@ Quaternion<T> KinematicsResults<T>::get_body_orientation(int body_index) const {
 template<typename T>
 Vector3<T> KinematicsResults<T>::get_body_position(int body_index) const {
   Isometry3<T>
-      pose = tree_.relativeTransform(kinematics_cache_, 0, body_index);
+      pose = tree_->relativeTransform(kinematics_cache_, 0, body_index);
   return pose.translation();
 }
 
@@ -51,8 +51,8 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
   auto x = dynamic_cast<const BasicVector<T> &>(
       context.get_continuous_state()->get_state()).get_value();
 
-  const int nq = tree_.get_num_positions();
-  const int nv = tree_.get_num_velocities();
+  const int nq = tree_->get_num_positions();
+  const int nv = tree_->get_num_velocities();
 
   // TODO(amcastro-tri): We would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
@@ -61,7 +61,7 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
   VectorX<T> v = x.bottomRows(nv);
 
   kinematics_cache_.initialize(q, v);
-  tree_.doKinematics(kinematics_cache_, false);
+  tree_->doKinematics(kinematics_cache_, false);
 }
 
 // Explicitly instantiates on the most common scalar types.
