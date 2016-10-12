@@ -26,8 +26,7 @@ if(MATLAB_FOUND)
 
   if(octomap_FOUND)
     add_mex(octomapWrapper octomapWrapper.cpp)
-    target_include_directories(octomapWrapper PRIVATE ${OCTOMAP_INCLUDE_DIRS})
-    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil ${OCTOMAP_LIBRARIES})
+    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil octomap)
   endif()
 
   if(lcm_FOUND AND NOT WIN32)
