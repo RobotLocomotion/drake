@@ -677,15 +677,6 @@ TEST_F(SymbolicExpressionTest, ToString) {
 }  // namespace symbolic
 }  // namespace drake
 
-// TODO(soonho): The following test is disabled for now, because
-// LeafSystem<T> requires a typename T to have the following operations:
-//
-//  - operator<
-//  - operator>
-//  - floor
-//  - ceil
-//  - casting to int64_t
-#if 0
 namespace drake {
 namespace systems {
 namespace {
@@ -696,7 +687,7 @@ using std::move;
 
 template <class T>
 std::unique_ptr<FreestandingInputPort> MakeInput(
-  std::unique_ptr<BasicVector<T>> data) {
+    std::unique_ptr<BasicVector<T>> data) {
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
@@ -725,8 +716,8 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   EXPECT_EQ(1, gain_->get_num_input_ports());
   EXPECT_EQ(1, context_->get_num_input_ports());
   Matrix<symbolic::Expression, 3, 1> input_vector(
-    drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
-    drake::symbolic::Expression{2.18});
+      drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
+      drake::symbolic::Expression{2.18});
   input0_->get_mutable_value() << input_vector;
 
   // Hook input of the expected size.
@@ -738,7 +729,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   EXPECT_EQ(1, output_->get_num_ports());
   EXPECT_EQ(1, gain_->get_num_output_ports());
   const BasicVector<symbolic::Expression>* output_vector =
-    output_->get_vector_data(0);
+      output_->get_vector_data(0);
   EXPECT_NE(nullptr, output_vector);
   Matrix<symbolic::Expression, 3, 1> expected = kGain_ * input_vector;
   EXPECT_EQ(expected, output_vector->get_value());
@@ -746,8 +737,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
   EXPECT_EQ(expected(1).Evaluate(), kGain_.Evaluate() * 3.14);
   EXPECT_EQ(expected(2).Evaluate(), kGain_.Evaluate() * 2.18);
 }
-#endif
 
-// }  // namespace
-// }  // namespace systems
-// }  // namespace drake
+}  // namespace
+}  // namespace systems
+}  // namespace drake
