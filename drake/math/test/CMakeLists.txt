@@ -5,4 +5,4 @@ drake_add_cc_test(rotation_conversion_test)
 target_link_libraries(rotation_conversion_test drakeCommon)
 drake_add_cc_test(normalize_vector_test)
 target_link_libraries(normalize_vector_test drakeCommon)
-
+drake_add_cc_test(jacobian_test)
