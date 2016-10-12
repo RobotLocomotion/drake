@@ -77,7 +77,7 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
   std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
     std::vector<U*> out(in.size());
     std::transform(in.begin(), in.end(), out.begin(),
-                   [](auto& p) { return p.get(); });
+                   [](const std::unique_ptr<U>& p) { return p.get(); });
     return out;
   }
 
