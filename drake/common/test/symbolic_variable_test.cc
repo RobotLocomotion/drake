@@ -10,19 +10,26 @@ namespace {
 
 using std::move;
 
-GTEST_TEST(SymVariableTest, get_id) {
+// Provides common variables that are used by the following tests.
+class SymbolicVariableTest : public ::testing::Test {
+ protected:
   const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  const Variable w{"w"};
+};
+
+TEST_F(SymbolicVariableTest, GetId) {
   const Variable x_prime{"x"};
   EXPECT_NE(x.get_id(), x_prime.get_id());
 }
 
-GTEST_TEST(SymVariableTest, get_name) {
-  const Variable x{"x"};
+TEST_F(SymbolicVariableTest, GetName) {
   const Variable x_prime{"x"};
   EXPECT_EQ(x.get_name(), x_prime.get_name());
 }
 
-GTEST_TEST(SymVariableTest, move_copy_preserve_id) {
+TEST_F(SymbolicVariableTest, MoveCopyPreserveId) {
   Variable x{"x"};
   const size_t x_id{x.get_id()};
   const size_t x_hash{x.get_hash()};
@@ -34,12 +41,7 @@ GTEST_TEST(SymVariableTest, move_copy_preserve_id) {
   EXPECT_EQ(x_hash, x_moved.get_hash());
 }
 
-GTEST_TEST(SymVariableTest, operator_lt) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-
+TEST_F(SymbolicVariableTest, Lt) {
   EXPECT_FALSE(x < x);
   EXPECT_TRUE(x < y);
   EXPECT_TRUE(x < z);
@@ -61,12 +63,7 @@ GTEST_TEST(SymVariableTest, operator_lt) {
   EXPECT_FALSE(w < w);
 }
 
-GTEST_TEST(SymVariableTest, operator_eq) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-
+TEST_F(SymbolicVariableTest, Eq) {
   EXPECT_TRUE(x == x);
   EXPECT_FALSE(x == y);
   EXPECT_FALSE(x == z);
@@ -88,12 +85,7 @@ GTEST_TEST(SymVariableTest, operator_eq) {
   EXPECT_TRUE(w == w);
 }
 
-GTEST_TEST(SymVariableTest, output_operator) {
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
-
+TEST_F(SymbolicVariableTest, ToString) {
   EXPECT_EQ(x.to_string(), "x");
   EXPECT_EQ(y.to_string(), "y");
   EXPECT_EQ(z.to_string(), "z");

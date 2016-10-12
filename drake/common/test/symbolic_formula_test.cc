@@ -11,19 +11,29 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-GTEST_TEST(SymFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
-
-GTEST_TEST(SymFormulaTest, False) { EXPECT_FALSE(Formula::False().Evaluate()); }
-
-GTEST_TEST(SymFormulaTest, EqualTo) {}
-
-GTEST_TEST(SymFormulaTest, Eq) {
+// Provides common variables that are used by the following tests.
+class SymbolicFormulaTest : public ::testing::Test {
+ protected:
   const Variable var_x{"x"};
   const Variable var_y{"y"};
   const Variable var_z{"z"};
   const Expression x{var_x};
   const Expression y{var_y};
   const Expression z{var_z};
+
+  const Formula tt{Formula::True()};
+  const Formula ff{Formula::False()};
+};
+
+TEST_F(SymbolicFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
+
+TEST_F(SymbolicFormulaTest, False) {
+  EXPECT_FALSE(Formula::False().Evaluate());
+}
+
+TEST_F(SymbolicFormulaTest, EqualTo) {}
+
+TEST_F(SymbolicFormulaTest, Eq) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -45,13 +55,7 @@ GTEST_TEST(SymFormulaTest, Eq) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) == (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, Neq) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
+TEST_F(SymbolicFormulaTest, Neq) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -73,13 +77,7 @@ GTEST_TEST(SymFormulaTest, Neq) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) != (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, Lt) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
+TEST_F(SymbolicFormulaTest, Lt) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -101,13 +99,7 @@ GTEST_TEST(SymFormulaTest, Lt) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) < (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, Gt) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
+TEST_F(SymbolicFormulaTest, Gt) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -129,13 +121,7 @@ GTEST_TEST(SymFormulaTest, Gt) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) > (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, Leq) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
+TEST_F(SymbolicFormulaTest, Leq) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -157,13 +143,7 @@ GTEST_TEST(SymFormulaTest, Leq) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) <= (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, Geq) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
+TEST_F(SymbolicFormulaTest, Geq) {
   const Expression e1{x + y};
   const Expression e1_prime{x + y};
   const Expression e2{x - y};
@@ -185,21 +165,14 @@ GTEST_TEST(SymFormulaTest, Geq) {
   EXPECT_EQ(f4.Evaluate(env), (2 - 3) >= (2 + 3));
 }
 
-GTEST_TEST(SymFormulaTest, And1) {
-  const Formula tt{Formula::True()};
-  const Formula ff{Formula::False()};
+TEST_F(SymbolicFormulaTest, And1) {
   EXPECT_TRUE(tt.EqualTo(tt && tt));
   EXPECT_TRUE(ff.EqualTo(ff && tt));
   EXPECT_TRUE(ff.EqualTo(tt && ff));
   EXPECT_TRUE(ff.EqualTo(ff && ff));
 }
 
-GTEST_TEST(SymFormulaTest, And2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-
+TEST_F(SymbolicFormulaTest, And2) {
   const Formula f1{x + y > 0};
   const Formula f2{x * y < 5};
   const Formula f{f1 && f2};
@@ -215,12 +188,7 @@ GTEST_TEST(SymFormulaTest, And2) {
   EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) && (-1 * -1 < 5));
 }
 
-GTEST_TEST(SymFormulaTest, Or2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-
+TEST_F(SymbolicFormulaTest, Or2) {
   const Formula f1{x + y > 0};
   const Formula f2{x * y < 5};
   const Formula f{f1 || f2};
@@ -236,21 +204,14 @@ GTEST_TEST(SymFormulaTest, Or2) {
   EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) || (-1 * -1 < 5));
 }
 
-GTEST_TEST(SymFormulaTest, Not1) {
-  const Formula tt = Formula::True();
-  const Formula ff = Formula::False();
+TEST_F(SymbolicFormulaTest, Not1) {
   EXPECT_TRUE(ff.EqualTo(!tt));
   EXPECT_TRUE(tt.EqualTo(!ff));
   EXPECT_TRUE(tt.EqualTo(!(!tt)));
   EXPECT_TRUE(ff.EqualTo(!(!ff)));
 }
 
-GTEST_TEST(SymFormulaTest, Not2) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-
+TEST_F(SymbolicFormulaTest, Not2) {
   const Formula f1{x + y > 0};
   const Formula f2{x * y < 5};
   const Formula f{f1 || f2};
@@ -267,14 +228,7 @@ GTEST_TEST(SymFormulaTest, Not2) {
   EXPECT_EQ(not_f.Evaluate(env4), !((-1 + -1 > 0) || (-1 * -1 < 5)));
 }
 
-GTEST_TEST(SymFormulaTest, GetFreeVariables) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-
+TEST_F(SymbolicFormulaTest, GetFreeVariables) {
   const Formula f1{x + y > 0};
   const Formula f2{y * z < 5};
   const Formula f3{f1 || f2};
@@ -301,14 +255,7 @@ GTEST_TEST(SymFormulaTest, GetFreeVariables) {
   EXPECT_TRUE(vars4.include(var_z));
 }
 
-GTEST_TEST(SymFormulaTest, output_operator) {
-  const Variable var_x{"x"};
-  const Variable var_y{"y"};
-  const Variable var_z{"z"};
-  const Expression x{var_x};
-  const Expression y{var_y};
-  const Expression z{var_z};
-
+TEST_F(SymbolicFormulaTest, ToString) {
   const Formula f1{x + y > 0};
   const Formula f2{y * z < 5};
   const Formula f3{f1 || f2};
