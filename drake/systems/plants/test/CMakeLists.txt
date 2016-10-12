@@ -206,3 +206,11 @@ drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAN
 
 # ==== Below this line is C++ and MATLAB shared code ====
 
+drake_add_cc_test(controlled_spring_mass_system_test)
+target_link_libraries(controlled_spring_mass_system_test drakeControlledSpringMassSystemPlant drakeSystemFramework)
+
+drake_add_cc_test(affine_system_test)
+target_link_libraries(affine_system_test drakeAffineLinearSystemPlant drakeSystemFramework)
+
+drake_add_cc_test(linear_system_test)
+target_link_libraries(linear_system_test drakeAffineLinearSystemPlant drakeSystemFramework)
