@@ -14,16 +14,17 @@ void checkTriplet(const Eigen::SparseMatrix<T, options>& sp_mat) {
   sp_mat_expected1.setFromTriplets(triplet1.begin(), triplet1.end());
   EXPECT_TRUE(sp_mat.isApprox(sp_mat_expected1));
 
-  std::vector<int> row;
-  std::vector<int> col;
+  std::vector<Eigen::Index> row_indices;
+  std::vector<Eigen::Index> col_indices;
   std::vector<T> val;
-  SparseMatrixToRowColumnValueVectors(sp_mat, row, col, val);
-  EXPECT_TRUE(static_cast<int>(row.size()) == sp_mat.nonZeros());
-  EXPECT_TRUE(row.size() == col.size());
-  EXPECT_TRUE(row.size() == val.size());
+  SparseMatrixToRowColumnValueVectors(sp_mat, row_indices, col_indices, val);
+  EXPECT_TRUE(static_cast<int>(row_indices.size()) == sp_mat.nonZeros());
+  EXPECT_TRUE(row_indices.size() == col_indices.size());
+  EXPECT_TRUE(row_indices.size() == val.size());
   std::vector<Eigen::Triplet<T>> triplet2;
-  for (int i = 0; i < static_cast<int>(row.size()); i++) {
-    triplet2.push_back(Eigen::Triplet<T>(row[i], col[i], val[i]));
+  for (int i = 0; i < static_cast<int>(row_indices.size()); i++) {
+    triplet2.push_back(
+        Eigen::Triplet<T>(row_indices[i], col_indices[i], val[i]));
   }
   Eigen::SparseMatrix<T, options> sp_mat_expected2(sp_mat.rows(),
                                                    sp_mat.cols());

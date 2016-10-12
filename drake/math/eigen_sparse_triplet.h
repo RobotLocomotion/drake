@@ -7,8 +7,8 @@
 namespace drake {
 namespace math {
 /**
- * For a sparse matrix, return the triplet, such that we can reconstruct the
- * matrix using setFromTriplet function
+ * For a sparse matrix, return a vector of triplets, such that we can
+ * reconstruct the matrix using setFromTriplet function
  * @param matrix A sparse matrix
  * @return A triplet with the row, column and value of the non-zero entries.
  * See https://eigen.tuxfamily.org/dox/group__TutorialSparse.html for more
@@ -18,17 +18,19 @@ template <typename Derived>
 std::vector<Eigen::Triplet<typename Derived::Scalar>> SparseMatrixToTriplets(
     const Derived& matrix) {
   using Scalar = typename Derived::Scalar;
-  std::vector<Eigen::Triplet<Scalar>> triplet;
+  std::vector<Eigen::Triplet<Scalar>> triplets;
+  triplets.reserve(matrix.nonZeros());
   for (int i = 0; i < matrix.outerSize(); i++) {
     for (typename Derived::InnerIterator it(matrix, i); it; ++it) {
-      triplet.push_back(Eigen::Triplet<Scalar>(it.row(), it.col(), it.value()));
+      triplets.push_back(
+          Eigen::Triplet<Scalar>(it.row(), it.col(), it.value()));
     }
   }
-  return triplet;
+  return triplets;
 }
 
 /**
- * For a sparse matrix, return the row index, the column index, and value of
+ * For a sparse matrix, return the row indices, the column indices, and value of
  * the non-zero entries.
  * For example, the matrix
  * <!--
@@ -49,29 +51,29 @@ std::vector<Eigen::Triplet<typename Derived::Scalar>> SparseMatrixToTriplets(
  * val = \begin{bmatrix} 1 & 3 & 2 & 4\end{bmatrix}
  * \f]
  * @param[in] matrix the input sparse matrix
- * @param[out] row a vector containing the row indices of the non-zero entries
- * @param[out] col a vector containing the column indices of the non-zero
- * entries
+ * @param[out] row_indices a vector containing the row indices of the
+ * non-zero entries
+ * @param[out] col_indices a vector containing the column indices of the
+ * non-zero entries
  * @param[out] val a vector containing the values of the non-zero entries.
  */
 template <typename Derived>
 void SparseMatrixToRowColumnValueVectors(
-    const Derived& matrix, std::vector<int>& row, std::vector<int>& col,
+    const Derived& matrix, std::vector<Eigen::Index>& row_indices,
+    std::vector<Eigen::Index>& col_indices,
     std::vector<typename Derived::Scalar>& val) {
-  row.clear();
-  col.clear();
+  row_indices.clear();
+  col_indices.clear();
   val.clear();
   int nnz = matrix.nonZeros();
-  row.resize(nnz);
-  col.resize(nnz);
-  val.resize(nnz);
-  int nnz_count = 0;
+  row_indices.reserve(nnz);
+  col_indices.reserve(nnz);
+  val.reserve(nnz);
   for (int i = 0; i < matrix.outerSize(); i++) {
     for (typename Derived::InnerIterator it(matrix, i); it; ++it) {
-      row[nnz_count] = it.row();
-      col[nnz_count] = it.col();
-      val[nnz_count] = it.value();
-      nnz_count++;
+      row_indices.push_back(it.row());
+      col_indices.push_back(it.col());
+      val.push_back(it.value());
     }
   }
 }
