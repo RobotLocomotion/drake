@@ -4,6 +4,7 @@
 
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the

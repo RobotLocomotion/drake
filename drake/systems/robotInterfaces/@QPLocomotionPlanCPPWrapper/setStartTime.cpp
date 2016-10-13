@@ -4,6 +4,7 @@
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs != 0 || nrhs != 2) {
     mexErrMsgTxt("usage: setStartTime(obj, t);");

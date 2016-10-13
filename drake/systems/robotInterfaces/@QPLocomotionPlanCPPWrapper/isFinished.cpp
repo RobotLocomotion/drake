@@ -4,6 +4,7 @@
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs != 1 || nrhs < 2) {
     mexErrMsgTxt("usage: is_finished = isFinished(obj, t, x);");

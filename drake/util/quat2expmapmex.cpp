@@ -22,6 +22,7 @@ pair<Vector3d, typename Gradient<Vector3d, 4>::type> quat2expmapWithGradient(
                    autoDiffToGradientMatrix(expmap_autodiff));
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs == 1) {
     auto func = make_function(&drake::math::quat2expmap<Map<const Vector4d>>);

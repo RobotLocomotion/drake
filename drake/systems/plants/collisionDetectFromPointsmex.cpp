@@ -14,6 +14,7 @@ using namespace std;
 
 using drake::kSpaceDimension;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   std::string usage =
       "Usage [phi, n, x, body_x, body_idx] = "

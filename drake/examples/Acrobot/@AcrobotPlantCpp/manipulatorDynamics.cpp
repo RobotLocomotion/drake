@@ -68,6 +68,7 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ> &q,
   plhs[2] = eigenToMatlabGeneral<2, 1>(B);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   const mxArray *pobj = prhs[0];
 

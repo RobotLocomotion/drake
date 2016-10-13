@@ -35,6 +35,7 @@ inline mxArray *getTangentsArray(RigidBodyTree *const model,
   return tangentCells;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 2) {
     mexErrMsgIdAndTxt(

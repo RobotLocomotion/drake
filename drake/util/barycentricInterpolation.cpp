@@ -48,6 +48,7 @@ int barycomp(const void* b1, const void* b2) {
   return order;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 2) {
     mexPrintf(

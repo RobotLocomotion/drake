@@ -5,6 +5,7 @@
 using namespace Eigen;
 using namespace std;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 5) {
     mexErrMsgIdAndTxt("Drake:cartesian2cylindricalmex:IncorrectInputs",

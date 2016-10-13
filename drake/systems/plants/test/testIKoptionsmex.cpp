@@ -7,6 +7,7 @@
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs != 19 || nrhs != 1) {
     mexErrMsgIdAndTxt(

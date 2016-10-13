@@ -10,6 +10,7 @@ using namespace std;
 #define BUF_SIZE 256
 #define FRAME_PARSER_EPSILON 1e-6
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 2) {
     mexErrMsgIdAndTxt("Drake:testFrameParsermex:NotEnoughInputs",

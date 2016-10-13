@@ -71,6 +71,7 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
 // func sig:
 // computeS1Trajmex(dZMP.pp, A, B, C, D, Q, R, Q1, R1, N, S);
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   auto pp = matlabPPFormToPiecewisePolynomial(prhs[0]);
   Map<Matrix4d> A(mxGetPrSafe(prhs[1]));

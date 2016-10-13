@@ -13,6 +13,7 @@ using namespace std;
  * mex interface for bullet raycast detection
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 5) {
     mexErrMsgIdAndTxt("Drake:collisionRaycastmex:NotEnoughInputs",

@@ -69,6 +69,7 @@ void constraints(mxArray* c_out, mxArray* ceq_out, mxArray* dc_out,
   return;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // [c_mex, ceq_mex, dc_mex, dceq_mex] = stepCollocationConstraintsMex(x);
 

@@ -28,6 +28,7 @@ pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(
                    autoDiffToGradientMatrix(unwrapped_autodiff));
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs == 1) {
     auto func =

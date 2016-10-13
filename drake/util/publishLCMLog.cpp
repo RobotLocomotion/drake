@@ -6,6 +6,7 @@ static lcm_t* lcm = NULL;
 
 void cleanup(void) { lcm_destroy(lcm); }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 1) {
     mexPrintf("Usage: publishLCMLog(lcm_log)\n");

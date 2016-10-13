@@ -53,6 +53,7 @@ using namespace std;
  * [q, info] = approximateIKEIQPmex(objgetMexModelPtr, q0, q_nom, Q, varargin)
  * info = 0 on success, 1 on failure
  **/
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 4) {
     mexErrMsgIdAndTxt("Drake:approximateIKmex:NotEnoughInputs",

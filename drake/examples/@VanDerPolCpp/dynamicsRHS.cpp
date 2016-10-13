@@ -19,6 +19,7 @@ void dynamicsRHS(const MatrixBase<DerivedA> &x, MatrixBase<DerivedB> &xdot) {
   xdot << x(1), -x(0) - x(1) * (x(0) * x(0) - 1);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (mxIsDouble(prhs[2])) {
     Map<Vector2d> x(mxGetPrSafe(prhs[2]));

@@ -6,6 +6,7 @@ using namespace Eigen;
 
 // TODO(tkoolen): rename to getStartTime after QPLocomotionPlan interface
 // changes
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 1 || nlhs != 1) {
     mexErrMsgTxt("usage: time = start_time(obj);");

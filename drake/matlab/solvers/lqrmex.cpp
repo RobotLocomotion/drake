@@ -6,6 +6,7 @@
 
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 4 || nlhs != 2) {
     mexErrMsgIdAndTxt("Drake:lqrmex:InvalidUsage",

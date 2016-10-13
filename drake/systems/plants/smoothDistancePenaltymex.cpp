@@ -153,6 +153,7 @@ void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
  *                        active_collision_options);
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 4) {
     mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:NotEnoughInputs",
