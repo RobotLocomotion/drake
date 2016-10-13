@@ -9,7 +9,6 @@ namespace schunk_gripper {
 template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkSystem() {
-
   // Instantiates a Multibody Dynamics (MBD) model of the world.
   auto rigid_body_tree = std::make_unique<RigidBodyTree>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
@@ -22,9 +21,10 @@ CreateSimulatedSchunkSystem() {
       std::make_unique<drake::systems::RigidBodyPlant<T>>(
           std::move(rigid_body_tree));
   return ret;
-};
+}
 
-template DRAKE_EXPORT std::unique_ptr<drake::systems::RigidBodyPlant<double>> CreateSimulatedSchunkSystem();
+template DRAKE_EXPORT std::unique_ptr<drake::systems::RigidBodyPlant<double>>
+CreateSimulatedSchunkSystem();
 
 }  // namespace schunk_gripper
 }  // namespace examples
