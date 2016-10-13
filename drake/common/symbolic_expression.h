@@ -243,6 +243,7 @@ class ExpressionCell {
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
+  /** Output string representation of expression into output stream \p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
@@ -283,7 +284,7 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = default;
   /** Copy-assign a set from an lvalue. */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = default;
-  /** Constructs UnaryExpressionCell of kind \p k with \p hash. */
+  /** Constructs UnaryExpressionCell of kind \p k with \p hash and \p e. */
   UnaryExpressionCell(ExpressionKind k, size_t hash, const Expression& e);
   /** Returns the nested expression. */
   const Expression& get_expression() const { return e_; }
@@ -311,12 +312,13 @@ class BinaryExpressionCell : public ExpressionCell {
   BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = default;
   /** Copy-assign a set from an lvalue. */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = default;
-  /** Constructs BinaryExpressionCell of kind \p k with \p hash. */
+  /** Constructs BinaryExpressionCell of kind \p k with \p hash, \p e1, \p e2.
+   */
   BinaryExpressionCell(ExpressionKind k, size_t hash, const Expression& e1,
                        const Expression& e2);
-  /** Returns the first expression (e1_). */
+  /** Returns the first expression. */
   const Expression& get_1st_expression() const { return e1_; }
-  /** Returns the second expression (e2_). */
+  /** Returns the second expression. */
   const Expression& get_2nd_expression() const { return e2_; }
 
  private:
