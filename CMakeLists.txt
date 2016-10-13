@@ -153,7 +153,8 @@ drake_add_external(dreal PUBLIC CMAKE
 drake_add_external(gflags PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON)
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
+    -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
 
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
