@@ -27,51 +27,39 @@ using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakeMexUtil_EXPORTS)
-#define DLLEXPORT __declspec(dllexport)
-#else
-#define DLLEXPORT __declspec(dllimport)
-#endif
-#elif __GNUC__ >= 4
-#define DLLEXPORT __attribute__((visibility("default")))
-#else
-#define DLLEXPORT
-#endif
+DLL_EXPORT_SYM bool isa(const mxArray* mxa, const char* class_str);
+DLL_EXPORT_SYM bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs,
+                                      mxArray* prhs[], const char* filename);
 
-DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);
-DLLEXPORT bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs,
-                                 mxArray* prhs[], const char* filename);
+DLL_EXPORT_SYM double* mxGetPrSafe(const mxArray* pobj);
 
-DLLEXPORT double* mxGetPrSafe(const mxArray* pobj);
-
-DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array,
-                                     std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array,
-                                  std::string const& field_name);
-DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index,
-                                     std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index,
-                                  std::string const& field_name);
-DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index,
-                              std::string const& fieldname, mxArray* data);
-DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array,
-                                            std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index,
-                                            std::string const& field_name);
+DLL_EXPORT_SYM mxArray* mxGetPropertySafe(const mxArray* array,
+                                          std::string const& field_name);
+DLL_EXPORT_SYM mxArray* mxGetFieldSafe(const mxArray* array,
+                                       std::string const& field_name);
+DLL_EXPORT_SYM mxArray* mxGetPropertySafe(const mxArray* array, size_t index,
+                                          std::string const& field_name);
+DLL_EXPORT_SYM mxArray* mxGetFieldSafe(const mxArray* array, size_t index,
+                                       std::string const& field_name);
+DLL_EXPORT_SYM void mxSetFieldSafe(mxArray* array, size_t index,
+                                   std::string const& fieldname, mxArray* data);
+DLL_EXPORT_SYM mxArray* mxGetFieldOrPropertySafe(const mxArray* array,
+                                                 std::string const& field_name);
+DLL_EXPORT_SYM mxArray* mxGetFieldOrPropertySafe(const mxArray* array,
+                                                 size_t index,
+                                                 std::string const& field_name);
 
 // Mex pointers shared through matlab
 // Note: the same mex function which calls this method will be called with the
 // syntax mexFunction(drake_mex_ptr) as the destructor
 
-DLLEXPORT mxArray* createDrakeMexPointer(
+DLL_EXPORT_SYM mxArray* createDrakeMexPointer(
     void* ptr, const std::string& name = "", int type_id = -1,
     int num_additional_inputs = 0,
     mxArray* delete_fcn_additional_inputs[] = NULL,
     const std::string& subclass_name = "",
     const std::string& mex_function_name_prefix = "");  // increments lock count
-DLLEXPORT void* getDrakeMexPointer(const mxArray* mx);
+DLL_EXPORT_SYM void* getDrakeMexPointer(const mxArray* mx);
 
 template <typename Derived>
 inline void destroyDrakeMexPointer(const mxArray* mx) {
@@ -90,8 +78,8 @@ inline void destroyDrakeMexPointer(const mxArray* mx) {
 }
 
 template <typename Derived>
-DLLEXPORT mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const& M,
-                                       int& num_non_zero);
+DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const& M,
+                                            int& num_non_zero);
 
 template <typename DerivedA>
 mxArray* eigenToMatlab(const DerivedA& m) {
@@ -163,10 +151,11 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
   return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
 
-DLLEXPORT Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex);
+DLL_EXPORT_SYM Eigen::SparseMatrix<double> matlabToEigenSparse(
+    const mxArray* mex);
 
-DLLEXPORT std::string mxGetStdString(const mxArray* array);
-DLLEXPORT std::vector<std::string> mxGetVectorOfStdStrings(
+DLL_EXPORT_SYM std::string mxGetStdString(const mxArray* array);
+DLL_EXPORT_SYM std::vector<std::string> mxGetVectorOfStdStrings(
     const mxArray* array);
 
 template <typename Scalar>
@@ -177,11 +166,11 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   }
   return pm;
 }
-DLLEXPORT mxArray* stdStringToMatlab(const std::string& str);
-DLLEXPORT mxArray* vectorOfStdStringsToMatlab(
+DLL_EXPORT_SYM mxArray* stdStringToMatlab(const std::string& str);
+DLL_EXPORT_SYM mxArray* vectorOfStdStringsToMatlab(
     const std::vector<std::string>& strs);
 
-DLLEXPORT void sizecheck(const mxArray* mat, mwSize M, mwSize N);
+DLL_EXPORT_SYM void sizecheck(const mxArray* mat, mwSize M, mwSize N);
 
 template <size_t Rows, size_t Cols>
 void matlabToCArrayOfArrays(const mxArray* source,
@@ -198,12 +187,13 @@ void matlabToCArrayOfArrays(const mxArray* source,
   }
 }
 
-DLLEXPORT mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
+DLL_EXPORT_SYM mwSize sub2ind(mwSize ndims, const mwSize* dims,
+                              const mwSize* sub);
 
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in);
 
-DLLEXPORT Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic>
+DLL_EXPORT_SYM Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic>
 msspolyToEigen(const mxArray* msspoly);
 
 template <int _Rows, int _Cols>
@@ -256,7 +246,7 @@ mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald, _Rows, _Cols>& poly) {
   return plhs[0];
 }
 
-DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
+DLL_EXPORT_SYM Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
 trigPolyToEigen(const mxArray* trigpoly);
 
 template <int _Rows, int _Cols>

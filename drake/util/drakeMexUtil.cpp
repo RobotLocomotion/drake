@@ -320,7 +320,7 @@ const std::vector<T> matlabToStdVector(const mxArray* in) {
 }
 
 template <>
-DLLEXPORT const std::vector<double> matlabToStdVector<double>(
+DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
     const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
@@ -329,7 +329,7 @@ DLLEXPORT const std::vector<double> matlabToStdVector<double>(
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
-DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(
+DLL_EXPORT_SYM Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(
     const mxArray* msspoly) {
   auto dim = matlabToEigenMap<1, 2>(mxGetPropertySafe(msspoly, 0, "dim"));
   auto sub = matlabToEigenMap<Dynamic, 2>(mxGetPropertySafe(msspoly, 0, "sub"));
@@ -365,7 +365,7 @@ DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(
   return poly;
 }
 
-DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
+DLL_EXPORT_SYM Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic>
 trigPolyToEigen(const mxArray* trigpoly) {
   auto q = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "q"));
   auto s = msspolyToEigen(mxGetPropertySafe(trigpoly, 0, "s"));
@@ -454,17 +454,17 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const& M, int& num_non_zero) {
   return sparse_mex;
 }
 
-template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase<MatrixXd> const&,
-                                                int&);
-template DLLEXPORT mxArray* eigenToMatlabSparse(
+template DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(
+    MatrixBase<MatrixXd> const&, int&);
+template DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(
     MatrixBase<Map<MatrixXd>> const&, int&);
-// template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const
-// mxArray* in); already explicitly specialized
-template DLLEXPORT const std::vector<int> matlabToStdVector<int>(
+// template DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
+//     const mxArray* in); already explicitly specialized
+template DLL_EXPORT_SYM const std::vector<int> matlabToStdVector<int>(
     const mxArray* in);
-template DLLEXPORT const std::vector<Eigen::Index>
+template DLL_EXPORT_SYM const std::vector<Eigen::Index>
 matlabToStdVector<Eigen::Index>(const mxArray* in);
-template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(
+template DLL_EXPORT_SYM const std::vector<bool> matlabToStdVector<bool>(
     const mxArray* in);
-// template DLLEXPORT mxArray* eigenToMSSPoly(const
+// template DLL_EXPORT_SYM mxArray* eigenToMSSPoly(const
 // Matrix<Polynomiald, Dynamic, Dynamic> & poly);
