@@ -226,10 +226,11 @@ FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
     : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
-                                             const size_t hash,
                                              const Expression& e1,
                                              const Expression& e2)
-    : FormulaCell(k, hash), e1_(e1), e2_(e2) {}
+    : FormulaCell{k, hash_combine(e1.get_hash(), e2.get_hash())},
+      e1_{e1},
+      e2_{e2} {}
 
 Variables RelationalFormulaCell::GetFreeVariables() const {
   Variables ret{e1_.GetVariables()};
@@ -247,9 +248,11 @@ bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
   return e1_.EqualTo(rel_f.e1_) && e2_.EqualTo(rel_f.e2_);
 }
 
-BinaryFormulaCell::BinaryFormulaCell(const FormulaKind k, const size_t hash,
-                                     const Formula& f1, const Formula& f2)
-    : FormulaCell(k, hash), f1_(f1), f2_(f2) {}
+BinaryFormulaCell::BinaryFormulaCell(const FormulaKind k, const Formula& f1,
+                                     const Formula& f2)
+    : FormulaCell{k, hash_combine(f1.get_hash(), f2.get_hash())},
+      f1_{f1},
+      f2_{f2} {}
 
 Variables BinaryFormulaCell::GetFreeVariables() const {
   Variables ret{f1_.GetFreeVariables()};
@@ -303,9 +306,7 @@ ostream& FormulaFalse::Display(ostream& os) const {
 }
 
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Eq,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
 bool FormulaEq::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) ==
@@ -318,9 +319,7 @@ ostream& FormulaEq::Display(ostream& os) const {
 }
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Neq,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) !=
@@ -333,9 +332,7 @@ ostream& FormulaNeq::Display(ostream& os) const {
 }
 
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Gt,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Gt, e1, e2} {}
 
 bool FormulaGt::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) >
@@ -348,9 +345,7 @@ ostream& FormulaGt::Display(ostream& os) const {
 }
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Geq,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Geq, e1, e2} {}
 
 bool FormulaGeq::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) >=
@@ -363,9 +358,7 @@ ostream& FormulaGeq::Display(ostream& os) const {
 }
 
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Lt,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Lt, e1, e2} {}
 
 bool FormulaLt::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) <
@@ -378,9 +371,7 @@ ostream& FormulaLt::Display(ostream& os) const {
 }
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
-    : RelationalFormulaCell{FormulaKind::Leq,
-                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
-                            e2} {}
+    : RelationalFormulaCell{FormulaKind::Leq, e1, e2} {}
 
 bool FormulaLeq::Evaluate(const Environment& env) const {
   return get_1st_expression().Evaluate(env) <=
@@ -393,8 +384,7 @@ ostream& FormulaLeq::Display(ostream& os) const {
 }
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
-    : BinaryFormulaCell{FormulaKind::And,
-                        hash_combine(f1.get_hash(), f2.get_hash()), f1, f2} {}
+    : BinaryFormulaCell{FormulaKind::And, f1, f2} {}
 
 bool FormulaAnd::Evaluate(const Environment& env) const {
   return get_1st_formula().Evaluate(env) && get_2nd_formula().Evaluate(env);
@@ -406,8 +396,7 @@ ostream& FormulaAnd::Display(ostream& os) const {
 }
 
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
-    : BinaryFormulaCell{FormulaKind::Or,
-                        hash_combine(f1.get_hash(), f2.get_hash()), f1, f2} {}
+    : BinaryFormulaCell{FormulaKind::Or, f1, f2} {}
 
 bool FormulaOr::Evaluate(const Environment& env) const {
   return get_1st_formula().Evaluate(env) || get_2nd_formula().Evaluate(env);

@@ -211,7 +211,7 @@ class RelationalFormulaCell : public FormulaCell {
   /** Copy-assign a set from an lvalue. */
   RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = default;
   /** Construct RelationalFormulaCell of kind \p k with \p hash. */
-  RelationalFormulaCell(FormulaKind k, size_t hash, const Expression& e1,
+  RelationalFormulaCell(FormulaKind k, const Expression& e1,
                         const Expression& e2);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
@@ -241,8 +241,7 @@ class BinaryFormulaCell : public FormulaCell {
   /** Copy-assign a set from an lvalue. */
   BinaryFormulaCell& operator=(const BinaryFormulaCell& f) = default;
   /** Construct BinaryFormulaCell of kind \p k with \p hash. */
-  BinaryFormulaCell(FormulaKind k, size_t hash, const Formula& f1,
-                    const Formula& f2);
+  BinaryFormulaCell(FormulaKind k, const Formula& f1, const Formula& f2);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
   /** Returns the first formula. */
