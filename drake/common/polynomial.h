@@ -423,22 +423,6 @@ class DRAKE_EXPORT Polynomial {
     return os;
   }
 
-  /// Obtains a matrix of random unvariate Polynomials of the specified size.
-  static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic>
-  RandomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,
-                         Eigen::Index rows, Eigen::Index cols) {
-    Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> mat(rows, cols);
-    for (Eigen::Index row = 0; row < mat.rows(); ++row) {
-      for (Eigen::Index col = 0; col < mat.cols(); ++col) {
-        auto coeffs =
-            (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(
-                 num_coefficients_per_polynomial)).eval();
-        mat(row, col) = Polynomial(coeffs);
-      }
-    }
-    return mat;
-  }
-
   //@{
   /** Variable name/ID conversion facility. */
   static bool IsValidVariableName(const std::string name);

@@ -18,21 +18,36 @@ namespace drake {
 namespace systems {
 namespace {
 
+GTEST_TEST(SimulatorTest, SecondConstructor) {
+  // Create the spring-mass sytem and context.
+  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Mark the context with an arbitrary value
+  context->set_time(3.);
+
+  /// Construct the simulator with the created context.
+  Simulator<double> simulator(spring_mass, std::move(context));
+
+  // Verify that context pointers are equivalent.
+  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+}
+
 GTEST_TEST(SimulatorTest, MiscAPI) {
   MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  // set the integrator default step size
+  // Set the integrator default step size.
   const double DT = 1e-3;
 
-  // create a context
+  // Create a context.
   auto context = simulator.get_mutable_context();
 
-  // create the integrator
+  // Create the integrator.
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
                                                               context);
 
-  // initialize the simulator first
+  // Initialize the simulator first.
   simulator.Initialize();
 }
 
@@ -53,9 +68,19 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   // initialize the simulator first
   simulator.Initialize();
 
+  // try some other context stuff
   simulator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(simulator.get_context().get_time(), 3.);
   simulator.release_context();
+  EXPECT_TRUE(simulator.get_mutable_context() == nullptr);
+  EXPECT_THROW(simulator.Initialize(), std::logic_error);
+
+  // create another context
+  auto ucontext = spring_mass.CreateDefaultContext();
+  ucontext->set_time(3.);
+  simulator.reset_context(std::move(ucontext));
+  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+  simulator.reset_context(nullptr);
   EXPECT_TRUE(simulator.get_mutable_context() == nullptr);
 }
 

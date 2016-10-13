@@ -1,4 +1,5 @@
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test/random_polynomial_matrix.h"
 #include "drake/math/random_rotation.h"
 #include "drake/util/lcmUtil.h"
 
@@ -25,7 +26,7 @@ GTEST_TEST(TestLcmUtil, testPolynomial) {
 }
 
 GTEST_TEST(TestLcmUtil, testPolynomialMatrix) {
-  auto poly_matrix = Polynomial<double>::RandomPolynomialMatrix(6, 5, 8);
+  auto poly_matrix = drake::test::RandomPolynomialMatrix<double>(6, 5, 8);
   drake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix<Eigen::Dynamic, Eigen::Dynamic>(poly_matrix, msg);
   EXPECT_EQ(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));

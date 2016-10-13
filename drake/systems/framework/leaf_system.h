@@ -27,9 +27,9 @@ namespace systems {
 template <typename T>
 struct PeriodicEvent {
   /// The period with which this event should recur.
-  T period_sec = 0.0;
+  T period_sec{0.0};
   /// The time after zero when this event should first occur.
-  T offset_sec = 0.0;
+  T offset_sec{0.0};
   /// The action that should be taken when this event occurs.
   DiscreteEvent<T> event;
 };

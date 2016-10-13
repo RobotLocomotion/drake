@@ -26,6 +26,10 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, DT,
                                           context_dbl.get());
   ExplicitEulerIntegrator<AScalar> int_ad(spring_mass_ad, DT, context_ad.get());
+
+  // Test that setting the target accuracy or initial step size target fails.
+  EXPECT_THROW(int_dbl.set_target_accuracy(1.0), std::logic_error);
+  EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -44,8 +48,10 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
-
-  EXPECT_EQ(context->get_time(), 3.);
+  EXPECT_EQ(context->get_time(), 3.);\
+  integrator.reset_context(nullptr);
+  EXPECT_THROW(integrator.Initialize(), std::logic_error);
+  EXPECT_THROW(integrator.Step(DT, DT), std::logic_error);
 }
 
 // Try a purely continuous system with no sampling.

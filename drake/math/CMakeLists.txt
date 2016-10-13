@@ -7,6 +7,7 @@ set(sources
   cylindrical.cc
   expmap.cc
   gradient.cc
+  jacobian.cc
   normalize_vector.cc
   quaternion.cc
   random_rotation.cc
@@ -24,6 +25,7 @@ set(installed_headers
   cylindrical.h
   expmap.h
   gradient.h
+  jacobian.h
   normalize_vector.h
   quaternion.h
   random_rotation.h
