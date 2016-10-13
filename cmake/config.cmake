@@ -151,6 +151,8 @@ macro(drake_setup_java)
   # compile flags)
   if(MATLAB_EXECUTABLE AND NOT DISABLE_MATLAB)
     drake_setup_java_for_matlab()
+  else()
+    unset(CMAKE_JAVA_COMPILE_FLAGS CACHE)
   endif()
 endmacro()
 
