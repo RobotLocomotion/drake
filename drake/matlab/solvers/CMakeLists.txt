@@ -9,8 +9,8 @@ if(gurobi_FOUND)
   pods_use_pkg_config_packages(gurobiQPmex gurobi)
 endif()
 
-drake_add_mex(lqrmex lqrmex.cpp)
-target_link_libraries(lqrmex drakeUtil)
+drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
+target_link_libraries(lqrmex drakeCommon)
 
 find_package(snopt_c)
 
