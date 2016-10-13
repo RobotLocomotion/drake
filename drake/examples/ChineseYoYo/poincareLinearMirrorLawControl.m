@@ -9,6 +9,9 @@ p = setInputFrame(p, getInputFrame(plantSim));
 
 c = SoftPaddlePositionController(p);
 
+%Adjust the set angle here:
+obj.psiDes = 0;
+
 output_select(1).system = 1;
 output_select(1).output = plantSim.getOutputFrame();
 output_select(2).system = 2;
@@ -41,7 +44,6 @@ xnplus1 = yAll(2:9,jumpIdx(2));
 
 %Now perturb and redot it for other set values...
 %TODO
-
 
 % [A,B,C,D] = linearize(sys,0,zeros(2,1),0);
 % 

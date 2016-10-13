@@ -3,6 +3,7 @@ classdef SoftPaddlePositionController < DrakeSystem
         kp
         kd
         plant
+        psiDes
     end
     
     methods
@@ -14,7 +15,7 @@ classdef SoftPaddlePositionController < DrakeSystem
             obj.kp = 100;
             obj.kd = 2*sqrt(obj.kp);
             obj.plant = plant;
-            
+            obj.psiDes = 0;
         end
        
         function u = output(obj,~,~,x)
@@ -33,7 +34,7 @@ classdef SoftPaddlePositionController < DrakeSystem
             Delta = Hinvtilde - J(1)*J*Hinv*B;
             %             Delta = Hinvtilde - J(1)*J*(H\B);
 
-            psid = 0;
+            psid = obj.psiDes;
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
             if m == 2
               u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
