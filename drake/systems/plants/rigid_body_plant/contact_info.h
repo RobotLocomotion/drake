@@ -28,9 +28,11 @@ class DRAKE_EXPORT ContactInfo {
 
    @param element1      The identifier for the first collision element.
    @param element2      The identifier for the second collision element.
+   @param manifold      The manifold defining the contact result.
    */
   ContactInfo(DrakeCollision::ElementId element1,
-              DrakeCollision::ElementId element2);
+              DrakeCollision::ElementId element2,
+              std::unique_ptr<ContactManifold<T>> manifold);
 
 
   // ContactInfo are moveable but not copyable.
