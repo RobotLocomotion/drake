@@ -109,7 +109,7 @@ class BasicVector : public VectorBase<T> {
   /// must be the same size. This specialized function serves to maximize
   /// speed through SIMD operations or minimize memory access, depending on
   /// the underlying types.
-  virtual VectorBase<T>& PlusEqScaled(
+  VectorBase<T>& PlusEqScaled(
       const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
       override {
     /// Look for the case where all are of type BasicVector.
