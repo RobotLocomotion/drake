@@ -10,6 +10,7 @@
 #include "drake/systems/plants/joints/PrismaticJoint.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/RigidBodySystem.h"
@@ -377,7 +378,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
 }
 
-GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
   typedef RigidBodyPlant<double> RBP;
   const double lower_limit = 10.;
   const double upper_limit = 20.;
@@ -433,6 +434,56 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
             0);
   EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit + 1, -10),
             0);
+}
+
+/// Given a starting @p position and @p applied_force, @return the resulting
+/// acceleration of the joint described in `limited_prismatic.sdf`.
+double GetPrismaticJointLimitAccel(double position, double applied_force) {
+  // Build two links connected by a limited prismatic joint.
+  auto rigid_body_tree = std::make_unique<RigidBodyTree>();
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+      "/systems/plants/rigid_body_plant/test/limited_prismatic.sdf",
+      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      rigid_body_tree.get());
+  RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
+
+  auto context = rigid_body_sys.CreateDefaultContext();
+  rigid_body_sys.SetZeroConfiguration(context.get());
+  context->get_mutable_continuous_state()
+      ->get_mutable_generalized_position()
+      ->SetAtIndex(0, position);
+
+  // Apply a constant force on the input.
+  Vector1d input;
+  input << applied_force;
+  auto input_vector = std::make_unique<BasicVector<double>>(1);
+  input_vector->set_value(input);
+  context->SetInputPort(0, MakeInput(move(input_vector)));
+
+  // Obtain the time derivatives; test that speed is zero, return acceleration.
+  auto derivatives = rigid_body_sys.AllocateTimeDerivatives();
+  rigid_body_sys.EvalTimeDerivatives(*context, derivatives.get());
+  auto xdot = derivatives->get_state().CopyToVector();
+  EXPECT_EQ(xdot(0), 0.);  // Not moving.
+  return xdot(1);
+}
+
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
+  // Test that joint limit forces are applied correctly in the rigid body
+  // tree.  This tests for a sign error at rigid_body_plant.cc@417b03e:240.
+
+  // Past the lower limit, acceleration should be upward.
+  EXPECT_GT(GetPrismaticJointLimitAccel(-1.05, 0.), 0.);
+
+  // Between the limits, acceleration should equal force (the moving mass in
+  // the SDF is 1kg).
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., -1.), -1.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 0), 0.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 1.), 1.);
+
+  // Past the upper limit, acceleration should be downward.
+  EXPECT_LT(GetPrismaticJointLimitAccel(1.05, 0.), 0.);
 }
 
 }  // namespace

@@ -237,7 +237,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
         const T limit_force = JointLimitForce(joint,
                                               q(b->get_position_start_index()),
                                               v(b->get_velocity_start_index()));
-        right_hand_side(b->get_velocity_start_index()) += limit_force;
+        right_hand_side(b->get_velocity_start_index()) -= limit_force;
       }
     }
   }
