@@ -93,3 +93,6 @@
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git
+[submodule "externals/robotlocomotion_lcmtypes"]
+	path = externals/robotlocomotion_lcmtypes
+	url = https://github.com/RobotLocomotion/lcmtypes.git
