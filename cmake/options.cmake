@@ -12,7 +12,11 @@ include(CMakeDependentOption)
 #     option for the component will be hidden.)
 #
 # Extra arguments are combined (with a single space) to form the description of
-# the option.
+# the option. A ';' appearing in the description text should be escaped to
+# prevent it being seen as an argument separator.
+#
+# This creates an option <NAME>, which may be either a dependent option or an
+# unconditional option.
 #------------------------------------------------------------------------------
 function(drake_option NAME DEFAULT_STATE)
   # "Fix" escaping so cmake_parse_arguments will split properly (note:
@@ -62,11 +66,14 @@ endfunction()
 #     option for the component will be hidden.)
 #
 # Extra arguments are combined (with a single space) to form the description of
-# the option.
+# the option. A ';' appearing in the description text should be escaped to
+# prevent it being seen as an argument separator.
 #
-# If the component is required, and the system version is not selected, the
-# internal version will be enabled. Otherwise, the user will be given an option
-# (defaulting to ON) if the component should be built.
+# This creates an option USE_SYSTEM_<NAME> that selects if the system version
+# of the dependency will be used. If the component is required, and the system
+# version is not selected, the internal version will be enabled. Otherwise, the
+# user will be given an option (WITH_<NAME>, defaulting to ON) if the component
+# should be built.
 #
 # Internally, this sets HAVE_<NAME> to indicate if the external is available,
 # and WITH_<NAME> to indicate if our internal version of the external should be
