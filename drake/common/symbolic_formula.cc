@@ -225,6 +225,47 @@ Formula operator>=(const Expression& e1, const double v2) {
 FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
     : kind_{k}, hash_{hash_combine(static_cast<size_t>(kind_), hash)} {}
 
+RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
+                                             const size_t hash,
+                                             const Expression& e1,
+                                             const Expression& e2)
+    : FormulaCell(k, hash), e1_(e1), e2_(e2) {}
+
+Variables RelationalFormulaCell::GetFreeVariables() const {
+  Variables ret{e1_.GetVariables()};
+  const Variables res_from_e2{e2_.GetVariables()};
+  ret.insert(res_from_e2.begin(), res_from_e2.end());
+  return ret;
+}
+
+bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
+  if (get_kind() != f.get_kind()) {
+    return false;
+  }
+  const RelationalFormulaCell& rel_f{
+      static_cast<const RelationalFormulaCell&>(f)};
+  return e1_.EqualTo(rel_f.e1_) && e2_.EqualTo(rel_f.e2_);
+}
+
+BinaryFormulaCell::BinaryFormulaCell(const FormulaKind k, const size_t hash,
+                                     const Formula& f1, const Formula& f2)
+    : FormulaCell(k, hash), f1_(f1), f2_(f2) {}
+
+Variables BinaryFormulaCell::GetFreeVariables() const {
+  Variables ret{f1_.GetFreeVariables()};
+  const Variables res_from_f2{f2_.GetFreeVariables()};
+  ret.insert(res_from_f2.begin(), res_from_f2.end());
+  return ret;
+}
+
+bool BinaryFormulaCell::EqualTo(const FormulaCell& f) const {
+  if (get_kind() != f.get_kind()) {
+    return false;
+  }
+  const BinaryFormulaCell& binary_f{static_cast<const BinaryFormulaCell&>(f)};
+  return f1_.EqualTo(binary_f.f1_) && f2_.EqualTo(binary_f.f2_);
+}
+
 FormulaTrue::FormulaTrue()
     : FormulaCell{FormulaKind::True, hash<string>{}("True")} {}
 
@@ -262,234 +303,118 @@ ostream& FormulaFalse::Display(ostream& os) const {
 }
 
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Eq, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaEq::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaEq::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaEq& f_eq{static_cast<const FormulaEq&>(f)};
-  return e1_.EqualTo(f_eq.e1_) && e2_.EqualTo(f_eq.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Eq,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaEq::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) == e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) ==
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaEq::Display(ostream& os) const {
-  os << "(" << e1_ << " = " << e2_ << ")";
+  os << "(" << get_1st_expression() << " = " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Neq, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaNeq::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaNeq::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaNeq& f_neq{static_cast<const FormulaNeq&>(f)};
-  return e1_.EqualTo(f_neq.e1_) && e2_.EqualTo(f_neq.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Neq,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) != e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) !=
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaNeq::Display(ostream& os) const {
-  os << "(" << e1_ << " != " << e2_ << ")";
+  os << "(" << get_1st_expression() << " != " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Gt, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaGt::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaGt::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaGt& f_gt{static_cast<const FormulaGt&>(f)};
-  return e1_.EqualTo(f_gt.e1_) && e2_.EqualTo(f_gt.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Gt,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaGt::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) > e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) >
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaGt::Display(ostream& os) const {
-  os << "(" << e1_ << " > " << e2_ << ")";
+  os << "(" << get_1st_expression() << " > " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Geq, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaGeq::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaGeq::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaGeq& f_geq{static_cast<const FormulaGeq&>(f)};
-  return e1_.EqualTo(f_geq.e1_) && e2_.EqualTo(f_geq.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Geq,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaGeq::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) >= e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) >=
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaGeq::Display(ostream& os) const {
-  os << "(" << e1_ << " >= " << e2_ << ")";
+  os << "(" << get_1st_expression() << " >= " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Lt, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaLt::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaLt::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaLt& f_gt{static_cast<const FormulaLt&>(f)};
-  return e1_.EqualTo(f_gt.e1_) && e2_.EqualTo(f_gt.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Lt,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaLt::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) < e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) <
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaLt::Display(ostream& os) const {
-  os << "(" << e1_ << " < " << e2_ << ")";
+  os << "(" << get_1st_expression() << " < " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
-    : FormulaCell{FormulaKind::Leq, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
-
-symbolic::Variables FormulaLeq::GetFreeVariables() const {
-  Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
-  return ret;
-}
-
-bool FormulaLeq::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaLeq& f_leq{static_cast<const FormulaLeq&>(f)};
-  return e1_.EqualTo(f_leq.e1_) && e2_.EqualTo(f_leq.e2_);
-}
+    : RelationalFormulaCell{FormulaKind::Leq,
+                            hash_combine(e1.get_hash(), e2.get_hash()), e1,
+                            e2} {}
 
 bool FormulaLeq::Evaluate(const Environment& env) const {
-  return e1_.Evaluate(env) <= e2_.Evaluate(env);
+  return get_1st_expression().Evaluate(env) <=
+         get_2nd_expression().Evaluate(env);
 }
 
 ostream& FormulaLeq::Display(ostream& os) const {
-  os << "(" << e1_ << " <= " << e2_ << ")";
+  os << "(" << get_1st_expression() << " <= " << get_2nd_expression() << ")";
   return os;
 }
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
-    : FormulaCell{FormulaKind::And, hash_combine(f1.get_hash(), f2.get_hash())},
-      f1_{f1},
-      f2_{f2} {}
-
-symbolic::Variables FormulaAnd::GetFreeVariables() const {
-  Variables ret{f1_.GetFreeVariables()};
-  const Variables res_from_f2{f2_.GetFreeVariables()};
-  ret.insert(res_from_f2.begin(), res_from_f2.end());
-  return ret;
-}
-
-bool FormulaAnd::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaAnd& f_and{static_cast<const FormulaAnd&>(f)};
-  return f1_.EqualTo(f_and.f1_) && f2_.EqualTo(f_and.f2_);
-}
+    : BinaryFormulaCell{FormulaKind::And,
+                        hash_combine(f1.get_hash(), f2.get_hash()), f1, f2} {}
 
 bool FormulaAnd::Evaluate(const Environment& env) const {
-  return f1_.Evaluate(env) && f2_.Evaluate(env);
+  return get_1st_formula().Evaluate(env) && get_2nd_formula().Evaluate(env);
 }
 
 ostream& FormulaAnd::Display(ostream& os) const {
-  os << "(" << f1_ << " and " << f2_ << ")";
+  os << "(" << get_1st_formula() << " and " << get_2nd_formula() << ")";
   return os;
 }
 
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
-    : FormulaCell{FormulaKind::Or, hash_combine(f1.get_hash(), f2.get_hash())},
-      f1_{f1},
-      f2_{f2} {}
-
-symbolic::Variables FormulaOr::GetFreeVariables() const {
-  Variables ret{f1_.GetFreeVariables()};
-  const Variables res_from_f2{f2_.GetFreeVariables()};
-  ret.insert(res_from_f2.begin(), res_from_f2.end());
-  return ret;
-}
-
-bool FormulaOr::EqualTo(const FormulaCell& f) const {
-  if (get_kind() != f.get_kind()) {
-    return false;
-  }
-  const FormulaOr& f_or{static_cast<const FormulaOr&>(f)};
-  return f1_.EqualTo(f_or.f1_) && f2_.EqualTo(f_or.f2_);
-}
+    : BinaryFormulaCell{FormulaKind::Or,
+                        hash_combine(f1.get_hash(), f2.get_hash()), f1, f2} {}
 
 bool FormulaOr::Evaluate(const Environment& env) const {
-  return f1_.Evaluate(env) || f2_.Evaluate(env);
+  return get_1st_formula().Evaluate(env) || get_2nd_formula().Evaluate(env);
 }
 
 ostream& FormulaOr::Display(ostream& os) const {
-  os << "(" << f1_ << " or " << f2_ << ")";
+  os << "(" << get_1st_formula() << " or " << get_2nd_formula() << ")";
   return os;
 }
 
