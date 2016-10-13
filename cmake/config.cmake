@@ -40,7 +40,8 @@ function(drake_setup_matlab)
       message(STATUS "Found MATLAB: ${MATLAB_EXECUTABLE}")
 
       # Determine the MATLAB root.
-      get_filename_component(_matlab_bindir "${MATLAB_EXECUTABLE}" DIRECTORY)
+      get_filename_component(_matlab_realpath "${MATLAB_EXECUTABLE}" REALPATH)
+      get_filename_component(_matlab_bindir "${_matlab_realpath}" DIRECTORY)
       get_filename_component(MATLAB_ROOT_DIR
         "${_matlab_bindir}" DIRECTORY CACHE)
 
