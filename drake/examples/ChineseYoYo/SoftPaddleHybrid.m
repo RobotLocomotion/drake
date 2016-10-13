@@ -167,11 +167,12 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % give a feasible initial state, otherwise the constraint solver will
       % barf
       x0 = Point(getStateFrame(obj));
-      x0.m = 2;
-      x0.load_x = -0.02905;  % was -0.029
-      x0.load_z = 3.99999;
+      x0.m = 1;
+      x0.load_x = -0.2905;  % was -0.02905
+      x0.load_z = 3.9999;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.in_contact,x0(2:end));
+%       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
     end
     
     function xDes = calcStateInContact(obj,x_load,z_load,paddle_angle)
