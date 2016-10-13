@@ -5,6 +5,7 @@
 
 #include "drake/automotive/automotive_common.h"
 #include "drake/automotive/car_simulation.h"
+#include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/common/drake_path.h"
 // #include "drake/math/roll_pitch_yaw.h"
 #include "drake/lcm/drake_lcm.h"
@@ -20,6 +21,7 @@
 // #include "drake/systems/framework/primitives/gain.h"
 // #include "drake/systems/framework/primitives/pid_controller.h"
 // #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
@@ -207,6 +209,10 @@ int main() {
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       kQuaternion, nullptr /* weld to frame */, tree.get());
 
+  for (auto& actuator : tree->actuators) {
+    std::cout << "Actuator: " << actuator.name_ << std::endl;
+  }
+
   AddFlatTerrainToWorld(tree.get());
 
   // Instantiates a system for visualizing the MBD model.
@@ -222,29 +228,51 @@ int main() {
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), 0. /* Kp */, 0. /* Ki */, 0. /* Kd */);
 
-  // std::cout << "Size of controller's input port 0: "
-  //           << controller->get_input_port(0).get_size() << std::endl;
-  // std::cout << "Size of controller's input port 1: "
-  //           << controller->get_input_port(1).get_size() << std::endl;
+  std::cout << "Size of controller's input port 0: "
+            << controller->get_input_port(0).get_size() << std::endl;
 
-  // TODO(liang.fok) Temporary placeholder. Remove when actual inputs can be
-  // wired to the controller.
-  VectorX<double> constant_value1(controller->get_input_port(0).get_size());
-  constant_value1.setZero();
-  auto constant_source1 =
-      builder.template AddSystem<ConstantVectorSource<double>>(constant_value1);
+  VectorX<double> constant_vector(controller->get_input_port(0).get_size());
+  constant_vector.setZero();
+  auto constant_zero_source =
+      builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
 
-  VectorX<double> constant_value2(controller->get_input_port(1).get_size());
-  constant_value2.setZero();
-  auto constant_source2 =
-      builder.template AddSystem<ConstantVectorSource<double>>(constant_value2);
+  // VectorX<double> constant_value2(controller->get_input_port(1).get_size());
+  // constant_value2.setZero();
+  // auto constant_source2 =
+  //     builder.template AddSystem<ConstantVectorSource<double>>(constant_value2);
+
+  // The output of vector of the command subscriber is a DrivingCommand<double>,
+  // which is a BasicVector<double> of length 3:
+  //
+  //     [steering angle, throttle, brake].
+  //
+  // These values need to be processed before they can be sent into the PID
+  // controller, which as an input port of size 6
+  //
+  // The RigidBodyPlant has three actuators, each accepting a torque as input.
+  // Here is the order:
+  //
+  //     0: steering
+  //     1: left wheel
+  //     2: right wheel
+  //
+  static const DrivingCommandTranslator driving_command_translator;
+  auto command_subscriber =
+      builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
+          "DRIVING_COMMAND", driving_command_translator, &lcm);
+
+  std::cout << "Size of command subscriber's output port 0: "
+            << command_subscriber->get_output_port(0).get_size() << std::endl;
+
+  std::cout << "Size of controller's input port 1: "
+            << controller->get_input_port(1).get_size() << std::endl;
 
   // Connects the feedforward control signal (all zeros).
-  builder.Connect(constant_source1->get_output_port(),
+  builder.Connect(constant_zero_source->get_output_port(),
                   controller->get_input_port(0));
 
   // Connects the desired state of the system.
-  builder.Connect(constant_source2->get_output_port(),
+  builder.Connect(command_subscriber->get_output_port(0),
                   controller->get_input_port(1));
   builder.Connect(controller->get_output_port(0),
                   publisher->get_input_port(0));
