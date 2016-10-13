@@ -21,3 +21,6 @@ target_link_libraries(contact_resultant_force_test drakeRigidBodyPlant)
 
 drake_add_cc_test(contact_result_test)
 target_link_libraries(contact_result_test drakeRigidBodyPlant drakeRBSystem)
+
+drake_add_cc_test(contact_manifold_test)
+target_link_libraries(contact_manifold_test drakeRigidBodyPlant drakeRBSystem)
