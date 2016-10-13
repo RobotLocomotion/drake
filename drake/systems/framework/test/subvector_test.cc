@@ -2,12 +2,11 @@
 
 #include <Eigen/Dense>
 
-#include "drake/systems/framework/subvector.h"
-
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/vector_base.h"
+#include "drake/systems/framework/subvector.h"
 
 namespace drake {
 namespace systems {
@@ -110,6 +109,55 @@ TEST_F(SubvectorTest, AddToVectorInvalidSize) {
   VectorX<int> target(3);
   Subvector<int> subvec(state_vector_.get(), 1, kSubVectorLength);
   EXPECT_THROW(subvec.ScaleAndAddToVector(1, target), std::out_of_range);
+}
+
+// Tests SetZero functionality in VectorBase.
+TEST_F(SubvectorTest, SetZero) {
+  Subvector<int> subvec(state_vector_.get(), 0, kSubVectorLength);
+  subvec.SetZero();
+  for (int i = 0; i < subvec.size(); i++) EXPECT_EQ(subvec.GetAtIndex(i), 0);
+}
+
+// Tests all += * operations for VectorBase.
+TEST_F(SubvectorTest, PlusEqScaled) {
+  Subvector<int> ogvec(state_vector_.get(), 0, kSubVectorLength);
+  BasicVector<int> vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
+  Eigen::Vector2i ans1, ans2, ans3, ans4, ans5;
+  vec1.get_mutable_value() << 1, 2;
+  vec2.get_mutable_value() << 3, 5;
+  vec3.get_mutable_value() << 7, 11;
+  vec4.get_mutable_value() << 13, 17;
+  vec5.get_mutable_value() << 19, 23;
+  VectorBase<int>& v1 = vec1;
+  VectorBase<int>& v2 = vec2;
+  VectorBase<int>& v3 = vec3;
+  VectorBase<int>& v4 = vec4;
+  VectorBase<int>& v5 = vec5;
+
+  ogvec.SetZero();
+  ogvec.PlusEqScaled(2, v1);
+  EXPECT_EQ(ogvec.GetAtIndex(0), 2);
+  EXPECT_EQ(ogvec.GetAtIndex(1), 4);
+
+  ogvec.SetZero();
+  ogvec.PlusEqScaled(2, v1, 3, v2);
+  EXPECT_EQ(ogvec.GetAtIndex(0), 11);
+  EXPECT_EQ(ogvec.GetAtIndex(1), 19);
+
+  ogvec.SetZero();
+  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3);
+  EXPECT_EQ(ogvec.GetAtIndex(0), 46);
+  EXPECT_EQ(ogvec.GetAtIndex(1), 74);
+
+  ogvec.SetZero();
+  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3, 7, v4);
+  EXPECT_EQ(ogvec.GetAtIndex(0), 137);
+  EXPECT_EQ(ogvec.GetAtIndex(1), 193);
+
+  ogvec.SetZero();
+  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3, 7, v4, 11, v5);
+  EXPECT_EQ(ogvec.GetAtIndex(0), 346);
+  EXPECT_EQ(ogvec.GetAtIndex(1), 446);
 }
 
 }  // namespace

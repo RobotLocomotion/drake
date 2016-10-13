@@ -98,9 +98,54 @@ class BasicVector : public VectorBase<T> {
     vec += scale * values_;
   }
 
-  BasicVector& PlusEqScaled(const T& scale,
-                            const VectorBase<T>& rhs) override {
+  void SetZero() override { values_.setZero(); }
+
+  BasicVector& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) override {
     rhs.ScaleAndAddToVector(scale, values_);
+    return *this;
+  }
+
+  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
+                            const T& scale2,
+                            const VectorBase<T>& rhs2) override {
+    rhs1.ScaleAndAddToVector(scale1, values_);
+    rhs2.ScaleAndAddToVector(scale2, values_);
+    return *this;
+  }
+
+  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
+                            const T& scale2, const VectorBase<T>& rhs2,
+                            const T& scale3,
+                            const VectorBase<T>& rhs3) override {
+    rhs1.ScaleAndAddToVector(scale1, values_);
+    rhs2.ScaleAndAddToVector(scale2, values_);
+    rhs3.ScaleAndAddToVector(scale3, values_);
+    return *this;
+  }
+
+  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
+                            const T& scale2, const VectorBase<T>& rhs2,
+                            const T& scale3, const VectorBase<T>& rhs3,
+                            const T& scale4,
+                            const VectorBase<T>& rhs4) override {
+    rhs1.ScaleAndAddToVector(scale1, values_);
+    rhs2.ScaleAndAddToVector(scale2, values_);
+    rhs3.ScaleAndAddToVector(scale3, values_);
+    rhs4.ScaleAndAddToVector(scale4, values_);
+    return *this;
+  }
+
+  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
+                            const T& scale2, const VectorBase<T>& rhs2,
+                            const T& scale3, const VectorBase<T>& rhs3,
+                            const T& scale4, const VectorBase<T>& rhs4,
+                            const T& scale5,
+                            const VectorBase<T>& rhs5) override {
+    rhs1.ScaleAndAddToVector(scale1, values_);
+    rhs2.ScaleAndAddToVector(scale2, values_);
+    rhs3.ScaleAndAddToVector(scale3, values_);
+    rhs4.ScaleAndAddToVector(scale4, values_);
+    rhs5.ScaleAndAddToVector(scale5, values_);
     return *this;
   }
 
@@ -129,9 +174,7 @@ class BasicVector : public VectorBase<T> {
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const {
-    return new BasicVector<T>(*this);
-  }
+  virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
 
  private:
   // The column vector of T values.
