@@ -9,11 +9,11 @@ namespace examples {
 namespace schunk_gripper {
 
 /// Create a System for a simulated Schunk.
+///
+/// At present this System is only tested and instantiated for T == `double`.
 template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkSystem();
-
-// At present this System is only tested and instantiated for T == `double`.
 
 }  // namespace schunk_gripper
 }  // namespace examples

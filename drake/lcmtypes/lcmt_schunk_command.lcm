@@ -2,7 +2,7 @@ package schunk_driver;
 
 struct lcmt_schunk_command
 {
-  int64_t timestamp;  //< The timestamp in microseconds.
+  int64_t timestamp_us;  //< The timestamp in microseconds.
 
   double target_position_mm;
   double force;
