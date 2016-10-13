@@ -13,20 +13,20 @@ using std::move;
 // Provides common variables that are used by the following tests.
 class SymbolicVariableTest : public ::testing::Test {
  protected:
-  const Variable x{"x"};
-  const Variable y{"y"};
-  const Variable z{"z"};
-  const Variable w{"w"};
+  const Variable x_{"x"};
+  const Variable y_{"y"};
+  const Variable z_{"z"};
+  const Variable w_{"w"};
 };
 
 TEST_F(SymbolicVariableTest, GetId) {
   const Variable x_prime{"x"};
-  EXPECT_NE(x.get_id(), x_prime.get_id());
+  EXPECT_NE(x_.get_id(), x_prime.get_id());
 }
 
 TEST_F(SymbolicVariableTest, GetName) {
   const Variable x_prime{"x"};
-  EXPECT_EQ(x.get_name(), x_prime.get_name());
+  EXPECT_EQ(x_.get_name(), x_prime.get_name());
 }
 
 TEST_F(SymbolicVariableTest, MoveCopyPreserveId) {
@@ -42,54 +42,54 @@ TEST_F(SymbolicVariableTest, MoveCopyPreserveId) {
 }
 
 TEST_F(SymbolicVariableTest, Lt) {
-  EXPECT_FALSE(x < x);
-  EXPECT_TRUE(x < y);
-  EXPECT_TRUE(x < z);
-  EXPECT_TRUE(x < w);
+  EXPECT_FALSE(x_ < x_);
+  EXPECT_TRUE(x_ < y_);
+  EXPECT_TRUE(x_ < z_);
+  EXPECT_TRUE(x_ < w_);
 
-  EXPECT_FALSE(y < x);
-  EXPECT_FALSE(y < y);
-  EXPECT_TRUE(y < z);
-  EXPECT_TRUE(y < w);
+  EXPECT_FALSE(y_ < x_);
+  EXPECT_FALSE(y_ < y_);
+  EXPECT_TRUE(y_ < z_);
+  EXPECT_TRUE(y_ < w_);
 
-  EXPECT_FALSE(z < x);
-  EXPECT_FALSE(z < y);
-  EXPECT_FALSE(z < z);
-  EXPECT_TRUE(z < w);
+  EXPECT_FALSE(z_ < x_);
+  EXPECT_FALSE(z_ < y_);
+  EXPECT_FALSE(z_ < z_);
+  EXPECT_TRUE(z_ < w_);
 
-  EXPECT_FALSE(w < x);
-  EXPECT_FALSE(w < y);
-  EXPECT_FALSE(w < z);
-  EXPECT_FALSE(w < w);
+  EXPECT_FALSE(w_ < x_);
+  EXPECT_FALSE(w_ < y_);
+  EXPECT_FALSE(w_ < z_);
+  EXPECT_FALSE(w_ < w_);
 }
 
 TEST_F(SymbolicVariableTest, Eq) {
-  EXPECT_TRUE(x == x);
-  EXPECT_FALSE(x == y);
-  EXPECT_FALSE(x == z);
-  EXPECT_FALSE(x == w);
+  EXPECT_TRUE(x_ == x_);
+  EXPECT_FALSE(x_ == y_);
+  EXPECT_FALSE(x_ == z_);
+  EXPECT_FALSE(x_ == w_);
 
-  EXPECT_FALSE(y == x);
-  EXPECT_TRUE(y == y);
-  EXPECT_FALSE(y == z);
-  EXPECT_FALSE(y == w);
+  EXPECT_FALSE(y_ == x_);
+  EXPECT_TRUE(y_ == y_);
+  EXPECT_FALSE(y_ == z_);
+  EXPECT_FALSE(y_ == w_);
 
-  EXPECT_FALSE(z == x);
-  EXPECT_FALSE(z == y);
-  EXPECT_TRUE(z == z);
-  EXPECT_FALSE(z == w);
+  EXPECT_FALSE(z_ == x_);
+  EXPECT_FALSE(z_ == y_);
+  EXPECT_TRUE(z_ == z_);
+  EXPECT_FALSE(z_ == w_);
 
-  EXPECT_FALSE(w == x);
-  EXPECT_FALSE(w == y);
-  EXPECT_FALSE(w == z);
-  EXPECT_TRUE(w == w);
+  EXPECT_FALSE(w_ == x_);
+  EXPECT_FALSE(w_ == y_);
+  EXPECT_FALSE(w_ == z_);
+  EXPECT_TRUE(w_ == w_);
 }
 
 TEST_F(SymbolicVariableTest, ToString) {
-  EXPECT_EQ(x.to_string(), "x");
-  EXPECT_EQ(y.to_string(), "y");
-  EXPECT_EQ(z.to_string(), "z");
-  EXPECT_EQ(w.to_string(), "w");
+  EXPECT_EQ(x_.to_string(), "x");
+  EXPECT_EQ(y_.to_string(), "y");
+  EXPECT_EQ(z_.to_string(), "z");
+  EXPECT_EQ(w_.to_string(), "w");
 }
 
 }  // namespace
