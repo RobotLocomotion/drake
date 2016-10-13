@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/drake_gcc48.h"
 
 /// @file
 /// Provides Drake's assertion implementation.  This is intended to be used
