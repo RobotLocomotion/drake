@@ -93,7 +93,6 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   WrenchVector<T> wrench;
   wrench.setZero();
 
-  auto accumTorque = wrench.tail(3);
   Vector3<T> point = Vector3<T>::Zero(3,1);
   T scale = 0;
 
@@ -112,13 +111,12 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   const double kEpsilon = 1e-10;
   if (scale > kEpsilon) point /= scale;
 
-  Vector3<T> tempForce;
+  auto accumTorque = wrench.tail(3);
   for (const auto & detail : contact_details_) {
     const Vector3<T>& contactPoint = detail->get_application_point();
     // cross product doesn't work on "head"
     const WrenchVector<T>& contactWrench = detail->get_force();
-    tempForce = contactWrench.head(3);
-    accumTorque += (point - contactPoint).cross(tempForce);
+    accumTorque += (point - contactPoint).cross(contactWrench.template head<3>());
   }
 
   return ContactDetail<T>(point, wrench);
