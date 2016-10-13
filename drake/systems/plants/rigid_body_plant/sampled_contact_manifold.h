@@ -79,23 +79,31 @@ SampledContactManifold<T>::SampledContactManifold(
 
 template <typename T>
 ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
-  Vector3<T> force = Vector3<T>::Zero(3,1);
-  Vector3<T> accumTorque = Vector3<T>::Zero(3,1);
+  // The "net" contact is defined as follows:
+  //  point = sum_i [p_i * |f_i|] / sum_i |f_i|
+  //  Force = sum_i F_i + sum_i [(point - p_i) x f_i , 0, 0, 0]
+  //
+  //  where p_i is the ith application point.
+  //  F_i is the ith spatial force (aka wrench).
+  //  f_i, |f_i| are the force component (and its magnitude) of the ith spatial
+  //  force, respectively.
+  //  [ f, 0, 0, 0] is a zero-torque wrench built off the given force.
+  //
+  //  The net application point is an approximation of the center of pressure.
+  WrenchVector<T> wrench;
+  wrench.setZero();
+
+  auto accumTorque = wrench.tail(3);
   Vector3<T> point = Vector3<T>::Zero(3,1);
   T scale = 0;
 
   for ( const auto & detail : contact_details_ ) {
     const Vector3<T>& contactPoint = detail->get_application_point();
     const WrenchVector<T>& contactWrench = detail->get_force();
-    Vector3<T> contactForce;
-    contactForce << contactWrench(0), contactWrench(1), contactWrench(2);
-    Vector3<T> contactTorque;
-    contactTorque << contactWrench(3), contactWrench(4), contactWrench(5);
 
-    force += contactForce;
-    accumTorque += contactTorque;
+    wrench += contactWrench;
 
-    T weight = contactForce.norm();
+    T weight = contactWrench.head(3).norm();
     scale += weight;
     point += contactPoint * weight;
   }
@@ -104,17 +112,15 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   const double kEpsilon = 1e-10;
   if (scale > kEpsilon) point /= scale;
 
+  Vector3<T> tempForce;
   for (const auto & detail : contact_details_) {
     const Vector3<T>& contactPoint = detail->get_application_point();
+    // cross product doesn't work on "head"
     const WrenchVector<T>& contactWrench = detail->get_force();
-    Vector3<T> contactForce;
-    contactForce << contactWrench(0), contactWrench(1), contactWrench(2);
-    accumTorque += (contactPoint - point).cross(contactForce);
+    tempForce = contactWrench.head(3);
+    accumTorque += (point - contactPoint).cross(tempForce);
   }
 
-  WrenchVector<T> wrench;
-  wrench << force(0), force(1), force(2),
-            accumTorque(0), accumTorque(1), accumTorque(2);
   return ContactDetail<T>(point, wrench);
 }
 
