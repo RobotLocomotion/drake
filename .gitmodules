@@ -100,3 +100,6 @@
 [submodule "externals/eigen"]
 	path = externals/eigen
 	url = https://github.com/RobotLocomotion/eigen-mirror.git
+[submodule "externals/tinyobjloader"]
+	path = externals/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
