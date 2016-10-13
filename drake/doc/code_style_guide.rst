@@ -132,12 +132,31 @@ Clarifications
     <http://www.lcdf.org/c%2B%2B/clause13.html>`_. (This applies to
     ``volatile`` also.)
 
+    If you want to declare and define a function in one place, you have 
+    several options: 
+
+    * Forgo marking the parameters as ``const`` (not a great loss for short
+      functions defined inline), or
+    * create some ``const`` local variables initialized to the supplied
+      parameter values (likely to be optimized away by the compiler), or
+    * split the declaration and definition (be sure to add the ``inline``
+      keyword if the function would otherwise have been implicitly inlined).
+
 .. _code-style-guide-cpp-exceptions:
 
 Exceptions
 ----------
 
 * Method names may violate Google standards and the "long, human-readable"
+  standard above if a short, non-compliant name more closely matches the common
+  conventions of the field.  For instance, the matrix portion of a linear
+  complementarity constraint is traditionally 'M' (one letter, upper-case); it
+  is not mandatory to downcase it or give it a more verbose name.
+* No need for a copyright line at the top of every file (this will change soon,
+  see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
+* While we encourage you to `Include What You Use (IWYU)
+  <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_
+  since it improves code transparency and readability, it will not be strictly
   standard above if a short, non-compliant name more closely matches the common
   conventions of the field.  For instance, the matrix portion of a linear
   complementarity constraint is traditionally 'M' (one letter, upper-case); it
@@ -356,12 +375,3 @@ Development stage is one of four values:
 
 Z (build) is optional. This is probably not needed but could just refer to the
 revision of the repository at the time of snapshot. Numbered versions should be
-referenced via tags.
-
-Supplementary documents
-=======================
-
-.. toctree::
-  :maxdepth: 1
-
-  cxx_inl
