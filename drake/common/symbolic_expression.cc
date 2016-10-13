@@ -332,8 +332,8 @@ void Expression::check_nan(const double v) {
 }
 
 UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
-                                         const size_t hash, const Expression& e)
-    : ExpressionCell{k, hash}, e_{e} {}
+                                         const Expression& e)
+    : ExpressionCell{k, e.get_hash()}, e_{e} {}
 
 Variables UnaryExpressionCell::GetVariables() const {
   return e_.GetVariables();
@@ -348,11 +348,17 @@ bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   return e_.EqualTo(unary_e.e_);
 }
 
+double UnaryExpressionCell::Evaluate(const Environment& env) const {
+  double const v{e_.Evaluate(env)};
+  return DoEvaluate(v);
+}
+
 BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
-                                           const size_t hash,
                                            const Expression& e1,
                                            const Expression& e2)
-    : ExpressionCell{k, hash}, e1_{e1}, e2_{e2} {}
+    : ExpressionCell{k, hash_combine(e1.get_hash(), e2.get_hash())},
+      e1_{e1},
+      e2_{e2} {}
 
 Variables BinaryExpressionCell::GetVariables() const {
   Variables ret{e1_.GetVariables()};
@@ -368,6 +374,12 @@ bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
   const BinaryExpressionCell& binary_e{
       static_cast<const BinaryExpressionCell&>(e)};
   return e1_.EqualTo(binary_e.e1_) && e2_.EqualTo(binary_e.e2_);
+}
+
+double BinaryExpressionCell::Evaluate(const Environment& env) const {
+  double const v1{e1_.Evaluate(env)};
+  double const v2{e2_.Evaluate(env)};
+  return DoEvaluate(v1, v2);
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
@@ -428,85 +440,71 @@ ostream& ExpressionConstant::Display(ostream& os) const {
 }
 
 ExpressionNeg::ExpressionNeg(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Neg, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Neg, e} {}
 
-double ExpressionNeg::Evaluate(const Environment& env) const {
-  return -get_expression().Evaluate(env);
-}
 ostream& ExpressionNeg::Display(ostream& os) const {
   os << "-(" << get_expression() << ")";
   return os;
 }
 
-ExpressionAdd::ExpressionAdd(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Add,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
-}
+double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
 
-double ExpressionAdd::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) +
-         get_2nd_expression().Evaluate(env);
-}
+ExpressionAdd::ExpressionAdd(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Add, e1, e2} {}
 
 ostream& ExpressionAdd::Display(ostream& os) const {
   os << "(" << get_1st_expression() << " + " << get_2nd_expression() << ")";
   return os;
 }
 
-ExpressionSub::ExpressionSub(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Sub,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
+double ExpressionAdd::DoEvaluate(const double v1, const double v2) const {
+  return v1 + v2;
 }
 
-double ExpressionSub::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) -
-         get_2nd_expression().Evaluate(env);
-}
+ExpressionSub::ExpressionSub(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Sub, e1, e2} {}
 
 ostream& ExpressionSub::Display(ostream& os) const {
   os << "(" << get_1st_expression() << " - " << get_2nd_expression() << ")";
   return os;
 }
 
-ExpressionMul::ExpressionMul(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Mul,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
+double ExpressionSub::DoEvaluate(const double v1, const double v2) const {
+  return v1 - v2;
 }
 
-double ExpressionMul::Evaluate(const Environment& env) const {
-  return get_1st_expression().Evaluate(env) *
-         get_2nd_expression().Evaluate(env);
-}
+ExpressionMul::ExpressionMul(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Mul, e1, e2} {}
 
 ostream& ExpressionMul::Display(ostream& os) const {
   os << "(" << get_1st_expression() << " * " << get_2nd_expression() << ")";
   return os;
 }
 
-ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Div,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
+double ExpressionMul::DoEvaluate(const double v1, const double v2) const {
+  return v1 * v2;
 }
 
-double ExpressionDiv::Evaluate(const Environment& env) const {
-  double const rhs{get_2nd_expression().Evaluate(env)};
-  if (rhs == 0.0) {
-    ostringstream oss;
-    oss << "Division by zero: ";
-    this->Display(oss) << endl;
-    oss << "under the following environment:" << endl << env << endl;
-    throw runtime_error(oss.str());
-  }
-  return get_1st_expression().Evaluate(env) / rhs;
-}
+ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Div, e1, e2} {}
 
 ostream& ExpressionDiv::Display(ostream& os) const {
   os << "(" << get_1st_expression() << " / " << get_2nd_expression() << ")";
   return os;
 }
 
+double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
+  if (v2 == 0.0) {
+    ostringstream oss;
+    oss << "Division by zero: " << v1 << " / " << v2;
+    this->Display(oss) << endl;
+    throw runtime_error(oss.str());
+  }
+  return v1 / v2;
+}
+
 ExpressionLog::ExpressionLog(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Log, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Log, e} {}
 
 void ExpressionLog::check_domain(double const v) {
   if (!(v >= 0)) {
@@ -517,44 +515,38 @@ void ExpressionLog::check_domain(double const v) {
   }
 }
 
-double ExpressionLog::Evaluate(const Environment& env) const {
-  double const eval_res{get_expression().Evaluate(env)};
-  check_domain(eval_res);
-  return std::log(eval_res);
-}
-
 ostream& ExpressionLog::Display(ostream& os) const {
   os << "log(" << get_expression() << ")";
   return os;
 }
 
-ExpressionAbs::ExpressionAbs(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Abs, e.get_hash(), e} {}
-
-double ExpressionAbs::Evaluate(const Environment& env) const {
-  double const eval_res{get_expression().Evaluate(env)};
-  return std::fabs(eval_res);
+double ExpressionLog::DoEvaluate(const double v) const {
+  check_domain(v);
+  return std::log(v);
 }
+
+ExpressionAbs::ExpressionAbs(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Abs, e} {}
 
 ostream& ExpressionAbs::Display(ostream& os) const {
   os << "abs(" << get_expression() << ")";
   return os;
 }
 
-ExpressionExp::ExpressionExp(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Exp, e.get_hash(), e} {}
+double ExpressionAbs::DoEvaluate(const double v) const { return std::fabs(v); }
 
-double ExpressionExp::Evaluate(const Environment& env) const {
-  return std::exp(get_expression().Evaluate(env));
-}
+ExpressionExp::ExpressionExp(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Exp, e} {}
 
 ostream& ExpressionExp::Display(ostream& os) const {
   os << "exp(" << get_expression() << ")";
   return os;
 }
 
+double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
+
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sqrt, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Sqrt, e} {}
 
 void ExpressionSqrt::check_domain(double const v) {
   if (!(v >= 0)) {
@@ -565,21 +557,18 @@ void ExpressionSqrt::check_domain(double const v) {
   }
 }
 
-double ExpressionSqrt::Evaluate(const Environment& env) const {
-  double const eval_res{get_expression().Evaluate(env)};
-  check_domain(eval_res);
-  return std::sqrt(eval_res);
-}
-
 ostream& ExpressionSqrt::Display(ostream& os) const {
   os << "sqrt(" << get_expression() << ")";
   return os;
 }
 
-ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Pow,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
+double ExpressionSqrt::DoEvaluate(const double v) const {
+  check_domain(v);
+  return std::sqrt(v);
 }
+
+ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Pow, e1, e2} {}
 
 static bool is_int(double const v) {
   double intpart;  // dummy variable
@@ -597,56 +586,48 @@ void ExpressionPow::check_domain(double const v1, double const v2) {
   }
 }
 
-double ExpressionPow::Evaluate(const Environment& env) const {
-  double const v1{get_1st_expression().Evaluate(env)};
-  double const v2{get_2nd_expression().Evaluate(env)};
-  check_domain(v1, v2);
-  return std::pow(v1, v2);
-}
-
 ostream& ExpressionPow::Display(ostream& os) const {
   os << "pow(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
   return os;
 }
 
-ExpressionSin::ExpressionSin(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sin, e.get_hash(), e} {}
-
-double ExpressionSin::Evaluate(const Environment& env) const {
-  return std::sin(get_expression().Evaluate(env));
+double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
+  check_domain(v1, v2);
+  return std::pow(v1, v2);
 }
+
+ExpressionSin::ExpressionSin(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Sin, e} {}
 
 ostream& ExpressionSin::Display(ostream& os) const {
   os << "sin(" << get_expression() << ")";
   return os;
 }
 
-ExpressionCos::ExpressionCos(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Cos, e.get_hash(), e} {}
+double ExpressionSin::DoEvaluate(double const v) const { return std::sin(v); }
 
-double ExpressionCos::Evaluate(const Environment& env) const {
-  return std::cos(get_expression().Evaluate(env));
-}
+ExpressionCos::ExpressionCos(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Cos, e} {}
 
 ostream& ExpressionCos::Display(ostream& os) const {
   os << "cos(" << get_expression() << ")";
   return os;
 }
 
-ExpressionTan::ExpressionTan(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Tan, e.get_hash(), e} {}
+double ExpressionCos::DoEvaluate(double const v) const { return std::cos(v); }
 
-double ExpressionTan::Evaluate(const Environment& env) const {
-  return std::tan(get_expression().Evaluate(env));
-}
+ExpressionTan::ExpressionTan(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Tan, e} {}
 
 ostream& ExpressionTan::Display(ostream& os) const {
   os << "tan(" << get_expression() << ")";
   return os;
 }
 
+double ExpressionTan::DoEvaluate(double const v) const { return std::tan(v); }
+
 ExpressionAsin::ExpressionAsin(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Asin, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Asin, e} {}
 
 void ExpressionAsin::check_domain(double const v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
@@ -657,19 +638,18 @@ void ExpressionAsin::check_domain(double const v) {
   }
 }
 
-double ExpressionAsin::Evaluate(const Environment& env) const {
-  double const eval_res{get_expression().Evaluate(env)};
-  check_domain(eval_res);
-  return std::asin(eval_res);
-}
-
 ostream& ExpressionAsin::Display(ostream& os) const {
   os << "asin(" << get_expression() << ")";
   return os;
 }
 
+double ExpressionAsin::DoEvaluate(double const v) const {
+  check_domain(v);
+  return std::asin(v);
+}
+
 ExpressionAcos::ExpressionAcos(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Acos, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Acos, e} {}
 
 void ExpressionAcos::check_domain(double const v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
@@ -680,46 +660,40 @@ void ExpressionAcos::check_domain(double const v) {
   }
 }
 
-double ExpressionAcos::Evaluate(const Environment& env) const {
-  double const eval_res{get_expression().Evaluate(env)};
-  check_domain(eval_res);
-  return std::acos(eval_res);
-}
-
 ostream& ExpressionAcos::Display(ostream& os) const {
   os << "acos(" << get_expression() << ")";
   return os;
 }
 
-ExpressionAtan::ExpressionAtan(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Atan, e.get_hash(), e} {}
-
-double ExpressionAtan::Evaluate(const Environment& env) const {
-  return std::atan(get_expression().Evaluate(env));
+double ExpressionAcos::DoEvaluate(double const v) const {
+  check_domain(v);
+  return std::acos(v);
 }
+
+ExpressionAtan::ExpressionAtan(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Atan, e} {}
 
 ostream& ExpressionAtan::Display(ostream& os) const {
   os << "atan(" << get_expression() << ")";
   return os;
 }
 
-ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
-    : BinaryExpressionCell{ExpressionKind::Atan2,
-                           hash_combine(e1.get_hash(), e2.get_hash()), e1, e2} {
-}
+double ExpressionAtan::DoEvaluate(const double v) const { return std::atan(v); }
 
-double ExpressionAtan2::Evaluate(const Environment& env) const {
-  return std::atan2(get_1st_expression().Evaluate(env),
-                    get_2nd_expression().Evaluate(env));
-}
+ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2} {}
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
   os << "atan2(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
   return os;
 }
 
+double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
+  return std::atan2(v1, v2);
+}
+
 ExpressionSinh::ExpressionSinh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Sinh, e.get_hash(), e} {}
+    : UnaryExpressionCell{ExpressionKind::Sinh, e} {}
 
 double ExpressionSinh::Evaluate(const Environment& env) const {
   return std::sinh(get_expression().Evaluate(env));
@@ -729,28 +703,28 @@ ostream& ExpressionSinh::Display(ostream& os) const {
   os << "sinh(" << get_expression() << ")";
   return os;
 }
-ExpressionCosh::ExpressionCosh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Cosh, e.get_hash(), e} {}
 
-double ExpressionCosh::Evaluate(const Environment& env) const {
-  return std::cosh(get_expression().Evaluate(env));
-}
+double ExpressionSinh::DoEvaluate(const double v) const { return std::sinh(v); }
+
+ExpressionCosh::ExpressionCosh(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Cosh, e} {}
+
 ostream& ExpressionCosh::Display(ostream& os) const {
   os << "cosh(" << get_expression() << ")";
   return os;
 }
 
-ExpressionTanh::ExpressionTanh(const Expression& e)
-    : UnaryExpressionCell{ExpressionKind::Tanh, e.get_hash(), e} {}
+double ExpressionCosh::DoEvaluate(const double v) const { return std::cosh(v); }
 
-double ExpressionTanh::Evaluate(const Environment& env) const {
-  return std::tanh(get_expression().Evaluate(env));
-}
+ExpressionTanh::ExpressionTanh(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Tanh, e} {}
 
 ostream& ExpressionTanh::Display(ostream& os) const {
   os << "tanh(" << get_expression() << ")";
   return os;
 }
+
+double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
 
 ostream& operator<<(ostream& os, const Expression& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
