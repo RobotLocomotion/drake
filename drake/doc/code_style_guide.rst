@@ -116,8 +116,21 @@ Clarifications
 
 * For the `Use of const
   <https://google.github.io/styleguide/cppguide.html#Use_of_const>`_ style rule,
-  we clarify that a class member variable must be declared ``const`` if it
-  is not modified after the class is constructed.
+  we clarify that:
+
+  * A class member variable *must* be declared ``const`` if it is not modified
+    after the class is constructed, and
+  * You *must not* use ``const`` in a function declaration where it adds no
+    meaning. That occurs in pass-by-value parameter declarations, where
+    ``const int i`` and ``int i`` mean the same thing, and in return-by-value
+    declarations, where ``int f()`` and ``const int f()`` are also synonymous.
+    You may add ``const`` to such parameter declarations in the function
+    *definition*, where it does indicate that the implementation will not
+    modify its own copy of the parameter value. The C++ standard explicitly
+    states that the signatures are identical with or without the ``const`` in
+    these cases, see `Overloadable declarations
+    <http://www.lcdf.org/c%2B%2B/clause13.html>`_. (This applies to
+    ``volatile`` also.)
 
 .. _code-style-guide-cpp-exceptions:
 
