@@ -103,10 +103,8 @@ symbolic::Expression may also be used as the scalar type of Eigen types.
 */
 class DRAKE_EXPORT Expression {
  public:
-  /** Default constructor. This is enabled only to make symbolic::Expression
-   * compatible with the Eigen data types. Expression() will construct a dummy
-   * symbolic expression and therefore should not be explicitly called.  */
-  Expression() = default;
+  /** Default constructor. It constructs Zero(). */
+  Expression() { *this = Zero(); }
 
   /** Move-construct a set from an rvalue. */
   Expression(Expression&& e) = default;
@@ -595,6 +593,67 @@ class ExpressionTanh : public UnaryExpressionCell {
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
+/** \relates Expression Return a copy of \p lhs updated to record component-wise
+ * multiplication by a constant \p rhs.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value,
+    typename MatrixL::PlainObject>::type
+operator*(const MatrixL& lhs, const double rhs) {
+  return lhs * Expression{rhs};
+}
+
+/** \relates Expression
+ * Return a copy of \p rhs updated to record component-wise multiplication by a
+ * constant \p rhs.
+ */
+template <typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixR::Scalar, Expression>::value,
+    typename MatrixR::PlainObject>::type
+operator*(const double lhs, const MatrixR& rhs) {
+  return (Expression{lhs}) * rhs;
+}
+
+/** \relates Expression
+ * Update \p lhs to record component-wise multiplication by a constant \p rhs.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value,
+    MatrixL&>::type
+operator*=(MatrixL& lhs, const double rhs) {
+  return lhs *= Expression{rhs};
+}
+
+/** \relates Expression
+ * Return a copy of \p lhs updated to record component-wise division by a
+ * constant \p rhs.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value,
+    typename MatrixL::PlainObject>::type
+operator/(const MatrixL& lhs, const double rhs) {
+  return lhs / Expression{rhs};
+}
+
+/** \relates Expression
+ * Update \p lhs to record component-wise division by a constant \p rhs.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, Expression>::value,
+    MatrixL&>::type
+operator/=(MatrixL& lhs, const double rhs) {
+  return lhs /= Expression{rhs};
+}
 }  // namespace symbolic
 
 /** Specializes is_numeric to be false for symbolic::Expression type. */
@@ -633,6 +692,7 @@ struct NumTraits<drake::symbolic::Expression>
   typedef drake::symbolic::Expression Real;
   typedef drake::symbolic::Expression NonInteger;
   typedef drake::symbolic::Expression Nested;
+  typedef drake::symbolic::Expression Literal;
   static inline Real epsilon() { return drake::symbolic::Expression::Zero(); }
   static inline Real dummy_precision() {
     return drake::symbolic::Expression::Zero();
@@ -647,6 +707,22 @@ struct NumTraits<drake::symbolic::Expression>
     AddCost = 1,
     MulCost = 1
   };
+  template <bool Vectorized>
+  struct Div {
+    enum { Cost = 1 };
+  };
 };
+
+namespace internal {
+// Eigen component-wise Matrix<Expression>::isConstant(Expression).
+template <>
+struct scalar_fuzzy_impl<drake::symbolic::Expression> {
+  static inline bool isApprox(drake::symbolic::Expression x,
+                              drake::symbolic::Expression y,
+                              drake::symbolic::Expression) {
+    return x.EqualTo(y);
+  }
+};
+}  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
