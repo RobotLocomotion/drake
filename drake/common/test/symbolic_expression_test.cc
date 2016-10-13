@@ -139,10 +139,14 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
   EXPECT_FALSE(c3_.EqualTo(-c3_));
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), -(-c3_).Evaluate());
-  // c3 and -(-c3) are structurally different
-  EXPECT_FALSE(c3_.EqualTo(-(-c3_)));
-  // but their evaluations should be the same.
+  EXPECT_TRUE(c3_.EqualTo(-(-c3_)));
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), (-(-c3_)).Evaluate());
+  const Expression e{x_ + y_};
+  const Environment env{{var_x_, 1.0}, {var_y_, 2.0}};
+  // (x + y) and -(-(x + y)) are structurally different
+  EXPECT_FALSE(e.EqualTo(-(-e)));
+  // but their evaluations should be the same.
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), (-(-e)).Evaluate(env));
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {
@@ -635,15 +639,15 @@ TEST_F(SymbolicExpressionTest, Tanh) {
 }
 
 TEST_F(SymbolicExpressionTest, GetVariables) {
-  Variables const vars1 = (x_ + y_ * log(x_ + y_)).GetVariables();
+  Variables const vars1{(x_ + y_ * log(x_ + y_)).GetVariables()};
   EXPECT_TRUE(vars1.include(var_x_));
   EXPECT_TRUE(vars1.include(var_y_));
   EXPECT_FALSE(vars1.include(var_z_));
   EXPECT_EQ(vars1.size(), 2u);
 
-  Variables const vars2 =
+  Variables const vars2{
       (x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) + cosh(y_))
-          .GetVariables();
+          .GetVariables()};
   EXPECT_TRUE(vars2.include(var_x_));
   EXPECT_TRUE(vars2.include(var_y_));
   EXPECT_TRUE(vars2.include(var_z_));
@@ -651,8 +655,8 @@ TEST_F(SymbolicExpressionTest, GetVariables) {
 }
 
 TEST_F(SymbolicExpressionTest, Swap) {
-  Expression e1 = sin(x_ + y_ * z_);
-  Expression e2 = cos(x_ * x_ + pow(y_, 2) * z_);
+  Expression e1{sin(x_ + y_ * z_)};
+  Expression e2{(x_ * x_ + pow(y_, 2) * z_)};
   const Expression e1_copy{e1};
   const Expression e2_copy{e2};
 
@@ -668,11 +672,132 @@ TEST_F(SymbolicExpressionTest, Swap) {
 }
 
 TEST_F(SymbolicExpressionTest, ToString) {
-  const Expression e1 = sin(x_ + y_ * z_);
-  const Expression e2 = cos(x_ * x_ + pow(y_, 2) * z_);
+  const Expression e1{sin(x_ + y_ * z_)};
+  const Expression e2{cos(x_ * x_ + pow(y_, 2) * z_)};
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((x * x) + (pow(y, 2) * z)))");
+}
+
+class SymbolicExpressionMatrixTest : public ::testing::Test {
+ protected:
+  const Variable var_x_{"x"};
+  const Variable var_y_{"y"};
+  const Variable var_z_{"z"};
+  const Expression x_{var_x_};
+  const Expression y_{var_y_};
+  const Expression z_{var_z_};
+
+  const Expression zero_{0.0};
+  const Expression one_{1.0};
+  const Expression two_{2.0};
+  const Expression neg_one_{-1.0};
+  const Expression pi_{3.141592};
+  const Expression neg_pi_{-3.141592};
+  const Expression e_{2.718};
+
+  Eigen::Matrix<Expression, 3, 2> A_;
+  Eigen::Matrix<Expression, 2, 3> B_;
+  Eigen::Matrix<Expression, 3, 2> C_;
+
+  void SetUp() {
+    // clang-format off
+    A_ << x_, one_,       //  [x  1]
+          y_, neg_one_,   //  [y -1]
+          z_, pi_;        //  [z  3.141592]
+
+    B_ << x_, y_,  z_,    //  [x     y        z]
+          e_, pi_, two_;  //  [2.718 3.141592 2]
+
+    C_ << z_, two_,       //  [z  2]
+          x_, e_,         //  [x -2.718]
+          y_, pi_;        //  [y  3.141592]
+    // clang-format on
+  }
+};
+
+TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
+  auto const M = A_ + A_;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected << (x_ + x_), (one_ + one_),
+                (y_ + y_), (neg_one_ + neg_one_),
+                (z_ + z_), (pi_ + pi_);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
+  auto const M = A_ - A_;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  EXPECT_EQ(M, M_expected);  // should be all zero.
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
+  auto const M = A_ - C_;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected << (x_ - z_), (one_ - two_),
+                (y_ - x_), (neg_one_ - e_),
+                (z_ - y_), (pi_ - pi_);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);  // should be all zero.
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
+  auto const M = A_ * B_;
+  Eigen::Matrix<Expression, 3, 3> M_expected;
+  // clang-format off
+  M_expected <<
+    (x_ * x_ + e_),       (x_ * y_ + pi_),       (x_ * z_ + two_),
+    (y_ * x_ + -e_),      (y_ * y_ + - pi_),     (y_ * z_ + - two_),
+    (z_ * x_ + pi_ * e_), (z_ * y_ + pi_ * pi_), (z_ * z_ + pi_ * two_);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
+  auto const M = B_ * A_;
+  Eigen::Matrix<Expression, 2, 2> M_expected;
+  // clang-format off
+  M_expected <<
+    (x_ * x_ + (y_ * y_ + z_ * z_)),      (x_ + (-y_ + z_ * pi_)),
+    (e_ * x_ + (pi_ * y_ + two_ * z_)), (e_ * one_ + pi_ * - one_ + two_ * pi_);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
+  auto const M = 2 * A_;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected << (2 * x_), (2 * one_),
+                (2 * y_), (2 * neg_one_),
+                (2 * z_), (2 * pi_);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
+  auto const M = A_ * 2;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected << (x_ * 2), (one_ * 2),
+                (y_ * 2), (neg_one_ * 2),
+                (z_ * 2), (pi_ * 2);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
+  auto const M = A_ / 2;
+  Eigen::Matrix<Expression, 3, 2> M_expected;
+  // clang-format off
+  M_expected << (x_ / 2), (one_ / 2),
+                (y_ / 2), (neg_one_ / 2),
+                (z_ / 2), (pi_ / 2);
+  // clang-format on
+  EXPECT_EQ(M, M_expected);
 }
 }  // namespace
 }  // namespace symbolic
