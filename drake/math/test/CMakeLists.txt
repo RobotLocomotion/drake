@@ -1,5 +1,6 @@
 drake_add_cc_test(autodiff_test)
 drake_add_cc_test(cross_product_test)
+drake_add_cc_test(eigen_sparse_triplet_test)
 drake_add_cc_test(expmap_test)
 drake_add_cc_test(rotation_conversion_test)
 target_link_libraries(rotation_conversion_test drakeCommon)
