@@ -122,7 +122,7 @@ class BasicVector : public VectorBase<T> {
 
  protected:
   explicit BasicVector(const BasicVector& other)
-      : values_(other.values_) {}
+      : VectorBase<T>(), values_(other.values_) {}
 
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership.
