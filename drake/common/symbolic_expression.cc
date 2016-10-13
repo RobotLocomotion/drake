@@ -509,7 +509,7 @@ ExpressionLog::ExpressionLog(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Log, e.get_hash(), e} {}
 
 void ExpressionLog::check_domain(double const v) {
-  if (v < 0) {
+  if (!(v >= 0)) {
     ostringstream oss;
     oss << "log(" << v << ") : numerical argument out of domain. " << v
         << " is not in [0, +oo)" << endl;
@@ -557,7 +557,7 @@ ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e.get_hash(), e} {}
 
 void ExpressionSqrt::check_domain(double const v) {
-  if (v < 0) {
+  if (!(v >= 0)) {
     ostringstream oss;
     oss << "sqrt(" << v << ") : numerical argument out of domain. " << v
         << " is not in [0, +oo)" << endl;
@@ -649,7 +649,7 @@ ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e.get_hash(), e} {}
 
 void ExpressionAsin::check_domain(double const v) {
-  if (v < -1.0 || v > 1.0) {
+  if (!((v >= -1.0) && (v <= 1.0))) {
     ostringstream oss;
     oss << "asin(" << v << ") : numerical argument out of domain. " << v
         << " is not in [-1.0, +1.0]" << endl;
@@ -672,7 +672,7 @@ ExpressionAcos::ExpressionAcos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Acos, e.get_hash(), e} {}
 
 void ExpressionAcos::check_domain(double const v) {
-  if (v < -1.0 || v > 1.0) {
+  if (!((v >= -1.0) && (v <= 1.0))) {
     ostringstream oss;
     oss << "acos(" << v << ") : numerical argument out of domain. " << v
         << " is not in [-1.0, +1.0]" << endl;
