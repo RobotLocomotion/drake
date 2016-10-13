@@ -38,6 +38,14 @@ while true; do
   esac
 done
 
+# Check if CMake is already installed
+if command -v cmake 2>/dev/null; then
+  echo "CMake is already installed."
+else
+  apt install --no-install-recommends cmake
+  apt install --no-install-recommends cmake-curses-gui
+fi
+
 # Install the APT dependencies.
 # TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
@@ -45,10 +53,10 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 autoconf
 automake
 bison
-cmake
-cmake-curses-gui
 default-jdk
 doxygen
+flex
+freeglut3-dev
 g++-5
 g++-5-multilib
 gdb
