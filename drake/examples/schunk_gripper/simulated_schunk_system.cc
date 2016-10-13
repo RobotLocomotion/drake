@@ -1,5 +1,7 @@
 #include "drake/examples/schunk_gripper/simulated_schunk_system.h"
 
+#include "drake/common/drake_export.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/common/drake_path.h"
 
 namespace drake {
@@ -9,7 +11,6 @@ namespace schunk_gripper {
 template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkSystem() {
-  // Instantiates a Multibody Dynamics (MBD) model of the world.
   auto rigid_body_tree = std::make_unique<RigidBodyTree>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
@@ -17,10 +18,8 @@ CreateSimulatedSchunkSystem() {
       drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
 
-  std::unique_ptr<drake::systems::RigidBodyPlant<T>> ret =
-      std::make_unique<drake::systems::RigidBodyPlant<T>>(
-          std::move(rigid_body_tree));
-  return ret;
+  return std::make_unique<drake::systems::RigidBodyPlant<T>>(
+      std::move(rigid_body_tree));
 }
 
 template DRAKE_EXPORT std::unique_ptr<drake::systems::RigidBodyPlant<double>>

@@ -2,7 +2,7 @@ package schunk_driver;
 
 struct lcmt_schunk_status
 {
-  int64_t timestamp;
+  int64_t timestamp;  //< The timestamp in microseconds.
 
   double actual_position_mm;
   double actual_force;

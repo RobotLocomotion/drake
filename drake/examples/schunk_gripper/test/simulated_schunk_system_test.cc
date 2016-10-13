@@ -2,12 +2,13 @@
 
 #include <map>
 #include <memory>
+
 #include <gtest/gtest.h>
 
-#include "drake/lcm/drake_lcm.h"
-#include "drake/systems/analysis/simulator.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
@@ -25,7 +26,7 @@ GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
   const systems::RigidBodyPlant<double>* schunk =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           CreateSimulatedSchunkSystem<double>());
-  EXPECT_NE(schunk, nullptr);
+  ASSERT_NE(schunk, nullptr);
   const RigidBodyTree& tree = schunk->get_rigid_body_tree();
 
   // The simulated Schunk plant has seven links (the gripper body, two

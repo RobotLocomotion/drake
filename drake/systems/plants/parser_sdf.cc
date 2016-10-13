@@ -567,6 +567,8 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
 
+    // This log statement is required for users to work around #3673, and can
+    // be removed when that issue is resolved.
     drake::log()->info("Made joint {} a loop joint.", name);
   } else {
     // Update the reference frames of the child link's inertia, visual,
@@ -583,6 +585,8 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
            << " not found! Cannot update its local frame to be that of joint.";
         throw std::runtime_error(ss.str());
       }
+      // This log statement is required for users to work around #3673, and
+      // can be removed when that issue is resolved.
       drake::log()->info("Adding joint {} to the plant.", name);
     }
 

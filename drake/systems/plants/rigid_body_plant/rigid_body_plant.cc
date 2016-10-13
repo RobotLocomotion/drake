@@ -22,8 +22,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
-    tree_(move(tree)) {
+RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
+    : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
 
   // The input to this system are the generalized forces commanded on the
