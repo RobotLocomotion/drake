@@ -205,7 +205,13 @@ Expression& operator-=(Expression& lhs, double const rhs) {
 }
 
 Expression operator-(Expression e) {
-  return Expression{make_shared<ExpressionNeg>(e)};
+  if (e.get_kind() == ExpressionKind::Constant) {
+    double const v =
+      static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
+    return Expression{-v};
+  } else {
+    return Expression{make_shared<ExpressionNeg>(e)};
+  }
 }
 
 Expression& Expression::operator--() {
@@ -244,16 +250,26 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   if (rhs.EqualTo(Expression::One())) {
     return lhs;
   }
-  // simplification #3 : 0 * x => 0
+  // simplification #3 : -1 * x => -x
+  if (lhs.EqualTo(-Expression::One())) {
+    lhs = -rhs;
+    return lhs;
+  }
+  // simplification #4 : x * -1 => -x
+  if (rhs.EqualTo(-Expression::One())) {
+    lhs = -lhs;
+    return lhs;
+  }
+  // simplification #5 : 0 * x => 0
   if (lhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
-  // simplification #4 : x * 0 => 0
+  // simplification #6 : x * 0 => 0
   if (rhs.EqualTo(Expression::Zero())) {
     lhs = Expression::Zero();
     return lhs;
   }
-  // simplification #5 : Expression(c1) * Expression(c2) => Expression(c1 * c2)
+  // simplification #7 : Expression(c1) * Expression(c2) => Expression(c1 * c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
     double const v1 =
