@@ -1,5 +1,5 @@
 macro(add_constraint_mex)
-  add_mex(${ARGV} ${ARGV}.cpp)
+  drake_add_mex(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
   # These warnings are not worth fixing.
   target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
@@ -14,8 +14,8 @@ pods_install_pkg_config_file(drake-rigid-body-constraint
   REQUIRES
   VERSION 0.0.1)
 
-if(MATLAB_FOUND)
-  add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
+if(Matlab_FOUND)
+  drake_add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
   target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeMexUtil drakeGeometryUtil)
   pods_install_libraries(drakeConstructRigidBodyConstraint)
   add_constraint_mex(testSingleTimeKinCnstmex)

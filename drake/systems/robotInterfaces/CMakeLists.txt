@@ -19,18 +19,18 @@ if(lcm_FOUND)
     VERSION 0.0.1)
 endif()
 
-if(MATLAB_FOUND)
-  add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
+if(Matlab_FOUND)
+  drake_add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
 
   find_package(octomap)
 
   if(octomap_FOUND)
-    add_mex(octomapWrapper octomapWrapper.cpp)
+    drake_add_mex(octomapWrapper octomapWrapper.cpp)
     target_link_libraries(octomapWrapper drakeUtil drakeMexUtil octomap)
   endif()
 
   if(lcm_FOUND AND NOT WIN32)
-    add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
+    drake_add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
     target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil drakeZMPUtil drakeMexUtil)
 
     add_subdirectory(@QPLocomotionPlanCPPWrapper)

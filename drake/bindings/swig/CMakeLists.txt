@@ -51,7 +51,7 @@ if(PYTHON_EXECUTABLE)
   endif()
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   if(SWIG_HAS_MATLAB_SUPPORT)
     # TODO: we can remove this check when mainline SWIG gets MATLAB support someday, or when we figure out how to build swig-matlab on Windows
     set(matlab_install_subdir ${CMAKE_BINARY_DIR}/bindings/matlab)

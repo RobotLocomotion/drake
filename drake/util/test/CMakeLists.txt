@@ -1,19 +1,19 @@
 # tk 20141113 debugMexTest causes compilation errors on Ubuntu 32 bit
 # See https://github.com/RobotLocomotion/drake/issues/553
 # debugMexTester.m and debugMexTest.cpp were moved to dev
-# add_mex(debugMexTest debugMexTest.cpp)
+# drake_add_mex(debugMexTest debugMexTest.cpp)
 
 drake_add_cc_test(NAME testDrakeGradientUtil EXTENSION cpp SIZE medium)
 target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
 
-if(MATLAB_FOUND)
-  add_mex(testQuatmex testQuatmex.cpp)
+if(Matlab_FOUND)
+  drake_add_mex(testQuatmex testQuatmex.cpp)
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
-  add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
+  drake_add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
   target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeMexUtil)
 
-  add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
+  drake_add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil drakeMexUtil)
 endif()
 

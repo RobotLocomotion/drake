@@ -1,6 +1,6 @@
 find_package(Bullet)
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   add_rbm_mex(compareParsersmex)
 endif()
 
@@ -56,9 +56,9 @@ target_link_libraries(debugManipulatorDynamics drakeRBM)
 add_executable(benchmarkRigidBodyTree benchmarkRigidBodyTree.cpp)
 target_link_libraries(benchmarkRigidBodyTree drakeRBM)
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   macro(add_ikoptions_mex)
-    add_mex(${ARGV} ${ARGV}.cpp)
+    drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
   endmacro()
   add_ikoptions_mex(testIKoptionsmex)
