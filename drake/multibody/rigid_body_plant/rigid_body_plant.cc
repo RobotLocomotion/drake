@@ -511,6 +511,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
   VectorX<T> contact_force(v.rows(), 1);
   contact_force.setZero();
+  // TODO(SeanCurtis-TRI): Determine if a distance of zero should be reported
+  //  as a zero-force contact.
   for (int i = 0; i < phi.rows(); i++) {
     if (phi(i) < 0.0) {  // There is contact.
       int bodyA_idx = elA_idx[i]->get_body()->get_body_index();
@@ -574,7 +576,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           wrench.head(3) = R.transpose() * fA;
           wrench.tail(3).setZero();
 
-          // TODO(SeanCurtis-TRI): Get real elemetn ids.
+          // TODO(SeanCurtis-TRI): This call would have to change based on the
+          //  contact model.  This call instantiates a smapled contact manifold.
+          //  Other contact models would have to instantiate an alterate
+          //  representation.
           contacts->AddContact(elA_idx[i]->getId(), elB_idx[i]->getId(),
               point, wrench);
         }
