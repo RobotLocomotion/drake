@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-  <model name='Schunk_Gripper'>
+  <model name='limited_prismatic_test_model'>
     <link name='body'>
       <pose frame=''>0 -0.049133 0 0 -0 0</pose>
       <inertial>
