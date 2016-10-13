@@ -266,5 +266,5 @@ TEST_F(SymbolicFormulaTest, ToString) {
   EXPECT_EQ(f4.to_string(), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
 }
 }  // namespace
-}  // namespace sy_mbolic
+}  // namespace symbolic
 }  // namespace drake

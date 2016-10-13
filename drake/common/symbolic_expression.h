@@ -248,24 +248,80 @@ class ExpressionCell {
  protected:
   /** Default constructor. */
   ExpressionCell() = default;
-
   /** Move-construct a set from an rvalue. */
   ExpressionCell(ExpressionCell&& e) = default;
-
   /** Copy-construct a set from an lvalue. */
   ExpressionCell(const ExpressionCell& e) = default;
-
   /** Move-assign a set from an rvalue. */
   ExpressionCell& operator=(ExpressionCell&& e) = default;
-
   /** Copy-assign a set from an lvalue. */
   ExpressionCell& operator=(const ExpressionCell& e) = default;
-
+  /** Construct ExpressionCell of kind \p k with \p hash. */
   ExpressionCell(ExpressionKind k, size_t hash);
 
  private:
   const ExpressionKind kind_{};
   const size_t hash_{};
+};
+
+/** Represents the base class for unary expressions.  */
+class UnaryExpressionCell : public ExpressionCell {
+ public:
+  /** Collects variables in expression. */
+  Variables GetVariables() const override;
+  /** Checks structural equality. */
+  bool EqualTo(const ExpressionCell& c) const override;
+
+ protected:
+  /** Default constructor (DELETED). */
+  UnaryExpressionCell() = delete;
+  /** Move-construct a set from an rvalue. */
+  UnaryExpressionCell(UnaryExpressionCell&& e) = default;
+  /** Copy-construct a set from an lvalue. */
+  UnaryExpressionCell(const UnaryExpressionCell& e) = default;
+  /** Move-assign a set from an rvalue. */
+  UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = default;
+  /** Copy-assign a set from an lvalue. */
+  UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = default;
+  /** Constructs UnaryExpressionCell of kind \p k with \p hash. */
+  UnaryExpressionCell(ExpressionKind k, size_t hash, const Expression& e);
+  /** Returns the nested expression. */
+  const Expression& get_expression() const { return e_; }
+
+ private:
+  const Expression e_;
+};
+
+/** Represents the base class for binary expressions.  */
+class BinaryExpressionCell : public ExpressionCell {
+ public:
+  /** Collects variables in expression. */
+  Variables GetVariables() const override;
+  /** Checks structural equality. */
+  bool EqualTo(const ExpressionCell& c) const override;
+
+ protected:
+  /** Default constructor (DELETED). */
+  BinaryExpressionCell() = delete;
+  /** Move-construct a set from an rvalue. */
+  BinaryExpressionCell(BinaryExpressionCell&& e) = default;
+  /** Copy-construct a set from an lvalue. */
+  BinaryExpressionCell(const BinaryExpressionCell& e) = default;
+  /** Move-assign a set from an rvalue. */
+  BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = default;
+  /** Copy-assign a set from an lvalue. */
+  BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = default;
+  /** Constructs BinaryExpressionCell of kind \p k with \p hash. */
+  BinaryExpressionCell(ExpressionKind k, size_t hash, const Expression& e1,
+                       const Expression& e2);
+  /** Returns the first expression (e1_). */
+  const Expression& get_1st_expression() const { return e1_; }
+  /** Returns the second expression (e2_). */
+  const Expression& get_2nd_expression() const { return e2_; }
+
+ private:
+  const Expression e1_;
+  const Expression e2_;
 };
 
 /** Symbolic expression representing a variable. */
@@ -297,143 +353,96 @@ class ExpressionConstant : public ExpressionCell {
 };
 
 /** Symbolic expression representing unary minus. */
-class ExpressionNeg : public ExpressionCell {
+class ExpressionNeg : public UnaryExpressionCell {
  public:
   explicit ExpressionNeg(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing addition. */
-class ExpressionAdd : public ExpressionCell {
+class ExpressionAdd : public BinaryExpressionCell {
  public:
   ExpressionAdd(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic expression representing subtraction. */
-class ExpressionSub : public ExpressionCell {
+class ExpressionSub : public BinaryExpressionCell {
  public:
   ExpressionSub(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic expression representing multiplication. */
-class ExpressionMul : public ExpressionCell {
+class ExpressionMul : public BinaryExpressionCell {
  public:
   ExpressionMul(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic expression representing division. */
-class ExpressionDiv : public ExpressionCell {
+class ExpressionDiv : public BinaryExpressionCell {
  public:
   ExpressionDiv(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic expression representing logarithms. */
-class ExpressionLog : public ExpressionCell {
+class ExpressionLog : public UnaryExpressionCell {
  public:
   explicit ExpressionLog(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression log(const Expression& e);
 
  private:
-  const Expression e_;
   /* Throws std::domain_error if v ∉ [0, +oo). */
   static void check_domain(double v);
 };
 
 /** Symbolic expression representing absolute value function. */
-class ExpressionAbs : public ExpressionCell {
+class ExpressionAbs : public UnaryExpressionCell {
  public:
   explicit ExpressionAbs(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression abs(const Expression& e);
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing exponentiation using the base of
  * natural logarithms. */
-class ExpressionExp : public ExpressionCell {
+class ExpressionExp : public UnaryExpressionCell {
  public:
   explicit ExpressionExp(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing square-root. */
-class ExpressionSqrt : public ExpressionCell {
+class ExpressionSqrt : public UnaryExpressionCell {
  public:
   explicit ExpressionSqrt(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression sqrt(const Expression& e);
 
  private:
-  const Expression e_;
   /* Throws std::domain_error if v ∉ [0, +oo). */
   static void check_domain(double v);
 };
 
 /** Symbolic expression representing power function. */
-class ExpressionPow : public ExpressionCell {
+class ExpressionPow : public BinaryExpressionCell {
  public:
   explicit ExpressionPow(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -443,151 +452,102 @@ class ExpressionPow : public ExpressionCell {
   friend DRAKE_EXPORT Expression pow(const Expression& e1, double v2);
 
  private:
-  const Expression e1_;
-  const Expression e2_;
   /* Throws std::domain_error if v1 is finite negative and v2 is finite
      non-integer. */
   static void check_domain(double v1, double v2);
 };
 
 /** Symbolic expression representing sine function. */
-class ExpressionSin : public ExpressionCell {
+class ExpressionSin : public UnaryExpressionCell {
  public:
   explicit ExpressionSin(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing cosine function. */
-class ExpressionCos : public ExpressionCell {
+class ExpressionCos : public UnaryExpressionCell {
  public:
   explicit ExpressionCos(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing tangent function. */
-class ExpressionTan : public ExpressionCell {
+class ExpressionTan : public UnaryExpressionCell {
  public:
   explicit ExpressionTan(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing arcsine function. */
-class ExpressionAsin : public ExpressionCell {
+class ExpressionAsin : public UnaryExpressionCell {
  public:
   explicit ExpressionAsin(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression asin(const Expression& e);
 
  private:
-  const Expression e_;
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
   static void check_domain(double v);
 };
 
 /** Symbolic expression representing arccosine function. */
-class ExpressionAcos : public ExpressionCell {
+class ExpressionAcos : public UnaryExpressionCell {
  public:
   explicit ExpressionAcos(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression acos(const Expression& e);
 
  private:
-  const Expression e_;
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
   static void check_domain(double v);
 };
 
 /** Symbolic expression representing arctangent function. */
-class ExpressionAtan : public ExpressionCell {
+class ExpressionAtan : public UnaryExpressionCell {
  public:
   explicit ExpressionAtan(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing atan2 function (arctangent function with
  * two arguments). atan2(y, x) is defined as atan(y/x). */
-class ExpressionAtan2 : public ExpressionCell {
+class ExpressionAtan2 : public BinaryExpressionCell {
  public:
   explicit ExpressionAtan2(const Expression& e1, const Expression& e2);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic expression representing hyperbolic sine function. */
-class ExpressionSinh : public ExpressionCell {
+class ExpressionSinh : public UnaryExpressionCell {
  public:
   explicit ExpressionSinh(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing hyperbolic cosine function. */
-class ExpressionCosh : public ExpressionCell {
+class ExpressionCosh : public UnaryExpressionCell {
  public:
   explicit ExpressionCosh(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 /** Symbolic expression representing hyperbolic tangent function. */
-class ExpressionTanh : public ExpressionCell {
+class ExpressionTanh : public UnaryExpressionCell {
  public:
   explicit ExpressionTanh(const Expression& e);
-  Variables GetVariables() const override;
-  bool EqualTo(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e_;
 };
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
