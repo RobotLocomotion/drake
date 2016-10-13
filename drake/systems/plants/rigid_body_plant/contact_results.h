@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <set>
 #include <vector>
 
 #include "drake/common/drake_export.h"
@@ -25,7 +24,7 @@ class DRAKE_EXPORT ContactResults {
   size_t get_num_contacts() const;
 
   /** Returns the ContactInfor for the ith collision element pair. */
-  const ContactInfo<T>& get_contact_info(size_t i);
+  const ContactInfo<T>& get_contact_info(size_t i) const;
 
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
   // information (e.g, query by body, etc.)
@@ -47,29 +46,16 @@ class DRAKE_EXPORT ContactResults {
   /**
    Adds a contact between two collision elements into the contact set.
    @param elementA      The first element in the collision.
-   @param elemetnB      The second element in the collision.
+   @param elementB      The second element in the collision.
    @param point         The point (expressed in the world frame) at which the
                         force is applied.
    @param force         The contact Force applied to A.  Its negative would be
                         applied to B.
    */
   void AddContact( DrakeCollision::ElementId elementA,
-                   DrakeCollision::ElementId elemetnB,
+                   DrakeCollision::ElementId elementB,
                    const Vector3<T> & point, const WrenchVector<T> & force);
 
-
-//  /**
-//   * For use in the set, the ordering of contact info is first by element 1 and
-//   * then by element 2.
-//   */
-//  struct Compare {
-//    bool operator()(const ContactInfo<T>& i1, const ContactInfo<T>& i2) {
-//      if (i1.element1_ < i2.element1_) return true;
-//      else if (i1.element1_ > i2.element1_) return false;
-//      else return i1.element2_ < i2.element2_;
-//    }
-//  };
-//  std::set<ContactInfo<T>, Compare> contacts_;
   std::vector<ContactInfo<T>> contacts_;
 };
 }  // namespace systems
