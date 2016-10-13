@@ -166,19 +166,93 @@ DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
  */
 class FormulaCell {
  public:
+  /** Default constructor (deleted). */
+  FormulaCell() = delete;
+  /** Move-construct a set from an rvalue. */
+  FormulaCell(FormulaCell&& f) = default;
+  /** Copy-construct a set from an lvalue. */
+  FormulaCell(const FormulaCell& f) = default;
+  /** Move-assign a set from an rvalue. */
+  FormulaCell& operator=(FormulaCell&& f) = default;
+  /** Copy-assign a set from an lvalue. */
+  FormulaCell& operator=(const FormulaCell& f) = default;
+  /** Construct FormulaCell of kind \p k with \p hash. */
   FormulaCell(FormulaKind k, size_t hash);
+  /** Returns kind of formula. */
   FormulaKind get_kind() const { return kind_; }
+  /** Returns hash of formula. */
   size_t get_hash() const { return hash_; }
+  /** Returns set of free variables in formula. */
   virtual Variables GetFreeVariables() const = 0;
   /** Checks structural equality. */
   virtual bool EqualTo(const FormulaCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual bool Evaluate(const Environment& env) const = 0;
+  /** Output string representation of formula into output stream \p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  private:
   const FormulaKind kind_{};
   const size_t hash_{};
+};
+
+/** Represents the base class for relational operators (==, !=, <, <=, >, >=).
+ */
+class RelationalFormulaCell : public FormulaCell {
+ protected:
+  /** Default constructor (deleted). */
+  RelationalFormulaCell() = delete;
+  /** Move-construct a set from an rvalue. */
+  RelationalFormulaCell(RelationalFormulaCell&& f) = default;
+  /** Copy-construct a set from an lvalue. */
+  RelationalFormulaCell(const RelationalFormulaCell& f) = default;
+  /** Move-assign a set from an rvalue. */
+  RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = default;
+  /** Copy-assign a set from an lvalue. */
+  RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = default;
+  /** Construct RelationalFormulaCell of kind \p k with \p hash. */
+  RelationalFormulaCell(FormulaKind k, size_t hash, const Expression& e1,
+                        const Expression& e2);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+
+  /** Returns the first expression. */
+  const Expression& get_1st_expression() const { return e1_; }
+  /** Returns the second expression. */
+  const Expression& get_2nd_expression() const { return e2_; }
+
+ private:
+  const Expression e1_;
+  const Expression e2_;
+};
+
+/** Represents the base class for binary logic operators (∧ and ∨).
+ */
+class BinaryFormulaCell : public FormulaCell {
+ protected:
+  /** Default constructor (deleted). */
+  BinaryFormulaCell() = delete;
+  /** Move-construct a set from an rvalue. */
+  BinaryFormulaCell(BinaryFormulaCell&& f) = default;
+  /** Copy-construct a set from an lvalue. */
+  BinaryFormulaCell(const BinaryFormulaCell& f) = default;
+  /** Move-assign a set from an rvalue. */
+  BinaryFormulaCell& operator=(BinaryFormulaCell&& f) = default;
+  /** Copy-assign a set from an lvalue. */
+  BinaryFormulaCell& operator=(const BinaryFormulaCell& f) = default;
+  /** Construct BinaryFormulaCell of kind \p k with \p hash. */
+  BinaryFormulaCell(FormulaKind k, size_t hash, const Formula& f1,
+                    const Formula& f2);
+  Variables GetFreeVariables() const override;
+  bool EqualTo(const FormulaCell& f) const override;
+  /** Returns the first formula. */
+  const Formula& get_1st_formula() const { return f1_; }
+  /** Returns the second formula. */
+  const Formula& get_2nd_formula() const { return f2_; }
+
+ private:
+  const Formula f1_;
+  const Formula f2_;
 };
 
 /** Symbolic formula representing true. */
@@ -202,115 +276,67 @@ class FormulaFalse : public FormulaCell {
 };
 
 /** Symbolic formula representing equality (e1 = e2). */
-class FormulaEq : public FormulaCell {
+class FormulaEq : public RelationalFormulaCell {
  public:
   FormulaEq(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing disequality (e1 ≠ e2). */
-class FormulaNeq : public FormulaCell {
+class FormulaNeq : public RelationalFormulaCell {
  public:
   FormulaNeq(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing 'greater-than' (e1 > e2). */
-class FormulaGt : public FormulaCell {
+class FormulaGt : public RelationalFormulaCell {
  public:
   FormulaGt(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing 'greater-than-or-equal-to' (e1 ≥ e2). */
-class FormulaGeq : public FormulaCell {
+class FormulaGeq : public RelationalFormulaCell {
  public:
   FormulaGeq(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing 'less-than' (e1 < e2). */
-class FormulaLt : public FormulaCell {
+class FormulaLt : public RelationalFormulaCell {
  public:
   FormulaLt(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing 'less-than-or-equal-to' (e1 ≤ e2). */
-class FormulaLeq : public FormulaCell {
+class FormulaLeq : public RelationalFormulaCell {
  public:
   FormulaLeq(const Expression& e1, const Expression& e2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Expression e1_;
-  const Expression e2_;
 };
 
 /** Symbolic formula representing conjunctions (f1 ∧ f2). */
-class FormulaAnd : public FormulaCell {
+class FormulaAnd : public BinaryFormulaCell {
  public:
   FormulaAnd(const Formula& f1, const Formula& f2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Formula f1_;
-  const Formula f2_;
 };
 
 /** Symbolic formula representing disjunctions (f1 ∨ f2). */
-class FormulaOr : public FormulaCell {
+class FormulaOr : public BinaryFormulaCell {
  public:
   FormulaOr(const Formula& f1, const Formula& f2);
-  Variables GetFreeVariables() const override;
-  bool EqualTo(const FormulaCell& f) const override;
   bool Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
-
- private:
-  const Formula f1_;
-  const Formula f2_;
 };
 
 /** Symbolic formula representing negations (¬f). */
