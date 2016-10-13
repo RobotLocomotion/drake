@@ -140,22 +140,22 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   EXPECT_EQ(ogvec.GetAtIndex(1), 4);
 
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2, v1, 3, v2);
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}});
   EXPECT_EQ(ogvec.GetAtIndex(0), 11);
   EXPECT_EQ(ogvec.GetAtIndex(1), 19);
 
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3);
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
   EXPECT_EQ(ogvec.GetAtIndex(0), 46);
   EXPECT_EQ(ogvec.GetAtIndex(1), 74);
 
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3, 7, v4);
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
   EXPECT_EQ(ogvec.GetAtIndex(0), 137);
   EXPECT_EQ(ogvec.GetAtIndex(1), 193);
 
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2, v1, 3, v2, 5, v3, 7, v4, 11, v5);
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
   EXPECT_EQ(ogvec.GetAtIndex(0), 346);
   EXPECT_EQ(ogvec.GetAtIndex(1), 446);
 }

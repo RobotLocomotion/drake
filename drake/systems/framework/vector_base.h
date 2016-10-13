@@ -107,7 +107,7 @@ class VectorBase {
     return *this;
   }
 
-  /// Add in two scaled vectors, @p rhs1 and @p rh2 to this vector. All vectors
+  /// Add in multiple scaled vectors to this vector. All vectors
   /// must be the same size. This specialized function serves to minimize
   /// memory access.
   ///
@@ -115,89 +115,18 @@ class VectorBase {
   /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                                   const T& scale2, const VectorBase<T>& rhs2) {
-    if (rhs1.size() != size() || rhs2.size() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
+  virtual VectorBase& PlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>&
+          rhs_scale) {
+    for (auto j : rhs_scale) {
+      if (j.second.size() != size())
+        throw std::out_of_range("Addends must be the same size.");
     }
-    for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + scale1 * rhs1.GetAtIndex(i) +
-                        scale2 * rhs2.GetAtIndex(i));
-    }
-    return *this;
-  }
 
-  /// Add in three scaled vectors @p rhs1, @p rhs2, and @p rhs3 to this vector.
-  /// All vectors must be the same size. This specialized function
-  /// serves to minimize memory access.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                                   const T& scale2, const VectorBase<T>& rhs2,
-                                   const T& scale3, const VectorBase<T>& rhs3) {
-    if (rhs1.size() != size() || rhs2.size() != size() ||
-        rhs3.size() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
     for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + scale1 * rhs1.GetAtIndex(i) +
-                        scale2 * rhs2.GetAtIndex(i) +
-                        scale3 * rhs3.GetAtIndex(i));
-    }
-    return *this;
-  }
-
-  /// Adds in four scaled vectors @p rhs1, @p rhs2, @p rhs3, and @p rhs4 to this
-  /// vector. All vectors must be the same size. This specialized function
-  /// serves to minimize memory access.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                                   const T& scale2, const VectorBase<T>& rhs2,
-                                   const T& scale3, const VectorBase<T>& rhs3,
-                                   const T& scale4, const VectorBase<T>& rhs4) {
-    if (rhs1.size() != size() || rhs2.size() != size() ||
-        rhs3.size() != size() || rhs4.size() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
-    for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + scale1 * rhs1.GetAtIndex(i) +
-                        scale2 * rhs2.GetAtIndex(i) +
-                        scale3 * rhs3.GetAtIndex(i) +
-                        scale4 * rhs4.GetAtIndex(i));
-    }
-    return *this;
-  }
-
-  /// Adds in five scaled vectors @p rhs1, @p rhs2, @p rhs3, @p rhs4, and
-  /// @p rhs5 to this vector. All vectors must be the same size. This
-  /// specialized function serves to minimize memory access.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                                   const T& scale2, const VectorBase<T>& rhs2,
-                                   const T& scale3, const VectorBase<T>& rhs3,
-                                   const T& scale4, const VectorBase<T>& rhs4,
-                                   const T& scale5, const VectorBase<T>& rhs5) {
-    if (rhs1.size() != size() || rhs2.size() != size() ||
-        rhs3.size() != size() || rhs4.size() != size() ||
-        rhs5.size() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
-    for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i,
-                 GetAtIndex(i) + scale1 * rhs1.GetAtIndex(i) +
-                     scale2 * rhs2.GetAtIndex(i) + scale3 * rhs3.GetAtIndex(i) +
-                     scale4 * rhs4.GetAtIndex(i) + scale5 * rhs5.GetAtIndex(i));
+      T value(0);
+      for (auto j : rhs_scale) value += j.second.GetAtIndex(i) * j.first;
+      SetAtIndex(i, GetAtIndex(i) + value);
     }
     return *this;
   }

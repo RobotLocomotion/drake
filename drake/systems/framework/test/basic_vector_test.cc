@@ -124,25 +124,25 @@ GTEST_TEST(BasicVectorTest, PlusEqScaled) {
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2.0, v1, 3.0, v2);
+  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}});
   ans2 << 11.0, 19.0;
   EXPECT_TRUE(CompareMatrices(ans2, ogvec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2.0, v1, 3.0, v2, 5.0, v3);
+  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}});
   ans3 << 46.0, 74.0;
   EXPECT_TRUE(CompareMatrices(ans3, ogvec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2.0, v1, 3.0, v2, 5.0, v3, 7.0, v4);
+  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}, {7.0, v4}});
   ans4 << 137.0, 193.0;
   EXPECT_TRUE(CompareMatrices(ans4, ogvec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
                               MatrixCompareType::absolute));
   ogvec.SetZero();
-  ogvec.PlusEqScaled(2.0, v1, 3.0, v2, 5.0, v3, 7.0, v4, 11.0, v5);
+  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}, {7.0, v4}, {11.0, v5}});
   ans5 << 346.0, 446.0;
   EXPECT_TRUE(CompareMatrices(ans5, ogvec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),

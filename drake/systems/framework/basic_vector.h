@@ -105,47 +105,37 @@ class BasicVector : public VectorBase<T> {
     return *this;
   }
 
-  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                            const T& scale2,
-                            const VectorBase<T>& rhs2) override {
-    rhs1.ScaleAndAddToVector(scale1, values_);
-    rhs2.ScaleAndAddToVector(scale2, values_);
-    return *this;
-  }
+  /// Add in multiple scaled vectors to this vector. All vectors
+  /// must be the same size. This specialized function serves to maximize
+  /// speed through SIMD operations or minimize memory access, depending on
+  /// the underlying types.
+  virtual VectorBase<T>& PlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
+      override {
+    /// Look for the case where all are of type BasicVector.
+    bool all_basic_vector = true;
+    for (auto j : rhs_scal) {
+      if (j.second.size() != size())
+        throw std::out_of_range("Addends must be the same size.");
+      if (all_basic_vector && !dynamic_cast<const BasicVector<T>*>(&j.second))
+        all_basic_vector = false;
+    }
 
-  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                            const T& scale2, const VectorBase<T>& rhs2,
-                            const T& scale3,
-                            const VectorBase<T>& rhs3) override {
-    rhs1.ScaleAndAddToVector(scale1, values_);
-    rhs2.ScaleAndAddToVector(scale2, values_);
-    rhs3.ScaleAndAddToVector(scale3, values_);
-    return *this;
-  }
-
-  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                            const T& scale2, const VectorBase<T>& rhs2,
-                            const T& scale3, const VectorBase<T>& rhs3,
-                            const T& scale4,
-                            const VectorBase<T>& rhs4) override {
-    rhs1.ScaleAndAddToVector(scale1, values_);
-    rhs2.ScaleAndAddToVector(scale2, values_);
-    rhs3.ScaleAndAddToVector(scale3, values_);
-    rhs4.ScaleAndAddToVector(scale4, values_);
-    return *this;
-  }
-
-  BasicVector& PlusEqScaled(const T& scale1, const VectorBase<T>& rhs1,
-                            const T& scale2, const VectorBase<T>& rhs2,
-                            const T& scale3, const VectorBase<T>& rhs3,
-                            const T& scale4, const VectorBase<T>& rhs4,
-                            const T& scale5,
-                            const VectorBase<T>& rhs5) override {
-    rhs1.ScaleAndAddToVector(scale1, values_);
-    rhs2.ScaleAndAddToVector(scale2, values_);
-    rhs3.ScaleAndAddToVector(scale3, values_);
-    rhs4.ScaleAndAddToVector(scale4, values_);
-    rhs5.ScaleAndAddToVector(scale5, values_);
+    // Fast version
+    if (all_basic_vector) {
+      for (auto j : rhs_scal) {
+        const BasicVector<T>* bv_j =
+            static_cast<const BasicVector<T>*>(&j.second);
+        values_ += bv_j->get_value() * j.first;
+      }
+    } else {
+      // Slow version
+      for (int i = 0; i < size(); ++i) {
+        T value(0);
+        for (auto j : rhs_scal) value += j.second.GetAtIndex(i) * j.first;
+        SetAtIndex(i, GetAtIndex(i) + value);
+      }
+    }
     return *this;
   }
 
