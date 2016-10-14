@@ -15,11 +15,11 @@ namespace {
  */
 template <typename T, int options>
 void checkTriplet(const Eigen::SparseMatrix<T, options>& sp_mat) {
-  auto triplets1 = SparseMatrixToTriplets(sp_mat);
-  Eigen::SparseMatrix<T, options> sp_mat_expected1(sp_mat.rows(),
-                                                   sp_mat.cols());
-  sp_mat_expected1.setFromTriplets(triplets1.begin(), triplets1.end());
-  EXPECT_TRUE(sp_mat.isApprox(sp_mat_expected1));
+  auto triplets = SparseMatrixToTriplets(sp_mat);
+  Eigen::SparseMatrix<T, options> sp_mat_from_triplets(sp_mat.rows(),
+                                                       sp_mat.cols());
+  sp_mat_from_triplets.setFromTriplets(triplets.begin(), triplets.end());
+  EXPECT_TRUE(sp_mat.isApprox(sp_mat_from_triplets));
 
   std::vector<Eigen::Index> row_indices;
   std::vector<Eigen::Index> col_indices;
@@ -28,15 +28,16 @@ void checkTriplet(const Eigen::SparseMatrix<T, options>& sp_mat) {
   EXPECT_TRUE(static_cast<int>(row_indices.size()) == sp_mat.nonZeros());
   EXPECT_TRUE(row_indices.size() == col_indices.size());
   EXPECT_TRUE(row_indices.size() == val.size());
-  std::vector<Eigen::Triplet<T>> triplets2;
+  std::vector<Eigen::Triplet<T>> triplets_from_vectors;
   for (int i = 0; i < static_cast<int>(row_indices.size()); i++) {
-    triplets2.push_back(
+    triplets_from_vectors.push_back(
         Eigen::Triplet<T>(row_indices[i], col_indices[i], val[i]));
   }
-  Eigen::SparseMatrix<T, options> sp_mat_expected2(sp_mat.rows(),
-                                                   sp_mat.cols());
-  sp_mat_expected2.setFromTriplets(triplets2.begin(), triplets2.end());
-  EXPECT_TRUE(sp_mat.isApprox(sp_mat_expected2));
+  Eigen::SparseMatrix<T, options> sp_mat_from_vectors(sp_mat.rows(),
+                                                      sp_mat.cols());
+  sp_mat_from_vectors.setFromTriplets(triplets_from_vectors.begin(),
+                                      triplets_from_vectors.end());
+  EXPECT_TRUE(sp_mat.isApprox(sp_mat_from_vectors));
 }
 
 /**
