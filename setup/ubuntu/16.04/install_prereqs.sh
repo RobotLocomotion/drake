@@ -19,8 +19,8 @@ me="The Drake prerequisite set-up script"
 
 # Install Clang 3.9
 while true; do
-  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default. To install \
-  Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
+  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default."
+  echo "To install Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
   echo "This script will add the repository
     'deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main'"
   read -p "Do you want to continue? [Y/n] " yn
@@ -38,10 +38,18 @@ while true; do
   esac
 done
 
-# Check if CMake is already installed
-if command -v cmake 2>/dev/null; then
-  echo "CMake is already installed."
-else
+# The CI scripts require a newer version of CMake than apt installs.
+# Only install CMake if it's not installed or older than 3.5.
+install_cmake=true
+if command -v cmake &>/dev/null; then
+  cmake_version=$(cmake --version) &>/dev/null
+  cmake_version=${cmake_version:14:3}
+  if [[ $cmake_version > "3.5" ]]; then
+    echo "CMake is already installed ($cmake_version)"
+    install_cmake=false
+  fi
+fi
+if $install_cmake; then
   apt install --no-install-recommends cmake
   apt install --no-install-recommends cmake-curses-gui
 fi
