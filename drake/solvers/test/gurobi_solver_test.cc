@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/ipopt_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -66,6 +67,8 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
 // min 0.5x'Qx + bx = -Q^(-1) * b
 // The values were chosen at random but were hardcoded
 // to enable test reproducibility.
+// The test also verifies the quadratic program works when
+// matrix Q has off-diagonal terms.
 GTEST_TEST(testGurobi, convexQPExample) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(5);
@@ -142,6 +145,13 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   RunQuadraticProgram(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
+
+  IpoptSolver ipopt_solver;
+  if (ipopt_solver.available()) {
+    ipopt_solver.Solve(prog);
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-8,
+                                MatrixCompareType::absolute));
+  }
 }
 
 }  // close namespace

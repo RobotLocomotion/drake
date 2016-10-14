@@ -73,11 +73,10 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
              double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x
-  typedef Eigen::Triplet<double> T;
   using std::abs;
   // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x
-  std::vector<T> Q_nonzero_coefs;
-  std::vector<T> b_nonzero_coefs;
+  std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;
+  std::vector<Eigen::Triplet<double>> b_nonzero_coefs;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     const int constraint_variable_dimension = binding.GetNumElements();
@@ -97,23 +96,25 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
       }
     }
     for (int i = 0; i < Q.rows(); i++) {
-      const double Qii = 0.5 * Q(i, i);
-      if (abs(Qii) > sparseness_threshold) {
-        Q_nonzero_coefs.push_back(
-            T(constraint_variable_index[i], constraint_variable_index[i], Qii));
+      const double kQii = 0.5 * Q(i, i);
+      if (abs(kQii) > sparseness_threshold) {
+        Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
+            constraint_variable_index[i], constraint_variable_index[i], kQii));
       }
       for (int j = i + 1; j < Q.cols(); j++) {
-        const double Qij = 0.5 * (Q(i, j) + Q(j, i));
-        if (abs(Qij) > sparseness_threshold) {
-          Q_nonzero_coefs.push_back(T(constraint_variable_index[i],
-                                      constraint_variable_index[j], Qij));
+        const double kQij = 0.5 * (Q(i, j) + Q(j, i));
+        if (abs(kQij) > sparseness_threshold) {
+          Q_nonzero_coefs.push_back(
+              Eigen::Triplet<double>(constraint_variable_index[i],
+                                     constraint_variable_index[j], kQij));
         }
       }
     }
 
     for (int i = 0; i < b.size(); i++) {
       if (abs(b(i)) > sparseness_threshold) {
-        b_nonzero_coefs.push_back(T(constraint_variable_index[i], 0, b(i)));
+        b_nonzero_coefs.push_back(
+            Eigen::Triplet<double>(constraint_variable_index[i], 0, b(i)));
       }
     }
   }
@@ -147,17 +148,17 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
     linear_row_indices_int[i] = static_cast<int>(linear_row[i]);
   }
 
-  const int error1 = GRBaddqpterms(
+  const int kError1 = GRBaddqpterms(
       model, static_cast<int>(Q_all_row.size()), Q_all_row_indices_int.data(),
       Q_all_col_indices_int.data(), Q_all_val.data());
-  if (error1) {
-    return error1;
+  if (kError1) {
+    return kError1;
   }
   for (int i = 0; i < static_cast<int>(linear_row.size()); i++) {
-    const int error = GRBsetdblattrarray(
+    const int kError = GRBsetdblattrarray(
         model, "Obj", linear_row_indices_int[i], 1, linear_val.data() + i);
-    if (error) {
-      return error;
+    if (kError) {
+      return kError;
     }
   }
   /*
