@@ -202,7 +202,7 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   Vector4d expected = -Q_symmetric.ldlt().solve(b);
   prog.SetInitialGuess({x}, Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
                                 MatrixCompareType::absolute));
   });
 }
