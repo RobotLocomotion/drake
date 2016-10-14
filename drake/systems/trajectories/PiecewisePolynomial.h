@@ -205,7 +205,7 @@ class DRAKE_EXPORT PiecewisePolynomial
    */
   static PiecewisePolynomial ReconstructInputTrajectory(
       const std::vector<double>& timeVec,
-      const std::vector<Eigen::MatrixXd>& inputVec){
+      const std::vector<Eigen::MatrixXd>& inputVec) {
     return PiecewisePolynomial<CoefficientType>::FirstOrderHold(timeVec,
                                                                 inputVec);
   }
@@ -215,7 +215,7 @@ class DRAKE_EXPORT PiecewisePolynomial
    */
   static PiecewisePolynomial ReconstructStateTrajectory(
     const std::vector<double>& timeVec,
-    const std::vector<Eigen::MatrixXd>& stateVec){
+    const std::vector<Eigen::MatrixXd>& stateVec) {
     return PiecewisePolynomial<CoefficientType>::FirstOrderHold(timeVec,
                                                                 stateVec);
   }

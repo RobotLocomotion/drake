@@ -205,7 +205,7 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
    */
   std::vector<Eigen::MatrixXd> GetStateVector() const;
 
-protected:
+ protected:
   /**
    * Construct a DirectTrajectoryOptimization object. The dimensions
    * of the trajectory are established at construction, though other
