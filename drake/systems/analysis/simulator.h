@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -232,17 +231,6 @@ class Simulator {
   // Pre-allocated temporaries for updated difference states.
   std::unique_ptr<DifferenceState<T>> discrete_updates_;
 };
-
-// No need for user code to instantiate these; they are in the library.
-
-// TODO(sherm1) Clean this up with a more nuanced export macro.
-#ifdef _MSC_VER
-extern template class Simulator<double>;
-extern template class Simulator<AutoDiffXd>;
-#else
-extern template class DRAKE_EXPORT Simulator<double>;
-extern template class DRAKE_EXPORT Simulator<AutoDiffXd>;
-#endif
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
