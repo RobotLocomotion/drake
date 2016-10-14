@@ -58,7 +58,7 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   // would it not be better to make sure that this ia a purely read-only
   // interface?  Although, making sure only const versions of the manifold are
   // available to the end user would alleviate this issue.
-  void AddContactDetail(std::unique_ptr<ContactDetail<T>>& detail);
+  void AddContactDetail(std::unique_ptr<ContactDetail<T>> detail);
 
  private:
   std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;

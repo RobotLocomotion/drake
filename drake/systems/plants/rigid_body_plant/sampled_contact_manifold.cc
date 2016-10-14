@@ -3,9 +3,6 @@
 namespace drake {
 namespace systems {
 
-template class SampledContactManifold<double>;
-
-
 template <typename T>
 SampledContactManifold<T>::SampledContactManifold() {}
 
@@ -75,7 +72,7 @@ const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
 
 template <typename T>
 void SampledContactManifold<T>::AddContactDetail(
-    std::unique_ptr<ContactDetail<T>>& detail) {
+    std::unique_ptr<ContactDetail<T>> detail) {
   contact_details_.push_back(move(detail));
 }
 
@@ -83,6 +80,8 @@ template <typename T>
 ContactManifold<T>* SampledContactManifold<T>::clone() const {
   return new SampledContactManifold(*this);
 }
+
+template class SampledContactManifold<double>;
 
 }
 }
