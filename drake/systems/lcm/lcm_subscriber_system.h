@@ -70,9 +70,9 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
 
   /**
    * Returns the translator used by this subscriber. This translator can be used
-   * to translate a BasicVector into an LCM byte array, which is then passed to
-   * DrakeMockLcm::InduceSubscriberCallback() to mimic the behavior of a message
-   * reception by an LCM subscriber.
+   * to translate a BasicVector into a serialized LCM message, which is then
+   * passed to DrakeMockLcm::InduceSubscriberCallback(). This mimics a message
+   * reception by an LCM subscriber and is useful for unit testing.
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
