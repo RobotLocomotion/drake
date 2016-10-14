@@ -435,9 +435,8 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
 }
 
 template <typename T>
-void RigidBodyPlant<T>::ComputeContactResults(const Context<T>& context,
-                                              ContactResults<T>* contacts) const
-{
+void RigidBodyPlant<T>::ComputeContactResults(
+    const Context<T>& context, ContactResults<T>* contacts) const {
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
@@ -459,7 +458,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T> &kinsol, const VectorX<T> &v,
     ContactResults<T> * contacts) const {
 
-  if ( contacts != nullptr) {
+  if (contacts != nullptr) {
     contacts->Clear();
   }
 
@@ -534,7 +533,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
         // this term needs to be subtracted.
         contact_force += J.transpose() * fA;
-        if ( contacts != nullptr) {
+        if (contacts != nullptr) {
           Vector3<T> point = (xA.col(i) + xB.col(i)) * 0.5;
 
           WrenchVector<T> wrench;
@@ -552,7 +551,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     }
   }
   return contact_force;
-};
+}
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyPlant<double>;

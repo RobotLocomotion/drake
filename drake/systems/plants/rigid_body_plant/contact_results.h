@@ -35,9 +35,8 @@ class DRAKE_EXPORT ContactResults {
   // cache this friendship and the method UpdateFromContext() won't be needed.
   friend class RigidBodyPlant<T>;
 
-  // Only RigidBodyPlant can construct a ContactResults from the underlying
-  // RigidBodyTree.
-  explicit ContactResults();
+  // Only RigidBodyPlant can construct a ContactResults.
+  ContactResults();
 
   /** Clears the set of contact information for when the old data becomes
    invalid */
@@ -52,9 +51,9 @@ class DRAKE_EXPORT ContactResults {
    @param force         The contact Force applied to A.  Its negative would be
                         applied to B.
    */
-  void AddContact( DrakeCollision::ElementId elementA,
-                   DrakeCollision::ElementId elementB,
-                   const Vector3<T> & point, const WrenchVector<T> & force);
+  void AddContact(DrakeCollision::ElementId elementA,
+                  DrakeCollision::ElementId elementB,
+                  const Vector3<T> & point, const WrenchVector<T> & force);
 
   std::vector<ContactInfo<T>> contacts_;
 };
