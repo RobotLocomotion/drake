@@ -33,7 +33,7 @@ void ContactResults<T>::AddContact( DrakeCollision::ElementId elementA,
                  const Vector3<T> & point, const WrenchVector<T> & force) {
   auto manifold = std::make_unique<SampledContactManifold<T>>();
   auto detail = make_unique<ContactDetail<T>>(point, force);
-  manifold->AddContactDetail(detail);
+  manifold->AddContactDetail(move(detail));
   contacts_.emplace_back(elementA, elementB, move(manifold));
 }
 
