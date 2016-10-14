@@ -1994,6 +1994,14 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
+const RigidBody* RigidBodyTree::FindBody(const DrakeCollision::ElementId& elementId) {
+  auto element = collision_model_->FindElement(elementId);
+  if (element != nullptr) {
+    return element->get_body();
+  }
+  return nullptr;
+}
+
 std::vector<const RigidBody*>
 RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
   std::vector<const RigidBody*> result;
