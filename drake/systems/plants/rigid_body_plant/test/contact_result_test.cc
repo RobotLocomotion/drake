@@ -4,9 +4,11 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include <drake/systems/plants/RigidBody.h>
 #include <drake/systems/plants/RigidBodyTree.h>
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include <drake/systems/plants/joints/QuaternionFloatingJoint.h>
 #include <drake/systems/plants/rigid_body_plant/rigid_body_plant.h>
 
@@ -31,13 +33,25 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
+template <typename DerivedA, typename DerivedB>
+bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
+                     const Eigen::MatrixBase<DerivedB>& m2) {
+  return CompareMatrices(m1, m2, 1e-14 /*threshold*/,
+                         MatrixCompareType::absolute);
+}
+
 class ContactResultTest : public ::testing::Test {
  protected:
   void SetUp() override {
   }
 
-  // The plant owns this tree; this is a convenience pointer.
+  // These pointers are merely reference pointers; the underlying instances
+  //  are owned by objects which, ultimately, are owned by the test class.
+  RigidBody* body1_{};
+  RigidBody* body2_{};
   RigidBodyTree* tree_{};
+
+  // instances owned by the test class
   unique_ptr<RigidBodyPlant<double>> plant_{};
   unique_ptr<Context<double>> context_{};
   unique_ptr<SystemOutput<double>> output_{};
@@ -53,9 +67,9 @@ class ContactResultTest : public ::testing::Test {
 
     Vector3d pos;
     pos << -(kRadius + distance), 0, 0;
-    AddSphere(pos, "sphere1");
+    body1_ = AddSphere(pos, "sphere1");
     pos << (kRadius + distance), 0, 0;
-    AddSphere(pos, "sphere2");
+    body2_ = AddSphere(pos, "sphere2");
 
     tree_->compile();
 
@@ -77,7 +91,7 @@ class ContactResultTest : public ::testing::Test {
   }
 
   // Add a sphere with default radius, placed at the given position.
-  void AddSphere(const Vector3d& pos, const std::string& name) {
+  RigidBody* AddSphere(const Vector3d& pos, const std::string& name) {
     RigidBody *body;
     tree_->add_rigid_body(unique_ptr<RigidBody>(body = new RigidBody()));
     body->set_name(name);
@@ -92,6 +106,7 @@ class ContactResultTest : public ::testing::Test {
     DrakeCollision::Element cElement(sphere);
     cElement.set_body(body);
     tree_->addCollisionElement(cElement, *body, "group1");
+    return body;
   }
 };
 
@@ -111,8 +126,32 @@ TEST_F(ContactResultTest, Touching) {
 
 // Confirms a contact result for two colliding spheres.
 TEST_F(ContactResultTest, SingleCollision) {
-  auto& contact_results = RunTest(-0.1);
+  double displace = 0.1;
+  auto& contact_results = RunTest(-displace);
   ASSERT_EQ(contact_results.get_num_contacts(), 1);
+  const auto info = contact_results.get_contact_info(0);
+  DrakeCollision::ElementId e1 = info.get_element_id_1();
+  DrakeCollision::ElementId e2 = info.get_element_id_2();
+  const ContactManifold<double>& manifold = info.get_contact_manifold();
+  const RigidBody* b1 = tree_->FindBody(e1);
+  const RigidBody* b2 = tree_->FindBody(e2);
+  ASSERT_NE(e1, e2);
+  ASSERT_TRUE(b1 == body1_ || b1 == body2_);
+  ASSERT_TRUE(b2 == body1_ || b2 == body2_);
+  ASSERT_EQ(manifold.get_num_contacts(), 1);
+  auto detail = manifold.get_ith_contact(0);
+  Vector3d expectedPt = Vector3d::Zero();
+  ASSERT_TRUE(CompareMatrices(detail->get_application_point(), expectedPt));
+  // note: this is fragile.  This is the value copied from rigid_body_plant.h
+  //  THis value depends on
+  //    a) What is hard-coded in that location.
+  //    b) Any dynamic changes which may affect it.
+  const double stiffness = 150.0;
+  double force = stiffness * displace * 2;
+  WrenchVector<double> expectedF;
+  // force goes from body2 to body2
+  expectedF << -force, 0, 0, 0, 0, 0;
+  ASSERT_TRUE(CompareMatrices(detail->get_force(), expectedF));
 }
 } // test
 } // rigid_body_plant
