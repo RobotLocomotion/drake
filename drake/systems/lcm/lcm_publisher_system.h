@@ -73,7 +73,11 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
                   SystemOutput<double>* output) const override {}
 
   /**
-   * Returns the translator used by this publisher.
+   * Returns the translator used by this publisher. This can be used to convert
+   * a serialized LCM message provided by
+   * DrakeMockLcm::get_last_published_message() into a BasicVector. It is useful
+   * in unit tests for verifying that a BasicVector was correctly published as
+   * an LCM message.
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 

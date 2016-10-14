@@ -173,10 +173,12 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
 // Subscribe and output a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
+  const std::string kChannelName = "dummy";
+
   // The "device under test" and its prerequisites.
   CustomDrakeSignalTranslator translator;
   drake::lcm::DrakeMockLcm lcm;
-  LcmSubscriberSystem dut("dummy", translator, &lcm);
+  LcmSubscriberSystem dut(kChannelName, translator, &lcm);
   lcm.StartReceiveThread();
 
   // Create a data-filled vector.
@@ -187,10 +189,12 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     sample_vector.SetName(i, std::to_string(i) + "_name");
   }
 
-  // Set message into the dut.  It is encoded into bytes internally, which lets
-  // us confirm that the full round-trip encode / decode cycle is correct.
-  const double time = 0;
-  dut.SetMessage(time, sample_vector);
+  // Induce a message transmission so we can evaluate whether the LCM
+  // subscriber was able to successfully decode the message.
+  std::vector<uint8_t> message_bytes;
+  translator.Serialize(0.0 /* time */, sample_vector, &message_bytes);
+  lcm.InduceSubscriberCallback(kChannelName, &message_bytes[0],
+      message_bytes.size());
 
   // Read back the vector via EvalOutput.
   auto context = dut.CreateDefaultContext();
