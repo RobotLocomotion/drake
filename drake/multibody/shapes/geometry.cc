@@ -1,5 +1,9 @@
 #include "drake/multibody/shapes/geometry.h"
+<<<<<<< 8ada0907ee2fa6061084a5833baad4e8901dcc0f
 #include <tiny_obj_loader.h>
+=======
+#include <tinyobjloader/tiny_obj_loader.h>
+>>>>>>> Added tinyobjloader
 
 #include <algorithm>
 #include <cstdio>
@@ -261,17 +265,24 @@ string Mesh::FindFileWithObjExtension() const {
 
 void Mesh::LoadObjFile(PointsVector* vertices,
                        TrianglesVector* triangles) const {
+
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
+
   if (!file) {
     throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
 
   string path;
   size_t idx = obj_file_name.rfind('/');
+<<<<<<< 8ada0907ee2fa6061084a5833baad4e8901dcc0f
   if (idx != string::npos) {
     path = obj_file_name.substr(0, idx + 1);
   }
+=======
+  if (idx != string::npos)
+    path = obj_file_name.substr(0, idx+1);
+>>>>>>> Added tinyobjloader
 
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
@@ -281,6 +292,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
       obj_file_name.c_str(), path.c_str(), true);
 
+<<<<<<< 8ada0907ee2fa6061084a5833baad4e8901dcc0f
   // Use the boolean return value, and the error string to determine
   // if we should proceeed.
   if (!ret || !err.empty()) {
@@ -305,6 +317,36 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       auto vertCount = shape.mesh.num_face_vertices[face];
 
       // Make sure the face has three vertices.
+=======
+  // Report any error
+  if (!err.empty())
+    std::cerr << "Error loading OBJ file: " << err << std::endl;
+
+  // Use the boolean return value to determine if we should proceeed
+  if (!ret)
+    throw std::runtime_error("Error parsing file \"" + obj_file_name + "\".");
+
+  // Store the vertices
+  for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3)
+  {
+    vertices->push_back(Vector3d(attrib.vertices[idx],
+                                 attrib.vertices[idx + 1],
+                                 attrib.vertices[idx + 2]));
+  }
+
+  // Iterate over the shapes
+  for (auto const shape: shapes)
+  {
+    unsigned int indexOffset = 0;
+
+    // For each face in the shape
+    for (unsigned int face = 0;
+         face < shape.mesh.num_face_vertices.size(); ++face)
+    {
+      unsigned int vertCount = shape.mesh.num_face_vertices[face];
+
+      // Make sure the face has three vertices
+>>>>>>> Added tinyobjloader
       if (vertCount != 3) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
@@ -314,9 +356,16 @@ void Mesh::LoadObjFile(PointsVector* vertices,
 
       Vector3i faceIndices;
 
+<<<<<<< 8ada0907ee2fa6061084a5833baad4e8901dcc0f
       // For each vertex in the face.
       for (auto vert = 0; vert < vertCount; ++vert) {
         // Store the vertex index.
+=======
+      // For each vertex in the face
+      for (unsigned int vert = 0; vert < vertCount; ++vert)
+      {
+        // Store the vertex index
+>>>>>>> Added tinyobjloader
         faceIndices[vert] = shape.mesh.indices[indexOffset + vert].vertex_index;
       }
 
