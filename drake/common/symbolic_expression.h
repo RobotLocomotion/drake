@@ -74,6 +74,8 @@ The following simple simplifications using identity and unity are implemented:
     E - E          ->  0
     E * 1          ->  E
     1 * E          ->  E
+    E * -1         -> -E
+   -1 * E          -> -E
     E * 0          ->  0
     0 * E          ->  0
     E / 1          ->  E
@@ -89,17 +91,17 @@ Constant folding is implemented:
     f(E(c))        ->  E(f(c))       // c is a constant, f is a math function
 \endverbatim
 
-For the math functions which are only defined over restricted domain (namely,
+For the math functions which are only defined over a restricted domain (namely,
 log, sqrt, pow, asin, acos), we check the domain of argument(s), and throw
 std::domain_error exception if a function is not well-defined for a given
 argument(s).
 
 Relational operators over expressions (==, !=, <, >, <=, >=) return
 symbolic::Formula instead of bool. Those operations are declared in
-symbolic_formula.h file. To check structural equality between two expressions, a
-separate function, Expression::EqualTo is provided.
+symbolic_formula.h file. To check structural equality between two expressions a
+separate function, Expression::EqualTo, is provided.
 
-symbolic::Expression may also be used as the scalar type of Eigen types.
+symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class DRAKE_EXPORT Expression {
  public:
@@ -221,8 +223,8 @@ class DRAKE_EXPORT Expression {
   static void check_nan(double v);
 
  private:
-  std::shared_ptr<ExpressionCell> ptr_;
   explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
+  std::shared_ptr<ExpressionCell> ptr_;
 };
 
 /** Represents an abstract class which is the base of concrete
@@ -251,10 +253,10 @@ class ExpressionCell {
   ExpressionCell(ExpressionCell&& e) = default;
   /** Copy-construct a set from an lvalue. */
   ExpressionCell(const ExpressionCell& e) = default;
-  /** Move-assign a set from an rvalue. */
-  ExpressionCell& operator=(ExpressionCell&& e) = default;
-  /** Copy-assign a set from an lvalue. */
-  ExpressionCell& operator=(const ExpressionCell& e) = default;
+  /** Move-assign (DELETED). */
+  ExpressionCell& operator=(ExpressionCell&& e) = delete;
+  /** Copy-assign (DELETED). */
+  ExpressionCell& operator=(const ExpressionCell& e) = delete;
   /** Construct ExpressionCell of kind \p k with \p hash. */
   ExpressionCell(ExpressionKind k, size_t hash);
 
@@ -280,10 +282,10 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell(UnaryExpressionCell&& e) = default;
   /** Copy-construct a set from an lvalue. */
   UnaryExpressionCell(const UnaryExpressionCell& e) = default;
-  /** Move-assign a set from an rvalue. */
-  UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = default;
-  /** Copy-assign a set from an lvalue. */
-  UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = default;
+  /** Move-assign (DELETED). */
+  UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
+  /** Copy-assign (DELETED). */
+  UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
   /** Constructs UnaryExpressionCell of kind \p k with \p hash and \p e. */
   UnaryExpressionCell(ExpressionKind k, const Expression& e);
   /** Returns the nested expression. */
@@ -312,10 +314,10 @@ class BinaryExpressionCell : public ExpressionCell {
   BinaryExpressionCell(BinaryExpressionCell&& e) = default;
   /** Copy-construct a set from an lvalue. */
   BinaryExpressionCell(const BinaryExpressionCell& e) = default;
-  /** Move-assign a set from an rvalue. */
-  BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = default;
-  /** Copy-assign a set from an lvalue. */
-  BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = default;
+  /** Move-assign (DELETED). */
+  BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
+  /** Copy-assign (DELETED). */
+  BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
   /** Constructs BinaryExpressionCell of kind \p k with \p hash, \p e1, \p e2.
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
@@ -476,8 +478,6 @@ class ExpressionPow : public BinaryExpressionCell {
   /* Throws std::domain_error if v1 is finite negative and v2 is finite
      non-integer. */
   static void check_domain(double v1, double v2);
-
- private:
   double DoEvaluate(double v1, double v2) const override;
 };
 

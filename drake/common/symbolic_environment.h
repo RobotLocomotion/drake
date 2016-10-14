@@ -10,8 +10,28 @@
 
 namespace drake {
 namespace symbolic {
-/** Represent a symbolic form of an environment (mapping from a variable
- * to a value).
+/** Represents a symbolic form of an environment (mapping from a variable to a
+ * value).
+ *
+ * This class is used when we evaluate symbolic expressions or formulas which
+ * include unquantified (free) variables. Here are examples:
+ *
+ * \code{.cpp}
+ *   const Variable var_x{"x"};
+ *   const Variable var_y{"y"};
+ *   const Expression x{var_x};
+ *   const Expression y{var_x};
+ *   const Expression e1{x + y};
+ *   const Expression e2{x - y};
+ *   const Formula f{e1 > e2};
+ *
+ *   // env maps var_x to 2.0 and var_y to 3.0
+ *   const Environment env{{var_x, 2.0}, {var_y, 3.0}};
+ *
+ *   const double res1 = e1.Evaluate(env);  // x + y => 2.0 + 3.0 =>  5.0
+ *   const double res2 = e2.Evaluate(env);  // x - y => 2.0 - 3.0 => -1.0
+ *   const bool res = f.Evaluate(env);  // x + y > x - y => 5.0 >= -1.0 => True
+ * \endcode
  */
 class DRAKE_EXPORT Environment {
  public:
