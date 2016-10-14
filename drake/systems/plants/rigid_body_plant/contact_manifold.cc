@@ -5,5 +5,5 @@ namespace systems {
 
 // Explicitly instantiates on the most common scalar types.
 template class ContactManifold<double>;
-}
-}
+}  // namespace system
+}  // namespace drake

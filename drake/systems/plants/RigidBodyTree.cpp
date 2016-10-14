@@ -671,13 +671,10 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
 }
 
 bool RigidBodyTree::collisionDetectElements(
-    const KinematicsCache<double>& cache,
-     Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
-     Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
-     std::vector<const DrakeCollision::Element*>& elA_idx,
-     std::vector<const DrakeCollision::Element*>& elB_idx,
-     bool use_margins)
-{
+    const KinematicsCache<double>& cache, Eigen::VectorXd& phi,
+    Eigen::Matrix3Xd& normal, Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
+    std::vector<const DrakeCollision::Element*>& elA_idx,
+    std::vector<const DrakeCollision::Element*>& elB_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -687,7 +684,7 @@ bool RigidBodyTree::collisionDetectElements(
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect (
+bool RigidBodyTree::collisionDetect(
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
     Matrix3Xd& xA, Matrix3Xd& xB,
     std::vector<const DrakeCollision::Element*>& elA_idx,
@@ -696,9 +693,8 @@ bool RigidBodyTree::collisionDetect (
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  bool points_found =
-      collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
-                                              points);
+  bool points_found = collision_model_->closestPointsAllToAll(
+      ids_to_check, use_margins, points);
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -2005,7 +2001,8 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
-const RigidBody* RigidBodyTree::FindBody(const DrakeCollision::ElementId& elementId) {
+const RigidBody* RigidBodyTree::FindBody(
+    const DrakeCollision::ElementId& elementId) {
   auto element = collision_model_->FindElement(elementId);
   if (element != nullptr) {
     return element->get_body();
