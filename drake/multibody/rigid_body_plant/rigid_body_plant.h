@@ -193,7 +193,6 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* positions_derivative) const override;
 
  private:
-
   /**
    * Computes the contact results for the output port
    * @param[in]     context     The system context.
@@ -227,7 +226,6 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
   int state_output_port_id_;
   int kinematics_output_port_id_;
   int contact_output_port_id_;
-
 };
 
 }  // namespace systems
