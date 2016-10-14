@@ -17,8 +17,7 @@ template <typename T>
 ContactInfo<T>::ContactInfo(const ContactInfo<T>& other) :
     element1_(other.element1_),
     element2_(other.element2_),
-    contact_manifold_(other.contact_manifold_->clone())
-{
+    contact_manifold_(other.contact_manifold_->clone()) {
 }
 
 template <typename T>
@@ -44,5 +43,5 @@ const ContactManifold<T>& ContactInfo<T>::get_contact_manifold() const {
 // explicit instantiation
 template class ContactInfo<double>;
 
-}
-}
+}  // namespace systems
+}  // namespace drake

@@ -59,7 +59,6 @@ class SampleCollisionManifoldTest : public ::testing::Test {
 // due to the fact that the manifold is empty, or that the applied forces
 // are, in fact, zero.
 TEST_F(SampleCollisionManifoldTest, ZeroForceManifold) {
-
   // test on empty manifold
   SampledContactManifold<double> manifold;
   auto net = manifold.ComputeNetResponse();
@@ -127,7 +126,6 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
 // Tests the net force computation for a manifold with non-zero Forces which
 // provide no torque.
 TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
-
   // test on empty manifold
   SampledContactManifold<double> manifold;
 
@@ -155,7 +153,6 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
 // Tests the net force computation for a manifold with non-zero Forces which
 // provide only torque.
 TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
-
   // test on empty manifold
   SampledContactManifold<double> manifold;
 

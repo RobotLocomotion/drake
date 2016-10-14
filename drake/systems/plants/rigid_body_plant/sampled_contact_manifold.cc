@@ -8,8 +8,7 @@ SampledContactManifold<T>::SampledContactManifold() {}
 
 template <typename T>
 SampledContactManifold<T>::SampledContactManifold(
-    const SampledContactManifold<T>& other)
-{
+    const SampledContactManifold<T>& other) {
   for (const auto & detail : other.contact_details_) {
     std::unique_ptr<ContactDetail<T>> copy(detail->clone());
     contact_details_.push_back(std::move(copy));
@@ -32,7 +31,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   WrenchVector<T> wrench;
   wrench.setZero();
 
-  Vector3<T> point = Vector3<T>::Zero(3,1);
+  Vector3<T> point = Vector3<T>::Zero(3, 1);
   T scale = 0;
 
   for ( const auto & detail : contact_details_ ) {
@@ -55,7 +54,8 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
     const Vector3<T>& contactPoint = detail->get_application_point();
     // cross product doesn't work on "head"
     const WrenchVector<T>& contactWrench = detail->get_force();
-    accumTorque += (point - contactPoint).cross(contactWrench.template head<3>());
+    accumTorque += (point - contactPoint).cross(
+        contactWrench.template head<3>());
   }
 
   return ContactDetail<T>(point, wrench);
@@ -64,7 +64,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
 template <typename T>
 const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
     size_t i) const {
-  if ( i < contact_details_.size()) {
+  if (i < contact_details_.size()) {
     return contact_details_[i].get();
   }
   return nullptr;

@@ -39,7 +39,6 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactManifold {
  public:
-
   /**
    Computes a single contact detail -- Force and application point -- which
    is equivalent to applying all individual contact forces individually.
@@ -64,5 +63,5 @@ class DRAKE_EXPORT ContactManifold {
   virtual ContactManifold<T>* clone() const = 0;
 };
 
-} // namespace systems
-} // namespace drake
+}  // namespace systems
+}  // namespace drake

@@ -23,7 +23,6 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactInfo {
  public:
-
   /**
    Initialize the contact information between two collision elements.
 
@@ -34,7 +33,7 @@ class DRAKE_EXPORT ContactInfo {
   ContactInfo(DrakeCollision::ElementId element1,
               DrakeCollision::ElementId element2,
               std::unique_ptr<ContactManifold<T>> manifold);
-  
+
   ContactInfo(const ContactInfo<T>& other);
 
   ContactInfo* clone() const;

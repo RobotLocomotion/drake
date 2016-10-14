@@ -786,9 +786,8 @@ bool RigidBodyTree<T>::collisionDetect (
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  bool points_found =
-      collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
-                                              points);
+  bool points_found = collision_model_->closestPointsAllToAll(
+      ids_to_check, use_margins, points);
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -2157,7 +2156,8 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
 }
 
 template <typename T>
-const RigidBody* RigidBodyTree<T>::FindBody(const DrakeCollision::ElementId& elementId) {
+const RigidBody* RigidBodyTree<T>::FindBody(
+    const DrakeCollision::ElementId& elementId) {
   auto element = collision_model_->FindElement(elementId);
   if (element != nullptr) {
     return element->get_body();

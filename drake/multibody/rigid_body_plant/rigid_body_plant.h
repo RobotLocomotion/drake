@@ -199,7 +199,6 @@ void DoMapQDotToVelocity(
       VectorBase<T> *generalized_velocity) const override;
 
  private:
-
   /**
    * Computes the contact results for the output port
    * @param[in]     context     The system context.
@@ -233,7 +232,6 @@ void DoMapQDotToVelocity(
   int state_output_port_id_;
   int kinematics_output_port_id_;
   int contact_output_port_id_;
-
 };
 
 }  // namespace systems
