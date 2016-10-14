@@ -9,7 +9,7 @@
 namespace drake {
 namespace systems {
 
-// Forward declaration for KinematicsResults.
+// Forward declaration
 template <typename T> class RigidBodyPlant;
 
 /**
@@ -29,7 +29,7 @@ class DRAKE_EXPORT ContactResults {
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
   // information (e.g, query by body, etc.)
  private:
-  // RigidBodyPlant is the only class allowed to update KinematicsResults
+  // RigidBodyPlant is the only class allowed to instantiate/update this class
   // through Clear and AddContact().
   // TODO(SeanCurtis-TRI): when ContactResults can reference entries in the
   // cache this friendship and the method UpdateFromContext() won't be needed.
