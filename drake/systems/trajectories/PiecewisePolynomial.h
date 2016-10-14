@@ -200,6 +200,26 @@ class DRAKE_EXPORT PiecewisePolynomial
       Eigen::Index num_coefficients_per_polynomial,
       const std::vector<double>& segment_times);
 
+  /**
+   * Get the input trajectory as a PiecewisePolynomial
+   */
+  static PiecewisePolynomial ReconstructInputTrajectory(
+      const std::vector<double>& timeVec,
+      const std::vector<Eigen::MatrixXd>& inputVec){
+    return PiecewisePolynomial<CoefficientType>::FirstOrderHold(timeVec,
+                                                                inputVec);
+  }
+
+  /**
+   * Get the state trajectory as a PiecewisePolynomial
+   */
+  static PiecewisePolynomial ReconstructStateTrajectory(
+    const std::vector<double>& timeVec,
+    const std::vector<Eigen::MatrixXd>& stateVec){
+    return PiecewisePolynomial<CoefficientType>::FirstOrderHold(timeVec,
+                                                                stateVec);
+  }
+
  protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
                                       Eigen::Index row, Eigen::Index col) const;
