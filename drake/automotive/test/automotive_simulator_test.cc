@@ -53,6 +53,13 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
 
+  // Confirm that the RigidBodyTree has been appropriately amended.
+  const auto& tree = simulator->get_rigid_body_tree();
+  EXPECT_EQ(1, tree.get_num_model_instances());
+  ASSERT_EQ(2, tree.get_num_bodies());  // (0 is world, 1 is boxcar.)
+  const auto& body = tree.get_body(1);
+  EXPECT_EQ("box_shape", body.get_name());
+
   // Set full throttle.
   DrivingCommand<double> command;
   command.set_throttle(1.0);
@@ -64,13 +71,6 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
                                          &message_bytes);
   mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
                                      message_bytes.size());
-
-  // Confirm that the RigidBodyTree has been appropriately amended.
-  const auto& tree = simulator->get_rigid_body_tree();
-  EXPECT_EQ(1, tree.get_num_model_instances());
-  ASSERT_EQ(2, tree.get_num_bodies());  // (0 is world, 1 is boxcar.)
-  const auto& body = tree.get_body(1);
-  EXPECT_EQ("box_shape", body.get_name());
 
   // Shortly after starting, we should have not have moved much.
   simulator->StepBy(0.01);

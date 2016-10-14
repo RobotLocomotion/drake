@@ -189,10 +189,8 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     sample_vector.SetName(i, std::to_string(i) + "_name");
   }
 
-  // Induce a message message transmission so we can evaluate wither the LCM
+  // Induce a message transmission so we can evaluate whether the LCM
   // subscriber was able to successfully decode the message.
-  // const double time = 0;
-  // dut.SetMessage(time, sample_vector);
   std::vector<uint8_t> message_bytes;
   translator.Serialize(0.0 /* time */, sample_vector, &message_bytes);
   lcm.InduceSubscriberCallback(kChannelName, &message_bytes[0],
