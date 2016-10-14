@@ -27,9 +27,18 @@ ContactInfo<T>* ContactInfo<T>::clone() const {
 }
 
 template <typename T>
-void ContactInfo<T>::set_manifold(std::unique_ptr<ContactManifold<T>> manifold)
-{
-  contact_manifold_.reset(manifold.release());
+DrakeCollision::ElementId ContactInfo<T>::get_element_id_1() const {
+  return element1_;
+}
+
+template <typename T>
+DrakeCollision::ElementId ContactInfo<T>::get_element_id_2() const {
+  return element2_;
+}
+
+template <typename T>
+const ContactManifold<T>& ContactInfo<T>::get_contact_manifold() const {
+  return *(contact_manifold_.get());
 }
 
 // explicit instantiation

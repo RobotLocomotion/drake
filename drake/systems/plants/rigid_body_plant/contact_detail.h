@@ -32,6 +32,7 @@ class DRAKE_EXPORT ContactDetail {
 
   const Vector3<T>& get_application_point() const { return application_point_; }
 
+  /** This is the *spatial* force (i.e., a wrench). */
   const WrenchVector<T>& get_force() const { return wrench_; };
 
   virtual ContactDetail* clone() const;
@@ -43,23 +44,6 @@ class DRAKE_EXPORT ContactDetail {
   /** The contact Force expressed in the world frame. */
   WrenchVector<T> wrench_{};
 };
-
-template<typename T>
-ContactDetail<T>::ContactDetail(const ContactDetail<T>& other) :
-  application_point_(other.application_point_),
-  wrench_(other.wrench_)
-{
-}
-
-template<typename T>
-ContactDetail<T>::ContactDetail(const Vector3 <T> &point,
-                                const WrenchVector <T> &wrench)
-    : application_point_(point), wrench_(wrench) {}
-
-template<typename T>
-ContactDetail<T>* ContactDetail<T>::clone() const {
-  return new ContactDetail<T>(*this);
-}
 
 extern template class DRAKE_EXPORT ContactDetail<double>;
 }

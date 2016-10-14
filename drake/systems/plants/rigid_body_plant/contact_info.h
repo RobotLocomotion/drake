@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/Element.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/rigid_body_plant/contact_manifold.h"
 
 namespace drake {
@@ -33,17 +34,14 @@ class DRAKE_EXPORT ContactInfo {
   ContactInfo(DrakeCollision::ElementId element1,
               DrakeCollision::ElementId element2,
               std::unique_ptr<ContactManifold<T>> manifold);
-
-
-  // ContactInfo are moveable but not copyable.
+  
   ContactInfo(const ContactInfo<T>& other);
-  ContactInfo& operator=(const ContactInfo<T>& other) = default;
-  ContactInfo(ContactInfo<T>&& other) = default;
-  ContactInfo& operator=(ContactInfo<T>&& other) = default;
 
   ContactInfo* clone() const;
 
-  void set_manifold(std::unique_ptr<ContactManifold<T>> manifold);
+  DrakeCollision::ElementId get_element_id_1() const;
+  DrakeCollision::ElementId get_element_id_2() const;
+  const ContactManifold<T>& get_contact_manifold() const;
 
  private:
   DrakeCollision::ElementId element1_;
@@ -51,5 +49,7 @@ class DRAKE_EXPORT ContactInfo {
 
   std::unique_ptr<ContactManifold<T>> contact_manifold_;
 };
+
+extern template class DRAKE_EXPORT ContactInfo<double>;
 }
 }
