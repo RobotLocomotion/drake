@@ -263,7 +263,6 @@ void Mesh::LoadObjFile(PointsVector* vertices,
                        TrianglesVector* triangles) const {
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
-
   if (!file) {
     throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
