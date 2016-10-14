@@ -1,12 +1,9 @@
 #pragma once
 
 #include "drake/common/drake_assert.h"
-
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
-
-#include "drake/systems/vector.h"
 
 namespace drake {
 namespace systems {

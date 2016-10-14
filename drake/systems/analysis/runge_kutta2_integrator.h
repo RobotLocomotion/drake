@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/systems/analysis/integrator_base.h"
-#include "integrator_base.h"
 
 namespace drake {
 namespace systems {
