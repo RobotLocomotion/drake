@@ -3,6 +3,8 @@
 #include <Eigen/Dense>
 #include <cmath>
 
+#include "drake/common/drake_gcc48.h"
+
 namespace drake {
 
 enum class MatrixCompareType { absolute, relative };
