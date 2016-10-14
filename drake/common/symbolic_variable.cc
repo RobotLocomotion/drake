@@ -14,7 +14,7 @@ namespace drake {
 namespace symbolic {
 
 size_t Variable::get_next_id() {
-  // Purposefully leaked to avoid static initialization fiasco.
+  // Purposefully never freed to avoid static initialization fiasco.
   static atomic<size_t>* next_id = new atomic<size_t>{0};
   return (*next_id)++;
 }
