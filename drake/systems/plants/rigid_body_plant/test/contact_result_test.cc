@@ -75,8 +75,7 @@ class ContactResultTest : public ::testing::Test {
 
     // Populate the plant
     plant_ = make_unique<RigidBodyPlant<double>>(
-        move(unique_ptr<RigidBodyTree>(tree_))
-    );
+        move(unique_ptr<RigidBodyTree>(tree_)));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     context_->SetInputPort(0, MakeInput(
@@ -84,9 +83,9 @@ class ContactResultTest : public ::testing::Test {
     plant_->SetZeroConfiguration(context_.get());
     plant_->EvalOutput(*context_.get(), output_.get());
 
-    // TODO(SeanCurtis-TRI): This hard-coded value is unfortuante. However, there
-    //  is no mechanism for finding out the port id for a known port (e.g.,
-    //  contact results).
+    // TODO(SeanCurtis-TRI): This hard-coded value is unfortuante. However,
+    //  there is no mechanism for finding out the port id for a known port
+    //  (e.g., contact results).
     return output_->get_data(2)->GetValue<ContactResults<double>>();
   }
 
@@ -153,8 +152,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   expectedF << -force, 0, 0, 0, 0, 0;
   ASSERT_TRUE(CompareMatrices(detail->get_force(), expectedF));
 }
-} // test
-} // rigid_body_plant
-} // plants
-} // systems
-} // drake
+}  // namespace test
+}  // namespace rigid_body_plant
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake
