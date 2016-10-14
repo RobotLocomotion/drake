@@ -1,6 +1,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -107,6 +108,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  logging::HandleSpdlogGflags();
 
   KukaIiwaArmDynamicsSim<double> model;
   Simulator<double> simulator(model);
