@@ -46,6 +46,7 @@ bool Formula::EqualTo(const Formula& f) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   DRAKE_ASSERT(f.ptr_ != nullptr);
   if (ptr_ == f.ptr_) {
+    // pointer equality
     return true;
   }
   if (get_kind() != f.get_kind()) {

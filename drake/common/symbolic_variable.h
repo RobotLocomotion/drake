@@ -26,11 +26,11 @@ class DRAKE_EXPORT Variable {
   /** Copy-construct a set from an lvalue. */
   Variable(const Variable& f) = default;
 
-  /** Move-assign a set from an rvalue. */
-  Variable& operator=(Variable&& f) = default;
+  /** Move-assign (DELETED). */
+  Variable& operator=(Variable&& f) = delete;
 
-  /** Copy-assign a set from an lvalue. */
-  Variable& operator=(const Variable& f) = default;
+  /** Copy-assign (DELETED). */
+  Variable& operator=(const Variable& f) = delete;
 
   size_t get_id() const;
   size_t get_hash() const { return std::hash<size_t>{}(id_); }
@@ -41,10 +41,10 @@ class DRAKE_EXPORT Variable {
                                                const Variable& var);
 
  private:
-  const size_t id_{};       // Unique identifier.
-  const std::string name_;  // Name of variable.
   // Produces a unique ID for a variable.
   static size_t get_next_id();
+  const size_t id_{};       // Unique identifier.
+  const std::string name_;  // Name of variable.
 };
 
 /// Compare two variables based on their ID values

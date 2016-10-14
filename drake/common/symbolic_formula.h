@@ -172,10 +172,10 @@ class FormulaCell {
   FormulaCell(FormulaCell&& f) = default;
   /** Copy-construct a set from an lvalue. */
   FormulaCell(const FormulaCell& f) = default;
-  /** Move-assign a set from an rvalue. */
-  FormulaCell& operator=(FormulaCell&& f) = default;
-  /** Copy-assign a set from an lvalue. */
-  FormulaCell& operator=(const FormulaCell& f) = default;
+  /** Move-assign (DELETED). */
+  FormulaCell& operator=(FormulaCell&& f) = delete;
+  /** Copy-assign (DELETED). */
+  FormulaCell& operator=(const FormulaCell& f) = delete;
   /** Construct FormulaCell of kind \p k with \p hash. */
   FormulaCell(FormulaKind k, size_t hash);
   /** Returns kind of formula. */
@@ -206,10 +206,10 @@ class RelationalFormulaCell : public FormulaCell {
   RelationalFormulaCell(RelationalFormulaCell&& f) = default;
   /** Copy-construct a set from an lvalue. */
   RelationalFormulaCell(const RelationalFormulaCell& f) = default;
-  /** Move-assign a set from an rvalue. */
-  RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = default;
-  /** Copy-assign a set from an lvalue. */
-  RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = default;
+  /** Move-assign (DELETED). */
+  RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = delete;
+  /** Copy-assign (DELETED). */
+  RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = delete;
   /** Construct RelationalFormulaCell of kind \p k with \p hash. */
   RelationalFormulaCell(FormulaKind k, const Expression& e1,
                         const Expression& e2);
@@ -236,10 +236,10 @@ class BinaryFormulaCell : public FormulaCell {
   BinaryFormulaCell(BinaryFormulaCell&& f) = default;
   /** Copy-construct a set from an lvalue. */
   BinaryFormulaCell(const BinaryFormulaCell& f) = default;
-  /** Move-assign a set from an rvalue. */
-  BinaryFormulaCell& operator=(BinaryFormulaCell&& f) = default;
-  /** Copy-assign a set from an lvalue. */
-  BinaryFormulaCell& operator=(const BinaryFormulaCell& f) = default;
+  /** Move-assign (DELETED). */
+  BinaryFormulaCell& operator=(BinaryFormulaCell&& f) = delete;
+  /** Copy-assign (DELETED). */
+  BinaryFormulaCell& operator=(const BinaryFormulaCell& f) = delete;
   /** Construct BinaryFormulaCell of kind \p k with \p hash. */
   BinaryFormulaCell(FormulaKind k, const Formula& f1, const Formula& f2);
   Variables GetFreeVariables() const override;
