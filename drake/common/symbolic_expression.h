@@ -601,7 +601,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     typename MatrixL::PlainObject>::type
-operator*(const MatrixL& lhs, const double rhs) {
+operator*(const MatrixL& lhs, double rhs) {
   return lhs * Expression{rhs};
 }
 
@@ -614,7 +614,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
         std::is_same<typename MatrixR::Scalar, Expression>::value,
     typename MatrixR::PlainObject>::type
-operator*(const double lhs, const MatrixR& rhs) {
+operator*(double lhs, const MatrixR& rhs) {
   return (Expression{lhs}) * rhs;
 }
 
@@ -626,7 +626,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     MatrixL&>::type
-operator*=(MatrixL& lhs, const double rhs) {
+operator*=(MatrixL& lhs, double rhs) {
   return lhs *= Expression{rhs};
 }
 
@@ -639,7 +639,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     typename MatrixL::PlainObject>::type
-operator/(const MatrixL& lhs, const double rhs) {
+operator/(const MatrixL& lhs, double rhs) {
   return lhs / Expression{rhs};
 }
 
@@ -651,7 +651,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     MatrixL&>::type
-operator/=(MatrixL& lhs, const double rhs) {
+operator/=(MatrixL& lhs, double rhs) {
   return lhs /= Expression{rhs};
 }
 }  // namespace symbolic
