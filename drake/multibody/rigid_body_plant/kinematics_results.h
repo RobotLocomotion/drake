@@ -10,7 +10,8 @@ namespace drake {
 namespace systems {
 
 // Forward declaration for KinematicsResults.
-template <typename T> class RigidBodyPlant;
+template <typename T>
+class RigidBodyPlant;
 
 /// A class containing the kinematics results from a RigidBodyPlant system.
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -33,6 +34,27 @@ class DRAKE_EXPORT KinematicsResults {
   /// Returns the three dimensional position of body @p body_index in world's
   /// frame.
   Vector3<T> get_body_position(int body_index) const;
+
+  /// Returns the pose of body @p body with respect to the world.
+  Isometry3<T> get_pose_in_world(const RigidBody& body) const;
+
+  /// Returns the twist of @p body with respect to the world, expressed in world
+  /// frame.
+  TwistVector<T> get_twist_with_respect_to_world(const RigidBody& body) const;
+
+  /// Returns the joint position vector associated with the joint between
+  /// @p body and @p body's parent.
+  /// TODO(tkoolen) should pass in joint instead of body, but that's currently
+  /// not convenient.
+  Eigen::VectorBlock<const VectorX<T>> get_joint_position(
+      const RigidBody& body) const;
+
+  /// Returns the joint velocity vector associated with the joint between
+  /// @p body and @p body's parent.
+  /// TODO(tkoolen) should pass in joint instead of body, but that's currently
+  /// not convenient.
+  Eigen::VectorBlock<const VectorX<T>> get_joint_velocity(
+      const RigidBody& body) const;
 
  private:
   // RigidBodyPlant is the only class allowed to update KinematicsResults

@@ -44,8 +44,24 @@ Vector3<T> KinematicsResults<T>::get_body_position(int body_index) const {
   return pose.translation();
 }
 
-template<typename T>
-void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
+template <typename T>
+Isometry3<T> KinematicsResults<T>::get_pose_in_world(
+    const RigidBody& body) const {
+  const auto& world = tree_->world();
+  return tree_->relativeTransform(kinematics_cache_, world.get_body_index(),
+                                 body.get_body_index());
+}
+
+template <typename T>
+TwistVector<T> KinematicsResults<T>::get_twist_with_respect_to_world(
+    const RigidBody& body) const {
+  const auto& world = tree_->world();
+  return tree_->relativeTwist(kinematics_cache_, world.get_body_index(),
+                             body.get_body_index(), 0);
+}
+
+template <typename T>
+void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
@@ -62,6 +78,20 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
 
   kinematics_cache_.initialize(q, v);
   tree_->doKinematics(kinematics_cache_, false);
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>> KinematicsResults<T>::get_joint_position(
+    const RigidBody& body) const {
+  return kinematics_cache_.getQ().segment(body.get_position_start_index(),
+                                          body.getJoint().get_num_positions());
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>> KinematicsResults<T>::get_joint_velocity(
+    const RigidBody& body) const {
+  return kinematics_cache_.getV().segment(body.get_velocity_start_index(),
+                                          body.getJoint().get_num_velocities());
 }
 
 // Explicitly instantiates on the most common scalar types.
