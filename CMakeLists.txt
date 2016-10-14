@@ -242,6 +242,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
     -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
+    -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
@@ -272,6 +273,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST MATLAB PYTHON
     swig_matlab
     swigmake
     textbook
+    tinyobjloader
     xfoil
     yalmip
     yaml_cpp
