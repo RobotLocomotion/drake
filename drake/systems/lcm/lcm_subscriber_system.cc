@@ -57,18 +57,6 @@ void LcmSubscriberSystem::EvalOutput(const Context<double>&,
   }
 }
 
-void LcmSubscriberSystem::SetMessage(std::vector<uint8_t> message_bytes) {
-  std::lock_guard<std::mutex> lock(received_message_mutex_);
-  received_message_ = message_bytes;
-}
-
-void LcmSubscriberSystem::SetMessage(
-    double time, const BasicVector<double>& message_vector) {
-  std::vector<uint8_t> message_bytes;
-  translator_.Serialize(time, message_vector, &message_bytes);
-  SetMessage(message_bytes);
-}
-
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
@@ -96,6 +84,10 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
               << "\" instead of channel \"" << channel_ << "\". Ignoring it."
               << std::endl;
   }
+}
+
+const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
+  return translator_;
 }
 
 }  // namespace lcm
