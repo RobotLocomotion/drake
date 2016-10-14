@@ -3,7 +3,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/solvers/ipopt_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -145,13 +144,6 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   RunQuadraticProgram(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
-
-  IpoptSolver ipopt_solver;
-  if (ipopt_solver.available()) {
-    ipopt_solver.Solve(prog);
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-8,
-                                MatrixCompareType::absolute));
-  }
 }
 
 }  // close namespace

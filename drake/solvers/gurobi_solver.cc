@@ -148,11 +148,11 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
     linear_row_indices_int[i] = static_cast<int>(linear_row[i]);
   }
 
-  const int kError1 = GRBaddqpterms(
+  const int kQPtermsError = GRBaddqpterms(
       model, static_cast<int>(Q_all_row.size()), Q_all_row_indices_int.data(),
       Q_all_col_indices_int.data(), Q_all_val.data());
-  if (kError1) {
-    return kError1;
+  if (kQPtermsError) {
+    return kQPtermsError;
   }
   for (int i = 0; i < static_cast<int>(linear_row.size()); i++) {
     const int kError = GRBsetdblattrarray(
