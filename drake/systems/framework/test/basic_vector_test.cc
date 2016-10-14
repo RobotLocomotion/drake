@@ -15,15 +15,12 @@ namespace {
 
 // Tests SetZero functionality.
 GTEST_TEST(BasicVectorTest, SetZero) {
-  BasicVector<double> vec(3);
-  vec.get_mutable_value() << 1.0, 2.0, 3.0;
+  BasicVector<int> vec(3);
+  vec.get_mutable_value() << 1, 2, 3;
   vec.SetZero();
-  Eigen::Vector3d expected;
-  expected << 0.0, 0.0, 0.0;
-  EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
-  vec.get_mutable_value() << 1.0, 2.0, 3.0;
+  Eigen::Vector3i expected;
+  expected << 0, 0, 0;
+  EXPECT_EQ(expected, vec.get_value());
 }
 
 // Tests that the BasicVector<double> is initialized to NaN.
@@ -105,48 +102,42 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
 
 // Tests all += * operations for BasicVector.
 GTEST_TEST(BasicVectorTest, PlusEqScaled) {
-  BasicVector<double> ogvec(2), vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
-  Eigen::Vector2d ans1, ans2, ans3, ans4, ans5;
+  BasicVector<int> ogvec(2), vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
+  Eigen::Vector2i ans1, ans2, ans3, ans4, ans5;
   ogvec.SetZero();
-  vec1.get_mutable_value() << 1.0, 2.0;
-  vec2.get_mutable_value() << 3.0, 5.0;
-  vec3.get_mutable_value() << 7.0, 11.0;
-  vec4.get_mutable_value() << 13.0, 17.0;
-  vec5.get_mutable_value() << 19.0, 23.0;
-  VectorBase<double>& v1 = vec1;
-  VectorBase<double>& v2 = vec2;
-  VectorBase<double>& v3 = vec3;
-  VectorBase<double>& v4 = vec4;
-  VectorBase<double>& v5 = vec5;
-  ogvec.PlusEqScaled(2.0, v1);
-  ans1 << 2.0, 4.0;
-  EXPECT_TRUE(CompareMatrices(ans1, ogvec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+  vec1.get_mutable_value() << 1, 2;
+  vec2.get_mutable_value() << 3, 5;
+  vec3.get_mutable_value() << 7, 11;
+  vec4.get_mutable_value() << 13, 17;
+  vec5.get_mutable_value() << 19, 23;
+  VectorBase<int>& v1 = vec1;
+  VectorBase<int>& v2 = vec2;
+  VectorBase<int>& v3 = vec3;
+  VectorBase<int>& v4 = vec4;
+  VectorBase<int>& v5 = vec5;
+  ogvec.PlusEqScaled(2, v1);
+  ans1 << 2, 4;
+  EXPECT_EQ(ans1, ogvec.get_value());
+
   ogvec.SetZero();
-  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}});
-  ans2 << 11.0, 19.0;
-  EXPECT_TRUE(CompareMatrices(ans2, ogvec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}});
+  ans2 << 11, 19;
+  EXPECT_EQ(ans2, ogvec.get_value());
+
   ogvec.SetZero();
-  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}});
-  ans3 << 46.0, 74.0;
-  EXPECT_TRUE(CompareMatrices(ans3, ogvec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
+  ans3 << 46, 74;
+  EXPECT_EQ(ans3, ogvec.get_value());
+
   ogvec.SetZero();
-  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}, {7.0, v4}});
-  ans4 << 137.0, 193.0;
-  EXPECT_TRUE(CompareMatrices(ans4, ogvec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
+  ans4 << 137, 193;
+  EXPECT_EQ(ans4, ogvec.get_value());
+
   ogvec.SetZero();
-  ogvec.PlusEqScaled({{2.0, v1}, {3.0, v2}, {5.0, v3}, {7.0, v4}, {11.0, v5}});
-  ans5 << 346.0, 446.0;
-  EXPECT_TRUE(CompareMatrices(ans5, ogvec.get_value(),
-                              Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
+  ans5 << 346, 446;
+  EXPECT_EQ(ans5, ogvec.get_value());
 }
 
 }  // namespace

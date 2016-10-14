@@ -57,7 +57,7 @@ class VectorBase {
   }
 
   virtual void SetZero() {
-    int64_t sz = size();
+    int sz = size();
     for (int i = 0; i < sz; ++i) {
       SetAtIndex(i, T(0));
     }
@@ -101,33 +101,23 @@ class VectorBase {
     if (rhs.size() != size()) {
       throw std::out_of_range("Addends must be the same size.");
     }
-    for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
-    }
+
+    DoPlusEqScaled(scale, rhs);
+
     return *this;
   }
 
   /// Add in multiple scaled vectors to this vector. All vectors
-  /// must be the same size. This specialized function serves to minimize
-  /// memory access.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(
-      const std::initializer_list<std::pair<T, const VectorBase<T>&>>&
-          rhs_scale) {
-    for (auto j : rhs_scale) {
-      if (j.second.size() != size())
+  /// must be the same size.
+  VectorBase& PlusEqScaled(const std::initializer_list<
+                           std::pair<T, const VectorBase<T>&>>& rhs_scale) {
+    for (const auto& operand : rhs_scale) {
+      if (operand.second.size() != size())
         throw std::out_of_range("Addends must be the same size.");
     }
 
-    for (int i = 0; i < size(); ++i) {
-      T value(0);
-      for (auto j : rhs_scale) value += j.second.GetAtIndex(i) * j.first;
-      SetAtIndex(i, GetAtIndex(i) + value);
-    }
+    DoPlusEqScaled(rhs_scale);
+
     return *this;
   }
 
@@ -149,6 +139,39 @@ class VectorBase {
 
  protected:
   VectorBase() {}
+
+  /// Add in scaled vector @p rhs to this vector. Both vectors are guaranteed
+  /// to be the same size.
+  ///
+  /// Implementations may override this default implementation with a more
+  /// efficient approach, for instance if this vector is contiguous.
+  /// Implementations should ensure this operation remains O(N) in the size of
+  /// the value and allocates no memory.
+  virtual void DoPlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
+    for (int i = 0; i < size(); ++i) {
+      SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
+    }
+  }
+
+  /// Add in multiple scaled vectors to this vector. All vectors
+  /// are guaranteed to be the same size. This function serves to minimize
+  /// memory access. Other specializations of this function serve to exploit
+  /// structure in other ways for computational efficiency (e.g., SIMD
+  /// operations).
+  ///
+  /// Implementations may override this default implementation with a more
+  /// efficient approach, for instance if this vector is contiguous.
+  /// Implementations should ensure this operation remains O(N) in the size of
+  /// the value and allocates no memory.
+  virtual void DoPlusEqScaled(const std::initializer_list<
+                              std::pair<T, const VectorBase<T>&>>& rhs_scale) {
+    for (int i = 0; i < size(); ++i) {
+      T value(0);
+      for (const auto& operand : rhs_scale)
+        value += operand.second.GetAtIndex(i) * operand.first;
+      SetAtIndex(i, GetAtIndex(i) + value);
+    }
+  }
 };
 
 }  // namespace systems
