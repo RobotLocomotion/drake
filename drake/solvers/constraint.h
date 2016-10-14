@@ -182,6 +182,8 @@ class QuadraticConstraint : public Constraint {
  x_1 >= 0 \\
  x_1^2-x_2^2-...-x_n^2 >= 0
  \f]
+ For more information and visualization, please refer to
+ https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class LorentzConeConstraint : public Constraint {
  public:
@@ -222,6 +224,8 @@ class LorentzConeConstraint : public Constraint {
  * x_1 >=0
  * x_0^2*x_1^2 -x_2^2 - x_3^2 - .. - x_n^2 >=0
  * \f]
+ * For more information and visualization, please refer to
+ * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
  */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
