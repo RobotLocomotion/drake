@@ -47,7 +47,7 @@ If you want to use the private externals
 ========================================
 
 Drake includes support for some externals which we are not able to redistribute directly
-(SNOPT, SEDUMI, BERTINI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.
+(SNOPT, SEDUMI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.
 
 Follow the instructions here:
 https://help.github.com/articles/generating-ssh-keys/
@@ -83,7 +83,6 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    fedora
     homebrew
     ubuntu_trusty
     ubuntu_xenial
@@ -311,4 +310,3 @@ To work on the bleeding edge, do::
 This is especially useful if you are ready to contribute your work back to the
 main repository with a
 `pull request <https://help.github.com/articles/using-pull-requests/>`_.
-

@@ -3,12 +3,12 @@
 #include <iostream>
 #include <fstream>
 
-#include "humanoid_status.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
@@ -80,6 +80,20 @@ class CartesianSetPoint {
 
     return qdd;
   }
+
+  // Getters
+  inline const Eigen::Isometry3d& desired_pose() const { return pose_d_; }
+  inline const Eigen::Vector6d& desired_velocity() const { return vel_d_; }
+  inline const Eigen::Vector6d& desired_acceleration() const { return acc_d_; }
+  inline const Eigen::Vector6d& Kp() const { return Kp_; }
+  inline const Eigen::Vector6d& Kd() const { return Kd_; }
+
+  // Setters
+  inline Eigen::Isometry3d& mutable_desired_pose() { return pose_d_; }
+  inline Eigen::Vector6d& mutable_desired_velocity() { return vel_d_; }
+  inline Eigen::Vector6d& mutable_desired_acceleration() { return acc_d_; }
+  inline Eigen::Vector6d& mutable_Kp() { return Kp_; }
+  inline Eigen::Vector6d& mutable_Kd() { return Kd_; }
 
  private:
   Eigen::Isometry3d pose_d_;  ///< Desired pose
@@ -445,7 +459,7 @@ class QPInput {
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
-          r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     }
     desired_vd_.resize(r.get_num_velocities());
   }
@@ -560,7 +574,7 @@ class QPOutput {
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
       coord_names_[i] =
-          r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     }
     vd_.resize(r.get_num_velocities());
     joint_torque_.resize(r.actuators.size());
@@ -736,6 +750,6 @@ class QPController {
   static const double kUpperBoundForContactBasis;
 };
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

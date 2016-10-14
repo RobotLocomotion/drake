@@ -27,9 +27,9 @@ namespace systems {
 template <typename T>
 struct PeriodicEvent {
   /// The period with which this event should recur.
-  T period_sec = 0.0;
+  T period_sec{0.0};
   /// The time after zero when this event should first occur.
-  T offset_sec = 0.0;
+  T offset_sec{0.0};
   /// The action that should be taken when this event occurs.
   DiscreteEvent<T> event;
 };
@@ -61,6 +61,9 @@ class LeafSystem : public System<T> {
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (const auto& descriptor : this->get_output_ports()) {
+      // TODO(liang.fok) Generalize this method to support ports of type
+      // kAbstractValued.
+      DRAKE_DEMAND(descriptor.get_data_type() == kVectorValued);
       output->get_mutable_ports()->emplace_back(
           new OutputPort(AllocateOutputVector(descriptor)));
     }

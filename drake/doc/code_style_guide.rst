@@ -40,8 +40,21 @@ Clarifications
   acronyms.
 * Manually provide user gradients only when we know more than AutoDiffScalar
   possibly could (e.g. sparsity of the gradients).
-* Use exceptions for error handling.  Essential control loops must be exception
-  safe.
+* For the `Exceptions
+  <https://google.github.io/styleguide/cppguide.html#Exceptions>`_ style rule,
+  we clarify as follows. Throwing exceptions is permitted and encouraged for
+  error handling. Unit tests may catch exceptions using
+  `EXPECT_THROW <https://github.com/google/googletest/blob/master/googletest/docs/AdvancedGuide.md#exception-assertions>`_
+  if the exception is documented in the API. Otherwise, catching exceptions is
+  forbidden. For more context, see
+  `PR #3759 <https://github.com/robotlocomotion/drake/pull/3759>`_.
+
+  * We allow exceptions to be thrown because it enables a more detailed
+    description of the error to be provided relative to an assert statement.
+  * **Note:** This is a work-in-progress rule, but captures our
+    currently-in-effect style. We are open to discussion on additional uses for
+    exceptions if and when the need arises.
+
 * No dynamic allocation in the inner simulation/control loops.  Code should be
   still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using
@@ -201,6 +214,13 @@ Additional Rules
   * For discussion, see Drake
     `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_ and
     `#3355 <https://github.com/RobotLocomotion/drake/issues/3355>`_.
+
+* The ``main()`` method should be as brief as possible since it exists outside
+  of namespace ``drake``. It should simply call another method that is
+  appropriately namespaced within namespace ``drake``. The method can be called
+  "``main()``" since it is allowed by the style guide's
+  `exceptions to naming rules <https://google.github.io/styleguide/cppguide.html#Exceptions_to_Naming_Rules>`_, though other method names like
+  "``exec()``" are also acceptable.
 
 .. _code-style-guide-matlab:
 

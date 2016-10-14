@@ -76,6 +76,8 @@
           <upper>1.5708</upper>
           <effort>30</effort>
           <velocity>1</velocity>
+          <stiffness>1</stiffness>
+          <dissipation>1</dissipation>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>

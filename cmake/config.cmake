@@ -26,16 +26,31 @@ endfunction()
 # Find MATLAB.
 #------------------------------------------------------------------------------
 function(drake_setup_matlab)
-  # Look for the MATLAB executable. This does not use find_package(Matlab)
-  # because that is "really good at finding MATLAB", and we only want to enable
-  # matlab support if the matlab executable is in the user's PATH.
-  find_program(MATLAB_EXECUTABLE matlab)
+  option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 
-  # Determine the MATLAB root.
-  get_filename_component(MATLAB_ROOT_DIR "${MATLAB_EXECUTABLE}" DIRECTORY)
-  get_filename_component(MATLAB_ROOT_DIR "${MATLAB_ROOT_DIR}" DIRECTORY CACHE)
+  if(DISABLE_MATLAB)
+    message(STATUS "MATLAB is disabled.")
+    unset(MATLAB_EXECUTABLE CACHE) # TODO unset MATLAB_FOUND instead (see below)
+  else()
+    # Look for the MATLAB executable. This does not use find_package(Matlab)
+    # because that is "really good at finding MATLAB", and we only want to
+    # enable matlab support if the matlab executable is in the user's PATH.
+    find_program(MATLAB_EXECUTABLE matlab)
+    if(MATLAB_EXECUTABLE)
+      message(STATUS "Found MATLAB: ${MATLAB_EXECUTABLE}")
 
-  # TODO find_package(Matlab) and delete mex_setup
+      # Determine the MATLAB root.
+      get_filename_component(_matlab_realpath "${MATLAB_EXECUTABLE}" REALPATH)
+      get_filename_component(_matlab_bindir "${_matlab_realpath}" DIRECTORY)
+      get_filename_component(MATLAB_ROOT_DIR
+        "${_matlab_bindir}" DIRECTORY CACHE)
+
+      # TODO find_package(Matlab) and delete mex_setup
+      # TODO change MATLAB_EXECUTABLE in options.cmake to MATLAB_FOUND
+    else()
+      message(STATUS "MATLAB was not found.")
+    endif()
+  endif()
 endfunction()
 
 #------------------------------------------------------------------------------
@@ -136,6 +151,8 @@ macro(drake_setup_java)
   # compile flags)
   if(MATLAB_EXECUTABLE AND NOT DISABLE_MATLAB)
     drake_setup_java_for_matlab()
+  else()
+    unset(CMAKE_JAVA_COMPILE_FLAGS CACHE)
   endif()
 endmacro()
 
@@ -164,6 +181,9 @@ macro(drake_setup_platform)
   # in that direction.
   set(CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY ON)
   set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
+
+  # Disable adding packages to the registry.
+  set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
 
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")

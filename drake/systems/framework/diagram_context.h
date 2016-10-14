@@ -9,6 +9,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/supervector.h"
@@ -17,78 +18,6 @@
 
 namespace drake {
 namespace systems {
-
-/// DiagramContinuousState is a ContinuousState consisting of Supervectors
-/// over a set of constituent ContinuousStates.
-///
-/// @tparam T The type of the output data. Must be a valid Eigen scalar.
-template <typename T>
-class DiagramContinuousState : public ContinuousState<T> {
- public:
-  /// Constructs a ContinuousState that is composed of other ContinuousStates,
-  /// which are not owned by this object and must outlive it. Some of the
-  /// subsystem states may be nullptr if the system is stateless.
-  ///
-  /// The DiagramContinuousState vector will have the same order as the
-  /// @p states parameter, which should be the sort order of the Diagram itself.
-  explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
-      : ContinuousState<T>(
-            Span(substates, x_selector), Span(substates, q_selector),
-            Span(substates, v_selector), Span(substates, z_selector)),
-        substates_(std::move(substates)) {}
-
-  ~DiagramContinuousState() override {}
-
-  int get_num_substates() const { return static_cast<int>(substates_.size()); }
-
-  /// Returns the continuous state at the given @p index, or nullptr if that
-  /// system is stateless. Aborts if @p index is out-of-bounds.
-  const ContinuousState<T>* get_substate(int index) const {
-    DRAKE_DEMAND(index >= 0 && index < get_num_substates());
-    return substates_[index];
-  }
-
-  /// Returns the continuous state at the given @p index, or nullptr if that
-  /// system is stateless. Aborts if @p index is out-of-bounds.
-  ContinuousState<T>* get_mutable_substate(int index) {
-    DRAKE_DEMAND(index >= 0 && index < get_num_substates());
-    return substates_[index];
-  }
-
- private:
-  // Returns a Supervector over the x, q, v, or z components of each
-  // substate in @p substates, as indicated by @p selector.
-  static std::unique_ptr<VectorBase<T>> Span(
-      const std::vector<ContinuousState<T>*>& substates,
-      std::function<VectorBase<T>*(ContinuousState<T>&)> selector) {
-    std::vector<VectorBase<T>*> sub_xs;
-    for (const auto& substate : substates) {
-      if (substate != nullptr) {
-        sub_xs.push_back(selector(*substate));
-      }
-    }
-    return std::make_unique<Supervector<T>>(sub_xs);
-  }
-
-  // Returns the entire state vector in @p xc.
-  static VectorBase<T>* x_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_state();
-  }
-  // Returns the generalized position vector in @p xc.
-  static VectorBase<T>* q_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_generalized_position();
-  }
-  // Returns the generalized velocity vector in @p xc.
-  static VectorBase<T>* v_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_generalized_velocity();
-  }
-  // Returns the misc continuous state vector in @p xc.
-  static VectorBase<T>* z_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_misc_continuous_state();
-  }
-
-  std::vector<ContinuousState<T>*> substates_;
-};
 
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
@@ -297,7 +226,11 @@ class DiagramContext : public Context<T> {
  private:
   std::vector<PortIdentifier> input_ids_;
 
+  // The outputs are stored in SystemIndex order, and outputs_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<SystemOutput<T>>> outputs_;
+  // The contexts are stored in SystemIndex order, and contexts_ is equal in
+  // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;
 
   // A map from the input ports of constituent systems, to the output ports of

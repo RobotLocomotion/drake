@@ -26,9 +26,11 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   drake_export.h
+  drake_gcc48.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
+  eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
   functional_form.h
@@ -48,9 +50,12 @@ set(private_headers
 # Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon threads)
-if(NOT WIN32)
-  target_link_libraries(drakeCommon gflags)
+target_link_libraries(drakeCommon gflags Threads::Threads)
+
+find_package(spdlog)
+if(spdlog_FOUND)
+  target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
+  target_link_libraries(drakeCommon spdlog::spdlog)
 endif()
 
 # Install all externally-visible headers.

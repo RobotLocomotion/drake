@@ -1,21 +1,13 @@
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakePendulum SOURCE_FILES
-    pendulum_swing_up.cc
-    )
-  target_link_libraries(drakePendulum drakeDynamicConstraint
-    drakeTrajectoryOptimization drakeLCMTypes)
-  pods_install_libraries(drakePendulum)
-  drake_install_headers(Pendulum.h pendulum_swing_up.h)
-  pods_install_pkg_config_file(drake-pendulum
-    LIBS -ldrakePendulum
-    REQUIRES
-    VERSION 0.0.1)
+  drake_install_headers(Pendulum.h)
 
   add_library_with_exports(LIB_NAME drakePendulumSystem
-    SOURCE_FILES pendulum_system.cc)
-  target_link_libraries(drakePendulumSystem drakeSystemFramework)
+    SOURCE_FILES pendulum_swing_up.cc pendulum_system.cc)
+  target_link_libraries(drakePendulumSystem drakeSystemFramework
+    drakeDynamicConstraint
+    drakeTrajectoryOptimization)
   pods_install_libraries(drakePendulumSystem)
-  drake_install_headers(pendulum_system.h)
+  drake_install_headers(pendulum_system.h pendulum_swing_up.h)
   pods_install_pkg_config_file(drake-pendulum-system
     LIBS -ldrakePendulumSystem
     REQUIRES
@@ -31,10 +23,11 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
   target_link_libraries(pendulum_run_energy_shaping
-    drakeRBM
-    drakeLCMSystem
-    threads)
-  # drake_add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
+    drakePendulumSystem
+    drakeRigidBodyPlant
+    drakeSystemAnalysis)
+  drake_add_test(NAME pendulum_run_energy_shaping
+    COMMAND pendulum_run_energy_shaping)
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
   target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
@@ -43,9 +36,10 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
   target_link_libraries(pendulum_run_swing_up
-    drakePendulum
-    drakeRBM
-    drakeLCMSystem)
+    drakePendulumSystem
+    drakeRigidBodyPlant
+    drakeSystemControllers
+    drakeSystemAnalysis)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
   find_package(NLopt)

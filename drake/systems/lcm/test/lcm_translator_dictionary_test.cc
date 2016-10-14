@@ -1,6 +1,7 @@
+#include "drake/systems/lcm/lcm_translator_dictionary.h"
+
 #include "gtest/gtest.h"
 
-#include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 
 namespace drake {
@@ -14,11 +15,8 @@ const int kDim = 10;
 
 // Tests the functionality of LcmTranslatorDictionary.
 GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
-  // Defines a channel name.
   const std::string channel_name = "_=?+pYa8J9c!Hg;V";
 
-  // Creates a dictionary with one translator for the above-defined channel
-  // name.
   LcmTranslatorDictionary dictionary;
   dictionary.AddEntry(
       channel_name,

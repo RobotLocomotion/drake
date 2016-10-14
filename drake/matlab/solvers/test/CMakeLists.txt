@@ -1,10 +1,9 @@
-drake_add_matlab_test(NAME matlab/solvers/test/gloptipoly_constrained_test REQUIRES gloptipoly3 sedumi  spotless COMMAND gloptipoly_constrained_test)
 drake_add_matlab_test(NAME matlab/solvers/test/rrt_basic COMMAND rrt_basic)
 drake_add_matlab_test(NAME matlab/solvers/test/rrt_bugtrap COMMAND rrt_bugtrap)
 drake_add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover)
 drake_add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_rotation REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover_rotation)
 drake_add_matlab_test(NAME matlab/solvers/test/rrt_piano_mover_translation REQUIRES lcm libbot OPTIONAL bullet COMMAND rrt_piano_mover_translation)
-# drake_add_matlab_test(NAME matlab/solvers/test/sixHumpCamel REQUIRES spotless OPTIONAL bertini gloptipoly3 snopt COMMAND sixHumpCamel)  # FIXME: see #3313
+# drake_add_matlab_test(NAME matlab/solvers/test/sixHumpCamel REQUIRES spotless OPTIONAL  snopt COMMAND sixHumpCamel)  # FIXME: see #3313
 drake_add_matlab_test(NAME matlab/solvers/test/testConstraint COMMAND testConstraint)
 drake_add_matlab_test(NAME matlab/solvers/test/testGurobiLCP REQUIRES gurobi COMMAND testGurobiLCP)
 drake_add_matlab_test(NAME matlab/solvers/test/testLQRmex OPTIONAL bullet COMMAND testLQRmex)

@@ -1,6 +1,6 @@
-
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -15,7 +15,7 @@ namespace pendulum {
 namespace {
 
 int do_main(int argc, char* argv[]) {
-  lcm::LCM lcm;
+  lcm::DrakeLcm lcm;
   RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
                      systems::plants::joints::kFixed);
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(1);

@@ -17,19 +17,38 @@ me="The Drake prerequisite set-up script"
 
 [[ $DISTRIB_RELEASE == "16.04" ]] || die "$me only supports Ubuntu 16.04."
 
+# Install Clang 3.9
+while true; do
+  echo "The Ubuntu 16.04 distribution includes Clang 3.8 by default. To install \
+  Clang 3.9 it is necessary to add a Personal Package Archive (PPA)."
+  echo "This script will add the repository
+    'deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main'"
+  read -p "Do you want to continue? [Y/n] " yn
+  case $yn in
+    [Yy]*)
+      apt-get install --no-install-recommends lsb-core software-properties-common wget
+      wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+      add-apt-repository -y "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main"
+      apt-get update
+      apt install --no-install-recommends clang-3.9
+      break
+      ;;
+    [Nn]*) break ;;
+    *) echo "Please answer yes or no." ;;
+  esac
+done
+
 # Install the APT dependencies.
-# TODO(david-german-tri): Can we remove libvtk-java, subversion?
+# TODO(david-german-tri): Can we remove libvtk-java?
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 autoconf
 automake
 bison
-clang
 cmake
 cmake-curses-gui
 default-jdk
 doxygen
-flex
 g++-5
 g++-5-multilib
 gdb
@@ -62,8 +81,6 @@ python-html5lib
 python-numpy
 python-sphinx
 python-vtk
-subversion
-swig
 unzip
 valgrind
 

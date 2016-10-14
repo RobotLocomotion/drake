@@ -144,14 +144,9 @@ enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
-if(WIN32)
-  # The following compiler flag is needed to support parameterized Google tests on Windows.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
-endif()
 
 find_package(gflags REQUIRED)
 
@@ -160,10 +155,7 @@ set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-# set up pseudo-target for threads
-find_package(Threads)
-add_library(threads INTERFACE)
-target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+find_package(Threads REQUIRED)
 
 # set up and build lcm types
 find_package(lcm)
@@ -215,15 +207,10 @@ pods_install_pkg_config_file(drake-java
 find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
-pods_find_pkg_config(spdlog)
-if(spdlog_FOUND)
-  pods_use_pkg_config_includes(spdlog)
-  add_definitions(-DHAVE_SPDLOG)
-endif()
-
 include_directories(thirdParty/bsd/spruce/include)
 
 add_subdirectory(common)
+add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
@@ -274,9 +261,9 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/get_drake_install_dir.m
   "end\n"
   "\n")
 
-find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(ffmpeg ffmpeg)
+find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(FFMPEG_EXECUTABLE ffmpeg)
 
 if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")

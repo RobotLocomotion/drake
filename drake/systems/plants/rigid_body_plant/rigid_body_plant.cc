@@ -22,8 +22,10 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
-    tree_(move(tree)) {
+RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
+    : tree_(move(tree)) {
+  DRAKE_DEMAND(tree_ != nullptr);
+
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
@@ -40,6 +42,16 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree) :
 
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() { }
+
+// TODO(liang.fok) Remove this method once a more advanced contact modeling
+// framework is available.
+template <typename T>
+void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
+  double penetration_damping, double friction_coefficient) {
+  penetration_stiffness_ = penetration_stiffness;
+  penetration_damping_ = penetration_damping;
+  friction_coefficient_ = friction_coefficient;
+}
 
 template <typename T>
 bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
@@ -173,6 +185,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   DRAKE_DEMAND(derivatives != nullptr);
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  DRAKE_DEMAND(input);
 
   // The input vector of actuation values.
   auto u = input->get_value();
@@ -221,20 +234,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     for (auto const& b : tree_->bodies) {
       if (!b->has_parent_body()) continue;
       auto const& joint = b->getJoint();
-      // Only for single-axis joints.
-      if (joint.getNumPositions() == 1 && joint.getNumVelocities() == 1) {
-        // Limits makes things easier/faster here.
-        T qmin = joint.getJointLimitMin()(0),
-            qmax = joint.getJointLimitMax()(0);
-        // tau = k * (qlimit-q) - b(qdot)
-        if (q(b->get_position_start_index()) < qmin)
-          right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmin - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
-        else if (q(b->get_position_start_index()) > qmax)
-          right_hand_side(b->get_velocity_start_index()) -=
-              penetration_stiffness_ * (qmax - q(b->get_position_start_index()))
-                  - penetration_damping_ * v(b->get_velocity_start_index());
+      // Joint limit forces are only implemented for single-axis joints.
+      if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
+        const T limit_force = JointLimitForce(joint,
+                                              q(b->get_position_start_index()),
+                                              v(b->get_velocity_start_index()));
+        right_hand_side(b->get_velocity_start_index()) -= limit_force;
       }
     }
   }
@@ -345,9 +350,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
+void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
     const Context<T>& context,
-    const VectorBase<T>& generalized_velocity,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     VectorBase<T>* positions_derivative) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
@@ -366,7 +371,7 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = generalized_velocity.CopyToVector();
+  VectorX<T> v = generalized_velocity;
 
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
@@ -376,6 +381,31 @@ void RigidBodyPlant<T>::MapVelocityToConfigurationDerivatives(
       kinsol.transformPositionDotMappingToVelocityMapping(
           MatrixX<T>::Identity(nq, nq)) * v);
 }
+
+template <typename T>
+T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
+                                     const T& position, const T& velocity) {
+  const T qmin = joint.getJointLimitMin()(0);
+  const T qmax = joint.getJointLimitMax()(0);
+  DRAKE_DEMAND(qmin < qmax);
+  const T joint_stiffness = joint.get_joint_limit_stiffness()(0);
+  DRAKE_DEMAND(joint_stiffness >= 0);
+  const T joint_dissipation = joint.get_joint_limit_dissipation()(0);
+  DRAKE_DEMAND(joint_dissipation >= 0);
+  if (position > qmax) {
+    const T violation = position - qmax;
+    const T limit_force = (-joint_stiffness * violation *
+                           (1 + joint_dissipation * velocity));
+    return std::min(limit_force, 0.);
+  } else if (position < qmin) {
+    const T violation = position - qmin;
+    const T limit_force = (-joint_stiffness * violation *
+                           (1 - joint_dissipation * velocity));
+    return std::max(limit_force, 0.);
+  }
+  return 0;
+}
+
 
 // Explicitly instantiates on the most common scalar types.
 template class DRAKE_EXPORT RigidBodyPlant<double>;

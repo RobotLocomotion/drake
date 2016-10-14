@@ -12,6 +12,10 @@ DrakeJoint::DrakeJoint(const std::string& _name,
           _num_positions, -std::numeric_limits<double>::infinity())),
       joint_limit_max(VectorXd::Constant(
           _num_positions, std::numeric_limits<double>::infinity())),
+      joint_limit_stiffness_(VectorXd::Constant(
+          _num_positions, 150. /* Historic default from RigidBodyPlant. */)),
+      joint_limit_dissipation_(VectorXd::Constant(
+          _num_positions, 1. /* Arbitrary, reasonable default. */)),
       transform_to_parent_body(_transform_to_parent_body),
       num_positions(_num_positions),
       num_velocities(_num_velocities) {
@@ -68,4 +72,12 @@ const Eigen::VectorXd& DrakeJoint::getJointLimitMin() const {
 
 const Eigen::VectorXd& DrakeJoint::getJointLimitMax() const {
   return joint_limit_max;
+}
+
+const Eigen::VectorXd& DrakeJoint::get_joint_limit_stiffness() const {
+  return joint_limit_stiffness_;
+}
+
+const Eigen::VectorXd& DrakeJoint::get_joint_limit_dissipation() const {
+  return joint_limit_dissipation_;
 }

@@ -43,7 +43,7 @@ class SinkSystem {
   bool isTimeVarying() const { return false; }
 };
 
-int DoMain(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   const std::shared_ptr<RigidBodyTree> tree =
@@ -64,5 +64,5 @@ int DoMain(int argc, const char* argv[]) {
 
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }

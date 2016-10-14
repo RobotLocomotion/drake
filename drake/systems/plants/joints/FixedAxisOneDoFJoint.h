@@ -128,6 +128,12 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     DrakeJoint::joint_limit_max[0] = joint_limit_max;
   }
 
+  void SetJointLimitDynamics(double joint_limit_stiffness,
+                             double joint_limit_dissipation) {
+    DrakeJoint::joint_limit_stiffness_[0] = joint_limit_stiffness;
+    DrakeJoint::joint_limit_dissipation_[0] = joint_limit_dissipation;
+  }
+
   Eigen::VectorXd zeroConfiguration() const override {
     return Eigen::VectorXd::Zero(1);
   }

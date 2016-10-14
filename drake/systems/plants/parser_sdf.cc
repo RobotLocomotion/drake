@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_common.h"
@@ -348,6 +349,12 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
     parseScalarValue(limit_node, "lower", lower);
     parseScalarValue(limit_node, "upper", upper);
     fjoint->setJointLimits(lower, upper);
+
+    double stiffness = fjoint->get_joint_limit_stiffness()(0);
+    double dissipation = fjoint->get_joint_limit_dissipation()(0);
+    parseScalarValue(limit_node, "stiffness", stiffness);
+    parseScalarValue(limit_node, "dissipation", dissipation);
+    fjoint->SetJointLimitDynamics(stiffness, dissipation);
   }
 }
 
@@ -560,6 +567,9 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
 
+    // This log statement is required for users to work around #3673, and can
+    // be removed when that issue is resolved.
+    drake::log()->info("Made joint {} a loop joint.", name);
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
@@ -575,6 +585,9 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
            << " not found! Cannot update its local frame to be that of joint.";
         throw std::runtime_error(ss.str());
       }
+      // This log statement is required for users to work around #3673, and
+      // can be removed when that issue is resolved.
+      drake::log()->info("Adding joint {} to the plant.", name);
     }
 
     // Update pose_map with child's new frame, which is now the same as this

@@ -1,8 +1,9 @@
-#include "humanoid_status.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
+
 #include <iostream>
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 // TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
@@ -109,6 +110,6 @@ void HumanoidStatus::Update(
          (Fz[Side::LEFT] + Fz[Side::RIGHT]);
 }
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

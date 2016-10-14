@@ -32,6 +32,8 @@ lcm_wrap_types(
   lcmt_quadrotor_output_t.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm
+  lcmt_schunk_command.lcm
+  lcmt_schunk_status.lcm
   lcmt_simple_car_config_t.lcm
   lcmt_simple_car_state_t.lcm
   lcmt_simulation_command.lcm

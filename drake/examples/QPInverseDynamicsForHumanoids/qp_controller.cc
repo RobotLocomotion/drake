@@ -1,11 +1,10 @@
-#include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/gurobi_solver.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 
-#include "qp_controller.h"
 #include "drake/math/cross_product.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
-namespace example {
+namespace examples {
 namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;
@@ -485,6 +484,6 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   return out;
 }
 
-}  // end namespace qp_inverse_dynamics
-}  // end namespace example
-}  // end namespace drake
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

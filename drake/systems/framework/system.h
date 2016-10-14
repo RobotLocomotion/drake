@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -42,18 +42,18 @@ struct DiscreteEvent {
   };
 
   /// The system that receives the event.
-  const System<T>* recipient = nullptr;
+  const System<T>* recipient{nullptr};
   /// The type of action the system must take in response to the event.
-  ActionType action = kUnknownAction;
+  ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kPublishAction. If nullptr, Publish will be used.
-  std::function<void(const Context<T>&)> do_publish = nullptr;
+  std::function<void(const Context<T>&)> do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
-  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update =
-      nullptr;
+  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
+    nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -329,39 +329,28 @@ class System {
     return;
   }
 
-  /// Transforms the velocity (v) in the given Context state to the derivative
+  /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
   /// in the number of generalized velocity states.
-  ///
-  /// The default implementation uses the identity mapping. It throws
-  /// std::out_of_range if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes must
-  /// override this function if qdot != v (even if they are the same size).
-  ///
-  /// Implementations may assume that @p configuration_derivatives is of
-  /// the same size as the generalized position allocated in
-  /// CreateDefaultContext()->continuous_state.get_generalized_position(),
-  /// and should populate it with elementwise-corresponding derivatives of
-  /// position. Implementations that are not second-order systems may simply
-  /// do nothing.
-  virtual void MapVelocityToConfigurationDerivatives(
+  void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
-    if (generalized_velocity.size() != configuration_derivatives->size()) {
-      throw std::out_of_range(
-          "generalized_velocity.size() " +
-          std::to_string(generalized_velocity.size()) +
-          " != configuration_derivatives.size() " +
-          std::to_string(configuration_derivatives->size()) +
-          ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives()?");
-    }
+    MapVelocityToConfigurationDerivatives(context,
+                                          generalized_velocity.CopyToVector(),
+                                          configuration_derivatives);
+  }
 
-    for (int i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(i,
-                                            generalized_velocity.GetAtIndex(i));
-    }
+  /// Transforms the velocity (v) in the given @p context to the derivative
+  /// of the configuration (qdot). The transformation must be linear in velocity
+  /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
+  /// in the number of generalized velocity states.
+  void MapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
+    DoMapVelocityToConfigurationDerivatives(context, generalized_velocity,
+                                            configuration_derivatives);
   }
 
   // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
@@ -553,6 +542,38 @@ class System {
     actions->time = std::numeric_limits<T>::infinity();
   }
 
+  /// Provides the substantive implementation of
+  /// MapVelocityToConfigurationDerivatives.
+  ///
+  /// The default implementation uses the identity mapping. It throws
+  /// std::runtime_error if the @p generalized_velocity and
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
+  ///
+  /// Implementations may assume that @p configuration_derivatives is of
+  /// the same size as the generalized position allocated in
+  /// AllocateTimeDerivatives(), and should populate it with elementwise
+  /// corresponding derivatives of position. Implementations that are not
+  /// second-order systems may simply do nothing.
+  virtual void DoMapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = generalized_velocity.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
+    for (int i = 0; i < n; ++i) {
+      const T value = generalized_velocity[i];
+      configuration_derivatives->SetAtIndex(i, value);
+    }
+  }
+
   /// Causes an InputPort in the @p context to become up-to-date, delegating to
   /// the parent Diagram if necessary.
   ///
@@ -572,7 +593,7 @@ class System {
   std::string name_;
   std::vector<SystemPortDescriptor<T>> input_ports_;
   std::vector<SystemPortDescriptor<T>> output_ports_;
-  const detail::InputPortEvaluatorInterface<T>* parent_ = nullptr;
+  const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 };
 
 }  // namespace systems

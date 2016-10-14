@@ -1,8 +1,7 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/common/drake_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -27,11 +26,11 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    * is aliased by this constructor and thus must remain valid for the lifetime
    * of this object.
    *
-   * @param[in] lcm A pointer to the LCM subsystem.
+   * @param[in] lcm A pointer to the LCM interface.
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     ::lcm::LCM* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm);
 
   /**
    * A constructor.
@@ -45,7 +44,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     ::lcm::LCM* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm);
 
 
   ~LcmPublisherSystem() override;
@@ -55,6 +54,8 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   std::string get_name() const override;
+
+  const std::string& get_channel_name() const;
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string get_name(const std::string& channel);
@@ -72,16 +73,9 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
                   SystemOutput<double>* output) const override {}
 
   /**
-   * Gets the most recently published message bytes; typically only used for
-   * unit testing.
+   * Returns the translator used by this publisher.
    */
-  std::vector<uint8_t> GetMessage() const;
-
-  /**
-   * Gets the most recently published message bytes, and converts them to into
-   * vector form using the translator; typically only used for unit testing.
-   */
-  void GetMessage(BasicVector<double>* message_vector) const;
+  const LcmAndVectorBaseTranslator& get_translator() const;
 
  private:
   // The channel on which to publish LCM messages.
@@ -92,11 +86,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   const LcmAndVectorBaseTranslator& translator_;
 
   // A pointer to the LCM subsystem.
-  ::lcm::LCM* lcm_;
-
-  // The most recent message bytes; mutable is ok because it only affects the
-  // GetMessage() results, which are not part of the System contract.
-  mutable std::vector<uint8_t> message_bytes_;
+  drake::lcm::DrakeLcmInterface* const lcm_;
 };
 
 }  // namespace lcm
