@@ -1,4 +1,5 @@
 #include "Geometry.h"
+#include "externals/tinyobjloader/tiny_obj_loader.h"
 
 #include <cstdio>
 #include <fstream>
@@ -259,79 +260,75 @@ string Mesh::FindFileWithObjExtension() const {
 
 void Mesh::LoadObjFile(PointsVector* vertices,
                        TrianglesVector* triangles) const {
+
   string obj_file_name = FindFileWithObjExtension();
   ifstream file(obj_file_name);
+
   if (!file) {
     throw std::runtime_error("Error opening file \"" + obj_file_name + "\".");
   }
 
-  std::string line;
-  int line_number = 0;
-  int maximum_index = 0;
-  while (!file.eof()) {
-    ++line_number;
-    std::getline(file, line);
-    std::stringstream ss(line);
-    std::string key;
-    ss >> key;
+  string path;
+  size_t idx = obj_file_name.rfind('/');
+  if (idx != string::npos)
+    path = obj_file_name.substr(0, idx+1);
 
-    if (key == "v") {
-      // Reads a 3D vertex.
-      double x, y, z;
-      ss >> x; ss >> y; ss >> z;
-      if (ss.fail()) {
-        throw std::runtime_error(
-            "In file \"" + obj_file_name + "\" "
-            "(line " + std::to_string(line_number) + "). "
-            "Vertex in the wrong format.");
-      }
-      vertices->push_back(Vector3d(x, y, z));
-    } else if (key == "f") {
-      // Reads the connectivity for a single triangle.
-      std::vector<int> indices;
-      int index;
-      while (ss >> index) {
-        // Checks that index >= 1.
-        if (index < 1) {
-          throw std::runtime_error(
-              "In file \"" + obj_file_name + "\" "
-              "(line " + std::to_string(line_number) + "). "
-              "Invalid vertex index is " + std::to_string(index) + " < 1.");
-        }
-        maximum_index = std::max(maximum_index, index);
+  tinyobj::attrib_t attrib;
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+  std::string err;
 
-        // Ignores line until the next whitespace.
-        // This effectively ignores texture coordinates and normals.
-        // The first entry always corresponds to an index in the face.
-        ss.ignore(line.size(), ' ');
-        if (ss.fail()) {
-          throw std::runtime_error(
-              "In file \"" + obj_file_name + "\" "
-              "(line " + std::to_string(line_number) + "). "
-              "Triangle face in the wrong format.");
-        }
-        indices.push_back(index);
-      }
-      if (indices.size() != 3) {
-        throw std::runtime_error(
-            "In file \"" + obj_file_name + "\" "
-            "(line " + std::to_string(line_number) + "). "
-            "Only triangular faces supported. However "
-            + std::to_string(indices.size()) + " indices are provided.");
-      }
-      triangles->push_back(Vector3i(indices[0]-1, indices[1]-1, indices[2]-1));
-    }
+  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+      obj_file_name.c_str(), path.c_str(), true);
+
+  // Report any error
+  if (!err.empty())
+    std::cerr << "Error loading OBJ file: " << err << std::endl;
+
+  // Use the boolean return value to determine if we should proceeed
+  if (!ret)
+    throw std::runtime_error("Error parsing file \"" + obj_file_name + "\".");
+
+  // Store the vertices
+  for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3)
+  {
+    vertices->push_back(Vector3d(attrib.vertices[idx],
+                                 attrib.vertices[idx + 1],
+                                 attrib.vertices[idx + 2]));
   }
 
-  // Verifies that the maximum index referenced when defining faces does not
-  // exceed the number of vertices.
-  if (maximum_index > static_cast<int>(vertices->size())) {
-    throw std::runtime_error(
-        "In file \"" + obj_file_name + "\". "
-        "The maximum index referenced in defining faces (" +
-            std::to_string(maximum_index) + ") "
-        "exceeds the number of vertices (" +
-            std::to_string(vertices->size()) + ". ");
+  // Iterate over the shapes
+  for (auto const shape: shapes)
+  {
+    unsigned int indexOffset = 0;
+
+    // For each face in the shape
+    for (unsigned int face = 0;
+         face < shape.mesh.num_face_vertices.size(); ++face)
+    {
+      unsigned int vertCount = shape.mesh.num_face_vertices[face];
+
+      // Make sure the face has three vertices
+      if (vertCount != 3) {
+        throw std::runtime_error(
+            "In file \"" + obj_file_name + "\" "
+            "Only triangular faces supported. However "
+            + std::to_string(vertCount) + " indices are provided.");
+      }
+
+      Vector3i faceIndices;
+
+      // For each vertex in the face
+      for (unsigned int vert = 0; vert < vertCount; ++vert)
+      {
+        // Store the vertex index
+        faceIndices[vert] = shape.mesh.indices[indexOffset + vert].vertex_index;
+      }
+
+      triangles->push_back(faceIndices);
+
+      indexOffset += vertCount;
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 add_library_with_exports(LIB_NAME drakeShapes SOURCE_FILES Geometry.cpp Element.cpp VisualElement.cpp)
-target_link_libraries(drakeShapes spruce)
+target_link_libraries(drakeShapes spruce tinyobjloader)
 
 #enable_testing()
 #add_subdirectory(test)

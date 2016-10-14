@@ -45,6 +45,7 @@ endif()
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)" ON)
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
+option(WITH_TINYOBJLOADER "library for reading wavefront mesh files" ON)
 
 ##############################################################
 # External Projects that are only needed when MATLAB is in use
@@ -245,6 +246,10 @@ drake_add_external(textbook PUBLIC CMAKE
   REQUIRES PythonInterp
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
 
+# tinyobjloader
+drake_add_external(tinyobjloader PUBLIC CMAKE
+  CMAKE_ARGS -DTINYOBJLOADER_COMPILATION_SHARED=ON)
+
 # yaml_cpp
 if(WIN32)
   drake_add_external(yaml_cpp PUBLIC CMAKE
@@ -347,6 +352,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
+    -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
   DEPENDS
     avl
     bertini
@@ -375,6 +381,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     spotless
     swig_matlab
     swigmake
+    tinyobjloader
     yalmip
     yaml_cpp
     xfoil
