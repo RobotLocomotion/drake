@@ -288,22 +288,19 @@ void Mesh::LoadObjFile(PointsVector* vertices,
     throw std::runtime_error("Error parsing file \"" + obj_file_name + "\".");
 
   // Store the vertices
-  for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3)
-  {
+  for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3) {
     vertices->push_back(Vector3d(attrib.vertices[idx],
                                  attrib.vertices[idx + 1],
                                  attrib.vertices[idx + 2]));
   }
 
   // Iterate over the shapes
-  for (auto const shape: shapes)
-  {
+  for (auto const shape : shapes) {
     unsigned int indexOffset = 0;
 
     // For each face in the shape
     for (unsigned int face = 0;
-         face < shape.mesh.num_face_vertices.size(); ++face)
-    {
+         face < shape.mesh.num_face_vertices.size(); ++face) {
       unsigned int vertCount = shape.mesh.num_face_vertices[face];
 
       // Make sure the face has three vertices
@@ -317,8 +314,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
       Vector3i faceIndices;
 
       // For each vertex in the face
-      for (unsigned int vert = 0; vert < vertCount; ++vert)
-      {
+      for (unsigned int vert = 0; vert < vertCount; ++vert) {
         // Store the vertex index
         faceIndices[vert] = shape.mesh.indices[indexOffset + vert].vertex_index;
       }
