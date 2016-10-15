@@ -161,53 +161,6 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
       return kError;
     }
   }
-  /*
-  int start_row = 0;
-  for (const auto& binding : prog.quadratic_costs()) {
-    const auto& constraint = binding.constraint();
-    const int constraint_variable_dimension = binding.GetNumElements();
-
-    Eigen::MatrixXd Q = 0.5 * (constraint->Q());
-    Eigen::VectorXd b = constraint->b();
-
-    // Check for square matrices.
-    DRAKE_ASSERT(Q.rows() == Q.cols());
-    // Check for symmetric matrices.
-    DRAKE_ASSERT(Q.transpose() == Q);
-    // Check for Quadratic and Linear Cost dimensions.
-    DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
-    DRAKE_ASSERT(b.cols() == 1);
-    DRAKE_ASSERT(b.rows() == constraint_variable_dimension);
-
-    // adding each Q term (only upper triangular).
-    for (int i = 0; i < constraint_variable_dimension; i++) {
-      for (int j = i; j < constraint_variable_dimension; j++) {
-        if (std::abs(Q(i, j)) > sparseness_threshold) {
-          int row_ind = i + start_row;
-          int col_ind = j + start_row;
-          // TODO(naveenoid) : Port to batch addition mode of this function
-          // by utilising the Upper right (or lower left) triangular matrix.
-          // The single element addition method used below is recommended
-          // initially by Gurobi since it has a low cost.
-          double individual_quadratic_cost_value = Q(i, j);
-          const int error = GRBaddqpterms(model, 1, &row_ind, &col_ind,
-                                          &individual_quadratic_cost_value);
-          if (error) {
-            return (error);
-          }
-        }
-      }
-    }
-    const int error = GRBsetdblattrarray(
-        model, "Obj", start_row, constraint_variable_dimension, b.data());
-    if (error) {
-      return error;
-    }
-    start_row += Q.rows();
-    // Verify that the start_row does not exceed the total possible
-    // dimension of the decision variable.
-    DRAKE_ASSERT(start_row <= static_cast<int>(prog.num_vars()));
-  }*/
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
 }
