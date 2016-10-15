@@ -43,9 +43,21 @@ namespace {
  * http://www.gurobi.com/documentation/6.5/refman/error_codes.html#sec:ErrorCodes
  */
 template <typename DerivedA, typename DerivedB>
-int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
-                   const Eigen::MatrixBase<DerivedB>& b, char constraint_sense,
-                   double sparseness_threshold) {
+int AddLinearConstraint(GRBmodel *model,
+                        const Eigen::MatrixBase<DerivedA> &A,
+                        const Eigen::MatrixBase<DerivedB> &b,
+                        const VariableList& variable_list,
+                        char constraint_sense,
+                        double sparseness_threshold) {
+  // variable_indices[i] is the index of the i'th variable
+  std::vector<int> variable_indices;
+  variable_indices.reserve(A.cols());
+  for(const DecisionVariableView &var : variable_list) {
+    for (int i = 0; i < static_cast<int>(var.size()); i++) {
+      variable_indices.push_back(var.index() + i);
+    }
+  }
+
   for (int i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
     std::vector<int> constraint_index(A.cols(), 0);
@@ -54,7 +66,7 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
     for (int j = 0; j < A.cols(); j++) {
       if (std::abs(A(i, j)) > sparseness_threshold) {
         constraint_value[non_zeros_index] = A(i, j);
-        constraint_index[non_zeros_index++] = j;
+        constraint_index[non_zeros_index++] = variable_indices[j];
       }
     }
     int error =
@@ -210,8 +222,8 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
     const int error =
-        AddConstraints(model, constraint->A(), constraint->lower_bound(),
-                       GRB_EQUAL, sparseness_threshold);
+        AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
+            binding.variable_list(), GRB_EQUAL, sparseness_threshold);
     if (error) {
       return error;
     }
@@ -219,13 +231,15 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
 
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
+    const int kNumVariables = binding.GetNumElements();
+    DRAKE_ASSERT(constraint->A().cols() == kNumVariables);
 
     if (constraint->lower_bound() !=
         -Eigen::MatrixXd::Constant((constraint->lower_bound()).rows(), 1,
                                    std::numeric_limits<double>::infinity())) {
       const int error =
-          AddConstraints(model, constraint->A(), constraint->lower_bound(),
-                         GRB_GREATER_EQUAL, sparseness_threshold);
+          AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
+              binding.variable_list(), GRB_GREATER_EQUAL, sparseness_threshold);
       if (error) {
         return error;
       }
@@ -234,8 +248,8 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
         Eigen::MatrixXd::Constant((constraint->upper_bound()).rows(), 1,
                                   std::numeric_limits<double>::infinity())) {
       const int error =
-          AddConstraints(model, constraint->A(), constraint->upper_bound(),
-                         GRB_LESS_EQUAL, sparseness_threshold);
+          AddLinearConstraint(model, constraint->A(), constraint->upper_bound(),
+              binding.variable_list(), GRB_LESS_EQUAL, sparseness_threshold);
       if (error) {
         return error;
       }
