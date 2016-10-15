@@ -57,7 +57,7 @@ class VectorBase {
   }
 
   virtual void SetZero() {
-    int sz = size();
+    const int sz = size();
     for (int i = 0; i < sz; ++i) {
       SetAtIndex(i, T(0));
     }
@@ -97,14 +97,8 @@ class VectorBase {
   /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
-    if (rhs.size() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
-
-    DoPlusEqScaled(scale, rhs);
-
-    return *this;
+  VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
+    return DoPlusEqScaled({scale, rhs});
   }
 
   /// Add in multiple scaled vectors to this vector. All vectors
@@ -140,32 +134,23 @@ class VectorBase {
  protected:
   VectorBase() {}
 
-  /// Add in scaled vector @p rhs to this vector. Both vectors are guaranteed
-  /// to be the same size.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
-  virtual void DoPlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
-    for (int i = 0; i < size(); ++i) {
-      SetAtIndex(i, GetAtIndex(i) + scale * rhs.GetAtIndex(i));
-    }
-  }
-
-  /// Add in multiple scaled vectors to this vector. All vectors
+  /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size. This function serves to minimize
   /// memory access. Other specializations of this function serve to exploit
   /// structure in other ways for computational efficiency (e.g., SIMD
   /// operations).
   ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
+  ///
+  /// You should override this method if possible with a more efficient
+  /// approach that leverages structure. For example, if the vector is
+  /// contiguous, implementations that leverage SIMD operations should
+  /// provde to be far more efficient. Overriding implementations should
+  /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void DoPlusEqScaled(const std::initializer_list<
                               std::pair<T, const VectorBase<T>&>>& rhs_scale) {
-    for (int i = 0; i < size(); ++i) {
+    const int sz = size();
+    for (int i = 0; i < sz; ++i) {
       T value(0);
       for (const auto& operand : rhs_scale)
         value += operand.second.GetAtIndex(i) * operand.first;

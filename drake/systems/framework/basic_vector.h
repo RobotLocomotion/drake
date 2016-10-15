@@ -100,10 +100,6 @@ class BasicVector : public VectorBase<T> {
 
   void SetZero() override { values_.setZero(); }
 
-  void DoPlusEqScaled(const T& scale, const VectorBase<T>& rhs) override {
-    rhs.ScaleAndAddToVector(scale, values_);
-  }
-
   /// Add in multiple scaled vectors to this vector. All vectors
   /// must be the same size. This specialized function serves to maximize
   /// speed through SIMD operations or minimize memory access, depending on
