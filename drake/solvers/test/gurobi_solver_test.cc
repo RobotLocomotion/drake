@@ -207,14 +207,49 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
   // R2a = R2' * a
   auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
   auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
+  MatrixXd R1_transpose = R1;
+  R1_transpose.transposeInPlace();
+  MatrixXd R2_transpose = R2;
+  R2_transpose.transposeInPlace();
+  MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
+  A_R1a.block(0, 0, R1.cols(), R1.cols()) = MatrixXd::Identity(R1.cols(), R1.cols());
+  A_R1a.block(0, R1.cols(), R1.cols(), R1.rows()) = -R1_transpose;
+  MatrixXd A_R2a(R2.cols(), R2.cols() + R2.rows());
+  A_R2a.block(0, 0, R2.cols(), R2.cols()) = MatrixXd::Identity(R2.cols(), R2.cols());
+  A_R2a.block(0, R2.cols(), R2.cols(), R2.rows()) = -R2_transpose;
+  VectorXd b1 = VectorXd::Zero(R1.cols());
+  VectorXd b2 = VectorXd::Zero(R2.cols());
+  prog.AddLinearEqualityConstraint(A_R1a, b1, {R1a, a});
+  prog.AddLinearEqualityConstraint(A_R2a, b2, {R2a, a});
 
+  // a'*(x2 - x1) = 1
+  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), drake::Vector1d(1.0), {a});
 
+  // Add cost
   auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
+
+  // Add Lorentz cones
   auto lorentz_cone1 = prog.AddLorentzConeConstraint({t(0), R1a});
   auto lorentz_cone2 = prog.AddLorentzConeConstraint({t(1), R2a});
+
+  RunGurobiSolver(&prog);
+
+  // Check the solution.
+  // First check if each constraint is satisfied.
+  EXPECT_TRUE(CompareMatrices(R1a.value(), R1_transpose * a.value(), 1e-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(R2a.value(), R2_transpose * a.value(), 1e-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(std::abs(t.value().coeff(0) - R1a.value().norm()) <= 1e-6);
+  EXPECT_TRUE(std::abs(t.value().coeff(1) - R2a.value().norm()) <= 1e-6);
+  EXPECT_TRUE(CompareMatrices((x2 - x1).transpose()*a.value(), drake::Vector1d(1.0), 1e-8, MatrixCompareType::absolute));
 };
 GTEST_TEST(testGurobi, EllipsoidsSeparation) {
-
+  // First test if two balls can be separated
+  Vector3d x1 = Vector3d::Zero();
+  Vector3d x2 = Vector3d::Zero();
+  x2(0) = 2.0;
+  Eigen::Matrix3d R1 = 0.5 * Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d R2 = Eigen::Matrix3d::Identity();
+  testEllipsoidsSeparation(x1, x2, R1, R2);
 }
 }  // close namespace
 }  // close namespace solvers

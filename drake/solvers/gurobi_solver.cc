@@ -84,30 +84,35 @@ int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
     // qrow to store the row    indices of the non-zero entries of Q
     // qcol to store the column indices of the non-zero entries of Q
     // qval to store the value          of the non-zero entries of Q
+    int error;
+    int num_constraint_variable = binding.GetNumElements();
+    std::vector<int> variable_indices;
+    variable_indices.reserve(num_constraint_variable);
+    auto variable_list = binding.variable_list();
+    for(const DecisionVariableView &var : variable_list) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(var.index() + i);
+      }
+    }
     std::vector<int> qrow;
     std::vector<int> qcol;
     std::vector<double> qval;
-    int error;
-    int row_num = 0;
-    for(const DecisionVariableView& variable : binding.variable_list()) {
-      for(int i = 0; i < static_cast<int>(variable.size()); i++) {
-        qrow.push_back(row_num);
-        qcol.push_back(static_cast<int>(variable.index()) + i);
-        if(row_num == 0) {
-          qval.push_back(-1.0);
-          // Also adds the constraint that the variable is non-negative.
-          error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, 0, 0.0);
-          if(error) {
-            return error;
-          }
-        }
-        else {
-          qval.push_back(1.0);
-        }
-        row_num ++;
-      }
+    qrow.reserve(num_constraint_variable);
+    qcol.reserve(num_constraint_variable);
+    qval.reserve(num_constraint_variable);
+    qrow.push_back(variable_indices[0]);
+    qcol.push_back(variable_indices[0]);
+    qval.push_back(-1.0);
+    for(int i = 1; i < num_constraint_variable; i++) {
+      qrow.push_back(variable_indices[i]);
+      qcol.push_back(variable_indices[i]);
+      qval.push_back(1.0);
     }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr, row_num + 1, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
+    if(error) {
+      return error;
+    }
+    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
     if(error) {
       return error;
     }
@@ -165,6 +170,24 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
         b_nonzero_coefs.push_back(
             Eigen::Triplet<double>(constraint_variable_index[i], 0, b(i)));
       }
+    }
+  }
+
+  // add linear cost
+  for(const auto &binding : prog.linear_costs()) {
+    const auto& constraint = binding.constraint();
+    const int constraint_variable_dimension = binding.GetNumElements();
+    std::vector<int> constraint_variable_index(constraint_variable_dimension);
+    int constraint_variable_count = 0;
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        constraint_variable_index[constraint_variable_count] = var.index() + i;
+        constraint_variable_count++;
+      }
+    }
+    Eigen::RowVectorXd c = constraint->A();
+    for(int i = 0; i < c.cols(); i++) {
+      b_nonzero_coefs.push_back(Eigen::Triplet<double>(constraint_variable_index[i], 0, c(i)));
     }
   }
 
@@ -256,9 +279,9 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
     }
   }
 
-  const int error = AddLorentzConeConstraints(model, prog);
-  if(error) {
-    return error;
+  const int kLorentzError = AddLorentzConeConstraints(model, prog);
+  if(kLorentzError) {
+    return kLorentzError;
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
@@ -300,7 +323,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   }
 
   GRBmodel* model = nullptr;
-  GRBnewmodel(env, &model, "QP", num_vars, nullptr, &xlow[0], &xupp[0], nullptr,
+  GRBnewmodel(env, &model, "gurobi_model", num_vars, nullptr, &xlow[0], &xupp[0], nullptr,
               nullptr);
 
   int error = 0;
