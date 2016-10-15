@@ -176,18 +176,13 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
   // add linear cost
   for(const auto &binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
-    const int constraint_variable_dimension = binding.GetNumElements();
-    std::vector<int> constraint_variable_index(constraint_variable_dimension);
+    Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        constraint_variable_index[constraint_variable_count] = var.index() + i;
+    for(const DecisionVariableView& var : binding.variable_list()) {
+      for(int i = 0; i< static_cast<int>(var.size()); i++) {
+        b_nonzero_coefs.push_back(Eigen::Triplet<double>(var.index() + i, 0, c(constraint_variable_count)));
         constraint_variable_count++;
       }
-    }
-    Eigen::RowVectorXd c = constraint->A();
-    for(int i = 0; i < c.cols(); i++) {
-      b_nonzero_coefs.push_back(Eigen::Triplet<double>(constraint_variable_index[i], 0, c(i)));
     }
   }
 

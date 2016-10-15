@@ -241,14 +241,100 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
   EXPECT_TRUE(std::abs(t.value().coeff(0) - R1a.value().norm()) <= 1e-6);
   EXPECT_TRUE(std::abs(t.value().coeff(1) - R2a.value().norm()) <= 1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose()*a.value(), drake::Vector1d(1.0), 1e-8, MatrixCompareType::absolute));
+
+  // Now check if the solution is meaning, that it really finds a separating
+  // hyperplane.
+  // The separating hyperplane exists if and only if p* <= 1
+  double p_star = t.value().coeff(0) + t.value().coeff(1);
+  bool is_separated = p_star <= 1.0;
+  double t1 = t.value().coeff(0);
+  double t2 = t.value().coeff(1);
+  if(is_separated) {
+    // Then the hyperplane a' * x = 0.5 * (a'*x1 + t1 + a'*x2 - t2)
+    double b1 = a.value().transpose() * x1 + t1;
+    double b2 = a.value().transpose() * x2 - t2;
+    double b = 0.5 * (b1 + b2);
+    // Verify that b - a'*x1 >= |R1' * a|
+    //             a'*x2 - b >= |R2' * a|
+    EXPECT_TRUE(b - a.value().transpose() * x1 >= (R1_transpose * a.value()).norm());
+    EXPECT_TRUE(a.value().transpose() * x2 - b >= (R2_transpose * a.value()).norm());
+  }
+  else {
+    // Now solve another SOCP to find a point y in the intersecting region
+    // y = x1 + R1*u1
+    // y = x2 + R2*u2
+    // 1 >= |u1|
+    // 1 >= |u2|
+    MathematicalProgram prog_intersect;
+    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(),"u1");
+    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(),"u2");
+    auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
+
+    auto slack = prog_intersect.AddContinuousVariables(1, "slack");
+    prog_intersect.AddBoundingBoxConstraint(drake::Vector1d(1), drake::Vector1d(1), {slack});
+
+    prog_intersect.AddLorentzConeConstraint({slack, u1});
+    prog_intersect.AddLorentzConeConstraint({slack, u2});
+
+    // Add constraint y = x1 + R1*u1
+    //                y = x2 + R2*u2
+    MatrixXd A1(y.size(), y.size() + R1.cols());
+    A1.block(0, 0, y.size(), y.size()) = MatrixXd::Identity(y.size(), y.size());
+    A1.block(0, y.size(), y.size(), R1.cols()) = -R1;
+    MatrixXd A2(y.size(), y.size() + R2.cols());
+    A2.block(0, 0, y.size(), y.size()) = MatrixXd::Identity(y.size(), y.size());
+    A2.block(0, y.size(), y.size(), R2.cols()) = -R2;
+    prog_intersect.AddLinearEqualityConstraint(A1, x1, {y, u1});
+    prog_intersect.AddLinearEqualityConstraint(A2, x2, {y, u2});
+
+    RunGurobiSolver(&prog_intersect);
+
+    // Check if the constraints are satisfied
+    EXPECT_TRUE(u1.value().norm() <= 1);
+    EXPECT_TRUE(u2.value().norm() <= 1);
+    EXPECT_TRUE(CompareMatrices(y.value(), x1 + R1 * u1.value(), 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(y.value(), x2 + R2 * u2.value(), 1e-8, MatrixCompareType::absolute));
+  }
 };
 GTEST_TEST(testGurobi, EllipsoidsSeparation) {
   // First test if two balls can be separated
-  Vector3d x1 = Vector3d::Zero();
-  Vector3d x2 = Vector3d::Zero();
+  VectorXd x1 = Vector3d::Zero();
+  VectorXd x2 = Vector3d::Zero();
   x2(0) = 2.0;
-  Eigen::Matrix3d R1 = 0.5 * Eigen::Matrix3d::Identity();
-  Eigen::Matrix3d R2 = Eigen::Matrix3d::Identity();
+  Eigen::MatrixXd R1 = 0.5 * Eigen::Matrix3d::Identity();
+  Eigen::MatrixXd R2 = Eigen::Matrix3d::Identity();
+  testEllipsoidsSeparation(x1, x2, R1, R2);
+
+  // Test if two intersecting balls
+  x1 = Vector3d::Zero();
+  x2 = Vector3d::Zero();
+  x2(0) = 1.0;
+  R1 = Eigen::Matrix3d::Identity();
+  R2 = Eigen::Matrix3d::Identity();
+  testEllipsoidsSeparation(x1, x2, R1, R2);
+
+  // Test two ellipsoids
+  x1 = Eigen::Vector2d(1.0, 0.2);
+  x2 = Eigen::Vector2d(0.5, 0.4);
+  R1 = Eigen::Matrix2d::Zero();
+  R1 << 0.1, 0.6,
+        0.2, 1.3;
+  R2 = Eigen::Matrix2d::Zero();
+  R2 << -0.4, 1.5,
+        1.7, 0.3;
+  testEllipsoidsSeparation(x1, x2, R1, R2);
+
+  // Test another two ellipsoids
+  x1 = Eigen::Vector3d(1.0, 0.2, 0.8);
+  x2 = Eigen::Vector3d(3.0, -1.5, 1.9);
+  R1 = Eigen::Matrix3d::Zero();
+  R1 << 0.2, 0.4, 0.2,
+        -0.2, -0.1, 0.3,
+        0.2, 0.1, 0.1;
+  R2 = Eigen::Matrix<double, 3, 2>::Zero();
+  R2 << 0.1, 0.2,
+        -0.1, 0.01,
+        -0.2, 0.1;
   testEllipsoidsSeparation(x1, x2, R1, R2);
 }
 }  // close namespace
