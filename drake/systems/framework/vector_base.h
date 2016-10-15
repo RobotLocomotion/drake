@@ -98,7 +98,7 @@ class VectorBase {
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
   VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
-    return DoPlusEqScaled({{scale, rhs}});
+    return PlusEqScaled({{scale, rhs}});
   }
 
   /// Add in multiple scaled vectors to this vector. All vectors
