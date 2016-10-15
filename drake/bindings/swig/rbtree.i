@@ -110,6 +110,12 @@
     return $self->doKinematics(q, v);
   }
 
+  Eigen::Matrix4d relativeTransform(
+      const KinematicsCache<double> &cache, int to_body_or_frame_ind, int from_body_or_frame_ind) const
+  {
+    return $self->relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).matrix();
+  }
+
   Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(
       const KinematicsCache<double> &cache, const Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
