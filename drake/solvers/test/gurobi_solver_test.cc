@@ -11,7 +11,7 @@ namespace drake {
 namespace solvers {
 namespace {
 
-void RunQuadraticProgram(MathematicalProgram* prog) {
+void RunGurobiSolver(MathematicalProgram *prog) {
   GurobiSolver gurobi_solver;
   SolutionResult result = SolutionResult::kUnknownError;
   ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
@@ -56,7 +56,7 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
   VectorXd expected(3);
   expected << 0, 1, 2.0 / 3.0;
 
-  RunQuadraticProgram(&prog);
+  RunGurobiSolver(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
 }
@@ -88,7 +88,7 @@ GTEST_TEST(testGurobi, convexQPExample) {
   Q_transpose.transposeInPlace();
   MatrixXd Q_symmetric = 0.5 * (Q + Q_transpose);
   VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
-  RunQuadraticProgram(&prog);
+  RunGurobiSolver(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
 }
@@ -141,11 +141,59 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
   // Exact solution.
   VectorXd expected = -Q.ldlt().solve(b);
 
-  RunQuadraticProgram(&prog);
+  RunGurobiSolver(&prog);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
 }
 
+/**
+ * This test is taken from
+ * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
+ * The goal is to find a hyperplane, that separates two ellipsoids
+ * E1 = x1 + R1 * u1, u1' * u1<=1
+ * E2 = x2 + R2 * u2, u2' * u2<=1
+ * A hyperplane a' * x = b separates these two ellipsoids, if and only if for
+ * SOCP p* = min t1 + t2
+ *           s.t t1 >= |R1' * a|
+ *               t2 >= |R2' * a|
+ *               a'*(x2-x1) = 1
+ * the optimal solution p* is no larger than 1. In that case, an approppriate
+ * value of b is b = 0.5 * (b1 + b2), where
+ * b1 = a' * x1 + |R1' * a|
+ * b2 = a' * x2 - |R2' * a|
+ * @param x1  the center of ellipsoid 1
+ * @param x2  the center of ellipsoid 2
+ * @param R1  the shape of ellipsoid 1
+ * @param R2  the shape of ellipsoid 2
+ */
+template<typename DerivedX1, typename DerivedX2, typename DerivedR1, typename DerivedR2>
+void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
+                              const Eigen::MatrixBase<DerivedX2> &x2,
+                              const Eigen::MatrixBase<DerivedR1> &R1,
+                              const Eigen::MatrixBase<DerivedR2> &R2) {
+  DRAKE_ASSERT(x1.cols() == 1);
+  DRAKE_ASSERT(x2.cols() == 1);
+  DRAKE_ASSERT(x1.rows() == x2.rows());
+  DRAKE_ASSERT(x1.rows() == R1.rows());
+  DRAKE_ASSERT(x2.rows() == R2.rows());
+
+  MathematicalProgram prog;
+  const int kXdim = x1.rows();
+  auto t = prog.AddContinuousVariables(2,"t");
+  auto a = prog.AddContinuousVariables(kXdim, "a");
+  // R1a = R1' * a
+  // R2a = R2' * a
+  auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
+  auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
+
+
+  auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
+  auto lorentz_cone1 = prog.AddLorentzConeConstraint({t(0), R1a});
+  auto lorentz_cone2 = prog.AddLorentzConeConstraint({t(1), R2a});
+};
+GTEST_TEST(testGurobi, EllipsoidsSeparation) {
+
+}
 }  // close namespace
 }  // close namespace solvers
 }  // close namespace drake

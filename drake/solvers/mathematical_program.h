@@ -403,6 +403,32 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
+   * @bridf Adds a cost term of the form c'*x
+   * Applied to a subset of the variables and pushes onto
+   * the linear cost data structure
+   */
+  void AddCost(std::shared_ptr<LinearConstraint> const& obj,
+               VariableList const& vars) {
+    required_capabilities_ |= kLinearCost;
+    linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
+  }
+
+  /**
+   * @bridf Adds a cost term of the form c'*x
+   * Applied to a subset of the variables and pushes onto
+   * the linear cost data structure
+   */
+  template<typename DerivedC>
+  std::shared_ptr<LinearConstraint> AddLinearCost(const Eigen::MatrixBase<DerivedC>& c, const VariableList& vars) {
+    using Scalar = typename DerivedC::Scalar;
+    std::shared_ptr<LinearConstraint> cost(new LinearConstraint(c,
+      drake::Vector1<Scalar>::Constant(-std::numeric_limits<Scalar>::infinity()),
+      drake::Vector1<Scalar>::Constant(std::numeric_limits<Scalar>::infinity())));
+    AddCost(cost, vars);
+    return cost;
+  }
+
+  /**
    * @brief Adds a cost term of the form 0.5*x'*Q*x + b'x
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
@@ -936,6 +962,10 @@ class DRAKE_EXPORT MathematicalProgram {
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
+  /** Getter for linear costs. */
+  const std::list<Binding<LinearConstraint>>& linear_costs() const {
+    return linear_costs_;
+  }
 
   /** Getter for quadratic costs. */
   const std::list<Binding<QuadraticConstraint>>& quadratic_costs() const {
@@ -959,11 +989,14 @@ class DRAKE_EXPORT MathematicalProgram {
 
   /** GetAllCosts
    *
-   * @brief Getter returning all costs (for now quadratic costs appended to
+   * @brief Getter returning all costs (for now linear costs appended to
+   * generic costs, then quadratic costs appended to
    * generic costs).
    */
   std::list<Binding<Constraint>> GetAllCosts() const {
     std::list<Binding<Constraint>> costlist = generic_costs_;
+    costlist.insert(costlist.end(), linear_costs_.begin(),
+                    linear_costs_.end());
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
     return costlist;
@@ -1031,6 +1064,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<Constraint>> generic_costs_;
   std::list<Binding<Constraint>> generic_constraints_;
   std::list<Binding<QuadraticConstraint>> quadratic_costs_;
+  std::list<Binding<LinearConstraint>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
