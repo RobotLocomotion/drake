@@ -92,11 +92,6 @@ class VectorBase {
 
   /// Add in scaled vector @p rhs to this vector. Both vectors must
   /// be the same size.
-  ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
-  /// Implementations should ensure this operation remains O(N) in the size of
-  /// the value and allocates no memory.
   VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
     return PlusEqScaled({{scale, rhs}});
   }
@@ -136,15 +131,12 @@ class VectorBase {
 
   /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size. This function serves to minimize
-  /// memory access. Other specializations of this function serve to exploit
-  /// structure in other ways for computational efficiency (e.g., SIMD
-  /// operations).
-  ///
+  /// memory access. 
   ///
   /// You should override this method if possible with a more efficient
   /// approach that leverages structure. For example, if the vector is
   /// contiguous, implementations that leverage SIMD operations should
-  /// provde to be far more efficient. Overriding implementations should
+  /// prove to be far more efficient. Overriding implementations should
   /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void DoPlusEqScaled(const std::initializer_list<
