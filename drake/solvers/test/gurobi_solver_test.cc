@@ -6,6 +6,7 @@
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace solvers {
@@ -146,6 +147,27 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
 }
 
+// Test the simple QP
+// min x(0)^2 + x(1)^2 + 2 * x(2)^2
+// s.t x(0) +   x(1) = 1
+//     x(0) + 2*x(2) = 2
+// The optimal solution should be
+// x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
+GTEST_TEST(testGurobi, addLinearConstraintTest) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(3);
+
+  Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
+  Q(2, 2) = 2.0;
+  Eigen::Vector3d b = Eigen::Vector3d::Zero();
+  prog.AddQuadraticCost(Q, b);
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), Vector1d::Constant(1), {x(0), x(1)});
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2), Vector1d::Constant(2), {x(0), x(2)});
+
+  RunGurobiSolver(&prog);
+  EXPECT_TRUE(CompareMatrices(Vector3d(0.8, 0.2, 0.6), x.value(), 1e-10, MatrixCompareType::absolute));
+}
+
 /**
  * This test is taken from
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
@@ -153,7 +175,7 @@ GTEST_TEST(testGurobi, convexQPMultiCostExample) {
  * E1 = x1 + R1 * u1, u1' * u1<=1
  * E2 = x2 + R2 * u2, u2' * u2<=1
  * A hyperplane a' * x = b separates these two ellipsoids, if and only if for
- * SOCP p* = min t1 + t2
+ * SOCP p* = min t1 + t2f
  *           s.t t1 >= |R1' * a|
  *               t2 >= |R2' * a|
  *               a'*(x2-x1) = 1
