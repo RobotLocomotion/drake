@@ -130,13 +130,13 @@ class VectorBase {
   VectorBase() {}
 
   /// Adds in multiple scaled vectors to this vector. All vectors
-  /// are guaranteed to be the same size. This function serves to minimize
-  /// memory access. 
+  /// are guaranteed to be the same size.
   ///
   /// You should override this method if possible with a more efficient
-  /// approach that leverages structure. The default implementation performs 
-  /// element-by-element computations that are likely inefficient. If the 
-  /// vector is contiguous, for example, implementations that leverage SIMD 
+  /// approach that leverages structure; the default implementation performs
+  /// element-by-element computations that are likely inefficient, but even
+  /// this implementation minimizes memory accesses for efficiency. If the
+  /// vector is contiguous, for example, implementations that leverage SIMD
   /// operations should be far more efficient. Overriding implementations should
   /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
