@@ -100,16 +100,6 @@ class BasicVector : public VectorBase<T> {
 
   void SetZero() override { values_.setZero(); }
 
-  /// Add in multiple scaled vectors to this vector. All vectors
-  /// must be the same size. This specialized function serves to maximize
-  /// speed through SIMD operations or minimize memory access, depending on
-  /// the underlying types.
-  void DoPlusEqScaled(const std::initializer_list<
-                      std::pair<T, const VectorBase<T>&>>& rhs_scal) override {
-    for (const auto& operand : rhs_scal) 
-      operand.second.ScaleAndAddToVector(operand.first, values_);
-  }
-
   /// Copies the entire vector to a new BasicVector, with the same concrete
   /// implementation type.
   ///
@@ -140,6 +130,17 @@ class BasicVector : public VectorBase<T> {
  private:
   // The column vector of T values.
   VectorX<T> values_;
+
+  /// Add in multiple scaled vectors to this vector. All vectors
+  /// must be the same size. This specialized function serves to maximize
+  /// speed through SIMD operations or minimize memory access, depending on
+  /// the underlying types.
+  void DoPlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
+      override {
+    for (const auto& operand : rhs_scal)
+      operand.second.ScaleAndAddToVector(operand.first, values_);
+  }
 };
 
 }  // namespace systems
