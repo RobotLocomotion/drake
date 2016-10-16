@@ -1,10 +1,6 @@
 #include "drake/systems/framework/primitives/gain.h"
 
 #include <memory>
-#include <stdexcept>
-#include <string>
-
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -12,8 +8,6 @@
 
 #include "gtest/gtest.h"
 
-using Eigen::AutoDiffScalar;
-using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
 
