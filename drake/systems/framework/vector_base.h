@@ -134,9 +134,10 @@ class VectorBase {
   /// memory access. 
   ///
   /// You should override this method if possible with a more efficient
-  /// approach that leverages structure. For example, if the vector is
-  /// contiguous, implementations that leverage SIMD operations should
-  /// prove to be far more efficient. Overriding implementations should
+  /// approach that leverages structure. The default implementation performs 
+  /// element-by-element computations that are likely inefficient. If the 
+  /// vector is contiguous, for example, implementations that leverage SIMD 
+  /// operations should be far more efficient. Overriding implementations should
   /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void DoPlusEqScaled(const std::initializer_list<
