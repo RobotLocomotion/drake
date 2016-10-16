@@ -337,6 +337,120 @@ GTEST_TEST(testGurobi, EllipsoidsSeparation) {
         -0.2, 0.1;
   testEllipsoidsSeparation(x1, x2, R1, R2);
 }
+
+/**
+ * This example is taken from
+ * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
+ * For a quadratic program
+ * 0.5 * x' * Q * x + c' * x
+ * s.t A * x <= b
+ * It can be casted as an SOCP, as follows
+ * By introducing a new variable w = Q^{1/2}*x and y, z
+ * The equivalent SOCP is
+ * min c'x + y
+ * s.t y * z >= w' * w
+ *     z = 2
+ *     w = Q^{1/2} * x
+ *     b_lb <= A * x <= b_ub
+ * @param Q A positive definite matrix
+ * @param c A column vector
+ * @param A A matrix
+ * @param b_lb A column vector
+ * @param b_ub A column vector
+ * @return The optimal solution x*.
+ */
+template<typename DerivedQ, typename DerivedC, typename DerivedA, typename DerivedBlower, typename DerivedBupper>
+VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
+                       const Eigen::MatrixBase<DerivedC> &c,
+                       const Eigen::MatrixBase<DerivedA> &A,
+                       const Eigen::MatrixBase<DerivedBlower> &b_lb,
+                       const Eigen::MatrixBase<DerivedBupper> &b_ub) {
+  DRAKE_ASSERT(Q.rows() == Q.cols());
+  MatrixXd Q_transpose = Q;
+  Q_transpose.transposeInPlace();
+  MatrixXd Q_symmetric = 0.5 * (Q + Q_transpose);
+  const int kXdim = Q.rows();
+  DRAKE_ASSERT(c.rows() == kXdim);
+  DRAKE_ASSERT(c.cols() == 1);
+  DRAKE_ASSERT(A.cols() == kXdim);
+  DRAKE_ASSERT(A.rows() == b_lb.rows());
+  DRAKE_ASSERT(b_lb.cols() == 1);
+  DRAKE_ASSERT(A.rows() == b_ub.rows());
+  DRAKE_ASSERT(b_ub.cols() == 1);
+
+  MathematicalProgram prog_socp;
+
+  auto x_socp = prog_socp.AddContinuousVariables(kXdim, "x");
+  auto y = prog_socp.AddContinuousVariables(1, "y");
+  auto z = prog_socp.AddContinuousVariables(1, "z");
+  auto w = prog_socp.AddContinuousVariables(kXdim, "w");
+
+  prog_socp.AddBoundingBoxConstraint(drake::Vector1d(2.0), drake::Vector1d(2.0), {z});
+  prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
+
+  Eigen::LLT<MatrixXd, Eigen::Upper> lltOfQ(Q);
+  MatrixXd Q_sqrt = lltOfQ.matrixU();
+  MatrixXd A_w(kXdim, 2*kXdim);
+  A_w << MatrixXd::Identity(kXdim, kXdim), -Q_sqrt;
+  prog_socp.AddLinearEqualityConstraint(A_w, VectorXd::Zero(kXdim), {w, x_socp});
+
+  prog_socp.AddLinearConstraint(A, b_lb, b_ub, {x_socp});
+
+  MatrixXd c_transpose;
+  c_transpose = c;
+  c_transpose.transposeInPlace();
+  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(c_transpose, drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(std::numeric_limits<double>::infinity())));
+  prog_socp.AddCost(cost_socp1, {x_socp});
+  prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
+  RunGurobiSolver(&prog_socp);
+
+  // Check the solution
+  EXPECT_TRUE(std::abs(2*y.value().coeff(0) - w.value().squaredNorm()) <= 1E-6);
+  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1e-6, MatrixCompareType::absolute));
+
+  // Now solve the problem as a QP.
+  MathematicalProgram prog_qp;
+  auto x_qp = prog_qp.AddContinuousVariables(kXdim, "x");
+  prog_qp.AddQuadraticCost(Q, c, {x_qp});
+  prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
+  RunGurobiSolver(&prog_qp);
+
+  // TODO(hongkai.dai@tri.global):tighten the tolerance. socp does not really converge to true optimal yet.
+  EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 1e-4, MatrixCompareType::absolute));
+  return x_socp.value();
+};
+GTEST_TEST(testGurobi, RotatedLorentzConeTest) {
+  // Solve an un-constraint QP
+  MatrixXd Q = Eigen::Matrix2d::Identity();
+  VectorXd c = Eigen::Vector2d::Ones();
+  MatrixXd A = Eigen::RowVector2d(0, 0);
+  VectorXd b_lb = VectorXd::Constant(1, -std::numeric_limits<double>::infinity());
+  VectorXd b_ub = VectorXd::Constant(1, std::numeric_limits<double>::infinity());
+  SolveQPasSOCP(Q, c, A, b_lb, b_ub);
+
+  // Solve a constraint QP
+  Q = Eigen::Matrix3d::Zero();
+  Q(0, 0) = 1.0;
+  Q(1, 1) = 1.3;
+  Q(2, 2) = 2.0;
+  Q(1, 2) = 0.01;
+  Q(0, 1) = -0.2;
+  c = Vector3d::Zero();
+  c(0) = -1.0;
+  c(1) = -2.0;
+  c(2) = 1.2;
+
+  A = Eigen::Matrix<double, 2, 3>::Zero();
+  A << 1, 0, 2,
+       0, 1, 3;
+  b_lb = Eigen::Vector2d::Zero();
+  b_lb(0) = -1;
+  b_lb(1) = -2;
+  b_ub = Eigen::Vector2d::Zero();
+  b_ub(0) = 2;
+  b_ub(1) = 4;
+  SolveQPasSOCP(Q, c, A, b_lb, b_ub);
+}
 }  // close namespace
 }  // close namespace solvers
 }  // close namespace drake

@@ -78,28 +78,28 @@ int AddLinearConstraint(GRBmodel *model,
   return 0;
 }
 
-int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
+int AddLorentzConeConstraints(GRBmodel* model, const MathematicalProgram& prog) {
   for(const auto& binding : prog.lorentz_cone_constraints()) {
     // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
     // qrow to store the row    indices of the non-zero entries of Q
     // qcol to store the column indices of the non-zero entries of Q
     // qval to store the value          of the non-zero entries of Q
     int error;
-    int num_constraint_variable = binding.GetNumElements();
+    int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
-    variable_indices.reserve(num_constraint_variable);
+    variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
     auto variable_list = binding.variable_list();
     for(const DecisionVariableView &var : variable_list) {
       for (int i = 0; i < static_cast<int>(var.size()); i++) {
-        variable_indices.push_back(var.index() + i);
+        variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
     }
     std::vector<int> qrow;
     std::vector<int> qcol;
     std::vector<double> qval;
-    qrow.reserve(num_constraint_variable);
-    qcol.reserve(num_constraint_variable);
-    qval.reserve(num_constraint_variable);
+    qrow.reserve(static_cast<size_t>(num_constraint_variable));
+    qcol.reserve(static_cast<size_t>(num_constraint_variable));
+    qval.reserve(static_cast<size_t>(num_constraint_variable));
     qrow.push_back(variable_indices[0]);
     qcol.push_back(variable_indices[0]);
     qval.push_back(-1.0);
@@ -121,9 +121,65 @@ int AddLorentzConeConstraints(GRBmodel* model, MathematicalProgram& prog) {
 }
 
 /*
+ * Add the rotated lorentz cone constraint
+ * x(0) * x(1) >= x(2)^2 + .. x(N-1)^2
+ * x(0) >= 0, x(1) >= 0
+ */
+int AddRotatedLorentzConeConstraint(GRBmodel* model, const MathematicalProgram &prog) {
+  for(const auto &binding : prog.rotated_lorentz_cone_constraints()) {
+    // Build a matrix Q = [0 -1 0 0 ... 0]
+    //                    [0  0 0 0 ... 0]
+    //                    [0  0 1 0 ... 0]
+    //                    [0  0 0 1 ... 0]
+    //                        ...
+    //                    [0  0 0 0 ... 1]
+    // qrow to store the row    indices of the non-zero entries of Q
+    // qcol to store the column indices of the non-zero entries of Q
+    // qval to store the value          of the non-zero entries of Q
+    int error;
+    int num_constraint_variable = static_cast<int>(binding.GetNumElements());
+    std::vector<int> variable_indices;
+    variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
+    auto variable_list = binding.variable_list();
+    for(const DecisionVariableView &var : variable_list) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(static_cast<int>(var.index()) + i);
+      }
+    }
+    std::vector<int> qrow;
+    std::vector<int> qcol;
+    std::vector<double> qval;
+    qrow.reserve(static_cast<size_t>(num_constraint_variable) - 1);
+    qcol.reserve(static_cast<size_t>(num_constraint_variable) - 1);
+    qval.reserve(static_cast<size_t>(num_constraint_variable) - 1);
+    qrow.push_back(variable_indices[0]);
+    qcol.push_back(variable_indices[1]);
+    qval.push_back(-1.0);
+    for(int i = 2; i < num_constraint_variable; i++) {
+      qrow.push_back(variable_indices[i]);
+      qcol.push_back(variable_indices[i]);
+      qval.push_back(1.0);
+    }
+    // x[0] >= 0, x[1] >= 0
+    for(int i = 0; i < 2; i++) {
+      error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[i],
+                                   0.0);
+      if (error) {
+        return error;
+      }
+    }
+    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable - 1, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    if(error) {
+      return error;
+    }
+  }
+  return 0;
+}
+
+/*
  * Add quadratic or linear costs to the optimization problem.
  */
-int AddCosts(GRBmodel* model, MathematicalProgram& prog,
+int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
              double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x
@@ -277,6 +333,11 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
   const int kLorentzError = AddLorentzConeConstraints(model, prog);
   if(kLorentzError) {
     return kLorentzError;
+  }
+
+  const int kRotatedLorentzError = AddRotatedLorentzConeConstraint(model, prog);
+  if(kRotatedLorentzError) {
+    return kRotatedLorentzError;
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;

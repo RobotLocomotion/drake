@@ -727,9 +727,13 @@ class DRAKE_EXPORT MathematicalProgram {
     // calling multiple solvers.)
     DRAKE_ASSERT(generic_constraints_.empty());
     DRAKE_ASSERT(generic_costs_.empty());
+    DRAKE_ASSERT(quadratic_costs_.empty());
+    DRAKE_ASSERT(linear_costs_.empty());
     DRAKE_ASSERT(linear_constraints_.empty());
     DRAKE_ASSERT(linear_equality_constraints_.empty());
     DRAKE_ASSERT(bbox_constraints_.empty());
+    DRAKE_ASSERT(lorentz_cone_constraint_.empty());
+    DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
 
     std::shared_ptr<LinearComplementarityConstraint> constraint(
         new LinearComplementarityConstraint(M, q));
