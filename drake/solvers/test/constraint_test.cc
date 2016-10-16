@@ -58,7 +58,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   Vector3d y_expected;
   y_expected(0) = x_test(0);
   y_expected(1) = x_test(1);
-  y_expected(2) = pow(x_test(0) * x_test(1), 2) -
+  y_expected(2) = x_test(0) * x_test(1) -
                   x_test.tail(x_test.size() - 2).squaredNorm();
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
@@ -79,8 +79,8 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   y_grad_expected.setZero();
   y_grad_expected(0, 0) = 1.0;
   y_grad_expected(1, 1) = 1.0;
-  y_grad_expected(2, 0) = 2 * x_test(0) * x_test(1) * x_test(1);
-  y_grad_expected(2, 1) = 2 * x_test(1) * x_test(0) * x_test(0);
+  y_grad_expected(2, 0) = x_test(1);
+  y_grad_expected(2, 1) = x_test(0);
   for (int i = 2; i < x_test.size(); ++i) {
     y_grad_expected(2, i) = -2 * x_test(i);
   }
