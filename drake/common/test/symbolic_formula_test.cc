@@ -30,7 +30,109 @@ TEST_F(SymbolicFormulaTest, False) {
   EXPECT_FALSE(Formula::False().Evaluate());
 }
 
-TEST_F(SymbolicFormulaTest, EqualTo) {}
+TEST_F(SymbolicFormulaTest, EqualTo1) {
+  const Formula f_eq = x_ == y_;
+  const Formula f_ne = x_ != y_;
+  const Formula f_lt = x_ < y_;
+  const Formula f_le = x_ <= y_;
+  const Formula f_gt = x_ > y_;
+  const Formula f_ge = x_ >= y_;
+
+  EXPECT_TRUE(f_eq.EqualTo(f_eq));
+  EXPECT_FALSE(f_eq.EqualTo(f_ne));
+  EXPECT_FALSE(f_eq.EqualTo(f_lt));
+  EXPECT_FALSE(f_eq.EqualTo(f_le));
+  EXPECT_FALSE(f_eq.EqualTo(f_gt));
+  EXPECT_FALSE(f_eq.EqualTo(f_ge));
+
+  EXPECT_FALSE(f_ne.EqualTo(f_eq));
+  EXPECT_TRUE(f_ne.EqualTo(f_ne));
+  EXPECT_FALSE(f_ne.EqualTo(f_lt));
+  EXPECT_FALSE(f_ne.EqualTo(f_le));
+  EXPECT_FALSE(f_ne.EqualTo(f_gt));
+  EXPECT_FALSE(f_ne.EqualTo(f_ge));
+
+  EXPECT_FALSE(f_lt.EqualTo(f_eq));
+  EXPECT_FALSE(f_lt.EqualTo(f_ne));
+  EXPECT_TRUE(f_lt.EqualTo(f_lt));
+  EXPECT_FALSE(f_lt.EqualTo(f_le));
+  EXPECT_FALSE(f_lt.EqualTo(f_gt));
+  EXPECT_FALSE(f_lt.EqualTo(f_ge));
+
+  EXPECT_FALSE(f_le.EqualTo(f_eq));
+  EXPECT_FALSE(f_le.EqualTo(f_ne));
+  EXPECT_FALSE(f_le.EqualTo(f_lt));
+  EXPECT_TRUE(f_le.EqualTo(f_le));
+  EXPECT_FALSE(f_le.EqualTo(f_gt));
+  EXPECT_FALSE(f_le.EqualTo(f_ge));
+
+  EXPECT_FALSE(f_gt.EqualTo(f_eq));
+  EXPECT_FALSE(f_gt.EqualTo(f_ne));
+  EXPECT_FALSE(f_gt.EqualTo(f_lt));
+  EXPECT_FALSE(f_gt.EqualTo(f_le));
+  EXPECT_TRUE(f_gt.EqualTo(f_gt));
+  EXPECT_FALSE(f_gt.EqualTo(f_ge));
+
+  EXPECT_FALSE(f_ge.EqualTo(f_eq));
+  EXPECT_FALSE(f_ge.EqualTo(f_ne));
+  EXPECT_FALSE(f_ge.EqualTo(f_lt));
+  EXPECT_FALSE(f_ge.EqualTo(f_le));
+  EXPECT_FALSE(f_ge.EqualTo(f_gt));
+  EXPECT_TRUE(f_ge.EqualTo(f_ge));
+}
+
+TEST_F(SymbolicFormulaTest, EqualTo2) {
+  const Formula f1 = x_ == y_;
+  const Formula f2 = y_ > z_;
+
+  const Formula f_and = f1 && f2;
+  const Formula f_or = f1 || f2;
+  const Formula f_not = !f1;
+
+  EXPECT_TRUE(f_and.EqualTo(f_and));
+  EXPECT_FALSE(f_and.EqualTo(f_or));
+  EXPECT_FALSE(f_and.EqualTo(f_not));
+
+  EXPECT_FALSE(f_or.EqualTo(f_and));
+  EXPECT_TRUE(f_or.EqualTo(f_or));
+  EXPECT_FALSE(f_or.EqualTo(f_not));
+
+  EXPECT_FALSE(f_not.EqualTo(f_and));
+  EXPECT_FALSE(f_not.EqualTo(f_or));
+  EXPECT_TRUE(f_not.EqualTo(f_not));
+}
+
+TEST_F(SymbolicFormulaTest, EqualTo3) {
+  const Formula f1{x_ + y_ > 0};
+  const Formula f2{y_ * z_ < 5};
+  const Formula f3{f1 || f2};
+  const Formula f4{f1 && f2};
+
+  const Formula f_forall1{forall({var_x_, var_y_}, f3)};
+  const Formula f_forall2{forall({var_x_, var_y_, var_z_}, f3)};
+  const Formula f_forall3{forall({var_x_, var_y_}, f4)};
+  const Formula f_forall4{forall({var_x_, var_y_, var_z_}, f4)};
+
+  EXPECT_TRUE(f_forall1.EqualTo(f_forall1));
+  EXPECT_FALSE(f_forall1.EqualTo(f_forall2));
+  EXPECT_FALSE(f_forall1.EqualTo(f_forall3));
+  EXPECT_FALSE(f_forall1.EqualTo(f_forall4));
+
+  EXPECT_FALSE(f_forall2.EqualTo(f_forall1));
+  EXPECT_TRUE(f_forall2.EqualTo(f_forall2));
+  EXPECT_FALSE(f_forall2.EqualTo(f_forall3));
+  EXPECT_FALSE(f_forall2.EqualTo(f_forall4));
+
+  EXPECT_FALSE(f_forall3.EqualTo(f_forall1));
+  EXPECT_FALSE(f_forall3.EqualTo(f_forall2));
+  EXPECT_TRUE(f_forall3.EqualTo(f_forall3));
+  EXPECT_FALSE(f_forall3.EqualTo(f_forall4));
+
+  EXPECT_FALSE(f_forall4.EqualTo(f_forall1));
+  EXPECT_FALSE(f_forall4.EqualTo(f_forall2));
+  EXPECT_FALSE(f_forall4.EqualTo(f_forall3));
+  EXPECT_TRUE(f_forall4.EqualTo(f_forall4));
+}
 
 TEST_F(SymbolicFormulaTest, Eq) {
   const Expression e1{x_ + y_};
