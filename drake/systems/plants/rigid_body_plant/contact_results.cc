@@ -36,7 +36,7 @@ void ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
   contacts_.emplace_back(elementA, elementB, move(manifold));
 }
 
-// explicit instantiation
+// Explicitly instantiates on the most common scalar types.
 template class ContactResults<double>;
 
 }  // namespace systems
