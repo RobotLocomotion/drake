@@ -10,8 +10,8 @@ namespace {
  * Given a sparse matrix, call SparseMatrixToTriplets or
  * SparseMatrixToRowColumnValueVectors to get the triplets
  * (row_index, column_index, value) of the non-zero entries. Then reconstruct
- * the sparse matrix using setFromTriplets, anch check if the reconstructed
- * sparse matrix is the same as the original one
+ * the sparse matrix using setFromTriplets, and check if the reconstructed
+ * sparse matrix is the same as the original one.
  */
 template <typename T, int options>
 void checkTriplet(const Eigen::SparseMatrix<T, options>& sp_mat) {
@@ -29,7 +29,7 @@ void checkTriplet(const Eigen::SparseMatrix<T, options>& sp_mat) {
   EXPECT_TRUE(row_indices.size() == col_indices.size());
   EXPECT_TRUE(row_indices.size() == val.size());
   std::vector<Eigen::Triplet<T>> triplets_from_vectors;
-  for (int i = 0; i < static_cast<int>(row_indices.size()); i++) {
+  for (int i = 0; i < static_cast<int>(row_indices.size()); ++i) {
     triplets_from_vectors.push_back(
         Eigen::Triplet<T>(row_indices[i], col_indices[i], val[i]));
   }

@@ -96,17 +96,17 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
       }
     }
     for (int i = 0; i < Q.rows(); i++) {
-      const double kQii = 0.5 * Q(i, i);
-      if (abs(kQii) > sparseness_threshold) {
+      const double Qii = 0.5 * Q(i, i);
+      if (abs(Qii) > sparseness_threshold) {
         Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
-            constraint_variable_index[i], constraint_variable_index[i], kQii));
+            constraint_variable_index[i], constraint_variable_index[i], Qii));
       }
       for (int j = i + 1; j < Q.cols(); j++) {
-        const double kQij = 0.5 * (Q(i, j) + Q(j, i));
-        if (abs(kQij) > sparseness_threshold) {
+        const double Qij = 0.5 * (Q(i, j) + Q(j, i));
+        if (abs(Qij) > sparseness_threshold) {
           Q_nonzero_coefs.push_back(
               Eigen::Triplet<double>(constraint_variable_index[i],
-                                     constraint_variable_index[j], kQij));
+                                     constraint_variable_index[j], Qij));
         }
       }
     }
@@ -148,17 +148,17 @@ int AddCosts(GRBmodel* model, MathematicalProgram& prog,
     linear_row_indices_int[i] = static_cast<int>(linear_row[i]);
   }
 
-  const int kQPtermsError = GRBaddqpterms(
+  const int QPtermsError = GRBaddqpterms(
       model, static_cast<int>(Q_all_row.size()), Q_all_row_indices_int.data(),
       Q_all_col_indices_int.data(), Q_all_val.data());
-  if (kQPtermsError) {
-    return kQPtermsError;
+  if (QPtermsError) {
+    return QPtermsError;
   }
   for (int i = 0; i < static_cast<int>(linear_row.size()); i++) {
-    const int kError = GRBsetdblattrarray(
+    const int LinearTermError = GRBsetdblattrarray(
         model, "Obj", linear_row_indices_int[i], 1, linear_val.data() + i);
-    if (kError) {
-      return kError;
+    if (LinearTermError) {
+      return LinearTermError;
     }
   }
   // If loop completes, no errors exist so the value '0' must be returned.
