@@ -39,12 +39,13 @@ classdef SoftPaddleControl < DrakeSystem
             %             Delta = Hinvtilde - J(1)*J*(H\B);
             
             [T,U] = energy(obj.plant,x);
-            Eref = 121;
+            Eref = 119;
             Etilde = T+U-Eref;
             uE = -10*qp(1)*Etilde;
             
             epsilon = 0.5;
-            psid = -0.001*q(3)-0.005*qp(3);
+            xFixed = -0.031;
+            psid = -0.001*(q(3)-xFixed)-0.005*qp(3);
 %             psid = -0.0001*q(3)-0.0001*qp(3);
 %             psid = 0;
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
@@ -52,7 +53,7 @@ classdef SoftPaddleControl < DrakeSystem
                 if(obj.numerically_stable)
                      u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
                 else
-                    psid = -0.0005*q(3)-0.001*qp(3);
+                    psid = -0.0005*(q(3)-xFixed)-0.001*qp(3);
 %                     if psid > 0.01
 %                         psid = 0.01;
 %                     elseif psid < -0.01
@@ -66,16 +67,23 @@ classdef SoftPaddleControl < DrakeSystem
                 end
             end
             
+            tcutOff = 40;
+            if t > tcutOff
+%             psid = 0;
+            psid = -0.0005*q(3)-0.001*qp(3);
+            u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) - 0.1*sign(Etilde*qp(1));
+%             u = 1000*Etilde*qp(1);
+            end
             
-            if t > 40 && m == 2
+            if t > tcutOff && m == 2
                 psi = q(1);
                 R = [cos(psi), sin(psi); -sin(psi), cos(psi)];
                 load_in_paddle = -[3; 0] + R'*([q(3); q(4)]-[-3;3]);
                 z = load_in_paddle(2);
 %                 fprintf(['z = ', num2str(z), '\n'])
-                t
+                fprintf(['t = ', num2str(t), '\n'])
                 
-                k = 5000;
+                k = 1000;
                 lambdad = 1/Hinvtilde*(  k*J*Hinv*B*sign(Etilde*qp(1)) + J*Hinv*C + Jp'*qp  );
                 
                 epsilon = 1e-2;
@@ -85,8 +93,14 @@ classdef SoftPaddleControl < DrakeSystem
                 lambda = max(0,gammad);
 %                 u = -1/(J*Hinv*B)*(Hinvtilde*lambda - J*Hinv*C - Jp'*qp);
 %                 u = -cf*k*sign(Etilde*qp(1));
-                u = -cf*k*2/pi*atan(20*Etilde*qp(1));
-%                 if t > 30.1
+%                 u = -cf*k*2/pi*atan(20*Etilde*qp(1)) + C(1);
+%                 u = -cf*k*Etilde*qp(1) + C(1);
+                if abs(Etilde) > 1
+                    u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta) - k*2/pi*atan(20*Etilde*qp(1));
+                else
+                    u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+                end
+%                 if t > 40.02
 %                     keyboard
 %                 end
             end
@@ -122,7 +136,7 @@ classdef SoftPaddleControl < DrakeSystem
             x0 = p.getInitialState();
             
             tic
-            [ytraj,xtraj] = simulate(sys,[0 50],x0);
+            [ytraj,xtraj] = simulate(sys,[0 100],x0);
             toc
             
             utraj = ytraj(10);

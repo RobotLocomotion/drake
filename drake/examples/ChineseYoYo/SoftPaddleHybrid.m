@@ -168,11 +168,15 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       % barf
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
-      x0.load_x = -0.2905;  % was -0.02905
-      x0.load_z = 3.9999;
+      x0.load_x = -0.5;  % was -0.02905
+      x0.load_z = 4.5;
       x0 = double(x0);
-      x0(2:end) = resolveConstraints(obj.in_contact,x0(2:end));
-%       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
+%       x0(2:end) = resolveConstraints(obj.in_contact,x0(2:end));
+      x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
+      
+      
+%       x0(2:end) = [0.00015647; 0.14351; -0.14346; 4.4639; 0.00016919; -0.00050156; -0.084561; -1.6321];
+      
     end
     
     function xDes = calcStateInContact(obj,x_load,z_load,paddle_angle)
