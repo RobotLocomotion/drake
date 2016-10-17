@@ -211,18 +211,9 @@ class LorentzConeConstraint : public Constraint {
  * A rotated Lorentz cone constraint that taks a n x 1 vector x, and imposes
  * constraint
  * \f[
- * x_0 >= 0
  * x_1 >= 0
- * x_0*x_1 >= x_2^2+x_3^x+...+x_n^2
- * \f]
- * Ideally this constraint should be handled by a second order cone solver.
- * In case the user wants to enforce this constraint through general nonlinear
- * nonconvex optimization, with smooth gradient, we alternatively impose the
- * following constraint, with smooth gradient everywhere
- * \f[
- * x_0 >= 0
- * x_1 >=0
- * x_0*x_1 -x_2^2 - x_3^2 - .. - x_n^2 >=0
+ * x_2 >= 0
+ * x_1 * x_2 >= x_3^2 + x_4^2 + ... + x_n^2
  * \f]
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html

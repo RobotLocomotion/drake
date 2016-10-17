@@ -16,11 +16,11 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// Tests if the Lorentz Cone constraint is imposed correctly
+// Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   auto cnstr = LorentzConeConstraint();
   VectorXd y;
-  // Test Eval with VectorXd
+  // Test Eval with VectorXd.
   cnstr.Eval(x_test, y);
   Vector2d y_expected;
   y_expected(0) = x_test(0);
@@ -35,7 +35,7 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   auto tx = drake::math::initializeAutoDiff(x_test);
   TaylorVecXd x_taylor = tx;
   TaylorVecXd y_taylor;
-  // Test Eval with TaylorVar
+  // Test Eval with TaylorVar.
   cnstr.Eval(x_taylor, y_taylor);
 
   // Check if the gradient is correct.
@@ -68,7 +68,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
       (x_test(0) * x_test(1) >= x_test.tail(x_test.size() - 2).norm());
   EXPECT_TRUE(is_in_cone == is_in_cone_expected);
 
-  // Eval with taylor var
+  // Eval with taylor var.
   auto tx = drake::math::initializeAutoDiff(x_test);
   TaylorVecXd x_taylor = tx;
   TaylorVecXd y_taylor;
@@ -89,7 +89,7 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
                               1E-10, MatrixCompareType::absolute));
 }
 
-GTEST_TEST(testConstraint, testLorentaConeConstraint) {
+GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   auto cnstr = LorentzConeConstraint();
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
@@ -99,19 +99,19 @@ GTEST_TEST(testConstraint, testLorentaConeConstraint) {
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), ub,
       1e-10, MatrixCompareType::absolute));
 
-  // [3;1;1] is in the interior of the Lorentz cone
+  // [3;1;1] is in the interior of the Lorentz cone.
   Eigen::Vector3d x1(3.0, 1.0, 1.0);
   TestLorentzConeEval(x1, true);
 
-  // [3;2;2;1] is on the boundary of the Lorentz cone
+  // [3;2;2;1] is on the boundary of the Lorentz cone.
   Eigen::Vector4d x2(3.0, 2.0, 2.0, 1.0);
   TestLorentzConeEval(x2, true);
 
-  // [3; 3; 1] is outside of the Lorentz cone
+  // [3; 3; 1] is outside of the Lorentz cone.
   Eigen::Vector3d x3(3.0, 3.0, 1.0);
   TestLorentzConeEval(x3, false);
 
-  // [-3; 1; 1] is outside of the Lorentz cone
+  // [-3; 1; 1] is outside of the Lorentz cone.
   Eigen::Vector3d x4(-3.0, 1.0, 1.0);
   TestLorentzConeEval(x4, false);
 }
@@ -126,16 +126,16 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), ub,
       1e-10, MatrixCompareType::absolute));
 
-  // [1;2;1] is in the interior of the rotated lorentz cone
+  // [1;2;1] is in the interior of the rotated lorentz cone.
   TestRotatedLorentzConeEval(Vector3d(1, 2, 1), true);
 
-  // [1;2;1;1] is on the boundary of the rotated Lorentz cone
+  // [1;2;1;1] is on the boundary of the rotated Lorentz cone.
   TestRotatedLorentzConeEval(Eigen::Vector4d(1, 2, 1, 1), true);
 
-  // [1;2;2;2] is outside of the rotated Lorentz cone
+  // [1;2;2;2] is outside of the rotated Lorentz cone.
   TestRotatedLorentzConeEval(Eigen::Vector4d(1, 2, 2, 2), false);
 
-  // [-1; -2; 1] is outside of the rotated Lorentz cone
+  // [-1; -2; 1] is outside of the rotated Lorentz cone.
   TestRotatedLorentzConeEval(Vector3d(-1, -2, 1), false);
 }
 }  // namespace
