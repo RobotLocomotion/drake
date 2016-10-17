@@ -19,6 +19,5 @@ LinearSystemPlant<T>::LinearSystemPlant(
 template class DRAKE_EXPORT LinearSystemPlant<double>;
 template class DRAKE_EXPORT LinearSystemPlant<AutoDiffXd>;
 
-
-}
-}
+}  // namespace systems
+}  // namespace drake

@@ -12,15 +12,16 @@ namespace systems {
 
 using std::make_unique;
 
+
 template <typename T>
-AffineSystemPlant<T>::AffineSystemPlant(const Eigen::Ref<const VectorX<T>>& x0,
+AffineSystemPlant<T>::AffineSystemPlant(const Eigen::Ref<const VectorX<T>>& xdot0,
                                         const Eigen::Ref<const MatrixX<T>>& A,
                                         const Eigen::Ref<const MatrixX<T>>& B,
                                         const Eigen::Ref<const MatrixX<T>>& C,
                                         const Eigen::Ref<const MatrixX<T>>& D,
                                         const Eigen::Ref<const VectorX<T>>& y0)
-    : kA(A), kB(B), kC(C), kD(D), kX0(x0), kY0(y0), kNumInputs(B.cols()),
-      kNumOutputs(y0.size()), kNumStates(x0.size())
+    : kA(A), kB(B), kC(C), kD(D), kXDot0(xdot0), kY0(y0), kNumInputs(B.cols()),
+      kNumOutputs(y0.size()), kNumStates(xdot0.size())
 {
   DRAKE_ASSERT(kNumStates == A.rows());
   DRAKE_ASSERT(kNumStates == A.cols());
@@ -41,13 +42,7 @@ AffineSystemPlant<T>::AffineSystemPlant(const Eigen::Ref<const VectorX<T>>& x0,
 
 template <typename T>
 const SystemPortDescriptor<T>& AffineSystemPlant<T>::get_force_port() const {
-  //if (system_is_forced_) {
     return this->get_input_port(0);
-//  } else {
-//    throw std::runtime_error(
-//        "Attempting to access input force port when this SpringMassSystem was "
-//            "instantiated with no input ports.");
-//  }
 }
 
 template <typename T>
@@ -95,8 +90,43 @@ void AffineSystemPlant<T>::EvalTimeDerivatives(
   auto x = context.get_continuous_state()->CopyToVector();
   auto u = get_input_force(context);
 
-  derivatives->SetFromVector(kA * x + kB * u + kX0);
+  derivatives->SetFromVector(kA * x + kB * u + kXDot0);
 }
+
+//
+//template <typename T>
+//const MatrixX<T> AffineSystemPlant<T>::GetA(void) {
+//  return(kA);
+//}
+//
+//template <typename T>
+//const MatrixX<T> AffineSystemPlant<T>::GetB(void) {
+//  return(kB);
+//}
+//
+//
+//template <typename T>
+//const MatrixX<T> AffineSystemPlant<T>::GetC(void) {
+//  return(kC);
+//}
+//
+//
+//template <typename T>
+//const MatrixX<T> AffineSystemPlant<T>::GetD(void) {
+//  return(kD);
+//}
+//
+//
+//template <typename T>
+//const VectorX<T> AffineSystemPlant<T>::GetXDot0(void) {
+//  return(kXDot0);
+//}
+//
+//template <typename T>
+//const VectorX<T> AffineSystemPlant<T>::GetY0(void) {
+//  return(kY0);
+//}
+
 
 template <typename T>
 std::unique_ptr<SystemOutput<T>> AffineSystemPlant<T>::AllocateOutput(
@@ -114,8 +144,10 @@ std::unique_ptr<SystemOutput<T>> AffineSystemPlant<T>::AllocateOutput(
 
 }
 
+
 template <typename T>
-std::unique_ptr<ContinuousState<T>> AffineSystemPlant<T>::AllocateContinuousState() const {
+std::unique_ptr<ContinuousState<T>> AffineSystemPlant<T>::
+    AllocateContinuousState() const {
 
   // For a first order system.
     return std::make_unique<ContinuousState<T>>(
@@ -125,5 +157,5 @@ std::unique_ptr<ContinuousState<T>> AffineSystemPlant<T>::AllocateContinuousStat
 template class DRAKE_EXPORT AffineSystemPlant<double>;
 template class DRAKE_EXPORT AffineSystemPlant<AutoDiffXd>;
 
-}
-}
+}  // namespace systems
+}  // namespace drake
