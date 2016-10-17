@@ -21,10 +21,9 @@ template <typename T> class RigidBodyPlant;
 template <typename T>
 class DRAKE_EXPORT ContactResults {
  public:
-  /** Returns the number of contacts between unique collision element pairs. */
+  /** Returns the number of unique collision element pairs in contact. */
   size_t get_num_contacts() const;
 
-  /** Returns the ContactInfo for the ith collision element pair. */
   const ContactInfo<T>& get_contact_info(size_t i) const;
 
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
@@ -50,7 +49,7 @@ class DRAKE_EXPORT ContactResults {
    @param point         The point (expressed in the world frame) at which the
                         force is applied.
    @param force         The contact Force applied to A.  Its negative would be
-                        applied to B.
+                        applied to B. The Force is expressed in the world frame.
    */
   void AddContact(DrakeCollision::ElementId elementA,
                   DrakeCollision::ElementId elementB,
