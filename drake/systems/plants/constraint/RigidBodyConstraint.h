@@ -132,6 +132,11 @@ class DRAKE_EXPORT QuasiStaticConstraint
   int getNumWeights() const { return num_pts_; }
   void addContact(int num_new_bodies, const int* body,
                   const Eigen::Matrix3Xd* body_pts);
+
+  void addContact(std::vector<int> body, const Eigen::Matrix3Xd& body_pts) {
+    addContact(body.size(), body.data(), &body_pts);
+  }
+
   void setShrinkFactor(double factor);
   void setActive(bool flag) { active_ = flag; }
   void updateRobot(RigidBodyTree* robot);
