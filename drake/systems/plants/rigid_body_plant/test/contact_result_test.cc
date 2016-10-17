@@ -74,6 +74,8 @@ class ContactResultTest : public ::testing::Test {
     tree_->compile();
 
     // Populate the plant
+    // note: this is done here instead of the constructor because it appears
+    //  the plan requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(
         move(unique_ptr<RigidBodyTree>(tree_)));
     context_ = plant_->CreateDefaultContext();
@@ -142,9 +144,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   Vector3d expectedPt = Vector3d::Zero();
   ASSERT_TRUE(CompareMatrices(detail->get_application_point(), expectedPt));
   // note: this is fragile.  This is the value copied from rigid_body_plant.h
-  //  THis value depends on
-  //    a) What is hard-coded in that location.
-  //    b) Any dynamic changes which may affect it.
+  //  If the hard-coded value changes, or the code changes for the value to
+  //  be set in some other manner, then this value could become incorrect.
   const double stiffness = 150.0;
   double force = stiffness * displace * 2;
   WrenchVector<double> expectedF;
