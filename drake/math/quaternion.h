@@ -9,11 +9,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/rotation_matrix.h"
-
-#ifdef DRAKE_ASSERT_IS_ARMED
 #include "drake/math/roll_pitch_yaw_independent_quaternion.h"
-#endif
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -151,52 +148,47 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
-/** Adapts the code from simbody
- * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Quaternion.cpp
- * @param quaternion a 4 x 1 vector, the quaternion that has been normalized to
- * unit length.
+/**
+ * @param quaternion a 4 x 1 vector that may or may not be normalized.
+ * @param is_angle_returned_in_range_0_to_2pi is a boolean.
  * @return [x; y; z; angle] a 4 x 1 vector, the axis-angle representation of a
- * rotation, the angle satisfies -PI < angle <= PI, and the axis [x;y;z]
- * has unit length.
- * The cost of this function is roughly one atan2, one sqrt, and one divide
- * (about 100 flops)
+ * rotation.  The axis is a unit vector [x;y;z].  Depending on the passed-in
+ * boolean, the angle is either: -PI <= angle <= PI or 0 <= angle <= 2*PI.
  */
+template <typename Derived>
+Vector4<typename Derived::Scalar> QuaternionToAxisAngle(
+    const Eigen::MatrixBase<Derived>& quaternion,
+    const bool is_angle_returned_in_range_0_to_2pi) {
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
+  // the range problem in Eigen
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  using Scalar = typename Derived::Scalar;
+  Eigen::Quaternion<Scalar> eigen_quaternion(quaternion(0), quaternion(1),
+                                             quaternion(2), quaternion(3));
+
+  // Use Eigen's built-in algorithm which seems robust (checked by Mitiguy/Dai).
+  Eigen::AngleAxis<Scalar> eigen_angle_axis(eigen_quaternion);
+  Scalar angle = eigen_angle_axis.angle();
+  const Vector3<Scalar> axis = eigen_angle_axis.axis();
+
+  // Decide range of return value for angle [0 to 2*PI] or [-PI to PI].
+  if (!is_angle_returned_in_range_0_to_2pi && angle > M_PI) angle -= 2 * M_PI;
+
+  // Switch from Eigen's [angle, x,y,z] order to Drake's [x,y,z, angle] order.
+  Vector4<Scalar> axis_angle;
+  axis_angle(3) = angle;                 // Drake's final argument is an angle.
+  axis_angle.template head<3>() = axis;  // Drake's first 3 arguments are axis.
+
+  return axis_angle;
+}
+
+/** (Deprecated) Computes Drake axis-angle from quaternion.
+Use `QuaternionToAxisAngle()` instead.
+@see QuaternionToAxisAngle() **/
 template <typename Derived>
 Vector4<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  using std::sqrt;
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  using Scalar = typename Derived::Scalar;
-  Scalar abs_sin_half_angle =
-      quaternion.template tail<3>().norm();  // abs(sin(angle/2))
-  Scalar epsilon_scalar = Eigen::NumTraits<Scalar>::epsilon();
-
-  Vector4<Scalar> axis_angle;
-  if (abs_sin_half_angle < epsilon_scalar * epsilon_scalar) {
-    // No rotation - arbitrarily return x-axis rotation of 0 degrees.
-    axis_angle << 1.0, 0.0, 0.0, 0.0;
-    return axis_angle;
-  } else {
-    // Use atan2.  Do NOT just use acos(q[0]) to calculate the rotation angle!!!
-    // Otherwise results are numerical garbage anywhere where abs_sin_half_angle
-    // (or equivalent rotation angle) is close to zero.
-    Scalar angle = 2 * std::atan2(abs_sin_half_angle, quaternion(0));
-
-    // Since sa2 >= 0, atan2 returns a value between 0 and pi, which is then
-    // multiplied by 2 which means the angle is between 0 and 2pi.
-    // We want an angle in the range:  -pi < angle <= pi range.
-    // E.g., instead of rotating 359 degrees clockwise, rotate -1 degree
-    // counterclockwise.
-    if (angle > M_PI) angle -= 2 * M_PI;
-
-    // Normalize the axis part of the return value.
-    axis_angle.template head<3>() =
-        quaternion.template tail<3>() / abs_sin_half_angle;
-    axis_angle(3) = angle;
-    return axis_angle;
-  }
+  return QuaternionToAxisAngle(quaternion, true);
 }
 
 /**
@@ -236,13 +228,72 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 
 /**
  * Computes SpaceXYZ Euler angles from quaternion representation.
- * @param quaternion 4x1 unit length vector @p q = [ w; x; y; z ].
+ * @param quaternion 4x1 unit length vector with elements [ e0, e1, e2, e3 ].
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * @see rpy2rotmat
- * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
+ * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
+ *
+http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
  * This accurate algorithm avoids numerical round-off issues encountered by some
- * algorithms when pitch is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
- */
+ * algorithms when pitch angle is within 1E-6 of PI/2 or -PI/2.
+ *
+ * <h3>Theory</h3>
+ * This algorithm was created September 2016 by Paul Mitiguy for TRI (Toyota).
+ * Notation: Angles q1, q2, q3 designate roll, pitch, and yaw.
+ *           Symbols e0, e1, e2, e3 are elements of the passed-in quaternion.
+ *
+ * Step 1.  Convert the quaternion to a 3x3 rotation matrix R.
+ *
+ * Step 2.  Calculate the pitch angle q2 using the atan2 function and several
+ *          elements of what is interpreted as a SpaceXYZ rotation matrix R.
+ *
+ * Step 3.  Realize the quaternion passed to the function can be regarded as
+ *          resulting from multiplication of 4x4 and 4x1 Euler matrices to give:
+ * e0 = sin(0.5*q1)*sin(0.5*q2)*sin(0.5*q3) +
+cos(0.5*q1)*cos(0.5*q2)*cos(0.5*q3)
+ * e1 = sin(0.5*q3)*cos(0.5*q1)*cos(0.5*q2) -
+sin(0.5*q1)*sin(0.5*q2)*cos(0.5*q3)
+ * e2 = sin(0.5*q1)*sin(0.5*q3)*cos(0.5*q2) +
+sin(0.5*q2)*cos(0.5*q1)*cos(0.5*q3)
+ * e3 = sin(0.5*q1)*cos(0.5*q2)*cos(0.5*q3) -
+sin(0.5*q2)*sin(0.5*q3)*cos(0.5*q1)
+ *
+ * Step 4.  Since q2 has already been calculated (in Step 2), subsitute
+ *          cos(0.5*q2) = A and sin(0.5*q2) = f*A.
+ *          Note: The final results are independent of A.
+ *
+ * Step 5.  Referring to Step 3 form: (1+f)*e1 + (1+f)*e3 and rearrange to:
+ *          sin(0.5*q1+0.5*q3) = (e1+e3)/(A*(1-f))
+ *
+ *          Referring to Step 3 form: (1+f)*e0 - (1+f)*e2 and rearrange to:
+ *          cos(0.5*q1+0.5*q3) = (e0-e2)/(A*(1-f))
+ *
+ *          Combine the two previous results to produce:
+ *          1/2*( q1 + q3 ) = atan2( e1+e3, e0-e2 )
+ *
+ * Step 6.  Referring to Step 3 form: (1-f)*e1 - (1-f)*e3 and rearrange to:
+ *          sin(0.5*q1-0.5*q3) = -(e1-e3)/(A*(1+f))
+ *
+ *          Referring to Step 3 form: (1-f)*e0 + (1-f)*e2 and rearrange to:
+ *          cos(0.5*q1-0.5*q3) = (e0+e2)/(A*(1+f))
+ *
+ *          Combine the two previous results to produce:
+ *          1/2*( q1 - q3 ) = atan2( e3-e1, e0+e2 )
+ *
+ * Step 7.  Combine Steps 5 and 6 and solve the linear equations for q1, q3.
+ *          1/2*( q1 + q3 ) = atan2( e1+e3,  e0-e2 ) = zA
+ *          1/2*( q1 - q3 ) = atan2( e3-e1,  e0+e2 ) = zB
+ *          q1 = zA + zB
+ *          q3 = zA - zB
+ *
+ * Step 8.  Return angles in the following ranges:
+ *          -pi   <= q1 <= pi
+ *          -pi/2 <= q2 <= pi/2
+ *          -pi   <= q3 <= pi
+ *
+ * Textbook reference: Advanced Dynamics and Motion Simulation,
+ *                     For professional engineers and scientists (2017).
+@author Paul Mitiguy
+**/
 template <typename Derived>
 Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
     const Eigen::MatrixBase<Derived>& quaternion) {
@@ -250,8 +301,8 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // the range problem in Eigen
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   Eigen::Matrix3d R = quat2rotmat(quaternion);
-  using Scalar = typename Derived::Scalar;
 
+  using Scalar = typename Derived::Scalar;
   using std::atan2;
   using std::sqrt;
   using std::abs;
@@ -259,67 +310,66 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // This algorithm is specific to BodyZYX order (equivalent to SpaceXYZ),
   // e.g., i=2, j=1, k=0; the given formulas (below) for xA, yA,  xB, yB;
   // and the returned quantities are specific to SpaceXYZ Euler sequence.
-  const int i = 2;
-  const int j = 1;
-  const int k = 0;
+  const int i = 2, j = 1, k = 0;
 
   // Calculate theta2 using lots of information in the rotation matrix.
+  // Rsum = abs( cos(theta2) ) is inherently non-negative.
+  // Rik = sin(theta2) may be negative, zero, or positive.
   const Scalar Rii = R(i, i);
   const Scalar Rij = R(i, j);
   const Scalar Rjk = R(j, k);
   const Scalar Rkk = R(k, k);
   const Scalar Rsum = sqrt((Rii * Rii + Rij * Rij + Rjk * Rjk + Rkk * Rkk) / 2);
-
-  // Rsum = abs(cos(theta2)) is inherently positive.
   const Scalar Rik = R(i, k);
   const Scalar theta2 = atan2(-Rik, Rsum);
-  const Scalar e0 = quaternion(0);
-  const Scalar e1 = quaternion(1);
-  const Scalar e2 = quaternion(2);
-  const Scalar e3 = quaternion(3);
-  const Scalar yA = e1 + e3;
-  const Scalar xA = e0 - e2;
-  const Scalar yB = e3 - e1;
-  const Scalar xB = e0 + e2;
-  const Scalar epsilon = 4.0 * Eigen::NumTraits<Scalar>::epsilon();
+
+  // Calculate theta1 and theta3 from Steps 3-7 (documented above).
+  const Scalar e0 = quaternion(0), e1 = quaternion(1);
+  const Scalar e2 = quaternion(2), e3 = quaternion(3);
+  const Scalar yA = e1 + e3, xA = e0 - e2;
+  const Scalar yB = e3 - e1, xB = e0 + e2;
+  const Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
   const bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
   const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
   const Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
   const Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
   Scalar theta1 = zA + zB;  // First angle in rotation sequence.
   Scalar theta3 = zA - zB;  // Third angle in rotation sequence.
+
+  // If necessary, modify angles theta1 and/or theta3 to be between -pi and pi.
   if (theta1 > M_PI) theta1 = theta1 - 2 * M_PI;
   if (theta1 < -M_PI) theta1 = theta1 + 2 * M_PI;
   if (theta3 > M_PI) theta3 = theta3 - 2 * M_PI;
   if (theta3 < -M_PI) theta3 = theta3 + 2 * M_PI;
 
-  // Returns in SpaceXYZ (roll-pitch-yaw) order rather
-  // than BodyZYX theta1, theta2, theta3 order.
+  // Return in Drake/ROS conventional SpaceXYZ (roll-pitch-yaw) order
+  // (which is equivalent to BodyZYX theta1, theta2, theta3 order).
   Vector3<Scalar> spaceXYZ_angles(theta3, theta2, theta1);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
-  const Matrix3<Scalar> rotmat_quaternion = quat2rotmat(quaternion);
-  const Matrix3<Scalar> rotmat_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
-  DRAKE_ASSERT(rotmat_quaternion.isApprox(rotmat_spaceXYZ, 1.0E-11));
+  // This algorithm converts from quaternion to SpaceXYZ.
+  // Test this algorithm by converting the quaternion to a rotation matrix
+  // and converting the SpaceXYZ angles to a rotation matrix and ensuring
+  // these rotation matrices are within epsilon of each other.
+  // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
+  // = 2.22E-16) and there are two sets of two multiplies and one addition for
+  // each rotation matrix element, I decided to test with 4.23E-14 epsilon.
+  // Note: (1+eps)*(1+eps)*(1+eps) = 1 + 3*eps + 3*eps^2 + eps^3 near 1 + 3*eps,
+  // so (1+4*eps)*(1+4*eps)*(1+4*eps) is near 1 + 3*(4^3)*eps = 1 + 192*eps.
+  const Matrix3<Scalar> rotMatrix_quaternion = quat2rotmat(quaternion);
+  const Matrix3<Scalar> rotMatrix_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
+  DRAKE_ASSERT(rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 4.23E-14));
 #endif
 
   return spaceXYZ_angles;
 }
 
-/**
- * Computes SpaceXYZ Euler angles from quaternion representation.
- * @param quaternion 4x1 unit length vector @p q = [ w; x; y; z ].
- * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * @see rpy2rotmat
- * This accurate algorithm avoids numerical round-off issues encountered by some
- * algorithms when pitch is close to PI/2 or -PI/2  (pitch = PI/2 - 1E-6).
- */
+/** (Deprecated) Computes SpaceXYZ Euler angles from quaternion.
+Use `QuaternionToSpaceXYZ()` instead.
+@see QuaternionToSpaceXYZ() **/
 template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-
   return QuaternionToSpaceXYZ(quaternion);
 }
 
