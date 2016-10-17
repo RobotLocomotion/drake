@@ -23,7 +23,7 @@ namespace systems {
 /**
  The contact manifold represents, abstractly, the domain of contact between
  two bodies and the Forces generated.  The actual representation of that
- contact can vary based on the nature of the simulation parameters.
+ contact can vary based on the nature of the simulation properties.
 
  However, all manifolds support the concept of a "net" applied force which is
  the accumulated affect of the underlying contact details into a single Force
@@ -44,7 +44,8 @@ class DRAKE_EXPORT ContactManifold {
   /**
    Computes a single contact detail -- Force and application point -- which
    is equivalent to applying all individual contact forces, independently.
-   * @returns the single net Force.
+
+   @returns the single net Force.
    */
   virtual ContactDetail<T> ComputeNetResponse() const = 0;
 
