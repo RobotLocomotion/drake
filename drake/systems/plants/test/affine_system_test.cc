@@ -93,15 +93,13 @@ class AffineSystemTest : public ::testing::Test {
   const Eigen::VectorXd kXDot0;
   const Eigen::VectorXd kY0;
 
-  Eigen::MatrixXd make_matrix(double a, double b, double c, double d)
-  {
-    Eigen::MatrixXd m(2,2);
+  Eigen::MatrixXd make_matrix(double a, double b, double c, double d) {
+    Eigen::MatrixXd m(2, 2);
     m << a, b, c, d;
     return m;
   }
 
-  Eigen::VectorXd make_vector(double a, double b)
-  {
+  Eigen::VectorXd make_vector(double a, double b) {
     Eigen::VectorXd v(2);
     v << a, b;
     return v;
@@ -124,7 +122,6 @@ TEST_F(AffineSystemTest, Construction) {
 
 // Tests that the derivatives are correctly computed
 TEST_F(AffineSystemTest, Derivatives) {
-
   Eigen::Vector2d u(2);
   u << 1, 4;
   SetInput(u);
@@ -146,7 +143,6 @@ TEST_F(AffineSystemTest, Derivatives) {
 
 // Tests that the outputs are correctly computed.
 TEST_F(AffineSystemTest, Output) {
-
   // Sets the context's input port.
   Eigen::Vector2d u(2);
   u << 5.6, -10.1;
