@@ -82,7 +82,8 @@ ContactManifold<T>* SampledContactManifold<T>::clone() const {
   return new SampledContactManifold(*this);
 }
 
+// Explicitly instantiates on the most common scalar types.
 template class SampledContactManifold<double>;
 
-}
-}
+}  // namespace systems
+}  // namespace drake

@@ -31,7 +31,8 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
    Computes a single contact detail -- Force and application point -- which
    is equivalent to applying all individual contact forces individually.
 
-   @returns The single net Force.
+   @returns The single net Force and application point - expressed in the world
+            frame.
    */
   ContactDetail<T> ComputeNetResponse() const override;
 
@@ -54,5 +55,5 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
 
 extern template class DRAKE_EXPORT SampledContactManifold<double>;
 
-}
-}
+}  // namespace systems
+}  // namespace drake
