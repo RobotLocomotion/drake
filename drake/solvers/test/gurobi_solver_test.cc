@@ -85,9 +85,7 @@ GTEST_TEST(testGurobi, convexQPExample) {
   prog.AddQuadraticCost(Q, b);
 
   // Exact solution.
-  MatrixXd Q_transpose = Q;
-  Q_transpose.transposeInPlace();
-  MatrixXd Q_symmetric = 0.5 * (Q + Q_transpose);
+  MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
   VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
   RunGurobiSolver(&prog);
   EXPECT_TRUE(
@@ -366,9 +364,7 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
                        const Eigen::MatrixBase<DerivedBlower> &b_lb,
                        const Eigen::MatrixBase<DerivedBupper> &b_ub) {
   DRAKE_ASSERT(Q.rows() == Q.cols());
-  MatrixXd Q_transpose = Q;
-  Q_transpose.transposeInPlace();
-  MatrixXd Q_symmetric = 0.5 * (Q + Q_transpose);
+  MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
   const int kXdim = Q.rows();
   DRAKE_ASSERT(c.rows() == kXdim);
   DRAKE_ASSERT(c.cols() == 1);
@@ -388,7 +384,7 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
   prog_socp.AddBoundingBoxConstraint(drake::Vector1d(2.0), drake::Vector1d(2.0), {z});
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
 
-  Eigen::LLT<MatrixXd, Eigen::Upper> lltOfQ(Q);
+  Eigen::LLT<MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   MatrixXd Q_sqrt = lltOfQ.matrixU();
   MatrixXd A_w(kXdim, 2*kXdim);
   A_w << MatrixXd::Identity(kXdim, kXdim), -Q_sqrt;
@@ -396,17 +392,17 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, {x_socp});
 
-  MatrixXd c_transpose;
-  c_transpose = c;
-  c_transpose.transposeInPlace();
-  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(c_transpose, drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(std::numeric_limits<double>::infinity())));
+  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(std::numeric_limits<double>::infinity())));
   prog_socp.AddCost(cost_socp1, {x_socp});
   prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
   RunGurobiSolver(&prog_socp);
+  double objective_value_socp = c.transpose() * x_socp.value() + y.value().coeff(0);
 
   // Check the solution
   EXPECT_TRUE(std::abs(2*y.value().coeff(0) - w.value().squaredNorm()) <= 1E-6);
   EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1e-6, MatrixCompareType::absolute));
+  EXPECT_TRUE(y.value().coeff(0) >= 0);
+  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt*x_socp.value(), 1E-6, MatrixCompareType::absolute));
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
@@ -414,13 +410,15 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
   RunGurobiSolver(&prog_qp);
+  double objective_value_qp = 0.5 * (x_qp.value().transpose() * Q * x_qp.value()).coeff(0, 0) + c.transpose() * x_qp.value();
 
   // TODO(hongkai.dai@tri.global):tighten the tolerance. socp does not really converge to true optimal yet.
   EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(std::abs(objective_value_qp - objective_value_socp) < 1E-6);
   return x_socp.value();
 };
 GTEST_TEST(testGurobi, RotatedLorentzConeTest) {
-  // Solve an un-constraint QP
+  // Solve an un-constrained QP
   MatrixXd Q = Eigen::Matrix2d::Identity();
   VectorXd c = Eigen::Vector2d::Ones();
   MatrixXd A = Eigen::RowVector2d(0, 0);
@@ -428,7 +426,7 @@ GTEST_TEST(testGurobi, RotatedLorentzConeTest) {
   VectorXd b_ub = VectorXd::Constant(1, std::numeric_limits<double>::infinity());
   SolveQPasSOCP(Q, c, A, b_lb, b_ub);
 
-  // Solve a constraint QP
+  // Solve a constrained QP
   Q = Eigen::Matrix3d::Zero();
   Q(0, 0) = 1.0;
   Q(1, 1) = 1.3;
