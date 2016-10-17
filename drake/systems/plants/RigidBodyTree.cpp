@@ -85,7 +85,7 @@ RigidBodyTree::RigidBodyTree(
     const FloatingBaseType floating_base_type)
     : RigidBodyTree() {
   // Adds the model defined in filename to this tree.
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       filename, floating_base_type, this);
 }
 
@@ -2360,7 +2360,7 @@ void RigidBodyTree::addRobotFromURDF(
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap ros_package_map;
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 
@@ -2370,7 +2370,7 @@ void RigidBodyTree::addRobotFromURDF(
     std::map<std::string, std::string>& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileSearchingInRosPackages(
       filename, ros_package_map, floating_base_type, weld_to_frame, this);
 }
 

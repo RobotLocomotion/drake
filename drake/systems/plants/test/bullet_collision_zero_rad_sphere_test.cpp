@@ -15,12 +15,12 @@ int main(int argc, char* argv[]) {
   RigidBodyTree tree;
 
   for (int i = 0; i < 10; ++i) {
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         drake::GetDrakePath() + "/systems/plants/test/PointMass.urdf",
             kRollPitchYaw, &tree);
   }
 
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::GetDrakePath() + "/systems/plants/test/FallingBrick.urdf",
           kFixed, &tree);
 
