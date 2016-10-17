@@ -264,6 +264,17 @@ bool SnoptSolver::available() const {
   return true;
 }
 
+template<typename Derived>
+void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
+  for (auto const& binding : constraint_list) {
+    auto const& c = binding.constraint();
+    size_t n = c->num_constraints();
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      max_num_gradients += n * v.size();
+    }
+    num_nonlinear_constraints += n;
+  }
+}
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d, &prog);
@@ -295,14 +306,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
-  for (auto const& binding : prog.generic_constraints()) {
-    auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      max_num_gradients += n * v.size();
-    }
-    num_nonlinear_constraints += n;
-  }
+  UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(), num_nonlinear_constraints, max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(prog.lorentz_cone_constraints(), num_nonlinear_constraints, max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(prog.rotated_lorentz_cone_constraints(), num_nonlinear_constraints, max_num_gradients);
+
   size_t num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
