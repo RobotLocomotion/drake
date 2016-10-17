@@ -65,8 +65,6 @@ TEST_F(SampleCollisionManifoldTest, ZeroForceManifold) {
   EXPECT_TRUE(CompareMatrices(net.get_application_point(), p0_));
   EXPECT_TRUE(CompareMatrices(net.get_force(), w0_));
 
-  // Test on single force
-
   // Single zero force
   auto zeroForce = make_unique<TestContactDetail>(p0_, w0_);
   manifold.AddContactDetail(move(zeroForce));
@@ -89,8 +87,6 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
   SampledContactManifold<double> manifold;
   EXPECT_EQ(0, manifold.get_num_contacts());
   EXPECT_EQ(nullptr, manifold.get_ith_contact(0));
-
-  // Test on single force
 
   // Zero force
   auto zeroForce = make_unique<TestContactDetail>(p0_, w0_);
