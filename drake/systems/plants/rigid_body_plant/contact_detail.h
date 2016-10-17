@@ -30,7 +30,7 @@ class DRAKE_EXPORT ContactDetail {
 
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  /** This is the *spatial* force (i.e., a wrench). */
+  /** This is the *spatial* force (i.e., a wrench) and *not* a linear force. */
   const WrenchVector<T>& get_force() const { return wrench_; }
 
   virtual ContactDetail* clone() const;
