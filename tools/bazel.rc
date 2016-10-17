@@ -1,0 +1,12 @@
+# Copyright 2016 Toyota Research Institute.  All rights reserved.
+
+# Default to an optimized build.
+build -c opt
+
+# Build options.
+build --strip=never
+build --copt -Werror=all
+build --cxxopt -std=c++1y
+
+# Test options.
+test --test_output=errors
