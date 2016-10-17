@@ -51,5 +51,6 @@ class DRAKE_EXPORT ContactInfo {
 };
 
 extern template class DRAKE_EXPORT ContactInfo<double>;
-}
-}
+
+}  // namespace systems
+}  // namespace drake
