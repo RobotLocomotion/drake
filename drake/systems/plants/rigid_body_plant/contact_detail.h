@@ -8,11 +8,11 @@ namespace systems {
 
 /**
   The base class which defines a single point of contact and its corresponding
-  Force (ultimately represented as a wrench)  -- both epxressed in the world
+  Force (ultimately represented as a wrench) - both expressed in the world
   frame.
 
   The intention is for other contact models to create sub-classes that augment
-  a single detail with additional relevant information.
+  this class with additional per-contact data.
 
   @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
@@ -21,16 +21,17 @@ class DRAKE_EXPORT ContactDetail {
  public:
   /**
    Constructor for a fully specified contact detail: Force and its application
-   point.
+   point -- both expressed in the world frame.
 
    @param[in] point      The contact point at which the force is applied.
    @param[in] wrench     The contact Force (represented as a wrench).
    */
   ContactDetail(const Vector3<T>& point, const WrenchVector<T>& wrench);
 
+  /** The point the Force is applied, expressed in the world frame */
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  /** This is the *spatial* force (i.e., a wrench) and *not* a linear force. */
+  /** Returns the *spatial* Force (i.e., a wrench) and *not* a linear force. */
   const WrenchVector<T>& get_force() const { return wrench_; }
 
   virtual ContactDetail* clone() const;
@@ -44,6 +45,6 @@ class DRAKE_EXPORT ContactDetail {
 };
 
 extern template class DRAKE_EXPORT ContactDetail<double>;
-}
-}
 
+}  // namespace systems
+}  // namespace drake
