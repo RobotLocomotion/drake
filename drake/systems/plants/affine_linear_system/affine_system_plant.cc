@@ -41,8 +41,8 @@ AffineSystemPlant<T>::AffineSystemPlant(const Eigen::Ref<const VectorX<T>>& xdot
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& AffineSystemPlant<T>::get_force_port() const {
-    return this->get_input_port(0);
+const SystemPortDescriptor<T>& AffineSystemPlant<T>::get_input_port() const {
+  return System<T>::get_input_port(0);
 }
 
 template <typename T>
@@ -69,15 +69,18 @@ void AffineSystemPlant<T>::EvalOutput(const MyContext& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(0);//output->GetMutableVectorData();
-  // TODO(amcastro-tri): Remove this copy by allowing output ports to be
-  // mere pointers to state variables (or cache lines).
+  BasicVector<T>* output_vector = output->GetMutableVectorData(0);
+
+  // TODO(naveenoid): Remove this copying of state and input.
 
   auto x = context.get_continuous_state()->CopyToVector();
-  auto u = get_input_force(context);
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  DRAKE_DEMAND(input);
+  auto u = input->get_value();
 
   output_vector->get_mutable_value() =
       kC * x + kD * u + kY0;
+
 }
 
 template <typename T>
@@ -88,45 +91,13 @@ void AffineSystemPlant<T>::EvalTimeDerivatives(
 
   // TODO(naveenoid): Perhaps the output of this function needs caching.
   auto x = context.get_continuous_state()->CopyToVector();
-  auto u = get_input_force(context);
+
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  DRAKE_DEMAND(input);
+  auto u = input->get_value();
 
   derivatives->SetFromVector(kA * x + kB * u + kXDot0);
 }
-
-//
-//template <typename T>
-//const MatrixX<T> AffineSystemPlant<T>::GetA(void) {
-//  return(kA);
-//}
-//
-//template <typename T>
-//const MatrixX<T> AffineSystemPlant<T>::GetB(void) {
-//  return(kB);
-//}
-//
-//
-//template <typename T>
-//const MatrixX<T> AffineSystemPlant<T>::GetC(void) {
-//  return(kC);
-//}
-//
-//
-//template <typename T>
-//const MatrixX<T> AffineSystemPlant<T>::GetD(void) {
-//  return(kD);
-//}
-//
-//
-//template <typename T>
-//const VectorX<T> AffineSystemPlant<T>::GetXDot0(void) {
-//  return(kXDot0);
-//}
-//
-//template <typename T>
-//const VectorX<T> AffineSystemPlant<T>::GetY0(void) {
-//  return(kY0);
-//}
-
 
 template <typename T>
 std::unique_ptr<SystemOutput<T>> AffineSystemPlant<T>::AllocateOutput(
@@ -134,14 +105,11 @@ std::unique_ptr<SystemOutput<T>> AffineSystemPlant<T>::AllocateOutput(
 
   auto output = make_unique<LeafSystemOutput<T>>();
   // Allocates an output for the AffineSystemPlant state (output port 0).
-  {
-    auto data = make_unique<BasicVector<T>>(kNumStates);
-    auto port = make_unique<OutputPort>(move(data));
-    output->get_mutable_ports()->push_back(move(port));
-  }
+  auto data = make_unique<BasicVector<T>>(kNumStates);
+  auto port = make_unique<OutputPort>(move(data));
+  output->get_mutable_ports()->push_back(move(port));
 
   return std::unique_ptr<SystemOutput<T>>(output.release());
-
 }
 
 
