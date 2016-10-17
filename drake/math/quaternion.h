@@ -9,7 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/roll_pitch_yaw_independent_quaternion.h"
+#include "drake/math/roll_pitch_yaw_no_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {

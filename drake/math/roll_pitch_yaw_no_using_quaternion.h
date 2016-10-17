@@ -1,5 +1,13 @@
-// This  file includes the conversion from a roll pitch yaw representation, that
-// does not depend on quaternion.h
+// @file This file includes the conversion from a roll pitch yaw representation,
+// that does not use quaternion.h.
+// We break roll_pitch_yaw.h into two half-files
+//      roll_pitch_yaw_no_using_quaternion.h
+// and  roll_pitch_yaw_using_quaternion.h,
+// so that quaternion.h can include roll_pitch_yaw_no_using_quaternion.h
+// to call rpy2rotmat in quaternion.h, without causing circular dependency
+// problem.
+// Most users should include roll_pitch_yaw.h, and ignore the half-files
+// roll_pitch_yaw_no_using_quaternion.h and roll_pitch_yaw_using_quaternion.h
 #pragma once
 
 #include <cmath>
