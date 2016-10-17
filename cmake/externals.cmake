@@ -383,6 +383,12 @@ function(drake_add_external PROJECT)
     drake_add_foreign_external(${PROJECT})
   endif()
 
+  if(SKIP_DRAKE_BUILD)
+    if(${PROJECT} STREQUAL drake OR drake IN_LIST _ext_deps)
+      set_target_properties(${PROJECT} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
+  endif()
+
   if(NOT _ext_LOCAL)
     # Set up build step to ensure project is updated before build
     drake_forceupdate(${PROJECT})

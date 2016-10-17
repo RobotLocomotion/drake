@@ -276,7 +276,7 @@ macro(drake_setup_options)
     "Sparse Non-linear Optimizer\;"
     "requires access to RobotLocomotion/snopt-pod")
 
-  drake_optional_external(SIGNALSCOPE OFF DEPENDS "NOT WIN32\;WITH_DIRECTOR"
+  drake_optional_external(SIGNALSCOPE OFF DEPENDS "NOT WIN32\;HAVE_LCM\;HAVE_DIRECTOR"
     "Live plotting tool for LCM messages")
 
   # Many of these might work on win32 with little or no work... they just
