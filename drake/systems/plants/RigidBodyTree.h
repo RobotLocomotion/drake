@@ -866,7 +866,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * @return A pointer to the owning RigidBody, or nullptr if the id is invalid
    *         or doesn't map to a rigid body.
    */
-  const RigidBody* FindBody(const DrakeCollision::ElementId& elementId);
+  const RigidBody* FindBody(DrakeCollision::ElementId elementId);
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
