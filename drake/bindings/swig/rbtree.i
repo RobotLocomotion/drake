@@ -15,6 +15,7 @@
 
 %include <typemaps.i>
 %include <std_vector.i>
+%include <std_map.i>
 
 #define SWIG_SHARED_PTR_NAMESPACE std
 // SWIG has built-in support for shared pointers, and can use either
@@ -31,6 +32,10 @@
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
 %template(vectorString) std::vector<std::string>;
+%template(vectorInt) std::vector<int>;
+%template(vectorFloat) std::vector<float>;
+%template(vectorDouble) std::vector<double>;
+%template(mapStringString) std::map<std::string,std::string>;
 %shared_ptr(RigidBody)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody> >;
 %shared_ptr(RigidBodyFrame)
