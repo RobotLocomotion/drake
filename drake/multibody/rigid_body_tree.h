@@ -806,6 +806,24 @@ class DRAKE_EXPORT RigidBodyTree {
                        std::vector<const DrakeCollision::Element*>& elB_idx,
                        bool use_margins = true);
 
+  /**
+   * Overload method for performing collision detection between all pairs of
+   * collision elements, but retrieving the *collision elements* themselves
+   * instead of their corresponding bodies.
+   *
+   * @param[in] cache           The dynamic pose data for the tree.
+   * @param[out] phi            The signed distance function
+   * @param[out] normal         The contact normal pointing out of element B.
+   * @param[out] xA             The contact point on element A (in world
+   *                            coordinates.)
+   * @param[out] xB             The contact point on element B (in world
+   *                            coordinates.)
+   * @param[out] elA_idx        Pointer to the first colliding object (A).
+   * @param[out] elB_idx        Pointer to the second colliding object (B).
+   * @param[out] ids_to_check   Pairs of collision element ids to test.
+   * @param[out] use_margins    If true, geometry with margins are used.
+   * @return    True if the method ran successfully.
+   */
   bool collisionDetect(
       const KinematicsCache<double>& cache, Eigen::VectorXd& phi,
       Eigen::Matrix3Xd& normal, Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
@@ -813,8 +831,6 @@ class DRAKE_EXPORT RigidBodyTree {
       std::vector<const DrakeCollision::Element*>& elB_idx,
       const std::vector<DrakeCollision::ElementId>& ids_to_check,
       bool use_margins);
-
-
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
