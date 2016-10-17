@@ -98,11 +98,7 @@ class BasicVector : public VectorBase<T> {
     vec += scale * values_;
   }
 
-  BasicVector& PlusEqScaled(const T& scale,
-                            const VectorBase<T>& rhs) override {
-    rhs.ScaleAndAddToVector(scale, values_);
-    return *this;
-  }
+  void SetZero() override { values_.setZero(); }
 
   /// Copies the entire vector to a new BasicVector, with the same concrete
   /// implementation type.
@@ -129,11 +125,21 @@ class BasicVector : public VectorBase<T> {
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const {
-    return new BasicVector<T>(*this);
-  }
+  virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
 
  private:
+  // Add in multiple scaled vectors to this vector. All vectors
+  // must be the same size. This function overrides the default DoPlusEqScaled()
+  // implementation toward maximizing speed. This implementation should be able
+  // to leverage Eigen's fast scale and add functions in the case that rhs_scal
+  // is also (i.e., in addition to 'this') a contiguous vector.
+  void DoPlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
+      override {
+    for (const auto& operand : rhs_scal)
+      operand.second.ScaleAndAddToVector(operand.first, values_);
+  }
+
   // The column vector of T values.
   VectorX<T> values_;
 };
