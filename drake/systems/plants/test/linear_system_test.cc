@@ -34,7 +34,7 @@ class LinearSystemTest : public ::testing::Test {
     // Construct the system I/O objects.
     system_ = make_unique<LinearSystemPlant<double>>(kA, kB, kC, kD);
     system_->set_name("test_linear_system");
-    context_ = system_->CreateDefaultContext();  
+    context_ = system_->CreateDefaultContext();
     input_vector_  = make_unique<BasicVector<double>>(2 /* size */);
 
     Eigen::Vector2d output_eigen_vector(2 /* size */);
@@ -89,15 +89,13 @@ class LinearSystemTest : public ::testing::Test {
   const Eigen::VectorXd kXDot0;
   const Eigen::VectorXd kY0;
 
-  Eigen::MatrixXd make_matrix(double a, double b, double c, double d)
-  {
-    Eigen::MatrixXd m(2,2);
+  Eigen::MatrixXd make_matrix(double a, double b, double c, double d) {
+    Eigen::MatrixXd m(2, 2);
     m << a, b, c, d;
     return m;
   }
 
-  Eigen::VectorXd make_vector(double a, double b)
-  {
+  Eigen::VectorXd make_vector(double a, double b) {
     Eigen::VectorXd v(2);
     v << a, b;
     return v;
@@ -114,8 +112,8 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(system_->GetD(), GetD());
   EXPECT_EQ(system_->GetXDot0(), GetXDot0());
   EXPECT_EQ(system_->GetY0(), GetY0());
-  EXPECT_EQ(system_->GetXDot0(), Eigen::VectorXd::Zero(2,1));
-  EXPECT_EQ(system_->GetY0(), Eigen::VectorXd::Zero(2,1));
+  EXPECT_EQ(system_->GetXDot0(), Eigen::VectorXd::Zero(2, 1));
+  EXPECT_EQ(system_->GetY0(), Eigen::VectorXd::Zero(2, 1));
   EXPECT_EQ(1, system_->get_num_output_ports());
   EXPECT_EQ(1, system_->get_num_input_ports());
 }

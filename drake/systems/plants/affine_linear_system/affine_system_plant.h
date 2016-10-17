@@ -43,31 +43,31 @@ class DRAKE_EXPORT AffineSystemPlant : public LeafSystem<T> {
                     const Eigen::Ref<const VectorX<T>>& y0);
 
   /// The input force to this system is not direct feedthrough.
-  virtual bool has_any_direct_feedthrough() const override { return false; }
+  bool has_any_direct_feedthrough() const override { return false; }
 
   /// LeafSystem override.
-  virtual std::unique_ptr<ContinuousState<T>>
+  std::unique_ptr<ContinuousState<T>>
   AllocateContinuousState() const override;
 
   /// Returns the input port to the externally applied input.
-  virtual const SystemPortDescriptor<T>& get_input_port() const;
+  const SystemPortDescriptor<T>& get_input_port() const;
 
   /// Returns the port to output state.
-  virtual const SystemPortDescriptor<T>& get_output_port() const;
+  const SystemPortDescriptor<T>& get_output_port() const;
 
   /// @returns the external driving force to the system.
-  virtual T get_input_force(const MyContext& context) const {
+  T get_input_force(const MyContext& context) const {
     T external_force = 0;
     external_force = this->EvalVectorInput(context, 0)->GetAtIndex(0);
     return external_force;
   }
 
   /// Sets the continuous state vector of the system to be @p x.
-  virtual void set_state_vector(Context<T>* context,
+  void set_state_vector(Context<T>* context,
                         const Eigen::Ref<const VectorX<T>> x) const;
   /// System<T> overrides.
   /// Allocates a single output port of type SystemOutput<T>.
-  virtual std::unique_ptr<MyOutput> AllocateOutput(
+  std::unique_ptr<MyOutput> AllocateOutput(
       const MyContext& context) const override;
 
   void EvalOutput(const MyContext& context, MyOutput* output) const override;
