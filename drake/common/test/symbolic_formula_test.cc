@@ -22,6 +22,23 @@ class SymbolicFormulaTest : public ::testing::Test {
   const Expression z_{var_z_};
   const Formula tt_{Formula::True()};
   const Formula ff_{Formula::False()};
+
+  const Expression e1_{x_ + y_};
+  const Expression e1_prime_{x_ + y_};
+  const Expression e2_{x_ - y_};
+  const Expression e3_{x_ + z_};
+
+  const Formula f1_{x_ + y_ > 0};
+  const Formula f2_{x_ * y_ < 5};
+  const Formula f_and_{f1_ && f2_};
+  const Formula f_or_{f1_ || f2_};
+  const Formula not_f_or_{!f_or_};
+  const Formula f_forall_{forall({var_x_, var_y_}, f_or_)};
+
+  const Environment env1_{{var_x_, 1}, {var_y_, 1}};
+  const Environment env2_{{var_x_, 3}, {var_y_, 4}};
+  const Environment env3_{{var_x_, -2}, {var_y_, -5}};
+  const Environment env4_{{var_x_, -1}, {var_y_, -1}};
 };
 
 TEST_F(SymbolicFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
@@ -103,15 +120,10 @@ TEST_F(SymbolicFormulaTest, EqualTo2) {
 }
 
 TEST_F(SymbolicFormulaTest, EqualTo3) {
-  const Formula f1{x_ + y_ > 0};
-  const Formula f2{y_ * z_ < 5};
-  const Formula f3{f1 || f2};
-  const Formula f4{f1 && f2};
-
-  const Formula f_forall1{forall({var_x_, var_y_}, f3)};
-  const Formula f_forall2{forall({var_x_, var_y_, var_z_}, f3)};
-  const Formula f_forall3{forall({var_x_, var_y_}, f4)};
-  const Formula f_forall4{forall({var_x_, var_y_, var_z_}, f4)};
+  const Formula f_forall1{forall({var_x_, var_y_}, f_or_)};
+  const Formula f_forall2{forall({var_x_, var_y_, var_z_}, f_or_)};
+  const Formula f_forall3{forall({var_x_, var_y_}, f_and_)};
+  const Formula f_forall4{forall({var_x_, var_y_, var_z_}, f_and_)};
 
   EXPECT_TRUE(f_forall1.EqualTo(f_forall1));
   EXPECT_FALSE(f_forall1.EqualTo(f_forall2));
@@ -135,20 +147,15 @@ TEST_F(SymbolicFormulaTest, EqualTo3) {
 }
 
 TEST_F(SymbolicFormulaTest, Eq) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 == e1};
+  const Formula f1{e1_ == e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
   EXPECT_FALSE(f1.EqualTo(Formula::False()));
-  const Formula f2{e1 == e1_prime};
+  const Formula f2{e1_ == e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   EXPECT_FALSE(f2.EqualTo(Formula::False()));
-  const Formula f3{e1 == e3};
+  const Formula f3{e1_ == e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  const Formula f4{e2 == e3};
+  const Formula f4{e2_ == e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -157,20 +164,15 @@ TEST_F(SymbolicFormulaTest, Eq) {
 }
 
 TEST_F(SymbolicFormulaTest, Neq) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 != e1};
+  const Formula f1{e1_ != e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
   EXPECT_FALSE(f1.EqualTo(Formula::True()));
-  const Formula f2{e1 != e1_prime};
+  const Formula f2{e1_ != e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   EXPECT_FALSE(f2.EqualTo(Formula::True()));
-  const Formula f3{e1 != e3};
+  const Formula f3{e1_ != e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::False()));
-  const Formula f4{e2 != e3};
+  const Formula f4{e2_ != e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::False()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -179,20 +181,15 @@ TEST_F(SymbolicFormulaTest, Neq) {
 }
 
 TEST_F(SymbolicFormulaTest, Lt) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 < e1};
+  const Formula f1{e1_ < e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
   EXPECT_FALSE(f1.EqualTo(Formula::True()));
-  const Formula f2{e1 < e1_prime};
+  const Formula f2{e1_ < e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   EXPECT_FALSE(f2.EqualTo(Formula::True()));
-  const Formula f3{e1 < e3};
+  const Formula f3{e1_ < e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  const Formula f4{e2 < e3};
+  const Formula f4{e2_ < e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -201,20 +198,15 @@ TEST_F(SymbolicFormulaTest, Lt) {
 }
 
 TEST_F(SymbolicFormulaTest, Gt) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 > e1};
+  const Formula f1{e1_ > e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::False()));
   EXPECT_FALSE(f1.EqualTo(Formula::True()));
-  const Formula f2{e1 > e1_prime};
+  const Formula f2{e1_ > e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::False()));
   EXPECT_FALSE(f2.EqualTo(Formula::True()));
-  const Formula f3{e1 > e3};
+  const Formula f3{e1_ > e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  const Formula f4{e2 > e3};
+  const Formula f4{e2_ > e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -223,20 +215,15 @@ TEST_F(SymbolicFormulaTest, Gt) {
 }
 
 TEST_F(SymbolicFormulaTest, Leq) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 <= e1};
+  const Formula f1{e1_ <= e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
   EXPECT_FALSE(f1.EqualTo(Formula::False()));
-  const Formula f2{e1 <= e1_prime};
+  const Formula f2{e1_ <= e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   EXPECT_FALSE(f2.EqualTo(Formula::False()));
-  const Formula f3{e1 <= e3};
+  const Formula f3{e1_ <= e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  const Formula f4{e2 <= e3};
+  const Formula f4{e2_ <= e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -245,20 +232,15 @@ TEST_F(SymbolicFormulaTest, Leq) {
 }
 
 TEST_F(SymbolicFormulaTest, Geq) {
-  const Expression e1{x_ + y_};
-  const Expression e1_prime{x_ + y_};
-  const Expression e2{x_ - y_};
-  const Expression e3{x_ + z_};
-
-  const Formula f1{e1 >= e1};
+  const Formula f1{e1_ >= e1_};
   EXPECT_TRUE(f1.EqualTo(Formula::True()));
   EXPECT_FALSE(f1.EqualTo(Formula::False()));
-  const Formula f2{e1 >= e1_prime};
+  const Formula f2{e1_ >= e1_prime_};
   EXPECT_TRUE(f2.EqualTo(Formula::True()));
   EXPECT_FALSE(f2.EqualTo(Formula::False()));
-  const Formula f3{e1 >= e3};
+  const Formula f3{e1_ >= e3_};
   EXPECT_FALSE(f3.EqualTo(Formula::True()));
-  const Formula f4{e2 >= e3};
+  const Formula f4{e2_ >= e3_};
   EXPECT_FALSE(f4.EqualTo(Formula::True()));
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
@@ -274,35 +256,17 @@ TEST_F(SymbolicFormulaTest, And1) {
 }
 
 TEST_F(SymbolicFormulaTest, And2) {
-  const Formula f1{x_ + y_ > 0};
-  const Formula f2{x_ * y_ < 5};
-  const Formula f{f1 && f2};
-
-  const Environment env1{{var_x_, 1}, {var_y_, 1}};
-  const Environment env2{{var_x_, 3}, {var_y_, 4}};
-  const Environment env3{{var_x_, -2}, {var_y_, -5}};
-  const Environment env4{{var_x_, -1}, {var_y_, -1}};
-
-  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) && (1 * 1 < 5));
-  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) && (3 * 4 < 5));
-  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) && (-2 * -5 < 5));
-  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) && (-1 * -1 < 5));
+  EXPECT_EQ(f_and_.Evaluate(env1_), (1 + 1 > 0) && (1 * 1 < 5));
+  EXPECT_EQ(f_and_.Evaluate(env2_), (3 + 4 > 0) && (3 * 4 < 5));
+  EXPECT_EQ(f_and_.Evaluate(env3_), (-2 + -5 > 0) && (-2 * -5 < 5));
+  EXPECT_EQ(f_and_.Evaluate(env4_), (-1 + -1 > 0) && (-1 * -1 < 5));
 }
 
 TEST_F(SymbolicFormulaTest, Or2) {
-  const Formula f1{x_ + y_ > 0};
-  const Formula f2{x_ * y_ < 5};
-  const Formula f{f1 || f2};
-
-  const Environment env1{{var_x_, 1}, {var_y_, 1}};
-  const Environment env2{{var_x_, 3}, {var_y_, 4}};
-  const Environment env3{{var_x_, -2}, {var_y_, -5}};
-  const Environment env4{{var_x_, -1}, {var_y_, -1}};
-
-  EXPECT_EQ(f.Evaluate(env1), (1 + 1 > 0) || (1 * 1 < 5));
-  EXPECT_EQ(f.Evaluate(env2), (3 + 4 > 0) || (3 * 4 < 5));
-  EXPECT_EQ(f.Evaluate(env3), (-2 + -5 > 0) || (-2 * -5 < 5));
-  EXPECT_EQ(f.Evaluate(env4), (-1 + -1 > 0) || (-1 * -1 < 5));
+  EXPECT_EQ(f_or_.Evaluate(env1_), (1 + 1 > 0) || (1 * 1 < 5));
+  EXPECT_EQ(f_or_.Evaluate(env2_), (3 + 4 > 0) || (3 * 4 < 5));
+  EXPECT_EQ(f_or_.Evaluate(env3_), (-2 + -5 > 0) || (-2 * -5 < 5));
+  EXPECT_EQ(f_or_.Evaluate(env4_), (-1 + -1 > 0) || (-1 * -1 < 5));
 }
 
 TEST_F(SymbolicFormulaTest, Not1) {
@@ -313,27 +277,17 @@ TEST_F(SymbolicFormulaTest, Not1) {
 }
 
 TEST_F(SymbolicFormulaTest, Not2) {
-  const Formula f1{x_ + y_ > 0};
-  const Formula f2{x_ * y_ < 5};
-  const Formula f{f1 || f2};
-  const Formula not_f{!f};
-
-  const Environment env1{{var_x_, 1}, {var_y_, 1}};
-  const Environment env2{{var_x_, 3}, {var_y_, 4}};
-  const Environment env3{{var_x_, -2}, {var_y_, -5}};
-  const Environment env4{{var_x_, -1}, {var_y_, -1}};
-
-  EXPECT_EQ(not_f.Evaluate(env1), !((1 + 1 > 0) || (1 * 1 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env2), !((3 + 4 > 0) || (3 * 4 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env3), !((-2 + -5 > 0) || (-2 * -5 < 5)));
-  EXPECT_EQ(not_f.Evaluate(env4), !((-1 + -1 > 0) || (-1 * -1 < 5)));
+  EXPECT_EQ(not_f_or_.Evaluate(env1_), !((1 + 1 > 0) || (1 * 1 < 5)));
+  EXPECT_EQ(not_f_or_.Evaluate(env2_), !((3 + 4 > 0) || (3 * 4 < 5)));
+  EXPECT_EQ(not_f_or_.Evaluate(env3_), !((-2 + -5 > 0) || (-2 * -5 < 5)));
+  EXPECT_EQ(not_f_or_.Evaluate(env4_), !((-1 + -1 > 0) || (-1 * -1 < 5)));
 }
 
 TEST_F(SymbolicFormulaTest, GetFreeVariables) {
   const Formula f1{x_ + y_ > 0};
   const Formula f2{y_ * z_ < 5};
-  const Formula f3{f1 || f2};
-  const Formula f4{forall({var_x_, var_y_}, f3)};
+  const Formula f_or{f1 || f2};
+  const Formula f_forall{forall({var_x_, var_y_}, f_or)};
 
   const Variables vars1{f1.GetFreeVariables()};  // {x_, y_}
   EXPECT_EQ(vars1.size(), 2u);
@@ -345,27 +299,23 @@ TEST_F(SymbolicFormulaTest, GetFreeVariables) {
   EXPECT_TRUE(vars2.include(var_y_));
   EXPECT_TRUE(vars2.include(var_z_));
 
-  const Variables vars3{f3.GetFreeVariables()};  // {x_, y_, z_}
+  const Variables vars3{f_or.GetFreeVariables()};  // {x_, y_, z_}
   EXPECT_EQ(vars3.size(), 3u);
   EXPECT_TRUE(vars3.include(var_x_));
   EXPECT_TRUE(vars3.include(var_y_));
   EXPECT_TRUE(vars3.include(var_z_));
 
-  const Variables vars4{f4.GetFreeVariables()};  // {z_}
+  const Variables vars4{f_forall.GetFreeVariables()};  // {z_}
   EXPECT_EQ(vars4.size(), 1u);
   EXPECT_TRUE(vars4.include(var_z_));
 }
 
 TEST_F(SymbolicFormulaTest, ToString) {
-  const Formula f1{x_ + y_ > 0};
-  const Formula f2{y_ * z_ < 5};
-  const Formula f3{f1 || f2};
-  const Formula f4{forall({var_x_, var_y_}, f3)};
-
-  EXPECT_EQ(f1.to_string(), "((x + y) > 0)");
-  EXPECT_EQ(f2.to_string(), "((y * z) < 5)");
-  EXPECT_EQ(f3.to_string(), "(((x + y) > 0) or ((y * z) < 5))");
-  EXPECT_EQ(f4.to_string(), "forall({x, y}. (((x + y) > 0) or ((y * z) < 5)))");
+  EXPECT_EQ(f1_.to_string(), "((x + y) > 0)");
+  EXPECT_EQ(f2_.to_string(), "((x * y) < 5)");
+  EXPECT_EQ(f_or_.to_string(), "(((x + y) > 0) or ((x * y) < 5))");
+  EXPECT_EQ(f_forall_.to_string(),
+            "forall({x, y}. (((x + y) > 0) or ((x * y) < 5)))");
 }
 }  // namespace
 }  // namespace symbolic
