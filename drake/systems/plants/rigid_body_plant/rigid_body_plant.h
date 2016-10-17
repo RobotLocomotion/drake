@@ -71,10 +71,10 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
-  /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
-  /// the world in @p tree.  @p tree must not be `nullptr`.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
+  /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
+  /// the world in @p tree.  @p tree must not be `nullptr`.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree);
 
   ~RigidBodyPlant() override;
@@ -194,25 +194,22 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* positions_derivative) const override;
 
  private:
-  /**
-   * Computes the contact results for the putting on the output port.
-   * @param[in]     context     The system context.
-   * @param[in,out] contacts    The contact result port data
-   */
+  /// Computes the contact results for feeding the corresponding output port.
+  ///
+  /// @param[in]     context     The system context.
+  /// @param[in,out] contacts    The contact result port data
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T> * contacts) const;
 
-  /**
-   * Computes the generalized forces on all bodies due to contact.
-   *
-   * @param kinsol      The kinematics of the rigid body system at the time of
-   *                    contact evaluation.
-   * @param v           The velocities for the bodies in the rigid body tree.
-   * @param contacts    The optional contact results.  If non-null, stores the
-   *                    contact information for consuming on the output port.
-   * @return            The generalized forces across all the bodies due to
-   *                    contact response.
-   */
+  /// Computes the generalized forces on all bodies due to contact.
+  ///
+  /// @param kinsol      The kinematics of the rigid body system at the time of
+  ///                    contact evaluation.
+  /// @param v           The velocities for the bodies in the rigid body tree.
+  /// @param contacts    The optional contact results.  If non-null, stores the
+  ///                    contact information for consuming on the output port.
+  /// @return            The generalized forces across all the bodies due to
+  ///                    contact response.
   VectorX<T> ComputeContactForce(const KinematicsCache<T> &kinsol,
                                  const VectorX<T> &v,
                                  ContactResults<T> * contacts = nullptr) const;
