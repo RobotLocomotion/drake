@@ -16,6 +16,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
+/// - Eigen::AutoDiffScalar<Eigen::Matrix<double, 2, 1, Eigen::DontAlign>>
 ///
 /// They are already available to link against in drakeSystemFramework.
 ///
