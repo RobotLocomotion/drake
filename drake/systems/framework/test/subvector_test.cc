@@ -120,7 +120,7 @@ TEST_F(SubvectorTest, SetZero) {
 
 // Tests all += * operations for VectorBase.
 TEST_F(SubvectorTest, PlusEqScaled) {
-  Subvector<int> ogvec(state_vector_.get(), 0, kSubVectorLength);
+  Subvector<int> orig_vec(state_vector_.get(), 0, kSubVectorLength);
   BasicVector<int> vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
   Eigen::Vector2i ans1, ans2, ans3, ans4, ans5;
   vec1.get_mutable_value() << 1, 2;
@@ -134,30 +134,30 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   VectorBase<int>& v4 = vec4;
   VectorBase<int>& v5 = vec5;
 
-  ogvec.SetZero();
-  ogvec.PlusEqScaled(2, v1);
-  EXPECT_EQ(ogvec.GetAtIndex(0), 2);
-  EXPECT_EQ(ogvec.GetAtIndex(1), 4);
+  orig_vec.SetZero();
+  orig_vec.PlusEqScaled(2, v1);
+  EXPECT_EQ(orig_vec.GetAtIndex(0), 2);
+  EXPECT_EQ(orig_vec.GetAtIndex(1), 4);
 
-  ogvec.SetZero();
-  ogvec.PlusEqScaled({{2, v1}, {3, v2}});
-  EXPECT_EQ(ogvec.GetAtIndex(0), 11);
-  EXPECT_EQ(ogvec.GetAtIndex(1), 19);
+  orig_vec.SetZero();
+  orig_vec.PlusEqScaled({{2, v1}, {3, v2}});
+  EXPECT_EQ(orig_vec.GetAtIndex(0), 11);
+  EXPECT_EQ(orig_vec.GetAtIndex(1), 19);
 
-  ogvec.SetZero();
-  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
-  EXPECT_EQ(ogvec.GetAtIndex(0), 46);
-  EXPECT_EQ(ogvec.GetAtIndex(1), 74);
+  orig_vec.SetZero();
+  orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
+  EXPECT_EQ(orig_vec.GetAtIndex(0), 46);
+  EXPECT_EQ(orig_vec.GetAtIndex(1), 74);
 
-  ogvec.SetZero();
-  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
-  EXPECT_EQ(ogvec.GetAtIndex(0), 137);
-  EXPECT_EQ(ogvec.GetAtIndex(1), 193);
+  orig_vec.SetZero();
+  orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
+  EXPECT_EQ(orig_vec.GetAtIndex(0), 137);
+  EXPECT_EQ(orig_vec.GetAtIndex(1), 193);
 
-  ogvec.SetZero();
-  ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
-  EXPECT_EQ(ogvec.GetAtIndex(0), 346);
-  EXPECT_EQ(ogvec.GetAtIndex(1), 446);
+  orig_vec.SetZero();
+  orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
+  EXPECT_EQ(orig_vec.GetAtIndex(0), 346);
+  EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
 }
 
 }  // namespace
