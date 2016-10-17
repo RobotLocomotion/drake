@@ -24,35 +24,41 @@ namespace {
 
 class AffineSystemTest : public ::testing::Test {
  public:
+  AffineSystemTest() :
+  kA(make_matrix(1.5, 2.7, 3.5, 4.9)),
+  kB(make_matrix(4.9, 5.1, 6.8, 7.2)),
+  kC(make_matrix(1.1, 2.5, 3.8, 4.6)),
+  kD(make_matrix(4.1, 5.6, 6.3, 7.7)),
+  kXDot0(make_vector(4.5, 6.5)),
+  kY0(make_vector(3.5, 7.6)) {
+
+  }
   void SetUp() override { Initialize(); }
 
   void Initialize() {
     // Construct the system I/O objects.
-    system_ = std::make_unique<AffineSystemPlant<double>>(
-        kXd0, kA, kB, kC, kD, kY0);
+    system_ = make_unique<AffineSystemPlant<double>>(
+        kXDot0, kA, kB, kC, kD, kY0);
     system_->set_name("test_affine_system");
     context_ = system_->CreateDefaultContext();
     system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
-//    const int nq = system_derivatives_->get_state().size();//get_generalized_position().size();
-    //configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
-
     // Set up some convenience pointers.
-    state_ = dynamic_cast<VectorX<double>*>(
-        context_->get_mutable_continuous_state()->get_mutable_state());
-    output_ = dynamic_cast<const VectorX<double>*>(
-        system_output_->get_vector_data(0));
-    derivatives_ = dynamic_cast<VectorX<double>*>(
-        system_derivatives_->get_mutable_state());
+//
+//    state_ = dynamic_cast<VectorX<double>*>(
+//        context_->get_mutable_continuous_state()->
+//            get_mutable_misc_continuous_state());
+//    output_ = dynamic_cast<const VectorX<double>*>(
+//        system_output_->get_vector_data(0));
+//    derivatives_ = dynamic_cast<VectorX<double>*>(
+//        system_derivatives_->get_mutable_state());
   }
 
-  void InitializeState(const Eigen::Ref<const VectorX<double>>& state) {
-  //   state_-> //->SetFromVector(state);
-//   state_ = state;
-//        ->set_position(position);
-//    state_->set_velocity(velocity);
-//    state_->set_conservative_work(0);
-  }
+//  void InitializeState(const Eigen::Ref<const VectorX<double>>& state_eigen_vector) {
+//    state_vector_ = make_unique<BasicVector<double>>(state_eigen_vector);
+//    state_ = make_unique<ContinuousState<double>>(move(state_vector_));
+//    context_->set_continuous_state(std::move(state_));
+//  }
 
   // Helper method to create input ports (free standing input ports) that are
   // not connected to any other output port in the system.
@@ -62,52 +68,97 @@ class AffineSystemTest : public ::testing::Test {
     return make_unique<FreestandingInputPort>(std::move(data));
   }
 
- protected:
-  std::unique_ptr<AffineSystemPlant<double>> system_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> system_output_;
-  std::unique_ptr<ContinuousState<double>> system_derivatives_;
-//  std::unique_ptr<BasicVector<double>> configuration_derivatives_;
+  const MatrixX<double> GetA(void) const {
+    return kA;
+  }
 
-  VectorX<double>* state_;
-  const VectorX<double>* output_;
-  VectorX<double>* derivatives_;
+  const MatrixX<double> GetB(void) const {
+    return kB;
+  }
+
+  const MatrixX<double> GetC(void) const {
+    return kC;
+  }
+
+  const MatrixX<double> GetD(void) const {
+    return kD;
+  }
+
+  const VectorX<double> GetXDot0(void) const {
+    return kXDot0;
+  }
+
+  const VectorX<double> GetY0(void) const {
+    return kY0;
+  }
+
+ protected:
+  unique_ptr<AffineSystemPlant<double>> system_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<SystemOutput<double>> system_output_;
+  unique_ptr<ContinuousState<double>> system_derivatives_;
+
+  VectorX<double> state_;
+  unique_ptr<BasicVector<double>> state_vector_;
+  VectorX<double> output_;
+  VectorX<double> derivatives_;
 
  private:
-  std::unique_ptr<VectorBase<double>> erased_derivatives_;
-  const Eigen::MatrixXd kA = Eigen::MatrixXd::Identity(2, 2);
-  const Eigen::MatrixXd kB = Eigen::MatrixXd::Identity(2, 1);
+  const Eigen::MatrixXd kA;// = Eigen::MatrixXd::Identity(2, 2);
+  const Eigen::MatrixXd kB;// = Eigen::MatrixXd::Identity(2, 1);
+  const Eigen::MatrixXd kC;// = Eigen::MatrixXd::Identity(2, 2);
+  const Eigen::MatrixXd kD;// = Eigen::MatrixXd::Zero(2, 1);
+  const Eigen::VectorXd kXDot0;// = Eigen::VectorXd::Zero(2,1);
+  const Eigen::VectorXd kY0;// = Eigen::VectorXd::Zero(2,1);
 
-  const Eigen::MatrixXd kC = Eigen::MatrixXd::Identity(2, 2);
-  const Eigen::MatrixXd kD = Eigen::MatrixXd::Zero(2, 1);
-  const Eigen::VectorXd kXd0 = Eigen::VectorXd::Zero(2,1);
-  const Eigen::VectorXd kY0 = Eigen::VectorXd::Zero(2,1);
+  Eigen::MatrixXd make_matrix(double a, double b, double c, double d)
+  {
+    Eigen::MatrixXd m(2,2);
+    m << a, b, c, d;
+    return m;
+  }
+  Eigen::VectorXd make_vector(double a, double b)
+  {
+    Eigen::VectorXd v(2);
+    v << a, b;
+    return v;
+  }
 };
 
 TEST_F(AffineSystemTest, Construction) {
-// Asserts zero inputs for this case.
-EXPECT_NE(0, context_->get_num_input_ports());
-EXPECT_EQ("test_affine_system", system_->get_name());
-//EXPECT_EQ(kSpring, system_->get_spring_constant());
-//EXPECT_EQ(kMass, system_->get_mass());
+// Asserts one input for this case.
+  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ("test_affine_system", system_->get_name());
+  EXPECT_EQ(system_->GetA(), GetA());
+  EXPECT_EQ(system_->GetB(), GetB());
+  EXPECT_EQ(system_->GetC(), GetC());
+  EXPECT_EQ(system_->GetD(), GetD());
+  EXPECT_EQ(system_->GetXDot0(), GetXDot0());
+  EXPECT_EQ(system_->GetY0(), GetY0());
 }
 
-//// Tests that state is passed through to the output.
-//TEST_F(SpringMassSystemTest, Output) {
-//// Displacement 100cm, vel 250cm/s (.25 is exact in binary).
-//InitializeState(0.1, 0.25);
-//system_->EvalOutput(*context_, system_output_.get());
+// Tests that state is passed through to the output.
+TEST_F(AffineSystemTest, Output) {
+// Displacement 100cm, vel 250cm/s (.25 is exact in binary).
+  Eigen::VectorXd u(2);
+  u << 0.1, 0.25;
+//InitializeState(u);
+//  state_vector_ = make_unique<BasicVector<double>>(state_eigen_vector);
+////    state_ = make_unique<ContinuousState<double>>(move(state_vector_));
+////    context_->set_continuous_state(std::move(state_)
+//system_->EvalOutput
+//
+// (*context_, system_output_.get());
 //ASSERT_EQ(1, system_output_->get_num_ports());
-//
+
 //// Check the output through the application-specific interface.
-//EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
-//EXPECT_EQ(0.25, output_->get_velocity());
+//EXPECT_NEAR(0.1, output_->, 1e-14);
+
+ASSERT_EQ(3, output_->size());
 //
-//// Check the output through the VectorBase API.
-//ASSERT_EQ(3, output_->size());
 //EXPECT_NEAR(0.1, output_->get_value()[0], 1e-14);
 //EXPECT_EQ(0.25, output_->get_value()[1]);
-//}
+}
 //
 //// Tests that second-order structure is exposed in the state.
 //TEST_F(SpringMassSystemTest, SecondOrderStructure) {
