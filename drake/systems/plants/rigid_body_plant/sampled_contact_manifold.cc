@@ -18,8 +18,8 @@ SampledContactManifold<T>::SampledContactManifold(
 template <typename T>
 ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   // The "net" contact is defined as follows:
-  //  point = sum_i [p_i * |f_i|] / sum_i |f_i|
-  //  Force = sum_i F_i + sum_i [(point - p_i) x f_i , 0, 0, 0]
+  //  p = sum_i [p_i * |f_i|] / sum_i |f_i|
+  //  F = sum_i F_i + sum_i [(p - p_i) x f_i , 0, 0, 0]
   //
   //  where p_i is the ith application point.
   //  F_i is the ith spatial force (aka wrench).
@@ -27,7 +27,8 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   //  force, respectively.
   //  [ f, 0, 0, 0] is a zero-torque wrench built off the given force.
   //
-  //  The net application point is an approximation of the center of pressure.
+  //  The net application point (p) is an approximation of the center of
+  // pressure.
   WrenchVector<T> wrench;
   wrench.setZero();
 

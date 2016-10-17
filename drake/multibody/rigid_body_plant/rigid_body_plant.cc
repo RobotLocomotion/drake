@@ -468,13 +468,16 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
 template <typename T>
 void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+
+  DRAKE_ASSERT(contacts != nullptr);
+  contacts->Clear();
 
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
+  auto x = dynamic_cast<const BasicVector<T>&>(
+      context.get_continuous_state()->get_state()).get_value();
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);
@@ -488,10 +491,6 @@ template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T> &kinsol, const VectorX<T> &v,
     ContactResults<T> * contacts) const {
-
-  if (contacts != nullptr) {
-    contacts->Clear();
-  }
 
   VectorX<T> phi;
   Matrix3X<T> normal, xA, xB;
@@ -572,8 +571,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           wrench.tail(3).setZero();
 
           // TODO(SeanCurtis-TRI): This call would have to change based on the
-          //  contact model.  This call instantiates a smapled contact manifold.
-          //  Other contact models would have to instantiate an alterate
+          //  contact model.  This call instantiates a sampled contact manifold.
+          //  Other contact models would have to instantiate an alternate
           //  representation.
           contacts->AddContact(elA_idx[i]->getId(), elB_idx[i]->getId(),
               point, wrench);
