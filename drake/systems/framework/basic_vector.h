@@ -128,9 +128,6 @@ class BasicVector : public VectorBase<T> {
   virtual BasicVector<T>* DoClone() const { return new BasicVector<T>(*this); }
 
  private:
-  // The column vector of T values.
-  VectorX<T> values_;
-
   // Add in multiple scaled vectors to this vector. All vectors
   // must be the same size. This function overrides the default DoPlusEqScaled()
   // implementation toward maximizing speed. This implementation should be able 
@@ -142,6 +139,9 @@ class BasicVector : public VectorBase<T> {
     for (const auto& operand : rhs_scal)
       operand.second.ScaleAndAddToVector(operand.first, values_);
   }
+
+  // The column vector of T values.
+  VectorX<T> values_;
 };
 
 }  // namespace systems
