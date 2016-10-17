@@ -13,6 +13,8 @@ namespace systems {
 
   The intention is for other contact models to create sub-classes that augment
   a single detail with additional relevant information.
+
+  @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT ContactDetail {
