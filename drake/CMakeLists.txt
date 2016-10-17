@@ -32,9 +32,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3)
+  find_package(PythonInterp 3 REQUIRED)
 else()
-  find_package(PythonInterp)
+  find_package(PythonInterp REQUIRED)
 endif()
 
 # set up pods

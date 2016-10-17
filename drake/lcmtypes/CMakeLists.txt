@@ -1,8 +1,6 @@
 include(${LCM_USE_FILE})
 
-if(PYTHONINTERP_FOUND)
-  set(python_args PYTHON_SOURCES python_install_sources)
-endif()
+set(python_args PYTHON_SOURCES python_install_sources)
 if(JAVA_FOUND AND TARGET lcm-java)
   set(java_args JAVA_SOURCES java_sources)
 endif()
@@ -69,9 +67,7 @@ install(TARGETS drake_lcmtypes
   INCLUDES DESTINATION include
 )
 
-if(PYTHONINTERP_FOUND)
-  lcm_install_python(${python_install_sources})
-endif()
+lcm_install_python(${python_install_sources})
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)
