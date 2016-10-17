@@ -35,11 +35,13 @@ class ValkyrieSystem : public LeafSystem<double> {
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_humanoid_status_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    output_port_index_raw_state_ = DeclareOutputPort(systems::kVectorValued, robot_.get_num_positions() + robot_.get_num_velocities(), systems::kInheritedSampling).get_index();
 
     zero_torque_ = Eigen::VectorXd::Zero(robot_.actuators.size());
 
+    std::cout << get_num_input_ports() << " " << get_num_output_ports() << std::endl;
     DRAKE_ASSERT(this->get_num_input_ports() == 1);
-    DRAKE_ASSERT(this->get_num_output_ports() == 1);
+    DRAKE_ASSERT(this->get_num_output_ports() == 2);
 
     set_name("Dummy Valkyrie System");
   }
@@ -63,6 +65,9 @@ class ValkyrieSystem : public LeafSystem<double> {
     HumanoidStatus rs(robot_);
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<HumanoidStatus>(rs)));
+
+    output->get_mutable_ports()->emplace_back(
+          new systems::OutputPort(AllocateOutputVector(get_output_port_raw_state())));
     return std::move(output);
   }
 
@@ -79,6 +84,15 @@ class ValkyrieSystem : public LeafSystem<double> {
             ->GetMutableValue<HumanoidStatus>();
     rs.Update(context.get_time(), q, v, zero_torque_, Eigen::Vector6d::Zero(),
               Eigen::Vector6d::Zero());
+
+    // Set state output.
+    BasicVector<double>* output_x = output->GetMutableVectorData(output_port_index_raw_state_);
+    for (int i = 0; i < robot_.get_num_positions(); i++) {
+      output_x->SetAtIndex(i, q[i]);
+    }
+    for (int i = 0; i < robot_.get_num_velocities(); i++) {
+      output_x->SetAtIndex(i+robot_.get_num_positions(), v[i]);
+    }
   }
 
   void EvalTimeDerivatives(
@@ -206,7 +220,13 @@ class ValkyrieSystem : public LeafSystem<double> {
    */
   inline const SystemPortDescriptor<double>& get_output_port_humanoid_status()
       const {
+        std::cout << "rs " << output_port_index_humanoid_status_ << std::endl;
     return get_output_port(output_port_index_humanoid_status_);
+  }
+
+  inline const SystemPortDescriptor<double>& get_output_port_raw_state() const {
+    std::cout << "x " << output_port_index_raw_state_ << std::endl;
+    return get_output_port(output_port_index_raw_state_);
   }
 
  private:
@@ -214,6 +234,7 @@ class ValkyrieSystem : public LeafSystem<double> {
 
   int input_port_index_qp_output_;
   int output_port_index_humanoid_status_;
+  int output_port_index_raw_state_;
 
   Eigen::VectorXd zero_torque_;
 };

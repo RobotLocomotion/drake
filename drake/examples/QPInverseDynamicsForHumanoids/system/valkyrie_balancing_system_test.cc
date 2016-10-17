@@ -5,11 +5,13 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 namespace drake {
 
@@ -17,6 +19,7 @@ using systems::DiagramBuilder;
 using systems::Diagram;
 using systems::Simulator;
 using systems::ExplicitEulerIntegrator;
+using systems::RigidBodyTreeLcmPublisher;
 
 namespace examples {
 namespace qp_inverse_dynamics {
@@ -30,12 +33,14 @@ namespace qp_inverse_dynamics {
 // simulation should be replaced later with real simulation.
 // The controller should drive the position and velocity close to zero in 2
 // seconds.
-GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
+//GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
+void test() {
   std::string urdf =
       GetDrakePath() +
       std::string(
-          "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
+          "/examples/Valkyrie/urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf);
+  lcm::DrakeLcm lcm;
 
   // Build diagram.
   DiagramBuilder<double> builder;
@@ -46,6 +51,9 @@ GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
   PlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
 
+  RigidBodyTreeLcmPublisher* viz_publisher = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+        robot, &lcm);
+
   builder.Connect(qp_con->get_output_port_qp_output(),
                   val_sim->get_input_port_qp_output());
   builder.Connect(val_sim->get_output_port_humanoid_status(),
@@ -54,6 +62,7 @@ GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
                   plan_eval->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
+  builder.Connect(val_sim->get_output_port_raw_state(), viz_publisher->get_input_port(0));
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
@@ -68,7 +77,7 @@ GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
   // Set plan eval's desired to the initial state.
   plan_eval->SetupDesired(*rs0);
   // Perturb the initial condition.
-  val_sim->PerturbVelocity("torsoPitch", 0.1, val_sim_context);
+  val_sim->PerturbVelocity("torsoPitch", 0.5, val_sim_context);
 
   // Simulation.
   // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
@@ -99,3 +108,8 @@ GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
 }  // end namespace qp_inverse_dynamics
 }  // end namespace examples
 }  // end namespace drake
+
+int main() {
+  drake::examples::qp_inverse_dynamics::test();
+  return 0;
+}
