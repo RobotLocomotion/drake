@@ -1990,9 +1990,9 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
-const RigidBody* RigidBodyTree::FindBody(
-    const DrakeCollision::ElementId& elementId) {
-  auto element = collision_model_->FindElement(elementId);
+const RigidBody* RigidBodyTree::FindBody(DrakeCollision::ElementId elementId) {
+  const DrakeCollision::Element* element =
+      collision_model_->FindElement(elementId);
   if (element != nullptr) {
     return element->get_body();
   }
