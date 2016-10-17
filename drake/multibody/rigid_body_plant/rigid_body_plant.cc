@@ -267,9 +267,6 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     }
   }
 
-  // TODO(SeanCurtis-TRI): Confirm that both sides produce the same answer.
-
-#if 1
   right_hand_side -= ComputeContactForce(kinsol, v);
 #else
   // Applies contact forces.
