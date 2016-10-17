@@ -39,7 +39,7 @@ const ContactManifold<T>& ContactInfo<T>::get_contact_manifold() const {
   return *(contact_manifold_.get());
 }
 
-// explicit instantiation
+// Explicitly instantiates on the most common scalar types.
 template class ContactInfo<double>;
 
 }  // namespace systems
