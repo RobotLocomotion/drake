@@ -5,7 +5,6 @@ using std::move;
 namespace drake {
 namespace systems {
 
-
 template <typename T>
 ContactInfo<T>::ContactInfo(DrakeCollision::ElementId element1,
                             DrakeCollision::ElementId element2,
