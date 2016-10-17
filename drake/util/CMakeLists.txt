@@ -21,10 +21,6 @@ add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
 target_link_libraries(drakeUtil drakeCommon)
 drake_install_headers(drakeUtil.h)
 pods_install_libraries(drakeUtil)
-pods_install_pkg_config_file(drake-util
-  LIBS -ldrakeUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 drake_install_headers(drakeAppUtil.h)
 
@@ -36,10 +32,6 @@ if(MATLAB_FOUND)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
   pods_install_libraries(drakeMexUtil)
-  pods_install_pkg_config_file(drake-mex-util
-    LIBS -ldrakeMexUtil
-    REQUIRES
-    VERSION 0.0.1)
 endif()
 
 if(lcm_FOUND)
@@ -53,10 +45,6 @@ if(lcm_FOUND)
     lcmtypes_bot2-core-cpp)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
-  pods_install_pkg_config_file(drake-lcm-util
-    LIBS -ldrakeLCMUtil
-    REQUIRES
-    VERSION 0.0.1)
 endif()
 
 drake_install_headers(drakeGradientUtil.h)
@@ -65,18 +53,10 @@ add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUt
 target_link_libraries(drakeGeometryUtil drakeCommon drakeMath)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
-pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil -ldrakeCommon
-  REQUIRES
-  VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
 drake_install_headers(convexHull.h)
-pods_install_pkg_config_file(drake-convex-hull
-  LIBS -ldrakeConvexHull
-  REQUIRES
-  VERSION 0.0.1)
 
 if(MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)

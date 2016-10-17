@@ -19,10 +19,6 @@ if(lcm_FOUND)
     lcm_translator_dictionary.h
     lcm_and_vector_base_translator.h
     lcmt_drake_signal_translator.h)
-  pods_install_pkg_config_file(drake-lcm-system2
-    LIBS -ldrakeLCMSystem2
-    REQUIRES lcm
-    VERSION 0.0.1)
 endif()
 
 add_subdirectory(test)

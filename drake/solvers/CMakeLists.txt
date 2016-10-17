@@ -7,10 +7,6 @@ if(gurobi_FOUND)
 
   pods_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
-  pods_install_pkg_config_file(drake-qp
-    LIBS -ldrakeQP
-    REQUIRES gurobi
-    VERSION 0.0.1)
 endif()
 
 set(optimization_files)
@@ -66,10 +62,6 @@ drake_install_headers(
   system_identification.h
   )
 pods_install_libraries(drakeOptimization)
-pods_install_pkg_config_file(drake-optimization
-  LIBS -ldrakeOptimization
-  REQUIRES
-  VERSION 0.0.1)
 
 if(ipopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization ipopt)

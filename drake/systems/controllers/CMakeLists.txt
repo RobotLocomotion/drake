@@ -7,10 +7,6 @@ add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
-pods_install_pkg_config_file(drake-control-util
-  LIBS -ldrakeControlUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
 find_package(yaml-cpp)
@@ -20,11 +16,6 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   pods_use_pkg_config_packages(drakeQPCommon gurobi)
   pods_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
-  pods_install_pkg_config_file(drake-qp-common
-    LIBS -ldrakeQPCommon
-    CFLAGS -I\${prefix}/include/lcmtypes
-    REQUIRES drake-control-util
-    VERSION 0.0.1)
 
   pods_find_pkg_config(bot2-lcmgl-client)
   if(bot2-lcmgl-client_FOUND)
@@ -57,10 +48,6 @@ add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
 pods_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
-pods_install_pkg_config_file(drake-zmp-util
-  LIBS -ldrakeZMPUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 
 # System 2 controllers
@@ -83,8 +70,5 @@ target_link_libraries(drakeSystemControllers
 drake_install_headers(${system2_installed_headers})
 
 pods_install_libraries(drakeSystemControllers)
-pods_install_pkg_config_file(drake-system2-controllers
-    LIBS -ldrakeSystem2Controllers -ldrakeSystemFramework -ldrakeRBM
-    REQUIRES
-    VERSION 0.0.1)
+
 add_subdirectory(test)

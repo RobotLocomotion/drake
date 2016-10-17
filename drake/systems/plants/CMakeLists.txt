@@ -6,10 +6,6 @@ add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
 drake_install_headers(xmlUtil.h)
-pods_install_pkg_config_file(drake-xml-util
-  LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
-  REQUIRES
-  VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
@@ -42,11 +38,6 @@ drake_install_headers(
   parser_urdf.h
   rigid_body_loop.h
   robot_state_tap.h)
-
-pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
 
@@ -151,10 +142,6 @@ if(drakeIK_SRC_FILES)
   pods_install_libraries(drakeIKoptions)
   drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
     inverseKinBackend.h)
-  pods_install_pkg_config_file(drake-ik
-    LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-    REQUIRES drake-rbm
-    VERSION 0.0.1)
 endif()
 
 if(MATLAB_FOUND)
@@ -185,10 +172,6 @@ target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyCon
 
 drake_install_headers(RigidBodySystem.h)
 pods_install_libraries(drakeRBSystem)
-pods_install_pkg_config_file(drake-rbsystem
-  CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-  LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
-  VERSION 0.0.1)
 
 if(lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)

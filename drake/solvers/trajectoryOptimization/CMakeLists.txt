@@ -8,9 +8,5 @@ pods_install_libraries(drakeTrajectoryOptimization)
 drake_install_headers(
   dircol_trajectory_optimization.h
   direct_trajectory_optimization.h)
-pods_install_pkg_config_file(drake-trajectory-optimization
-  LIBS -ldrakeTrajectoryOptimization
-  REQUIRES
-  VERSION 0.0.1)
 
 add_subdirectory(test)

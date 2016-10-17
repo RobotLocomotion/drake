@@ -77,10 +77,6 @@ target_link_libraries(drakeSystemFramework drakeCommon drakeTrajectories)
 drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemFramework)
-pods_install_pkg_config_file(drake-system-framework
-  LIBS -ldrakeSystemFramework -ldrakeCommon -ldrakeTrajectories
-  REQUIRES
-  VERSION 0.0.1)
 
 #add_subdirectory(examples)
 add_subdirectory(primitives)
