@@ -64,6 +64,7 @@ class ContactResultTest : public ::testing::Test {
     //  numbers imply collision.
 
     tree_ = new RigidBodyTree();
+    auto unique_tree = unique_ptr<RigidBodyTree>(tree_);
 
     Vector3d pos;
     pos << -(kRadius + distance), 0, 0;
@@ -76,8 +77,7 @@ class ContactResultTest : public ::testing::Test {
     // Populate the plant
     // note: this is done here instead of the constructor because it appears
     //  the plan requires a *compiled* tree at constructor time.
-    plant_ = make_unique<RigidBodyPlant<double>>(
-        move(unique_ptr<RigidBodyTree>(tree_)));
+    plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
     context_->SetInputPort(0, MakeInput(
