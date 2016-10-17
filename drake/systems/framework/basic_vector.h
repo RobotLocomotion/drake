@@ -131,10 +131,11 @@ class BasicVector : public VectorBase<T> {
   // The column vector of T values.
   VectorX<T> values_;
 
-  /// Add in multiple scaled vectors to this vector. All vectors
-  /// must be the same size. This specialized function serves to maximize
-  /// speed through SIMD operations or minimize memory access, depending on
-  /// the underlying types.
+  // Add in multiple scaled vectors to this vector. All vectors
+  // must be the same size. This function overrides the default DoPlusEqScaled()
+  // implementation toward maximizing speed. This implementation should be able 
+  // to leverage Eigen's fast scale and add functions in the case that rhs_scal
+  // is also (i.e., in addition to 'this') a contiguous vector. 
   void DoPlusEqScaled(
       const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
       override {
