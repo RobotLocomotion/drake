@@ -16,7 +16,7 @@ drake_add_cc_test(symbolic_environment_test)
 target_link_libraries(symbolic_environment_test drakeCommon)
 
 drake_add_cc_test(symbolic_expression_test)
-target_link_libraries(symbolic_expression_test drakeCommon drakeSystemFramework)
+target_link_libraries(symbolic_expression_test drakeCommon)
 
 drake_add_cc_test(symbolic_formula_test)
 target_link_libraries(symbolic_formula_test drakeCommon)

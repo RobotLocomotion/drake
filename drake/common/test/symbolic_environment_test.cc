@@ -47,11 +47,11 @@ TEST_F(SymbolicEnvironmentTest, insert_find) {
   EXPECT_EQ(env1.size(), 4u);
   EXPECT_EQ(env2.size(), 3u);
 
-  const auto it1{env1.find(var_w_)};
+  const auto it1(env1.find(var_w_));
   ASSERT_TRUE(it1 != env1.end());
   EXPECT_EQ(it1->second, 5);
 
-  const auto it2{env1.find(var_v_)};
+  const auto it2(env1.find(var_v_));
   EXPECT_TRUE(it2 == env1.end());
 
   env1.insert(var_v_, 6);
