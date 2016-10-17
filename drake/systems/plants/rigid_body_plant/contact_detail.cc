@@ -2,13 +2,6 @@
 
 namespace drake {
 namespace systems {
-
-template<typename T>
-ContactDetail<T>::ContactDetail(const ContactDetail<T>& other) :
-    application_point_(other.application_point_),
-    wrench_(other.wrench_) {
-}
-
 template<typename T>
 ContactDetail<T>::ContactDetail(const Vector3 <T> &point,
                                 const WrenchVector <T> &wrench)
