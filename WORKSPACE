@@ -1,5 +1,4 @@
 # -*- python -*-
-# Copyright 2016 Toyota Research Institute.  All rights reserved.
 
 # This file marks a workspace root for the Bazel build system. see
 # http://bazel.io/ .

@@ -1,5 +1,4 @@
 # -*- python -*-
-# Copyright 2016 Toyota Research Institute.  All rights reserved.
 
 # This file contains rules for the Bazel build system.
 # See http://bazel.io/ .
