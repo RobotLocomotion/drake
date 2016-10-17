@@ -12,7 +12,7 @@ classdef SoftPaddleControl < DrakeSystem
             obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
-            obj.kp = 100;
+            obj.kp = 1000;
             obj.kd = 2*sqrt(obj.kp);
             obj.plant = plant;
             
@@ -45,20 +45,36 @@ classdef SoftPaddleControl < DrakeSystem
             
             epsilon = 0.5;
             xFixed = -0.031;
-            psid = -0.001*(q(3)-xFixed)-0.005*qp(3);
-%             psid = -0.0001*q(3)-0.0001*qp(3);
+            zTouchDes = 4;
+%             psid = -0.001*(q(3)-xFixed)-0.005*qp(3);
+
+            psi = q(1);
+            R = [cos(psi), sin(psi); -sin(psi), cos(psi)];
+            load_in_paddle = -[3; 0] + R'*([q(3); q(4)]-[-3;3]);
+            loadv_in_paddle = R'*[qp(3); qp(4)];
+            
+            tf = max(roots([-1/2*9.81*cos(psi), loadv_in_paddle(2), load_in_paddle(2)-1]));
+            zTouch = q(4) + qp(4)*tf - 1/2*9.81*tf^2;
+            zpTouch = qp(4) - 9.81*tf;
+            xTouch = q(3) + qp(3)*tf;
+            xpTouch = qp(3);
+            
+            psid = 0.066513*(xTouch-xFixed) + 0.071367*(zTouch-zTouchDes) + 0.032835*xpTouch + (1.3774e-11)*(zpTouch);
+%             psid = -psid;
 %             psid = 0;
+
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
             if m == 2
                 if(obj.numerically_stable)
                      u = Hinvtilde/(Delta)*u + J(1)*((Jp'+2/epsilon*J)*qp+1/(epsilon^2)*phi-J*Hinv*C)/(Delta);
                 else
-                    psid = -0.0005*(q(3)-xFixed)-0.001*qp(3);
+%                     psid = -0.0005*(q(3)-xFixed)-0.001*qp(3);
 %                     if psid > 0.01
 %                         psid = 0.01;
 %                     elseif psid < -0.01
 %                         psid = -0.01;
 %                     end
+                    psid = evalin('base','psid');
                     u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
                     u = Hinvtilde/(Delta)*u + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
 %                     if q(1)*qp(1) < 0
@@ -66,11 +82,13 @@ classdef SoftPaddleControl < DrakeSystem
 %                     end
                 end
             end
+            assignin('base','psid', psid)
             
             tcutOff = 40;
             if t > tcutOff
 %             psid = 0;
-            psid = -0.0005*q(3)-0.001*qp(3);
+%             psid = -0.0005*q(3)-0.001*qp(3);
+            psid = 0.066513*(xTouch-xFixed) + 0.071367*(zTouch-zTouchDes) + 0.032835*xpTouch + (1.3774e-11)*(zpTouch);
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) - 0.1*sign(Etilde*qp(1));
 %             u = 1000*Etilde*qp(1);
             end
@@ -95,6 +113,7 @@ classdef SoftPaddleControl < DrakeSystem
 %                 u = -cf*k*sign(Etilde*qp(1));
 %                 u = -cf*k*2/pi*atan(20*Etilde*qp(1)) + C(1);
 %                 u = -cf*k*Etilde*qp(1) + C(1);
+                psid = evalin('base','psid');
                 if abs(Etilde) > 1
                     u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta) - k*2/pi*atan(20*Etilde*qp(1));
                 else
@@ -104,6 +123,7 @@ classdef SoftPaddleControl < DrakeSystem
 %                     keyboard
 %                 end
             end
+            assignin('base','psid', psid)
             
             %% Set
             %             u = C(1);
@@ -228,6 +248,8 @@ classdef SoftPaddleControl < DrakeSystem
                 axis('tight')
                 xlabel('$t$ [sec]', 'Interpreter', 'LaTeX', 'FontSize', 15)
                 ylabel('$\psi$', 'Interpreter', 'LaTeX', 'FontSize', 15)
+                
+%                 poincareLinearMirrorLawControl
                 
             end
         end
