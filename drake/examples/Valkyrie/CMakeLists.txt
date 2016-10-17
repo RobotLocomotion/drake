@@ -20,6 +20,13 @@ if (lcm_FOUND)
   pods_install_libraries(drakeRobotCommandToDesiredEffortConverter)
   drake_install_headers(robot_command_to_desired_effort_converter.h)
 
+  add_library_with_exports(LIB_NAME drakeActuatorEffortToRigidBodyPlantInputConverter SOURCE_FILES
+      actuator_effort_to_rigid_body_plant_input_converter.cc)
+  target_link_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter
+      drakeLCMSystem2)
+  pods_install_libraries(drakeActuatorEffortToRigidBodyPlantInputConverter)
+  drake_install_headers(actuator_effort_to_rigid_body_plant_input_converter.h)
+
   add_library_with_exports(LIB_NAME drakeRobotStateLcmTypeUtil SOURCE_FILES
       robot_state_lcmtype_util.cc)
   target_link_libraries(drakeRobotStateLcmTypeUtil
