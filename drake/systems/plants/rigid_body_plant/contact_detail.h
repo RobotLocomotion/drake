@@ -17,9 +17,6 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactDetail {
  public:
-  /** Copy constructor */
-  ContactDetail(const ContactDetail<T>& other);
-
   /**
    Constructor for a fully specified contact detail: Force and its application
    point.
@@ -27,8 +24,7 @@ class DRAKE_EXPORT ContactDetail {
    @param[in] point      The contact point at which the force is applied.
    @param[in] wrench     The contact Force (represented as a wrench).
    */
-  explicit ContactDetail(const Vector3<T>& point,
-                         const WrenchVector<T>& wrench);
+  ContactDetail(const Vector3<T>& point, const WrenchVector<T>& wrench);
 
   const Vector3<T>& get_application_point() const { return application_point_; }
 
