@@ -19,6 +19,8 @@ namespace systems {
 
  The forces in the collision manifold are all defined such that they act on
  the first element in the pair (e1).
+
+ @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT ContactInfo {
@@ -45,7 +47,6 @@ class DRAKE_EXPORT ContactInfo {
  private:
   DrakeCollision::ElementId element1_;
   DrakeCollision::ElementId element2_;
-
   std::unique_ptr<ContactManifold<T>> contact_manifold_;
 };
 

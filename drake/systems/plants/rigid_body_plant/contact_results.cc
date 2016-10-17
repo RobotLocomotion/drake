@@ -9,7 +9,6 @@ using std::move;
 namespace drake {
 namespace systems {
 
-
 template <typename T>
 size_t ContactResults<T>::get_num_contacts() const { return contacts_.size(); }
 
@@ -36,7 +35,6 @@ void ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
   manifold->AddContactDetail(move(detail));
   contacts_.emplace_back(elementA, elementB, move(manifold));
 }
-
 
 // explicit instantiation
 template class ContactResults<double>;

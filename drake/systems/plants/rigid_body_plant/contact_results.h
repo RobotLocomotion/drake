@@ -13,9 +13,10 @@ namespace systems {
 template <typename T> class RigidBodyPlant;
 
 /**
- A class containg the contact results (contact points and response Forces) for a
- RigidBodyPlant system.
- @tparam T      The scalar type[  It must be a valid Eigen scalar;
+ A class containg the contact results (contact points and response Forces for
+ each colliding pair of collision elements) produced by a RigidBodyPlant system.
+
+ @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT ContactResults {
@@ -23,7 +24,7 @@ class DRAKE_EXPORT ContactResults {
   /** Returns the number of contacts between unique collision element pairs. */
   size_t get_num_contacts() const;
 
-  /** Returns the ContactInfor for the ith collision element pair. */
+  /** Returns the ContactInfo for the ith collision element pair. */
   const ContactInfo<T>& get_contact_info(size_t i) const;
 
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision

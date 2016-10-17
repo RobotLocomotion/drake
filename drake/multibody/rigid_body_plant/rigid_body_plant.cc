@@ -156,7 +156,6 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
     auto contact_results =
         make_unique<Value<ContactResults<T>>>(
             ContactResults<T>());
-
     output->add_port(move(contact_results));
   }
 
@@ -270,8 +269,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   // TODO(SeanCurtis-TRI): Confirm that both sides produce the same answer.
 
-#if 0
-  right_hand_side -= ComputeContactForces(kinsol, v);
+#if 1
+  right_hand_side -= ComputeContactForce(kinsol, v);
 #else
   // Applies contact forces.
   // TODO(amcastro-tri): Maybe move to RBT::ComputeGeneralizedContactForces(C)?
@@ -472,13 +471,13 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
 template <typename T>
 void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
+  auto x = dynamic_cast<const BasicVector<T>&>(
+      context.get_continuous_state()->get_state()).get_value();
+
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
-
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);

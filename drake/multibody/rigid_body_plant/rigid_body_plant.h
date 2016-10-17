@@ -73,7 +73,8 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.  @p tree must not be `nullptr`.
-  // TODO(SeanCurtis-TRI): Does the tree have to be compiled already?
+  // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
+  // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree);
 
   ~RigidBodyPlant() override;
@@ -200,7 +201,7 @@ void DoMapQDotToVelocity(
 
  private:
   /**
-   * Computes the contact results for the output port
+   * Computes the contact results for the putting on the output port.
    * @param[in]     context     The system context.
    * @param[in,out] contacts    The contact result port data
    */
@@ -220,7 +221,7 @@ void DoMapQDotToVelocity(
    */
   VectorX<T> ComputeContactForce(const KinematicsCache<T> &kinsol,
                                  const VectorX<T> &v,
-                                 ContactResults<T> * contacts) const;
+                                 ContactResults<T> * contacts = nullptr) const;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.

@@ -15,5 +15,6 @@ ContactDetail<T>* ContactDetail<T>::clone() const {
 
 // Explicitly instantiates on the most common scalar types.
 template class ContactDetail<double>;
-}
-}
+
+}  // namespace systems
+}  // namespace drake
