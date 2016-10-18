@@ -1,7 +1,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
 
 using namespace std;

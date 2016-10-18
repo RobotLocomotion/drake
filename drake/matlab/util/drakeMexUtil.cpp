@@ -1,4 +1,4 @@
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include <stdexcept>
 
 #include "drake/common/drake_assert.h"

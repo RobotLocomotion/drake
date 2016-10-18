@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "drake/util/MexWrapper.h"
+#include "drake/matlab/util/MexWrapper.h"
 
 #include <string>
 #include <map>

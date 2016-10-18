@@ -5,7 +5,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
 

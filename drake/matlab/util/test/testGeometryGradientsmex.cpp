@@ -4,7 +4,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector4d;

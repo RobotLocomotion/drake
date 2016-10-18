@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/util/mexify.h"
+#include "drake/matlab/util/mexify.h"
 
 DLL_EXPORT_SYM void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray* plhs[],
                                                      int nrhs,

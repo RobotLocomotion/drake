@@ -1,6 +1,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
