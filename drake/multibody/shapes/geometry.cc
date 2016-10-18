@@ -269,8 +269,9 @@ void Mesh::LoadObjFile(PointsVector* vertices,
 
   string path;
   size_t idx = obj_file_name.rfind('/');
-  if (idx != string::npos)
+  if (idx != string::npos) {
     path = obj_file_name.substr(0, idx+1);
+  }
 
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
@@ -280,13 +281,12 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
       obj_file_name.c_str(), path.c_str(), true);
 
-  // Report any error
-  if (!err.empty())
-    std::cerr << "Error loading OBJ file: " << err << std::endl;
-
-  // Use the boolean return value to determine if we should proceeed
-  if (!ret)
-    throw std::runtime_error("Error parsing file \"" + obj_file_name + "\".");
+  // Use the boolean return value, and the error string to determine
+  // if we should proceeed.
+  if (!ret || !err.empty()) {
+    throw std::runtime_error("Error parsing file \""
+        + obj_file_name + "\" : " + err);
+  }
 
   // Store the vertices
   for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3) {
@@ -295,16 +295,16 @@ void Mesh::LoadObjFile(PointsVector* vertices,
                                  attrib.vertices[idx + 2]));
   }
 
-  // Iterate over the shapes
-  for (auto const shape : shapes) {
+  // Iterate over the shapes.
+  for (auto const &shape : shapes) {
     unsigned int indexOffset = 0;
 
-    // For each face in the shape
+    // For each face in the shape.
     for (unsigned int face = 0;
          face < shape.mesh.num_face_vertices.size(); ++face) {
-      unsigned int vertCount = shape.mesh.num_face_vertices[face];
+      auto vertCount = shape.mesh.num_face_vertices[face];
 
-      // Make sure the face has three vertices
+      // Make sure the face has three vertices.
       if (vertCount != 3) {
         throw std::runtime_error(
             "In file \"" + obj_file_name + "\" "
@@ -314,9 +314,9 @@ void Mesh::LoadObjFile(PointsVector* vertices,
 
       Vector3i faceIndices;
 
-      // For each vertex in the face
-      for (unsigned int vert = 0; vert < vertCount; ++vert) {
-        // Store the vertex index
+      // For each vertex in the face.
+      for (auto vert = 0; vert < vertCount; ++vert) {
+        // Store the vertex index.
         faceIndices[vert] = shape.mesh.indices[indexOffset + vert].vertex_index;
       }
 
