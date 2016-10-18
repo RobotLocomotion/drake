@@ -63,18 +63,21 @@ else()
   message(STATUS "DOXYGEN_EXECUTABLE (doxygen) not found. C++ and MATLAB Doxygen will be excluded from the documentation build.")
 endif()
 
-if(ENV{OXYGEN_DIR})
+set(OXYGEN_DIR "$ENV{OXYGEN_DIR}" CACHE PATH
+  "Path to the directory containing the oXygen XML Editor")
+
+if(OXYGEN_DIR AND EXISTS "${OXYGEN_DIR}")
   if(APPLE)
     set(OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE
-      $ENV{OXYGEN_DIR}/schemaDocumentationMac.sh)
+      "${OXYGEN_DIR}/schemaDocumentationMac.sh")
   else()
     set(OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE
-      $ENV{OXYGEN_DIR}/schemaDocumentation.sh)
+      "${OXYGEN_DIR}/schemaDocumentation.sh")
   endif()
   configure_file(oxygen_cfg.xml.in oxygen_cfg.xml @ONLY)
   add_custom_command(
     COMMAND ${OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE}
-            ${CMAKE_CURRENT_BINARY_DIR}/drakeURDF.xsd
+            ${CMAKE_CURRENT_SOURCE_DIR}/drakeURDF.xsd
             -cfg:${CMAKE_CURRENT_BINARY_DIR}/oxygen_cfg.xml
     COMMENT "Building URDF documentation..."
     OUTPUT urdf_output
@@ -83,6 +86,8 @@ if(ENV{OXYGEN_DIR})
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/urdf
     DESTINATION ${DRAKE_DOCUMENTATION_DIR} OPTIONAL)
   list(APPEND DRAKE_DOCUMENTATION_OUTPUTS urdf_output)
+else()
+  message(STATUS "OXYGEN_DIR (oXygen XML Editor) not found. URDF documentation will be excluded from the documentation build.")
 endif()
 
 if(DRAKE_DOCUMENTATION_OUTPUTS)
