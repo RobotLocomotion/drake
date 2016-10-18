@@ -1,8 +1,3 @@
-if(Matlab_FOUND)
-  drake_add_mex(PPTmex PPTmex.cpp)
-  drake_add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
-endif()
-
 add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES PiecewiseFunction.cpp PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp ExponentialPlusPiecewisePolynomial.cpp)
 target_link_libraries(drakeTrajectories drakeCommon)
 pods_install_libraries(drakeTrajectories)
@@ -11,6 +6,13 @@ pods_install_pkg_config_file(drake-trajectories
   LIBS -ldrakeTrajectories
   REQUIRES
   VERSION 0.0.3)
+
+# ==== Below this line is MATLAB-specific code ====
+
+if(Matlab_FOUND)
+  drake_add_mex(PPTmex PPTmex.cpp)
+  drake_add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
+endif()
 
 find_package(Bullet)
 
@@ -46,5 +48,7 @@ if(BULLET_FOUND AND Matlab_FOUND)
   target_include_directories(ptToPolyBullet_mex PRIVATE ${BULLET_INCLUDE_DIRS})
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil ${BULLET_LIBRARIES})
 endif()
+
+# ==== Below this line is C++ and MATLAB shared code ====
 
 add_subdirectory(test)
