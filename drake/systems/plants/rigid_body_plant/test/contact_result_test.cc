@@ -85,13 +85,14 @@ class ContactResultTest : public ::testing::Test {
     plant_->SetZeroConfiguration(context_.get());
     plant_->EvalOutput(*context_.get(), output_.get());
 
-    // TODO(SeanCurtis-TRI): This hard-coded value is unfortuante. However,
+    // TODO(SeanCurtis-TRI): This hard-coded value is unfortunate. However,
     //  there is no mechanism for finding out the port id for a known port
     //  (e.g., contact results).
     return output_->get_data(2)->GetValue<ContactResults<double>>();
   }
 
   // Add a sphere with default radius, placed at the given position.
+  //  Returns a raw pointer so that tests can use it for result validation.
   RigidBody* AddSphere(const Vector3d& pos, const std::string& name) {
     RigidBody *body;
     tree_->add_rigid_body(unique_ptr<RigidBody>(body = new RigidBody()));
@@ -127,8 +128,8 @@ TEST_F(ContactResultTest, Touching) {
 
 // Confirms a contact result for two colliding spheres.
 TEST_F(ContactResultTest, SingleCollision) {
-  double displace = 0.1;
-  auto& contact_results = RunTest(-displace);
+  double offset = 0.1;
+  auto& contact_results = RunTest(-offset);
   ASSERT_EQ(contact_results.get_num_contacts(), 1);
   const auto info = contact_results.get_contact_info(0);
   DrakeCollision::ElementId e1 = info.get_element_id_1();
@@ -141,17 +142,17 @@ TEST_F(ContactResultTest, SingleCollision) {
   ASSERT_TRUE(b2 == body1_ || b2 == body2_);
   ASSERT_EQ(manifold.get_num_contacts(), 1);
   auto detail = manifold.get_ith_contact(0);
-  Vector3d expectedPt = Vector3d::Zero();
-  ASSERT_TRUE(CompareMatrices(detail->get_application_point(), expectedPt));
+  Vector3d expected_pt = Vector3d::Zero();
+  ASSERT_TRUE(CompareMatrices(detail->get_application_point(), expected_pt));
   // note: this is fragile.  This is the value copied from rigid_body_plant.h
   //  If the hard-coded value changes, or the code changes for the value to
   //  be set in some other manner, then this value could become incorrect.
   const double stiffness = 150.0;
-  double force = stiffness * displace * 2;
-  WrenchVector<double> expectedF;
+  double force = stiffness * offset * 2;
+  WrenchVector<double> expected_F;
   // force goes from body2 to body2
-  expectedF << -force, 0, 0, 0, 0, 0;
-  ASSERT_TRUE(CompareMatrices(detail->get_force(), expectedF));
+  expected_F << -force, 0, 0, 0, 0, 0;
+  ASSERT_TRUE(CompareMatrices(detail->get_force(), expected_F));
 }
 }  // namespace test
 }  // namespace rigid_body_plant

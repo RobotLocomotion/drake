@@ -34,6 +34,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 class SampleCollisionManifoldTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    // Do not change these values; tests rely on them as is
     p0_ = TestVector::Zero(3, 1);
     w0_ = TestWrench::Zero(6, 1);
     p1_ << 0, 1, 0;
