@@ -259,12 +259,13 @@ deltapsi = (xnplus2 -xnplus1)/dSpatial;
 A = [deltax([3:4,7:8]),deltaz([3:4,7:8]),deltaxdot([3:4,7:8]),deltazdot([3:4,7:8])];
 B = deltapsi([3:4,7:8]);
 
-
+%% Calculate DLQR
 Q = diag([1,1,1,1]);
 R = 1e-3;
 [K,S,E] = dlqr(A,B,Q,R);
 z = eig(A-B*K);
 
+save('poincareLinearMirrorLawOutput.mat','A','B','Q','R','K','S','E');
 
 figure(4), clf, hold on
 h = ezplot('x^2 + y^2 = 1');
