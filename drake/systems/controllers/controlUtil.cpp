@@ -6,8 +6,17 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeUtil.h"
 
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Matrix3d;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 

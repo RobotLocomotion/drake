@@ -5,8 +5,7 @@
 #endif
 #include "drake/systems/plants/collision/unusable_model.h"
 
-using namespace std;
-using namespace Eigen;
+using std::unique_ptr;
 
 namespace DrakeCollision {
 

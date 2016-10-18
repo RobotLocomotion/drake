@@ -10,8 +10,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::VectorXd;
+using std::cerr;
+using std::default_random_engine;
+using std::endl;
+using std::runtime_error;
 
 struct CheckSettings {
   bool expect_error_on_configuration_methods;

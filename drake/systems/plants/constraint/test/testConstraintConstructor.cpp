@@ -5,7 +5,8 @@
 
 #include "../RigidBodyConstraint.h"
 
-using namespace std;
+using std::cerr;
+using std::endl;
 
 int main() {
   RigidBodyTree* model = new RigidBodyTree(drake::GetDrakePath() +

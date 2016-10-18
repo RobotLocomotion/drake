@@ -101,8 +101,8 @@ void RigidBodySystem::addSensor(std::shared_ptr<RigidBodySensor> s) {
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const double& t, const RigidBodySystem::StateVector<double>& x,
     const RigidBodySystem::InputVector<double>& u) const {
-  using namespace std;
-  using namespace Eigen;
+  using namespace std;  // NOLINT(build/namespaces)
+  using namespace Eigen;  // NOLINT(build/namespaces)
 
   // todo: make kinematics cache once and re-use it (but have to make one per
   // type)

@@ -4,7 +4,8 @@
 
 #include "drake/common/drake_assert.h"
 
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::Matrix;
 
 template <typename CoefficientType>
 ExponentialPlusPiecewisePolynomial<
