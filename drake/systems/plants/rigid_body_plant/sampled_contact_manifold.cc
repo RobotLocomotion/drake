@@ -17,46 +17,34 @@ SampledContactManifold<T>::SampledContactManifold(
 
 template <typename T>
 ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
-  // The "net" contact is defined as follows:
-  //  p = sum_i [p_i * |f_i|] / sum_i |f_i|
-  //  F = sum_i F_i + sum_i [(p - p_i) x f_i , 0, 0, 0]
-  //
-  //  where p_i is the ith application point.
-  //  F_i is the ith spatial force (aka wrench).
-  //  f_i, |f_i| are the force component (and its magnitude) of the ith spatial
-  //  force, respectively.
-  //  [ f, 0, 0, 0] is a zero-torque wrench built off the given force.
-  //
-  //  The net application point (p) is an approximation of the center of
-  // pressure.
   WrenchVector<T> wrench;
   wrench.setZero();
 
-  Vector3<T> point = Vector3<T>::Zero(3, 1);
+  Vector3<T> point = Vector3<T>::Zero();
   T scale = 0;
 
   for ( const auto & detail : contact_details_ ) {
-    const Vector3<T>& contactPoint = detail->get_application_point();
-    const WrenchVector<T>& contactWrench = detail->get_force();
+    const Vector3<T>& contact_point = detail->get_application_point();
+    const WrenchVector<T>& contact_wrench = detail->get_force();
 
-    wrench += contactWrench;
+    wrench += contact_wrench;
 
-    T weight = contactWrench.head(3).norm();
+    T weight = contact_wrench.template head<3>().norm();
     scale += weight;
-    point += contactPoint * weight;
+    point += contact_point * weight;
   }
 
   // TODO(SeanCurtis-TRI): Figure out where this epislon definition belongs.
-  const double kEpsilon = 1e-10;
+  const T kEpsilon = 1e-10;
   if (scale > kEpsilon) point /= scale;
 
-  auto accumTorque = wrench.tail(3);
+  auto accum_torque = wrench.template tail<3>();
   for (const auto & detail : contact_details_) {
-    const Vector3<T>& contactPoint = detail->get_application_point();
+    const Vector3<T>& contact_point = detail->get_application_point();
     // cross product doesn't work on "head"
-    const WrenchVector<T>& contactWrench = detail->get_force();
-    accumTorque += (point - contactPoint).cross(
-        contactWrench.template head<3>());
+    const WrenchVector<T>& contact_wrench = detail->get_force();
+    accum_torque += (point - contact_point).cross(
+        contact_wrench.template head<3>());
   }
 
   return ContactDetail<T>(point, wrench);
