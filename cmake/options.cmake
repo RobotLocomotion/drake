@@ -216,10 +216,12 @@ macro(drake_setup_options)
 
   drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
+  drake_optional_external(DRAKE ON "Drake library")
+
   if(NOT WIN32)
     # Not win32 yet; builds, but requires manual installation of VTKk, etc.
     drake_optional_external(DIRECTOR ON
-      DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES"
+      DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;HAVE_DRAKE"
       "VTK-based visualization tool and robot user interface")
 
     # Probably not on Windows until lcmgl is split out
@@ -276,7 +278,7 @@ macro(drake_setup_options)
     "Sparse Non-linear Optimizer\;"
     "requires access to RobotLocomotion/snopt-pod")
 
-  drake_optional_external(SIGNALSCOPE OFF DEPENDS "NOT WIN32\;WITH_DIRECTOR"
+  drake_optional_external(SIGNALSCOPE OFF DEPENDS "NOT WIN32\;HAVE_LCM\;HAVE_DRAKE\;HAVE_DIRECTOR"
     "Live plotting tool for LCM messages")
 
   # Many of these might work on win32 with little or no work... they just
