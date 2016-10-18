@@ -1,22 +1,3 @@
-if(simulink_FOUND)
-  add_mex(realtime realtime.cpp)
-endif()
-
-add_mex(barycentricInterpolation barycentricInterpolation.cpp)
-
-if(lcm_FOUND AND MATLAB_FOUND)
-  if(simulink_FOUND)
-    add_mex(lcmLogger lcmLogger.cpp)
-    target_link_libraries(lcmLogger lcm)
-    if(WIN32)
-      target_link_libraries(lcmLogger ws2_32)
-    endif()
-  endif()
-
-  add_mex(publishLCMLog publishLCMLog.cpp)
-  target_link_libraries(publishLCMLog lcm)
-endif()
-
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
 target_link_libraries(drakeUtil drakeCommon)
 drake_install_headers(drakeUtil.h)
@@ -27,20 +8,6 @@ pods_install_pkg_config_file(drake-util
   VERSION 0.0.1)
 
 drake_install_headers(drakeAppUtil.h)
-
-if(MATLAB_FOUND)
-  add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakeCommon)
-  # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
-  # add_mex(drakeUtil OBJECT drakeUtil.cpp)
-
-  drake_install_headers(drakeMexUtil.h MexWrapper.h)
-  pods_install_libraries(drakeMexUtil)
-  pods_install_pkg_config_file(drake-mex-util
-    LIBS -ldrakeMexUtil
-    REQUIRES
-    VERSION 0.0.1)
-endif()
 
 if(lcm_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
@@ -78,7 +45,29 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(yaml)
+
+# ==== Below this line is C++ and MATLAB joint code ===
+
+add_subdirectory(test)
+
+# ==== Below this line is MATLAB-specific code ===
+
 if(MATLAB_FOUND)
+  add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
+  target_link_libraries(drakeMexUtil drakeCommon)
+  # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
+  # add_mex(drakeUtil OBJECT drakeUtil.cpp)
+
+  drake_install_headers(drakeMexUtil.h MexWrapper.h)
+  pods_install_libraries(drakeMexUtil)
+  pods_install_pkg_config_file(drake-mex-util
+    LIBS -ldrakeMexUtil
+    REQUIRES
+    VERSION 0.0.1)
+
+  add_mex(barycentricInterpolation barycentricInterpolation.cpp)
+
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeMath)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
@@ -104,9 +93,21 @@ if(MATLAB_FOUND)
 
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
-endif()
 
-add_subdirectory(test)
+  if(simulink_FOUND)
+    add_mex(realtime realtime.cpp)
+  endif()
+
+  if(lcm_FOUND)
+    if(simulink_FOUND)
+      add_mex(lcmLogger lcmLogger.cpp)
+      target_link_libraries(lcmLogger lcm)
+    endif()
+
+    add_mex(publishLCMLog publishLCMLog.cpp)
+    target_link_libraries(publishLCMLog lcm)
+  endif()
+endif()
 
 # Mex debugging tools:
 if(0)  # NOT WIN32
@@ -154,5 +155,4 @@ if(0)  # NOT WIN32
     PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif()  # NOT WIN32
 
-add_subdirectory(yaml)
 add_subdirectory(geometry/test)
