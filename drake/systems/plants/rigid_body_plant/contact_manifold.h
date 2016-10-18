@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 
 // The intention is that this will be sub-classed to support contact manifolds
-// defined with alternate algorithms/criteria.
+// defined with arbitrary data..
 //
 // For example: Hertzian contact.  The Force will still be applied at a single
 // point, but the manifold includes the information of the size of the contact
@@ -22,16 +22,15 @@ namespace systems {
 // contact manifold.
 /**
  The contact manifold represents, abstractly, the domain of contact between
- two bodies and the Forces generated.  The actual representation of that
- contact can vary based on the nature of the simulation properties.
+ two bodies and the contact wrenches generated.  The actual representation of
+ that contact can vary based on the nature of the collision and contact models.
 
- However, all manifolds support the concept of a "net" applied force which is
- the accumulated affect of the underlying contact details into a single Force
- applied at a single point (@see ContactDetail).
+ However, all manifolds support the concept of a "net" applied wrench which is
+ the accumulated affect of the applying the full manifold into a single
+ equivalent wrench applied at a single point represented as a ContactDetail.
+ (@see ContactDetail).
 
- Individual /contact details/ can be examined (if they exist).  The underlying
- representation will include, at least, the contact point and contact Force.
- However, sub-classes may also include additional data.
+ Individual /contact details/ can be examined (if they exist).
 
  Sub-classes must be copy-constructable; they must override the clone method as
  well as defining the copy constructor.
@@ -42,10 +41,10 @@ template <typename T>
 class DRAKE_EXPORT ContactManifold {
  public:
   /**
-   Computes a single contact detail -- Force and application point -- which
-   is equivalent to applying all individual contact forces, independently.
+   Computes a single contact detail -- wrench and application point -- which
+   is equivalent to applying all individual contact wrenches, independently.
 
-   @returns the single net Force.
+   @returns the single net wrench.
    */
   virtual ContactDetail<T> ComputeNetResponse() const = 0;
 

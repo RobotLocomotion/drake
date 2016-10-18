@@ -52,6 +52,12 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   /** Reports the number of distinct contact details for this manifold. */
   size_t get_num_contacts() const override { return contact_details_.size(); }
 
+  /**
+   * Get the ith contact detail in the manifold.
+   * @param i       The index of the desired contact detail.
+   * @return A pointer to the ith contact detail.
+   * @throws std::logic_error if the index is out of range.
+   */
   const ContactDetail<T>* get_ith_contact(size_t i) const override;
 
   ContactManifold<T>* clone() const override;
