@@ -14,6 +14,7 @@ drake_install_headers(
   pass_through.h
   pass_through-inl.h
   time_varying_polynomial_source.h
+  time_varying_polynomial_traj_src.h
   zero_order_hold.h)
 
 add_subdirectory(test)

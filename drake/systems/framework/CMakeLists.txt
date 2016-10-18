@@ -23,6 +23,7 @@ set(sources
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/time_varying_polynomial_source.cc
+  primitives/time_varying_polynomial_traj_src.cc
   primitives/zero_order_hold.cc
   state.cc
   subvector.cc
