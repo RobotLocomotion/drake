@@ -974,8 +974,13 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd & A, const VectorXd b) {
   b_hat << b, VectorXd::Zero(A.cols());
   VectorXd xz_expected = A_hat.colPivHouseholderQr().solve(b_hat);
   VectorXd x_expected = xz_expected.head(xDim);
-  
+
   double cost_expected_lorentz = x_expected.norm();
+  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
+  // IPOPT seems OK with starting point not so close to optimal solution.
+  prog_lorentz.SetInitialGuess({t_lorentz}, drake::Vector1d(cost_expected_lorentz + 0.1));
+  VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
+  prog_lorentz.SetInitialGuess({x_lorentz}, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
     EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
@@ -991,6 +996,12 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd & A, const VectorXd b) {
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
+  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
+  // IPOPT seems OK with starting point not so close to optimal solution.
+  prog_rotated_lorentz.SetInitialGuess({t_rotated_lorentz}, drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
+  prog_rotated_lorentz.SetInitialGuess({slack_rotated_lorentz}, drake::Vector1d(1.0));
+  VectorXd x_rotated_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
+  prog_rotated_lorentz.SetInitialGuess({x_rotated_lorentz}, x_rotated_lorentz_guess);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
     EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz.value().coeff(0), 1E-3);
