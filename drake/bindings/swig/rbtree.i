@@ -116,6 +116,14 @@
     return $self->relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).matrix();
   }
 
+  Eigen::Matrix3Xd getTerrainContactPoints(
+      const RigidBody& body,
+      const std::string& group_name = "") const {
+    Eigen::Matrix3Xd pts;
+    $self->getTerrainContactPoints(body, &pts, group_name);
+    return pts;
+  }
+
   Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(
       const KinematicsCache<double> &cache, const Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
