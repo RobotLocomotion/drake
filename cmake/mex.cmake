@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # Add a MATLAB MEX target to the drake project.
 #
-#  matlab_add_mex(<name> [EXECUTABLE | MODULE | SHARED] <src1> [<src2> ...]
+#  drake_add_mex(<name> [EXECUTABLE | MODULE | SHARED] <src1> [<src2> ...]
 #------------------------------------------------------------------------------
 function(drake_add_mex NAME)
   if(NOT Matlab_FOUND)
