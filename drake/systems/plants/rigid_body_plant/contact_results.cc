@@ -29,9 +29,9 @@ void ContactResults<T>::Clear() {
 template <typename T>
 void ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
                  DrakeCollision::ElementId elementB,
-                 const Vector3<T> & point, const WrenchVector<T> & force) {
+                 const Vector3<T> & point, const WrenchVector<T> & wrench) {
   auto manifold = std::make_unique<SampledContactManifold<T>>();
-  auto detail = make_unique<ContactDetail<T>>(point, force);
+  auto detail = make_unique<ContactDetail<T>>(point, wrench);
   manifold->AddContactDetail(move(detail));
   contacts_.emplace_back(elementA, elementB, move(manifold));
 }

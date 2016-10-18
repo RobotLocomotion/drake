@@ -13,7 +13,7 @@ namespace systems {
 template <typename T> class RigidBodyPlant;
 
 /**
- A class containg the contact results (contact points and response Forces for
+ A class containg the contact results (contact points and response wrenches for
  each colliding pair of collision elements) produced by a RigidBodyPlant system.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
@@ -48,12 +48,12 @@ class DRAKE_EXPORT ContactResults {
    @param elementB      The second element in the collision.
    @param point         The point (expressed in the world frame) at which the
                         force is applied.
-   @param force         The contact Force applied to A.  Its negative would be
-                        applied to B. The Force is expressed in the world frame.
+   @param wrench        The contact wrench applied to A.  Its negative would be
+                        applied to B. The wrench is expressed in the world frame.
    */
   void AddContact(DrakeCollision::ElementId elementA,
                   DrakeCollision::ElementId elementB,
-                  const Vector3<T> & point, const WrenchVector<T> & force);
+                  const Vector3<T> & point, const WrenchVector<T> & wrench);
 
   std::vector<ContactInfo<T>> contacts_;
 };
