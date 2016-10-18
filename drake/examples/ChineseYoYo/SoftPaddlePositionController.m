@@ -12,7 +12,7 @@ classdef SoftPaddlePositionController < DrakeSystem
             obj = obj@DrakeSystem(0,0,9,1,true,true);
             obj = setInputFrame(obj, getOutputFrame(plant));
             obj = setOutputFrame(obj, getInputFrame(plant));
-            obj.kp = 100;
+            obj.kp = 1000;
             obj.kd = 2*sqrt(obj.kp);
             obj.plant = plant;
             obj.psiDes = 0;

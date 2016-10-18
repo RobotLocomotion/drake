@@ -18,17 +18,26 @@ output_select(2).system = 2;
 output_select(2).output = c.getOutputFrame();
 
 sys = mimoFeedback(plantSim,c,[],[],[],output_select);
+dSpatial = 0.0005;
+
+v = p.constructVisualizer();
 x0 = Point(getStateFrame(p));
 x0.m = 1;
-x0.load_x = -0.0305;
+x0.load_x = -0.031;
+x0.load_z = 4.5;
+x0 = double(x0);
+x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
+v.drawWrapper(0,x0);
+
+%% Perturb along the x direction
+x0 = Point(getStateFrame(p));
+x0.m = 1;
+x0.load_x = -0.031-dSpatial/2;
 x0.load_z = 4.5;
 % x0.load_zdot = -4;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
 
-v = p.constructVisualizer();
-
-v.drawWrapper(0,x0);
 tic
 [ytraj,xtraj] = simulate(sys,[0 1.75],x0);
 toc
@@ -40,12 +49,10 @@ jumpIdx = find(diff(yAll(1,:)));
 xn = yAll(2:9,jumpIdx(1));
 xnplus1 = yAll(2:9,jumpIdx(3));
 
-%Now perturb and redot it for other set values...
-%TODO
 
 x0 = Point(getStateFrame(p));
 x0.m = 1;
-x0.load_x = -0.0315;
+x0.load_x = -0.031+dSpatial/2;
 x0.load_z = 4.5;
 % x0.load_zdot = -4;
 x0 = double(x0);
@@ -63,17 +70,15 @@ jumpIdx = find(diff(yAll(1,:)));
 xn = yAll(2:9,jumpIdx(1));
 xnplus2 = yAll(2:9,jumpIdx(3));
 
-
-dSpatial = 0.001;
 deltax = (xnplus2 -xnplus1)/dSpatial;
 
 
-
+%% Perturb along the xdot direction
 x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
-x0.load_xdot = -0.0005;
+x0.load_xdot = 0-dSpatial/2;
 x0.load_zdot = 0;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
@@ -94,7 +99,7 @@ x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
-x0.load_xdot = 0.0005;
+x0.load_xdot = 0+dSpatial/2;
 x0.load_zdot = 0;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
@@ -114,11 +119,11 @@ deltaxdot = (xnplus2 -xnplus1)/dSpatial;
 
 
 
-
+%% Perturb along the z direction
 x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.load_x = -0.031;
-x0.load_z = 4.4905;
+x0.load_z = 4.5-dSpatial/2;
 x0.load_xdot = 0;
 x0.load_zdot = 0;
 x0 = double(x0);
@@ -139,7 +144,7 @@ xnplus1 = yAll(2:9,jumpIdx(3));
 x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.load_x = -0.031;
-x0.load_z = 4.5005;
+x0.load_z = 4.5+dSpatial/2;
 x0.load_xdot = 0;
 x0.load_zdot = 0;
 x0 = double(x0);
@@ -160,12 +165,13 @@ deltaz = (xnplus2 -xnplus1)/dSpatial;
 
 
 
+%% Perturb along the zdot direction
 x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
 x0.load_xdot = 0;
-x0.load_zdot = -0.0005;
+x0.load_zdot = 0-dSpatial/2;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
 
@@ -186,7 +192,7 @@ x0.m = 1;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
 x0.load_xdot = 0;
-x0.load_zdot = 0.0005;
+x0.load_zdot = 0+dSpatial/2;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
 
@@ -204,10 +210,10 @@ xnplus2 = yAll(2:9,jumpIdx(3));
 deltazdot = (xnplus2 -xnplus1)/dSpatial;
 
 
-
+%% Perturb along the psi direction
 x0 = Point(getStateFrame(p));
 x0.m = 1;
-x0.paddle_angle = -0.0005;
+x0.paddle_angle = 0-dSpatial/2;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
 x0.load_xdot = 0;
@@ -229,7 +235,7 @@ xnplus1 = yAll(2:9,jumpIdx(3));
 
 x0 = Point(getStateFrame(p));
 x0.m = 1;
-x0.paddle_angle = 0.0005;
+x0.paddle_angle = 0+dSpatial/2;
 x0.load_x = -0.031;
 x0.load_z = 4.5;
 x0.load_xdot = 0;
@@ -257,7 +263,24 @@ B = deltapsi([3:4,7:8]);
 Q = diag([1,1,1,1]);
 R = 1e-3;
 [K,S,E] = dlqr(A,B,Q,R);
+z = eig(A-B*K);
 
+
+figure(4), clf, hold on
+h = ezplot('x^2 + y^2 = 1');
+set(h, 'Color', [0 0 0], 'LineWidth', 2)
+plot(z, 'x', 'MarkerSize', 10)
+axis([-1,1,-1,1])
+axis('square')
+
+Ts = 1;
+sys = ss(A-B*K, B, eye(4), zeros(4,1),Ts);
+t = 0:Ts:10;
+u = zeros(1,length(t));
+x0 = [0.1; 0.5; -0.3; 1];
+
+figure(5), clf
+lsim(sys, u, t, x0);
 
 
 % [A,B,C,D] = linearize(sys,0,zeros(2,1),0);

@@ -39,12 +39,13 @@ classdef SoftPaddleControl < DrakeSystem
             %             Delta = Hinvtilde - J(1)*J*(H\B);
             
             [T,U] = energy(obj.plant,x);
-            Eref = 119;
+            Eref = 121;
             Etilde = T+U-Eref;
             uE = -10*qp(1)*Etilde;
             
             epsilon = 0.5;
             xFixed = -0.031;
+            xFixed = -0.05;
             zTouchDes = 4;
 %             psid = -0.001*(q(3)-xFixed)-0.005*qp(3);
 
@@ -59,7 +60,10 @@ classdef SoftPaddleControl < DrakeSystem
             xTouch = q(3) + qp(3)*tf;
             xpTouch = qp(3);
             
-            psid = 0.066513*(xTouch-xFixed) + 0.071367*(zTouch-zTouchDes) + 0.032835*xpTouch + (1.3774e-11)*(zpTouch);
+%             K = [0.066513, 0.071367, 0.032835, 1.3774e-11];   % original
+%             K = 0.5*[0.11276, -0.095662, -0.047351, 2.8845e-11];
+            K = 0.75*[0.11155, -0.09665, -0.048202, 5.6288e-12];
+            psid = K(1)*(xTouch-xFixed) + K(2)*(zTouch-zTouchDes) + K(3)*xpTouch + K(4)*(zpTouch);
 %             psid = -psid;
 %             psid = 0;
 
@@ -84,16 +88,18 @@ classdef SoftPaddleControl < DrakeSystem
             end
             assignin('base','psid', psid)
             
-            tcutOff = 40;
-            if t > tcutOff
+            tCutOff1 = 100;
+            tCutOff2 = 100;
+            if t > tCutOff1 && t < tCutOff2
 %             psid = 0;
 %             psid = -0.0005*q(3)-0.001*qp(3);
-            psid = 0.066513*(xTouch-xFixed) + 0.071367*(zTouch-zTouchDes) + 0.032835*xpTouch + (1.3774e-11)*(zpTouch);
+            K = 0.75*[0.11155, -0.09665, -0.048202, 5.6288e-12];
+            psid = K(1)*(xTouch-xFixed) + K(2)*(zTouch-zTouchDes) + K(3)*xpTouch + K(4)*(zpTouch);
             u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) - 0.1*sign(Etilde*qp(1));
 %             u = 1000*Etilde*qp(1);
             end
             
-            if t > tcutOff && m == 2
+            if t > tCutOff1 && t < tCutOff2 && m == 2
                 psi = q(1);
                 R = [cos(psi), sin(psi); -sin(psi), cos(psi)];
                 load_in_paddle = -[3; 0] + R'*([q(3); q(4)]-[-3;3]);
