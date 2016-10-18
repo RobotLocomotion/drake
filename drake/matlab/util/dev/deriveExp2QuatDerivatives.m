@@ -11,19 +11,19 @@ q_degenerate = subs(simplify(subs(q, {sin(th/2), cos(th/2)}, {taylor(sin(th/2),t
 dq_degenerate = subs(simplify(subs(dq, {sin(th/2), cos(th/2)}, {taylor(sin(th/2),th),taylor(cos(th/2),th)})),{th^4,th^5},{0,0});
 ddq_degenerate = subs(simplify(subs(ddq, {sin(th/2), cos(th/2)}, {taylor(sin(th/2),th),taylor(cos(th/2),th)})),{th^4,th^5},{0,0});
 
-filename = fullfile(getDrakePath(), 'util', 'expmap2quatNonDegenerate');
+filename = fullfile(getDrakePath(), 'matlab', 'util', 'expmap2quatNonDegenerate');
 matlabFunction(q, dq, ddq, 'Vars', {v,th}, 'File',filename);
 
-filename = fullfile(getDrakePath(), 'util', 'expmap2quatDegenerate');
+filename = fullfile(getDrakePath(), 'matlab', 'util', 'expmap2quatDegenerate');
 matlabFunction(q_degenerate, dq_degenerate, ddq_degenerate, 'Vars', {v,th}, 'File',filename);
 
 %dir = pwd;
-%cd(fullfile(getDrakePath(), 'util'));
+%cd(fullfile(getDrakePath(), 'matlab', 'util'));
 %v_num = zeros(3,1);
 %codegen expmap2quatImpl.m -args {v_num}
 %cd(dir);
 
-path = fullfile(getDrakePath(), 'util');
+path = fullfile(getDrakePath(), 'matlab', 'util');
 filename = 'expmap2quat';
 function_name_cell = {};
 output_cell = {};

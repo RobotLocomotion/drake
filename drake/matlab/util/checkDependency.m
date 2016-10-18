@@ -88,10 +88,10 @@ else % then try to evaluate the dependency now...
         end
 
         if (conf.lcm_enabled)
-          [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'util','check_multicast_is_loopback.sh'));
+          [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'matlab','util','check_multicast_is_loopback.sh'));
           if (retval)
             info = strrep(info,'ERROR: ','');
-            info = strrep(info,'./',[getDrakePath,'/util/']);
+            info = strrep(info,'./',[getDrakePath,'/matlab/util/']);
             warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
           end
         elseif nargout<1
