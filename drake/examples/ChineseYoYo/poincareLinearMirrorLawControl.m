@@ -328,7 +328,7 @@ A = [deltax([3:4,7:8]),deltaz([3:4,7:8]),deltaxdot([3:4,7:8]),deltazdot([3:4,7:8
 B = deltapsi([3:4,7:8]);
 B2 = [deltapsi([3:4,7:8]), deltapsidot([3:4,7:8])];
 
-
+%% Calculate DLQR
 Q = diag([1,1,1,1]);
 R = 1e-3;
 R2 = 1e-3*diag([1,1]);
@@ -337,6 +337,7 @@ R2 = 1e-3*diag([1,1]);
 z = eig(A-B*K);
 z2 = eig(A-B2*K2);
 
+save('poincareLinearMirrorLawOutput.mat','A','B','Q','R','K','S','E');
 
 figure(4), clf, hold on
 h = ezplot('x^2 + y^2 = 1');
