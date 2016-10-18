@@ -278,6 +278,7 @@ deltapsi = (xnplus2 -xnplus1)/dSpatial;
 
 
 %% Perturb along the psidot direction
+%% TODO: NEED TO Add velocity controlled plant to allow psidot to stay constnat
 x0 = Point(getStateFrame(p));
 x0.m = 1;
 x0.paddle_angledot = 0-dSpatial/2;
@@ -326,16 +327,16 @@ deltapsidot = (xnplus2 -xnplus1)/dSpatial;
 
 A = [deltax([3:4,7:8]),deltaz([3:4,7:8]),deltaxdot([3:4,7:8]),deltazdot([3:4,7:8])];
 B = deltapsi([3:4,7:8]);
-B2 = [deltapsi([3:4,7:8]), deltapsidot([3:4,7:8])];
+B2 = [deltapsi([3:4,7:8]), deltapsidot([3:4,7:8])]; %TODO: fix how it is generated
 
 %% Calculate DLQR
 Q = diag([1,1,1,1]);
 R = 1e-3;
 R2 = 1e-3*diag([1,1]);
 [K,S,E] = dlqr(A,B,Q,R);
-[K2,S2,E2] = dlqr(A,B2,Q,R2);
+[K2,S2,E2] = dlqr(A,B2,Q,R2);%TODO: fix how it is generated
 z = eig(A-B*K);
-z2 = eig(A-B2*K2);
+z2 = eig(A-B2*K2);%TODO: fix how it is generated
 
 save('poincareLinearMirrorLawOutput.mat','A','B','Q','R','K','S','E');
 
