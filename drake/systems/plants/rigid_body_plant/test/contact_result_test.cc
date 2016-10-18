@@ -152,7 +152,7 @@ TEST_F(ContactResultTest, SingleCollision) {
   WrenchVector<double> expected_F;
   // force goes from body2 to body2
   expected_F << -force, 0, 0, 0, 0, 0;
-  ASSERT_TRUE(CompareMatrices(detail->get_force(), expected_F));
+  ASSERT_TRUE(CompareMatrices(detail->get_wrench(), expected_F));
 }
 }  // namespace test
 }  // namespace rigid_body_plant
