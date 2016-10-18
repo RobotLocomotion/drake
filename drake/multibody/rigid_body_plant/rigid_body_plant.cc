@@ -267,79 +267,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     }
   }
 
-  right_hand_side -= ComputeContactForce(kinsol, v);
-#else
-  // Applies contact forces.
-  // TODO(amcastro-tri): Maybe move to RBT::ComputeGeneralizedContactForces(C)?
-  {
-    VectorX<T> phi;
-    Matrix3X<T> normal, xA, xB;
-    vector<int> bodyA_idx, bodyB_idx;
-
-    // TODO(amcastro-tri): get rid of this const_cast.
-    // Unfortunately collisionDetect() modifies the collision model in the RBT
-    // when updating the collision element poses.
-    const_cast<RigidBodyTree<T>*>(tree_.get())
-        ->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
-
-    for (int i = 0; i < phi.rows(); i++) {
-      if (phi(i) < 0.0) {  // There is contact.
-        auto JA = tree_->transformPointsJacobian(kinsol, xA.col(i),
-                                                 bodyA_idx[i], 0, false);
-        auto JB = tree_->transformPointsJacobian(kinsol, xB.col(i),
-                                                 bodyB_idx[i], 0, false);
-        Vector3<T> this_normal = normal.col(i);
-
-        // Computes a local surface coordinate frame with the local z axis
-        // aligned with the surface's normal. The other two axes are arbitrarily
-        // chosen to complete a right handed triplet.
-        Vector3<T> tangent1;
-        if (1.0 - this_normal(2) < EPSILON) {
-          // Handles the unit-normal case. Since it's unit length, just check z.
-          tangent1 << 1.0, 0.0, 0.0;
-        } else if (1 + this_normal(2) < EPSILON) {
-          tangent1 << -1.0, 0.0, 0.0;  // Same for the reflected case.
-        } else {                       // Now the general case.
-          tangent1 << this_normal(1), -this_normal(0), 0.0;
-          tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-                           this_normal(0) * this_normal(0));
-        }
-        Vector3<T> tangent2 = this_normal.cross(tangent1);
-        // Transformation from world frame to local surface frame.
-        Matrix3<T> R;
-        R.row(0) = tangent1;
-        R.row(1) = tangent2;
-        R.row(2) = this_normal;
-        auto J = R * (JA - JB);          // J = [ D1; D2; n ]
-        auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
-
-        {
-          // Spring law for normal force:  fA_normal = -k * phi - b * phidot
-          // and damping for tangential force:  fA_tangent = -b * tangentdot
-          // (bounded by the friction cone).
-          Vector3<T> fA;
-          fA(2) = std::max<T>(-penetration_stiffness_ * phi(i) -
-                                  penetration_damping_ * relative_velocity(2),
-                              0.0);
-          fA.head(2) =
-              -std::min<T>(penetration_damping_,
-                           friction_coefficient_ * fA(2) /
-                               (relative_velocity.head(2).norm() + EPSILON)) *
-              relative_velocity.head(2);  // Epsilon avoids divide by zero.
-
-          // fB is equal and opposite to fA: fB = -fA.
-          // Therefore the generalized forces tau_c due to contact are:
-          // tau_c = (R * JA)^T * fA + (R * JB)^T * fB = J^T * fA.
-          // With J computed as above: J = R * (JA - JB).
-          // Since right_hand_side has a negative sign when on the RHS of the
-          // system of equations ([H,-J^T] * [vdot;f] + right_hand_side = 0),
-          // this term needs to be subtracted.
-          right_hand_side -= J.transpose() * fA;
-        }
-      }
-    }
-  }
-#endif
+  right_hand_side -= ComputeContactForce(kinsol);
 
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
@@ -484,12 +412,12 @@ void RigidBodyPlant<T>::ComputeContactResults(
   VectorX<T> v = x.bottomRows(nv);
   auto kinsol = tree_->doKinematics(q, v);
 
-  ComputeContactForce(kinsol, v, contacts);
+  ComputeContactForce(kinsol, contacts);
 }
 
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
-    const KinematicsCache<T> &kinsol, const VectorX<T> &v,
+    const KinematicsCache<T>& kinsol,
     ContactResults<T> * contacts) const {
 
   VectorX<T> phi;
@@ -503,7 +431,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   const_cast<RigidBodyTree*>(tree_.get())->collisionDetectElements(
       kinsol, phi, normal, xA, xB, elA_idx, elB_idx);
 
-  VectorX<T> contact_force(v.rows(), 1);
+  VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
   // TODO(SeanCurtis-TRI): Determine if a distance of zero should be reported
   //  as a zero-force contact.
@@ -538,7 +466,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       R.row(1) = tangent2;
       R.row(2) = this_normal;
       auto J = R * (JA - JB);          // J = [ D1; D2; n ]
-      auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
+      // [ tangent1dot; tangent2dot; phidot ]
+      auto relative_velocity = J * kinsol.getV();
 
       {
         // Spring law for normal force:  fA_normal = -k * phi - b * phidot

@@ -209,15 +209,14 @@ void DoMapQDotToVelocity(
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
-  /// @param kinsol      The kinematics of the rigid body system at the time of
-  ///                    contact evaluation.
-  /// @param v           The velocities for the bodies in the rigid body tree.
-  /// @param contacts    The optional contact results.  If non-null, stores the
-  ///                    contact information for consuming on the output port.
+  /// @param kinsol         The kinematics of the rigid body system at the time of
+  ///                       contact evaluation.
+  /// @param[out] contacts  The optional contact results.  If non-null, stores
+  ///                       the contact information for consuming on the output
+  ///                       port.
   /// @return            The generalized forces across all the bodies due to
   ///                    contact response.
-  VectorX<T> ComputeContactForce(const KinematicsCache<T> &kinsol,
-                                 const VectorX<T> &v,
+  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
                                  ContactResults<T> * contacts = nullptr) const;
 
   // Some parameters defining the contact.
