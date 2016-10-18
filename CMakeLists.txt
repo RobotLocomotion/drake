@@ -270,8 +270,8 @@ drake_add_external(director PUBLIC CMAKE
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
     -DUSE_DRAKE=ON
-    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
-    -DUSE_LCMGL=ON
+    -DUSE_LCM=${HAVE_LCM}
+    -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_SYSTEM_LCM=ON
     -DUSE_EXTERNAL_INSTALL=ON
   INSTALL_COMMAND :
