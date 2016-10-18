@@ -267,7 +267,7 @@ bool SnoptSolver::available() const {
 /*
  * Updates the number of nonlinear constraints and the number of gradients by
  * looping through the constraint list
- * Derived is supposed to be MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS
+ * Derived is supposed to be MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS>
  */
 template<typename Derived>
 void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
@@ -279,6 +279,31 @@ void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constra
     }
     num_nonlinear_constraints += n;
   }
+}
+
+template <typename Derived>
+void UpdateConstraintBoundsAndGradients(const std::list<Derived> &constraint_list, snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar, size_t &constraint_index, size_t &grad_index) {
+for (auto const& binding : constraint_list) {
+  auto const &c = binding.constraint();
+  size_t n = c->num_constraints();
+
+  auto const lb = c->lower_bound(), ub = c->upper_bound();
+  for (size_t i = 0; i < n; i++) {
+    Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
+    Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
+  }
+
+  for (const DecisionVariableView &v : binding.variable_list()) {
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < v.size(); j++) {
+        iGfun[grad_index] = constraint_index + i + 1;  // row order
+        jGvar[grad_index] = v.index() + j + 1;
+        grad_index++;
+      }
+    }
+  }
+  constraint_index += n;
+}
 }
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
@@ -342,27 +367,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
-  for (auto const& binding : prog.generic_constraints()) {
-    auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
-
-    auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (size_t i = 0; i < n; i++) {
-      Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
-      Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
-    }
-
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      for (size_t i = 0; i < n; i++) {
-        for (size_t j = 0; j < v.size(); j++) {
-          iGfun[grad_index] = constraint_index + i + 1;  // row order
-          jGvar[grad_index] = v.index() + j + 1;
-          grad_index++;
-        }
-      }
-    }
-    constraint_index += n;
-  }
+  UpdateConstraintBoundsAndGradients(prog.generic_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
+  UpdateConstraintBoundsAndGradients(prog.lorentz_cone_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
+  UpdateConstraintBoundsAndGradients(prog.rotated_lorentz_cone_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
 
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
