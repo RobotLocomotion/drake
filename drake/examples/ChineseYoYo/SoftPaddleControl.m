@@ -62,7 +62,8 @@ classdef SoftPaddleControl < DrakeSystem
             
 %             K = [0.066513, 0.071367, 0.032835, 1.3774e-11];   % original
 %             K = 0.5*[0.11276, -0.095662, -0.047351, 2.8845e-11];
-            K = 0.75*[0.11155, -0.09665, -0.048202, 5.6288e-12];
+%             K = 0.75*[0.11155, -0.09665, -0.048202, 5.6288e-12];  % Works nicely
+            K = -[-0.071799     0.042213     0.022939   4.7217e-13];
             psid = K(1)*(xTouch-xFixed) + K(2)*(zTouch-zTouchDes) + K(3)*xpTouch + K(4)*(zpTouch);
 %             psid = -psid;
 %             psid = 0;
@@ -88,9 +89,9 @@ classdef SoftPaddleControl < DrakeSystem
             end
             assignin('base','psid', psid)
             
-            tCutOff1 = 100;
+            tCutOff1 = 60;
             tCutOff2 = 100;
-            if t > tCutOff1 && t < tCutOff2
+            if t > tCutOff1+50 && t < tCutOff2
 %             psid = 0;
 %             psid = -0.0005*q(3)-0.001*qp(3);
             K = 0.75*[0.11155, -0.09665, -0.048202, 5.6288e-12];
@@ -107,8 +108,9 @@ classdef SoftPaddleControl < DrakeSystem
 %                 fprintf(['z = ', num2str(z), '\n'])
                 fprintf(['t = ', num2str(t), '\n'])
                 
-                k = 1000;
-                lambdad = 1/Hinvtilde*(  k*J*Hinv*B*sign(Etilde*qp(1)) + J*Hinv*C + Jp'*qp  );
+                k1 = 0.1;
+                k2 = 1e+3;
+                lambdad = 1/Hinvtilde*(  k1*J*Hinv*B*sign(Etilde*qp(1)) + J*Hinv*C + Jp'*qp  );
                 
                 epsilon = 1e-2;
                 cf = 1/2 + 1/pi*atan(1/epsilon*(1-z));
@@ -119,12 +121,13 @@ classdef SoftPaddleControl < DrakeSystem
 %                 u = -cf*k*sign(Etilde*qp(1));
 %                 u = -cf*k*2/pi*atan(20*Etilde*qp(1)) + C(1);
 %                 u = -cf*k*Etilde*qp(1) + C(1);
-                psid = evalin('base','psid');
-                if abs(Etilde) > 1
-                    u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta) - k*2/pi*atan(20*Etilde*qp(1));
-                else
-                    u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
-                end
+%                 psid = evalin('base','psid');
+%                 if abs(Etilde) > 1
+%                     u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta) - k1*2/pi*atan(20*Etilde*qp(1));
+                    u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta) - k2*Etilde*qp(1);
+%                 else
+%                     u = Hinvtilde/(Delta)*( -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1) ) + J(1)*(Jp'*qp-J*Hinv*C)/(Delta);
+%                 end
 %                 if t > 40.02
 %                     keyboard
 %                 end
