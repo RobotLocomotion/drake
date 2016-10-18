@@ -230,13 +230,15 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  * Computes SpaceXYZ Euler angles from quaternion representation.
  * @param quaternion 4x1 unit length vector with elements [ e0, e1, e2, e3 ].
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
- *
-http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
  * This accurate algorithm avoids numerical round-off issues encountered by some
  * algorithms when pitch angle is within 1E-6 of PI/2 or -PI/2.
  *
+ * <pre>
+ * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
+ * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
+ *
  * <h3>Theory</h3>
+ *
  * This algorithm was created September 2016 by Paul Mitiguy for TRI (Toyota).
  * Notation: Angles q1, q2, q3 designate roll, pitch, and yaw.
  *           Symbols e0, e1, e2, e3 are elements of the passed-in quaternion.
@@ -248,14 +250,10 @@ http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrp
  *
  * Step 3.  Realize the quaternion passed to the function can be regarded as
  *          resulting from multiplication of 4x4 and 4x1 Euler matrices to give:
- * e0 = sin(0.5*q1)*sin(0.5*q2)*sin(0.5*q3) +
-cos(0.5*q1)*cos(0.5*q2)*cos(0.5*q3)
- * e1 = sin(0.5*q3)*cos(0.5*q1)*cos(0.5*q2) -
-sin(0.5*q1)*sin(0.5*q2)*cos(0.5*q3)
- * e2 = sin(0.5*q1)*sin(0.5*q3)*cos(0.5*q2) +
-sin(0.5*q2)*cos(0.5*q1)*cos(0.5*q3)
- * e3 = sin(0.5*q1)*cos(0.5*q2)*cos(0.5*q3) -
-sin(0.5*q2)*sin(0.5*q3)*cos(0.5*q1)
+ *          e0 = sin(q1/2)*sin(q2/2)*sin(q3/2) + cos(q1/2)*cos(q2/2)*cos(q3/2)
+ *          e1 = sin(q3/2)*cos(q1/2)*cos(q2/2) - sin(q1/2)*sin(q2/2)*cos(q3/2)
+ *          e2 = sin(q1/2)*sin(q3/2)*cos(q2/2) + sin(q2/2)*cos(q1/2)*cos(q3/2)
+ *          e3 = sin(q1/2)*cos(q2/2)*cos(q3/2) - sin(q2/2)*sin(q3/2)*cos(q1/2)
  *
  * Step 4.  Since q2 has already been calculated (in Step 2), subsitute
  *          cos(0.5*q2) = A and sin(0.5*q2) = f*A.
@@ -292,6 +290,7 @@ sin(0.5*q2)*sin(0.5*q3)*cos(0.5*q1)
  *
  * Textbook reference: Advanced Dynamics and Motion Simulation,
  *                     For professional engineers and scientists (2017).
+ * </pre>
 @author Paul Mitiguy
 **/
 template <typename Derived>
