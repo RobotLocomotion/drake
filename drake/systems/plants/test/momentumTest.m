@@ -13,7 +13,7 @@ r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,options);
 if display
   v = r.constructVisualizer();
   checkDependency('lcmgl');
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
 end
 
 manipulator = r.getManipulator();

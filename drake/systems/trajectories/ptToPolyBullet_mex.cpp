@@ -20,7 +20,7 @@ Date: Nov 8 2013
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "LinearMath/btTransformUtil.h"
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 

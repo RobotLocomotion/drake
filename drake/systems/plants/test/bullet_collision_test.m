@@ -8,7 +8,7 @@ end
 %v = r.constructVisualizer();
 
 %v = BotVisualizer('FallingBrick.urdf',struct('floating',true));
-% lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'contact_points');
+% lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'contact_points');
 
 %q = randn(getNumPositions(r),1);
 q = getZeroConfiguration(r);

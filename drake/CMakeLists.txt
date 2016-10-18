@@ -155,7 +155,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 
 find_package(gflags REQUIRED)
 
-set(drake_jar_javafiles util/Transform.java)
+set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
@@ -170,10 +170,10 @@ if(lcm_FOUND)
   add_subdirectory(lcmtypes)
 
   list(APPEND drake_jar_javafiles
-    util/MyLCMTypeDatabase.java
-    util/MessageMonitor.java
-    util/CoordinateFrameData.java
-    util/LCMCoder.java)
+    matlab/util/MyLCMTypeDatabase.java
+    matlab/util/MessageMonitor.java
+    matlab/util/CoordinateFrameData.java
+    matlab/util/LCMCoder.java)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
@@ -198,7 +198,7 @@ if(lcm_FOUND)
       message(STATUS "Found bot2-lcmgl")
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles util/BotLCMGLClient.java)
+    list(APPEND drake_jar_javafiles matlab/util/BotLCMGLClient.java)
   endif()
 endif()
 

@@ -730,7 +730,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             cartesian_force = cartesian_force - repmat(beta',3,1).*contact_data.d{i};
           end
 
-          lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'LCP contact forces');
+          lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'LCP contact forces');
           for j=1:nC
             point = forwardKin(obj.manip,kinsol,contact_data.idxA(j),contact_data.xA(:,j));
             lcmgl.glColor3f(.4,.2,.4);

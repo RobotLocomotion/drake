@@ -12,7 +12,7 @@ end
     
 options.floating = true;
 r = RigidBodyManipulator([],options);
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
+lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
   r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),options);

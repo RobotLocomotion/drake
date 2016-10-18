@@ -99,7 +99,7 @@ classdef FootContactBlock < MIMODrakeSystem
       obj.num_outputs = options.num_outputs;
       
       if obj.use_lcm
-        obj.contact_est_monitor = drake.util.MessageMonitor(drc.foot_contact_estimate_t,'utime');
+        obj.contact_est_monitor = drake.matlab.util.MessageMonitor(drc.foot_contact_estimate_t,'utime');
         lc = lcm.lcm.LCM.getSingleton();
         if isfield(options,'channel')
           typecheck(options.channel,'char');
