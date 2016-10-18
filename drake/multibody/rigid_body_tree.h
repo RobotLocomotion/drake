@@ -878,11 +878,11 @@ class DRAKE_EXPORT RigidBodyTree {
 
   /**
    * Reports the RigidBody that owns the collision element indicated by the id.
-   * @param elementId       The id to query.
-   * @return A pointer to the owning RigidBody, or nullptr if the id is invalid
-   *         or doesn't map to a rigid body.
+   * @param element_id       The id to query.
+   * @return A pointer to the owning RigidBody.
+   * @throws std::logic_error if no body can be mapped to the element id.
    */
-  const RigidBody* FindBody(DrakeCollision::ElementId elementId);
+  const RigidBody* FindBody(DrakeCollision::ElementId element_id);
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
