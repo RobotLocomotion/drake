@@ -221,9 +221,6 @@ drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
 # also find it useful, especially to build drake with ninja using fewer than
 # the default number of jobs.
 option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
-if(SKIP_DRAKE_BUILD)
-  set(DRAKE_BUILD_COMMANDS BUILD_COMMAND : INSTALL_COMMAND :)
-endif()
 
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
@@ -231,7 +228,6 @@ endif()
 drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
