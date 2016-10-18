@@ -13,7 +13,7 @@ end
 if(det(U)<0 ||det(V)<0)
   error('U and V should be both rotation matrix');
 end
-h = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),lcmgl_name);
+h = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),lcmgl_name);
 h.glColor4f(0,0,1,0.5);
 h.glPushMatrix();
 h.glTranslated(b_ellipsoid(1),b_ellipsoid(2),b_ellipsoid(3));

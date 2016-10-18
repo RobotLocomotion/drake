@@ -1,4 +1,4 @@
-package drake.util;
+package drake.matlab.util;
 
 import lcm.lcm.*;
 
@@ -12,6 +12,6 @@ public interface LCMCoder {
   int dim();  // returns the dimension of the vector being encoded/decoded 
   String timestampName();
   String[] coordinateNames();
-  drake.util.CoordinateFrameData decode(byte[] data);
-  LCMEncodable encode(drake.util.CoordinateFrameData d);
+  drake.matlab.util.CoordinateFrameData decode(byte[] data);
+  LCMEncodable encode(drake.matlab.util.CoordinateFrameData d);
 }

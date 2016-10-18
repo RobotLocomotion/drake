@@ -1544,7 +1544,7 @@ classdef RigidBodyManipulator < Manipulator
         if (nargin<3), gravity_visual_magnitude=0.25; end
         gravity_force = getMass(model)*model.gravity;
         vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
+        lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
         lcmgl.glColor3f(1,0,0);
         lcmgl.drawVector3d(getCOM(model,q),vector_scale*gravity_force);
         lcmgl.switchBuffers();
@@ -1595,7 +1595,7 @@ classdef RigidBodyManipulator < Manipulator
         for i=1:length(force_types);
             force_type = force_types(i); force_type = force_type{1};
             vectors = force_vectors.(force_type);
-            lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
+            lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
             for j=1:size(vectors,2)
                 point = vectors(1:3,j);
                 torque_ext = vectors(4:6,j);

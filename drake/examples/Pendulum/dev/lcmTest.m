@@ -1,6 +1,6 @@
 
 lc = lcm.lcm.LCM.getSingleton();
-mon = drake.util.MessageMonitor(drake.lcmt_drake_signal,'timestamp');
+mon = drake.matlab.util.MessageMonitor(drake.lcmt_drake_signal,'timestamp');
 lc.subscribe('PendulumInput',mon);
 
 while(1);

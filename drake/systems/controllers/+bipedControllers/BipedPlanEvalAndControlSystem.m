@@ -56,7 +56,7 @@ classdef BipedPlanEvalAndControlSystem < DrakeSystem
       if isempty(obj.plan_eval) || isempty(obj.control)
         obj.lc = lcm.lcm.LCM.getSingleton();
         if isempty(obj.plan_eval)
-          obj.monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
+          obj.monitor = drake.matlab.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
           obj.lc.subscribe('QP_CONTROLLER_INPUT', obj.monitor);
         end
       end
