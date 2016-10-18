@@ -1,10 +1,12 @@
 drake_add_cc_test(mathematical_program_test)
 target_link_libraries(mathematical_program_test drakeOptimization)
 
-if(mosek_FOUND)
-  drake_add_cc_test(mosek_test)
-  target_link_libraries(mosek_test drakeOptimization)
-endif()
+# TODO(hongkai.dai@tri.global) : re-enable mosek test after re-writing
+# mosek_solver and the test
+#if(mosek_FOUND)
+#  drake_add_cc_test(mosek_test)
+#  target_link_libraries(mosek_test drakeOptimization)
+#endif()
 
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)

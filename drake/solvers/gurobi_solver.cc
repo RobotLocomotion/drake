@@ -233,7 +233,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     }
   }
 
-  // add linear cost
+  // Add linear cost in prog.linear_costs() to the aggregated cost
   for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
@@ -310,8 +310,6 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
 
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
-    const int kNumVariables = binding.GetNumElements();
-    DRAKE_ASSERT(constraint->A().cols() == kNumVariables);
 
     if (constraint->lower_bound() !=
         -Eigen::MatrixXd::Constant((constraint->lower_bound()).rows(), 1,

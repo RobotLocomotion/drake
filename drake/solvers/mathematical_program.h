@@ -409,11 +409,16 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddCost(std::shared_ptr<LinearConstraint> const& obj,
                VariableList const& vars) {
     required_capabilities_ |= kLinearCost;
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
+    }
+    DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
     linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
   }
 
   /**
-   * @bridf Adds a cost term of the form c'*x
+   * Adds a linear cost term of the form c'*x
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure
    */
@@ -438,6 +443,11 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddCost(std::shared_ptr<QuadraticConstraint> const& obj,
                VariableList const& vars) {
     required_capabilities_ |= kQuadraticCost;
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
+    }
+    DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
 
@@ -520,6 +530,11 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearConstraint;
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
+    }
+    DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
 
@@ -557,6 +572,11 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearEqualityConstraint;
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
+    }
+    DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
@@ -599,6 +619,11 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearConstraint;
+    int var_dim = 0;
+    for (const auto& var : vars) {
+      var_dim += var.size();
+    }
+    DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }
 
@@ -646,8 +671,8 @@ class DRAKE_EXPORT MathematicalProgram {
         Binding<LorentzConeConstraint>(con, vars));
   }
 
-  /** AddLorentzConeConstraint
-   * @brief Adds Lorentz cone constraint referencing potentially a subset of the
+  /**
+   * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter)
    * <!--
    * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
@@ -664,8 +689,8 @@ class DRAKE_EXPORT MathematicalProgram {
     return constraint;
   }
 
-  /** AddLorentzConeConstraint
-   * @brief Adds Lorentz cone constraint to the program for all
+  /**
+   * Adds Lorentz cone constraint to the program for all
    * (currently existing) variables
    * <!--
    * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
@@ -699,7 +724,7 @@ class DRAKE_EXPORT MathematicalProgram {
         Binding<RotatedLorentzConeConstraint>(con, vars));
   }
 
-  /** AddRotatedLorentzConeConstraint
+  /**
    * @param vars A list of DecisionVariableView
    * Example: if you want to add the rotated Lorentz cone constraint
    * <!--
@@ -724,8 +749,8 @@ class DRAKE_EXPORT MathematicalProgram {
     return constraint;
   }
 
-  /** AddRotatedLorentzConeConstraint
-   * @brief Adds a rotated Lorentz constraint to the program for all
+  /**
+   * Adds a rotated Lorentz constraint to the program for all
    * (currently existing) variables
    * <!--
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
