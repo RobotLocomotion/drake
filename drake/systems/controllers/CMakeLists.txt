@@ -4,7 +4,7 @@ drake_install_headers(
   simple_feedback_trajectory_controller.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
-target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
+target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 pods_install_pkg_config_file(drake-control-util

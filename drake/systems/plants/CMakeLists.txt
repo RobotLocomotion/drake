@@ -21,9 +21,10 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   RigidBodyTreeContact.cpp
   rigid_body_actuator.cc
   rigid_body_frame.cc
-  rigid_body_loop.cc)
+  rigid_body_loop.cc
+  $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
-        drakeCollision drakeCommon drakeJoints drakeUtil drakeXMLUtil)
+        drakeCollision drakeCommon drakeJoints drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
   ConstraintWrappers.h
@@ -44,7 +45,7 @@ drake_install_headers(
   robot_state_tap.h)
 
 pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
+  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeXMLUtil
   REQUIRES
   VERSION 0.0.1)
 
@@ -63,9 +64,6 @@ if(Matlab_FOUND)
   target_compile_options(rbmMexFunctions PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
 
   macro(add_rbm_mex)
-    # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
-    # drake_add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-    # target_link_libraries(${ARGV} drakeRBM)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} rbmMexFunctions)
     # These warnings are not worth fixing.
@@ -128,7 +126,7 @@ if(Matlab_FOUND)
 
   macro(add_constraint_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
+    target_link_libraries(${ARGV} drakeRBM drakeRigidBodyConstraint)
   endmacro()
 endif()
 

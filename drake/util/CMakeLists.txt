@@ -17,22 +17,14 @@ if(lcm_FOUND AND Matlab_FOUND)
   target_link_libraries(publishLCMLog lcm)
 endif()
 
-add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
-target_link_libraries(drakeUtil drakeCommon)
+add_library(drakeUtil OBJECT drakeUtil.cpp)
 drake_install_headers(drakeUtil.h)
-pods_install_libraries(drakeUtil)
-pods_install_pkg_config_file(drake-util
-  LIBS -ldrakeUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 drake_install_headers(drakeAppUtil.h)
 
 if(Matlab_FOUND)
   drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   target_link_libraries(drakeMexUtil drakeCommon)
-  # TODO: use this again once I can assume everyone has CMAKE version >= 2.8.8
-  # drake_add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
   pods_install_libraries(drakeMexUtil)
@@ -102,8 +94,8 @@ if(Matlab_FOUND)
   drake_add_mex(closestExpmapmex closestExpmapmex.cpp)
   target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
 
-  drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
-  target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
+  drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp $<TARGET_OBJECTS:drakeUtil>)
+  target_link_libraries(resolveCenterOfPressuremex drakeMexUtil)
 endif()
 
 add_subdirectory(test)
