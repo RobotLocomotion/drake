@@ -632,8 +632,11 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   * <!--
+   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * -->
    * \f[
-   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
    * \f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
@@ -646,8 +649,11 @@ class DRAKE_EXPORT MathematicalProgram {
   /** AddLorentzConeConstraint
    * @brief Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter)
+   * <!--
+   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * -->
    * \f[
-   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
    * \f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
@@ -661,8 +667,11 @@ class DRAKE_EXPORT MathematicalProgram {
   /** AddLorentzConeConstraint
    * @brief Adds Lorentz cone constraint to the program for all
    * (currently existing) variables
+   * <!--
+   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * -->
    * \f[
-   * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
+   * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
    * \f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
@@ -672,9 +681,13 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
    * of decision variables, such that
+   * <!--
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) >= 0, x(1) >= 0
+   * -->
    * \f[
-   * vars(0)*vars(1)>=\sqrt{vars(2)+...+vars(N-1)^2}\\
-   * vars(0)>=0, vars(1)>=0
+   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
+   * x_0\ge 0, x_1\ge 0
    * \f]
    * @param con A pointer to a RotatedLorentzConeConstraint object
    * @param vars A list of DecisionVariableView
@@ -689,9 +702,13 @@ class DRAKE_EXPORT MathematicalProgram {
   /** AddRotatedLorentzConeConstraint
    * @param vars A list of DecisionVariableView
    * Example: if you want to add the rotated Lorentz cone constraint
+   * <!--
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) >= 0, x(1) >= 0
+   * -->
    * \f[
-   * x(0)*x(1)>=\sqrt{x(2)^2+x(3)^2+...+x(N-1)^2}\\
-   * x(0)>=0, x(1)>=0
+   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
+   * x_0\ge 0, x_1\ge 0
    * \f]
    * you can call
    * \code{.cc}
@@ -710,9 +727,13 @@ class DRAKE_EXPORT MathematicalProgram {
   /** AddRotatedLorentzConeConstraint
    * @brief Adds a rotated Lorentz constraint to the program for all
    * (currently existing) variables
+   * <!--
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) >= 0, x(1) >= 0
+   * -->
    * \f[
-   * vars(0)*vars(1)>=\sqrt{vars(2)^2+...vars(N-1)^2}\\
-   * vars(0)>=0, vars(1)>=0
+   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
+   * x_0\ge 0, x_1\ge 0
    * \f]
    */
   std::shared_ptr<RotatedLorentzConeConstraint>
