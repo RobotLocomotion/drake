@@ -221,10 +221,10 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   A_R2a.block(0, 0, R2.cols(), R2.cols()) =
       MatrixXd::Identity(R2.cols(), R2.cols());
   A_R2a.block(0, R2.cols(), R2.cols(), R2.rows()) = -R2_transpose;
-  VectorXd b1 = VectorXd::Zero(R1.cols());
-  VectorXd b2 = VectorXd::Zero(R2.cols());
-  prog.AddLinearEqualityConstraint(A_R1a, b1, {R1a, a});
-  prog.AddLinearEqualityConstraint(A_R2a, b2, {R2a, a});
+  VectorXd b_R1a = VectorXd::Zero(R1.cols());
+  VectorXd b_R2a = VectorXd::Zero(R2.cols());
+  prog.AddLinearEqualityConstraint(A_R1a, b_R1a, {R1a, a});
+  prog.AddLinearEqualityConstraint(A_R2a, b_R2a, {R2a, a});
 
   // a'*(x2 - x1) = 1
   prog.AddLinearEqualityConstraint((x2 - x1).transpose(), drake::Vector1d(1.0),

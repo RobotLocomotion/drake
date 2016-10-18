@@ -178,12 +178,26 @@ struct SNOPTRun {
   }
 };
 
+/**
+ * Evaluate the value and gradients of nonlinear constraints.
+ * The template type _Binding is supposed to be a
+ * MathematicalProgram::Binding<Constraint> type.
+ * @param constraint_list A list of Binding<Constraint>
+ * @param F The value of the constraints
+ * @param G The value of the non-zero entries in the gradient
+ * @param constraint_index The starting index of the constraint_list(0) in the
+ * optimization problem.
+ * @param grad_index The starting index of the gradient of constraint_list(0)
+ * in the optimization problem.
+ * @param tx the AutoDiffMatrixType that stores the value of the decision
+ * variable.
+ */
 template <typename _Binding>
 void EvaluateNonlinearConstraints(
     const std::list<_Binding>& constraint_list, snopt::doublereal F[],
     snopt::doublereal G[], size_t& constraint_index, size_t& grad_index,
-    TaylorVecXd& this_x, TaylorVecXd& ty,
     const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
+  TaylorVecXd this_x;
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
@@ -192,7 +206,7 @@ void EvaluateNonlinearConstraints(
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
-
+    TaylorVecXd ty;
     ty.resize(num_constraints);
     c->Eval(this_x, ty);
 
@@ -267,12 +281,12 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   // The gradient_index also starts after the cost.
   size_t grad_index = *n;
   EvaluateNonlinearConstraints(current_problem->generic_constraints(), F, G,
-                               constraint_index, grad_index, this_x, ty, tx);
+                               constraint_index, grad_index, tx);
   EvaluateNonlinearConstraints(current_problem->lorentz_cone_constraints(), F,
-                               G, constraint_index, grad_index, this_x, ty, tx);
+                               G, constraint_index, grad_index, tx);
   EvaluateNonlinearConstraints(
       current_problem->rotated_lorentz_cone_constraints(), F, G,
-      constraint_index, grad_index, this_x, ty, tx);
+      constraint_index, grad_index, tx);
 
   return 0;
 }
