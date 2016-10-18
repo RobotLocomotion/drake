@@ -3,6 +3,7 @@
 
 drake_install_headers(
   adder.h
+  affine_system_plant.h
   constant_value_source.h
   constant_value_source-inl.h
   constant_vector_source.h
@@ -10,6 +11,7 @@ drake_install_headers(
   gain.h
   gain-inl.h
   integrator.h
+  linear_system_plant.h
   multiplexer.h
   pass_through.h
   pass_through-inl.h
