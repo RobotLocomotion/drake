@@ -1,4 +1,4 @@
-#include "drake/systems/plants/affine_linear_system/linear_system_plant.h"
+#include "drake/systems/framework/primitives/linear_system_plant.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
