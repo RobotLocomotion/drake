@@ -823,7 +823,8 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
-  Q << 1.0, 0.0, 0.0, 1.0;
+  Q << 1.0, 0.0,
+       0.0, 1.0;
   VectorXd c(2);
   c << -1.0, -1.0;
 

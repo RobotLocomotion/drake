@@ -45,17 +45,8 @@ namespace {
 template <typename DerivedA, typename DerivedB>
 int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                         const Eigen::MatrixBase<DerivedB>& b,
-                        const VariableList& variable_list,
+                        const std::vector<int> &variable_indices,
                         char constraint_sense, double sparseness_threshold) {
-  // variable_indices[i] is the index of the i'th variable
-  std::vector<int> variable_indices;
-  variable_indices.reserve(A.cols());
-  for (const DecisionVariableView& var : variable_list) {
-    for (int i = 0; i < static_cast<int>(var.size()); i++) {
-      variable_indices.push_back(var.index() + i);
-    }
-  }
-
   for (int i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
     std::vector<int> constraint_index(A.cols(), 0);
@@ -293,16 +284,24 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   return 0;
 }
 
-/// Splits out the equality and inequality constraints and makes call to
-/// add any non-inf constraints.
-int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
+// Add both LinearConstraints and LinearEqualityConstraints to gurobi
+int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
                        double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
+    int var_dim = binding.GetNumElements();
+    // variable_indices[i] is the index of the i'th variable
+    std::vector<int> variable_indices;
+    variable_indices.reserve(var_dim);
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(var.index() + i);
+      }
+    }
     const int error = AddLinearConstraint(
         model, constraint->A(), constraint->lower_bound(),
-        binding.variable_list(), GRB_EQUAL, sparseness_threshold);
+        variable_indices, GRB_EQUAL, sparseness_threshold);
     if (error) {
       return error;
     }
@@ -310,37 +309,54 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
 
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.constraint();
-
-    if (constraint->lower_bound() !=
-        -Eigen::MatrixXd::Constant((constraint->lower_bound()).rows(), 1,
-                                   std::numeric_limits<double>::infinity())) {
-      const int error = AddLinearConstraint(
-          model, constraint->A(), constraint->lower_bound(),
-          binding.variable_list(), GRB_GREATER_EQUAL, sparseness_threshold);
-      if (error) {
-        return error;
+    int var_dim = binding.GetNumElements();
+    // variable_indices[i] is the index of the i'th variable
+    std::vector<int> variable_indices;
+    variable_indices.reserve(var_dim);
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        variable_indices.push_back(var.index() + i);
       }
     }
-    if (constraint->upper_bound() !=
-        Eigen::MatrixXd::Constant((constraint->upper_bound()).rows(), 1,
-                                  std::numeric_limits<double>::infinity())) {
-      const int error = AddLinearConstraint(
-          model, constraint->A(), constraint->upper_bound(),
-          binding.variable_list(), GRB_LESS_EQUAL, sparseness_threshold);
-      if (error) {
-        return error;
+    Eigen::MatrixXd A = constraint->A();
+    Eigen::VectorXd lb = constraint->lower_bound();
+    Eigen::VectorXd ub = constraint->upper_bound();
+
+    // Go through the matrix A row by row to determine whether to add it as
+    // a less than or greater than constraint, or both.
+    for (int i = 0; i < static_cast<int>(A.rows()); i++) {
+      // In each row, we find out the non-zero entries in A.row(i), such that
+      // the linear constraint is
+      // lb(i) <= sum_j linear_coeff_row_i[j] * x[j] <= ub(i)
+      // where x is the aggregated decision variable for the entire optimization
+      // problem.
+      std::vector<int> variable_indices_row_i;
+      std::vector<double> linear_coeff_row_i;
+      variable_indices_row_i.reserve(var_dim);
+      linear_coeff_row_i.reserve(var_dim);
+      for (int j = 0; j < var_dim; j++) {
+        if (std::abs(A(i, j)) > sparseness_threshold) {
+          variable_indices_row_i.push_back(variable_indices[j]);
+          linear_coeff_row_i.push_back(A(i, j));
+        }
+      }
+      if (!isinf(lb(i))) {
+        int error = GRBaddconstr(model, variable_indices_row_i.size(),
+        variable_indices_row_i.data(), linear_coeff_row_i.data(),
+                                 GRB_GREATER_EQUAL, lb(i), nullptr);
+        if (error) {
+          return error;
+        }
+      }
+      if (!isinf(ub(i))) {
+        int error = GRBaddconstr(model, variable_indices_row_i.size(),
+                     variable_indices_row_i.data(), linear_coeff_row_i.data(),
+                                 GRB_LESS_EQUAL, ub(i), nullptr);
+        if (error) {
+          return error;
+        }
       }
     }
-  }
-
-  const int kLorentzError = AddLorentzConeConstraints(model, prog);
-  if (kLorentzError) {
-    return kLorentzError;
-  }
-
-  const int kRotatedLorentzError = AddRotatedLorentzConeConstraint(model, prog);
-  if (kRotatedLorentzError) {
-    return kRotatedLorentzError;
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;
@@ -389,9 +405,21 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // TODO(naveenoid) : This needs access externally.
   double sparseness_threshold = 1e-14;
   error = AddCosts(model, prog, sparseness_threshold);
+
   if (!error) {
-    error = ProcessConstraints(model, prog, sparseness_threshold);
+    error = ProcessLinearConstraints(model, prog, sparseness_threshold);
   }
+
+  // Add Lorentz cone constraints.
+  if (!error) {
+    error = AddLorentzConeConstraints(model, prog);
+  }
+
+  // Add rotated Lorentz cone constraints.
+  if (!error) {
+    error = AddRotatedLorentzConeConstraint(model, prog);
+  }
+
   SolutionResult result = SolutionResult::kUnknownError;
 
   if (!error) {

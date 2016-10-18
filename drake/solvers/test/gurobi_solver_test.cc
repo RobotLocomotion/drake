@@ -19,10 +19,12 @@ void RunGurobiSolver(MathematicalProgram* prog) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
-/// Simple test from the Gurobi documentation.
+/// Adapt from the simple test on the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
-//  subj to  x + 2 y + 3 z >= 4
-//           x +   y       >= 1
+//  subj to        x + 2 y + 3 z >= 4
+//                -x -   y       <= -1
+//        -20 <=         y + 2 z <= 100
+//               3 x +   y + 3 z  = 3
 GTEST_TEST(testGurobi, gurobiQPExample1) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
@@ -42,17 +44,18 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
 
   prog.AddQuadraticCost(Q, b);
 
-  VectorXd constraint(3);
-  constraint << 1, 2, 3;
-  prog.AddLinearConstraint(
-      constraint.transpose(), drake::Vector1d::Constant(4),
-      drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
-
-  VectorXd constraint2(3);
-  constraint2 << 1, 1, 0;
-  prog.AddLinearConstraint(
-      constraint2.transpose(), drake::Vector1d::Constant(1),
-      drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
+  // This test handles the case that in one LinearConstraint, some rows are
+  // "LESS_THAN", some rows are "GREATER_THAN"
+  Eigen::Matrix<double, 3, 3> A1;
+  A1 << 1,  2, 3,
+       -1, -1, 0,
+        3,  1, 3;
+  Eigen::Vector3d b_lb(4, -std::numeric_limits<double>::infinity(), -20);
+  Eigen::Vector3d b_ub(std::numeric_limits<double>::infinity(), -1, 100);
+  prog.AddLinearConstraint(A1, b_lb, b_ub);
+  // This test also handles linear equality constraint
+  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3),
+                                   drake::Vector1d(3));
 
   VectorXd expected(3);
   expected << 0, 1, 2.0 / 3.0;
