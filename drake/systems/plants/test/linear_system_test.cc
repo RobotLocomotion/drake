@@ -25,7 +25,9 @@ class LinearSystemTest : public ::testing::Test {
       kA(make_matrix(1.5, 2.7, 3.5, -4.9)),
       kB(make_matrix(4.9, -5.1, 6.8, 7.2)),
       kC(make_matrix(1.1, 2.5, -3.8, 4.6)),
-      kD(make_matrix(4.1, 5.6, -6.3, 7.7)) {
+      kD(make_matrix(4.1, 5.6, -6.3, 7.7)),
+      kXDot0(make_vector(0.0, 0.0)),
+      kY0(make_vector(0.0, 0.0)) {
   }
 
   void SetUp() override { Initialize(); }
@@ -117,6 +119,50 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(1, system_->get_num_output_ports());
   EXPECT_EQ(1, system_->get_num_input_ports());
 }
+
+// Tests that the derivatives are correctly computed
+TEST_F(LinearSystemTest, Derivatives) {
+  Eigen::Vector2d u(2);
+  u << 1, 4;
+  SetInput(u);
+
+  Eigen::VectorXd x(2);
+  x << 0.1, 0.25;
+  SetState(x);
+
+  derivatives_ = system_->AllocateTimeDerivatives();
+  EXPECT_NE(derivatives_, nullptr);
+  system_->EvalTimeDerivatives(*context_, derivatives_.get());
+
+  Eigen::VectorXd expected_derivatives(2);
+  expected_derivatives = GetA() * x + GetB() * u;
+
+  EXPECT_EQ(expected_derivatives, derivatives_->get_state().CopyToVector());
+}
+
+// Tests that the outputs are correctly computed.
+TEST_F(LinearSystemTest, Output) {
+  // Sets the context's input port.
+  Eigen::Vector2d u(2);
+  u << 5.6, -10.1;
+  SetInput(u);
+
+  // Sets the state
+  Eigen::VectorXd x(2);
+  x << 0.8, -22.1;
+  SetState(x);
+
+  system_->EvalOutput(*context_, &system_output_);
+
+  Eigen::VectorXd expected_output(2);
+
+  expected_output = GetC() * x + GetD() * u;
+
+  EXPECT_EQ(expected_output,
+            system_output_.get_port(0).
+                get_vector_data<double>()->CopyToVector());
+}
+
 
 }  // namespace
 }  // namespace systems
