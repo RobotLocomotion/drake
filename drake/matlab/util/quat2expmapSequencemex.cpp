@@ -1,7 +1,7 @@
 #include <mex.h>
 
 #include "drake/math/expmap.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

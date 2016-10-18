@@ -4,9 +4,9 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
-#include "drake/util/mexify.h"
-#include "drake/util/standardMexConversions.h"
-#include "drake/util/makeFunction.h"
+#include "drake/matlab/util/makeFunction.h"
+#include "drake/matlab/util/mexify.h"
+#include "drake/matlab/util/standardMexConversions.h"
 
 using namespace std;
 using namespace Eigen;

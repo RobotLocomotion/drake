@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/util/mexify.h"
+#include "drake/matlab/util/mexify.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)

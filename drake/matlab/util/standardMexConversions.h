@@ -5,7 +5,7 @@
 //
 
 #include <string>
-#include "drake/util/mexify.h"
+#include "drake/matlab/util/mexify.h"
 
 /**
  * fromMex specializations

@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
 #include "drake/systems/plants/joints/DrakeJoints.h"

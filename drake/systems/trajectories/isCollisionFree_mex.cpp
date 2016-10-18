@@ -25,7 +25,7 @@ Date: Nov 12 2013
 #include <matrix.h>
 
 #include <math.h>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"

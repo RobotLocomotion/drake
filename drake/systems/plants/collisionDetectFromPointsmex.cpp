@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "drake/common/constants.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 

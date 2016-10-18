@@ -4,7 +4,7 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
