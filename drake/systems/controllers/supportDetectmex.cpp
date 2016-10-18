@@ -10,6 +10,7 @@ struct SupportDetectData {
   void* map_ptr;
 };
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 1)
     mexErrMsgTxt(

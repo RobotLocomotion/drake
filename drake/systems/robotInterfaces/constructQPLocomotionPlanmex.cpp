@@ -279,6 +279,7 @@ QuadraticLyapunovFunction setUpLyapunovFunction(const mxArray* mex_V) {
   return V;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   string usage =
       "usage: ptr = constructQPLocomotionPlanmex(mex_model_ptr, "
