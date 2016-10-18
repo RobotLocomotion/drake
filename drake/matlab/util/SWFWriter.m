@@ -80,7 +80,7 @@ methods
     if (obj.loop)
       cmd{5}=['swfcombine -r ',num2str(obj.fps),' --dummy ',obj.filename,'.swf -o ',obj.filename, '.swf '];
     else
-      cmd{5}=['swfcombine -r ',num2str(obj.fps),' --cat ',obj.filename,'.swf -o ',obj.filename, '.swf ', getDrakePath(), '/util/swfstop.swf'];
+      cmd{5}=['swfcombine -r ',num2str(obj.fps),' --cat ',obj.filename,'.swf -o ',obj.filename, '.swf ', getDrakePath(), '/matlab/util/swfstop.swf'];
     end
     
     if (obj.poster)

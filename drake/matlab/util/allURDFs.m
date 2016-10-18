@@ -36,7 +36,7 @@ if info == 0
 else
   % If the `find` program fails for some reason (windows?), then print an error
   % message.
-  error_msg = ['ERROR: drake/util/allURDFs.m: Failed to find any URDFs! '];
+  error_msg = ['ERROR: drake/matlab/util/allURDFs.m: Failed to find any URDFs! '];
   error_msg = [error_msg, 'Ensure program `find` is installed and available.'];
   error('Drake:MissingDependency:find', error_msg);
 end
