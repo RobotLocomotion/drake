@@ -9,6 +9,6 @@ function root = getDrakePath()
 persistent myroot;
 
 if (isempty(myroot))
-  myroot = fileparts(fileparts(which('getDrakePath')));
+  myroot = fileparts(fileparts(fileparts(which('getDrakePath'))));
 end
 root = myroot;
