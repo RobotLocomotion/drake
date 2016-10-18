@@ -15,11 +15,13 @@ set(sources
   modal_state.cc
   output_port_listener_interface.cc
   primitives/adder.cc
+  primitives/affine_system_plant.cc
   primitives/constant_value_source.cc
   primitives/constant_vector_source.cc
   primitives/demultiplexer.cc
   primitives/gain.cc
   primitives/integrator.cc
+  primitives/linear_system_plant.cc
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/trajectory_source.cc

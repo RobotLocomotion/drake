@@ -1,4 +1,4 @@
-#include "drake/systems/plants/affine_linear_system/linear_system_plant.h"
+#include "drake/systems/framework/primitives/affine_system_plant.h"
 
 #include "gtest/gtest.h"
 
@@ -17,29 +17,30 @@ namespace drake {
 namespace systems {
 namespace {
 
-
-class LinearSystemTest : public ::testing::Test {
+class AffineSystemTest : public ::testing::Test {
  public:
-  // Setup an arbitrary LinearSystem.
-  LinearSystemTest() :
-      kA(make_matrix(1.5, 2.7, 3.5, -4.9)),
-      kB(make_matrix(4.9, -5.1, 6.8, 7.2)),
-      kC(make_matrix(1.1, 2.5, -3.8, 4.6)),
-      kD(make_matrix(4.1, 5.6, -6.3, 7.7)),
-      kXDot0(make_vector(0.0, 0.0)),
-      kY0(make_vector(0.0, 0.0)) {
+  // Setup an arbitrary AffineSystem.
+  AffineSystemTest() :
+  kA(make_matrix(1.5, 2.7, 3.5, -4.9)),
+  kB(make_matrix(4.9, -5.1, 6.8, 7.2)),
+  kC(make_matrix(1.1, 2.5, -3.8, 4.6)),
+  kD(make_matrix(4.1, 5.6, -6.3, 7.7)),
+  kXDot0(make_vector(-4.5, 6.5)),
+  kY0(make_vector(3.5, -7.6)) {
   }
 
   void SetUp() override { Initialize(); }
 
   void Initialize() {
     // Construct the system I/O objects.
-    system_ = make_unique<LinearSystemPlant<double>>(kA, kB, kC, kD);
-    system_->set_name("test_linear_system");
+    system_ = make_unique<AffineSystemPlant<double>>(
+        kA, kB, kC, kD, kXDot0, kY0);
+    system_->set_name("test_affine_system");
     context_ = system_->CreateDefaultContext();
+    system_derivatives_ = system_->AllocateTimeDerivatives();
     input_vector_  = make_unique<BasicVector<double>>(2 /* size */);
 
-    Eigen::Vector2d output_eigen_vector(2 /* size */);
+    Eigen::Vector2d output_eigen_vector(2);
     auto output_vector = make_unique<BasicVector<double>>(output_eigen_vector);
     auto output_value = make_unique<VectorValue<double>>(move(output_vector));
 
@@ -74,9 +75,10 @@ class LinearSystemTest : public ::testing::Test {
   const VectorX<double> GetY0(void) const { return kY0; }
 
  protected:
-  unique_ptr<LinearSystemPlant<double>> system_;
+  unique_ptr<AffineSystemPlant<double>> system_;
   unique_ptr<Context<double>> context_;
   LeafSystemOutput<double> system_output_;
+  unique_ptr<ContinuousState<double>> system_derivatives_;
 
   unique_ptr<ContinuousState<double>> state_;
   unique_ptr<BasicVector<double>> state_vector_;
@@ -104,24 +106,22 @@ class LinearSystemTest : public ::testing::Test {
   }
 };
 
-// Tests that the linear system is setup correctly.
-TEST_F(LinearSystemTest, Construction) {
+// Tests that the affine system is setup correctly.
+TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(1, context_->get_num_input_ports());
-  EXPECT_EQ("test_linear_system", system_->get_name());
+  EXPECT_EQ("test_affine_system", system_->get_name());
   EXPECT_EQ(system_->GetA(), GetA());
   EXPECT_EQ(system_->GetB(), GetB());
   EXPECT_EQ(system_->GetC(), GetC());
   EXPECT_EQ(system_->GetD(), GetD());
   EXPECT_EQ(system_->GetXDot0(), GetXDot0());
   EXPECT_EQ(system_->GetY0(), GetY0());
-  EXPECT_EQ(system_->GetXDot0(), Eigen::VectorXd::Zero(2, 1));
-  EXPECT_EQ(system_->GetY0(), Eigen::VectorXd::Zero(2, 1));
   EXPECT_EQ(1, system_->get_num_output_ports());
   EXPECT_EQ(1, system_->get_num_input_ports());
 }
 
 // Tests that the derivatives are correctly computed
-TEST_F(LinearSystemTest, Derivatives) {
+TEST_F(AffineSystemTest, Derivatives) {
   Eigen::Vector2d u(2);
   u << 1, 4;
   SetInput(u);
@@ -135,13 +135,13 @@ TEST_F(LinearSystemTest, Derivatives) {
   system_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
-  expected_derivatives = GetA() * x + GetB() * u;
+  expected_derivatives = GetA() * x + GetB() * u +  GetXDot0();
 
   EXPECT_EQ(expected_derivatives, derivatives_->get_state().CopyToVector());
 }
 
 // Tests that the outputs are correctly computed.
-TEST_F(LinearSystemTest, Output) {
+TEST_F(AffineSystemTest, Output) {
   // Sets the context's input port.
   Eigen::Vector2d u(2);
   u << 5.6, -10.1;
@@ -156,13 +156,12 @@ TEST_F(LinearSystemTest, Output) {
 
   Eigen::VectorXd expected_output(2);
 
-  expected_output = GetC() * x + GetD() * u;
+  expected_output = GetC() * x + GetD() * u +  GetY0();
 
   EXPECT_EQ(expected_output,
             system_output_.get_port(0).
                 get_vector_data<double>()->CopyToVector());
 }
-
 
 }  // namespace
 }  // namespace systems

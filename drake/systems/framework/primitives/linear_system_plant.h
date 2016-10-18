@@ -1,17 +1,6 @@
 # pragma once
 
-#include "drake/systems/plants/affine_linear_system/affine_system_plant.h"
-
-
-#include <memory>
-
-#include <Eigen/Geometry>
-
-#include "drake/common/drake_export.h"
-#include "drake/common/eigen_types.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/primitives/affine_system_plant.h"
 
 namespace drake {
 namespace systems {
@@ -33,9 +22,9 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
-/// @ingroup systems
+/// @ingroup primitive_systems
 template<typename T>
-class DRAKE_EXPORT LinearSystemPlant: public AffineSystemPlant<T> {
+class LinearSystemPlant: public AffineSystemPlant<T> {
  public:
   LinearSystemPlant(const Eigen::Ref<const MatrixX<T>> &A,
                     const Eigen::Ref<const MatrixX<T>> &B,
