@@ -34,7 +34,7 @@ class AffineSystemTest : public ::testing::Test {
   void Initialize() {
     // Construct the system I/O objects.
     system_ = make_unique<AffineSystemPlant<double>>(
-        kXDot0, kA, kB, kC, kD, kY0);
+        kA, kB, kC, kD, kXDot0, kY0);
     system_->set_name("test_affine_system");
     context_ = system_->CreateDefaultContext();
     system_derivatives_ = system_->AllocateTimeDerivatives();
@@ -139,7 +139,6 @@ TEST_F(AffineSystemTest, Derivatives) {
 
   EXPECT_EQ(expected_derivatives, derivatives_->get_state().CopyToVector());
 }
-
 
 // Tests that the outputs are correctly computed.
 TEST_F(AffineSystemTest, Output) {

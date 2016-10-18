@@ -34,12 +34,12 @@ class DRAKE_EXPORT AffineSystemPlant : public LeafSystem<T> {
   using MyOutput = SystemOutput<T>;
 
   /// Construct a Affine system with a fixed set of matrices `A`, `B`,`C`, and
-  /// `D` as well as fixed initial velocity offset xd0
-  AffineSystemPlant(const Eigen::Ref<const VectorX<T>>& xdot0,
-                    const Eigen::Ref<const MatrixX<T>>& A,
+  /// `D` as well as fixed initial velocity offset xd0 and output offset y0.
+  AffineSystemPlant(const Eigen::Ref<const MatrixX<T>>& A,
                     const Eigen::Ref<const MatrixX<T>>& B,
                     const Eigen::Ref<const MatrixX<T>>& C,
                     const Eigen::Ref<const MatrixX<T>>& D,
+                    const Eigen::Ref<const VectorX<T>>& xDot0,
                     const Eigen::Ref<const VectorX<T>>& y0);
 
   /// The input force to this system is not direct feedthrough.
