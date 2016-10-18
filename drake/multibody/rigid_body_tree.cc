@@ -2163,7 +2163,7 @@ const RigidBody* RigidBodyTree<T>::FindBody(
     return element->get_body();
   }
   throw std::logic_error(
-      "RigidBodyTree::FindBody: ERROR: Could not find body for collision " +
+      "RigidBodyTree::FindBody: ERROR: Could not find body for collision " \
           "element id: " + std::to_string(element_id) + ".");
 }
 

@@ -784,11 +784,11 @@ class DRAKE_EXPORT RigidBodyTree {
    * Special case of collision detection which returns collision elements
    * instead of body ids.
    *
-   * The results represent a struct of arrays.  The ith element in each of the
+   * The results are akin to a struct of arrays.  The ith element in each of the
    * output parameters represents the data for a single contact.
    *
    * @param[in] cache           The dynamic pose data for the tree.
-   * @param[out] phi            The signed distance function
+   * @param[out] phi            The signed distance.
    * @param[out] normal         The contact normal pointing out of element B.
    * @param[out] xA             The contact point on element A (in world
    *                            coordinates.)
@@ -812,7 +812,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * instead of their corresponding bodies.
    *
    * @param[in] cache           The dynamic pose data for the tree.
-   * @param[out] phi            The signed distance function
+   * @param[out] phi            The signed distance[
    * @param[out] normal         The contact normal pointing out of element B.
    * @param[out] xA             The contact point on element A (in world
    *                            coordinates.)

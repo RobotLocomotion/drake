@@ -14,7 +14,7 @@ namespace systems {
 /**
  This manifold represents a contact surface with a limited number of sampled
  points.  It is, at best, a coarse approximation of the contact surface.  It
- doesn't guarantee that the points from a complete convex hull of the full
+ doesn't guarantee that the points form a complete convex hull of the full
  contact area.  It merely provides one or more points which in some meaningful
  sense attempt to sample the contact area.
  */
@@ -30,6 +30,19 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   /**
    Computes a single contact detail -- Force and application point -- which
    is equivalent to applying all individual contact forces individually.
+
+   The "net" contact is defined as follows:
+   p = sum_i [p_i * |f_i|] / sum_i |f_i|
+   F = sum_i F_i + sum_i [(p - p_i) x f_i , 0, 0, 0]
+
+   where p_i is the ith application point.
+   F_i is the ith spatial force (aka wrench).
+   f_i, |f_i| are the force component (and its magnitude) of the ith spatial
+   force, respectively.
+   [ f, 0, 0, 0] is a zero-torque wrench built off the given force.
+
+   The net application point (p) is an approximation of the center of
+   pressure.
 
    @returns The single net Force and application point - expressed in the world
             frame.
