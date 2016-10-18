@@ -264,6 +264,11 @@ bool SnoptSolver::available() const {
   return true;
 }
 
+/*
+ * Updates the number of nonlinear constraints and the number of gradients by
+ * looping through the constraint list
+ * Derived is supposed to be MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS
+ */
 template<typename Derived>
 void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
   for (auto const& binding : constraint_list) {
