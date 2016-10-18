@@ -596,6 +596,14 @@ class DRAKE_EXPORT RigidBodyTree {
                                Eigen::Matrix3Xd* terrain_points,
                                const std::string& group_name = "") const;
 
+  Eigen::Matrix3Xd getTerrainContactPoints(
+      const RigidBody& body,
+      const std::string& group_name = "") const {
+    Eigen::Matrix3Xd pts;
+    this->getTerrainContactPoints(body, &pts, group_name);
+    return pts;
+  }
+
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints,
