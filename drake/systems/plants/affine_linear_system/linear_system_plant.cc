@@ -12,8 +12,9 @@ LinearSystemPlant<T>::LinearSystemPlant(
     const Eigen::Ref<const MatrixX<T>> &B,
     const Eigen::Ref<const MatrixX<T>> &C,
     const Eigen::Ref<const MatrixX<T>> &D) :
-    AffineSystemPlant<T>(VectorX<T>::Zero(A.rows(), 1), A, B, C, D,
-                      VectorX<T>::Zero(C.rows(), 1) ) {
+    AffineSystemPlant<T>(A, B, C, D,
+                         VectorX<T>::Zero(A.rows(), 1),
+                         VectorX<T>::Zero(C.rows(), 1)) {
 }
 template class DRAKE_EXPORT LinearSystemPlant<double>;
 template class DRAKE_EXPORT LinearSystemPlant<AutoDiffXd>;

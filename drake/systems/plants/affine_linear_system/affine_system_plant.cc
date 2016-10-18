@@ -15,11 +15,11 @@ using std::make_unique;
 
 template <typename T>
 AffineSystemPlant<T>::AffineSystemPlant(
-    const Eigen::Ref<const VectorX<T>>& xdot0,
     const Eigen::Ref<const MatrixX<T>>& A,
     const Eigen::Ref<const MatrixX<T>>& B,
     const Eigen::Ref<const MatrixX<T>>& C,
     const Eigen::Ref<const MatrixX<T>>& D,
+    const Eigen::Ref<const VectorX<T>>& xdot0,
     const Eigen::Ref<const VectorX<T>>& y0)
     : kA(A), kB(B), kC(C), kD(D), kXDot0(xdot0), kY0(y0),
       kNumInputs(B.cols()), kNumOutputs(y0.size()), kNumStates(xdot0.size()) {
