@@ -4,10 +4,6 @@ drake_install_headers(
         atlasUtil.h
         atlas_plant.h
         )
-pods_install_pkg_config_file(drake-atlas-util
-  LIBS -ldrakeAtlasUtil
-  REQUIRES
-  VERSION 0.0.1)
 
 if (lcm_FOUND)
   add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)

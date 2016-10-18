@@ -56,9 +56,5 @@ drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})
 pods_install_libraries(drakeLcm)
-pods_install_pkg_config_file(drake-lcm
-    CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-    LIBS -ldrakeLcm
-    VERSION 0.0.1)
 
 add_subdirectory(test)

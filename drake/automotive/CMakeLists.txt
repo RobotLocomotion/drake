@@ -30,10 +30,6 @@ drake_install_headers(
   system1_vector.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
-pods_install_pkg_config_file(drake-automotive
-  LIBS -ldrakeAutomotive
-  REQUIRES
-  VERSION 0.0.1)
 
 if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
@@ -57,10 +53,6 @@ if(lcm_FOUND)
     car_simulation.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
-  pods_install_pkg_config_file(drake-automotive-lcm
-    LIBS -ldrakeAutomotiveLcm
-    REQUIRES
-    VERSION 0.0.1)
 
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)

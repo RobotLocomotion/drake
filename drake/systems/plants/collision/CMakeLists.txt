@@ -21,7 +21,3 @@ add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
 drake_install_headers(DrakeCollision.h point_pair.h Element.h Model.h)
-pods_install_pkg_config_file(drake-collision
-  LIBS -ldrakeCollision
-  REQUIRES
-  VERSION 0.0.1)
