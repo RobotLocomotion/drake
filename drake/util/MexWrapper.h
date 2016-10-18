@@ -4,18 +4,7 @@
 
 #include <string>
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakeMexUtil_EXPORTS)
-#define DLLEXPORT __declspec(dllexport)
-#else
-#define DLLEXPORT __declspec(dllimport)
-#endif
-#else
-#define DLLEXPORT [[gnu::visibility("default")]]
-#endif
-
-class DLLEXPORT MexWrapper {
+class DLL_EXPORT_SYM MexWrapper {
  public:
   explicit MexWrapper(std::string const& filename);
   ~MexWrapper();
