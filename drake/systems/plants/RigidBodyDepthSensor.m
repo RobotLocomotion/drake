@@ -40,7 +40,7 @@ classdef RigidBodyDepthSensor < RigidBodySensor
     
     function obj = enableLCMGL(obj)
       checkDependency('lcmgl');
-      obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), obj.name);
+      obj.lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), obj.name);
     end
     
     function points = output(obj,manip,t,x,u)

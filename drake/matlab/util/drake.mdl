@@ -737,7 +737,7 @@ Library {
       Ports		      []
       Position		      [150, 129, 268, 161]
       FunctionName	      "lcmTimeKeeper"
-      Parameters	      "channel,drake.util.MessageMonitor(lcmtype,timestamp_field),timestamp_scale,sample_time"
+      Parameters	      "channel,drake.matlab.util.MessageMonitor(lcmtype,timestamp_field),timestamp_scale,sample_time"
       MaskPromptString	      "Channel Name|LCM Message Instance |Timestamp Field|Timestamp Scale|Sample Time"
       MaskStyleString	      "edit,edit,edit,edit,edit"
       MaskVariables	      "channel=@1;lcmtype=@2;timestamp_field=@3;timestamp_scale=@4;sample_time=@5;"

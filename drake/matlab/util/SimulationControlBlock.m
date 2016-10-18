@@ -27,7 +27,7 @@ classdef SimulationControlBlock < DrakeSystem
       if ~isempty(lcm_channel)
         checkDependency('lcm');
         obj.lc = lcm.lcm.LCM.getSingleton();
-        obj.monitor = drake.util.MessageMonitor(drake.lcmt_simulation_command(), 'timestamp');
+        obj.monitor = drake.matlab.util.MessageMonitor(drake.lcmt_simulation_command(), 'timestamp');
         obj.lc.subscribe(lcm_channel, obj.monitor);
         fprintf(1,'Enabling LCM simultion control on channel %s\n',lcm_channel);
       end

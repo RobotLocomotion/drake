@@ -56,7 +56,7 @@ function DoPostPropSetup(block)
 function Start(block)
   typecheck(block.DialogPrm(1).Data,'char');  % channel
   mon = block.DialogPrm(2).Data;
-  typecheck(mon,'drake.util.MessageMonitor'); 
+  typecheck(mon,'drake.matlab.util.MessageMonitor'); 
   typecheck(block.DialogPrm(3).Data,'numeric'); % timstamp scale
   
   lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');

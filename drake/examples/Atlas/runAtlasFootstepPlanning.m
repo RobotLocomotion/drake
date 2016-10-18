@@ -25,7 +25,7 @@ plan = r.planFootsteps(start_pos, goal_pos);
 v = r.constructVisualizer();
 v.draw(0, xstar);
 if isa(v, 'BotVisualizer')
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
   plan.draw_lcmgl(lcmgl);
   lcmgl.switchBuffers();
 else

@@ -40,7 +40,7 @@ try
 catch
   disp(['Can''t load log file: ',logfile]);
 end
-handlers = drake.util.MyLCMTypeDatabase(classpathtosearch);
+handlers = drake.matlab.util.MyLCMTypeDatabase(classpathtosearch);
 
 data=struct();
 

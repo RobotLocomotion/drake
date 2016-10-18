@@ -10,7 +10,7 @@ else
   draw_pause = 0.05;
 end
 
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_distance_test');
+lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_distance_test');
 options.floating = true;
 r = RigidBodyManipulator([],options);
 

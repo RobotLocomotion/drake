@@ -9,7 +9,7 @@ for i = 1:size(A,1)
   face_vert_rotate = R*face_vert;
   K = convhull(face_vert_rotate(1,:),face_vert_rotate(2,:));
   
-  h = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('%s%d',lcmgl_name,i));
+  h = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('%s%d',lcmgl_name,i));
   h.glColor4f(0,0,1,0.5);
   h.polygon(face_vert(1,K),face_vert(2,K),face_vert(3,K));
   h.switchBuffers();

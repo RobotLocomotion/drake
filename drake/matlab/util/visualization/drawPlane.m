@@ -28,7 +28,7 @@ if(~isstruct(lcmgl_struct) || ~isfield(lcmgl_struct,'use_lcmgl') || ~isfield(lcm
 end
 if(lcmgl_struct.use_lcmgl)
   checkDependency('lcmgl');
-  h = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,lcmgl_struct.lcmgl_name);
+  h = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,lcmgl_struct.lcmgl_name);
   h.glColor4f(0, 0, 1, 0.5)
   h.glPushMatrix();
   h.glTranslated(plane_pt(1),plane_pt(2),plane_pt(3));

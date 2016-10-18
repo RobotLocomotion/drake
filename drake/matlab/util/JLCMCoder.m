@@ -24,7 +24,7 @@ classdef JLCMCoder < LCMCoder
     end
     
     function msg = encode(obj,t,x,varargin)
-      msg = obj.jcoder.encode(drake.util.CoordinateFrameData(t,x),varargin{:});
+      msg = obj.jcoder.encode(drake.matlab.util.CoordinateFrameData(t,x),varargin{:});
     end
     
   end

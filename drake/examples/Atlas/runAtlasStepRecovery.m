@@ -70,7 +70,7 @@ for iter = 1:3
   ts = walking_plan_data.zmptraj.getBreaks();
 
   % plot walking traj in drake viewer
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
 
   for i=1:length(ts)
     lcmgl.glColor3f(0, 0, 1);

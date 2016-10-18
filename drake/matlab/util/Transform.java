@@ -1,4 +1,4 @@
-package drake.util;
+package drake.matlab.util;
 
 // java versions of the most useful transformations in the matlab directory, 
 // unit tested to be equivalent to their matlab counter-parts

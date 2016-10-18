@@ -1,4 +1,4 @@
-package drake.util;
+package drake.matlab.util;
 
 public class CoordinateFrameData {
   public double[] val;
