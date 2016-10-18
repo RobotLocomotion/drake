@@ -83,17 +83,43 @@ drake_add_external(google_styleguide PUBLIC
   BUILD_COMMAND :)
 
 # ipopt
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
+  get_filename_component(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}" NAME)
+  get_filename_component(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}" NAME)
+else()
+  set(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}")
+  set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
+endif()
+
 drake_add_external(ipopt PUBLIC
-  # TODO(sam.creasey) add an alternate build command for WIN32 which
-  # downloads the precopiled binary and installs that.
-  CONFIGURE_COMMAND ./configure
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+   ./configure
     --with-blas=BUILD
     --with-lapack=BUILD
     --prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
     --disable-shared
     --with-pic
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
@@ -140,10 +166,23 @@ drake_add_external(octomap PUBLIC CMAKE
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
   PATCH_COMMAND ./autogen.sh
-  CONFIGURE_COMMAND ./configure
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --with-matlab
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+    ./configure
+      --prefix=${CMAKE_INSTALL_PREFIX}
+      --with-matlab
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # textbook
 if(MATLAB_EXECUTABLE)
