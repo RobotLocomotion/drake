@@ -25,7 +25,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
 
   for ( const auto & detail : contact_details_ ) {
     const Vector3<T>& contact_point = detail->get_application_point();
-    const WrenchVector<T>& contact_wrench = detail->get_force();
+    const WrenchVector<T>& contact_wrench = detail->get_wrench();
 
     wrench += contact_wrench;
 
@@ -42,7 +42,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   for (const auto & detail : contact_details_) {
     const Vector3<T>& contact_point = detail->get_application_point();
     // cross product doesn't work on "head"
-    const WrenchVector<T>& contact_wrench = detail->get_force();
+    const WrenchVector<T>& contact_wrench = detail->get_wrench();
     accum_torque += (point - contact_point).cross(
         contact_wrench.template head<3>());
   }
@@ -56,7 +56,10 @@ const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
   if (i < contact_details_.size()) {
     return contact_details_[i].get();
   }
-  return nullptr;
+  throw std::logic_error(
+      "Attempted to acquire a contact detail with an invalid index: " +
+      std::to_string(i) + " from a valid range of [0, " +
+  std::to_string(contact_details_.size()) + "].");
 }
 
 template <typename T>
