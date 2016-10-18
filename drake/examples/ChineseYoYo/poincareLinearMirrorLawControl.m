@@ -209,7 +209,6 @@ xnplus2 = yAll(2:9,jumpIdx(3));
 
 deltazdot = (xnplus2 -xnplus1)/dSpatial;
 
-
 %% Perturb along the psi direction
 x0 = Point(getStateFrame(p));
 x0.m = 1;
@@ -220,6 +219,17 @@ x0.load_xdot = 0;
 x0.load_zdot = 0;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
+
+%Adjust the set angle here:
+c.psiDes = 0-dSpatial/2;
+
+output_select(1).system = 1;
+output_select(1).output = plantSim.getOutputFrame();
+output_select(2).system = 2;
+output_select(2).output = c.getOutputFrame();
+
+sys = mimoFeedback(plantSim,c,[],[],[],output_select);
+
 
 tic
 [ytraj,xtraj] = simulate(sys,[0 1.75],x0);
@@ -243,6 +253,16 @@ x0.load_zdot = 0;
 x0 = double(x0);
 x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
 
+
+c.psiDes = 0+dSpatial/2;
+
+output_select(1).system = 1;
+output_select(1).output = plantSim.getOutputFrame();
+output_select(2).system = 2;
+output_select(2).output = c.getOutputFrame();
+
+sys = mimoFeedback(plantSim,c,[],[],[],output_select);
+
 tic
 [ytraj,xtraj] = simulate(sys,[0 1.75],x0);
 toc
@@ -256,14 +276,66 @@ xnplus2 = yAll(2:9,jumpIdx(3));
 
 deltapsi = (xnplus2 -xnplus1)/dSpatial;
 
+
+%% Perturb along the psidot direction
+x0 = Point(getStateFrame(p));
+x0.m = 1;
+x0.paddle_angledot = 0-dSpatial/2;
+x0.load_x = -0.031;
+x0.load_z = 4.5;
+x0.load_xdot = 0;
+x0.load_zdot = 0;
+x0 = double(x0);
+x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
+
+tic
+[ytraj,xtraj] = simulate(sys,[0 1.75],x0);
+toc
+tt=getBreaks(ytraj);
+yAll = ytraj.eval(tt);
+
+%Find changes
+jumpIdx = find(diff(yAll(1,:)));
+xn = yAll(2:9,jumpIdx(1));
+xnplus1 = yAll(2:9,jumpIdx(3));
+
+
+x0 = Point(getStateFrame(p));
+x0.m = 1;
+x0.paddle_angledot = 0+dSpatial/2;
+x0.load_x = -0.031;
+x0.load_z = 4.5;
+x0.load_xdot = 0;
+x0.load_zdot = 0;
+x0 = double(x0);
+x0(2:end) = resolveConstraints(p.no_contact,x0(2:end));
+
+tic
+[ytraj,xtraj] = simulate(sys,[0 1.75],x0);
+toc
+tt=getBreaks(ytraj);
+yAll = ytraj.eval(tt);
+
+%Find changes
+jumpIdx = find(diff(yAll(1,:)));
+xn = yAll(2:9,jumpIdx(1));
+xnplus2 = yAll(2:9,jumpIdx(3));
+
+deltapsidot = (xnplus2 -xnplus1)/dSpatial;
+
+
 A = [deltax([3:4,7:8]),deltaz([3:4,7:8]),deltaxdot([3:4,7:8]),deltazdot([3:4,7:8])];
 B = deltapsi([3:4,7:8]);
+B2 = [deltapsi([3:4,7:8]), deltapsidot([3:4,7:8])];
 
 
 Q = diag([1,1,1,1]);
 R = 1e-3;
+R2 = 1e-3*diag([1,1]);
 [K,S,E] = dlqr(A,B,Q,R);
+[K2,S2,E2] = dlqr(A,B2,Q,R2);
 z = eig(A-B*K);
+z2 = eig(A-B2*K2);
 
 
 figure(4), clf, hold on
