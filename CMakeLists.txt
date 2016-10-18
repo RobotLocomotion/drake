@@ -195,21 +195,6 @@ drake_add_external(libbot PUBLIC CMAKE
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
-# director
-drake_add_external(director PUBLIC CMAKE
-  SOURCE_SUBDIR distro/superbuild
-  CMAKE_ARGS
-    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
-    -DUSE_LCMGL=ON
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC
-  DEPENDS director)
-
 # xfoil
 # The Ninja generator does not support Fortran.
 drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
@@ -255,7 +240,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     bot_core_lcmtypes
     bullet
     ccd
-    director
     dreal
     eigen
     gflags
@@ -280,6 +264,22 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     yaml_cpp
     xfoil
 )
+
+# director
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_DRAKE=ON
+    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
+    -DUSE_LCMGL=ON
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
+  DEPENDS bot_core_lcmtypes drake lcm libbot)
+
+# signalscope
+drake_add_external(signalscope PUBLIC
+  DEPENDS director)
 
 # END external projects
 ###############################################################################
