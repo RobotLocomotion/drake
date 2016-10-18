@@ -20,9 +20,8 @@ namespace drake {
 namespace math {
 /**
  * Computes the quaternion representation from Euler angles.
- * @param rpy A 3 x 1 vector. The Euler angles about Body-fixed z-y'-x'' axes
- * by angles [rpy(2), rpy(1), rpy(0)].
- * @return A 4 x 1 unit length quaternion @p a=[w;x;y;z]
+ * @param rpy 3 x 1 vector with SpaceXYZ Euler angles.
+ * @return 4 x 1 unit length quaternion @p quaternion = [w; x; y; z].
  * @see rpy2rotmat
  */
 template <typename Derived>
@@ -107,5 +106,5 @@ Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(
 
   return dR;
 }
-}
-}
+}  // namespace math
+}  // namespace drake
