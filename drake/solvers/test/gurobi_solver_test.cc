@@ -12,7 +12,7 @@ namespace drake {
 namespace solvers {
 namespace {
 
-void RunGurobiSolver(MathematicalProgram *prog) {
+void RunGurobiSolver(MathematicalProgram* prog) {
   GurobiSolver gurobi_solver;
   SolutionResult result = SolutionResult::kUnknownError;
   ASSERT_NO_THROW(result = gurobi_solver.Solve(*prog));
@@ -159,11 +159,14 @@ GTEST_TEST(testGurobi, addLinearConstraintTest) {
   Q(2, 2) = 2.0;
   Eigen::Vector3d b = Eigen::Vector3d::Zero();
   prog.AddQuadraticCost(Q, b);
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), Vector1d::Constant(1), {x(0), x(1)});
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2), Vector1d::Constant(2), {x(0), x(2)});
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
+                                   Vector1d::Constant(1), {x(0), x(1)});
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
+                                   Vector1d::Constant(2), {x(0), x(2)});
 
   RunGurobiSolver(&prog);
-  EXPECT_TRUE(CompareMatrices(Vector3d(0.8, 0.2, 0.6), x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Vector3d(0.8, 0.2, 0.6), x.value(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 /**
@@ -186,11 +189,12 @@ GTEST_TEST(testGurobi, addLinearConstraintTest) {
  * @param R1  the shape of ellipsoid 1
  * @param R2  the shape of ellipsoid 2
  */
-template<typename DerivedX1, typename DerivedX2, typename DerivedR1, typename DerivedR2>
-void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
-                              const Eigen::MatrixBase<DerivedX2> &x2,
-                              const Eigen::MatrixBase<DerivedR1> &R1,
-                              const Eigen::MatrixBase<DerivedR2> &R2) {
+template <typename DerivedX1, typename DerivedX2, typename DerivedR1,
+          typename DerivedR2>
+void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
+                              const Eigen::MatrixBase<DerivedX2>& x2,
+                              const Eigen::MatrixBase<DerivedR1>& R1,
+                              const Eigen::MatrixBase<DerivedR2>& R2) {
   DRAKE_ASSERT(x1.cols() == 1);
   DRAKE_ASSERT(x2.cols() == 1);
   DRAKE_ASSERT(x1.rows() == x2.rows());
@@ -199,7 +203,7 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
 
   MathematicalProgram prog;
   const int kXdim = x1.rows();
-  auto t = prog.AddContinuousVariables(2,"t");
+  auto t = prog.AddContinuousVariables(2, "t");
   auto a = prog.AddContinuousVariables(kXdim, "a");
   // R1a = R1' * a
   // R2a = R2' * a
@@ -210,10 +214,12 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
   MatrixXd R2_transpose = R2;
   R2_transpose.transposeInPlace();
   MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
-  A_R1a.block(0, 0, R1.cols(), R1.cols()) = MatrixXd::Identity(R1.cols(), R1.cols());
+  A_R1a.block(0, 0, R1.cols(), R1.cols()) =
+      MatrixXd::Identity(R1.cols(), R1.cols());
   A_R1a.block(0, R1.cols(), R1.cols(), R1.rows()) = -R1_transpose;
   MatrixXd A_R2a(R2.cols(), R2.cols() + R2.rows());
-  A_R2a.block(0, 0, R2.cols(), R2.cols()) = MatrixXd::Identity(R2.cols(), R2.cols());
+  A_R2a.block(0, 0, R2.cols(), R2.cols()) =
+      MatrixXd::Identity(R2.cols(), R2.cols());
   A_R2a.block(0, R2.cols(), R2.cols(), R2.rows()) = -R2_transpose;
   VectorXd b1 = VectorXd::Zero(R1.cols());
   VectorXd b2 = VectorXd::Zero(R2.cols());
@@ -221,7 +227,8 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
   prog.AddLinearEqualityConstraint(A_R2a, b2, {R2a, a});
 
   // a'*(x2 - x1) = 1
-  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), drake::Vector1d(1.0), {a});
+  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), drake::Vector1d(1.0),
+                                   {a});
 
   // Add cost
   auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
@@ -234,11 +241,15 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
 
   // Check the solution.
   // First check if each constraint is satisfied.
-  EXPECT_TRUE(CompareMatrices(R1a.value(), R1_transpose * a.value(), 1e-8, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(R2a.value(), R2_transpose * a.value(), 1e-8, MatrixCompareType::absolute));
-  EXPECT_TRUE(std::abs(t.value().coeff(0) - R1a.value().norm()) <= 1e-6);
-  EXPECT_TRUE(std::abs(t.value().coeff(1) - R2a.value().norm()) <= 1e-6);
-  EXPECT_TRUE(CompareMatrices((x2 - x1).transpose()*a.value(), drake::Vector1d(1.0), 1e-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(R1a.value(), R1_transpose * a.value(), 1e-8,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(R2a.value(), R2_transpose * a.value(), 1e-8,
+                              MatrixCompareType::absolute));
+  EXPECT_NEAR(t.value().coeff(0), R1a.value().norm(), 1e-6);
+  EXPECT_NEAR(t.value().coeff(1), R2a.value().norm(), 1e-6);
+  EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a.value(),
+                              drake::Vector1d(1.0), 1e-8,
+                              MatrixCompareType::absolute));
 
   // Now check if the solution is meaning, that it really finds a separating
   // hyperplane.
@@ -247,29 +258,31 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
   bool is_separated = p_star <= 1.0;
   double t1 = t.value().coeff(0);
   double t2 = t.value().coeff(1);
-  if(is_separated) {
+  if (is_separated) {
     // Then the hyperplane a' * x = 0.5 * (a'*x1 + t1 + a'*x2 - t2)
     double b1 = a.value().transpose() * x1 + t1;
     double b2 = a.value().transpose() * x2 - t2;
     double b = 0.5 * (b1 + b2);
     // Verify that b - a'*x1 >= |R1' * a|
     //             a'*x2 - b >= |R2' * a|
-    EXPECT_TRUE(b - a.value().transpose() * x1 >= (R1_transpose * a.value()).norm());
-    EXPECT_TRUE(a.value().transpose() * x2 - b >= (R2_transpose * a.value()).norm());
-  }
-  else {
+    EXPECT_TRUE(b - a.value().transpose() * x1 >=
+                (R1_transpose * a.value()).norm());
+    EXPECT_TRUE(a.value().transpose() * x2 - b >=
+                (R2_transpose * a.value()).norm());
+  } else {
     // Now solve another SOCP to find a point y in the intersecting region
     // y = x1 + R1*u1
     // y = x2 + R2*u2
     // 1 >= |u1|
     // 1 >= |u2|
     MathematicalProgram prog_intersect;
-    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(),"u1");
-    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(),"u2");
+    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(), "u1");
+    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), "u2");
     auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
 
     auto slack = prog_intersect.AddContinuousVariables(1, "slack");
-    prog_intersect.AddBoundingBoxConstraint(drake::Vector1d(1), drake::Vector1d(1), {slack});
+    prog_intersect.AddBoundingBoxConstraint(drake::Vector1d(1),
+                                            drake::Vector1d(1), {slack});
 
     prog_intersect.AddLorentzConeConstraint({slack, u1});
     prog_intersect.AddLorentzConeConstraint({slack, u2});
@@ -288,12 +301,15 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1> &x1,
     RunGurobiSolver(&prog_intersect);
 
     // Check if the constraints are satisfied
-    EXPECT_TRUE(u1.value().norm() <= 1);
-    EXPECT_TRUE(u2.value().norm() <= 1);
-    EXPECT_TRUE(CompareMatrices(y.value(), x1 + R1 * u1.value(), 1e-8, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y.value(), x2 + R2 * u2.value(), 1e-8, MatrixCompareType::absolute));
+    EXPECT_LE(u1.value().norm(), 1);
+    EXPECT_LE(u2.value().norm(), 1);
+    EXPECT_TRUE(CompareMatrices(y.value(), x1 + R1 * u1.value(), 1e-8,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(y.value(), x2 + R2 * u2.value(), 1e-8,
+                                MatrixCompareType::absolute));
   }
-};
+}
+
 GTEST_TEST(testGurobi, EllipsoidsSeparation) {
   // First test if two balls can be separated
   VectorXd x1 = Vector3d::Zero();
@@ -315,24 +331,18 @@ GTEST_TEST(testGurobi, EllipsoidsSeparation) {
   x1 = Eigen::Vector2d(1.0, 0.2);
   x2 = Eigen::Vector2d(0.5, 0.4);
   R1 = Eigen::Matrix2d::Zero();
-  R1 << 0.1, 0.6,
-        0.2, 1.3;
+  R1 << 0.1, 0.6, 0.2, 1.3;
   R2 = Eigen::Matrix2d::Zero();
-  R2 << -0.4, 1.5,
-        1.7, 0.3;
+  R2 << -0.4, 1.5, 1.7, 0.3;
   testEllipsoidsSeparation(x1, x2, R1, R2);
 
   // Test another two ellipsoids
   x1 = Eigen::Vector3d(1.0, 0.2, 0.8);
   x2 = Eigen::Vector3d(3.0, -1.5, 1.9);
   R1 = Eigen::Matrix3d::Zero();
-  R1 << 0.2, 0.4, 0.2,
-        -0.2, -0.1, 0.3,
-        0.2, 0.1, 0.1;
+  R1 << 0.2, 0.4, 0.2, -0.2, -0.1, 0.3, 0.2, 0.1, 0.1;
   R2 = Eigen::Matrix<double, 3, 2>::Zero();
-  R2 << 0.1, 0.2,
-        -0.1, 0.01,
-        -0.2, 0.1;
+  R2 << 0.1, 0.2, -0.1, 0.01, -0.2, 0.1;
   testEllipsoidsSeparation(x1, x2, R1, R2);
 }
 
@@ -357,12 +367,13 @@ GTEST_TEST(testGurobi, EllipsoidsSeparation) {
  * @param b_ub A column vector
  * @return The optimal solution x*.
  */
-template<typename DerivedQ, typename DerivedC, typename DerivedA, typename DerivedBlower, typename DerivedBupper>
-VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
-                       const Eigen::MatrixBase<DerivedC> &c,
-                       const Eigen::MatrixBase<DerivedA> &A,
-                       const Eigen::MatrixBase<DerivedBlower> &b_lb,
-                       const Eigen::MatrixBase<DerivedBupper> &b_ub) {
+template <typename DerivedQ, typename DerivedC, typename DerivedA,
+          typename DerivedBlower, typename DerivedBupper>
+VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
+                       const Eigen::MatrixBase<DerivedC>& c,
+                       const Eigen::MatrixBase<DerivedA>& A,
+                       const Eigen::MatrixBase<DerivedBlower>& b_lb,
+                       const Eigen::MatrixBase<DerivedBupper>& b_ub) {
   DRAKE_ASSERT(Q.rows() == Q.cols());
   MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
   const int kXdim = Q.rows();
@@ -381,28 +392,35 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
   auto z = prog_socp.AddContinuousVariables(1, "z");
   auto w = prog_socp.AddContinuousVariables(kXdim, "w");
 
-  prog_socp.AddBoundingBoxConstraint(drake::Vector1d(2.0), drake::Vector1d(2.0), {z});
+  prog_socp.AddBoundingBoxConstraint(drake::Vector1d(2.0), drake::Vector1d(2.0),
+                                     {z});
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
 
   Eigen::LLT<MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   MatrixXd Q_sqrt = lltOfQ.matrixU();
-  MatrixXd A_w(kXdim, 2*kXdim);
+  MatrixXd A_w(kXdim, 2 * kXdim);
   A_w << MatrixXd::Identity(kXdim, kXdim), -Q_sqrt;
-  prog_socp.AddLinearEqualityConstraint(A_w, VectorXd::Zero(kXdim), {w, x_socp});
+  prog_socp.AddLinearEqualityConstraint(A_w, VectorXd::Zero(kXdim),
+                                        {w, x_socp});
 
   prog_socp.AddLinearConstraint(A, b_lb, b_ub, {x_socp});
 
-  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(std::numeric_limits<double>::infinity())));
+  std::shared_ptr<LinearConstraint> cost_socp1(new LinearConstraint(
+      c.transpose(), drake::Vector1d(-std::numeric_limits<double>::infinity()),
+      drake::Vector1d(std::numeric_limits<double>::infinity())));
   prog_socp.AddCost(cost_socp1, {x_socp});
   prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
   RunGurobiSolver(&prog_socp);
-  double objective_value_socp = c.transpose() * x_socp.value() + y.value().coeff(0);
+  double objective_value_socp =
+      c.transpose() * x_socp.value() + y.value().coeff(0);
 
   // Check the solution
-  EXPECT_TRUE(std::abs(2*y.value().coeff(0) - w.value().squaredNorm()) <= 1E-6);
-  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1e-6, MatrixCompareType::absolute));
-  EXPECT_TRUE(y.value().coeff(0) >= 0);
-  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt*x_socp.value(), 1E-6, MatrixCompareType::absolute));
+  EXPECT_NEAR(2 * y.value().coeff(0), w.value().squaredNorm(), 1E-6);
+  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1e-6,
+                              MatrixCompareType::absolute));
+  EXPECT_GE(y.value().coeff(0), 0);
+  EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1E-6,
+                              MatrixCompareType::absolute));
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
@@ -410,20 +428,27 @@ VectorXd SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ> &Q,
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
   RunGurobiSolver(&prog_qp);
-  double objective_value_qp = 0.5 * (x_qp.value().transpose() * Q * x_qp.value()).coeff(0, 0) + c.transpose() * x_qp.value();
+  double objective_value_qp =
+      0.5 * (x_qp.value().transpose() * Q * x_qp.value()).coeff(0, 0) +
+      c.transpose() * x_qp.value();
 
-  // TODO(hongkai.dai@tri.global):tighten the tolerance. socp does not really converge to true optimal yet.
-  EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 1e-4, MatrixCompareType::absolute));
+  // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
+  // converge to true optimal yet.
+  EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 1e-4,
+                              MatrixCompareType::absolute));
   EXPECT_TRUE(std::abs(objective_value_qp - objective_value_socp) < 1E-6);
   return x_socp.value();
-};
+}
+
 GTEST_TEST(testGurobi, RotatedLorentzConeTest) {
   // Solve an un-constrained QP
   MatrixXd Q = Eigen::Matrix2d::Identity();
   VectorXd c = Eigen::Vector2d::Ones();
   MatrixXd A = Eigen::RowVector2d(0, 0);
-  VectorXd b_lb = VectorXd::Constant(1, -std::numeric_limits<double>::infinity());
-  VectorXd b_ub = VectorXd::Constant(1, std::numeric_limits<double>::infinity());
+  VectorXd b_lb =
+      VectorXd::Constant(1, -std::numeric_limits<double>::infinity());
+  VectorXd b_ub =
+      VectorXd::Constant(1, std::numeric_limits<double>::infinity());
   SolveQPasSOCP(Q, c, A, b_lb, b_ub);
 
   // Solve a constrained QP
@@ -439,8 +464,7 @@ GTEST_TEST(testGurobi, RotatedLorentzConeTest) {
   c(2) = 1.2;
 
   A = Eigen::Matrix<double, 2, 3>::Zero();
-  A << 1, 0, 2,
-       0, 1, 3;
+  A << 1, 0, 2, 0, 1, 3;
   b_lb = Eigen::Vector2d::Zero();
   b_lb(0) = -1;
   b_lb(1) = -2;

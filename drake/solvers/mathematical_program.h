@@ -9,9 +9,9 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/drake_export.h"
 #include "drake/solvers/Function.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
@@ -334,8 +334,7 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   const DecisionVariableView GetVariable(const std::string& name) const {
     for (auto& var : variable_views_) {
-      if (name.compare(var.name()) == 0)
-        return var;
+      if (name.compare(var.name()) == 0) return var;
     }
     throw std::runtime_error("unable to find variable: " + name);
   }
@@ -418,12 +417,15 @@ class DRAKE_EXPORT MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure
    */
-  template<typename DerivedC>
-  std::shared_ptr<LinearConstraint> AddLinearCost(const Eigen::MatrixBase<DerivedC>& c, const VariableList& vars) {
+  template <typename DerivedC>
+  std::shared_ptr<LinearConstraint> AddLinearCost(
+      const Eigen::MatrixBase<DerivedC>& c, const VariableList& vars) {
     using Scalar = typename DerivedC::Scalar;
-    std::shared_ptr<LinearConstraint> cost(new LinearConstraint(c,
-      drake::Vector1<Scalar>::Constant(-std::numeric_limits<Scalar>::infinity()),
-      drake::Vector1<Scalar>::Constant(std::numeric_limits<Scalar>::infinity())));
+    std::shared_ptr<LinearConstraint> cost(
+        new LinearConstraint(c, drake::Vector1<Scalar>::Constant(
+                                    -std::numeric_limits<Scalar>::infinity()),
+                             drake::Vector1<Scalar>::Constant(
+                                 std::numeric_limits<Scalar>::infinity())));
     AddCost(cost, vars);
     return cost;
   }
@@ -634,9 +636,11 @@ class DRAKE_EXPORT MathematicalProgram {
    * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
    * \f]
    */
-  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con, VariableList const& vars) {
+  void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
+                     VariableList const& vars) {
     required_capabilities_ |= kLorentzConeConstraint;
-    lorentz_cone_constraint_.push_back(Binding<LorentzConeConstraint>(con, vars));
+    lorentz_cone_constraint_.push_back(
+        Binding<LorentzConeConstraint>(con, vars));
   }
 
   /** AddLorentzConeConstraint
@@ -646,8 +650,10 @@ class DRAKE_EXPORT MathematicalProgram {
    * vars(0) >= \sqrt{vars(1)^2+...+vars(N-1)^2}
    * \f]
    */
-  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint( const VariableList& vars) {
-    std::shared_ptr<LorentzConeConstraint> constraint(new LorentzConeConstraint());
+  std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
+      const VariableList& vars) {
+    std::shared_ptr<LorentzConeConstraint> constraint(
+        new LorentzConeConstraint());
     AddConstraint(constraint, vars);
     return constraint;
   }
@@ -673,9 +679,11 @@ class DRAKE_EXPORT MathematicalProgram {
    * @param con A pointer to a RotatedLorentzConeConstraint object
    * @param vars A list of DecisionVariableView
    */
-  void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con, VariableList const& vars) {
+  void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
+                     VariableList const& vars) {
     required_capabilities_ |= kRotatedLorentzConeConstraint;
-    rotated_lorentz_cone_constraint_.push_back(Binding<RotatedLorentzConeConstraint>(con, vars));
+    rotated_lorentz_cone_constraint_.push_back(
+        Binding<RotatedLorentzConeConstraint>(con, vars));
   }
 
   /** AddRotatedLorentzConeConstraint
@@ -691,8 +699,10 @@ class DRAKE_EXPORT MathematicalProgram {
    *   auto con = prog.AddRotatedLorentzConeConstraint(x);
    * \endcode
    */
-  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(const VariableList& vars) {
-    std::shared_ptr<RotatedLorentzConeConstraint> constraint(new RotatedLorentzConeConstraint());
+  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const VariableList& vars) {
+    std::shared_ptr<RotatedLorentzConeConstraint> constraint(
+        new RotatedLorentzConeConstraint());
     AddConstraint(constraint, vars);
     return constraint;
   }
@@ -705,7 +715,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * vars(0)>=0, vars(1)>=0
    * \f]
    */
-  std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint() {
+  std::shared_ptr<RotatedLorentzConeConstraint>
+  AddRotatedLorentzConeConstraint() {
     return AddRotatedLorentzConeConstraint(variable_views_);
   }
 
@@ -982,12 +993,14 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /** Getter for Lorentz cone constraint */
-  const std::list<Binding<LorentzConeConstraint>>& lorentz_cone_constraints() const {
+  const std::list<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
+      const {
     return lorentz_cone_constraint_;
   }
 
   /** Getter for rotated Lorentz cone constraint */
-  const std::list<Binding<RotatedLorentzConeConstraint>>& rotated_lorentz_cone_constraints() const {
+  const std::list<Binding<RotatedLorentzConeConstraint>>&
+  rotated_lorentz_cone_constraints() const {
     return rotated_lorentz_cone_constraint_;
   }
 
@@ -999,8 +1012,7 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   std::list<Binding<Constraint>> GetAllCosts() const {
     std::list<Binding<Constraint>> costlist = generic_costs_;
-    costlist.insert(costlist.end(), linear_costs_.begin(),
-                    linear_costs_.end());
+    costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
     return costlist;
@@ -1076,7 +1088,8 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
   std::list<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
-  std::list<Binding<RotatedLorentzConeConstraint>> rotated_lorentz_cone_constraint_;
+  std::list<Binding<RotatedLorentzConeConstraint>>
+      rotated_lorentz_cone_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?

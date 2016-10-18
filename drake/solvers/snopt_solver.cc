@@ -1,18 +1,21 @@
 #include "drake/solvers/snopt_solver.h"
 
-#include <cstdlib>
-#include <memory>
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include "drake/math/autodiff.h"
 
 namespace snopt {
+// Needs to include snopt.hh BEFORE snfilewrapper.hh, otherwise compiler does
+// not work.
+// clang-format wants to switch the order of this inclusion, which causes
+// compiler failure.
 #include "snopt.hh"
 #include "snfilewrapper.hh"
 }
-
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
 // todo(sammy-tri) :  handle snopt options
@@ -175,12 +178,12 @@ struct SNOPTRun {
   }
 };
 
-template<typename _Binding>
-void EvaluateNonlinearConstraints(const std::list<_Binding>& constraint_list,
-                                  snopt::doublereal F[], snopt::doublereal G[],
-                                  size_t &constraint_index, size_t &grad_index,
-                                  TaylorVecXd &this_x, TaylorVecXd& ty,
-                                  const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic> &tx) {
+template <typename _Binding>
+void EvaluateNonlinearConstraints(
+    const std::list<_Binding>& constraint_list, snopt::doublereal F[],
+    snopt::doublereal G[], size_t& constraint_index, size_t& grad_index,
+    TaylorVecXd& this_x, TaylorVecXd& ty,
+    const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
@@ -193,12 +196,14 @@ void EvaluateNonlinearConstraints(const std::list<_Binding>& constraint_list,
     ty.resize(num_constraints);
     c->Eval(this_x, ty);
 
-    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
+    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
+         i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
     for (const DecisionVariableView& v : binding.variable_list()) {
-      for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
+      for (snopt::integer i = 0;
+           i < static_cast<snopt::integer>(num_constraints); i++) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
           G[grad_index++] =
               static_cast<snopt::doublereal>(ty(i).derivatives()(j));
@@ -209,12 +214,12 @@ void EvaluateNonlinearConstraints(const std::list<_Binding>& constraint_list,
 }
 
 int snopt_userfun(snopt::integer* Status, snopt::integer* n,
-                         snopt::doublereal x[], snopt::integer* needF,
-                         snopt::integer* neF, snopt::doublereal F[],
-                         snopt::integer* needG, snopt::integer* neG,
-                         snopt::doublereal G[], char* cu, snopt::integer* lencu,
-                         snopt::integer iu[], snopt::integer* leniu,
-                         snopt::doublereal ru[], snopt::integer* lenru) {
+                  snopt::doublereal x[], snopt::integer* needF,
+                  snopt::integer* neF, snopt::doublereal F[],
+                  snopt::integer* needG, snopt::integer* neG,
+                  snopt::doublereal G[], char* cu, snopt::integer* lencu,
+                  snopt::integer iu[], snopt::integer* leniu,
+                  snopt::doublereal ru[], snopt::integer* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
   MathematicalProgram const* current_problem = NULL;
@@ -263,30 +268,29 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   size_t grad_index = *n;
   EvaluateNonlinearConstraints(current_problem->generic_constraints(), F, G,
                                constraint_index, grad_index, this_x, ty, tx);
-  EvaluateNonlinearConstraints(current_problem->lorentz_cone_constraints(),
-                               F, G,
-                               constraint_index, grad_index, this_x, ty, tx);
-  EvaluateNonlinearConstraints(current_problem->rotated_lorentz_cone_constraints(),
-                               F, G,
-                               constraint_index, grad_index, this_x, ty, tx);
-
+  EvaluateNonlinearConstraints(current_problem->lorentz_cone_constraints(), F,
+                               G, constraint_index, grad_index, this_x, ty, tx);
+  EvaluateNonlinearConstraints(
+      current_problem->rotated_lorentz_cone_constraints(), F, G,
+      constraint_index, grad_index, this_x, ty, tx);
 
   return 0;
 }
 
 }  // anon namespace
 
-bool SnoptSolver::available() const {
-  return true;
-}
+bool SnoptSolver::available() const { return true; }
 
 /*
  * Updates the number of nonlinear constraints and the number of gradients by
  * looping through the constraint list
- * Derived is supposed to be MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS>
+ * Derived is supposed to be
+ * MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS>
  */
-template<typename _Binding>
-void UpdateNumNonlinearConstraintsAndGradients(const std::list<_Binding> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
+template <typename _Binding>
+void UpdateNumNonlinearConstraintsAndGradients(
+    const std::list<_Binding>& constraint_list,
+    size_t& num_nonlinear_constraints, size_t& max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
@@ -298,28 +302,31 @@ void UpdateNumNonlinearConstraintsAndGradients(const std::list<_Binding> &constr
 }
 
 template <typename _Binding>
-void UpdateConstraintBoundsAndGradients(const std::list<_Binding> &constraint_list, snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar, size_t &constraint_index, size_t &grad_index) {
-for (auto const& binding : constraint_list) {
-  auto const &c = binding.constraint();
-  size_t n = c->num_constraints();
+void UpdateConstraintBoundsAndGradients(
+    const std::list<_Binding>& constraint_list, snopt::doublereal* Flow,
+    snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
+    size_t& constraint_index, size_t& grad_index) {
+  for (auto const& binding : constraint_list) {
+    auto const& c = binding.constraint();
+    size_t n = c->num_constraints();
 
-  auto const lb = c->lower_bound(), ub = c->upper_bound();
-  for (size_t i = 0; i < n; i++) {
-    Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
-    Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
-  }
-
-  for (const DecisionVariableView &v : binding.variable_list()) {
+    auto const lb = c->lower_bound(), ub = c->upper_bound();
     for (size_t i = 0; i < n; i++) {
-      for (size_t j = 0; j < v.size(); j++) {
-        iGfun[grad_index] = constraint_index + i + 1;  // row order
-        jGvar[grad_index] = v.index() + j + 1;
-        grad_index++;
+      Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
+      Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
+    }
+
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < v.size(); j++) {
+          iGfun[grad_index] = constraint_index + i + 1;  // row order
+          jGvar[grad_index] = v.index() + j + 1;
+          grad_index++;
+        }
       }
     }
+    constraint_index += n;
   }
-  constraint_index += n;
-}
 }
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
@@ -352,9 +359,14 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
-  UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(), num_nonlinear_constraints, max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(prog.lorentz_cone_constraints(), num_nonlinear_constraints, max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(prog.rotated_lorentz_cone_constraints(), num_nonlinear_constraints, max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.generic_constraints(), num_nonlinear_constraints, max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(prog.lorentz_cone_constraints(),
+                                            num_nonlinear_constraints,
+                                            max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.rotated_lorentz_cone_constraints(), num_nonlinear_constraints,
+      max_num_gradients);
 
   size_t num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
@@ -383,9 +395,15 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the cost is the
                                                  // first row
-  UpdateConstraintBoundsAndGradients(prog.generic_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
-  UpdateConstraintBoundsAndGradients(prog.lorentz_cone_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
-  UpdateConstraintBoundsAndGradients(prog.rotated_lorentz_cone_constraints(), Flow, Fupp, iGfun,jGvar, constraint_index, grad_index);
+  UpdateConstraintBoundsAndGradients(prog.generic_constraints(), Flow, Fupp,
+                                     iGfun, jGvar, constraint_index,
+                                     grad_index);
+  UpdateConstraintBoundsAndGradients(prog.lorentz_cone_constraints(), Flow,
+                                     Fupp, iGfun, jGvar, constraint_index,
+                                     grad_index);
+  UpdateConstraintBoundsAndGradients(prog.rotated_lorentz_cone_constraints(),
+                                     Flow, Fupp, iGfun, jGvar, constraint_index,
+                                     grad_index);
 
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
@@ -400,8 +418,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();
     for (const DecisionVariableView& v : binding.variable_list()) {
       for (size_t k = 0; k < v.size(); ++k) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(
-                 A_constraint, var_index + k);
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint,
+                                                           var_index + k);
              it; ++it) {
           tripletList.push_back(
               T(linear_constraint_index + it.row(), v.index() + k, it.value()));

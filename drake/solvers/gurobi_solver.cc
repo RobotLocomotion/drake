@@ -43,16 +43,14 @@ namespace {
  * http://www.gurobi.com/documentation/6.5/refman/error_codes.html#sec:ErrorCodes
  */
 template <typename DerivedA, typename DerivedB>
-int AddLinearConstraint(GRBmodel *model,
-                        const Eigen::MatrixBase<DerivedA> &A,
-                        const Eigen::MatrixBase<DerivedB> &b,
+int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
+                        const Eigen::MatrixBase<DerivedB>& b,
                         const VariableList& variable_list,
-                        char constraint_sense,
-                        double sparseness_threshold) {
+                        char constraint_sense, double sparseness_threshold) {
   // variable_indices[i] is the index of the i'th variable
   std::vector<int> variable_indices;
   variable_indices.reserve(A.cols());
-  for(const DecisionVariableView &var : variable_list) {
+  for (const DecisionVariableView& var : variable_list) {
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
       variable_indices.push_back(var.index() + i);
     }
@@ -78,8 +76,9 @@ int AddLinearConstraint(GRBmodel *model,
   return 0;
 }
 
-int AddLorentzConeConstraints(GRBmodel* model, const MathematicalProgram& prog) {
-  for(const auto& binding : prog.lorentz_cone_constraints()) {
+int AddLorentzConeConstraints(GRBmodel* model,
+                              const MathematicalProgram& prog) {
+  for (const auto& binding : prog.lorentz_cone_constraints()) {
     // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
     // qrow to store the row    indices of the non-zero entries of Q
     // qcol to store the column indices of the non-zero entries of Q
@@ -89,7 +88,7 @@ int AddLorentzConeConstraints(GRBmodel* model, const MathematicalProgram& prog) 
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
     auto variable_list = binding.variable_list();
-    for(const DecisionVariableView &var : variable_list) {
+    for (const DecisionVariableView& var : variable_list) {
       for (int i = 0; i < static_cast<int>(var.size()); i++) {
         variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
@@ -103,17 +102,20 @@ int AddLorentzConeConstraints(GRBmodel* model, const MathematicalProgram& prog) 
     qrow.push_back(variable_indices[0]);
     qcol.push_back(variable_indices[0]);
     qval.push_back(-1.0);
-    for(int i = 1; i < num_constraint_variable; i++) {
+    for (int i = 1; i < num_constraint_variable; i++) {
       qrow.push_back(variable_indices[i]);
       qcol.push_back(variable_indices[i]);
       qval.push_back(1.0);
     }
-    error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
-    if(error) {
+    error =
+        GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
+    if (error) {
       return error;
     }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
-    if(error) {
+    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable,
+                          qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL,
+                          0.0, NULL);
+    if (error) {
       return error;
     }
   }
@@ -125,8 +127,9 @@ int AddLorentzConeConstraints(GRBmodel* model, const MathematicalProgram& prog) 
  * x(0) * x(1) >= x(2)^2 + .. x(N-1)^2
  * x(0) >= 0, x(1) >= 0
  */
-int AddRotatedLorentzConeConstraint(GRBmodel* model, const MathematicalProgram &prog) {
-  for(const auto &binding : prog.rotated_lorentz_cone_constraints()) {
+int AddRotatedLorentzConeConstraint(GRBmodel* model,
+                                    const MathematicalProgram& prog) {
+  for (const auto& binding : prog.rotated_lorentz_cone_constraints()) {
     // Build a matrix Q = [0 -1 0 0 ... 0]
     //                    [0  0 0 0 ... 0]
     //                    [0  0 1 0 ... 0]
@@ -141,7 +144,7 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model, const MathematicalProgram &
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
     auto variable_list = binding.variable_list();
-    for(const DecisionVariableView &var : variable_list) {
+    for (const DecisionVariableView& var : variable_list) {
       for (int i = 0; i < static_cast<int>(var.size()); i++) {
         variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
@@ -155,21 +158,23 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model, const MathematicalProgram &
     qrow.push_back(variable_indices[0]);
     qcol.push_back(variable_indices[1]);
     qval.push_back(-1.0);
-    for(int i = 2; i < num_constraint_variable; i++) {
+    for (int i = 2; i < num_constraint_variable; i++) {
       qrow.push_back(variable_indices[i]);
       qcol.push_back(variable_indices[i]);
       qval.push_back(1.0);
     }
     // x[0] >= 0, x[1] >= 0
-    for(int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; i++) {
       error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[i],
                                    0.0);
       if (error) {
         return error;
       }
     }
-    error = GRBaddqconstr(model, 0, nullptr, nullptr, num_constraint_variable - 1, qrow.data(), qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
-    if(error) {
+    error = GRBaddqconstr(model, 0, nullptr, nullptr,
+                          num_constraint_variable - 1, qrow.data(), qcol.data(),
+                          qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
+    if (error) {
       return error;
     }
   }
@@ -214,9 +219,8 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
       for (int j = i + 1; j < Q.cols(); j++) {
         const double Qij = 0.5 * (Q(i, j) + Q(j, i));
         if (abs(Qij) > sparseness_threshold) {
-          Q_nonzero_coefs.push_back(
-              Eigen::Triplet<double>(constraint_variable_index[i],
-                                     constraint_variable_index[j], Qij));
+          Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
+              constraint_variable_index[i], constraint_variable_index[j], Qij));
         }
       }
     }
@@ -230,13 +234,14 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   }
 
   // add linear cost
-  for(const auto &binding : prog.linear_costs()) {
+  for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for(const DecisionVariableView& var : binding.variable_list()) {
-      for(int i = 0; i< static_cast<int>(var.size()); i++) {
-        b_nonzero_coefs.push_back(Eigen::Triplet<double>(var.index() + i, 0, c(constraint_variable_count)));
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        b_nonzero_coefs.push_back(Eigen::Triplet<double>(
+            var.index() + i, 0, c(constraint_variable_count)));
         constraint_variable_count++;
       }
     }
@@ -295,9 +300,9 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
-    const int error =
-        AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
-            binding.variable_list(), GRB_EQUAL, sparseness_threshold);
+    const int error = AddLinearConstraint(
+        model, constraint->A(), constraint->lower_bound(),
+        binding.variable_list(), GRB_EQUAL, sparseness_threshold);
     if (error) {
       return error;
     }
@@ -311,9 +316,9 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
     if (constraint->lower_bound() !=
         -Eigen::MatrixXd::Constant((constraint->lower_bound()).rows(), 1,
                                    std::numeric_limits<double>::infinity())) {
-      const int error =
-          AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
-              binding.variable_list(), GRB_GREATER_EQUAL, sparseness_threshold);
+      const int error = AddLinearConstraint(
+          model, constraint->A(), constraint->lower_bound(),
+          binding.variable_list(), GRB_GREATER_EQUAL, sparseness_threshold);
       if (error) {
         return error;
       }
@@ -321,9 +326,9 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
     if (constraint->upper_bound() !=
         Eigen::MatrixXd::Constant((constraint->upper_bound()).rows(), 1,
                                   std::numeric_limits<double>::infinity())) {
-      const int error =
-          AddLinearConstraint(model, constraint->A(), constraint->upper_bound(),
-              binding.variable_list(), GRB_LESS_EQUAL, sparseness_threshold);
+      const int error = AddLinearConstraint(
+          model, constraint->A(), constraint->upper_bound(),
+          binding.variable_list(), GRB_LESS_EQUAL, sparseness_threshold);
       if (error) {
         return error;
       }
@@ -331,12 +336,12 @@ int ProcessConstraints(GRBmodel* model, MathematicalProgram& prog,
   }
 
   const int kLorentzError = AddLorentzConeConstraints(model, prog);
-  if(kLorentzError) {
+  if (kLorentzError) {
     return kLorentzError;
   }
 
   const int kRotatedLorentzError = AddRotatedLorentzConeConstraint(model, prog);
-  if(kRotatedLorentzError) {
+  if (kRotatedLorentzError) {
     return kRotatedLorentzError;
   }
   // If loop completes, no errors exist so the value '0' must be returned.
@@ -379,8 +384,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   }
 
   GRBmodel* model = nullptr;
-  GRBnewmodel(env, &model, "gurobi_model", num_vars, nullptr, &xlow[0], &xupp[0], nullptr,
-              nullptr);
+  GRBnewmodel(env, &model, "gurobi_model", num_vars, nullptr, &xlow[0],
+              &xupp[0], nullptr, nullptr);
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
