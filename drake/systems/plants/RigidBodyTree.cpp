@@ -2021,13 +2021,15 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
-const RigidBody* RigidBodyTree::FindBody(DrakeCollision::ElementId elementId) {
+const RigidBody* RigidBodyTree::FindBody(DrakeCollision::ElementId element_id) {
   const DrakeCollision::Element* element =
-      collision_model_->FindElement(elementId);
+      collision_model_->FindElement(element_id);
   if (element != nullptr) {
     return element->get_body();
   }
-  return nullptr;
+  throw std::logic_error(
+      "RigidBodyTree::FindBody: ERROR: Could not find body for collision " +
+          "element id: " + std::to_string(element_id) + ".");
 }
 
 std::vector<const RigidBody*>
