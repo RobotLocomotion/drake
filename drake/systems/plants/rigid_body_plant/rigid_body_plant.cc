@@ -264,7 +264,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     }
   }
 
-  right_hand_side -= ComputeContactForce(kinsol, v);
+  right_hand_side -= ComputeContactForce(kinsol);
 
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
@@ -375,12 +375,12 @@ void RigidBodyPlant<T>::ComputeContactResults(
   VectorX<T> v = x.bottomRows(nv);
   auto kinsol = tree_->doKinematics(q, v);
 
-  ComputeContactForce(kinsol, v, contacts);
+  ComputeContactForce(kinsol, contacts);
 }
 
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
-    const KinematicsCache<T> &kinsol, const VectorX<T> &v,
+    const KinematicsCache<T>& kinsol,
     ContactResults<T> * contacts) const {
 
   VectorX<T> phi;
@@ -394,7 +394,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   const_cast<RigidBodyTree*>(tree_.get())->collisionDetectElements(
       kinsol, phi, normal, xA, xB, elA_idx, elB_idx);
 
-  VectorX<T> contact_force(v.rows(), 1);
+  VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
   // TODO(SeanCurtis-TRI): Determine if a distance of zero should be reported
   //  as a zero-force contact.
@@ -429,7 +429,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       R.row(1) = tangent2;
       R.row(2) = this_normal;
       auto J = R * (JA - JB);          // J = [ D1; D2; n ]
-      auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
+      // [ tangent1dot; tangent2dot; phidot ]
+      auto relative_velocity = J * kinsol.getV();
 
       {
         // Spring law for normal force:  fA_normal = -k * phi - b * phidot
