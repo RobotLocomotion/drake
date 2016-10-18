@@ -933,8 +933,100 @@ MathematicalProgram prog;
       << "\tActual: " << actual_answer.transpose();
 }
 
-// TODO(hongkai.dai@tri.global): add a test to solve an second order conic
-// problem through nonlinear solver.
+/**
+ * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
+ * nonlinear optimization problem
+ * The object tive is to find the smallest distance from a hyperplane
+ * A * x = b to the origin.
+ * We can solve the following SOCP with Lorentz cone constraint
+ * min  t
+ *  s.t t >= sqrt(x'*x)
+ *      A * x = b
+ * Alternatively, we can solve the following SOCP with rotated Lorentz cone
+ * constraint
+ * min t
+ * s.t t >= x'*x
+ *     A * x = b
+ *
+ * The optimal solution of this equality constrained QP can be found using
+ * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
+ * satisfy
+ * A_hat * [x*; z*] = [b; 0]
+ * where A_hat = [A 0; 2*I A']
+ */
+void MinDistanceFromPlaneToOrigin(const MatrixXd & A, const VectorXd b) {
+  DRAKE_ASSERT(A.rows() == b.rows());
+  const int xDim = A.cols();
+  MathematicalProgram prog_lorentz;
+  auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
+  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
+  prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
+  prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
+  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
+
+  // A_hat = [A 0; 2*I A']
+  MatrixXd A_hat(A.rows() + A.cols(), A.rows() + A.cols());
+  A_hat.topLeftCorner(A.rows(), A.cols()) = A;
+  A_hat.topRightCorner(A.rows(), A.rows()) = MatrixXd::Zero(A.rows(), A.rows());
+  A_hat.bottomLeftCorner(A.cols(), A.cols()) = 2*MatrixXd::Identity(A.cols(), A.cols());
+  A_hat.bottomRightCorner(A.cols(), A.rows()) = A.transpose();
+  VectorXd b_hat(A.rows() + A.cols());
+  b_hat << b, VectorXd::Zero(A.cols());
+  VectorXd xz_expected = A_hat.colPivHouseholderQr().solve(b_hat);
+  VectorXd x_expected = xz_expected.head(xDim);
+  
+  double cost_expected_lorentz = x_expected.norm();
+  RunNonlinearProgram(prog_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+  });
+
+  MathematicalProgram prog_rotated_lorentz;
+  auto t_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(1, "t");
+  auto x_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
+  auto slack_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(1, "slack");
+  prog_rotated_lorentz.AddRotatedLorentzConeConstraint({t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddBoundingBoxConstraint(drake::Vector1d(1.0), drake::Vector1d(1.0), {slack_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
+
+  double cost_expected_rotated_lorentz = x_expected.squaredNorm();
+  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz.value().coeff(0), 1E-3);
+  });
+
+  // now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
+  // The optimal solution and the costs are still the same, but now we test
+  // Lorentz cone (rotated Lorentz cone) constraints with generic nonlinear
+  // constraints
+  std::shared_ptr<QuadraticConstraint> quadratic_constraint(new QuadraticConstraint(MatrixXd::Identity(xDim, xDim), VectorXd::Zero(xDim), 0, x_expected.squaredNorm()));
+
+  prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
+  RunNonlinearProgram(prog_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+  });
+
+  prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
+  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5, MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz.value().coeff(0), 1E-3);
+  });
+
+}
+
+GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
+  MatrixXd A = Matrix<double, 1, 2>::Ones();
+  VectorXd b = drake::Vector1d(2);
+  MinDistanceFromPlaneToOrigin(A, b);
+
+  A = Matrix<double, 2, 3>::Zero();
+  A << 0, 1, 2,
+       -1, 2, 3;
+  b = Vector2d(1.0, 3.0);
+  MinDistanceFromPlaneToOrigin(A, b);
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

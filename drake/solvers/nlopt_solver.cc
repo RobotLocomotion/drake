@@ -337,6 +337,14 @@ SolutionResult NloptSolver::Solve(MathematicalProgram &prog) const {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
   }
 
+  for (const auto& c : prog.lorentz_cone_constraints()) {
+    WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
+  }
+
+  for (const auto& c : prog.rotated_lorentz_cone_constraints()) {
+    WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
+  }
+
   for (const auto& c : prog.linear_equality_constraints()) {
     WrapConstraint(c, constraint_tol, &opt, &wrapped_list);
   }

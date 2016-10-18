@@ -175,6 +175,39 @@ struct SNOPTRun {
   }
 };
 
+template<typename _Binding>
+void EvaluateNonlinearConstraints(const std::list<_Binding>& constraint_list,
+                                  snopt::doublereal F[], snopt::doublereal G[],
+                                  size_t &constraint_index, size_t &grad_index,
+                                  TaylorVecXd &this_x, TaylorVecXd& ty,
+                                  const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic> &tx) {
+  for (auto const& binding : constraint_list) {
+    auto const& c = binding.constraint();
+    size_t index = 0, num_constraints = c->num_constraints();
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      this_x.conservativeResize(index + v.size());
+      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
+      index += v.size();
+    }
+
+    ty.resize(num_constraints);
+    c->Eval(this_x, ty);
+
+    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
+      F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
+    }
+
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
+        for (size_t j = v.index(); j < v.index() + v.size(); j++) {
+          G[grad_index++] =
+              static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+        }
+      }
+    }
+  }
+}
+
 int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                          snopt::doublereal x[], snopt::integer* needF,
                          snopt::integer* neF, snopt::doublereal F[],
@@ -228,32 +261,15 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   size_t constraint_index = 1;
   // The gradient_index also starts after the cost.
   size_t grad_index = *n;
+  EvaluateNonlinearConstraints(current_problem->generic_constraints(), F, G,
+                               constraint_index, grad_index, this_x, ty, tx);
+  EvaluateNonlinearConstraints(current_problem->lorentz_cone_constraints(),
+                               F, G,
+                               constraint_index, grad_index, this_x, ty, tx);
+  EvaluateNonlinearConstraints(current_problem->rotated_lorentz_cone_constraints(),
+                               F, G,
+                               constraint_index, grad_index, this_x, ty, tx);
 
-  for (auto const& binding : current_problem->generic_constraints()) {
-    auto const& c = binding.constraint();
-    size_t index = 0, num_constraints = c->num_constraints();
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      this_x.conservativeResize(index + v.size());
-      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
-      index += v.size();
-    }
-
-    ty.resize(num_constraints);
-    c->Eval(this_x, ty);
-
-    for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
-      F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
-    }
-
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      for (i = 0; i < static_cast<snopt::integer>(num_constraints); i++) {
-        for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-          G[grad_index++] =
-              static_cast<snopt::doublereal>(ty(i).derivatives()(j));
-        }
-      }
-    }
-  }
 
   return 0;
 }
@@ -269,8 +285,8 @@ bool SnoptSolver::available() const {
  * looping through the constraint list
  * Derived is supposed to be MathematicalProgram::Binding<SOME_TYPE_OF_NONLINEAR_CONSTRAINTS>
  */
-template<typename Derived>
-void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
+template<typename _Binding>
+void UpdateNumNonlinearConstraintsAndGradients(const std::list<_Binding> &constraint_list, size_t &num_nonlinear_constraints, size_t &max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
@@ -281,8 +297,8 @@ void UpdateNumNonlinearConstraintsAndGradients(const std::list<Derived> &constra
   }
 }
 
-template <typename Derived>
-void UpdateConstraintBoundsAndGradients(const std::list<Derived> &constraint_list, snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar, size_t &constraint_index, size_t &grad_index) {
+template <typename _Binding>
+void UpdateConstraintBoundsAndGradients(const std::list<_Binding> &constraint_list, snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar, size_t &constraint_index, size_t &grad_index) {
 for (auto const& binding : constraint_list) {
   auto const &c = binding.constraint();
   size_t n = c->num_constraints();
