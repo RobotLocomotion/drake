@@ -6,7 +6,10 @@
 #include <set>
 #include <gurobi_c++.h>
 
+// TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace std;
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>

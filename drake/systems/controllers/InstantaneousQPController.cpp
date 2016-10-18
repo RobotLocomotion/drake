@@ -21,6 +21,8 @@ const double REG = 1e-8;
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
+// TODO(jwnimmer-tri) Someone with gurobi has to fix this.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07

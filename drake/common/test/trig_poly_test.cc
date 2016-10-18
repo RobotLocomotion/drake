@@ -7,9 +7,6 @@
 
 #include "drake/common/polynomial.h"
 
-using namespace Eigen;
-using namespace std;
-
 namespace drake {
 namespace util {
 namespace {

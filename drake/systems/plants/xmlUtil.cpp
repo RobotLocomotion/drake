@@ -12,9 +12,13 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
+using std::cerr;
+using std::endl;
+using std::istringstream;
+using std::map;
+using std::string;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   if (val == nullptr) {

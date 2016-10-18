@@ -6,6 +6,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -15,14 +16,24 @@
 #include "drake/util/drakeUtil.h"
 
 #include <algorithm>
-#include <limits>
-#include <string>
-#include "KinematicsCache.h"
-
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <string>
 
-using namespace Eigen;
+using Eigen::AutoDiffScalar;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Isometry;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix4Xd;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Transform;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 using drake::AutoDiffUpTo73d;
 using drake::AutoDiffXd;

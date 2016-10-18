@@ -1,7 +1,9 @@
 #include "PiecewiseFunction.h"
+
 #include <stdexcept>
 
-using namespace std;
+using std::uniform_real_distribution;
+using std::vector;
 
 PiecewiseFunction::PiecewiseFunction(
     std::vector<double> const& segment_times_in)

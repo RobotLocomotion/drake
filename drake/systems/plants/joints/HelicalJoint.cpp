@@ -1,6 +1,6 @@
 #include "HelicalJoint.h"
 
-using namespace Eigen;
+using Eigen::Vector3d;
 
 drake::TwistVector<double> HelicalJoint::spatialJointAxis(const Vector3d& axis,
                                                           double pitch) {

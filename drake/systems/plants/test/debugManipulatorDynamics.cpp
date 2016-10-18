@@ -5,9 +5,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-using namespace std;
-
 using Eigen::VectorXd;
+using std::cout;
+using std::endl;
+using std::default_random_engine;
 
 int main() {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");

@@ -6,7 +6,9 @@
 #include "drake/systems/feedback_system.h"
 #include "drake/systems/test/system_test_util.h"
 
+// NOLINTNEXTLINE(build/namespaces) This code will be deleted soon.
 using namespace std;
+// NOLINTNEXTLINE(build/namespaces) This code will be deleted soon.
 using namespace Eigen;
 
 namespace drake {
