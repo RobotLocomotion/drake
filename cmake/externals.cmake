@@ -3,7 +3,8 @@ include(ExternalProject)
 find_package(Git REQUIRED)
 
 if(CMAKE_GENERATOR STREQUAL "Ninja")
-  # The Ninja generator does not support Fortran
+  # The Ninja generator does not support Fortran, so manually find the Fortran
+  # compiler and set any flags passed in by environment variable
   find_program(CMAKE_Fortran_COMPILER "$ENV{FC}" DOC "Fortran compiler")
   set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
     "Flags for Fortran compiler")
