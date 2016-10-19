@@ -209,8 +209,8 @@ void DoMapQDotToVelocity(
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
-  /// @param kinsol         The kinematics of the rigid body system at the time of
-  ///                       contact evaluation.
+  /// @param kinsol         The kinematics of the rigid body system at the time
+  ///                       of contact evaluation.
   /// @param[out] contacts  The optional contact results.  If non-null, stores
   ///                       the contact information for consuming on the output
   ///                       port.
