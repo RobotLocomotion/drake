@@ -31,5 +31,8 @@ target_link_libraries(multiplexer_test drakeSystemFramework)
 drake_add_cc_test(time_varying_polynomial_source_test)
 target_link_libraries(time_varying_polynomial_source_test drakeSystemFramework)
 
+drake_add_cc_test(time_varying_polynomial_traj_src_test)
+target_link_libraries(time_varying_polynomial_traj_src_test drakeSystemFramework)
+
 drake_add_cc_test(zero_order_hold_test)
 target_link_libraries(zero_order_hold_test drakeSystemFramework)

@@ -13,12 +13,13 @@ template <typename T>
 TimeVaryingPolynomialTrajSrc<T>::TimeVaryingPolynomialTrajSrc(
     const PiecewisePolynomialTrajectory<double>& pp_traj)
     : pp_traj_(pp_traj) {
-  this->DeclareOutputPort(kVectorValued, pp_traj_.rows(), kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, pp_traj_.length(),
+                          kContinuousSampling);
 }
 
 template <typename T>
-void TimeVaryingPolynomialTrajSrc<T>::EvalOutput(const Context<T>& context,
-                                                SystemOutput<T>* output) const {
+void TimeVaryingPolynomialTrajSrc<T>::EvalOutput(
+    const Context<T>& context, SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
   T time = context.get_time();
   System<T>::GetMutableOutputVector(output, 0) = pp_traj_.value(time);
