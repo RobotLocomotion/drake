@@ -8,11 +8,12 @@ namespace systems {
 
 /**
   The base class for defining a contact response.  It consists of a wrench
-  and a point at which that wrench is applied.  Both are expressed in the
-  world frame.
+  and a point.  The point is measured and expressed in the world frame and
+  serves as the origin of a world-aligned frame in which the wrench is
+  expressed.
 
   These two pieces of data are considered to be the minimum amount of data,
-  regardless of the contact model used. However, he intention is for the
+  regardless of the contact model used. However, the intention is for the
   creation of new sub-classes which augment the set of per-contact point
   data based on other contact models.
 
