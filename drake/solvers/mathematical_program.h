@@ -196,10 +196,18 @@ class DRAKE_EXPORT MathematicalProgram {
   class Binding {
     std::shared_ptr<C> constraint_;
     VariableList variable_list_;
+    std::vector<int> variable_indices_; // This stores the indices of all the
+                                        // variables in the variable_list_;
 
    public:
     Binding(const std::shared_ptr<C>& c, const VariableList& v)
-        : constraint_(c), variable_list_(v) {}
+        : constraint_(c), variable_list_(v) {
+      for(const auto &var : variable_list_) {
+        for(int i = 0; i < var.size(); ++i) {
+          variable_indices_.push_back(var.index() + i);
+        }
+      }
+    }
     template <typename U>
     Binding(
         const Binding<U>& b,
@@ -261,6 +269,8 @@ class DRAKE_EXPORT MathematicalProgram {
         solution_index += view.size();
       }
     }
+
+    std::vector<int> const& variable_indices() const {return variable_indices_;}
   };
 
   template <typename F>
