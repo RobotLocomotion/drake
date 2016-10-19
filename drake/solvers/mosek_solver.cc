@@ -102,10 +102,36 @@ MSKrescodee AddLinearConstraints(MSKtask_t &task,
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
+
+  return rescode;
 }
 
 MSKrescodee AddCosts(MSKtask_t &task, const MathematicalProgram &prog) {
-
+  // Add the cost in the form 0.5 * x' * Q_all * x + linear_terms' * x
+  MSKrescodee rescode;
+  int xDim = prog.num_vars();
+  std::vector<Eigen::Triplet<double>> linear_term_triplets;
+  for(const auto &binding : prog.linear_costs()) {
+    int var_count = 0;
+    Eigen::RowVectorXd c = binding.constraint()->A();
+    for(const DecisionVariableView &var : binding.variable_list()) {
+      for(int i = 0; i < static_cast<int>(var.size()); ++i) {
+        if(std::abs(c(var_count)) > std::numeric_limits<double>::epsilon()) {
+          linear_term_triplets.push_back(Eigen::Triplet<double>(var.index() + i, 0, c(var_count)));
+        }
+        var_count++;
+      }
+    }
+  }
+  Eigen::SparseMatrix<double, Eigen::ColMajor> linear_terms(xDim, 1);
+  linear_terms.setFromTriplets(linear_term_triplets.begin(), linear_term_triplets.end());
+  for(Eigen::SparseMatrix<double, Eigen::ColMajor>::InnerIterator it(linear_terms, 0); it; ++it) {
+    rescode = MSK_putcj(task, it.row(), it.value());
+    if(rescode != MSK_RES_OK) {
+      return rescode;
+    }
+  }
+  return rescode;
 }
 } // end namespace
 
@@ -113,6 +139,7 @@ MSKrescodee AddCosts(MSKtask_t &task, const MathematicalProgram &prog) {
 bool MosekSolver::available() const { return true; }
 
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+  int num_vars = prog.num_vars();
   MSKenv_t env = NULL;
   MSKtask_t task = NULL;
   MSKrescodee rescode;
@@ -124,7 +151,57 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     rescode = MSK_maketask(env, 0, prog.num_vars(), &task);
   }
   // Add linear constraints
-  rescode = AddLinearConstraints(env, task, prog);
+  if(rescode == MSK_RES_OK) {
+    rescode = AddLinearConstraints(task, prog);
+  }
+  if(rescode == MSK_RES_OK) {
+    rescode = AddCosts(task, prog);
+  }
+
+  SolutionResult result = SolutionResult::kUnknownError;
+  // Run optimizer.
+  if(rescode == MSK_RES_OK) {
+    MSKrescodee trmcode; // termination code
+    rescode = MSK_optimizetrm(task, &trmcode);
+  }
+
+  if(rescode == MSK_RES_OK) {
+    MSKsolstae solsta;
+    if(rescode == MSK_RES_OK) {
+      rescode = MSK_getsolsta(task, MSK_SOL_BAS, &solsta);
+    }
+    if(rescode == MSK_RES_OK) {
+      switch (solsta) {
+        case MSK_SOL_STA_OPTIMAL:
+        case MSK_SOL_STA_NEAR_OPTIMAL: {
+          result = SolutionResult::kSolutionFound;
+          Eigen::VectorXd sol_vector(num_vars);
+          MSK_getxx(task, MSK_SOL_BAS, sol_vector.data());
+          prog.SetDecisionVariableValues(sol_vector);
+          break;
+        }
+        case MSK_SOL_STA_DUAL_INFEAS_CER:
+        case MSK_SOL_STA_PRIM_INFEAS_CER:
+        case MSK_SOL_STA_NEAR_DUAL_FEAS:
+        case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
+          result = SolutionResult::kInfeasibleConstraints;
+          break;
+        }
+        default: {
+          result = SolutionResult::kUnknownError;
+          break;
+        }
+      }
+    }
+  }
+
+  if(rescode != MSK_RES_OK) {
+    result = SolutionResult ::kUnknownError;
+  }
+
+  MSK_deletetask(&task);
+  MSK_deleteenv(&env);
+  return result;
 }
 
 }
