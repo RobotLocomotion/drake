@@ -35,14 +35,14 @@ class SampleCollisionManifoldTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Do not change these values; tests rely on them as is
-    p0_ = TestVector::Zero(3, 1);
-    w0_ = TestWrench::Zero(6, 1);
+    p0_ = TestVector::Zero();
+    w0_ = TestWrench::Zero();
     p1_ << 0, 1, 0;
-    w1_ << 0, 1, 0, 0, 0, 0;
+    w1_ << 0, 0, 0, 0, 1, 0;
     p2_ << 0, 0, 1;
-    w2_ << 0, 0, 2, 0, 0, 0;
+    w2_ << 0, 0, 0, 0, 0, 2;
     p3_ << 1, 0, 1;
-    w3_ << 1, 0, 0, 0, 0, 0;
+    w3_ << 0, 0, 0, 1, 0, 0;
   }
 
  protected:
@@ -63,22 +63,22 @@ TEST_F(SampleCollisionManifoldTest, ZeroForceManifold) {
   // test on empty manifold
   SampledContactManifold<double> manifold;
   auto net = manifold.ComputeNetResponse();
-  EXPECT_TRUE(CompareMatrices(net.get_application_point(), p0_));
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), w0_));
+  EXPECT_TRUE(CompareMatrices(net.get_application_point(), TestVector::Zero()));
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), TestWrench::Zero()));
 
   // Single zero force
-  auto zeroForce = make_unique<TestContactDetail>(p0_, w0_);
-  manifold.AddContactDetail(move(zeroForce));
+  auto zero_contact = make_unique<TestContactDetail>(p0_, w0_);
+  manifold.AddContactDetail(move(zero_contact));
   net = manifold.ComputeNetResponse();
-  EXPECT_TRUE(CompareMatrices(net.get_application_point(), p0_));
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), w0_));
+  EXPECT_TRUE(CompareMatrices(net.get_application_point(), TestVector::Zero()));
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), TestWrench::Zero()));
 
   // two zero forces
-  zeroForce = make_unique<TestContactDetail>(p1_, w0_);
-  manifold.AddContactDetail(move(zeroForce));
+  zero_contact = make_unique<TestContactDetail>(p1_, w0_);
+  manifold.AddContactDetail(move(zero_contact));
   net = manifold.ComputeNetResponse();
-  EXPECT_TRUE(CompareMatrices(net.get_application_point(), p0_));
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), w0_));
+  EXPECT_TRUE(CompareMatrices(net.get_application_point(), TestVector::Zero()));
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), TestWrench::Zero()));
 }
 
 // Performs the work of adding details to the manifold, confirming that they
@@ -87,17 +87,17 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
   // test on empty manifold
   SampledContactManifold<double> manifold;
   EXPECT_EQ(0, manifold.get_num_contacts());
-  EXPECT_EQ(nullptr, manifold.get_ith_contact(0));
+  EXPECT_THROW(manifold.get_ith_contact(0), std::logic_error);
 
   // Zero force
-  auto zeroForce = make_unique<TestContactDetail>(p0_, w0_);
-  manifold.AddContactDetail(move(zeroForce));
+  auto zero_contact = make_unique<TestContactDetail>(p0_, w0_);
+  manifold.AddContactDetail(move(zero_contact));
   EXPECT_EQ(1, manifold.get_num_contacts());
   auto detail = manifold.get_ith_contact(0);
   TestVector p = detail->get_application_point();
   TestWrench w = detail->get_wrench();
-  EXPECT_TRUE(CompareMatrices(p, p0_));
-  EXPECT_TRUE(CompareMatrices(w, w0_));
+  EXPECT_TRUE(CompareMatrices(p, TestVector::Zero()));
+  EXPECT_TRUE(CompareMatrices(w, TestWrench::Zero()));
 
   // Two forces
   auto unitYForce = make_unique<TestContactDetail>(p1_, w1_);
@@ -128,22 +128,22 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
 
   // Test on single force
   TestWrench w1;
-  w1 << 0, 0, 0, 1, 0, 0;
-  auto xTorque = make_unique<TestContactDetail>(p0_, w1);
-  manifold.AddContactDetail(move(xTorque));
+  w1 << 1, 0, 0, 0, 0, 0;
+  auto x_torque = make_unique<TestContactDetail>(p0_, w1);
+  manifold.AddContactDetail(move(x_torque));
   auto net = manifold.ComputeNetResponse();
-  EXPECT_EQ(net.get_application_point(), p0_);
+  EXPECT_EQ(net.get_application_point(), TestVector::Zero());
   EXPECT_EQ(net.get_wrench(), w1);
 
   // two planar forces
   TestWrench w2;
-  w2 << 0, 0, 0, 0, 1, 0;
-  auto yTorque = make_unique<TestContactDetail>(p2_, w2);
-  manifold.AddContactDetail(move(yTorque));
+  w2 << 0, 1, 0, 0, 0, 0;
+  auto y_torque = make_unique<TestContactDetail>(p2_, w2);
+  manifold.AddContactDetail(move(y_torque));
   net = manifold.ComputeNetResponse();
-  TestWrench expectedW;
-  expectedW << 0, 0, 0, 1, 1, 0;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expectedW));
+  TestWrench expected_wrench;
+  expected_wrench << 1, 1, 0, 0, 0, 0;
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
 }
 
 
@@ -154,8 +154,8 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   SampledContactManifold<double> manifold;
 
   // Test on single force
-  auto unitYForce = make_unique<TestContactDetail>(p1_, w1_);
-  manifold.AddContactDetail(move(unitYForce));
+  auto unit_y_force = make_unique<TestContactDetail>(p1_, w1_);
+  manifold.AddContactDetail(move(unit_y_force));
   auto net = manifold.ComputeNetResponse();
   EXPECT_EQ(net.get_application_point(), p1_);
   EXPECT_EQ(net.get_wrench(), w1_);
@@ -164,25 +164,25 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   auto zForce = make_unique<TestContactDetail>(p2_, w2_);
   manifold.AddContactDetail(move(zForce));
   net = manifold.ComputeNetResponse();
-  TestVector expectedPt;
-  expectedPt << 0, 1 / 3., 2 / 3.;
-  EXPECT_TRUE(CompareMatrices(net.get_application_point(), expectedPt));
-  TestWrench expectedW;
-  expectedW << 0, 1, 2, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expectedW));
+  TestVector expected_point;
+  expected_point << 0, 1 / 3., 2 / 3.;
+  EXPECT_TRUE(CompareMatrices(net.get_application_point(), expected_point));
+  TestWrench expected_wrench;
+  expected_wrench << 0, 0, 0, 0, 1, 2;
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
 
   // two non-planar forces
   SampledContactManifold<double> manifold2;
-  unitYForce = make_unique<TestContactDetail>(p1_, w1_);
-  manifold2.AddContactDetail(move(unitYForce));
+  unit_y_force = make_unique<TestContactDetail>(p1_, w1_);
+  manifold2.AddContactDetail(move(unit_y_force));
   auto skewForce = make_unique<TestContactDetail>(p3_, w3_);
   manifold2.AddContactDetail(move(skewForce));
 
   net = manifold2.ComputeNetResponse();
-  expectedPt << 0.5, 0.5, 0.5;
-  EXPECT_TRUE(CompareMatrices(net.get_application_point(), expectedPt));
-  expectedW << 1, 1, 0, -0.5, -0.5, 0;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expectedW));
+  expected_point << 0.5, 0.5, 0.5;
+  EXPECT_TRUE(CompareMatrices(net.get_application_point(), expected_point));
+  expected_wrench << -0.5, -0.5, 0, 1, 1, 0;
+  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
 }
 }  // namespace test
 }  // namespace rigid_body_plant
