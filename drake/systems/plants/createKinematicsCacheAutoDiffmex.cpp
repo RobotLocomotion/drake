@@ -22,6 +22,7 @@ void destructKinematicsCache(const mxArray *mex) {
  * * createKinematicsCacheAutoDiffmex(model_ptr, num_derivs) to construct
  * * createKinematicsCacheAutoDiffmex(cache_ptr) to destruct
  */
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs == 0 && nrhs == 1) {
     // if a KinematicsCache is passed in, then assume the destructor is being

@@ -9,6 +9,7 @@
 using Eigen::Isometry3d;
 using Eigen::Vector4d;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 6 || nlhs != 7) {
     mexErrMsgIdAndTxt("Drake:testGeometryGradientsmex:BadInputs",

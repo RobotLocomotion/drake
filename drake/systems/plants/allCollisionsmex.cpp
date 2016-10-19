@@ -14,6 +14,7 @@ using namespace std;
  * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 3) {
     mexErrMsgIdAndTxt("Drake:allCollisions:NotEnoughInputs",

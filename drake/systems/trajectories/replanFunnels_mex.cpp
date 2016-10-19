@@ -719,6 +719,7 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
 /************************ Main mex function
  * ***************************************************************/
 /* Main mex funtion*/
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (lenrw == 0) {  // then initialize (sninit needs some default allocation)
     lenrw = DEFAULT_LENRW;
