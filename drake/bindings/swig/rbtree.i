@@ -111,9 +111,9 @@
   }
 
   Eigen::Matrix4d relativeTransform(
-      const KinematicsCache<double> &cache, int to_body_or_frame_ind, int from_body_or_frame_ind) const
+      const KinematicsCache<double>& cache, int base_or_frame_ind, int body_or_frame_ind) const
   {
-    return $self->relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).matrix();
+    return $self->relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
   }
 
   Eigen::Matrix3Xd getTerrainContactPoints(
