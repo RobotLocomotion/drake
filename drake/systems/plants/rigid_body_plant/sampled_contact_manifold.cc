@@ -29,7 +29,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
 
     wrench += contact_wrench;
 
-    T weight = contact_wrench.template head<3>().norm();
+    T weight = contact_wrench.template tail<3>().norm();
     scale += weight;
     point += contact_point * weight;
   }
@@ -38,13 +38,13 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   const T kEpsilon = 1e-10;
   if (scale > kEpsilon) point /= scale;
 
-  auto accum_torque = wrench.template tail<3>();
+  auto accum_torque = wrench.template head<3>();
   for (const auto & detail : contact_details_) {
     const Vector3<T>& contact_point = detail->get_application_point();
     // cross product doesn't work on "head"
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
     accum_torque += (point - contact_point).cross(
-        contact_wrench.template head<3>());
+        contact_wrench.template tail<3>());
   }
 
   return ContactDetail<T>(point, wrench);

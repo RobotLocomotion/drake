@@ -151,7 +151,7 @@ TEST_F(ContactResultTest, SingleCollision) {
   double force = stiffness * offset * 2;
   WrenchVector<double> expected_F;
   // force goes from body2 to body2
-  expected_F << -force, 0, 0, 0, 0, 0;
+  expected_F << 0, 0, 0, -force, 0, 0;
   ASSERT_TRUE(CompareMatrices(detail->get_wrench(), expected_F));
 }
 }  // namespace test

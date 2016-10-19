@@ -496,8 +496,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           Vector3<T> point = (xA.col(i) + xB.col(i)) * 0.5;
 
           WrenchVector<T> wrench;
-          wrench.template head<3>() = R.transpose() * fA;
-          wrench.template tail<3>().setZero();
+          wrench.template head<3>().setZero();
+          wrench.template tail<3>() = R.transpose() * fA;
 
           // TODO(SeanCurtis-TRI): This call would have to change based on the
           //  contact model.  This call instantiates a sampled contact manifold.
