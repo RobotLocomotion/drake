@@ -23,7 +23,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   Vector3<T> point = Vector3<T>::Zero();
   T scale = 0;
 
-  for ( const auto & detail : contact_details_ ) {
+  for (const auto & detail : contact_details_) {
     const Vector3<T>& contact_point = detail->get_application_point();
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
 
