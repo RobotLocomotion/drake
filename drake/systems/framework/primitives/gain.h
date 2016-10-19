@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -26,13 +27,21 @@ namespace systems {
 template <typename T>
 class Gain : public LeafSystem<T> {
  public:
-  /// Constructs a %Gain system.
-  /// @param k the gain constant so that `y = k*u`.
-  /// @param size number of elements in the signal to be processed.
+  /// Constructs a %Gain system where the same gain is applied to every input
+  /// value.
+  ///
+  /// @param[in] k the gain constant so that `y = k * u`.
+  /// @param[in] size number of elements in the signal to be processed.
   Gain(const T& k, int size);
 
+  /// Constructs a %Gain system the different gains can be applied to each input
+  /// value.
+  ///
+  /// @param k the gain constants so that `y = k * u`.
+  Gain(const VectorX<T>& gain);
+
   /// Returns the gain constant.
-  const T& get_gain() const;
+  const VectorX<T>& get_gain() const;
 
   /// Sets the output port value to the product of the gain and the input port
   /// value. The gain is specified in the constructor.
@@ -49,7 +58,7 @@ class Gain : public LeafSystem<T> {
 
  private:
   // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
-  const T gain_;
+  const VectorX<T> gain_;
 };
 
 }  // namespace systems

@@ -42,11 +42,12 @@ class PidControllerTest : public ::testing::Test {
     context_->SetInputPort(1, MakeInput(std::move(vec1)));
   }
 
-  const double kp_{2.0};
-  const double ki_{3.0};
-  const double kd_{1.0};
   const int port_size_{3};
-  PidController<double> controller_{kp_, ki_, kd_, port_size_};
+  const VectorX<double> kp_{VectorX<double>::Ones(port_size_) * 2.0};
+  const VectorX<double> ki_{VectorX<double>::Ones(port_size_) * 3.0};
+  const VectorX<double> kd_{VectorX<double>::Ones(port_size_) * 1.0};
+
+  PidController<double> controller_{kp_, ki_, kd_};
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -73,7 +74,8 @@ TEST_F(PidControllerTest, EvalOutput) {
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
-  EXPECT_EQ(kp_ * error_signal_ + kd_ * error_rate_signal_,
+  EXPECT_EQ((kp_.array() * error_signal_.array() +
+            kd_.array() * error_rate_signal_.array()).matrix(),
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
@@ -82,7 +84,9 @@ TEST_F(PidControllerTest, EvalOutput) {
   controller_.set_integral_value(context_.get(), integral_value);
   controller_.EvalOutput(*context_, output_.get());
   EXPECT_EQ(
-      kp_ * error_signal_ + ki_ * integral_value + kd_ * error_rate_signal_,
+      (kp_.array() * error_signal_.array() +
+       ki_.array() * integral_value.array() +
+       kd_.array() * error_rate_signal_.array()).matrix(),
       output_vector->get_value());
 }
 

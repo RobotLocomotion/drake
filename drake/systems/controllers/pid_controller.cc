@@ -10,18 +10,30 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-PidController<T>::PidController(
-    const T& Kp, const T& Ki, const T& Kd, int size) : Diagram<T>() {
-  DRAKE_ASSERT(Kp >= 0);
-  DRAKE_ASSERT(Ki >= 0);
-  DRAKE_ASSERT(Kd >= 0);
+PidController<T>::PidController(const T& Kp, const T& Ki, const T& Kd, int size)
+    : PidController(VectorX<T>::Ones(size) * Kp, VectorX<T>::Ones(size) * Ki,
+      VectorX<T>::Ones(size) * Kd) { }
+
+template <typename T>
+PidController<T>::PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
+    const VectorX<T>& Kd) : Diagram<T>() {
+  const int size = Kp.size();
   DRAKE_ASSERT(size > 0);
+
+  DRAKE_ASSERT(Ki.size() == size);
+  DRAKE_ASSERT(Kd.size() == size);
+
+  for (int i = 0; i < size; ++i) {
+    DRAKE_ASSERT(Kp(i) >= 0);
+    DRAKE_ASSERT(Ki(i) >= 0);
+    DRAKE_ASSERT(Kd(i) >= 0);
+  }
 
   DiagramBuilder<T> builder;
   pass_through_ = builder.AddSystem(make_unique<PassThrough<T>>(size));
-  proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp, size));
-  integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki, size));
-  derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd, size));
+  proportional_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kp));
+  integral_gain_ = builder.AddSystem(make_unique<Gain<T>>(Ki));
+  derivative_gain_ = builder.AddSystem(make_unique<Gain<T>>(Kd));
   integrator_ = builder.AddSystem(make_unique<Integrator<T>>(size));
   adder_ = builder.AddSystem(make_unique<Adder<T>>(3 /* inputs */, size));
 
@@ -43,23 +55,26 @@ PidController<T>::PidController(
 }
 
 template <typename T>
-T PidController<T>::get_Kp() const {
+const VectorX<T>& PidController<T>::get_Kp() const {
   return proportional_gain_->get_gain();
 }
 
 template <typename T>
-T PidController<T>::get_Ki() const {
+const VectorX<T>& PidController<T>::get_Ki() const {
   return integral_gain_->get_gain();
 }
 
 template <typename T>
-T PidController<T>::get_Kd() const {
+const VectorX<T>& PidController<T>::get_Kd() const {
   return derivative_gain_->get_gain();
 }
 
 template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
-  if (get_Kp() == 0 && get_Kd() == 0) return false;
+  if (get_Kp() == VectorX<T>::Ones(get_Kp().size()) * 0 &&
+      get_Kd() == VectorX<T>::Ones(get_Kd().size()) * 0) {
+    return false;
+  }
   return true;
 }
 

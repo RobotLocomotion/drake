@@ -34,23 +34,34 @@ namespace systems {
 template <typename T>
 class PidController : public Diagram<T> {
  public:
-  /// Constructs a %PidController system.
+  /// Constructs a %PidController system where each gain vector contains only
+  /// a single gain.
+  ///
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
   /// @param Kd the derivative constant.
   /// @param size number of elements in the signal to be processed.
   PidController(const T& Kp, const T& Ki, const T& Kd, int size);
 
+  /// Constructs a %PidController system where each gain vector can contain
+  /// multiple different values.
+  ///
+  /// @param Kp the proportional vector constant.
+  /// @param Ki the integral vector constant.
+  /// @param Kd the derivative vector constant.
+  PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
+                const VectorX<T>& Kd);
+
   ~PidController() override {}
 
   /// Returns the proportional constant.
-  T get_Kp() const;
+  const VectorX<T>& get_Kp() const;
 
   /// Returns the integral constant.
-  T get_Ki() const;
+  const VectorX<T>& get_Ki() const;
 
   /// Returns the derivative constant.
-  T get_Kd() const;
+  const VectorX<T>& get_Kd() const;
 
   // System<T> overrides
   /// A PID controller directly feedthroughs the error signal to the output when
