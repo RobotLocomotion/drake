@@ -39,6 +39,7 @@ expmap2quatWithSecondDeriv(const MatrixBase<Map<const Vector3d>>& expmap) {
   return make_tuple(quat, dquat, ddquat);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs == 1) {
     auto func_double = make_function(&expmap2quat<Map<const Vector3d>>);

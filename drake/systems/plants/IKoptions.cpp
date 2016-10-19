@@ -1,8 +1,13 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/IKoptions.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::MatrixXd;
+using Eigen::RowVectorXd;
+using Eigen::SelfAdjointEigenSolver;
+using Eigen::VectorXd;
+using std::cerr;
+using std::endl;
+using std::set;
 
 IKoptions::IKoptions(RigidBodyTree *robot) {
   // It is important to make sure these default values are consistent with the

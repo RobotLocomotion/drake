@@ -1,7 +1,7 @@
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   if(lcm_FOUND)
     macro(add_qplocomotionplan_mex)
-      add_mex(${ARGV} ${ARGV}.cpp)
+      drake_add_mex(${ARGV} ${ARGV}.cpp)
       target_link_libraries(${ARGV} drakeQPLocomotionPlan drakeMexUtil)
     endmacro()
 

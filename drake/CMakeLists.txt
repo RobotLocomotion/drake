@@ -32,9 +32,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3)
+  find_package(PythonInterp 3 REQUIRED)
 else()
-  find_package(PythonInterp)
+  find_package(PythonInterp REQUIRED)
 endif()
 
 # set up pods
@@ -130,10 +130,6 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
   else()
-    # Search for MATLAB and configure various MEX options.
-    # If MATLAB is found, MATLAB_FOUND is set.
-    mex_setup()
-
     # Use find_package to find "all of matlab" along with what is needed to use
     # matlab_add_unit_test and matlab_add_mex
     find_package(Matlab REQUIRED
@@ -214,22 +210,19 @@ include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 include_directories(thirdParty/bsd/spruce/include)
 
+add_subdirectory(thirdParty/bsd/spruce)
+add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
 add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
+  add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(systems)
-add_subdirectory(thirdParty/bsd/GetFullPath)
-add_subdirectory(thirdParty/bsd/spruce)
-add_subdirectory(thirdParty/zlib/tinyxml2)
-if(NOT WIN32)
-  # This subdirectory does not support windows.
-  add_subdirectory(automotive)
-endif()
+add_subdirectory(automotive)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)
@@ -280,7 +273,7 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)

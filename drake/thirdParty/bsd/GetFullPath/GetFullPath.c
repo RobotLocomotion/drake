@@ -114,6 +114,7 @@ typedef enum OutStyle_ENUM OutStyle_T;
 mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle);
 
 // Main function ===============================================================
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   const mxArray *In, *String;

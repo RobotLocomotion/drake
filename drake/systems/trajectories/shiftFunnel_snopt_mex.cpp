@@ -543,6 +543,7 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary,
 }
 
 /* Main mex funtion*/
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (lenrw == 0) {  // then initialize (sninit needs some default allocation)
     lenrw = DEFAULT_LENRW;

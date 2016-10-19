@@ -6,6 +6,21 @@ target_link_libraries(functional_form_test drakeCommon)
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 
+drake_add_cc_test(symbolic_variable_test)
+target_link_libraries(symbolic_variable_test drakeCommon)
+
+drake_add_cc_test(symbolic_variables_test)
+target_link_libraries(symbolic_variables_test drakeCommon)
+
+drake_add_cc_test(symbolic_environment_test)
+target_link_libraries(symbolic_environment_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_test)
+target_link_libraries(symbolic_expression_test drakeCommon)
+
+drake_add_cc_test(symbolic_formula_test)
+target_link_libraries(symbolic_formula_test drakeCommon)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 
@@ -147,7 +162,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
 endif()
 
 # Rules for cpplint_wrapper.py.
-if(PYTHONINTERP_FOUND AND WITH_GOOGLE_STYLEGUIDE)
+if(WITH_GOOGLE_STYLEGUIDE)
   drake_add_test(NAME cpplint_wrapper_test COMMAND
     ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cpplint_wrapper_test.py)
 endif()

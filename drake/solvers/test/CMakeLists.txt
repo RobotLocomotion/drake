@@ -15,6 +15,10 @@ target_link_libraries(system_identification_test drakeOptimization)
 drake_add_cc_test(NAME fastqp_solver_test)
 target_link_libraries(fastqp_solver_test drakeOptimization)
 
+
+drake_add_cc_test(constraint_test)
+target_link_libraries(constraint_test drakeOptimization drakeCommon)
+
 if(gurobi_FOUND)
   drake_add_cc_test(gurobi_solver_test)
   target_link_libraries(gurobi_solver_test drakeOptimization)

@@ -386,12 +386,12 @@ class DRAKE_EXPORT FunctionalForm {
     /** Return \c true if \c lhs and \c rhs represent the same set.  */
     friend DRAKE_EXPORT
         bool
-        operator==(Variables const& lhs, Variables const& rhs);
+        operator==(const Variables& lhs, const Variables& rhs);
 
     /** Return \c false if \c lhs and \c rhs represent the same set.  */
     friend DRAKE_EXPORT
         bool
-        operator!=(Variables const& lhs, Variables const& rhs);
+        operator!=(const Variables& lhs, const Variables& rhs);
 
    private:
     explicit Variables(std::vector<Variable>&& vars);

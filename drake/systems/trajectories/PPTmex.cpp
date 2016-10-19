@@ -81,6 +81,7 @@ class PPTrajectory {
   }
 };
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs == 4 && nlhs == 1) {
     // create object

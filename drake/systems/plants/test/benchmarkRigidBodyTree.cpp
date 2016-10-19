@@ -5,14 +5,26 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Dynamic;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using drake::common::test::MeasureExecutionTime;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using std::cout;
+using std::default_random_engine;
+using std::endl;
+using std::make_pair;
+using std::map;
+using std::pair;
+using std::string;
+using std::uniform_real_distribution;
+using std::vector;
 
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;

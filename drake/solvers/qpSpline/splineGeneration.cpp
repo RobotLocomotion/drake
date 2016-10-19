@@ -8,8 +8,15 @@
 
 #include "drake/common/drake_assert.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Dynamic;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::VectorXd;
+using std::endl;
+using std::runtime_error;
+using std::stringstream;
+using std::vector;
 
 template <typename DerivedM>
 void setConstraintMatrixPart(double time, int derivative_order,
