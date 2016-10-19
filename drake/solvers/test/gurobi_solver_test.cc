@@ -34,17 +34,19 @@ GTEST_TEST(testGurobi, gurobiLPExample1) {
 
   prog.AddLinearCost(Eigen::RowVector2d(2.0, 1.0));
   Eigen::Matrix<double, 3, 2> A;
-  A << -1, 1,
-        1, 1,
-        1, -2;
-  Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0, -std::numeric_limits<double>::infinity());
+  A << -1, 1, 1, 1, 1, -2;
+  Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0,
+                       -std::numeric_limits<double>::infinity());
   Eigen::Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
   prog.AddLinearConstraint(A, b_lb, b_ub);
-  prog.AddBoundingBoxConstraint(drake::Vector1d(0), drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+  prog.AddBoundingBoxConstraint(
+      drake::Vector1d(0),
+      drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
 
   RunGurobiSolver(&prog);
   Eigen::Vector2d x_expected(0.5, 1.5);
-  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-10,
+                              MatrixCompareType::absolute));
 }
 
 /// Adapt from the simple test on the Gurobi documentation.
@@ -79,10 +81,7 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
   // some rows have both bounds.
   // some rows have none.
   Eigen::Matrix<double, 4, 3> A1;
-  A1 << 1,  2, 3,
-       -1, -1, 0,
-        1,  1, 2,
-        3,  1, 3;
+  A1 << 1, 2, 3, -1, -1, 0, 1, 1, 2, 3, 1, 3;
   Eigen::Vector4d b_lb(4, -std::numeric_limits<double>::infinity(),
                        -std::numeric_limits<double>::infinity(), -20);
   Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), -1,
