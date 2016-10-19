@@ -409,10 +409,7 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddCost(std::shared_ptr<LinearConstraint> const& obj,
                VariableList const& vars) {
     required_capabilities_ |= kLinearCost;
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
-    }
+    int var_dim = VariableListSize(vars);
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
     linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
   }
@@ -443,10 +440,7 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddCost(std::shared_ptr<QuadraticConstraint> const& obj,
                VariableList const& vars) {
     required_capabilities_ |= kQuadraticCost;
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
-    }
+    int var_dim = VariableListSize(vars);
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
@@ -530,10 +524,7 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
-    }
+    int var_dim = VariableListSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
@@ -572,10 +563,7 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearEqualityConstraint;
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
-    }
+    int var_dim = VariableListSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
@@ -619,10 +607,7 @@ class DRAKE_EXPORT MathematicalProgram {
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                      VariableList const& vars) {
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = 0;
-    for (const auto& var : vars) {
-      var_dim += var.size();
-    }
+    int var_dim = VariableListSize(vars);
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }

@@ -24,6 +24,7 @@ void RunGurobiSolver(MathematicalProgram* prog) {
 //  subj to        x + 2 y + 3 z >= 4
 //                -x -   y       <= -1
 //        -20 <=         y + 2 z <= 100
+//       -inf <=   x +   y + 2 z <= inf
 //               3 x +   y + 3 z  = 3
 GTEST_TEST(testGurobi, gurobiQPExample1) {
   MathematicalProgram prog;
@@ -44,14 +45,20 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
 
   prog.AddQuadraticCost(Q, b);
 
-  // This test handles the case that in one LinearConstraint, some rows are
-  // "LESS_THAN", some rows are "GREATER_THAN"
-  Eigen::Matrix<double, 3, 3> A1;
+  // This test handles the case that in one LinearConstraint,
+  // some rows have active upper bounds;
+  // some rows have active lower bounds;
+  // some rows have both bounds.
+  // some rows have none.
+  Eigen::Matrix<double, 4, 3> A1;
   A1 << 1,  2, 3,
        -1, -1, 0,
+        1,  1, 2,
         3,  1, 3;
-  Eigen::Vector3d b_lb(4, -std::numeric_limits<double>::infinity(), -20);
-  Eigen::Vector3d b_ub(std::numeric_limits<double>::infinity(), -1, 100);
+  Eigen::Vector4d b_lb(4, -std::numeric_limits<double>::infinity(),
+                       -std::numeric_limits<double>::infinity(), -20);
+  Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), -1,
+                       std::numeric_limits<double>::infinity(), 100);
   prog.AddLinearConstraint(A1, b_lb, b_ub);
   // This test also handles linear equality constraint
   prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3),
@@ -179,7 +186,7 @@ GTEST_TEST(testGurobi, addLinearConstraintTest) {
  * E1 = x1 + R1 * u1, u1' * u1<=1
  * E2 = x2 + R2 * u2, u2' * u2<=1
  * A hyperplane a' * x = b separates these two ellipsoids, if and only if for
- * SOCP p* = min t1 + t2f
+ * SOCP p* = min t1 + t2
  *           s.t t1 >= |R1' * a|
  *               t2 >= |R2' * a|
  *               a'*(x2-x1) = 1
@@ -212,10 +219,8 @@ void testEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   // R2a = R2' * a
   auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
   auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
-  MatrixXd R1_transpose = R1;
-  R1_transpose.transposeInPlace();
-  MatrixXd R2_transpose = R2;
-  R2_transpose.transposeInPlace();
+  MatrixXd R1_transpose = R1.transpose();
+  MatrixXd R2_transpose = R2.transpose();
   MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
   A_R1a.block(0, 0, R1.cols(), R1.cols()) =
       MatrixXd::Identity(R1.cols(), R1.cols());
@@ -354,7 +359,7 @@ GTEST_TEST(testGurobi, EllipsoidsSeparation) {
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
  * For a quadratic program
  * 0.5 * x' * Q * x + c' * x
- * s.t A * x <= b
+ * s.t b_lb <= A * x <= b_ub
  * It can be casted as an SOCP, as follows
  * By introducing a new variable w = Q^{1/2}*x and y, z
  * The equivalent SOCP is

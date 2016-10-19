@@ -136,6 +136,13 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 };
 
 typedef std::list<DecisionVariableView> VariableList;
+inline int VariableListSize(const VariableList &vars) {
+  int var_dim = 0;
+  for (const auto& var : vars) {
+    var_dim += var.size();
+  }
+  return var_dim;
+}
 
 }  // end namespace solvers
 }  // end namespace drake

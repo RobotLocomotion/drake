@@ -923,24 +923,24 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
 
 /**
  * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
- * nonlinear optimization problem
- * The object tive is to find the smallest distance from a hyperplane
+ * nonlinear optimization problem.
+ * The objective is to find the smallest distance from a hyperplane
  * A * x = b to the origin.
  * We can solve the following SOCP with Lorentz cone constraint
  * min  t
  *  s.t t >= sqrt(x'*x)
- *      A * x = b
+ *      A * x = b.
  * Alternatively, we can solve the following SOCP with rotated Lorentz cone
  * constraint
  * min t
  * s.t t >= x'*x
- *     A * x = b
+ *     A * x = b.
  *
  * The optimal solution of this equality constrained QP can be found using
  * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
  * satisfy
  * A_hat * [x*; z*] = [b; 0]
- * where A_hat = [A 0; 2*I A']
+ * where A_hat = [A 0; 2*I A'].
  */
 void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   DRAKE_ASSERT(A.rows() == b.rows());
@@ -1008,10 +1008,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
                 t_rotated_lorentz.value().coeff(0), 1E-3);
   });
 
-  // now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
+  // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
   // The optimal solution and the costs are still the same, but now we test
   // Lorentz cone (rotated Lorentz cone) constraints with generic nonlinear
-  // constraints
+  // constraints.
   std::shared_ptr<QuadraticConstraint> quadratic_constraint(
       new QuadraticConstraint(MatrixXd::Identity(xDim, xDim),
                               VectorXd::Zero(xDim), 0,
