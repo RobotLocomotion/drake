@@ -474,7 +474,9 @@ void RigidBodyTree::updateDynamicCollisionElements(
 }
 
 void RigidBodyTree::getTerrainContactPoints(
-    const RigidBody& body, Eigen::Matrix3Xd* terrain_points) const {
+    const RigidBody& body,
+    Eigen::Matrix3Xd* terrain_points,
+    const std::string& group_name) const {
   // Ensures terrain_points is a valid pointer.
   DRAKE_DEMAND(terrain_points);
 
@@ -482,11 +484,29 @@ void RigidBodyTree::getTerrainContactPoints(
   size_t num_points = 0;
   terrain_points->resize(Eigen::NoChange, 0);
 
+  vector<DrakeCollision::ElementId> element_ids;
+
+  // If a group name was given, use it to look up the subset of collision
+  // elements that belong to that group.  Otherwise, use the full set of
+  // collision elements that belong to the body.
+  if (!group_name.empty()) {
+    auto group_map = body.get_group_to_collision_ids_map();
+    auto map_iter = group_map.find(group_name);
+    if (map_iter == group_map.end()) {
+      throw runtime_error("RigidBodyTree::getTerrainContactPoints: "
+        "could not find collision group named: " + group_name);
+    }
+
+    element_ids = map_iter->second;
+  } else {
+    element_ids = body.get_collision_element_ids();
+  }
+
   // Iterates through each collision element in the rigid body. For each
   // collision element, obtain its contact points with the terrain and add it to
   // to the matrix pointed to by parameter terrain_points.
-  for (auto id_iter = body.get_collision_element_ids().begin();
-       id_iter != body.get_collision_element_ids().end(); ++id_iter) {
+  for (auto id_iter = element_ids.begin();
+      id_iter != element_ids.end(); ++id_iter) {
     Matrix3Xd element_points;
     collision_model_->getTerrainContactPoints(*id_iter, element_points);
     terrain_points->conservativeResize(
