@@ -7,8 +7,6 @@ namespace systems {
 
 template class DRAKE_EXPORT Gain<double>;
 template class DRAKE_EXPORT Gain<AutoDiffXd>;
-template class DRAKE_EXPORT Gain<Eigen::AutoDiffScalar<Eigen::Matrix<double, 2,
-    1, Eigen::DontAlign>>>;
 
 }  // namespace systems
 }  // namespace drake
