@@ -26,7 +26,7 @@ namespace systems {
  that contact can vary based on the nature of the collision and contact models.
 
  However, all manifolds support the concept of a "net" applied wrench which is
- the accumulated affect of the applying the full manifold into a single
+ the accumulated affect of applying the full manifold into a single
  equivalent wrench applied at a single point represented as a ContactDetail.
  (@see ContactDetail).
 
@@ -44,7 +44,7 @@ class DRAKE_EXPORT ContactManifold {
    Computes a single contact detail -- wrench and application point -- which
    is equivalent to applying all individual contact wrenches, independently.
 
-   @returns the single net wrench.
+   @returns the single net contact response.
    */
   virtual ContactDetail<T> ComputeNetResponse() const = 0;
 
