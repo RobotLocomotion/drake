@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
 
-#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+#include <Eigen/Geometry>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
@@ -43,6 +43,7 @@ class SampleCollisionManifoldTest : public ::testing::Test {
     w2_ << 0, 0, 0, 0, 0, 2;
     p3_ << 1, 0, 1;
     w3_ << 0, 0, 0, 1, 0, 0;
+    origin_ << -10, -10, -10;
   }
 
  protected:
@@ -54,7 +55,30 @@ class SampleCollisionManifoldTest : public ::testing::Test {
   TestWrench w2_;
   TestVector p3_;
   TestWrench w3_;
+  /** Arbitrary point away from contacts to serve as center of mass */
+  TestVector origin_;
 };
+
+TestWrench ApplyWrench(const TestVector& center_of_mass,
+                       const TestVector& point, const TestWrench& wrench) {
+  TestWrench result = TestWrench::Zero();
+  result.template tail<3>() += wrench.template tail<3>();
+  TestVector torque = (point - center_of_mass).cross(wrench.template tail<3>());
+  result.template head<3>() += torque + wrench.template head<3>();
+  return result;
+}
+// Utility function for applying all of the wrenches in a manifold to a
+// center of mass.
+TestWrench ApplyManifold(const TestVector& center_of_mass,
+                         const ContactManifold<double>& manifold) {
+  TestWrench result = TestWrench::Zero();
+  for (size_t i = 0; i < manifold.get_num_contacts(); ++i) {
+    auto detail = manifold.get_ith_contact(i);
+    result += ApplyWrench(center_of_mass, detail->get_application_point(),
+                          detail->get_wrench());
+  }
+  return result;
+}
 
 // Performs test on a manifold without appreciable forces.  This could be due
 // due to the fact that the manifold is empty, or that the applied forces
@@ -121,7 +145,10 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
 }
 
 // Tests the net force computation for a manifold with non-zero Forces which
-// provide no torque.
+// provide no torque.  The validity of the net wrench is determined by applying
+// the net wrench to an arbitrary center of mass (measured and expressed in
+// world frame) to the full manifold applied to the same point.  The resultant
+//  wrench *on that point* should be the same.
 TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
   // test on empty manifold
   SampledContactManifold<double> manifold;
@@ -133,7 +160,11 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
   manifold.AddContactDetail(move(x_torque));
   auto net = manifold.ComputeNetResponse();
   EXPECT_EQ(net.get_application_point(), TestVector::Zero());
-  EXPECT_EQ(net.get_wrench(), w1);
+
+  TestWrench expected_wrench = ApplyManifold(origin_, manifold);
+  TestWrench net_wrench =
+      ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
+  EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 
   // two planar forces
   TestWrench w2;
@@ -141,14 +172,17 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
   auto y_torque = make_unique<TestContactDetail>(p2_, w2);
   manifold.AddContactDetail(move(y_torque));
   net = manifold.ComputeNetResponse();
-  TestWrench expected_wrench;
-  expected_wrench << 1, 1, 0, 0, 0, 0;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
+  expected_wrench = ApplyManifold(origin_, manifold);
+  net_wrench =
+      ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
+  EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 }
 
-
 // Tests the net force computation for a manifold with non-zero Forces which
-// provide only torque.
+// provide only torque.  The validity of the net wrench is determined by applying
+// the net wrench to an arbitrary center of mass (measured and expressed in
+// world frame) to the full manifold applied to the same point.  The resultant
+//  wrench *on that point* should be the same.
 TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   // test on empty manifold
   SampledContactManifold<double> manifold;
@@ -160,16 +194,17 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   EXPECT_EQ(net.get_application_point(), p1_);
   EXPECT_EQ(net.get_wrench(), w1_);
 
-  // two planar forces
+  // two symmetric, planar forces.
   auto zForce = make_unique<TestContactDetail>(p2_, w2_);
   manifold.AddContactDetail(move(zForce));
   net = manifold.ComputeNetResponse();
   TestVector expected_point;
   expected_point << 0, 1 / 3., 2 / 3.;
   EXPECT_TRUE(CompareMatrices(net.get_application_point(), expected_point));
-  TestWrench expected_wrench;
-  expected_wrench << 0, 0, 0, 0, 1, 2;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
+  TestWrench expected_wrench = ApplyManifold(origin_, manifold);
+  TestWrench net_wrench =
+      ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
+  EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 
   // two non-planar forces
   SampledContactManifold<double> manifold2;
@@ -177,12 +212,14 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   manifold2.AddContactDetail(move(unit_y_force));
   auto skewForce = make_unique<TestContactDetail>(p3_, w3_);
   manifold2.AddContactDetail(move(skewForce));
-
   net = manifold2.ComputeNetResponse();
   expected_point << 0.5, 0.5, 0.5;
   EXPECT_TRUE(CompareMatrices(net.get_application_point(), expected_point));
-  expected_wrench << -0.5, -0.5, 0, 1, 1, 0;
-  EXPECT_TRUE(CompareMatrices(net.get_wrench(), expected_wrench));
+
+  expected_wrench = ApplyManifold(origin_, manifold2);
+  net_wrench =
+      ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
+  EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 }
 }  // namespace test
 }  // namespace rigid_body_plant
