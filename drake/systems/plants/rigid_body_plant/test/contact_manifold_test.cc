@@ -179,10 +179,10 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
 }
 
 // Tests the net force computation for a manifold with non-zero Forces which
-// provide only torque.  The validity of the net wrench is determined by applying
-// the net wrench to an arbitrary center of mass (measured and expressed in
-// world frame) to the full manifold applied to the same point.  The resultant
-//  wrench *on that point* should be the same.
+// provide only torque.  The validity of the net wrench is determined by
+// applying the net wrench to an arbitrary center of mass (measured and
+// expressed in world frame) to the full manifold applied to the same point.
+// The resultant wrench *on that point* should be the same.
 TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
   // test on empty manifold
   SampledContactManifold<double> manifold;
