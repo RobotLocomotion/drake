@@ -17,6 +17,10 @@ SampledContactManifold<T>::SampledContactManifold(
 
 template <typename T>
 ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
+  if ( get_num_contacts() == 1) {
+    return *get_ith_contact(0);
+  }
+
   WrenchVector<T> wrench;
   wrench.setZero();
 
