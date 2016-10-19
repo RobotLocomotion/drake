@@ -58,8 +58,13 @@ class DRAKE_EXPORT Environment {
   /** Copy-assign a set from an lvalue. */
   Environment& operator=(const Environment& e) = default;
 
-  /** List constructor. */
+  /** List constructor. Constructs an environment from a list of (Variable *
+   * double). */
   Environment(std::initializer_list<value_type> init);
+
+  /** List constructor. Constructs an environment from a list of
+   * Variable. Initializes the variables with 0.0. */
+  Environment(std::initializer_list<key_type> vars);
 
   /** Returns an iterator to the beginning. */
   iterator begin() { return map_.begin(); }
@@ -88,6 +93,10 @@ class DRAKE_EXPORT Environment {
 
   /** Returns string representation. */
   std::string to_string() const;
+
+  /** Returns a reference to the value that is mapped to a key equivalent to
+   * \p key, performing an insertion if such key does not already exist. */
+  mapped_type& operator[](const key_type& key);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                const Environment& env);
