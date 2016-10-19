@@ -29,6 +29,8 @@ void TestGainSystem(const Gain<T>& gain_system,
                     const Eigen::VectorXd& input_vector,
                     const Eigen::VectorXd& expected_output) {
   auto context = gain_system.CreateDefaultContext();
+
+  // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(nullptr, context->get_continuous_state());
   auto output = gain_system.AllocateOutput(*context);
   auto input = make_unique<BasicVector<double>>(gain_system.get_gain().size());
