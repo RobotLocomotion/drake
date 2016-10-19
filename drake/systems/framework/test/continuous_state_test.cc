@@ -32,7 +32,7 @@ class ContinuousStateTest : public ::testing::Test {
 };
 
 TEST_F(ContinuousStateTest, Access) {
-  EXPECT_EQ(kLength, continuous_state_->get_state().size());
+  EXPECT_EQ(kLength, continuous_state_->size());
   EXPECT_EQ(kPositionLength,
             continuous_state_->get_generalized_position().size());
   EXPECT_EQ(1, continuous_state_->get_generalized_position().GetAtIndex(0));
@@ -52,10 +52,10 @@ TEST_F(ContinuousStateTest, Mutation) {
   continuous_state_->get_mutable_generalized_velocity()->SetAtIndex(0, 7);
   continuous_state_->get_mutable_misc_continuous_state()->SetAtIndex(0, 8);
 
-  EXPECT_EQ(5, continuous_state_->get_state().GetAtIndex(0));
-  EXPECT_EQ(6, continuous_state_->get_state().GetAtIndex(1));
-  EXPECT_EQ(7, continuous_state_->get_state().GetAtIndex(2));
-  EXPECT_EQ(8, continuous_state_->get_state().GetAtIndex(3));
+  EXPECT_EQ(5, continuous_state_->get_vector()[0]);
+  EXPECT_EQ(6, continuous_state_->get_vector()[1]);
+  EXPECT_EQ(7, continuous_state_->get_vector()[2]);
+  EXPECT_EQ(8, continuous_state_->get_vector()[3]);
 }
 
 // Tests that the continuous state can be indexed as an array.

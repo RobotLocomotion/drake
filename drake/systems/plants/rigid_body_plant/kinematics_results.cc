@@ -48,8 +48,8 @@ template<typename T>
 void KinematicsResults<T>::UpdateFromContext(const Context<T> &context) {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
-  auto x = dynamic_cast<const BasicVector<T> &>(
-      context.get_continuous_state()->get_state()).get_value();
+  auto x = dynamic_cast<const BasicVector<T>&>(
+      context.get_continuous_state_vector()).get_value();
 
   const int nq = tree_->get_num_positions();
   const int nv = tree_->get_num_velocities();

@@ -95,15 +95,15 @@ class DiagramTest : public ::testing::Test {
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
     ASSERT_TRUE(integrator0_xc != nullptr);
-    integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
-    integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
-    integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(0, 3);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(1, 9);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(2, 27);
 
     auto integrator1_xc = GetMutableContinuousState(integrator1());
     ASSERT_TRUE(integrator1_xc != nullptr);
-    integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
-    integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
-    integrator1_xc->get_mutable_state()->SetAtIndex(2, 729);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(0, 81);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(1, 243);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(2, 729);
   }
 
   // Returns the continuous state of the given @p system.
@@ -217,7 +217,7 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
 
   diagram_->EvalTimeDerivatives(*context_, derivatives.get());
 
-  ASSERT_EQ(6, derivatives->get_state().size());
+  ASSERT_EQ(6, derivatives->size());
   ASSERT_EQ(0, derivatives->get_generalized_position().size());
   ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
@@ -226,17 +226,17 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
   ASSERT_TRUE(integrator0_xcdot != nullptr);
-  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
   ASSERT_TRUE(integrator1_xcdot != nullptr);
-  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -331,26 +331,22 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
     integrator0_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 3);
+        ->get_mutable_vector()->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
     integrator1_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 9);
+        ->get_mutable_vector()->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
     integrator2_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 27);
+        ->get_mutable_vector()->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
     integrator3_x->get_mutable_continuous_state()
-        ->get_mutable_state()
-        ->SetAtIndex(0, 81);
+        ->get_mutable_vector()->SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -549,7 +545,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
 
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
-        context->get_mutable_continuous_state()->get_mutable_state());
+        context->get_mutable_continuous_state_vector());
   }
 
  protected:

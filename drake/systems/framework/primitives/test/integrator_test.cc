@@ -29,9 +29,9 @@ class IntegratorTest : public ::testing::Test {
 
     // Set the state to zero initially.
     ContinuousState<double>* xc = continuous_state();
-    EXPECT_EQ(3, xc->get_state().size());
+    EXPECT_EQ(3, xc->size());
     EXPECT_EQ(3, xc->get_misc_continuous_state().size());
-    xc->get_mutable_state()->SetFromVector(Eigen::VectorXd::Zero(kLength));
+    xc->SetFromVector(Eigen::VectorXd::Zero(kLength));
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(
@@ -84,7 +84,7 @@ TEST_F(IntegratorTest, Output) {
   expected << 0.0, 0.0, 0.0;
   EXPECT_EQ(expected, output_port->get_value());
 
-  continuous_state()->get_mutable_state()->SetAtIndex(1, 42.0);
+  continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
   integrator_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(expected, output_port->get_value());
@@ -99,7 +99,7 @@ TEST_F(IntegratorTest, Derivatives) {
   integrator_->EvalTimeDerivatives(*context_, derivatives_.get());
   Eigen::Vector3d expected;
   expected << 1.0, 2.0, 3.0;
-  EXPECT_EQ(expected, derivatives_->get_state().CopyToVector());
+  EXPECT_EQ(expected, derivatives_->CopyToVector());
 }
 
 // Asserts that integrators do not have any direct feedthrough inputs.
