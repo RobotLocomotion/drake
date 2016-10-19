@@ -43,7 +43,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
     const Vector3<T>& contact_point = detail->get_application_point();
     // cross product doesn't work on "head"
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
-    accum_torque += (point - contact_point).cross(
+    accum_torque += (contact_point - point).cross(
         contact_wrench.template tail<3>());
   }
 
