@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include <unsupported/Eigen/AutoDiff>
-
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
