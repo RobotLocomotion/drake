@@ -107,10 +107,16 @@ class LeafSystem : public System<T> {
   // New methods for subclasses to override
 
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
-  /// AllocateTimeDerivatives. By default, allocates no state. Systems with
-  /// continuous state variables should override.
+  /// AllocateTimeDerivatives. Allocates the state configured with
+  /// DeclareContinuousState, or none by default. Systems with continuous state
+  /// variables may override.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
-    return  std::make_unique<ContinuousState<T>>();
+    if (model_continuous_state_vector_ != nullptr) {
+      return std::make_unique<ContinuousState<T>>(
+          model_continuous_state_vector_->Clone(), num_generalized_positions_,
+          num_generalized_velocities_, num_misc_continuous_state_);
+    }
+    return std::make_unique<ContinuousState<T>>();
   }
 
   /// Reserves the difference state as required by CreateDefaultContext. By
@@ -156,6 +162,37 @@ class LeafSystem : public System<T> {
     event.event.recipient = this;
     event.event.action = DiscreteEvent<T>::kUpdateAction;
     periodic_events_ = {event};
+  }
+
+  /// Declares that this System should reserve continuous state with @p num_z
+  /// miscellaneous state variables. Has no effect if AllocateContinuousState
+  /// is overridden.
+  void DeclareContinuousState(int num_state_variables) {
+    const int num_q = 0, num_v = 0;
+    DeclareContinuousState(num_q, num_v, num_state_variables);
+  }
+
+  /// Declares that this System should reserve continuous state with @p num_q
+  /// generalized positions, @p num_v generalized velocities, and @p num_z
+  /// miscellaneous state variables.  Has no effect if AllocateContinuousState
+  /// is overridden.
+  void DeclareContinuousState(int num_q, int num_v, int num_z) {
+    const int n = num_q + num_v + num_z;
+    DeclareContinuousState(std::make_unique<BasicVector<T>>(n),
+                           num_q, num_v, num_z);
+  }
+
+  /// Declares that this System should reserve continuous state with @p num_q
+  /// generalized positions, @p num_v generalized velocities, and @p num_z
+  /// miscellaneous state variables, stored in the a vector Cloned from
+  /// @p model_vector. Throws if @p model_vector has the wrong size. Has no
+  /// effect if AllocateContinuousState is overridden.
+  void DeclareContinuousState(std::unique_ptr<BasicVector<T>> model_vector,
+                              int num_q, int num_v, int num_z) {
+    model_continuous_state_vector_ = std::move(model_vector);
+    num_generalized_positions_ = num_q;
+    num_generalized_velocities_ = num_v;
+    num_misc_continuous_state_ = num_z;
   }
 
  private:
@@ -235,6 +272,12 @@ class LeafSystem : public System<T> {
 
   // Periodic Update or Publish events registered on this system.
   std::vector<PeriodicEvent<T>> periodic_events_;
+
+  // A model continuous state to be used in AllocateDefaultContext.
+  std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
+  int num_generalized_positions_{0};
+  int num_generalized_velocities_{0};
+  int num_misc_continuous_state_{0};
 };
 
 }  // namespace systems

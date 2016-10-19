@@ -19,9 +19,10 @@ using drake::systems::ContinuousState;
 class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
+    const int kSize = 1;  // The dimension of both output (y) and state (x).
     this->DeclareOutputPort(drake::systems::kVectorValued,
-                            1,  // dimension of output (y) = 1
-                            drake::systems::kContinuousSampling);
+                            kSize, drake::systems::kContinuousSampling);
+    this->DeclareContinuousState(kSize);
   }
   ~SimpleContinuousTimeSystem() override{};
 
@@ -39,14 +40,6 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
                   drake::systems::SystemOutput<double>* output) const override {
     double x = context.get_continuous_state_vector().GetAtIndex(0);
     output->GetMutableVectorData(0)->SetAtIndex(0, x);
-  }
-
- protected:
-  // allocate a basic vector of dimension 1
-  std::unique_ptr<drake::systems::ContinuousState<double>>
-  AllocateContinuousState() const override {
-    return std::make_unique<drake::systems::ContinuousState<double>>(
-        std::make_unique<drake::systems::BasicVector<double>>(1));
   }
 };
 
