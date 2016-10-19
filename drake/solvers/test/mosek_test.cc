@@ -19,55 +19,53 @@ namespace drake {
 namespace solvers {
 namespace {
 
-GTEST_TEST(testMosek, MosekLinearProgram) {
-  // Taken from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4);
-  Eigen::Vector4d A;
-  A << 3, 1, 5, 1;
-  LinearConstraint obj(A, Eigen::Vector4d::Constant(0),
-                       Eigen::Vector4d::Constant(0));
-  std::shared_ptr<LinearConstraint> ptrtoobj =
-      std::make_shared<LinearConstraint>(obj);
-
-  prog.AddCost(ptrtoobj);
-  Eigen::MatrixXd constraint1(1, 4);
-  Eigen::MatrixXd constraint2(1, 4);
-  constraint1 << 2, 1, 3, 1;
-  constraint2 << 0, 2, 0, 3;
-  Eigen::MatrixXd lineqconstraint(1, 4);
-  lineqconstraint << 3, 1, 2, 0;
-  Eigen::MatrixXd lb1(1, 1), ub1(1, 1);
-  Eigen::MatrixXd lb2(1, 1), ub2(1, 1);
-  lb1 << 15;
-  ub1 << +std::numeric_limits<double>::infinity();
-  lb2 << -std::numeric_limits<double>::infinity();
-  ub2 << 25;
-  Eigen::MatrixXd lineqbounds(1, 1);
-  lineqbounds << 30;
-
-  prog.AddLinearConstraint(constraint1, lb1, ub1);
-  prog.AddLinearConstraint(constraint2, lb2, ub2);
-  prog.AddLinearEqualityConstraint(lineqconstraint, lineqbounds);
-  Eigen::Vector4d bboxlow, bboxhigh;
-  bboxlow << 0, 0, 0, 0;
-  bboxhigh << std::numeric_limits<double>::infinity(),
-              10,
-              std::numeric_limits<double>::infinity(),
-              std::numeric_limits<double>::infinity();
-  prog.AddBoundingBoxConstraint(bboxlow, bboxhigh);
-  prog.SetSolverOption("Mosek", "maxormin", "max");
-  prog.SetSolverOption("Mosek", "problemtype", "linear");
+void RunMosekSolver(MathematicalProgram &prog) {
+  MosekSolver mosek_solver;
   SolutionResult result = SolutionResult::kUnknownError;
-  MosekSolver msk;
-  ASSERT_NO_THROW(result = msk.Solve(prog));
+  ASSERT_NO_THROW(result = mosek_solver.Solve(prog));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  Eigen::Vector4d solutions;
-  solutions << 0, 0, 15, 8.33333333333333333333;
-  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-10,
-                              MatrixCompareType::absolute));
 }
 
+// Test a simple linear programming problem
+// Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
+// min -3x0 - x1 - 5x2 - x3
+// s.t     3x0 + x1 + 2x2        = 30
+//         2x0 + x1 + 3x2 +  x3 >= 15
+//              2x1       + 3x3 <= 25
+// -100 <=  x0      + 2x2       <= 30
+//           x1 <= 10
+// The optimal solution is at (0, 0, 15, 25/3)
+GTEST_TEST(testMosek, MosekLinearProgram) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(4);
+  // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
+  // to test adding multiple costs.
+  Eigen::RowVector3d c1(-3 -1 -4);
+  Eigen::RowVector2d c2(-1, -1);
+
+  prog.AddLinearCost(c1, {x(0), x(1), x(2)});
+  prog.AddLinearCost(c2, {x(2), x(3)});
+
+  Eigen::RowVector3d a1(3, 1, 2);
+  prog.AddLinearEqualityConstraint(a1, drake::Vector1d(30), {x(0), x(1), x(2)});
+
+  Eigen::Matrix<double, 3, 4> A;
+  A << 2, 1, 3, 1,
+       0, 2, 0, 3,
+       0, 2, 0, 3;
+  Eigen::Vector3d b_lb(15, -std::numeric_limits<double>::infinity(), -100);
+  Eigen::Vector3d b_ub(std::numeric_limits<double>::infinity(), 25, 30);
+  prog.AddLinearConstraint(A, b_lb, b_ub);
+
+  prog.AddBoundingBoxConstraint(drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(10), {x(1)});
+
+  RunMosekSolver(prog);
+
+  Eigen::Vector4d x_expected(0, 0, 15, 25.0/3.0);
+  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10, MatrixCompareType::absolute));
+
+}
+/*
 GTEST_TEST(testMosek, MosekQuadraticCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
   MathematicalProgram prog2;
@@ -203,7 +201,7 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
   EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
                               MatrixCompareType::absolute));
 }
-
+*/
 }  // Anonymous namespace
 }  // namespace solvers
 }  // namespace drake
