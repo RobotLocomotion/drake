@@ -40,7 +40,16 @@ class Subvector : public VectorBase<T> {
 
   int size() const override { return num_elements_; }
 
-  const T GetAtIndex(int index) const override {
+  const T& GetAtIndex(int index) const override {
+    if (index >= size()) {
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              " out of bounds for subvector of size " +
+                              std::to_string(size()));
+    }
+    return vector_->GetAtIndex(first_element_ + index);
+  }
+
+  T& GetAtIndex(int index) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for subvector of size " +

@@ -58,6 +58,13 @@ TEST_F(ContinuousStateTest, Mutation) {
   EXPECT_EQ(8, continuous_state_->get_state().GetAtIndex(3));
 }
 
+// Tests that the continuous state can be indexed as an array.
+TEST_F(ContinuousStateTest, ArrayOperator) {
+  (*continuous_state_)[1] = 42;
+  EXPECT_EQ(42, continuous_state_->get_generalized_position()[1]);
+  EXPECT_EQ(4, (*continuous_state_)[3]);
+}
+
 TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
   EXPECT_THROW(continuous_state_->get_generalized_position().GetAtIndex(2),
                std::out_of_range);

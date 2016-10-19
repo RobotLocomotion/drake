@@ -36,7 +36,17 @@ class VectorBase {
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual const T GetAtIndex(int index) const = 0;
+  virtual const T& GetAtIndex(int index) const = 0;
+
+  /// Returns the element at the given index in the vector. Throws
+  /// std::out_of_range if the index is >= size().
+  ///
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.
+  virtual T& GetAtIndex(int index) = 0;
+
+  T& operator[](std::size_t idx) { return GetAtIndex(idx); }
+  const T& operator[](std::size_t idx) const { return GetAtIndex(idx); }
 
   /// Replaces the state at the given index with the value. Throws
   /// std::out_of_range if the index is >= size().
@@ -46,7 +56,7 @@ class VectorBase {
   virtual void SetAtIndex(int index, const T& value) = 0;
 
   /// Replaces the entire state with the contents of value. Throws
-  /// std::out_of_range if value is not a column vector with size() rows.
+  /// if value is not a column vector with size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.

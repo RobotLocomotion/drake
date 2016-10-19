@@ -98,6 +98,9 @@ class ContinuousState {
   /// Returns the size of the entire continuous state vector.
   int size() const { return get_state().size(); }
 
+  T& operator[](std::size_t idx) { return (*state_)[idx]; }
+  const T& operator[](std::size_t idx) const { return (*state_)[idx]; }
+
   /// Returns the entire continuous state vector.
   const VectorBase<T>& get_state() const { return *state_; }
 
