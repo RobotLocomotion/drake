@@ -12,7 +12,11 @@ else()
   set(hasDisplay FALSE)
 endif()
 
-if(WITH_DIRECTOR)
+# The visualization startup test is currently disabled because it depends
+# on director which has changed position in the build order. When the continuous
+# integration scripts are updated to run ctest in the director external then
+# this test will be removed.
+if(FALSE AND WITH_DIRECTOR)
   # A test that starts up drake-visualizer.
   set(visualizerStartupTestCommand
       ${CMAKE_INSTALL_PREFIX}/bin/directorPython
