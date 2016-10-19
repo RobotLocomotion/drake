@@ -218,12 +218,12 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
                         std::vector<double>* times) const;
 
   /**
-   * Get the input trajectory as a PiecewisePolynomial
+   * Get the input trajectory as a PiecewisePolynomialTrajectory
    */
   PiecewisePolynomialTrajectory<double> ReconstructInputTrajectory() const;
 
   /**
-   * Get the state trajectory as a PiecewisePolynomial
+   * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
   PiecewisePolynomialTrajectory<double> ReconstructStateTrajectory() const;
 
