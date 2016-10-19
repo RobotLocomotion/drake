@@ -34,8 +34,8 @@ namespace systems {
 template <typename T>
 class PidController : public Diagram<T> {
  public:
-  /// Constructs a %PidController system where each gain vector contains only
-  /// a single gain.
+  /// Constructs a %PidController system where all of the gains are the same
+  /// value.
   ///
   /// @param Kp the proportional constant.
   /// @param Ki the integral constant.
@@ -43,8 +43,8 @@ class PidController : public Diagram<T> {
   /// @param size number of elements in the signal to be processed.
   PidController(const T& Kp, const T& Ki, const T& Kd, int size);
 
-  /// Constructs a %PidController system where each gain vector can contain
-  /// multiple different values.
+  /// Constructs a %PidController system where the gains can have more than one
+  /// value.
   ///
   /// @param Kp the proportional vector constant.
   /// @param Ki the integral vector constant.
