@@ -38,7 +38,7 @@ class Gain : public LeafSystem<T> {
   /// value.
   ///
   /// @param k the gain constants so that `y = k * u`.
-  Gain(const VectorX<T>& gain);
+  explicit Gain(const VectorX<T>& gain);
 
   /// Returns the gain constant.
   const VectorX<T>& get_gain() const;

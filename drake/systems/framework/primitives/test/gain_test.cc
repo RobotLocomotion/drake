@@ -61,7 +61,8 @@ GTEST_TEST(GainTest, VectorThroughGainSystem) {
   const int kSize = 3;
   const auto gain_system = make_unique<Gain<double>>(kGain, kSize);
   const Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
-  const Eigen::Vector3d expected_output(1.0 * kGain, 3.14 * kGain, 2.18 * kGain);
+  const Eigen::Vector3d expected_output(1.0 * kGain, 3.14 * kGain,
+                                        2.18 * kGain);
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
 
