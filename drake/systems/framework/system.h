@@ -320,12 +320,18 @@ class System {
   /// Implementations may assume that the given @p derivatives argument has the
   /// same constituent structure as was produced by AllocateTimeDerivatives.
   ///
+  /// By default, this function does nothing if the @p derivatives are empty,
+  /// and aborts otherwise.
+  ///
   /// @param context The context in which to evaluate the derivatives.
   ///
   /// @param derivatives The output vector. Will be the same size as the
   ///                    state vector Context.state.continuous_state.
   virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {
+    // This default implementation is only valid for Systems with no continuous
+    // state. Other Systems must override this method!
+    DRAKE_DEMAND(derivatives->size() == 0);
     return;
   }
 
