@@ -9,9 +9,10 @@ set(sources
   diagram_builder.cc
   diagram_context.cc
   diagram_continuous_state.cc
+  input_port_evaluator_interface.cc
   leaf_context.cc
   leaf_system.cc
-  input_port_evaluator_interface.cc
+  modal_state.cc
   output_port_listener_interface.cc
   primitives/adder.cc
   primitives/constant_value_source.cc
@@ -52,9 +53,10 @@ set(installed_headers
   diagram_context.h
   diagram_continuous_state.h
   difference_state.h
+  input_port_evaluator_interface.h
   leaf_context.h
   leaf_system.h
-  input_port_evaluator_interface.h
+  modal_state.h
   output_port_listener_interface.h
   state.h
   subvector.h

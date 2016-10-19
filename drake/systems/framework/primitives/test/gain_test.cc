@@ -67,7 +67,7 @@ TEST_F(GainTest, VectorThroughGainSystem) {
 
 // Tests that Gain allocates no state variables in the context_.
 TEST_F(GainTest, GainIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace
