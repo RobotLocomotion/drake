@@ -19,6 +19,34 @@ void RunGurobiSolver(MathematicalProgram* prog) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
+// Take the linear programming example from
+// http://cvxopt.org/examples/tutorial/lp.html
+// Solve the following linear program
+// min  2x0 + x1
+// s.t -x0 + x1 <= 1
+//      x0 + x1 >= 2
+//      x1 >= 0
+//      x0 - 2x1 <= 4
+// The optimal solution is x0 = 0.5, x1 = 1.5;
+GTEST_TEST(testGurobi, gurobiLPExample1) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(2, "x");
+
+  prog.AddLinearCost(Eigen::RowVector2d(2.0, 1.0));
+  Eigen::Matrix<double, 3, 2> A;
+  A << -1, 1,
+        1, 1,
+        1, -2;
+  Eigen::Vector3d b_lb(-std::numeric_limits<double>::infinity(), 2.0, -std::numeric_limits<double>::infinity());
+  Eigen::Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
+  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddBoundingBoxConstraint(drake::Vector1d(0), drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+
+  RunGurobiSolver(&prog);
+  Eigen::Vector2d x_expected(0.5, 1.5);
+  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-10, MatrixCompareType::absolute));
+}
+
 /// Adapt from the simple test on the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
 //  subj to        x + 2 y + 3 z >= 4

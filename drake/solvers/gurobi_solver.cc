@@ -14,16 +14,6 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// TODO(naveenoid): This is currently largely copy-pasta from the deprecated
-// Gurobi wrapper in solvers. Utilise sparsity in the constraint matrices,
-// i.e. Something like :
-//    Eigen::SparseMatrix<double, Eigen::RowMajor> sparseA(A.sparseView());
-//    sparseA.makeCompressed();
-//    error =  GRBaddconstrs(model, A.rows(), sparseA.nonZeros(),
-//                           sparseA.InnerIndices(), sparseA.OuterStarts(),
-//                           sparseA.Values(),sense, b.data(), nullptr);
-//    return(error);
-
 /**
  * Adds a constraint of one of the following forms :
  * Ax>=b, Ax<=b, or Ax==b,
@@ -71,9 +61,9 @@ int AddLorentzConeConstraints(GRBmodel* model,
                               const MathematicalProgram& prog) {
   for (const auto& binding : prog.lorentz_cone_constraints()) {
     // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
-    // qrow to store the row    indices of the non-zero entries of Q
-    // qcol to store the column indices of the non-zero entries of Q
-    // qval to store the value          of the non-zero entries of Q
+    // qrow to store the row    indices of the non-zero entries of Q.
+    // qcol to store the column indices of the non-zero entries of Q.
+    // qval to store the value          of the non-zero entries of Q.
     int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -114,7 +104,7 @@ int AddLorentzConeConstraints(GRBmodel* model,
 }
 
 /*
- * Add the rotated lorentz cone constraint
+ * Add the rotated lorentz cone constraint.
  * x(0) * x(1) >= x(2)^2 + .. x(N-1)^2
  * x(0) >= 0, x(1) >= 0
  */
@@ -127,9 +117,9 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
     //                    [0  0 0 1 ... 0]
     //                        ...
     //                    [0  0 0 0 ... 1]
-    // qrow to store the row    indices of the non-zero entries of Q
-    // qcol to store the column indices of the non-zero entries of Q
-    // qval to store the value          of the non-zero entries of Q
+    // qrow to store the row    indices of the non-zero entries of Q.
+    // qcol to store the column indices of the non-zero entries of Q.
+    // qval to store the value          of the non-zero entries of Q.
     int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -178,9 +168,9 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
 int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
              double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
-  // 0.5 * x' * Q_all * x + linear_term' * x
+  // 0.5 * x' * Q_all * x + linear_term' * x.
   using std::abs;
-  // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x
+  // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x.
   std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;
   std::vector<Eigen::Triplet<double>> b_nonzero_coefs;
   for (const auto& binding : prog.quadratic_costs()) {
@@ -192,7 +182,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
     // constraint_variable_index[i] is the index of the i'th decision variable
-    // binding.VariableListToVectorXd(i)
+    // binding.VariableListToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
     for (const DecisionVariableView& var : binding.variable_list()) {
@@ -224,7 +214,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     }
   }
 
-  // Add linear cost in prog.linear_costs() to the aggregated cost
+  // Add linear cost in prog.linear_costs() to the aggregated cost.
   for (const auto& binding : prog.linear_costs()) {
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
@@ -379,7 +369,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   const int num_vars = prog.num_vars();
 
-  // bound constraints
+  // Bound constraints.
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
