@@ -203,7 +203,7 @@ class DRAKE_EXPORT MathematicalProgram {
     Binding(const std::shared_ptr<C>& c, const VariableList& v)
         : constraint_(c), variable_list_(v) {
       for(const auto &var : variable_list_) {
-        for(int i = 0; i < var.size(); ++i) {
+        for(int i = 0; i < static_cast<int>(var.size()); ++i) {
           variable_indices_.push_back(var.index() + i);
         }
       }
