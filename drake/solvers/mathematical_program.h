@@ -343,8 +343,8 @@ class DRAKE_EXPORT MathematicalProgram {
   //    std::string name);
   //  ...
 
-  void AddCost(std::shared_ptr<Constraint> const& obj,
-               VariableList const& vars) {
+  void AddCost(const std::shared_ptr<Constraint>& obj,
+               const VariableList& vars) {
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
@@ -423,11 +423,11 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<LinearConstraint> AddLinearCost(
       const Eigen::MatrixBase<DerivedC>& c, const VariableList& vars) {
     using Scalar = typename DerivedC::Scalar;
-    std::shared_ptr<LinearConstraint> cost(
-        new LinearConstraint(c, drake::Vector1<Scalar>::Constant(
-                                    -std::numeric_limits<Scalar>::infinity()),
-                             drake::Vector1<Scalar>::Constant(
-                                 std::numeric_limits<Scalar>::infinity())));
+    auto cost = std::make_shared<LinearConstraint>(
+        c, drake::Vector1<Scalar>::Constant(
+               -std::numeric_limits<Scalar>::infinity()),
+        drake::Vector1<Scalar>::Constant(
+            std::numeric_limits<Scalar>::infinity()));
     AddCost(cost, vars);
     return cost;
   }
@@ -464,9 +464,9 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> cost(new QuadraticConstraint(
+    auto cost = std::make_shared<QuadraticConstraint>(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity()));
+        std::numeric_limits<double>::infinity());
     AddCost(cost, vars);
     return cost;
   }
@@ -490,9 +490,9 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
-    std::shared_ptr<QuadraticConstraint> cost(
-        new QuadraticConstraint(Q, b, -std::numeric_limits<double>::infinity(),
-                                std::numeric_limits<double>::infinity()));
+    auto cost = std::make_shared<QuadraticConstraint>(
+        Q, b, -std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity());
     AddCost(cost, vars);
     return cost;
   }
@@ -632,8 +632,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-    std::shared_ptr<BoundingBoxConstraint> constraint(
-        new BoundingBoxConstraint(lb, ub));
+    auto constraint = std::make_shared<BoundingBoxConstraint>(lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
   }
@@ -654,14 +653,14 @@ class DRAKE_EXPORT MathematicalProgram {
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    * <!--
-   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
    * \f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
    * \f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kLorentzConeConstraint;
     lorentz_cone_constraint_.push_back(
         Binding<LorentzConeConstraint>(con, vars));
@@ -671,7 +670,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Adds Lorentz cone constraint referencing potentially a subset of the
    * decision variables (defined in the vars parameter).
    * <!--
-   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
    * \f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
@@ -679,8 +678,7 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
       const VariableList& vars) {
-    std::shared_ptr<LorentzConeConstraint> constraint(
-        new LorentzConeConstraint());
+    auto constraint = std::make_shared<LorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
   }
@@ -689,7 +687,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Adds Lorentz cone constraint to the program for all
    * (currently existing) variables
    * <!--
-   * x(0) >= \sqrt{x(1)^2 + ... + x(N-1)^2}
+   * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
    * \f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
@@ -703,7 +701,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Adds a rotated Lorentz cone constraint referencing potentially a subset
    * of decision variables, such that
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
    * \f[
@@ -714,7 +712,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * @param vars A list of DecisionVariableView.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kRotatedLorentzConeConstraint;
     rotated_lorentz_cone_constraint_.push_back(
         Binding<RotatedLorentzConeConstraint>(con, vars));
@@ -724,7 +722,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * @param vars A list of DecisionVariableView.
    * Example: if you want to add the rotated Lorentz cone constraint
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
    * \f[
@@ -739,8 +737,7 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const VariableList& vars) {
-    std::shared_ptr<RotatedLorentzConeConstraint> constraint(
-        new RotatedLorentzConeConstraint());
+    auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
   }
@@ -749,7 +746,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Adds a rotated Lorentz constraint to the program for all
    * (currently existing) variables.
    * <!--
-   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2\\
+   * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
    * \f[
@@ -788,8 +785,7 @@ class DRAKE_EXPORT MathematicalProgram {
     DRAKE_ASSERT(lorentz_cone_constraint_.empty());
     DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
 
-    std::shared_ptr<LinearComplementarityConstraint> constraint(
-        new LinearComplementarityConstraint(M, q));
+    auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
     linear_complementarity_constraints_.push_back(
         Binding<LinearComplementarityConstraint>(constraint, vars));
     return constraint;
@@ -851,21 +847,20 @@ class DRAKE_EXPORT MathematicalProgram {
         }
       }
       if (ub == lb) {
-        std::shared_ptr<LinearEqualityConstraint> constraint(
-            new LinearEqualityConstraint(linear_constraint_matrix,
-                                         linear_constraint_ub));
+        auto constraint = std::make_shared<LinearEqualityConstraint>(
+            linear_constraint_matrix, linear_constraint_ub);
         AddConstraint(constraint, vars);
         return constraint;
       } else {
-        std::shared_ptr<LinearConstraint> constraint(
-            new LinearConstraint(linear_constraint_matrix, linear_constraint_lb,
-                                 linear_constraint_ub));
+        auto constraint = std::make_shared<LinearConstraint>(
+            linear_constraint_matrix, linear_constraint_lb,
+            linear_constraint_ub);
         AddConstraint(constraint, vars);
         return constraint;
       }
     } else {
-      std::shared_ptr<PolynomialConstraint> constraint(
-          new PolynomialConstraint(polynomials, poly_vars, lb, ub));
+      auto constraint = std::make_shared<PolynomialConstraint>(
+          polynomials, poly_vars, lb, ub);
       AddConstraint(constraint, vars);
       return constraint;
     }

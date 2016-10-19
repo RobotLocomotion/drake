@@ -807,7 +807,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
-/**
+/*
  * Test how an unconstrained QP is dispatched and solved:
  *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
  *     at (x1=1, x2=1).
@@ -863,7 +863,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/**
+/*
  * Test how an equality-constrained QP is dispatched
  *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
  *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
@@ -921,7 +921,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tActual: " << actual_answer.transpose();
 }
 
-/**
+/*
  * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
  * nonlinear optimization problem.
  * The objective is to find the smallest distance from a hyperplane

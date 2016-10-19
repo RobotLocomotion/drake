@@ -35,7 +35,7 @@ namespace {
 template <typename DerivedA, typename DerivedB>
 int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
                         const Eigen::MatrixBase<DerivedB>& b,
-                        const std::vector<int> &variable_indices,
+                        const std::vector<int>& variable_indices,
                         char constraint_sense, double sparseness_threshold) {
   for (int i = 0; i < A.rows(); i++) {
     int non_zeros_index = 0;
@@ -60,10 +60,6 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 int AddLorentzConeConstraints(GRBmodel* model,
                               const MathematicalProgram& prog) {
   for (const auto& binding : prog.lorentz_cone_constraints()) {
-    // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
-    // qrow to store the row    indices of the non-zero entries of Q.
-    // qcol to store the column indices of the non-zero entries of Q.
-    // qval to store the value          of the non-zero entries of Q.
     int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -74,6 +70,10 @@ int AddLorentzConeConstraints(GRBmodel* model,
         variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
     }
+    // We will build a matrix Q = diag([-1;1;1;...;1;], and we will use
+    // qrow to store the row    indices of the non-zero entries of Q.
+    // qcol to store the column indices of the non-zero entries of Q.
+    // qval to store the value          of the non-zero entries of Q.
     std::vector<int> qrow;
     std::vector<int> qcol;
     std::vector<double> qval;
@@ -111,15 +111,6 @@ int AddLorentzConeConstraints(GRBmodel* model,
 int AddRotatedLorentzConeConstraint(GRBmodel* model,
                                     const MathematicalProgram& prog) {
   for (const auto& binding : prog.rotated_lorentz_cone_constraints()) {
-    // Build a matrix Q = [0 -1 0 0 ... 0]
-    //                    [0  0 0 0 ... 0]
-    //                    [0  0 1 0 ... 0]
-    //                    [0  0 0 1 ... 0]
-    //                        ...
-    //                    [0  0 0 0 ... 1]
-    // qrow to store the row    indices of the non-zero entries of Q.
-    // qcol to store the column indices of the non-zero entries of Q.
-    // qval to store the value          of the non-zero entries of Q.
     int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
@@ -130,6 +121,15 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
         variable_indices.push_back(static_cast<int>(var.index()) + i);
       }
     }
+    // Build a matrix Q = [0 -1 0 0 ... 0]
+    //                    [0  0 0 0 ... 0]
+    //                    [0  0 1 0 ... 0]
+    //                    [0  0 0 1 ... 0]
+    //                        ...
+    //                    [0  0 0 0 ... 1]
+    // qrow to store the row    indices of the non-zero entries of Q.
+    // qcol to store the column indices of the non-zero entries of Q.
+    // qval to store the value          of the non-zero entries of Q.
     std::vector<int> qrow;
     std::vector<int> qcol;
     std::vector<double> qval;
@@ -281,7 +281,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
     int var_dim = binding.GetNumElements();
-    // variable_indices[i] is the index of the i'th variable
+    // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
     for (const DecisionVariableView& var : binding.variable_list()) {

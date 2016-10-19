@@ -9,6 +9,7 @@
 /**
  * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
+ * The pamater of this QP is randomly generated.
  */
 namespace drake {
 namespace solvers {
@@ -54,16 +55,14 @@ GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   SolutionResult result;
   SnoptSolver snopt;
   result = snopt.Solve(prog);
-  if (result != drake::solvers::SolutionResult::kSolutionFound) {
-    std::cerr << "solution not found\n";
-  }
+  EXPECT_TRUE(result == SolutionResult::kSolutionFound);
+
   Eigen::VectorXd snopt_solution = prog.GetSolutionVectorValues();
 
   GurobiSolver gurobi;
   result = gurobi.Solve(prog);
-  if (result != drake::solvers::SolutionResult::kSolutionFound) {
-    std::cerr << "solution not found\n";
-  }
+  EXPECT_TRUE(result == SolutionResult::kSolutionFound);
+
   Eigen::VectorXd gurobi_solution = prog.GetSolutionVectorValues();
 
   EXPECT_TRUE(CompareMatrices(gurobi_solution, snopt_solution, 1e-4,

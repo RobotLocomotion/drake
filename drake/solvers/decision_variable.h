@@ -136,7 +136,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 };
 
 typedef std::list<DecisionVariableView> VariableList;
-inline int GetVariableListSize(const VariableList &vars) {
+inline int GetVariableListSize(const VariableList& vars) {
   int var_dim = 0;
   for (const auto& var : vars) {
     var_dim += var.size();
