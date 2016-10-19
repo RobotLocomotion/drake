@@ -57,6 +57,14 @@ TEST_F(SupervectorTest, SetAtIndex) {
   EXPECT_EQ(16, vec4_->GetAtIndex(2));
 }
 
+
+// Tests that the Supervector can be addressed as an array.
+TEST_F(SupervectorTest, ArrayOperator) {
+  (*supervector_)[5] = 42;
+  EXPECT_EQ(42, (*vec2_)[1]);
+  EXPECT_EQ(8, (*supervector_)[8]);
+}
+
 TEST_F(SupervectorTest, OutOfRange) {
   EXPECT_THROW(supervector_->GetAtIndex(-1), std::out_of_range);
   EXPECT_THROW(supervector_->GetAtIndex(10), std::out_of_range);

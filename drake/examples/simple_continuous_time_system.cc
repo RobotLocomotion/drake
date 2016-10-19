@@ -9,6 +9,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 
+using drake::systems::ContinuousState;
+
 /// Simple Continuous Time System
 /// \begin{gather*}
 ///     \dot{x} = -x + x^3 \newline
@@ -57,18 +59,15 @@ int main(int argc, char* argv[]) {
   drake::systems::Simulator<double> simulator(system);
 
   // set the initial conditions x(0);
-  auto initial_conditions = simulator.get_mutable_context();
-  initial_conditions->get_mutable_continuous_state()
-      ->get_mutable_state()
-      ->SetAtIndex(0, .9);
+  ContinuousState<double>& xc =
+      *simulator.get_mutable_context()->get_mutable_continuous_state();
+  xc[0] = 0.9;
 
   // simulate for 10 seconds
   simulator.StepTo(10);
 
   // make sure the simulation converges to the stable fixed point at x=0
-  DRAKE_ASSERT(std::abs(simulator.get_context()
-                            .get_continuous_state()
-                            ->get_state().GetAtIndex(0)) < 1.0e-4);
+  DRAKE_ASSERT(xc[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory (using vtk?)
 

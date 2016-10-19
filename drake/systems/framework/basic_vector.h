@@ -66,7 +66,16 @@ class BasicVector : public VectorBase<T> {
     return values_.head(values_.rows());
   }
 
-  const T GetAtIndex(int index) const override {
+  const T& GetAtIndex(int index) const override {
+    if (index >= size()) {
+      throw std::out_of_range("Index " + std::to_string(index) +
+                              " out of bounds for state vector of size " +
+                              std::to_string(size()));
+    }
+    return values_[index];
+  }
+
+  T& GetAtIndex(int index) override {
     if (index >= size()) {
       throw std::out_of_range("Index " + std::to_string(index) +
                               " out of bounds for state vector of size " +
