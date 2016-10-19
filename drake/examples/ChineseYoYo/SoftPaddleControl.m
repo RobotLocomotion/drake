@@ -78,8 +78,8 @@ classdef SoftPaddleControl < DrakeSystem
       xTouch = q(3) + qp(3)*tf;
       xpTouch = qp(3);
       
-      psid = -0.001*q(3)-0.005*qp(3);       % Old controller -- from my pocket
-%       psid = obj.K(1)*(xTouch-xFixed) + obj.K(2)*(zTouch-zTouchDes) + obj.K(3)*xpTouch + obj.K(4)*(zpTouch);    % Poincare map controller
+%       psid = 0.01*(q(3)-xFixed)-0.025*qp(3);       % Old controller -- from my pocket
+      psid = obj.K(1)*(xTouch-xFixed) + obj.K(2)*(zTouch-zTouchDes) + obj.K(3)*xpTouch + obj.K(4)*(zpTouch);    % (Linearized) Poincare map controller
       %             psid = 0;
       
       %%%%%%%%%%%%%%%%%%%%% Another way to compute psid %%%%%%%%%%%%%%%%%%%
@@ -111,7 +111,7 @@ classdef SoftPaddleControl < DrakeSystem
       tCutOff2 = 500;
       
       if t > tCutOff1 && t < tCutOff2 && m == 2
-          psid = evalin('base','psid');
+          psid = evalin('base','psid');       % (Linearized) Poincare map controller
           if rem(t,10) < 0.5
             fprintf(['t = ', num2str(t), '\n'])
           end
