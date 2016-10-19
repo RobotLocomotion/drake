@@ -2,26 +2,30 @@
 
 #include <Eigen/Core>
 
+#include "PiecewisePolynomial.h"
 #include "drake/common/drake_export.h"
 #include "trajectory.h"
-#include "PiecewisePolynomial.h"
 
 namespace drake {
 
+/**
+ * A PiecewisePolynomialTrajectory is a Trajectory that is represented by
+ * (implemented in terms of) a PiecewisePolynomial.
+ */
 template <typename CoefficientType = double>
-class DRAKE_EXPORT PiecewisePolynomialTrajectory : public Trajectory {
+class PiecewisePolynomialTrajectory : public Trajectory {
  public:
-  PiecewisePolynomialTrajectory(
-      const PiecewisePolynomial<CoefficientType>& pp) : pp_(pp) {}
+  PiecewisePolynomialTrajectory(const PiecewisePolynomial<CoefficientType>& pp)
+      : pp_(pp) {}
 
-  virtual Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
-      double t) const {
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
+      double t) const override {
     return pp_.value(t);
   }
 
-  virtual Eigen::Index rows() const { return pp_.rows(); }
+  Eigen::Index length() const { return pp_.rows(); }
 
-private:
+ private:
   const PiecewisePolynomial<double> pp_;
 };
 
