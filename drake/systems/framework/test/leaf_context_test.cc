@@ -175,7 +175,7 @@ TEST_F(LeafContextTest, Clone) {
   // Verify that the state was copied.
   ContinuousState<double>* xc = clone->get_mutable_continuous_state();
   {
-    VectorX<double> contents = xc->get_state().CopyToVector();
+    VectorX<double> contents = xc->CopyToVector();
     VectorX<double> expected(kContinuousStateSize);
     expected << 1.0, 2.0, 3.0, 5.0, 8.0;
     EXPECT_EQ(expected, contents);
@@ -203,7 +203,7 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that the state type was preserved.
   BasicVector<double>* xc_data =
-      dynamic_cast<BasicVector<double>*>(xc->get_mutable_state());
+      dynamic_cast<BasicVector<double>*>(xc->get_mutable_vector());
   ASSERT_NE(nullptr, xc_data);
   EXPECT_EQ(kContinuousStateSize, xc_data->size());
 
@@ -223,7 +223,7 @@ TEST_F(LeafContextTest, Clone) {
   // -- Continuous
   xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, xc_data->GetAtIndex(3));
-  EXPECT_EQ(5.0, context_.get_continuous_state()->get_state().GetAtIndex(3));
+  EXPECT_EQ(5.0, context_.get_continuous_state_vector().GetAtIndex(3));
 
   // -- Difference
   xd1->SetAtIndex(0, 1024.0);

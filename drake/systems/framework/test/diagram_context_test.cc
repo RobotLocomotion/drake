@@ -45,8 +45,8 @@ class DiagramContextTest : public ::testing::Test {
 
     context_->MakeState();
     ContinuousState<double>* xc = context_->get_mutable_continuous_state();
-    xc->get_mutable_state()->SetAtIndex(0, 42.0);
-    xc->get_mutable_state()->SetAtIndex(1, 43.0);
+    xc->get_mutable_vector()->SetAtIndex(0, 42.0);
+    xc->get_mutable_vector()->SetAtIndex(1, 43.0);
   }
 
   void AddSystem(const System<double>& sys, int index) {
@@ -110,7 +110,7 @@ TEST_F(DiagramContextTest, Time) {
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
   ContinuousState<double>* xc = context_->get_mutable_continuous_state();
-  EXPECT_EQ(2, xc->get_state().size());
+  EXPECT_EQ(2, xc->size());
   EXPECT_EQ(0, xc->get_generalized_position().size());
   EXPECT_EQ(0, xc->get_generalized_velocity().size());
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
@@ -120,12 +120,12 @@ TEST_F(DiagramContextTest, State) {
       context_->GetMutableSubsystemContext(2)->get_mutable_continuous_state();
   ContinuousState<double>* integrator1_xc =
       context_->GetMutableSubsystemContext(3)->get_mutable_continuous_state();
-  EXPECT_EQ(42.0, integrator0_xc->get_state().GetAtIndex(0));
-  EXPECT_EQ(43.0, integrator1_xc->get_state().GetAtIndex(0));
+  EXPECT_EQ(42.0, integrator0_xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, integrator1_xc->get_vector().GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
-  integrator1_xc->get_mutable_state()->SetAtIndex(0, 1000.0);
-  EXPECT_EQ(1000.0, xc->get_state().GetAtIndex(1));
+  integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
+  EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
 }
 
 // Tests that no exception is thrown when connecting a valid source
@@ -159,8 +159,8 @@ TEST_F(DiagramContextTest, Clone) {
   // Verify that the state was copied.
   const ContinuousState<double>* xc = context_->get_continuous_state();
 
-  EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
-  EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));
+  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.

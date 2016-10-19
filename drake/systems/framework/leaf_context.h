@@ -111,7 +111,7 @@ class LeafContext : public Context<T> {
       const int num_v = xc.get_generalized_velocity().size();
       const int num_z = xc.get_misc_continuous_state().size();
       const BasicVector<T>& xc_vector =
-          dynamic_cast<const BasicVector<T>&>(xc.get_state());
+          dynamic_cast<const BasicVector<T>&>(xc.get_vector());
       context->set_continuous_state(std::make_unique<ContinuousState<T>>(
           xc_vector.Clone(), num_q, num_v, num_z));
     }

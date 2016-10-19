@@ -29,15 +29,15 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
   void EvalTimeDerivatives(
       const drake::systems::Context<double>& context,
       drake::systems::ContinuousState<double>* derivatives) const override {
-    double x = context.get_continuous_state()->get_state().GetAtIndex(0);
+    double x = context.get_continuous_state_vector().GetAtIndex(0);
     double xdot = -x + std::pow(x, 3.0);
-    derivatives->get_mutable_state()->SetAtIndex(0, xdot);
+    derivatives->get_mutable_vector()->SetAtIndex(0, xdot);
   }
 
   /// y = x
   void EvalOutput(const drake::systems::Context<double>& context,
                   drake::systems::SystemOutput<double>* output) const override {
-    double x = context.get_continuous_state()->get_state().GetAtIndex(0);
+    double x = context.get_continuous_state_vector().GetAtIndex(0);
     output->GetMutableVectorData(0)->SetAtIndex(0, x);
   }
 

@@ -368,7 +368,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
   rbs2->EvalTimeDerivatives(*context, derivatives.get());
-  auto rbs2_xdot = derivatives->get_state().CopyToVector();
+  auto rbs2_xdot = derivatives->CopyToVector();
 
   //////////////////////////////////////////////////////////////////////////////
   // Performs the comparison.
@@ -464,7 +464,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Obtain the time derivatives; test that speed is zero, return acceleration.
   auto derivatives = rigid_body_sys.AllocateTimeDerivatives();
   rigid_body_sys.EvalTimeDerivatives(*context, derivatives.get());
-  auto xdot = derivatives->get_state().CopyToVector();
+  auto xdot = derivatives->CopyToVector();
   EXPECT_EQ(xdot(0), 0.);  // Not moving.
   return xdot(1);
 }
