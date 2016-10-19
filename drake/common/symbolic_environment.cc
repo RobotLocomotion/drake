@@ -1,6 +1,7 @@
 #include "drake/common/symbolic_environment.h"
 
 #include <cmath>
+#include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -14,8 +15,9 @@ using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
+using std::initializer_list;
 
-Environment::Environment(std::initializer_list<value_type> init) : map_(init) {
+Environment::Environment(const initializer_list<value_type> init) : map_(init) {
   for (const auto& p : init) {
     if (std::isnan(p.second)) {
       ostringstream oss;
@@ -23,6 +25,12 @@ Environment::Environment(std::initializer_list<value_type> init) : map_(init) {
           << " is detected in the initialization of a symbolic environment.";
       throw runtime_error(oss.str());
     }
+  }
+}
+
+Environment::Environment(const initializer_list<key_type> vars) {
+  for (const auto& var : vars) {
+    map_.emplace(var, 0.0);
   }
 }
 
@@ -34,6 +42,10 @@ string Environment::to_string() const {
   ostringstream oss;
   oss << *this;
   return oss.str();
+}
+
+Environment::mapped_type& Environment::operator[](const key_type& key) {
+  return map_[key];
 }
 
 ostream& operator<<(ostream& os, const Environment& env) {
