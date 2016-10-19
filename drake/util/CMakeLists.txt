@@ -1,38 +1,7 @@
-if(Matlab_SIMULINK_FOUND)
-  drake_add_mex(realtime realtime.cpp)
-endif()
-
-drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
-
-if(lcm_FOUND AND Matlab_FOUND)
-  if(Matlab_SIMULINK_FOUND)
-    drake_add_mex(lcmLogger lcmLogger.cpp)
-    target_link_libraries(lcmLogger lcm)
-    if(WIN32)
-      target_link_libraries(lcmLogger ws2_32)
-    endif()
-  endif()
-
-  drake_add_mex(publishLCMLog publishLCMLog.cpp)
-  target_link_libraries(publishLCMLog lcm)
-endif()
-
 add_library(drakeUtil OBJECT drakeUtil.cpp)
 drake_install_headers(drakeUtil.h)
 
 drake_install_headers(drakeAppUtil.h)
-
-if(Matlab_FOUND)
-  drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakeCommon)
-
-  drake_install_headers(drakeMexUtil.h MexWrapper.h)
-  pods_install_libraries(drakeMexUtil)
-  pods_install_pkg_config_file(drake-mex-util
-    LIBS -ldrakeMexUtil
-    REQUIRES
-    VERSION 0.0.1)
-endif()
 
 if(lcm_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
@@ -70,7 +39,23 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
+add_subdirectory(yaml)
+
+# ==== Below this line is MATLAB-specific code ====
+
 if(Matlab_FOUND)
+  drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
+  target_link_libraries(drakeMexUtil drakeCommon)
+
+  drake_install_headers(drakeMexUtil.h MexWrapper.h)
+  pods_install_libraries(drakeMexUtil)
+  pods_install_pkg_config_file(drake-mex-util
+    LIBS -ldrakeMexUtil
+    REQUIRES
+    VERSION 0.0.1)
+
+  drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
+  
   drake_add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeMath)
   drake_add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
@@ -96,9 +81,21 @@ if(Matlab_FOUND)
 
   drake_add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp $<TARGET_OBJECTS:drakeUtil>)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil)
-endif()
 
-add_subdirectory(test)
+  if(Matlab_SIMULINK_FOUND)
+    drake_add_mex(realtime realtime.cpp)
+  endif()
+
+  if(lcm_FOUND)
+    if(Matlab_SIMULINK_FOUND)
+      drake_add_mex(lcmLogger lcmLogger.cpp)
+      target_link_libraries(lcmLogger lcm)
+    endif()
+
+    drake_add_mex(publishLCMLog publishLCMLog.cpp)
+    target_link_libraries(publishLCMLog lcm)
+  endif()
+endif()
 
 # Mex debugging tools:
 if(0)  # NOT WIN32
@@ -146,5 +143,8 @@ if(0)  # NOT WIN32
     PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif()  # NOT WIN32
 
-add_subdirectory(yaml)
 add_subdirectory(geometry/test)
+
+# ==== Below this line is C++ and MATLAB shared code ====
+
+add_subdirectory(test)

@@ -16,12 +16,15 @@ if(BULLET_FOUND)
 endif()
 target_link_libraries(drakeCollision drakeShapes drakeCommon)
 
-enable_testing()
-add_subdirectory(test)
-
 pods_install_libraries(drakeCollision)
 drake_install_headers(DrakeCollision.h point_pair.h Element.h Model.h)
 pods_install_pkg_config_file(drake-collision
   LIBS -ldrakeCollision
   REQUIRES
   VERSION 0.0.1)
+
+# ==== Below this line is MATLAB-specific code ====
+
+# ==== Below this line is C++ and MATLAB shared code ====
+
+add_subdirectory(test)
