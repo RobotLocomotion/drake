@@ -10,6 +10,7 @@
 
 using Eigen::Vector3d;
 using std::make_unique;
+using std::unique_ptr;
 
 namespace drake {
 namespace systems {
@@ -18,8 +19,8 @@ namespace {
 // TODO(amcastro-tri): Create a diagram with a ConstantVectorSource feeding
 // the input of the Gain system.
 template <class T>
-std::unique_ptr<FreestandingInputPort> MakeInput(
-    std::unique_ptr<BasicVector<T>> data) {
+unique_ptr<FreestandingInputPort> MakeInput(
+    unique_ptr<BasicVector<T>> data) {
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
@@ -34,11 +35,11 @@ class GainTest : public ::testing::Test {
   }
 
   const double kGain_{2.0};
-  std::unique_ptr<System<double>> gain_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
+  unique_ptr<System<double>> gain_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<SystemOutput<double>> output_;
+  unique_ptr<BasicVector<double>> input0_;
+  unique_ptr<BasicVector<double>> input1_;
 };
 
 TEST_F(GainTest, VectorThroughGainSystem) {
