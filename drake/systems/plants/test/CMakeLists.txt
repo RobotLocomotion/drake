@@ -98,12 +98,6 @@ target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSy
 
 # ==== Below this line is MATLAB-specific code ====
 
-find_package(Bullet)
-if(BULLET_FOUND)
-  drake_add_cc_test(bullet_collision_zero_rad_sphere_test EXTENSION cpp)
-  target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
-endif()
-
 if(Matlab_FOUND)
   add_rbm_mex(compareParsersmex)
 
