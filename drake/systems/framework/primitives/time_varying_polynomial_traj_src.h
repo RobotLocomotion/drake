@@ -26,13 +26,13 @@ template <typename T>
 class TimeVaryingPolynomialTrajSrc : public LeafSystem<T> {
  public:
   /// Constructs a system with a vector output that is time-varying and equals
-  /// the value of the piecewise polynomial evaluated at a each time.
-  /// @param pp_traj PiecewisePolynomial used by the system. So, the output
-  /// is `y = pp_traj(t)` at all times.
+  /// the value of the trajectory evaluated at a each time.
+  /// @param pp_traj PiecewisePolynomialTrajectory used by the system. The
+  /// output is `y = pp_traj(t)` at all times.
   explicit TimeVaryingPolynomialTrajSrc(
       const PiecewisePolynomialTrajectory<double>& pp_traj);
 
-  /// Outputs a signal with a time-varying polynomial value as specified by the
+  /// Outputs a signal with a time-varying trajectory value as specified by the
   /// user.
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
