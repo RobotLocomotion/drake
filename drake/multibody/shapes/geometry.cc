@@ -270,7 +270,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   string path;
   size_t idx = obj_file_name.rfind('/');
   if (idx != string::npos) {
-    path = obj_file_name.substr(0, idx+1);
+    path = obj_file_name.substr(0, idx + 1);
   }
 
   tinyobj::attrib_t attrib;
