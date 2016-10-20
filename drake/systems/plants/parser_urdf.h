@@ -49,12 +49,11 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
 
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
- * @p tree. In a URDF model, the set of bodies and joints form a tree where
- * there is exactly one body that does not have a parent joint. Let this body
- * be called the "root body". The root body is connected to the world via a
- * systems::plants::joints::kRollPitchYaw joint. When this joint is at its zero
- * position, the root body's frame is coincident with the world's coordinate
- * frame.
+ * @p tree. Let the "base bodies" be the bodies in the model that do not have
+ * parent joints. The base bodies bodies are connected to the world via
+ * systems::plants::joints::kRollPitchYaw joints. When these joints are at their
+ * zero positions, the base body's frames are coincident with the world's
+ * coordinate frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -119,13 +118,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
- * @p tree. In a URDF model, the set of bodies and joints form a tree where
- * there is exactly one body that does not have a parent joint. Let this body
- * be called the "root body".  This method connects the root body to an existing
- * body in @p tree via a joint of type @p floating_base_type. The body in the
- * tree to which to which this joint attaches and the transform between this
- * body and the root body's frame when the joint is in its zero position is
- * determined by @p weld_to_frame.
+ * @p tree. Let the "base bodies" be the bodies in the model that do not have
+ * parent joints.  This method connects the base bodies to an existing
+ * body in @p tree via joints of type @p floating_base_type. The body in the
+ * tree to which to which these joints attach and the transform between this
+ * body and the base bodies's frames when the joints are in their zero positions
+ * is determined by @p weld_to_frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -202,12 +200,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
- * to @p tree. In a URDF model, the set of bodies and joints form a tree where
- * there is exactly one body that does not have a parent joint. Let this body
- * be called the "root body". This method connects the model instance's root
- * body to the world via a systems::plants::joints::kRollPitchYaw joint. When
- * this joint is at its zero position, the root body's frame is coincident with
- * the world's coordinate frame.
+ * to @p tree. Let the "base bodies" be the bodies in the model that do not have
+ * parent joints. This method connects the model instance's base bodies to the
+ * world via systems::plants::joints::kRollPitchYaw joints. When
+ * this joint is at its zero position, the base bodies's frames are coincident
+ * with the world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  *
@@ -230,12 +227,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
- * to @p tree. In a URDF model, the set of bodies and joints form a tree where
- * there is exactly one body that does not have a parent joint. Let this body
- * be called the "root body". This method connects the model instance's root
- * body to the world via a joint of type @p floating_base_type. When this joint
- * is at its zero position, the root body's frame is coincident with the world's
- * coordinate frame.
+ * to @p tree. Let the "base bodies" be the bodies in the model that do not have
+ * parent joints. This method connects the model instance's base bodies to the
+ * world via joints of type @p floating_base_type. When these joints are at
+ * their zero positions, the base bodies's frames are coincident with the
+ * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
  * description of the model. An instance of this model will be added to
@@ -268,13 +264,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
- * to @p tree. In a URDF model, the set of bodies and joints form a tree where
- * there is exactly one body that does not have a parent joint. Let this body
- * be called the "root body". This method connects the root body to an
- * existing body in the tree using a joint of type @p floating_base_type. The
- * body in the tree to which the root body is attached and the transform
- * between this body and the root body when the joint is in its zero position is
- * specified by @p weld_to_frame.
+ * to @p tree. Let the "base bodies" be the bodies in the model that do not have
+ * parent joints. This method connects the base bodies to an existing body in
+ * the tree using joints of type @p floating_base_type. The body in the tree to
+ * which the base bodies are attached and the transform between this body and
+ * the base bodies when the joints are in their zero positions is specified by
+ * @p weld_to_frame.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model. A
  * new instance of this model is created and added to @p tree.
