@@ -568,7 +568,7 @@ GTEST_TEST(FunctionalFormTest, Divide) {
   }
 }
 
-GTEST_TEST(FunctionalFormTest, Functions) {
+GTEST_TEST(FunctionalFormTest, UnaryFunctions) {
   {
     FunctionalForm f = abs(FunctionalForm::Linear({"x"}));
     EXPECT_TRUE(f.IsDifferentiable());
@@ -607,6 +607,46 @@ GTEST_TEST(FunctionalFormTest, Functions) {
 
   {
     FunctionalForm f = sqrt(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+}
+
+GTEST_TEST(FunctionalFormTest, BinaryFunctions) {
+  {
+    FunctionalForm f = max(FunctionalForm::Linear({"x"}),
+                           FunctionalForm::Linear({"y"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f = max(FunctionalForm::Linear({"x"}), 1);
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = max(1, FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = min(FunctionalForm::Linear({"x"}),
+                           FunctionalForm::Linear({"y"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f = min(FunctionalForm::Linear({"x"}), 1);
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = min(1, FunctionalForm::Linear({"x"}));
     EXPECT_TRUE(f.IsDifferentiable());
     EXPECT_EQ(f.GetVariables(), Vars({"x"}));
   }
