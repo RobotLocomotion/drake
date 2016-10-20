@@ -56,6 +56,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
     SolutionResult result = SolutionResult::kUnknownError;
 
     try {
+      prog.SetSolverOption("snopt")
       result = prog.Solve();  // TODO(russt) call fastQP solver
                               // explicitly
     } catch (const std::runtime_error& error) {
@@ -69,7 +70,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
     // TODO(russt) assert that fastQP only falls back on the expected
     // iterations
 
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
                                 MatrixCompareType::absolute));
   }
 
