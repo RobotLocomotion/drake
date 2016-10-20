@@ -17,8 +17,8 @@ endif()
 find_package(Bullet)
 
 if(BULLET_FOUND AND Matlab_FOUND)
-  find_package(BLAS)
   find_package(snopt_c)
+  drake_find_package(BLAS MODULE)
 
   if(BLAS_FOUND AND snopt_c_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)
