@@ -142,12 +142,12 @@ Clarifications
     * split the declaration and definition (be sure to add the ``inline``
       keyword if the function would otherwise have been implicitly inlined).
 
-* When declaring a pointer or a reference, the "``*``" and "``&``" symbols
-  must be next to the variable *type*, not the variable *name*. In other words
-  use "``const MyClass& foo;``" instead of "``const MyClass &foo;``". This is
-  what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For
-  additional context, see
-  `this comment thread <https://reviewable.io/reviews/robotlocomotion/drake/3830#-KUSH9E-rBwyUCb560uX>`_.
+* For the `Pointer and Reference Expressions Rule <https://google.github.io/styleguide/cppguide.html#Pointer_and_Reference_Expressions>`_,
+  we clarify as follows. When declaring a pointer or a reference, the "``*``"
+  and "``&``" symbols must be next to the variable *type*, not the variable
+  *name*. In other words use "``const MyClass& foo;``" instead of
+  "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
+  `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
 .. _code-style-guide-cpp-exceptions:
 
