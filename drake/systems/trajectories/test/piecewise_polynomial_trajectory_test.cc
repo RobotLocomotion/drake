@@ -16,7 +16,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const Polynomiald y = Polynomiald("y");
   const Polynomiald y2 = (2 * y);
   const std::vector<Polynomiald> p_vec{a, y, y2};
-  const std::vector<double> times{0.0, 3, 7, 9}; // Knot points.
+  const std::vector<double> times{0.0, 3, 7, 9};  // Knot points.
   const PiecewisePolynomialType ppFromVec(p_vec, times);
   const PPTrajType ppTrajFromVec {ppFromVec};
   EXPECT_EQ(ppTrajFromVec.length(), 1);
@@ -45,8 +45,8 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const PPTrajType ppTrajFromMatrix {ppFromMatrix};
   EXPECT_EQ(ppTrajFromMatrix.length(), 3);
   EXPECT_EQ(ppTrajFromMatrix.value(2.9)(0), 3);
-  EXPECT_EQ(ppTrajFromMatrix.value(2.9)(1), 2.9); // y
-  EXPECT_EQ(ppTrajFromMatrix.value(1)(2), 2); // y2 = 2 * y
+  EXPECT_EQ(ppTrajFromMatrix.value(2.9)(1), 2.9);  // y
+  EXPECT_EQ(ppTrajFromMatrix.value(1)(2), 2);  // y2 = 2 * y
   EXPECT_EQ(ppTrajFromMatrix.value(2)(2), 4);
   EXPECT_EQ(ppTrajFromMatrix.value(3)(2), 6);
 }
