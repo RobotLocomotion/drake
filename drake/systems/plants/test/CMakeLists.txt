@@ -108,8 +108,8 @@ if(Matlab_FOUND)
   add_ikoptions_mex(testIKoptionsmex)
 endif()
 
-find_package(avl)
-find_package(xfoil)
+drake_find_package(avl CONFIG)
+drake_find_package(xfoil CONFIG)
 
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)
