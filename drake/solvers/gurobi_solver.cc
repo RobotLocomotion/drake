@@ -60,7 +60,6 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
 int AddLorentzConeConstraints(GRBmodel* model,
                               const MathematicalProgram& prog) {
   for (const auto& binding : prog.lorentz_cone_constraints()) {
-    int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
@@ -88,7 +87,7 @@ int AddLorentzConeConstraints(GRBmodel* model,
       qcol.push_back(variable_indices[i]);
       qval.push_back(1.0);
     }
-    error =
+    int error =
         GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[0], 0.0);
     if (error) {
       return error;
@@ -111,7 +110,6 @@ int AddLorentzConeConstraints(GRBmodel* model,
 int AddRotatedLorentzConeConstraint(GRBmodel* model,
                                     const MathematicalProgram& prog) {
   for (const auto& binding : prog.rotated_lorentz_cone_constraints()) {
-    int error;
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
@@ -145,6 +143,7 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
       qval.push_back(1.0);
     }
     // x[0] >= 0, x[1] >= 0
+    int error;
     for (int i = 0; i < 2; i++) {
       error = GRBsetdblattrelement(model, GRB_DBL_ATTR_LB, variable_indices[i],
                                    0.0);
@@ -176,8 +175,8 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     const int constraint_variable_dimension = binding.GetNumElements();
-    Eigen::MatrixXd Q = constraint->Q();
-    Eigen::VectorXd b = constraint->b();
+    const Eigen::MatrixXd& Q = constraint->Q();
+    const Eigen::VectorXd& b = constraint->b();
 
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
@@ -308,9 +307,9 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
         variable_indices.push_back(var.index() + i);
       }
     }
-    Eigen::MatrixXd A = constraint->A();
-    Eigen::VectorXd lb = constraint->lower_bound();
-    Eigen::VectorXd ub = constraint->upper_bound();
+    const Eigen::MatrixXd& A = constraint->A();
+    const Eigen::VectorXd& lb = constraint->lower_bound();
+    const Eigen::VectorXd& ub = constraint->upper_bound();
 
     // Go through the matrix A row by row to determine whether to add it as
     // a less than or greater than constraint, or both.
@@ -377,12 +376,14 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const auto& constraint = binding.constraint();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
+    int var_idx = 0;
     for (const DecisionVariableView& decision_variable_view :
          binding.variable_list()) {
       for (size_t k = 0; k < decision_variable_view.size(); k++) {
         const int idx = decision_variable_view.index() + k;
-        xlow[idx] = std::max(lower_bound(k), xlow[idx]);
-        xupp[idx] = std::min(upper_bound(k), xupp[idx]);
+        xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
+        xupp[idx] = std::min(upper_bound(var_idx), xupp[idx]);
+        var_idx++;
       }
     }
   }

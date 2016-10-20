@@ -197,18 +197,18 @@ class DRAKE_EXPORT MathematicalProgram {
     VariableList variable_list_;
 
    public:
-    Binding(std::shared_ptr<C> const& c, VariableList const& v)
+    Binding(const std::shared_ptr<C>& c, const VariableList& v)
         : constraint_(c), variable_list_(v) {}
     template <typename U>
     Binding(
-        Binding<U> const& b,
+        const Binding<U>& b,
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
         : Binding(b.constraint(), b.variable_list()) {}
 
-    std::shared_ptr<C> const& constraint() const { return constraint_; }
+    const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-    VariableList const& variable_list() const { return variable_list_; }
+    const VariableList& variable_list() const { return variable_list_; }
 
     /**
      * @return A Eigen::VectorXd for all the variables in the variable list.
@@ -269,7 +269,7 @@ class DRAKE_EXPORT MathematicalProgram {
    public:
     // Construct by copying from an lvalue.
     template <typename... Args>
-    ConstraintImpl(F const& f, Args&&... args)
+    ConstraintImpl(const F& f, Args&&... args)
         : Constraint(detail::FunctionTraits<F>::numOutputs(f),
                      std::forward<Args>(args)...),
           f_(f) {}
@@ -369,7 +369,7 @@ class DRAKE_EXPORT MathematicalProgram {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddCost(F&& f, VariableList const& vars) {
+  AddCost(F&& f, const VariableList& vars) {
     auto c = MakeCost(std::forward<F>(f));
     AddCost(c, vars);
     return c;
@@ -390,7 +390,7 @@ class DRAKE_EXPORT MathematicalProgram {
   // Provide an explicit alternative for this case.
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
-                                      VariableList const& vars) {
+                                      const VariableList& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
     AddCost(c, vars);
@@ -406,8 +406,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * Applied to a subset of the variables and pushes onto
    * the linear cost data structure.
    */
-  void AddCost(std::shared_ptr<LinearConstraint> const& obj,
-               VariableList const& vars) {
+  void AddCost(const std::shared_ptr<LinearConstraint>& obj,
+               const VariableList& vars) {
     required_capabilities_ |= kLinearCost;
     int var_dim = GetVariableListSize(vars);
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
@@ -449,8 +449,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * Applied to subset of the variables and pushes onto
    * the quadratic cost data structure.
    */
-  void AddCost(std::shared_ptr<QuadraticConstraint> const& obj,
-               VariableList const& vars) {
+  void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
+               const VariableList& vars) {
     required_capabilities_ |= kQuadraticCost;
     int var_dim = GetVariableListSize(vars);
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
@@ -524,7 +524,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * expensive solver.
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kGenericConstraint;
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
@@ -534,7 +534,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kLinearConstraint;
     int var_dim = GetVariableListSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
@@ -572,7 +572,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * subset of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kLinearEqualityConstraint;
     int var_dim = GetVariableListSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
@@ -616,7 +616,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
-                     VariableList const& vars) {
+                     const VariableList& vars) {
     required_capabilities_ |= kLinearConstraint;
     int var_dim = GetVariableListSize(vars);
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));

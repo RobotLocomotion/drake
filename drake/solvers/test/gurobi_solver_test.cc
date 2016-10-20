@@ -19,15 +19,16 @@ void RunGurobiSolver(MathematicalProgram* prog) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
-// Take the linear programming example from
+// Adapt from the linear programming example
 // http://cvxopt.org/examples/tutorial/lp.html
 // Solve the following linear program
 // min  2x0 + x1
 // s.t -x0 + x1 <= 1
 //      x0 + x1 >= 2
-//      x1 >= 0
+//      x0 >= 0
 //      x0 - 2x1 <= 4
-// The optimal solution is x0 = 0.5, x1 = 1.5;
+//      x1 >= 2
+// The optimal solution is x0 = 1, x1 = 2
 GTEST_TEST(testGurobi, gurobiLPExample1) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");
@@ -40,11 +41,13 @@ GTEST_TEST(testGurobi, gurobiLPExample1) {
   Eigen::Vector3d b_ub(1.0, std::numeric_limits<double>::infinity(), 4.0);
   prog.AddLinearConstraint(A, b_lb, b_ub);
   prog.AddBoundingBoxConstraint(
-      drake::Vector1d(0),
-      drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+      Eigen::Vector2d(0.0, 2.0),
+      Eigen::Vector2d(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()),
+      {x(0), x(1)});
 
   RunGurobiSolver(&prog);
-  Eigen::Vector2d x_expected(0.5, 1.5);
+  Eigen::Vector2d x_expected(1, 2);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-10,
                               MatrixCompareType::absolute));
 }
