@@ -32,9 +32,6 @@ namespace systems {
 
  Individual /contact details/ can be examined (if they exist).
 
- Sub-classes must be copy-constructable; they must override the clone method as
- well as defining the copy constructor.
-
  @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
