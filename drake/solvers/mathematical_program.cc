@@ -1,6 +1,7 @@
 #include "mathematical_program.h"
 
 #include "equality_constrained_qp_solver.h"
+#include "gurobi_solver.h"
 #include "ipopt_solver.h"
 #include "linear_system_solver.h"
 #include "moby_lcp_solver.h"
@@ -57,7 +58,8 @@ MathematicalProgram::MathematicalProgram()
       snopt_solver_(new SnoptSolver()),
       moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
-      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()) {}
+      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      gurobi_solver_(new GurobiSolver()) {}
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
