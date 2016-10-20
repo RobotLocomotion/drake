@@ -8,8 +8,8 @@ ContactDetail<T>::ContactDetail(const Vector3<T>& point,
     : application_point_(point), wrench_(wrench) {}
 
 template <typename T>
-ContactDetail<T>* ContactDetail<T>::clone() const {
-  return new ContactDetail<T>(*this);
+std::unique_ptr<ContactDetail<T>>ContactDetail<T>::Clone() const {
+  return std::make_unique<ContactDetail<T>>(*this);
 }
 
 // Explicitly instantiates on the most common scalar types.
