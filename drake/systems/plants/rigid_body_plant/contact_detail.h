@@ -33,7 +33,19 @@ class DRAKE_EXPORT ContactDetail {
    */
   ContactDetail(const Vector3<T>& point, const WrenchVector<T>& wrench);
 
-  /** The point the Force is applied, expressed in the world frame */
+  virtual ~ContactDetail() {}
+
+  // ContactDetail requires both move and copy constructors.
+  //  Copy constructor because it is used as an abstract value in an output
+  //    port; the Value class requires copy constructors.
+  //  Move constructor because ContactManifold::ComputeNetResponse returns a
+  //    ContactDetail by value and the move constructor facilitates this.
+  ContactDetail(const ContactDetail<T>& other) = default;
+  ContactDetail<T>& operator=(const ContactDetail<T>& other) = default;
+  ContactDetail(ContactDetail<T>&& other) = default;
+  ContactDetail<T>& operator=(ContactDetail<T>&& other) = default;
+
+  /** The point the Force is applied, expressed in the world frame. */
   const Vector3<T>& get_application_point() const { return application_point_; }
 
   /** Returns the *spatial* wrench. */
@@ -42,10 +54,10 @@ class DRAKE_EXPORT ContactDetail {
   virtual std::unique_ptr<ContactDetail> Clone() const;
 
  private:
-  /** The point at which the wrench is applied, expressed in the world frame. */
+  // The point at which the wrench is applied, expressed in the world frame.
   Vector3<T> application_point_{};
 
-  /** The contact wrench expressed in the world frame. */
+  // The contact wrench expressed in the world frame.
   WrenchVector<T> wrench_{};
 };
 
