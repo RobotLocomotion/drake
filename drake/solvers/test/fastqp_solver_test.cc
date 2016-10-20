@@ -56,7 +56,6 @@ GTEST_TEST(testFastQP, unitBallExample) {
     SolutionResult result = SolutionResult::kUnknownError;
 
     try {
-      prog.SetSolverOption("snopt")
       result = prog.Solve();  // TODO(russt) call fastQP solver
                               // explicitly
     } catch (const std::runtime_error& error) {
@@ -86,6 +85,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
 
     SolutionResult result = SolutionResult::kUnknownError;
 
+    prog.SetSolverOption("GUROBI", "BarConvTol", 1E-9);
     ASSERT_NO_THROW(result = prog.Solve());
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
 

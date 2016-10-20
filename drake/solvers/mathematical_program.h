@@ -940,6 +940,10 @@ class DRAKE_EXPORT MathematicalProgram {
    * guide section "Options Reference"
    * http://www.coin-or.org/Ipopt/documentation/node40.html
    *
+   * "GUROBI" -- Parameter name and values as specified in GUROBI Reference
+   * Manual, section 10.2 "Parameter Descriptions"
+   * https://www.gurobi.com/documentation/6.5/refman/parameters.html
+   *
    * "Mosek" -- Accepts two parameters:
    * - "maxormin"
    *   + Maximize or minimize current problem using either "max" or "min".

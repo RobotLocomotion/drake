@@ -422,6 +422,23 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     error = GRBoptimize(model);
   }
 
+
+  if (!error) {
+    for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
+      error = GRBsetdblparam(env, it.first.c_str(), it.second);
+      if(error) {
+        continue;
+      }
+    }
+  }
+  if (!error) {
+    for (const auto it : prog.GetSolverOptionsInt("GUROBI")) {
+      error = GRBsetintparam(env, it.first.c_str(), it.second);
+      if (error) {
+        continue;
+      }
+    }
+  }
   // If any error exists so far, its either from invalid input or
   // from unknown errors.
   // TODO(naveenoid) : Properly handle gurobi specific error.
