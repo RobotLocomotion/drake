@@ -321,6 +321,42 @@ class DRAKE_EXPORT FunctionalForm {
       FunctionalForm
       log(FunctionalForm const& x);
 
+  /** Return the form of the \c max function applied to forms
+      \p lhs and \p rhs.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      max(FunctionalForm const& lhs, FunctionalForm const& rhs);
+
+  /** Return the form of the \c max function applied to form
+      \p lhs and a \ref constant or \ref zero.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      max(FunctionalForm const& lhs, double rhs);
+
+  /** Return the form of the \c max function applied to form
+      \p rhs and a \ref constant or \ref zero.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      max(double lhs, FunctionalForm const& rhs);
+
+  /** Return the form of the \c min function applied to forms
+      \p lhs and \p rhs.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      min(FunctionalForm const& lhs, FunctionalForm const& rhs);
+
+  /** Return the form of the \c min function applied to form
+      \p lhs and a \ref constant or \ref zero.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      min(FunctionalForm const& lhs, double rhs);
+
+  /** Return the form of the \c min function applied to form
+      \p rhs and a \ref constant or \ref zero.  */
+  friend DRAKE_EXPORT
+      FunctionalForm
+      min(double lhs, FunctionalForm const& rhs);
+
   /** Return a copy of \p x updated to record application of a
       \c sin function.  */
   friend DRAKE_EXPORT
