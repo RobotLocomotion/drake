@@ -162,7 +162,7 @@ find_package(Threads MODULE REQUIRED)
 # set up and build lcm types
 find_package(lcm)
 if(lcm_FOUND)
-  find_package(bot2-core)
+  drake_find_package(bot2-core CONFIG)
 
   add_subdirectory(lcmtypes)
 
