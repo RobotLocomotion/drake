@@ -39,7 +39,6 @@ class DRAKE_EXPORT ContactInfo {
   ContactInfo(const ContactInfo<T>& other);
   ContactInfo& operator=(const ContactInfo<T>& other);
 
-  ContactInfo* clone() const;
 
   DrakeCollision::ElementId get_element_id_1() const;
   DrakeCollision::ElementId get_element_id_2() const;
