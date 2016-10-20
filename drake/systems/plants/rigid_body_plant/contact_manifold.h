@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 
 // The intention is that this will be sub-classed to support contact manifolds
-// defined with arbitrary data..
+// defined with arbitrary data.
 //
 // For example: Hertzian contact.  The Force will still be applied at a single
 // point, but the manifold includes the information of the size of the contact
