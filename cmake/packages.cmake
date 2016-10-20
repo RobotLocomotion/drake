@@ -8,7 +8,7 @@ mark_as_advanced(FIND_PACKAGE_STRICT)
 # to indicate whether the package was found.
 #
 #   drake_find_package(<PACKAGE> [REQUIRED] [QUIET | NO_QUIET]
-#                      [CONFIG | MODULE])
+#                      [CONFIG | MODULE | PKG_CONFIG])
 #
 # Arguments:
 #   <PACKAGE>
@@ -25,9 +25,11 @@ mark_as_advanced(FIND_PACKAGE_STRICT)
 #     Use config mode to find the package.
 #   MODULE
 #     Use module mode to find the package.
+#   PKG_CONFIG
+#     Use pkg-config to find the package.
 #------------------------------------------------------------------------------
 macro(drake_find_package PACKAGE)
-  cmake_parse_arguments(DFP "NO_QUIET;QUIET;REQUIRED" "" "" ${ARGN})
+  cmake_parse_arguments(DFP "NO_QUIET;PKG_CONFIG;QUIET;REQUIRED" "" "" ${ARGN})
 
   if(DFP_REQUIRED)
     set(dfp_required REQUIRED)
@@ -37,8 +39,13 @@ macro(drake_find_package PACKAGE)
     set(dfp_quiet QUIET)
   endif()
 
-  find_package("${PACKAGE}" ${dfp_required} ${dfp_quiet}
-    ${DFP_UNPARSED_ARGUMENTS})
+  if(DFP_PKG_CONFIG)
+    drake_find_package(PkgConfig MODULE REQUIRED)
+    pkg_check_modules("${PACKAGE}" ${dfp_quiet} ${dfp_required} "${PACKAGE}")
+  else()
+    find_package("${PACKAGE}" ${dfp_required} ${dfp_quiet}
+      ${DFP_UNPARSED_ARGUMENTS})
+  endif()
 
   string(TOUPPER "${PACKAGE}" dfp_package_upper)
 
@@ -52,6 +59,7 @@ macro(drake_find_package PACKAGE)
   unset(dfp_required)
 
   unset(DFP_NO_QUIET)
+  unset(DFP_PKG_CONFIG)
   unset(DFP_QUIET)
   unset(DFP_REQUIRED)
   unset(DFP_UNPARSED_ARGUMENTS)
