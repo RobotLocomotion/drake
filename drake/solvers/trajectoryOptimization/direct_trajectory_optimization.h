@@ -191,14 +191,19 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
                         std::vector<double>* times) const;
 
   /**
-   * Get the input trajectory as a PiecewisePolynomial
+   * Returns a vector containing the elapsed time at each knot point.
    */
-  PiecewisePolynomial<double> ReconstructInputTrajectory() const;
+  std::vector<double> GetTimeVector() const;
 
   /**
-   * Get the state trajectory as a PiecewisePolynomial
+   * Returns a vector containing the input values at each knot point.
    */
-  PiecewisePolynomial<double> ReconstructStateTrajectory() const;
+  std::vector<Eigen::MatrixXd> GetInputVector() const;
+
+  /**
+   * Returns a vector containing the state values at each knot point.
+   */
+  std::vector<Eigen::MatrixXd> GetStateVector() const;
 
  protected:
   /**
@@ -221,21 +226,6 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
                                double trajectory_time_upper_bound);
   // TODO(Lucy-tri) add param to indicate whether time steps are constant or
   // independent, and modify implementation to handle.
-
-  /**
-   * Returns a vector containing the elapsed time at each knot point.
-   */
-  std::vector<double> GetTimeVector() const;
-
-  /**
-   * Returns a vector containing the input values at each knot point.
-   */
-  std::vector<Eigen::MatrixXd> GetInputVector() const;
-
-  /**
-   * Returns a vector containing the state values at each knot point.
-   */
-  std::vector<Eigen::MatrixXd> GetStateVector() const;
 
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }

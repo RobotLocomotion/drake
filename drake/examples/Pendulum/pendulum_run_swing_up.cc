@@ -63,9 +63,11 @@ int do_main(int argc, char* argv[]) {
   }
 
   const PiecewisePolynomialType pp_traj =
-      dircol_traj.ReconstructInputTrajectory();
+      PiecewisePolynomialType::ReconstructInputTrajectory(
+        dircol_traj.GetTimeVector(), dircol_traj.GetInputVector());
   const PiecewisePolynomialType pp_xtraj =
-      dircol_traj.ReconstructStateTrajectory();
+    PiecewisePolynomialType::ReconstructStateTrajectory(
+      dircol_traj.GetTimeVector(), dircol_traj.GetStateVector());
   auto input_source = builder.AddSystem<
     systems::TimeVaryingPolynomialSource>(pp_traj);
   auto state_source = builder.AddSystem<

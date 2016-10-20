@@ -231,17 +231,5 @@ void DirectTrajectoryOptimization::GetResultSamples(
   }
 }
 
-PiecewisePolynomial<double>
-DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetInputVector());
-}
-
-PiecewisePolynomial<double>
-DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetStateVector());
-}
-
 }  // solvers
 }  // drake
