@@ -49,7 +49,5 @@ class DRAKE_EXPORT ContactDetail {
   WrenchVector<T> wrench_{};
 };
 
-extern template class DRAKE_EXPORT ContactDetail<double>;
-
 }  // namespace systems
 }  // namespace drake
