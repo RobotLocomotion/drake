@@ -12,7 +12,6 @@ if(lcm_FOUND)
     drakePendulumSystem drakeTrajectoryOptimization GTest::GTest GTest::Main)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
-  find_package(NLopt)
   find_package(snopt_c)
 
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
