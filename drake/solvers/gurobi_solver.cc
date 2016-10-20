@@ -426,7 +426,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (!error) {
     for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {
       error = GRBsetdblparam(env, it.first.c_str(), it.second);
-      if(error) {
+      if (error) {
         continue;
       }
     }
