@@ -33,9 +33,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3 REQUIRED)
+  find_package(PythonInterp 3 MODULE REQUIRED)
 else()
-  find_package(PythonInterp REQUIRED)
+  find_package(PythonInterp MODULE REQUIRED)
 endif()
 
 # set up pods
@@ -133,7 +133,7 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   else()
     # Use find_package to find "all of matlab" along with what is needed to use
     # matlab_add_unit_test and matlab_add_mex
-    find_package(Matlab REQUIRED
+    find_package(Matlab MODULE REQUIRED
       COMPONENTS
         MAIN_PROGRAM
         MEX_COMPILER
@@ -157,7 +157,7 @@ set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-find_package(Threads REQUIRED)
+find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
 find_package(lcm)

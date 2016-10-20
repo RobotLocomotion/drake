@@ -25,9 +25,9 @@ else()
   message(STATUS "SPHINX_EXECUTABLE (sphinx-build) not found. Sphinx will be excluded from the documentation build.")
 endif()
 
-find_package(Doxygen)
+find_package(Doxygen MODULE)
 
-if(DOXYGEN_FOUND)
+if(Doxygen_FOUND)
   configure_file(Doxyfile_CXX.in Doxyfile_CXX @ONLY)
   add_custom_command(
     COMMAND ${DOXYGEN_EXECUTABLE}
@@ -40,9 +40,9 @@ if(DOXYGEN_FOUND)
     DESTINATION ${DRAKE_DOCUMENTATION_DIR}/doxygen_cxx OPTIONAL)
   list(APPEND DRAKE_DOCUMENTATION_OUTPUTS doxygen_cxx_output)
 
-  find_package(Perl)
+  find_package(Perl MODULE)
 
-  if(PERL_FOUND)
+  if(Perl_FOUND)
     configure_file(Doxyfile_MATLAB.in Doxyfile_MATLAB @ONLY)
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/DoxygenMatlab
       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
