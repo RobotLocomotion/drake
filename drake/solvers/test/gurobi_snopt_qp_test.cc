@@ -1,4 +1,4 @@
-// @file This is to test a QP problem solved by both SNOPT and Gurobi
+/// @file This is to test a QP problem solved by both SNOPT and Gurobi
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
@@ -6,14 +6,14 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 
+namespace drake {
+namespace solvers {
+namespace {
 /**
  * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
  * The pamater of this QP is randomly generated.
  */
-namespace drake {
-namespace solvers {
-namespace {
 GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");

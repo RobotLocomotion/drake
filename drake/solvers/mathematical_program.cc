@@ -22,12 +22,10 @@ AttributesSet kEqualityConstrainedQPCapabilities =
 // Solver for Linear Complementarity Problems (LCPs)
 AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 
-// Solver for Quadratic Programs (QPs); commented out until Gurobi is ready
-// to land.
-// AttributesSet kGurobiCapabilities = (
-//     kLinearEqualityConstraint | kLinearInequalityConstraint |
-//     kLorentzConeConstraint | kRotatedLorentzConeConstraint
-//     kLinearCost | kQuadraticCost);
+// Gurobi solver capabilities.
+AttributesSet kGurobiCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
@@ -76,6 +74,9 @@ SolutionResult MathematicalProgram::Solve() {
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
+             gurobi_solver_->available()) {
+    return gurobi_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
