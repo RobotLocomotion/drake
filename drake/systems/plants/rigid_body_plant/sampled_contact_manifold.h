@@ -21,6 +21,11 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
  public:
+  // This class is not movable
+  SampledContactManifold(SampledContactManifold<T>&& other) = delete;
+  SampledContactManifold<T>& operator=(SampledContactManifold<T>&& other) =
+      delete;
+
   /** Default constructor */
   SampledContactManifold();
 
@@ -46,7 +51,8 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   ContactDetail<T> ComputeNetResponse() const override;
 
   /** Reports the number of distinct contact details for this manifold. */
-  size_t get_num_contacts() const override { return contact_details_.size(); }
+  int get_num_contacts() const override {
+    return static_cast<int>(contact_details_.size()); }
 
   /**
    * Get the ith contact detail in the manifold.
@@ -54,7 +60,7 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
    * @return A pointer to the ith contact detail.
    * @throws std::logic_error if the index is out of range.
    */
-  const ContactDetail<T>* get_ith_contact(size_t i) const override;
+  const ContactDetail<T>* get_ith_contact(int i) const override;
 
   std::unique_ptr<ContactManifold<T>> Clone() const override;
 
