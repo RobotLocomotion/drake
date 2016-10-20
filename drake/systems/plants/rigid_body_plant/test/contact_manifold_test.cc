@@ -1,13 +1,8 @@
-#include <iostream>
-#include <memory>
+#include "drake/systems/plants/rigid_body_plant/sampled_contact_manifold.h"
 
 #include <gtest/gtest.h>
-#include <Eigen/Geometry>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/eigen_types.h"
-#include "drake/systems/plants/rigid_body_plant/contact_detail.h"
-#include "drake/systems/plants/rigid_body_plant/sampled_contact_manifold.h"
 
 namespace drake {
 namespace systems {
@@ -35,7 +30,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 class SampleCollisionManifoldTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Do not change these values; tests rely on them as is
+    // Do not change these values; tests rely on them as is.
     p0_ = TestVector::Zero();
     w0_ = TestWrench::Zero();
     p1_ << 0, 1, 0;
@@ -56,7 +51,7 @@ class SampleCollisionManifoldTest : public ::testing::Test {
   TestWrench w2_;
   TestVector p3_;
   TestWrench w3_;
-  /** Arbitrary point away from contacts to serve as center of mass */
+  // Arbitrary point away from contacts to serve as center of mass.
   TestVector origin_;
 };
 
@@ -85,20 +80,20 @@ TestWrench ApplyManifold(const TestVector& center_of_mass,
 // due to the fact that the manifold is empty, or that the applied forces
 // are, in fact, zero.
 TEST_F(SampleCollisionManifoldTest, ZeroForceManifold) {
-  // test on empty manifold
+  // Case 1: Empty manifold.
   SampledContactManifold<double> manifold;
   auto net = manifold.ComputeNetResponse();
   EXPECT_TRUE(CompareMatrices(net.get_application_point(), TestVector::Zero()));
   EXPECT_TRUE(CompareMatrices(net.get_wrench(), TestWrench::Zero()));
 
-  // Single zero force
+  // Case 2: Manifold with single zero force.
   auto zero_contact = make_unique<TestContactDetail>(p0_, w0_);
   manifold.AddContactDetail(move(zero_contact));
   net = manifold.ComputeNetResponse();
   EXPECT_TRUE(CompareMatrices(net.get_application_point(), TestVector::Zero()));
   EXPECT_TRUE(CompareMatrices(net.get_wrench(), TestWrench::Zero()));
 
-  // two zero forces
+  // Case 3: Manifold with two zero forces.
   zero_contact = make_unique<TestContactDetail>(p1_, w0_);
   manifold.AddContactDetail(move(zero_contact));
   net = manifold.ComputeNetResponse();
@@ -109,12 +104,12 @@ TEST_F(SampleCollisionManifoldTest, ZeroForceManifold) {
 // Performs the work of adding details to the manifold, confirming that they
 // are properly registered and that the data comes back as provided.
 TEST_F(SampleCollisionManifoldTest, AddDetail) {
-  // test on empty manifold
+  // Case 1: Empty manifold
   SampledContactManifold<double> manifold;
   EXPECT_EQ(0, manifold.get_num_contacts());
   EXPECT_THROW(manifold.get_ith_contact(0), std::logic_error);
 
-  // Zero force
+  // Case 2: Manifold with single zero force.
   auto zero_contact = make_unique<TestContactDetail>(p0_, w0_);
   manifold.AddContactDetail(move(zero_contact));
   EXPECT_EQ(1, manifold.get_num_contacts());
@@ -124,7 +119,7 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
   EXPECT_TRUE(CompareMatrices(p, TestVector::Zero()));
   EXPECT_TRUE(CompareMatrices(w, TestWrench::Zero()));
 
-  // Two forces
+  // Case 3: Manifold with two forces.
   auto unitYForce = make_unique<TestContactDetail>(p1_, w1_);
   manifold.AddContactDetail(move(unitYForce));
   EXPECT_EQ(2, manifold.get_num_contacts());
@@ -134,7 +129,7 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
   EXPECT_TRUE(CompareMatrices(p, p1_));
   EXPECT_TRUE(CompareMatrices(w, w1_));
 
-  // three forces
+  // Case 3: Manifold with three forces.
   auto zForce = make_unique<TestContactDetail>(p2_, w2_);
   manifold.AddContactDetail(move(zForce));
   EXPECT_EQ(3, manifold.get_num_contacts());
@@ -149,12 +144,11 @@ TEST_F(SampleCollisionManifoldTest, AddDetail) {
 // provide no torque.  The validity of the net wrench is determined by applying
 // the net wrench to an arbitrary center of mass (measured and expressed in
 // world frame) to the full manifold applied to the same point.  The resultant
-//  wrench *on that point* should be the same.
+// wrench *on that point* should be the same.
 TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
-  // test on empty manifold
   SampledContactManifold<double> manifold;
 
-  // Test on single force
+  // Case 1: Manifold contains a single force with a unit torque.
   TestWrench w1;
   w1 << 1, 0, 0, 0, 0, 0;
   auto x_torque = make_unique<TestContactDetail>(p0_, w1);
@@ -167,7 +161,7 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
       ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
   EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 
-  // two planar forces
+  // Case 2: Manifold contains two forces, each with different unit torques.
   TestWrench w2;
   w2 << 0, 1, 0, 0, 0, 0;
   auto y_torque = make_unique<TestContactDetail>(p2_, w2);
@@ -185,17 +179,16 @@ TEST_F(SampleCollisionManifoldTest, NetFromTorqueOnly) {
 // expressed in world frame) to the full manifold applied to the same point.
 // The resultant wrench *on that point* should be the same.
 TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
-  // test on empty manifold
   SampledContactManifold<double> manifold;
 
-  // Test on single force
+  // Case 1: Manifold with single force with no torque.
   auto unit_y_force = make_unique<TestContactDetail>(p1_, w1_);
   manifold.AddContactDetail(move(unit_y_force));
   auto net = manifold.ComputeNetResponse();
   EXPECT_EQ(net.get_application_point(), p1_);
   EXPECT_EQ(net.get_wrench(), w1_);
 
-  // two symmetric, planar forces.
+  // Case 2: Manifold contains two symmetric, planar forces with no torques.
   auto zForce = make_unique<TestContactDetail>(p2_, w2_);
   manifold.AddContactDetail(move(zForce));
   net = manifold.ComputeNetResponse();
@@ -207,7 +200,7 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
       ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
   EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 
-  // two non-planar forces
+  // Case 3: Manifold contains two non-planar forces with no torques.
   SampledContactManifold<double> manifold2;
   unit_y_force = make_unique<TestContactDetail>(p1_, w1_);
   manifold2.AddContactDetail(move(unit_y_force));

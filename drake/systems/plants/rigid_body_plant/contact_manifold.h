@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <set>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"

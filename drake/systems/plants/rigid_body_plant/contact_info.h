@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
+#include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/rigid_body_plant/contact_manifold.h"
 
 namespace drake {

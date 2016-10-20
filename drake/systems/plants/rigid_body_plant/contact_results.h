@@ -10,7 +10,8 @@ namespace drake {
 namespace systems {
 
 // Forward declaration
-template <typename T> class RigidBodyPlant;
+template <typename T>
+class RigidBodyPlant;
 
 /**
  A class containg the contact results (contact points and response wrenches for
