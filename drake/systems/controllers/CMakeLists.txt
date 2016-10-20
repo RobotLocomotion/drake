@@ -1,7 +1,5 @@
 drake_install_headers(
-  LQR.h
-  open_loop_trajectory_controller.h
-  simple_feedback_trajectory_controller.h)
+  LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
@@ -91,4 +89,3 @@ if(Matlab_FOUND)
 endif()
 
 # ==== Below this line is C++ and MATLAB shared code ====
-
