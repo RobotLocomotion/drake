@@ -1,7 +1,3 @@
-# IMPORTANT NOTE!!
-# matlab has it's own boost libraries.  DO NOT let any mex file depend
-# on the system boost (directly nor indirectly), or you're asking for trouble.
-
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
@@ -49,12 +45,63 @@ pods_install_pkg_config_file(drake-rbm
   REQUIRES
   VERSION 0.0.1)
 
+add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
+target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint)
+
+drake_install_headers(RigidBodySystem.h)
+pods_install_libraries(drakeRBSystem)
+pods_install_pkg_config_file(drake-rbsystem
+  CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
+  LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
+  VERSION 0.0.1)
+
+if(lcm_FOUND)
+  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
+  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
+  pods_install_executables(rigidBodyLCMNode)
+  drake_install_headers(BotVisualizer.h)
+endif()
+
+add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
+target_link_libraries(drakeIKoptions drakeRBM)
+
 pods_find_pkg_config(gurobi)
 
+# Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
+# moved it into the "C++ and MATLAB shared code" lower section of this file,
+# because the C++ IK will remain in this directory.  Only MATLAB code that will
+# be evicted from this directory is moved to the lower section of this file.
+set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
+  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp
+  inverseKinTrajBackend.cpp)
+set(drakeIK_PODS_PKG)
+if(gurobi_FOUND)
+  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
+  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
+endif()
+add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
+if(drakeIK_PODS_PKG)
+  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
+endif()
+target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
+pods_install_libraries(drakeIK)
+pods_install_libraries(drakeIKoptions)
+drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
+  inverseKinBackend.h)
+pods_install_pkg_config_file(drake-ik
+  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
+  REQUIRES drake-rbm
+  VERSION 0.0.1)
+
 add_subdirectory(shapes)
-add_subdirectory(collision)
-add_subdirectory(constraint)
-add_subdirectory(joints)
+add_subdirectory(rigid_body_plant)
+add_subdirectory(spring_mass_system)
+
+# ==== Below this line is MATLAB-specific code ====
+
+# IMPORTANT NOTE!!
+# matlab has it's own boost libraries.  DO NOT let any mex file depend
+# on the system boost (directly nor indirectly), or you're asking for trouble.
 
 if(Matlab_FOUND)
   drake_add_mex(rbmMexFunctions rigidBodyTreeMexFunctions.cpp)
@@ -105,17 +152,13 @@ if(Matlab_FOUND)
   add_rbm_mex(collisionDetectFromPointsmex)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
+  pods_find_pkg_config(gurobi)
   if(gurobi_FOUND)
     drake_add_mex(solveLCPmex solveLCPmex.cpp)
     target_compile_definitions(solveLCPmex PRIVATE "PATHLCP_MEXFILE=\"${PROJECT_SOURCE_DIR}/thirdParty/misc/pathlcp/lcppath.${Matlab_MEX_EXTENSION}\"")
     target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
   endif()
-endif()
 
-add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
-target_link_libraries(drakeIKoptions drakeRBM)
-
-if(Matlab_FOUND)
   macro(add_ikoptions_mex)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
@@ -128,33 +171,7 @@ if(Matlab_FOUND)
     drake_add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeRigidBodyConstraint)
   endmacro()
-endif()
 
-set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
-  inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp
-  inverseKinTrajBackend.cpp)
-set(drakeIK_PODS_PKG)
-if(gurobi_FOUND)
-  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
-  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
-endif()
-
-
-add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
-if(drakeIK_PODS_PKG)
-  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
-endif()
-target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
-pods_install_libraries(drakeIK)
-pods_install_libraries(drakeIKoptions)
-drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
-  inverseKinBackend.h)
-pods_install_pkg_config_file(drake-ik
-  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-  REQUIRES drake-rbm
-  VERSION 0.0.1)
-
-if(Matlab_FOUND)
   if(gurobi_FOUND)
     drake_add_mex(approximateIKmex approximateIKmex.cpp)
     target_link_libraries(approximateIKmex drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
@@ -169,7 +186,6 @@ if(Matlab_FOUND)
   endmacro()
 
   find_package(snopt_c)
-
   if(snopt_c_FOUND)
     add_ik_mex(inverseKinmex)
     add_ik_mex(inverseKinPointwisemex)
@@ -177,25 +193,9 @@ if(Matlab_FOUND)
   endif()
 endif()
 
-add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint)
+# ==== Below this line is C++ and MATLAB shared code ====
 
-drake_install_headers(RigidBodySystem.h)
-pods_install_libraries(drakeRBSystem)
-pods_install_pkg_config_file(drake-rbsystem
-  CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-  LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
-  VERSION 0.0.1)
-
-if(lcm_FOUND)
-  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
-  pods_install_executables(rigidBodyLCMNode)
-  drake_install_headers(BotVisualizer.h)
-endif()
-
-add_subdirectory(rigid_body_plant)
+add_subdirectory(collision)
+add_subdirectory(constraint)
+add_subdirectory(joints)
 add_subdirectory(test)
-
-#System2.0 Plants
-add_subdirectory(spring_mass_system)
