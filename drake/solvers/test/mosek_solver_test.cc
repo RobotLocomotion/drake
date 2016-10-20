@@ -1,10 +1,4 @@
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "drake/solvers/mosek_solver.h"
-#include "drake/solvers/gurobi_solver.h"
-#include <iostream>
-
-
 
 #include "gtest/gtest.h"
 
@@ -64,22 +58,19 @@ GTEST_TEST(testMosek, MosekLinearProgram2) {
   Eigen::RowVector3d a1(3, 1, 2);
   prog.AddLinearEqualityConstraint(a1, drake::Vector1d(30), {x(0), x(1), x(2)});
 
-  Eigen::Matrix<double, 2, 4> A;
+  Eigen::Matrix<double, 4, 4> A;
   A << 2, 1, 3, 1,
-       0, 2, 0, 3;
-       //1, 2, 0, 1,
-       //1, 0, 2, 0;
-  Eigen::Vector2d b_lb(15, -std::numeric_limits<double>::infinity());//, -std::numeric_limits<double>::infinity(), -100);
-  Eigen::Vector2d b_ub(std::numeric_limits<double>::infinity(), 25);//, std::numeric_limits<double>::infinity(), 40);
+       0, 2, 0, 3,
+       1, 2, 0, 1,
+       1, 0, 2, 0;
+  Eigen::Vector4d b_lb(15, -std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(), -100);
+  Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), 25, std::numeric_limits<double>::infinity(), 40);
   prog.AddLinearConstraint(A, b_lb, b_ub);
 
-  prog.AddBoundingBoxConstraint(drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(10), {x(1)});
+  prog.AddBoundingBoxConstraint(drake::Vector1d(0), drake::Vector1d(10), {x(1)});
   prog.AddBoundingBoxConstraint(Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), {x(0), x(2), x(3)});
 
   RunMosekSolver(&prog);
-  GurobiSolver gurobi_solver;
-  SolutionResult result = gurobi_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0/3.0);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10, MatrixCompareType::absolute));
