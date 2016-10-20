@@ -11,11 +11,12 @@ namespace drake {
 namespace systems {
 
 /**
- A class containing information regarding contact between two bodies including:
-    - The pair of collision elements that are contacting (e1, e2) (referenced
-        by their unique identifiers.)
-    - The collision manifold representing the contact surface and the contact
-        forces (@see ContactManifold).
+ A class containing information regarding contact response between two bodies
+ including:
+    - The pair of collision elements that are contacting (e1, e2), referenced
+        by their unique identifiers.
+    - The collision manifold representing the forces engendered by the contact.
+        (@see ContactManifold).
 
  The forces in the collision manifold are all defined such that they act on
  the first element in the pair (e1).
@@ -26,11 +27,11 @@ template <typename T>
 class DRAKE_EXPORT ContactInfo {
  public:
   /**
-   Initialize the contact information between two collision elements.
+   Initialize the contact response for two colliding collision elements.
 
    @param element1      The identifier for the first collision element.
    @param element2      The identifier for the second collision element.
-   @param manifold      The manifold defining the contact result.
+   @param manifold      The manifold of contact responses.
    */
   ContactInfo(DrakeCollision::ElementId element1,
               DrakeCollision::ElementId element2,

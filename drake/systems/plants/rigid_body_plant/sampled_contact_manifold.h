@@ -30,16 +30,15 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
 
    The "net" contact is defined as follows:
    p = sum_i [p_i * |f_i|] / sum_i |f_i|
-   F = sum_i F_i + sum_i [(p - p_i) x f_i , 0, 0, 0]
+   F = sum_i F_i + sum_i <0, 0, 0, (p - p_i) x f_i>
 
    where p_i is the ith application point.
    F_i is the ith spatial force (aka wrench).
    f_i, |f_i| are the force component (and its magnitude) of the ith spatial
    force, respectively.
-   [ f, 0, 0, 0] is a zero-torque wrench built off the given force.
+   <0, 0, 0, f> is a zero-torque wrench built off the given force.
 
-   The net application point (p) is an approximation of the center of
-   pressure.
+   The net application point (p) is an approximation of the center of  pressure.
 
    @returns The single net Force and application point - expressed in the world
             frame.
