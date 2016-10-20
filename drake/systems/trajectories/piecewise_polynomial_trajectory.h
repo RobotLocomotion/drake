@@ -2,9 +2,9 @@
 
 #include <Eigen/Core>
 
-#include "PiecewisePolynomial.h"
 #include "drake/common/drake_export.h"
-#include "trajectory.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/trajectory.h"
 
 namespace drake {
 

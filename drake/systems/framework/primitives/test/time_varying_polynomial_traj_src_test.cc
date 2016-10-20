@@ -59,15 +59,9 @@ TEST_F(TimeVaryingPolynomialTrajSrcTest, OutputTest) {
   EXPECT_EQ(pp_value, output_vector->get_value());
 }
 
-// Tests that inputs cannot be set for a ConstantVectorSource.
-TEST_F(TimeVaryingPolynomialTrajSrcTest, ShouldNotBePossibleToConnectInputs) {
-  EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
-               std::out_of_range);
-}
-
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(TimeVaryingPolynomialTrajSrcTest, ConstantVectorSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace
