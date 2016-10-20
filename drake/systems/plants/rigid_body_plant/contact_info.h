@@ -39,15 +39,16 @@ class DRAKE_EXPORT ContactInfo {
 
   ContactInfo(const ContactInfo<T>& other);
   ContactInfo& operator=(const ContactInfo<T>& other);
-
+  ContactInfo(ContactInfo<T>&& other) = delete;
+  ContactInfo& operator=(ContactInfo<T>&& other) = delete;
 
   DrakeCollision::ElementId get_element_id_1() const;
   DrakeCollision::ElementId get_element_id_2() const;
   const ContactManifold<T>& get_contact_manifold() const;
 
  private:
-  DrakeCollision::ElementId element1_;
-  DrakeCollision::ElementId element2_;
+  DrakeCollision::ElementId element1_{};
+  DrakeCollision::ElementId element2_{};
   std::unique_ptr<ContactManifold<T>> contact_manifold_;
 };
 

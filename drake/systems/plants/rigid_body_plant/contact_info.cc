@@ -40,7 +40,7 @@ DrakeCollision::ElementId ContactInfo<T>::get_element_id_2() const {
 
 template <typename T>
 const ContactManifold<T>& ContactInfo<T>::get_contact_manifold() const {
-  return *(contact_manifold_.get());
+  return *contact_manifold_.get();
 }
 
 // Explicitly instantiates on the most common scalar types.

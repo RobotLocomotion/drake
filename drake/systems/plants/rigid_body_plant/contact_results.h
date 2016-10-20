@@ -21,10 +21,15 @@ template <typename T> class RigidBodyPlant;
 template <typename T>
 class DRAKE_EXPORT ContactResults {
  public:
-  /** Returns the number of unique collision element pairs in contact. */
-  size_t get_num_contacts() const;
+  ContactResults(const ContactResults<T>& other) = default;
+  ContactResults<T>& operator=(const ContactResults<T>& other) = default;
+  ContactResults(ContactResults<T>&& other) = delete;
+  ContactResults<T>& operator=(ContactResults<T>&& other) = delete;
 
-  const ContactInfo<T>& get_contact_info(size_t i) const;
+  /** Returns the number of unique collision element pairs in contact. */
+  int get_num_contacts() const;
+
+  const ContactInfo<T>& get_contact_info(int i) const;
 
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
   // information (e.g, query by body, etc.)

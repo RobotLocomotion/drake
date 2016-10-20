@@ -26,6 +26,7 @@ namespace systems {
 namespace plants {
 namespace rigid_body_plant {
 namespace test {
+namespace {
 
 template <class T>
 std::unique_ptr<FreestandingInputPort> MakeInput(
@@ -42,9 +43,6 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 
 class ContactResultTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-  }
-
   // These pointers are merely reference pointers; the underlying instances
   //  are owned by objects which, ultimately, are owned by the test class.
   RigidBody* body1_{};
@@ -63,8 +61,8 @@ class ContactResultTest : public ::testing::Test {
     //  each other such there is `distance` units gap between them.  Negative
     //  numbers imply collision.
 
-    tree_ = new RigidBodyTree();
-    auto unique_tree = unique_ptr<RigidBodyTree>(tree_);
+    auto unique_tree = unique_ptr<RigidBodyTree>(new RigidBodyTree());
+    tree_ = unique_tree.get();
 
     Vector3d pos;
     pos << -(kRadius + distance), 0, 0;

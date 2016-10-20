@@ -10,11 +10,13 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-size_t ContactResults<T>::get_num_contacts() const { return contacts_.size(); }
+int ContactResults<T>::get_num_contacts() const {
+  return static_cast<int>(contacts_.size());
+}
 
 template <typename T>
-const ContactInfo<T>& ContactResults<T>::get_contact_info(size_t i) const {
-  DRAKE_ASSERT(i < contacts_.size());
+const ContactInfo<T>& ContactResults<T>::get_contact_info(int i) const {
+  DRAKE_ASSERT(i >= 0 && i < static_cast<int>(contacts_.size()));
   return contacts_[i];
 }
 
@@ -28,8 +30,9 @@ void ContactResults<T>::Clear() {
 
 template <typename T>
 void ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
-                 DrakeCollision::ElementId elementB,
-                 const Vector3<T> & point, const WrenchVector<T> & wrench) {
+                                   DrakeCollision::ElementId elementB,
+                                   const Vector3<T>& point,
+                                   const WrenchVector<T>& wrench) {
   auto manifold = std::make_unique<SampledContactManifold<T>>();
   auto detail = make_unique<ContactDetail<T>>(point, wrench);
   manifold->AddContactDetail(move(detail));

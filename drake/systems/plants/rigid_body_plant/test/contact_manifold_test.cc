@@ -14,6 +14,7 @@ namespace systems {
 namespace plants {
 namespace rigid_body_plant {
 namespace test {
+namespace {
 
 using std::unique_ptr;
 using std::make_unique;
@@ -72,7 +73,7 @@ TestWrench ApplyWrench(const TestVector& center_of_mass,
 TestWrench ApplyManifold(const TestVector& center_of_mass,
                          const ContactManifold<double>& manifold) {
   TestWrench result = TestWrench::Zero();
-  for (size_t i = 0; i < manifold.get_num_contacts(); ++i) {
+  for (int i = 0; i < manifold.get_num_contacts(); ++i) {
     auto detail = manifold.get_ith_contact(i);
     result += ApplyWrench(center_of_mass, detail->get_application_point(),
                           detail->get_wrench());
@@ -221,6 +222,7 @@ TEST_F(SampleCollisionManifoldTest, NetFromForceOnly) {
       ApplyWrench(origin_, net.get_application_point(), net.get_wrench());
   EXPECT_TRUE(CompareMatrices(net_wrench, expected_wrench));
 }
+}  // namespace
 }  // namespace test
 }  // namespace rigid_body_plant
 }  // namespace plants
