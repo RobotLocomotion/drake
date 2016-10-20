@@ -13,7 +13,7 @@ pods_install_pkg_config_file(drake-control-util
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
-find_package(yaml-cpp)
+drake_find_package(yaml-cpp CONFIG)
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
@@ -75,7 +75,6 @@ if(Matlab_FOUND)
   pods_find_pkg_config(gurobi)
 
   if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
-
     drake_add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide drakeYAMLUtil)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
