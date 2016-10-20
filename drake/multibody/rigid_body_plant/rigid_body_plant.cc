@@ -420,30 +420,27 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     const KinematicsCache<T>& kinsol,
     ContactResults<T> * contacts) const {
 
-  VectorX<T> phi;
-  Matrix3X<T> normal, xA, xB;
-  vector<const DrakeCollision::Element*> elA_idx, elB_idx;
+  std::vector<DrakeCollision::PointPair> pairs;
 
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  // TODO(SeanCurtis-TRI): Use the version that provides element data.
   const_cast<RigidBodyTree *>(tree_.get())->AllPairsClosestPoints(
-      kinsol, phi, normal, xA, xB, elA_idx, elB_idx);
+      kinsol, &pairs);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
   // TODO(SeanCurtis-TRI): Determine if a distance of zero should be reported
   //  as a zero-force contact.
-  for (int i = 0; i < phi.rows(); i++) {
-    if (phi(i) < 0.0) {  // There is contact.
-      int bodyA_idx = elA_idx[i]->get_body()->get_body_index();
-      int bodyB_idx = elB_idx[i]->get_body()->get_body_index();
+  for (const auto& pair : pairs) {
+    if (pair.distance < 0.0) {  // There is contact.
+      int bodyA_idx = pair.elementA->get_body()->get_body_index();
+      int bodyB_idx = pair.elementB->get_body()->get_body_index();
       auto JA = tree_->transformPointsJacobian(
-          kinsol, xA.col(i), bodyA_idx, 0, false);
+          kinsol, pair.ptA, bodyA_idx, 0, false);
       auto JB = tree_->transformPointsJacobian(
-          kinsol, xB.col(i), bodyB_idx, 0, false);
-      Vector3<T> this_normal = normal.col(i);
+          kinsol, pair.ptB, bodyB_idx, 0, false);
+      Vector3<T> this_normal = pair.normal;
 
       // Computes a local surface coordinate frame with the local z axis
       // aligned with the surface's normal. The other two axes are arbitrarily
@@ -475,7 +472,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // (bounded by the friction cone).
         Vector3<T> fA;
         fA(2) = std::max<T>(
-            -penetration_stiffness_ * phi(i) -
+            -penetration_stiffness_ * pair.distance -
                 penetration_damping_ * relative_velocity(2), 0.0);
         fA.head(2) =
             -std::min<T>(
@@ -493,7 +490,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // this term needs to be subtracted.
         contact_force += J.transpose() * fA;
         if (contacts != nullptr) {
-          Vector3<T> point = (xA.col(i) + xB.col(i)) * 0.5;
+          Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
 
           WrenchVector<T> wrench;
           wrench.template head<3>().setZero();
@@ -503,7 +500,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           //  contact model.  This call instantiates a sampled contact manifold.
           //  Other contact models would have to instantiate an alternate
           //  representation.
-          contacts->AddContact(elA_idx[i]->getId(), elB_idx[i]->getId(),
+          contacts->AddContact(pair.elementA->getId(), pair.elementB->getId(),
               point, wrench);
         }
       }

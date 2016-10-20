@@ -788,28 +788,15 @@ class DRAKE_EXPORT RigidBodyTree {
    * This is a special case which returns the actual collision elements instead
    * of their corresponding rigid body identifiers.
    *
-   * The results are akin to a struct of arrays.  The ith element in each of the
-   * output parameters represents the data for a single tested pair of collision
-   * elements.
-   *
-   * @param[in] cache           The dynamic pose data for the tree.
-   * @param[out] phi            The signed distance.
-   * @param[out] normal         The contact normal pointing out of element B.
-   * @param[out] xA             The contact point on element A (in world
-   *                            coordinates.)
-   * @param[out] xB             The contact point on element B (in world
-   *                            coordinates.)
-   * @param[out] elA_idx        Pointer to the first colliding element (A).
-   * @param[out] elB_idx        Pointer to the second colliding element (B).
-   * @param[in]  use_margins    If true, geometry with margins are used.
+   * @param[in]  cache          The dynamic pose data for the tree.
+   * @param[out] pairs          A vector that will be populated with the query
+   *                            data.  There will be one entry per pair of
+   *                            tested collision elements.
    * @returns                   True if the method ran successfully.
    */
   bool AllPairsClosestPoints(const KinematicsCache<double> &cache,
-                       Eigen::VectorXd &phi, Eigen::Matrix3Xd &normal,
-                       Eigen::Matrix3Xd &xA, Eigen::Matrix3Xd &xB,
-                       std::vector<const DrakeCollision::Element *> &elA_idx,
-                       std::vector<const DrakeCollision::Element *> &elB_idx,
-                       bool use_margins = true);
+                             std::vector<DrakeCollision::PointPair> * pairs,
+                             bool use_margins = true);
 
   /**
    * This performs all-pairs collision detection (excepting those filtered out)
@@ -819,30 +806,17 @@ class DRAKE_EXPORT RigidBodyTree {
    * This is a special case which returns the actual collision elements instead
    * of their corresponding rigid body identifiers.
    *
-   * The results are akin to a struct of arrays.  The ith element in each of the
-   * output parameters represents the data for a single tested pair of collision
-   * elements.
-   *
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[in]  ids_to_check   Pairs of collision element ids to test.
-   * @param[out] phi            The signed distance[
-   * @param[out] normal         The contact normal pointing out of element B.
-   * @param[out] xA             The contact point on element A (in world
-   *                            coordinates.)
-   * @param[out] xB             The contact point on element B (in world
-   *                            coordinates.)
-   * @param[out] elA_idx        Pointer to the first colliding element (A).
-   * @param[out] elB_idx        Pointer to the second colliding element (B).
-   * @param[in]  use_margins    If true, geometry with margins are used.
+   * @param[out] pairs          A vector that will be populated with the query
+   *                            data.  There will be one entry per pair of
+   *                            tested collision elements.
    * @returns                   True if the method ran successfully.
    */
-  bool SubsetAllPairsClosestPairs(
-      const KinematicsCache<double>& cache,
-      const std::vector<DrakeCollision::ElementId>& ids_to_check,
-      Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
-      Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
-      std::vector<const DrakeCollision::Element*>& elA_idx,
-      std::vector<const DrakeCollision::Element*>& elB_idx, bool use_margins);
+  bool SetAllPairsClosestPairs(
+      const KinematicsCache<double> &cache,
+      const std::vector<DrakeCollision::ElementId> &ids_to_check,
+      std::vector<DrakeCollision::PointPair> *pairs, bool use_margins);
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.

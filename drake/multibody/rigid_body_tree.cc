@@ -759,49 +759,25 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::AllPairsClosestPoints(
-    const KinematicsCache<double> &cache, Eigen::VectorXd &phi,
-    Eigen::Matrix3Xd &normal, Eigen::Matrix3Xd &xA, Eigen::Matrix3Xd &xB,
-    std::vector<const DrakeCollision::Element *> &elA_idx,
-    std::vector<const DrakeCollision::Element *> &elB_idx, bool use_margins) {
+bool RigidBodyTree::AllPairsClosestPoints(
+    const KinematicsCache<double> &cache,
+    std::vector<DrakeCollision::PointPair> * pairs, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
-  for (auto body_iter = bodies.begin(); body_iter != bodies.end();
-       ++body_iter) {
-    (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
+  for (const auto& body : bodies) {
+    body->appendCollisionElementIdsFromThisBody(ids_to_check);
   }
-  return SubsetAllPairsClosestPairs(cache, ids_to_check, phi, normal, xA, xB,
-                                    elA_idx, elB_idx, use_margins);
+  return SetAllPairsClosestPairs(cache, ids_to_check, pairs, use_margins);
 }
 
 template <typename T>
-bool RigidBodyTree<T>::SubsetAllPairsClosestPairs(
-    const KinematicsCache<double>& cache,
-    const vector<DrakeCollision::ElementId>& ids_to_check,
-    VectorXd& phi, Matrix3Xd& normal, Matrix3Xd& xA, Matrix3Xd& xB,
-    std::vector<const DrakeCollision::Element*>& elA_idx,
-    std::vector<const DrakeCollision::Element*>& elB_idx,bool use_margins) {
+bool RigidBodyTree::SetAllPairsClosestPairs(
+    const KinematicsCache<double> &cache,
+    const vector<DrakeCollision::ElementId> &ids_to_check,
+    std::vector<DrakeCollision::PointPair> *pairs,
+    bool use_margins) {
   updateDynamicCollisionElements(cache);
-
-  vector<DrakeCollision::PointPair> points;
-  bool points_found = collision_model_->closestPointsAllToAll(
-      ids_to_check, use_margins, points);
-
-  xA = MatrixXd::Zero(3, points.size());
-  xB = MatrixXd::Zero(3, points.size());
-  normal = MatrixXd::Zero(3, points.size());
-  phi = VectorXd::Zero(points.size());
-
-  for (size_t i = 0; i < points.size(); ++i) {
-    xA.col(i) = points[i].ptA;
-    xB.col(i) = points[i].ptB;
-    normal.col(i) = points[i].normal;
-    phi[i] = points[i].distance;
-    const DrakeCollision::Element* elementA = points[i].elementA;
-    elA_idx.push_back(elementA);
-    const DrakeCollision::Element* elementB = points[i].elementB;
-    elB_idx.push_back(elementB);
-  }
-  return points_found;
+  return collision_model_->closestPointsAllToAll(
+      ids_to_check, use_margins, *pairs);
 }
 
 template <typename T>
