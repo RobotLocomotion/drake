@@ -209,7 +209,7 @@ GTEST_TEST(testGurobi, addLinearConstraintTest) {
                               MatrixCompareType::absolute));
 }
 
-/**
+/*
  * This test is taken from
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_ell_sep.html
  * The goal is to find a hyperplane, that separates two ellipsoids
@@ -384,7 +384,7 @@ GTEST_TEST(testGurobi, EllipsoidsSeparation) {
   testEllipsoidsSeparation(x1, x2, R1, R2);
 }
 
-/**
+/*
  * This example is taken from
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/exa_qp_as_socp.html
  * For a quadratic program

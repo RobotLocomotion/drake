@@ -1,4 +1,4 @@
-/// @file This is to test a QP problem solved by both SNOPT and Gurobi
+// This is to test a QP problem solved by both SNOPT and Gurobi
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 namespace {
-/**
+/*
  * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
  * The pamater of this QP is randomly generated.

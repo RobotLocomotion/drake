@@ -57,7 +57,7 @@ int AddLinearConstraint(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
   return 0;
 }
 
-/**
+/*
  * Add Lorentz cone constraints.
  * A Lorentz cone constraint is the convex conic constraint
  * x(0) >= sqrt(x(1)^2 + ... + x(N-1)^2)
