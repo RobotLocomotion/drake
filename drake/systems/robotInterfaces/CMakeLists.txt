@@ -24,7 +24,7 @@ endif()
 if(Matlab_FOUND)
   drake_add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
 
-  find_package(octomap)
+  drake_find_package(octomap CONFIG)
 
   if(octomap_FOUND)
     drake_add_mex(octomapWrapper octomapWrapper.cpp $<TARGET_OBJECTS:drakeUtil>)
