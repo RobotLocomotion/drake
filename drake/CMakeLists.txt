@@ -157,7 +157,7 @@ set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-find_package(Threads REQUIRED)
+drake_find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
 find_package(lcm)
