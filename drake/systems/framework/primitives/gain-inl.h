@@ -22,16 +22,16 @@ template <typename T>
 Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) { }
 
 template <typename T>
-Gain<T>::Gain(const VectorX<T>& gain) : gain_(gain) {
+Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
   // TODO(amcastro-tri): remove the size parameter from the constructor once
   // #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, gain.size(), kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, gain.size(), kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, k.size(), kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, k.size(), kContinuousSampling);
 }
 
 template <typename T>
 const VectorX<T>& Gain<T>::get_gain() const {
-  return gain_;
+  return k_;
 }
 
 template <typename T>
@@ -52,7 +52,7 @@ void Gain<T>::EvalOutput(const Context<T>& context,
 
   auto input_vector = this->EvalEigenVectorInput(context, 0);
   System<T>::GetMutableOutputVector(output, 0) =
-      gain_.array() * input_vector.array();
+      k_.array() * input_vector.array();
 }
 
 }  // namespace systems

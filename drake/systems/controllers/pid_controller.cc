@@ -71,8 +71,8 @@ const VectorX<T>& PidController<T>::get_Kd() const {
 
 template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
-  if (get_Kp() == VectorX<T>::Ones(get_Kp().size()) * 0 &&
-      get_Kd() == VectorX<T>::Ones(get_Kd().size()) * 0) {
+  if (get_Kp() == VectorX<T>::Zero(get_Kp().size()) &&
+      get_Kd() == VectorX<T>::Zero(get_Kd().size())) {
     return false;
   }
   return true;

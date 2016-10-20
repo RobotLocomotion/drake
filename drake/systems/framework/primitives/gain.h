@@ -8,7 +8,7 @@
 namespace drake {
 namespace systems {
 
-/// A gain block with input `u` and output `y = k*u` with `k` a constant.
+/// A gain block with input `u` and output `y = k * u` with `k` a constant.
 /// The input to this system directly feeds through to its output.
 ///
 /// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
@@ -34,11 +34,11 @@ class Gain : public LeafSystem<T> {
   /// @param[in] size number of elements in the signal to be processed.
   Gain(const T& k, int size);
 
-  /// Constructs a %Gain system the different gains can be applied to each input
-  /// value.
+  /// Constructs a %Gain system where different gains can be applied to each
+  /// input value.
   ///
-  /// @param k the gain constants so that `y = k * u`.
-  explicit Gain(const VectorX<T>& gain);
+  /// @param[in] k the gain vector constants so that `y = k * u`.
+  explicit Gain(const VectorX<T>& k);
 
   /// Returns the gain constant.
   const VectorX<T>& get_gain() const;
@@ -58,7 +58,7 @@ class Gain : public LeafSystem<T> {
 
  private:
   // TODO(amcastro-tri): move gain_ to System<T>::Parameter.
-  const VectorX<T> gain_;
+  const VectorX<T> k_;
 };
 
 }  // namespace systems
