@@ -38,22 +38,14 @@ class DRAKE_EXPORT ContactResults {
   // Only RigidBodyPlant can construct a ContactResults.
   ContactResults();
 
-  /** Clears the set of contact information for when the old data becomes
-   invalid */
+  // Clears the set of contact information for when the old data becomes
+  // invalid.
   void Clear();
 
-  /**
-   Adds a contact between two collision elements into the contact set.
-   @param elementA      The first element in the collision.
-   @param elementB      The second element in the collision.
-   @param point         The point (expressed in the world frame) at which the
-                        force is applied.
-   @param wrench        The contact wrench applied to A.  Its negative would be
-                        applied to B. The wrench is expressed in the world frame.
-   */
+  // Adds a contact between two collision elements into the contact set.
   void AddContact(DrakeCollision::ElementId elementA,
-                  DrakeCollision::ElementId elementB,
-                  const Vector3<T> & point, const WrenchVector<T> & wrench);
+                  DrakeCollision::ElementId elementB, const Vector3<T>& point,
+                  const WrenchVector<T>& wrench);
 
   std::vector<ContactInfo<T>> contacts_;
 };
