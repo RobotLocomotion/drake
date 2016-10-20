@@ -56,6 +56,7 @@ void TestGainSystem(const Gain<T>& gain_system,
   EXPECT_EQ(expected_output, output_vector->get_value());
 }
 
+// Tests the ability to use a double as the gain.
 GTEST_TEST(GainTest, VectorThroughGainSystem) {
   const double kGain{2.0};
   const int kSize = 3;
@@ -66,7 +67,7 @@ GTEST_TEST(GainTest, VectorThroughGainSystem) {
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
 
-// Tests the ability to use a gain vector where the values vary.
+// Tests the ability to use a vector as the gain.
 GTEST_TEST(GainTest, GainVectorTest) {
   const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
   const auto gain_system = make_unique<Gain<double>>(gain_values);
