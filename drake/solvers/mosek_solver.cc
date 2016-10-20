@@ -14,7 +14,7 @@ namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template<typename _Binding>
 MSKrescodee AddLinearConstraintsFromBindings(MSKtask_t* task,
-                                             const std::list<_Binding> &constraint_list,
+                                             const std::list<_Binding>& constraint_list,
                                              bool is_equality_constraint) {
   for (const auto &binding : constraint_list) {
     auto constraint = binding.constraint();
