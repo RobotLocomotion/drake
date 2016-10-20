@@ -185,7 +185,8 @@ if(Matlab_FOUND)
     target_compile_options(${ARGV} PRIVATE ${CXX_FLAGS_NO_SIGN_COMPARE})
   endmacro()
 
-  find_package(snopt_c)
+  drake_find_package(snopt_c CONFIG)
+
   if(snopt_c_FOUND)
     add_ik_mex(inverseKinmex)
     add_ik_mex(inverseKinPointwisemex)

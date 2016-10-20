@@ -12,7 +12,7 @@ endif()
 drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(lqrmex drakeCommon)
 
-find_package(snopt_c)
+drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND)
   drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)

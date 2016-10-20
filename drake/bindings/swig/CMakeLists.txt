@@ -25,7 +25,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
 endif()
 
-find_package(snopt_c)
+drake_find_package(snopt_c CONFIG)
 
 if(PYTHON_EXECUTABLE)
   include(SwigPython)
