@@ -51,7 +51,5 @@ class DRAKE_EXPORT ContactInfo {
   std::unique_ptr<ContactManifold<T>> contact_manifold_;
 };
 
-extern template class DRAKE_EXPORT ContactInfo<double>;
-
 }  // namespace systems
 }  // namespace drake
