@@ -72,7 +72,5 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;
 };
 
-extern template class DRAKE_EXPORT SampledContactManifold<double>;
-
 }  // namespace systems
 }  // namespace drake
