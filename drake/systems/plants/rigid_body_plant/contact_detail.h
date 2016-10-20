@@ -19,6 +19,11 @@ namespace systems {
   creation of new sub-classes which augment the set of per-contact point
   data based on other contact models.
 
+  For example, in Hertzian contact, the ContactDetail would include the geometry
+  of the contact ellipse.  For soft-body dynamics, which would produce a patch
+  of contacts, an indvidual ContactDetail instance may include topological
+  information.
+
   @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
