@@ -44,7 +44,7 @@ install_cmake=true
 if command -v cmake &>/dev/null; then
   cmake_version=$(cmake --version) &>/dev/null
   cmake_version=${cmake_version:14:3}
-  if [[ $cmake_version > "3.5" || $cmake_version == "3.5" ]]; then
+  if dpkg --compare-versions $cmake_version ge 3.5; then
     echo "CMake is already installed ($cmake_version)"
     install_cmake=false
   fi
