@@ -1,9 +1,9 @@
-pods_find_pkg_config(gurobi)
+drake_find_package(gurobi PKG_CONFIG)
 
 if(gurobi_FOUND)
-
   add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES qp.cc)
-  pods_use_pkg_config_packages(drakeQP gurobi)
+  target_include_directories(drakeQP PUBLIC ${gurobi_INCLUDE_DIRS})
+  target_link_libraries(drakeQP ${gurobi_LIBRARIES})
 
   pods_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
@@ -100,7 +100,8 @@ if(snopt_c_FOUND)
   target_link_libraries(drakeOptimization snopt_c)
 endif()
 if(gurobi_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization gurobi)
+  target_include_directories(drakeOptimization PUBLIC ${gurobi_INCLUDE_DIRS})
+  target_link_libraries(drakeOptimization ${gurobi_LIBRARIES})
 endif()
 
 if(mosek_FOUND)

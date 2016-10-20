@@ -65,7 +65,7 @@ endif()
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 
-pods_find_pkg_config(gurobi)
+drake_find_package(gurobi PKG_CONFIG)
 
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
 # moved it into the "C++ and MATLAB shared code" lower section of this file,
@@ -74,15 +74,10 @@ pods_find_pkg_config(gurobi)
 set(drakeIK_SRC_FILES ik_trajectory_helper.cc inverseKin.cpp
   inverseKinBackend.cpp inverseKinPointwise.cpp inverseKinTraj.cpp
   inverseKinTrajBackend.cpp)
-set(drakeIK_PODS_PKG)
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
-  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
 endif()
 add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
-if(drakeIK_PODS_PKG)
-  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
-endif()
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
 pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
@@ -175,7 +170,6 @@ if(Matlab_FOUND)
   if(gurobi_FOUND)
     drake_add_mex(approximateIKmex approximateIKmex.cpp)
     target_link_libraries(approximateIKmex drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
-    pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
   macro(add_ik_mex)
