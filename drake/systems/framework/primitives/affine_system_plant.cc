@@ -27,6 +27,7 @@ AffineSystemPlant<T>::AffineSystemPlant(
   DRAKE_ASSERT(kNumStates == B.rows());
   DRAKE_ASSERT(kNumStates == C.cols());
   DRAKE_ASSERT(kNumInputs == B.cols());
+  DRAKE_ASSERT(kNumInputs == D.cols());
   DRAKE_ASSERT(kNumOutputs == C.rows());
   DRAKE_ASSERT(kNumOutputs == D.rows());
 
@@ -60,6 +61,8 @@ void AffineSystemPlant<T>::EvalOutput(const Context<T>& context,
   // Evaluates the state output port.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
+  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
+  // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_state()).get_value();
 
@@ -77,6 +80,8 @@ void AffineSystemPlant<T>::EvalTimeDerivatives(
 
     DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
+  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
+  // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_state()).get_value();
 
@@ -91,8 +96,8 @@ template <typename T>
 std::unique_ptr<ContinuousState<T>> AffineSystemPlant<T>::
     AllocateContinuousState() const {
   // For a first order system.
-    return make_unique<ContinuousState<T>>(
-        make_unique<BasicVector<T>>(kNumStates));
+  return make_unique<ContinuousState<T>>(
+      make_unique<BasicVector<T>>(kNumStates));
 }
 
 template class DRAKE_EXPORT AffineSystemPlant<double>;

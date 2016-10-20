@@ -5,9 +5,10 @@
 namespace drake {
 namespace systems {
 
-/// An affine system. An Affine system. Given an input vector u, a state vector
-/// x, and state space coefficient matrices A, B, C, and D, this system
-/// implements the following equations:
+/// An Affine system. Given an input vector `u`, an output vector 'y', a state
+/// vector `x`, its derivative @f['\dot{x}'@f] and state space coefficient
+/// matrices `A`, `B`, `C`, and `D`, this system implements the following
+/// equations:
 /// @f[
 ///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
 ///   y = Cx + Du + y_0
@@ -22,16 +23,19 @@ namespace systems {
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
-
 template <typename T>
 class AffineSystemPlant : public LeafSystem<T> {
  public:
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
   /// output offset `y0`.
-  /// Note that A must be a square matrix where number of Rows / Columns must
-  /// match that on B and on xDot0. The number of rows on C must equal the
-  /// number of Rows on D and Y0.
+  /// The coefficient matrices must obey the following dimensions :
+  /// | Matrix  | Num Rows    | Num Columns |
+  /// |:-------:|:-----------:|:-----------:|
+  /// | A       | num states  | num states  |
+  /// | B       | num states  | num inputs  |
+  /// | C       | num outputs | num states  |
+  /// | D       | num outputs | num inputs  |
   AffineSystemPlant(const Eigen::Ref<const MatrixX<T>>& A,
                     const Eigen::Ref<const MatrixX<T>>& B,
                     const Eigen::Ref<const VectorX<T>>& xDot0,
@@ -39,17 +43,18 @@ class AffineSystemPlant : public LeafSystem<T> {
                     const Eigen::Ref<const MatrixX<T>>& D,
                     const Eigen::Ref<const VectorX<T>>& y0);
 
-  /// The input to this system is not direct feedthrough.
+  /// The input to this system is direct feedthrough only if the coefficient
+  /// matrix D is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
 
   /// LeafSystem override.
   std::unique_ptr<ContinuousState<T>>
   AllocateContinuousState() const override;
 
-  /// Returns the input port to the externally applied input.
+  /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;
 
-  /// Returns the port to output state.
+  /// Returns the port containing output state.
   const SystemPortDescriptor<T>& get_output_port() const;
 
   void EvalOutput(const Context<T>& context,
@@ -59,12 +64,12 @@ class AffineSystemPlant : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
   // Helper getter methods.
-  const MatrixX<T> GetA(void) const { return A_; }
-  const MatrixX<T> GetB(void) const { return B_; }
-  const MatrixX<T> GetC(void) const { return C_; }
-  const MatrixX<T> GetD(void) const { return D_; }
-  const VectorX<T> GetXDot0(void) const { return XDot0_; }
-  const VectorX<T> GetY0(void) const { return Y0_; }
+  const Eigen::Ref<const MatrixX<T>> GetA(void) const { return A_; }
+  const Eigen::Ref<const MatrixX<T>> GetB(void) const { return B_; }
+  const Eigen::Ref<const MatrixX<T>> GetC(void) const { return C_; }
+  const Eigen::Ref<const MatrixX<T>> GetD(void) const { return D_; }
+  const Eigen::Ref<const VectorX<T>> GetXDot0(void) const { return XDot0_; }
+  const Eigen::Ref<const VectorX<T>> GetY0(void) const { return Y0_; }
 
  private:
   const MatrixX<T> A_;
