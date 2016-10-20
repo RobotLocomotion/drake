@@ -38,7 +38,6 @@ else()
 endif()
 
 # set up pods
-set(POD_NAME drake)
 include(../cmake/pods.cmake)
 
 function(drake_install_headers)
