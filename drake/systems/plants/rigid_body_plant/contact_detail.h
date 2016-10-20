@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 
@@ -37,7 +39,7 @@ class DRAKE_EXPORT ContactDetail {
   /** Returns the *spatial* wrench. */
   const WrenchVector<T>& get_wrench() const { return wrench_; }
 
-  virtual ContactDetail* clone() const;
+  virtual std::unique_ptr<ContactDetail> Clone() const;
 
  private:
   /** The point at which the wrench is applied, expressed in the world frame. */

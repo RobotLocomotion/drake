@@ -24,9 +24,6 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
   /** Default constructor */
   SampledContactManifold();
 
-  /** Copy constructor */
-  SampledContactManifold(const SampledContactManifold& other);
-
   /**
    Computes a single contact detail -- Force and application point -- which
    is equivalent to applying all individual contact forces individually.
@@ -60,13 +57,16 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
    */
   const ContactDetail<T>* get_ith_contact(size_t i) const override;
 
-  ContactManifold<T>* clone() const override;
+  std::unique_ptr<ContactManifold<T>> Clone() const override;
 
   /**
    Add a new contact detail to the manifold.
    @param[in] detail    The contact detail to add.
    */
   void AddContactDetail(std::unique_ptr<ContactDetail<T>> detail);
+
+ protected:
+  SampledContactManifold(const SampledContactManifold& other);
 
  private:
   std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;
