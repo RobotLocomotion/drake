@@ -132,8 +132,8 @@ Clarifications
     <http://www.lcdf.org/c%2B%2B/clause13.html>`_. (This applies to
     ``volatile`` also.)
 
-    If you want to declare and define a function in one place, you have 
-    several options: 
+    If you want to declare and define a function in one place, you have
+    several options:
 
     * Forgo marking the parameters as ``const`` (not a great loss for short
       functions defined inline), or
@@ -142,6 +142,12 @@ Clarifications
     * split the declaration and definition (be sure to add the ``inline``
       keyword if the function would otherwise have been implicitly inlined).
 
+* When declaring a pointer or a reference, the "``*``" and "``&``" symbols
+  must be next to the variable *type*, not the variable *name*. In other words
+  use "``const MyClass& foo;``" instead of "``const MyClass &foo;``". This is
+  what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For
+  additional context, see
+  `this comment thread <https://reviewable.io/reviews/robotlocomotion/drake/3830#-KUSH9E-rBwyUCb560uX>`_.
 
 .. _code-style-guide-cpp-exceptions:
 
