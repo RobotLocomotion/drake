@@ -81,7 +81,7 @@ GTEST_TEST(testGurobi, gurobiQPExample1) {
   // This test handles the case that in one LinearConstraint,
   // some rows have active upper bounds;
   // some rows have active lower bounds;
-  // some rows have both bounds.
+  // some rows have both bounds;
   // some rows have none.
   Eigen::Matrix<double, 4, 3> A1;
   A1 << 1, 2, 3, -1, -1, 0, 1, 1, 2, 3, 1, 3;
