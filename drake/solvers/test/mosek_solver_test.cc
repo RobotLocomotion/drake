@@ -15,11 +15,26 @@ namespace drake {
 namespace solvers {
 namespace {
 
-void RunMosekSolver(MathematicalProgram &prog) {
+void RunMosekSolver(MathematicalProgram *prog) {
   MosekSolver mosek_solver;
   SolutionResult result = SolutionResult::kUnknownError;
-  ASSERT_NO_THROW(result = mosek_solver.Solve(prog));
+  ASSERT_NO_THROW(result = mosek_solver.Solve(*prog));
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
+}
+
+// Test a simple linear programming problem with only bounding box constraint
+// on x.
+// min x0 - 2*x1
+//     0 <= x0 <= 2
+//    -1 <= x1 <= 4
+// The optimal solution is (0, 4)
+GTEST_TEST(testMosek, MosekLinearProgram1) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(2, "x");
+  prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
+  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
+  RunMosekSolver(&prog);
+  EXPECT_TRUE(x.value().isApprox(Eigen::Vector2d(0, 4)));
 }
 
 // Test a simple linear programming problem
@@ -35,9 +50,9 @@ void RunMosekSolver(MathematicalProgram &prog) {
 //           0 <= x2 <= inf
 //           0 <= x3 <= inf
 // The optimal solution is at (0, 0, 15, 25/3)
-GTEST_TEST(testMosek, MosekLinearProgram) {
+GTEST_TEST(testMosek, MosekLinearProgram2) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4);
+  auto x = prog.AddContinuousVariables(4, "x");
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
   // to test adding multiple costs.
   Eigen::RowVector3d c1(-3, -1, -4);
@@ -61,9 +76,10 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   prog.AddBoundingBoxConstraint(drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(10), {x(1)});
   prog.AddBoundingBoxConstraint(Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), {x(0), x(2), x(3)});
 
-  RunMosekSolver(prog);
+  RunMosekSolver(&prog);
   GurobiSolver gurobi_solver;
   SolutionResult result = gurobi_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0/3.0);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10, MatrixCompareType::absolute));
