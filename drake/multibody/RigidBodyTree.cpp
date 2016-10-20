@@ -759,30 +759,27 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::collisionDetectElements(
-    const KinematicsCache<double>& cache,
-     Eigen::VectorXd& phi, Eigen::Matrix3Xd& normal,
-     Eigen::Matrix3Xd& xA, Eigen::Matrix3Xd& xB,
-     std::vector<const DrakeCollision::Element*>& elA_idx,
-     std::vector<const DrakeCollision::Element*>& elB_idx,
-     bool use_margins)
-{
+bool RigidBodyTree<T>::AllPairsClosestPoints(
+    const KinematicsCache<double> &cache, Eigen::VectorXd &phi,
+    Eigen::Matrix3Xd &normal, Eigen::Matrix3Xd &xA, Eigen::Matrix3Xd &xB,
+    std::vector<const DrakeCollision::Element *> &elA_idx,
+    std::vector<const DrakeCollision::Element *> &elB_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
   }
-  return collisionDetect(cache, phi, normal, xA, xB, elA_idx, elB_idx,
-                         ids_to_check, use_margins);
+  return SubsetAllPairsClosestPairs(cache, ids_to_check, phi, normal, xA, xB,
+                                    elA_idx, elB_idx, use_margins);
 }
 
 template <typename T>
-bool RigidBodyTree<T>::collisionDetect (
-    const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
-    Matrix3Xd& xA, Matrix3Xd& xB,
+bool RigidBodyTree<T>::SubsetAllPairsClosestPairs(
+    const KinematicsCache<double>& cache,
+    const vector<DrakeCollision::ElementId>& ids_to_check,
+    VectorXd& phi, Matrix3Xd& normal, Matrix3Xd& xA, Matrix3Xd& xB,
     std::vector<const DrakeCollision::Element*>& elA_idx,
-    std::vector<const DrakeCollision::Element*>& elB_idx,
-    const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
+    std::vector<const DrakeCollision::Element*>& elB_idx,bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
@@ -2163,7 +2160,7 @@ const RigidBody* RigidBodyTree<T>::FindBody(
     return element->get_body();
   }
   throw std::logic_error(
-      "RigidBodyTree::FindBody: ERROR: Could not find body for collision " \
+      "RigidBodyTree::FindBody: ERROR: Could not find body for collision "
           "element id: " + std::to_string(element_id) + ".");
 }
 
