@@ -14,6 +14,7 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/difference_state.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/modal_state.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
@@ -54,6 +55,7 @@ class LeafSystem : public System<T> {
     context->set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
     context->set_difference_state(this->AllocateDifferenceState());
+    context->set_modal_state(this->AllocateModalState());
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -70,12 +72,12 @@ class LeafSystem : public System<T> {
     return std::unique_ptr<SystemOutput<T>>(output.release());
   }
 
-  /// Returns the AllocateContinuousState value, which may be nullptr.
+  /// Returns the AllocateContinuousState value, which must not be nullptr.
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return AllocateContinuousState();
   }
 
-  /// Returns the AllocateDifferenceState value, which may be nullptr.
+  /// Returns the AllocateDifferenceState value, which must not be nullptr.
   std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
       const override {
     return AllocateDifferenceState();
@@ -108,13 +110,19 @@ class LeafSystem : public System<T> {
   /// AllocateTimeDerivatives. By default, allocates no state. Systems with
   /// continuous state variables should override.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
-    return nullptr;
+    return  std::make_unique<ContinuousState<T>>();
   }
 
-  /// Reserves the difference state as required by CreateDefaultContext.  By
+  /// Reserves the difference state as required by CreateDefaultContext. By
   /// default, reserves no state. Systems with difference state should override.
   virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceState() const {
-    return {};
+    return std::make_unique<DifferenceState<T>>();
+  }
+
+  /// Reserves the modal state as required by CreateDefaultContext. By
+  /// default, reserves no state. Systems with modal state should override.
+  virtual std::unique_ptr<ModalState> AllocateModalState() const {
+    return std::make_unique<ModalState>();
   }
 
   /// Given a port descriptor, allocates the vector storage.  The default

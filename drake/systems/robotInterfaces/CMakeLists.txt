@@ -19,19 +19,21 @@ if(lcm_FOUND)
     VERSION 0.0.1)
 endif()
 
-if(MATLAB_FOUND)
-  add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
+# ==== Below this line is MATLAB-specific code ====
+
+if(Matlab_FOUND)
+  drake_add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
 
   find_package(octomap)
 
   if(octomap_FOUND)
-    add_mex(octomapWrapper octomapWrapper.cpp)
-    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil octomap)
+    drake_add_mex(octomapWrapper octomapWrapper.cpp $<TARGET_OBJECTS:drakeUtil>)
+    target_link_libraries(octomapWrapper drakeMexUtil octomap)
   endif()
 
   if(lcm_FOUND AND NOT WIN32)
-    add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
-    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil drakeZMPUtil drakeMexUtil)
+    drake_add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp $<TARGET_OBJECTS:drakeUtil>)
+    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeZMPUtil drakeMexUtil)
 
     add_subdirectory(@QPLocomotionPlanCPPWrapper)
   endif()
@@ -39,3 +41,6 @@ endif()
 
 add_subdirectory(calibration/test)
 add_subdirectory(test)
+
+# ==== Below this line is C++ and MATLAB shared code ====
+

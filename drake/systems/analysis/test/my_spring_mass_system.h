@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace systems {
-namespace {
+namespace analysis_test {
 
 template <class T>
 class MySpringMassSystem : public SpringMassSystem<T> {
@@ -75,7 +75,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int update_count_{0};
 };  // MySpringMassSystem
 
-}  // namespace
+}  // analysis_test
 }  // systems
 }  // drake
 

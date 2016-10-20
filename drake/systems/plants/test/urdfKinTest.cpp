@@ -1,10 +1,11 @@
-
-
 #include <iostream>
 #include <cstdlib>
+
 #include "drake/systems/plants/RigidBodyTree.h"
 
-using namespace std;
+using std::cout;
+using std::cerr;
+using std::endl;
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {

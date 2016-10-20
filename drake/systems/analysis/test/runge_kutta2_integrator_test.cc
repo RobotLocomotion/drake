@@ -12,7 +12,7 @@ namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
   // Create the spring-mass system.
-  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup integration step.
   const double DT  = 1e-3;

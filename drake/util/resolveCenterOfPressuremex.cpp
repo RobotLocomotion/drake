@@ -6,6 +6,7 @@
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   std::string usage =
       "Usage [cop, normal_torque_at_cop] = resolveCenterOfPressure(torque, "

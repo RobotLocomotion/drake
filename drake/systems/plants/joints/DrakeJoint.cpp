@@ -2,7 +2,8 @@
 
 #include "drake/common/drake_assert.h"
 
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::VectorXd;
 
 DrakeJoint::DrakeJoint(const std::string& _name,
                        const Isometry3d& _transform_to_parent_body,

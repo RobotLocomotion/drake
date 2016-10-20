@@ -1,6 +1,6 @@
 #include "Element.h"
 
-using namespace Eigen;
+using Eigen::Isometry3d;
 
 namespace DrakeShapes {
 Element::Element(const Element& other)

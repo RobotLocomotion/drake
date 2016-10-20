@@ -8,6 +8,7 @@
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   string usage = "[coefs, objval] = nWaypointCubicSplinemex(ts, xs, xd0, xdf)";
   if (nrhs != 4)

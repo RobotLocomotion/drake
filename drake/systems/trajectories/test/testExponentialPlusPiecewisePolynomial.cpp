@@ -6,8 +6,8 @@
 #include <Eigen/Core>
 #include "gtest/gtest.h"
 
-using namespace std;
-using namespace Eigen;
+using std::default_random_engine;
+using std::uniform_real_distribution;
 
 namespace drake {
 namespace {

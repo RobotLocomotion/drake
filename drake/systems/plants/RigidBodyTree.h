@@ -592,8 +592,22 @@ class DRAKE_EXPORT RigidBodyTree {
 
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
+  /**
+   * Gets the contact points defined by a body's collision elements.
+   *
+   * @param[in] body The body who's collision elements are searched.
+   *
+   * @param[out] terrain_points Contact points are added to this matrix.
+   *
+   * @param[in] group_name If a group name was given, use it to look up the
+   * subset of collision elements that belong to that collision group.
+   * Otherwise, uses the full set of collision elements that belong to the body.
+   *
+   * @throws std::runtime_error if an invalid group name is given.
+   */
   void getTerrainContactPoints(const RigidBody& body,
-                               Eigen::Matrix3Xd* terrain_points) const;
+                               Eigen::Matrix3Xd* terrain_points,
+                               const std::string& group_name = "") const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache,
                         const Eigen::Matrix3Xd& origins,
