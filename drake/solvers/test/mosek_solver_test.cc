@@ -1,19 +1,15 @@
-// TODO(hongkai.dai@tri.global) : This test is going to be disabled temporarily.
-// The constraint and cost is formulated incorrectly. It only works because
-// mosek_solver.cc and mosek_wrapper.cc were also incorrect when parsing
-// the constraints and cost. We will re-write mosek_solver.cc and
-// mosek_wrapper.cc
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "drake/solvers/mosek_solver.h"
-
+#include "drake/solvers/gurobi_solver.h"
 #include <iostream>
 
-#include <Eigen/Core>
+
 
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/solvers/constraint.h"
-#include "drake/solvers/mathematical_program.h"
+
 
 namespace drake {
 namespace solvers {
@@ -29,18 +25,22 @@ void RunMosekSolver(MathematicalProgram &prog) {
 // Test a simple linear programming problem
 // Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
 // min -3x0 - x1 - 5x2 - x3
-// s.t     3x0 + x1 + 2x2        = 30
-//         2x0 + x1 + 3x2 +  x3 >= 15
-//              2x1       + 3x3 <= 25
-// -100 <=  x0      + 2x2       <= 30
-//           x1 <= 10
+// s.t     3x0 +  x1 + 2x2        = 30
+//         2x0 +  x1 + 3x2 +  x3 >= 15
+//               2x1       + 3x3 <= 25
+// -inf <=  x0 + 2x1       + x3  <= inf
+// -100 <=  x0       + 2x2       <= 40
+//           0 <= x0 <= inf
+//           0 <= x1 <= 10
+//           0 <= x2 <= inf
+//           0 <= x3 <= inf
 // The optimal solution is at (0, 0, 15, 25/3)
 GTEST_TEST(testMosek, MosekLinearProgram) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4);
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
   // to test adding multiple costs.
-  Eigen::RowVector3d c1(-3 -1 -4);
+  Eigen::RowVector3d c1(-3, -1, -4);
   Eigen::RowVector2d c2(-1, -1);
 
   prog.AddLinearCost(c1, {x(0), x(1), x(2)});
@@ -49,17 +49,21 @@ GTEST_TEST(testMosek, MosekLinearProgram) {
   Eigen::RowVector3d a1(3, 1, 2);
   prog.AddLinearEqualityConstraint(a1, drake::Vector1d(30), {x(0), x(1), x(2)});
 
-  Eigen::Matrix<double, 3, 4> A;
+  Eigen::Matrix<double, 2, 4> A;
   A << 2, 1, 3, 1,
-       0, 2, 0, 3,
        0, 2, 0, 3;
-  Eigen::Vector3d b_lb(15, -std::numeric_limits<double>::infinity(), -100);
-  Eigen::Vector3d b_ub(std::numeric_limits<double>::infinity(), 25, 30);
+       //1, 2, 0, 1,
+       //1, 0, 2, 0;
+  Eigen::Vector2d b_lb(15, -std::numeric_limits<double>::infinity());//, -std::numeric_limits<double>::infinity(), -100);
+  Eigen::Vector2d b_ub(std::numeric_limits<double>::infinity(), 25);//, std::numeric_limits<double>::infinity(), 40);
   prog.AddLinearConstraint(A, b_lb, b_ub);
 
   prog.AddBoundingBoxConstraint(drake::Vector1d(-std::numeric_limits<double>::infinity()), drake::Vector1d(10), {x(1)});
+  prog.AddBoundingBoxConstraint(Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), {x(0), x(2), x(3)});
 
   RunMosekSolver(prog);
+  GurobiSolver gurobi_solver;
+  SolutionResult result = gurobi_solver.Solve(prog);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0/3.0);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10, MatrixCompareType::absolute));
