@@ -31,7 +31,7 @@ if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-pods_find_pkg_config(ipopt)
+drake_find_package(ipopt PKG_CONFIG)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)

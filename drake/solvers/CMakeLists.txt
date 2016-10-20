@@ -18,7 +18,7 @@ list(APPEND optimization_files
   mathematical_program.cc moby_lcp_solver.cc
   system_identification.cpp linear_system_solver.cc
   equality_constrained_qp_solver.cc)
-pods_find_pkg_config(ipopt)
+drake_find_package(ipopt PKG_CONFIG)
 if (ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
 else()
@@ -72,7 +72,8 @@ pods_install_pkg_config_file(drake-optimization
   VERSION 0.0.1)
 
 if(ipopt_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  target_include_directories(drakeOptimization PUBLIC ${ipopt_INCLUDE_DIRS})
+  target_link_libraries(drakeOptimization ${ipopt_LIBRARIES})
   # IPOPT builds its own version of BLAS during compilation, and links
   # it into the output library.  On (at least some) ELF systems, you
   # wind up with a symbol name collision between IPOPT's BLAS and
