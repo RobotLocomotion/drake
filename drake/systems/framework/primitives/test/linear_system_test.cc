@@ -40,9 +40,9 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ("test_linear_system", system_->get_name());
   EXPECT_EQ(system_->GetA(), A_);
   EXPECT_EQ(system_->GetB(), B_);
+  EXPECT_EQ(system_->GetXDot0(), XDot0_);
   EXPECT_EQ(system_->GetC(), C_);
   EXPECT_EQ(system_->GetD(), D_);
-  EXPECT_EQ(system_->GetXDot0(), XDot0_);
   EXPECT_EQ(system_->GetY0(), Y0_);
   EXPECT_EQ(system_->GetXDot0(), Eigen::VectorXd::Zero(2, 1));
   EXPECT_EQ(system_->GetY0(), Eigen::VectorXd::Zero(2, 1));
