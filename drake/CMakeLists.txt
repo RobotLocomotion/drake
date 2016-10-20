@@ -206,7 +206,7 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-find_package(Eigen3 REQUIRED)
+drake_find_package(Eigen3 CONFIG REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 include_directories(thirdParty/bsd/spruce/include)
