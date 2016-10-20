@@ -150,7 +150,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 
-find_package(gflags REQUIRED)
+drake_find_package(gflags CONFIG REQUIRED)
 
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
