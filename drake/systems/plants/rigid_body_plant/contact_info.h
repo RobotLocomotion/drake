@@ -37,6 +37,7 @@ class DRAKE_EXPORT ContactInfo {
               std::unique_ptr<ContactManifold<T>> manifold);
 
   ContactInfo(const ContactInfo<T>& other);
+  ContactInfo& operator=(const ContactInfo<T>& other);
 
   ContactInfo* clone() const;
 
