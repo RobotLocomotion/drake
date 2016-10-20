@@ -58,6 +58,5 @@ class DRAKE_EXPORT ContactResults {
   std::vector<ContactInfo<T>> contacts_;
 };
 
-extern template class DRAKE_EXPORT ContactResults<double>;
 }  // namespace systems
 }  // namespace drake
