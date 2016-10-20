@@ -1,6 +1,6 @@
-find_package(Bullet)
+drake_find_package(Bullet MODULE)
 
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   drake_add_cc_test(rigid_body_plant_test)
   target_link_libraries(rigid_body_plant_test drakeRigidBodyPlant drakeRBSystem)
 
