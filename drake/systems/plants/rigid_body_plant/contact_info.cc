@@ -20,6 +20,15 @@ ContactInfo<T>::ContactInfo(const ContactInfo<T>& other) :
 }
 
 template <typename T>
+ContactInfo<T>& ContactInfo<T>::operator=(const ContactInfo<T>& other) {
+  if ( this == &other) return *this;
+  element1_ = other.element1_;
+  element2_ = other.element2_;
+  contact_manifold_.reset(other.contact_manifold_->clone());
+  return *this;
+}
+
+template <typename T>
 ContactInfo<T>* ContactInfo<T>::clone() const {
   return new ContactInfo<T>(*this);
 }
