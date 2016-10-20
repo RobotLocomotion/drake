@@ -8,7 +8,7 @@ ContactDetail<T>::ContactDetail(const Vector3<T>& point,
     : application_point_(point), wrench_(wrench) {}
 
 template <typename T>
-std::unique_ptr<ContactDetail<T>>ContactDetail<T>::Clone() const {
+std::unique_ptr<ContactDetail<T>> ContactDetail<T>::Clone() const {
   return std::make_unique<ContactDetail<T>>(*this);
 }
 
