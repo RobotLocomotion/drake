@@ -15,7 +15,8 @@ namespace drake {
 template <typename CoefficientType = double>
 class PiecewisePolynomialTrajectory : public Trajectory {
  public:
-  explicit PiecewisePolynomialTrajectory(const PiecewisePolynomial<CoefficientType>& pp)
+  explicit PiecewisePolynomialTrajectory(
+      const PiecewisePolynomial<CoefficientType>& pp)
       : pp_(pp) {}
 
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
