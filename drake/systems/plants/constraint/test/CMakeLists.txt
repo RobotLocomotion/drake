@@ -1,6 +1,8 @@
 drake_add_cc_test(direct_collocation_constraint_test)
 target_link_libraries(direct_collocation_constraint_test drakeDynamicConstraint)
 
+# ==== Below this line is MATLAB-specific code ====
+
 drake_add_matlab_test(NAME systems/plants/constraint/test/AllBodiesClosestDistanceConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND AllBodiesClosestDistanceConstraintTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/constraint/test/RelativeGazeTargetConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND RelativeGazeTargetConstraintTest SIZE large)
 drake_add_matlab_test(NAME systems/plants/constraint/test/RelativePositionConstraintTest REQUIRES lcm libbot OPTIONAL bullet COMMAND RelativePositionConstraintTest)
@@ -12,3 +14,5 @@ drake_add_matlab_test(NAME systems/plants/constraint/test/testQuasiStaticConstra
 drake_add_matlab_test(NAME systems/plants/constraint/test/testSingleTimeLinearPostureConstraint OPTIONAL bullet COMMAND testSingleTimeLinearPostureConstraint)
 
 # drake_add_matlab_test(NAME systems/plants/constraint/test/testKinCnst OPTIONAL bullet COMMAND testKinCnst)  # FIXME: see #2339
+
+# ==== Below this line is C++ and MATLAB shared code ====
