@@ -4,13 +4,13 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-SampledContactManifold<T>::SampledContactManifold() {}
+SampledContactManifold<T>::SampledContactManifold() : ContactManifold<T>() {}
 
 template <typename T>
 SampledContactManifold<T>::SampledContactManifold(
-    const SampledContactManifold<T>& other) {
+    const SampledContactManifold<T>& other) : ContactManifold<T>(other) {
   for (const auto & detail : other.contact_details_) {
-    std::unique_ptr<ContactDetail<T>> copy(detail->clone());
+    std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
     contact_details_.push_back(std::move(copy));
   }
 }
@@ -56,8 +56,8 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
 
 template <typename T>
 const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
-    size_t i) const {
-  if (i < contact_details_.size()) {
+    int i) const {
+  if (i >= 0 && i < static_cast<int>(contact_details_.size())) {
     return contact_details_[i].get();
   }
   throw std::logic_error(
@@ -73,8 +73,8 @@ void SampledContactManifold<T>::AddContactDetail(
 }
 
 template <typename T>
-ContactManifold<T>* SampledContactManifold<T>::clone() const {
-  return new SampledContactManifold(*this);
+std::unique_ptr<ContactManifold<T>> SampledContactManifold<T>::Clone() const {
+  return std::unique_ptr<ContactManifold<T>>(new SampledContactManifold(*this));
 }
 
 // Explicitly instantiates on the most common scalar types.

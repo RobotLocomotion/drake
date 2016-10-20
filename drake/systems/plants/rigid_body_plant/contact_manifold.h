@@ -37,6 +37,12 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactManifold {
  public:
+  // This class is not movable
+  ContactManifold(ContactManifold<T>&& other) = delete;
+  ContactManifold<T>& operator=(ContactManifold<T>&& other) = delete;
+
+  virtual ~ContactManifold() {}
+
   /**
    Computes a single contact detail -- wrench and application point -- which
    is equivalent to applying all individual contact wrenches, independently.
@@ -46,7 +52,7 @@ class DRAKE_EXPORT ContactManifold {
   virtual ContactDetail<T> ComputeNetResponse() const = 0;
 
   /** Reports the number of distinct contact details for this manifold. */
-  virtual size_t get_num_contacts() const = 0;
+  virtual int get_num_contacts() const = 0;
 
   /**
    Access the ith contact detail in this manifold.
@@ -55,7 +61,7 @@ class DRAKE_EXPORT ContactManifold {
    @returns  A pointer to the ith contact detail (or null for invalid index
              values).
    */
-  virtual const ContactDetail<T>* get_ith_contact(size_t i) const = 0;
+  virtual const ContactDetail<T>* get_ith_contact(int i) const = 0;
 
   virtual std::unique_ptr<ContactManifold<T>> Clone() const = 0;
 
