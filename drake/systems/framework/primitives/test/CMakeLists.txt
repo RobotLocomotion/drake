@@ -19,11 +19,11 @@ target_link_libraries(gain_test drakeSystemFramework)
 drake_add_cc_test(gain_scalartype_test)
 target_link_libraries(gain_scalartype_test drakeSystemFramework)
 
-drake_add_cc_test(linear_system_test)
-target_link_libraries(linear_system_test drakeSystemFramework)
-
 drake_add_cc_test(integrator_test)
 target_link_libraries(integrator_test drakeSystemFramework)
+
+drake_add_cc_test(linear_system_test)
+target_link_libraries(linear_system_test drakeSystemFramework)
 
 drake_add_cc_test(multiplexer_test)
 target_link_libraries(multiplexer_test drakeSystemFramework)
