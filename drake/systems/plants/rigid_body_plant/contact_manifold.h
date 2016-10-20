@@ -60,7 +60,17 @@ class DRAKE_EXPORT ContactManifold {
    */
   virtual const ContactDetail<T>* get_ith_contact(size_t i) const = 0;
 
-  virtual ContactManifold<T>* clone() const = 0;
+  virtual std::unique_ptr<ContactManifold<T>> Clone() const = 0;
+
+ protected:
+  /** Makes the default constructor available for sub-classes only. */
+  ContactManifold() {}
+
+  /** Makes the copy constructor available for sub-classes only. */
+  ContactManifold(const ContactManifold<T>& other) = default;
+
+  /** Makes the assignment copy available for sub-classes only. */
+  ContactManifold& operator=(const ContactManifold<T>& other) = default;
 };
 
 }  // namespace systems
