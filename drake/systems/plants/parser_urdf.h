@@ -52,8 +52,9 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * @p tree. In a URDF model, the set of bodies and joints form a tree where
  * there is exactly one body that does not have a parent joint. Let this body
  * be called the "root body". The root body is connected to the world via a
- * `kRollPitchYaw` joint. When this joint is at its zero position, the root
- * body's frame is coincident with the world's coordinate frame.
+ * systems::plants::joints::kRollPitchYaw joint. When this joint is at its zero
+ * position, the root body's frame is coincident with the world's coordinate
+ * frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -81,11 +82,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 /**
  * This method is the same as
  * AddModelInstanceFromUrdfStringWithRpyJointToWorld() except it has an
- * additional parameter called @p ros_package_map. This parameter contains a
- * mapping from ROS package names to their paths on the local file system. The
- * mapping is used to find resources like mesh files that are referenced within
- * the URDF. This method may be called from within the context of a
- * [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
+ * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * contains a mapping from ROS package names to their paths on the local file
+ * system. The mapping is used to find resources like mesh files that are
+ * referenced within the URDF. This method may be called from within the context
+ * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -152,11 +153,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfString() except it has an
- * additional parameter called @p ros_package_map. This parameter contains a
- * mapping from ROS package names to their paths on the local file system. The
- * mapping is used to find resources like mesh files that are referenced within
- * the URDF. This method may be called from within the context of a
- * [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
+ * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * contains a mapping from ROS package names to their paths on the local file
+ * system. The mapping is used to find resources like mesh files that are
+ * referenced within the URDF. This method may be called from within the context
+ * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -204,9 +205,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * to @p tree. In a URDF model, the set of bodies and joints form a tree where
  * there is exactly one body that does not have a parent joint. Let this body
  * be called the "root body". This method connects the model instance's root
- * body to the world via a `kRollPitchYaw` joint. When this joint is at its zero
- * position, the root body's frame is coincident with the world's coordinate
- * frame.
+ * body to the world via a systems::plants::joints::kRollPitchYaw joint. When
+ * this joint is at its zero position, the root body's frame is coincident with
+ * the world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  *
@@ -300,11 +301,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 
 /**
  * This method is the same as AddModelInstanceFromUrdfFile() except it has an
- * additional parameter called @p ros_package_map. This parameter contains a
- * mapping from ROS package names to their paths on the local file system. The
- * mapping is used to find resources like mesh files that are referenced within
- * the URDF. This method may be called from within the context of a
- * [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
+ * additional parameter called @p ros_package_map. Parameter @p ros_package_map
+ * contains a mapping from ROS package names to their paths on the local file
+ * system. The mapping is used to find resources like mesh files that are
+ * referenced within the URDF. This method may be called from within the context
+ * of a [ROS node](http://wiki.ros.org/Nodes) or a regular non-ROS application.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  * An instance of this model will be added to @p tree.
