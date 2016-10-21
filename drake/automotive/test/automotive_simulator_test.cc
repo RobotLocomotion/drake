@@ -32,8 +32,10 @@ void GetLastPublishedJointValue(const std::string& channel,
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
+  const std::string kCommandChannelName = "DRIVING_COMMAND";
+
   const std::string driving_command_name =
-      systems::lcm::LcmSubscriberSystem::get_name("DRIVING_COMMAND");
+      systems::lcm::LcmSubscriberSystem::get_name(kCommandChannelName);
   // TODO(jwnimmer-tri) Do something better than "0_" here.
   const std::string joint_state_name =
       systems::lcm::LcmPublisherSystem::get_name(kJointStateChannelName);
@@ -48,11 +50,6 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   auto& state_pub = dynamic_cast<systems::lcm::LcmPublisherSystem&>(
       simulator->GetBuilderSystemByName(joint_state_name));
 
-  // Set full throttle.
-  DrivingCommand<double> command;
-  command.set_throttle(1.0);
-  command_sub.SetMessage(0.0 /* time */, command);
-
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
 
@@ -63,12 +60,23 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   const auto& body = tree.get_body(1);
   EXPECT_EQ("box_shape", body.get_name());
 
+  // Set full throttle.
+  DrivingCommand<double> command;
+  command.set_throttle(1.0);
+  lcm::DrakeMockLcm* mock_lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(nullptr, mock_lcm);
+  std::vector<uint8_t> message_bytes;
+  command_sub.get_translator().Serialize(0.0 /* time */, command,
+                                         &message_bytes);
+  mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
+                                     message_bytes.size());
+
   // Shortly after starting, we should have not have moved much.
   simulator->StepBy(0.01);
   EulerFloatingJointState<double> joint_value;
-  GetLastPublishedJointValue(kJointStateChannelName,
-      state_pub.get_translator(),
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm()), &joint_value);
+  GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
+                             mock_lcm, &joint_value);
   EXPECT_GT(joint_value.x(), 0.0);
   EXPECT_LT(joint_value.x(), 0.001);
 
@@ -77,16 +85,12 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
     simulator->StepBy(0.01);
   }
   // TODO(jwnimmer-tri) Check the timestamp of the final publication.
-  GetLastPublishedJointValue(kJointStateChannelName,
-      state_pub.get_translator(),
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm()), &joint_value);
+  GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
+                             mock_lcm, &joint_value);
   EXPECT_GT(joint_value.x(), 1.0);
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
   // message's fields are checked.
-  lcm::DrakeMockLcm* mock_lcm =
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
-  ASSERT_NE(nullptr, mock_lcm);
   const std::vector<uint8_t>& published_message_bytes =
       mock_lcm->get_last_published_message("DRAKE_VIEWER_DRAW");
 

@@ -19,16 +19,19 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Gain<T>::Gain(const T& k, int size) : gain_(k) {
+Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) { }
+
+template <typename T>
+Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
   // TODO(amcastro-tri): remove the size parameter from the constructor once
   // #3109 supporting automatic sizes is resolved.
-  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, k.size(), kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, k.size(), kContinuousSampling);
 }
 
 template <typename T>
-const T& Gain<T>::get_gain() const {
-  return gain_;
+const VectorX<T>& Gain<T>::get_gain() const {
+  return k_;
 }
 
 template <typename T>
@@ -48,7 +51,8 @@ void Gain<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   auto input_vector = this->EvalEigenVectorInput(context, 0);
-  System<T>::GetMutableOutputVector(output, 0) = gain_ * input_vector;
+  System<T>::GetMutableOutputVector(output, 0) =
+      k_.array() * input_vector.array();
 }
 
 }  // namespace systems

@@ -24,6 +24,8 @@ namespace systems {
 template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
     : tree_(move(tree)) {
+  DRAKE_DEMAND(tree_ != nullptr);
+
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
@@ -137,7 +139,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   {
     auto kinematics_results =
         make_unique<Value<KinematicsResults<T>>>(
-            KinematicsResults<T>(*tree_));
+            KinematicsResults<T>(tree_.get()));
     output->add_port(move(kinematics_results));
   }
 
@@ -237,7 +239,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
         const T limit_force = JointLimitForce(joint,
                                               q(b->get_position_start_index()),
                                               v(b->get_velocity_start_index()));
-        right_hand_side(b->get_velocity_start_index()) += limit_force;
+        right_hand_side(b->get_velocity_start_index()) -= limit_force;
       }
     }
   }

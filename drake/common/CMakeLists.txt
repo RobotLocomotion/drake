@@ -16,6 +16,11 @@ set(sources
   functional_form.cc
   nice_type_name.cc
   polynomial.cc
+  symbolic_environment.cc
+  symbolic_expression.cc
+  symbolic_formula.cc
+  symbolic_variable.cc
+  symbolic_variables.cc
   text_logging.cc
   )
 
@@ -26,6 +31,7 @@ set(installed_headers
   drake_assert.h
   drake_deprecated.h
   drake_export.h
+  drake_gcc48.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
@@ -37,6 +43,11 @@ set(installed_headers
   number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
+  symbolic_environment.h
+  symbolic_expression.h
+  symbolic_formula.h
+  symbolic_variable.h
+  symbolic_variables.h
   text_logging.h
   trig_poly.h
   )
@@ -51,7 +62,7 @@ add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon gflags Threads::Threads)
 
-find_package(spdlog)
+drake_find_package(spdlog CONFIG)
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)

@@ -2,8 +2,10 @@
 
 #include <iostream>
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using std::move;
+using std::unique_ptr;
+using std::vector;
 
 namespace DrakeCollision {
 ElementId Model::addElement(const Element& element) {

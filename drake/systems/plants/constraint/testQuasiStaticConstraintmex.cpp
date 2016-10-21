@@ -1,7 +1,7 @@
 #include <mex.h>
 
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
@@ -27,6 +27,7 @@
 using namespace Eigen;
 using namespace std;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 && nrhs != 4) {
     mexErrMsgIdAndTxt("Drake:testQuasiStaticConstraintmex:BadInputs",

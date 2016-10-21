@@ -1,6 +1,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -10,6 +10,7 @@ struct SupportDetectData {
   void* map_ptr;
 };
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 1)
     mexErrMsgTxt(

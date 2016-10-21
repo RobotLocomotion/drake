@@ -11,7 +11,10 @@
 #define MAX_STATE 1000
 #define MAX_ITER 10
 
+// TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
+// NOLINTNEXTLINE(build/namespaces)
 using namespace std;
 
 // template <typename tA, typename tB, typename tC, typename tD, typename tE,

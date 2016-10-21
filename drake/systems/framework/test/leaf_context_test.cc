@@ -17,7 +17,7 @@ namespace systems {
 
 constexpr int kNumInputPorts = 2;
 constexpr int kInputSize[kNumInputPorts] = {1, 2};
-constexpr int kStateSize = 5;
+constexpr int kContinuousStateSize = 5;
 constexpr int kGeneralizedPositionSize = 2;
 constexpr int kGeneralizedVelocitySize = 2;
 constexpr int kMiscContinuousStateSize = 1;
@@ -37,14 +37,24 @@ class LeafContextTest : public ::testing::Test {
       context_.SetInputPort(i, std::move(port));
     }
 
-    // State
-    auto state = std::make_unique<BasicVector<double>>(kStateSize);
-    state->get_mutable_value() << 1.0, 2.0, 3.0, 5.0, 8.0;
-
+    // Reserve a continuous state with five elements.
     context_.set_continuous_state(std::make_unique<ContinuousState<double>>(
-        std::move(state),
+        BasicVector<double>::Make({1.0, 2.0, 3.0, 5.0, 8.0}),
         kGeneralizedPositionSize, kGeneralizedVelocitySize,
         kMiscContinuousStateSize));
+
+    // Reserve a difference state with two elements, of size 1 and size 2.
+    std::vector<std::unique_ptr<BasicVector<double>>> xd;
+    xd.push_back(BasicVector<double>::Make({128.0}));
+    xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
+    context_.set_difference_state(
+        std::make_unique<DifferenceState<double>>(std::move(xd)));
+
+    // Reserve a modal state with one element, which is not owned.
+    modal_state_ = PackValue(42);
+    std::vector<AbstractValue*> xm;
+    xm.push_back(modal_state_.get());
+    context_.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
   }
 
   std::unique_ptr<AbstractValue> PackValue(int value) {
@@ -83,6 +93,7 @@ class LeafContextTest : public ::testing::Test {
   }
 
   LeafContext<double> context_;
+  std::unique_ptr<AbstractValue> modal_state_;
 };
 
 TEST_F(LeafContextTest, GetNumInputPorts) {
@@ -92,10 +103,6 @@ TEST_F(LeafContextTest, GetNumInputPorts) {
 TEST_F(LeafContextTest, ClearInputPorts) {
   context_.ClearInputPorts();
   EXPECT_EQ(0, context_.get_num_input_ports());
-}
-
-TEST_F(LeafContextTest, SetOutOfBoundsInputPort) {
-  EXPECT_THROW(context_.SetInputPort(3, nullptr), std::out_of_range);
 }
 
 TEST_F(LeafContextTest, GetVectorInput) {
@@ -167,16 +174,38 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that the state was copied.
   ContinuousState<double>* xc = clone->get_mutable_continuous_state();
-  VectorX<double> contents = xc->get_state().CopyToVector();
-  VectorX<double> expected(kStateSize);
-  expected << 1.0, 2.0, 3.0, 5.0, 8.0;
-  EXPECT_EQ(expected, contents);
+  {
+    VectorX<double> contents = xc->get_state().CopyToVector();
+    VectorX<double> expected(kContinuousStateSize);
+    expected << 1.0, 2.0, 3.0, 5.0, 8.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  EXPECT_EQ(2, clone->get_mutable_difference_state()->size());
+  BasicVector<double>* xd0 = clone->get_mutable_difference_state(0);
+  BasicVector<double>* xd1 = clone->get_mutable_difference_state(1);
+  {
+    VectorX<double> contents = xd0->CopyToVector();
+    VectorX<double> expected(1);
+    expected << 128.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  {
+    VectorX<double> contents = xd1->CopyToVector();
+    VectorX<double> expected(2);
+    expected << 256.0, 512.0;
+    EXPECT_EQ(expected, contents);
+  }
+
+  EXPECT_EQ(1, clone->get_mutable_modal_state()->size());
+  EXPECT_EQ(42, clone->get_modal_state<int>(0));
 
   // Verify that the state type was preserved.
   BasicVector<double>* xc_data =
       dynamic_cast<BasicVector<double>*>(xc->get_mutable_state());
   ASSERT_NE(nullptr, xc_data);
-  EXPECT_EQ(kStateSize, xc_data->size());
+  EXPECT_EQ(kContinuousStateSize, xc_data->size());
 
   // Verify that the second-order structure was preserved.
   EXPECT_EQ(kGeneralizedPositionSize, xc->get_generalized_position().size());
@@ -191,9 +220,18 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(8.0, xc->get_misc_continuous_state().GetAtIndex(0));
 
   // Verify that changes to the cloned state do not affect the original state.
+  // -- Continuous
   xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, xc_data->GetAtIndex(3));
   EXPECT_EQ(5.0, context_.get_continuous_state()->get_state().GetAtIndex(3));
+
+  // -- Difference
+  xd1->SetAtIndex(0, 1024.0);
+  EXPECT_EQ(128.0, context_.get_difference_state(0)->GetAtIndex(0));
+
+  // -- Modal (even though it's not owned in context_)
+  clone->get_mutable_modal_state<int>(0) = 2048;
+  EXPECT_EQ(42, context_.get_modal_state<int>(0));
 }
 
 }  // namespace systems

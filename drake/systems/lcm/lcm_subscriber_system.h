@@ -68,37 +68,13 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
   void EvalOutput(const Context<double>& context,
                   SystemOutput<double>* output) const override;
 
-  // TODO(liang.fok) Remove this method once #3643 is merged.
   /**
-   * Sets the `message_bytes` that will provide the value for `EvalOutput`;
-   * typically only used for unit testing.
-   *
-   * This class's constructors subscribe to an `LCM` channel that provides the
-   * values for `EvalOutput`.  However, if `LCM` is not providing any message
-   * data (e.g., in a unit test, or if the channel is not being published
-   * during a simulation), this method can be used to provide a value.
-   *
-   * When both `LCM` and `SetMessage` are updating the output value, the most
-   * recent update wins.
+   * Returns the translator used by this subscriber. This translator can be used
+   * to translate a BasicVector into a serialized LCM message, which is then
+   * passed to DrakeMockLcm::InduceSubscriberCallback(). This mimics a message
+   * reception by an LCM subscriber and is useful for unit testing.
    */
-  void SetMessage(std::vector<uint8_t> message_bytes);
-
-  // TODO(liang.fok) Remove this method once #3643 is merged.
-  /**
-   * Sets the message vector that will provide the value for `EvalOutput`;
-   * typically only used for unit testing.  The value will come translating the
-   * given @p time and @p message_vector to bytes, which are then stored and
-   * for decoding.
-   *
-   * This class's constructors subscribe to an `LCM` channel that provides the
-   * values for `EvalOutput`.  However, if `LCM` is not providing any message
-   * data (e.g., in a unit test, or if the channel is not being published
-   * during a simulation), this method can be used to provide a value.
-   *
-   * When both `LCM` and `SetMessage` are updating the output value, the most
-   * recent update wins.
-   */
-  void SetMessage(double time, const BasicVector<double>& message_vector);
+  const LcmAndVectorBaseTranslator& get_translator() const;
 
  protected:
   std::unique_ptr<BasicVector<double>> AllocateOutputVector(

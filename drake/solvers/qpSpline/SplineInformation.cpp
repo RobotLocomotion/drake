@@ -2,8 +2,6 @@
 
 #include "drake/common/drake_assert.h"
 
-using namespace std;
-
 SplineInformation::SplineInformation(
     std::vector<int> const& segment_polynomial_orders,
     std::vector<double> const& segment_times)

@@ -1,6 +1,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/text_logging.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -56,6 +57,7 @@ int main(int argc, char* argv[]) {
     gflags::ShowUsageWithFlags(argv[0]);
     return 1;
   }
+  logging::HandleSpdlogGflags();
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused

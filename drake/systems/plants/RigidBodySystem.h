@@ -555,7 +555,7 @@ class DRAKE_EXPORT RigidBodySpringDamper
       const double& t,
       /* todo: add force state here */ const Eigen::VectorXd& u,
       const KinematicsCache<double>& rigid_body_state) const override {
-    using namespace Eigen;
+    using namespace Eigen;  // NOLINT(build/namespaces)
     const Vector3d origin = Vector3d::Zero();
     Vector3d xA_in_B = sys.getRigidBodyTree()->transformPoints(
         rigid_body_state, origin, frameA->get_frame_index(),

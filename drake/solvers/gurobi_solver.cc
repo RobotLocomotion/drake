@@ -1,9 +1,14 @@
 #include "gurobi_solver.h"
 
+#include <vector>
+
 #include <Eigen/Core>
+#include <Eigen/Sparse>
+
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/eigen_sparse_triplet.h"
 
 namespace drake {
 namespace solvers {
@@ -61,54 +66,100 @@ int AddConstraints(GRBmodel* model, const Eigen::MatrixBase<DerivedA>& A,
   return 0;
 }
 
-/// Splits out the quadratic costs and makes calls to add them individually.
+/*
+ * Add quadratic or linear costs to the optimization problem.
+ */
 int AddCosts(GRBmodel* model, MathematicalProgram& prog,
              double sparseness_threshold) {
-  int start_row = 0;
+  // Aggregates the quadratic costs and linear costs in the form
+  // 0.5 * x' * Q_all * x + linear_term' * x
+  using std::abs;
+  // record the non-zero entries in the cost 0.5*x'*Q*x + b'*x
+  std::vector<Eigen::Triplet<double>> Q_nonzero_coefs;
+  std::vector<Eigen::Triplet<double>> b_nonzero_coefs;
   for (const auto& binding : prog.quadratic_costs()) {
     const auto& constraint = binding.constraint();
     const int constraint_variable_dimension = binding.GetNumElements();
-
-    Eigen::MatrixXd Q = 0.5 * (constraint->Q());
+    Eigen::MatrixXd Q = constraint->Q();
     Eigen::VectorXd b = constraint->b();
 
-    // Check for square matrices.
-    DRAKE_ASSERT(Q.rows() == Q.cols());
-    // Check for symmetric matrices.
-    DRAKE_ASSERT(Q.transpose() == Q);
-    // Check for Quadratic and Linear Cost dimensions.
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
-    DRAKE_ASSERT(b.cols() == 1);
-    DRAKE_ASSERT(b.rows() == constraint_variable_dimension);
 
-    // adding each Q term (only upper triangular).
-    for (int i = 0; i < constraint_variable_dimension; i++) {
-      for (int j = i; j < constraint_variable_dimension; j++) {
-        if (std::abs(Q(i, j)) > sparseness_threshold) {
-          int row_ind = i + start_row;
-          int col_ind = j + start_row;
-          // TODO(naveenoid) : Port to batch addition mode of this function
-          // by utilising the Upper right (or lower left) triangular matrix.
-          // The single element addition method used below is recommended
-          // initially by Gurobi since it has a low cost.
-          double individual_quadratic_cost_value = Q(i, j);
-          const int error = GRBaddqpterms(model, 1, &row_ind, &col_ind,
-                                          &individual_quadratic_cost_value);
-          if (error) {
-            return (error);
-          }
+    // constraint_variable_index[i] is the index of the i'th decision variable
+    // binding.VariableListToVectorXd(i)
+    std::vector<int> constraint_variable_index(constraint_variable_dimension);
+    int constraint_variable_count = 0;
+    for (const DecisionVariableView& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.size()); i++) {
+        constraint_variable_index[constraint_variable_count] = var.index() + i;
+        constraint_variable_count++;
+      }
+    }
+    for (int i = 0; i < Q.rows(); i++) {
+      const double Qii = 0.5 * Q(i, i);
+      if (abs(Qii) > sparseness_threshold) {
+        Q_nonzero_coefs.push_back(Eigen::Triplet<double>(
+            constraint_variable_index[i], constraint_variable_index[i], Qii));
+      }
+      for (int j = i + 1; j < Q.cols(); j++) {
+        const double Qij = 0.5 * (Q(i, j) + Q(j, i));
+        if (abs(Qij) > sparseness_threshold) {
+          Q_nonzero_coefs.push_back(
+              Eigen::Triplet<double>(constraint_variable_index[i],
+                                     constraint_variable_index[j], Qij));
         }
       }
     }
-    const int error = GRBsetdblattrarray(
-        model, "Obj", start_row, constraint_variable_dimension, b.data());
-    if (error) {
-      return error;
+
+    for (int i = 0; i < b.size(); i++) {
+      if (abs(b(i)) > sparseness_threshold) {
+        b_nonzero_coefs.push_back(
+            Eigen::Triplet<double>(constraint_variable_index[i], 0, b(i)));
+      }
     }
-    start_row += Q.rows();
-    // Verify that the start_row does not exceed the total possible
-    // dimension of the decision variable.
-    DRAKE_ASSERT(start_row <= static_cast<int>(prog.num_vars()));
+  }
+
+  Eigen::SparseMatrix<double> Q_all(prog.num_vars(), prog.num_vars());
+  Eigen::SparseMatrix<double> linear_terms(prog.num_vars(), 1);
+  Q_all.setFromTriplets(Q_nonzero_coefs.begin(), Q_nonzero_coefs.end());
+  linear_terms.setFromTriplets(b_nonzero_coefs.begin(), b_nonzero_coefs.end());
+
+  std::vector<Eigen::Index> Q_all_row;
+  std::vector<Eigen::Index> Q_all_col;
+  std::vector<double> Q_all_val;
+  drake::math::SparseMatrixToRowColumnValueVectors(Q_all, Q_all_row, Q_all_col,
+                                                   Q_all_val);
+
+  std::vector<int> Q_all_row_indices_int(Q_all_row.size());
+  std::vector<int> Q_all_col_indices_int(Q_all_col.size());
+  for (int i = 0; i < static_cast<int>(Q_all_row_indices_int.size()); i++) {
+    Q_all_row_indices_int[i] = static_cast<int>(Q_all_row[i]);
+    Q_all_col_indices_int[i] = static_cast<int>(Q_all_col[i]);
+  }
+
+  std::vector<Eigen::Index> linear_row;
+  std::vector<Eigen::Index> linear_col;
+  std::vector<double> linear_val;
+  drake::math::SparseMatrixToRowColumnValueVectors(linear_terms, linear_row,
+                                                   linear_col, linear_val);
+
+  std::vector<int> linear_row_indices_int(linear_row.size());
+  for (int i = 0; i < static_cast<int>(linear_row_indices_int.size()); i++) {
+    linear_row_indices_int[i] = static_cast<int>(linear_row[i]);
+  }
+
+  const int QPtermsError = GRBaddqpterms(
+      model, static_cast<int>(Q_all_row.size()), Q_all_row_indices_int.data(),
+      Q_all_col_indices_int.data(), Q_all_val.data());
+  if (QPtermsError) {
+    return QPtermsError;
+  }
+  for (int i = 0; i < static_cast<int>(linear_row.size()); i++) {
+    const int LinearTermError = GRBsetdblattrarray(
+        model, "Obj", linear_row_indices_int[i], 1, linear_val.data() + i);
+    if (LinearTermError) {
+      return LinearTermError;
+    }
   }
   // If loop completes, no errors exist so the value '0' must be returned.
   return 0;

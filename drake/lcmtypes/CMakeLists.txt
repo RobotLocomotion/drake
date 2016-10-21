@@ -1,8 +1,6 @@
 include(${LCM_USE_FILE})
 
-if(PYTHONINTERP_FOUND)
-  set(python_args PYTHON_SOURCES python_install_sources)
-endif()
+set(python_args PYTHON_SOURCES python_install_sources)
 if(JAVA_FOUND AND TARGET lcm-java)
   set(java_args JAVA_SOURCES java_sources)
 endif()
@@ -32,6 +30,8 @@ lcm_wrap_types(
   lcmt_quadrotor_output_t.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm
+  lcmt_schunk_command.lcm
+  lcmt_schunk_status.lcm
   lcmt_simple_car_config_t.lcm
   lcmt_simple_car_state_t.lcm
   lcmt_simulation_command.lcm
@@ -67,9 +67,7 @@ install(TARGETS drake_lcmtypes
   INCLUDES DESTINATION include
 )
 
-if(PYTHONINTERP_FOUND)
-  lcm_install_python(${python_install_sources})
-endif()
+lcm_install_python(${python_install_sources})
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)

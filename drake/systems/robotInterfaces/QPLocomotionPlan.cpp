@@ -25,9 +25,20 @@
 // TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
 // remove body_id from BodyMotionData?
 
-using namespace std;
-using namespace Eigen;
-using namespace drake;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::Stride;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Vector4f;
+using Eigen::VectorXd;
 
 using drake::kQuaternionSize;
 using drake::kSpaceDimension;
@@ -40,6 +51,12 @@ using drake::math::expmap2quat;
 using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
+
+using std::allocator;
+using std::cerr;
+using std::endl;
+using std::runtime_error;
+using std::vector;
 
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps_ =

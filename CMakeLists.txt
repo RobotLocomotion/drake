@@ -6,99 +6,14 @@ include(CTest)
 include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
+include(cmake/options.cmake)
 include(cmake/git/hooks.cmake)
 
 drake_setup_superbuild()
 drake_setup_platform()
 drake_setup_git_hooks()
+drake_setup_options()
 
-###############################################################################
-# BEGIN options
-
-##########################################
-# External Projects that are ON by default
-##########################################
-option(WITH_EIGEN "required c++ matrix library.  only disable if you have it already." ON)
-option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
-option(WITH_GFLAGS "required c++ command-line library.  only disable if you have it already." ON)
-option(WITH_GOOGLE_STYLEGUIDE "provides cpplint.py style checking" ON)
-option(WITH_SWIGMAKE "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_BULLET "used for collision detection" ON)
-option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
-option(WITH_CCD "collision detection between convex shapes" ON)
-option(WITH_SPDLOG "spdlog text logging facility; disabling will turn off text logging." ON)
-if(NOT WIN32)
-  option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
-  option(WITH_LCM "interprocess communications protocol for visualizers, etc" ON)
-  option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
-  option(WITH_NLOPT "nonlinear optimization solver" ON)
-  option(WITH_DREAL "nonlinear SMT solver" OFF)
-  option(WITH_MOSEK "convex optimization solver; free for academics" OFF)
-  option(WITH_OCTOMAP "provides oct-tree data structures" ON)
-  option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
-endif()
-
-option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
-
-##############################################################
-# External Projects that are only needed when MATLAB is in use
-##############################################################
-include(CMakeDependentOption)
-option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
-if(DISABLE_MATLAB)
-  message(STATUS "MATLAB is disabled.")
-else()
-  find_program(matlab matlab)
-  if(matlab)
-    message(STATUS "Found MATLAB at " ${matlab})
-  else()
-    message(STATUS "Looked for MATLAB but could not find it.")
-  endif()
-endif()
-
-## The following projects are default ON when MATLAB is present and enabled.
-## Otherwise, they are hidden and default OFF.
-cmake_dependent_option(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
-
-## The following projects are default OFF when MATLAB is present and enabled.
-## Otherwise, they are hidden and default OFF.
-## Some of them may also be hidden on Windows regardless of the status of MATLAB.
-cmake_dependent_option(WITH_IRIS "fast approximate convex segmentation" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32;WITH_MOSEK" OFF)
-cmake_dependent_option(WITH_SEDUMI "semi-definite programming solver" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-cmake_dependent_option(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
-
-
-# IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB compatibility
-# issues: https://github.com/RobotLocomotion/drake/issues/2578
-cmake_dependent_option(WITH_IPOPT "nonlinear optimization solver" ON "NOT APPLE OR DISABLE_MATLAB" OFF)
-
-
-###########################################
-# External Projects that are OFF by default
-###########################################
-option(WITH_SNOPT "nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
-cmake_dependent_option(WITH_SIGNALSCOPE "live plotting tool for lcm messages" OFF "NOT WIN32;WITH_DIRECTOR" OFF)
-
-if(NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
-  option(WITH_AVL "use w/ AVL to compute aerodynamic coefficients for airfoils")
-  option(WITH_GUROBI "convex/integer optimization solver; free for academics (will prompt you for login bits)")
-  option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-  option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
-  option(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-endif()
-
-# Option to skip building drake proper via the superbuild. This allows the
-# superbuild to build everything BUT drake, which can still be built separately
-# from its build directory. This is used by the dashboards to make separate
-# submissions for drake proper and the superbuild without drake. Some users may
-# also find it useful, especially to build drake with ninja using fewer than
-# the default number of jobs.
-option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
-if(SKIP_DRAKE_BUILD)
-  set(DRAKE_BUILD_COMMANDS BUILD_COMMAND : INSTALL_COMMAND :)
-endif()
-
-# END options
 ###############################################################################
 # BEGIN external projects
 
@@ -153,7 +68,8 @@ drake_add_external(dreal PUBLIC CMAKE
 drake_add_external(gflags PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
-    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON)
+    -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
+    -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
 
 # googletest
 drake_add_external(googletest PUBLIC CMAKE
@@ -167,17 +83,43 @@ drake_add_external(google_styleguide PUBLIC
   BUILD_COMMAND :)
 
 # ipopt
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
+  get_filename_component(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}" NAME)
+  get_filename_component(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}" NAME)
+else()
+  set(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}")
+  set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
+endif()
+
 drake_add_external(ipopt PUBLIC
-  # TODO(sam.creasey) add an alternate build command for WIN32 which
-  # downloads the precopiled binary and installs that.
-  CONFIGURE_COMMAND ./configure
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+   ./configure
     --with-blas=BUILD
     --with-lapack=BUILD
     --prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
     --disable-shared
     --with-pic
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
@@ -194,7 +136,7 @@ drake_add_external(sedumi CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
 
 # snopt
-if(NOT DISABLE_MATLAB AND matlab)
+if(MATLAB_EXECUTABLE)
   set(SNOPT_EXTRA_CMAKE_ARGS
     -DBUILD_SNOPT_C_MEX=ON
     -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
@@ -224,13 +166,26 @@ drake_add_external(octomap PUBLIC CMAKE
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
   PATCH_COMMAND ./autogen.sh
-  CONFIGURE_COMMAND ./configure
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --with-matlab
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+    ./configure
+      --prefix=${CMAKE_INSTALL_PREFIX}
+      --with-matlab
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # textbook
-if(NOT DISABLE_MATLAB AND matlab)
+if(MATLAB_EXECUTABLE)
   set(TEXTBOOK_CMAKE_ARGS
     -DBUILD_TESTING=ON
     -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
@@ -279,24 +234,17 @@ drake_add_external(libbot PUBLIC CMAKE
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
-# director
-drake_add_external(director PUBLIC CMAKE
-  SOURCE_SUBDIR distro/superbuild
-  CMAKE_ARGS
-    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
-    -DUSE_LCMGL=ON
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC
-  DEPENDS director)
-
 # xfoil
 # The Ninja generator does not support Fortran.
 drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
+
+# Option to skip building drake proper via the superbuild. This allows the
+# superbuild to build everything BUT drake, which can still be built separately
+# from its build directory. This is used by the dashboards to make separate
+# submissions for drake proper and the superbuild without drake. Some users may
+# also find it useful, especially to build drake with ninja using fewer than
+# the default number of jobs.
+option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
@@ -304,35 +252,45 @@ drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
 drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_CCD:BOOL=${WITH_CCD}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
+    -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
     -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
+    -DWITH_MESHCONVERTERS:BOOL=${WITH_MESHCONVERTERS}
     -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
+    -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
+    -DWITH_SNOPT_C:BOOL=${WITH_SNOPT}   # TODO(jamiesnape): Fix naming inconsistency and duplication
+    -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
+    -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
+    -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
+    -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
   DEPENDS
     avl
     bot_core_lcmtypes
     bullet
     ccd
-    director
     dreal
     eigen
     gflags
@@ -353,10 +311,27 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     spotless
     swig_matlab
     swigmake
+    textbook
+    xfoil
     yalmip
     yaml_cpp
-    xfoil
 )
+
+# director
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_DRAKE=OFF
+    -DUSE_LCM=${HAVE_LCM}
+    -DUSE_LCMGL=${HAVE_LIBBOT}
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
+  DEPENDS bot_core_lcmtypes drake lcm libbot)
+
+# signalscope
+drake_add_external(signalscope PUBLIC
+  DEPENDS director)
 
 # END external projects
 ###############################################################################

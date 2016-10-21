@@ -5,6 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
 drake_setup_platform()
@@ -32,13 +33,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3)
+  find_package(PythonInterp 3 MODULE REQUIRED)
 else()
-  find_package(PythonInterp)
+  find_package(PythonInterp MODULE REQUIRED)
 endif()
 
 # set up pods
-set(POD_NAME drake)
 include(../cmake/pods.cmake)
 
 function(drake_install_headers)
@@ -86,6 +86,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+  else()
+    # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
+    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
   endif()
   set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
   set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
@@ -125,13 +130,9 @@ if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
   else()
-    # Search for MATLAB and configure various MEX options.
-    # If MATLAB is found, MATLAB_FOUND is set.
-    mex_setup()
-
     # Use find_package to find "all of matlab" along with what is needed to use
     # matlab_add_unit_test and matlab_add_mex
-    find_package(Matlab REQUIRED
+    find_package(Matlab MODULE REQUIRED
       COMPONENTS
         MAIN_PROGRAM
         MEX_COMPILER
@@ -143,32 +144,32 @@ endif()
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
-find_package(GTest REQUIRED)
+drake_find_package(GTest REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 
-find_package(gflags REQUIRED)
+drake_find_package(gflags CONFIG REQUIRED)
 
-set(drake_jar_javafiles util/Transform.java)
+set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-find_package(Threads REQUIRED)
+find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
-find_package(lcm)
+drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
-  find_package(bot2-core)
+  drake_find_package(bot2-core CONFIG)
 
   add_subdirectory(lcmtypes)
 
   list(APPEND drake_jar_javafiles
-    util/MyLCMTypeDatabase.java
-    util/MessageMonitor.java
-    util/CoordinateFrameData.java
-    util/LCMCoder.java)
+    matlab/util/MyLCMTypeDatabase.java
+    matlab/util/MessageMonitor.java
+    matlab/util/CoordinateFrameData.java
+    matlab/util/LCMCoder.java)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
@@ -193,7 +194,7 @@ if(lcm_FOUND)
       message(STATUS "Found bot2-lcmgl")
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles util/BotLCMGLClient.java)
+    list(APPEND drake_jar_javafiles matlab/util/BotLCMGLClient.java)
   endif()
 endif()
 
@@ -204,27 +205,24 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-find_package(Eigen3 REQUIRED)
+drake_find_package(Eigen3 CONFIG REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 include_directories(thirdParty/bsd/spruce/include)
 
+add_subdirectory(thirdParty/bsd/spruce)
+add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
 add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
+  add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(systems)
-add_subdirectory(thirdParty/bsd/GetFullPath)
-add_subdirectory(thirdParty/bsd/spruce)
-add_subdirectory(thirdParty/zlib/tinyxml2)
-if(NOT WIN32)
-  # This subdirectory does not support windows.
-  add_subdirectory(automotive)
-endif()
+add_subdirectory(automotive)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)
@@ -275,7 +273,7 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)

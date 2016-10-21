@@ -4,9 +4,9 @@
 
 #include "drake/common/sorted_vectors_have_intersection.h"
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Isometry3d;
 using drake::SortedVectorsHaveIntersection;
+using std::ostream;
 
 namespace DrakeCollision {
 

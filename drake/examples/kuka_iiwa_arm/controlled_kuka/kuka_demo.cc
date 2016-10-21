@@ -9,13 +9,10 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
-#include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/adder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
@@ -36,14 +33,12 @@ using std::unique_ptr;
 
 namespace drake {
 
-using systems::Adder;
 using systems::Context;
 using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::Gain;
 using systems::GravityCompensator;
-using systems::PidController;
+using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
@@ -202,11 +197,12 @@ class KukaDemo : public systems::Diagram<T> {
     DiagramBuilder<T> builder;
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
-    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
-        move(rigid_body_tree));
+    std::unique_ptr<RigidBodyPlant<T>> plant =
+        make_unique<RigidBodyPlant<T>>(move(rigid_body_tree));
+    plant_ = plant.get();
 
-    state_minus_target_ = builder.template AddSystem<Adder<T>>
-        (2 /*number of inputs*/, plant_->get_num_states() /* size */);
+    DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
+                 plant_->get_num_positions());
 
     // Create and add PID controller.
     // Constants are chosen by trial and error to qualitatively match an
@@ -216,28 +212,19 @@ class KukaDemo : public systems::Diagram<T> {
     const double kp = 2.0;  // proportional constant.
     const double ki = 0.0;  // integral constant.
     const double kd = 1.0;  // derivative constant.
-    controller_ = builder.template AddSystem<PidController<T>>(
-        kp, ki, kd, plant_->get_num_positions());
+    controller_ = builder.template AddSystem<PidControlledSystem<T>>(
+        std::move(plant), kp, ki, kd);
 
     gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
         plant_->get_rigid_body_tree());
-    gcomp_minus_pid_ = builder.template AddSystem<Adder<T>>(
-        2 /*number of inputs*/, plant_->get_num_actuators() /* size */);
 
     // Split the input state into two signals one with the positions and one
     // with the velocities.
     // For Kuka:
     // -  get_num_states() = 14
     // -  get_num_positions() = 7
-    error_demux_ = builder.template AddSystem<Demultiplexer<T>>(
-        plant_->get_num_states(), plant_->get_num_positions());
     rbp_state_demux_ = builder.template AddSystem<Demultiplexer<T>>(
         plant_->get_num_states(), plant_->get_num_positions());
-
-    controller_inverter_ = builder.template AddSystem<Gain<T>>(
-        -1.0, plant_->get_num_actuators());
-    error_inverter_ = builder.template AddSystem<Gain<T>>(
-        -1.0, plant_->get_num_states());
 
     // Creates a plan and wraps it into a source system.
     poly_trajectory_ = MakePlan();
@@ -251,46 +238,23 @@ class KukaDemo : public systems::Diagram<T> {
     // Generates an error signal for the PID controller by subtracting the
     // desired plan state from the RigidBodyPlant's (iiwa arm) state.
     builder.Connect(desired_plan_->get_output_port(0),
-                    error_inverter_->get_input_port());
-    builder.Connect(error_inverter_->get_output_port(),
-                    state_minus_target_->get_input_port(0));
-    builder.Connect(plant_->get_output_port(0),
-                    state_minus_target_->get_input_port(1));
-
-    // Splits the error signal into positions and velocities components.
-    builder.Connect(state_minus_target_->get_output_port(),
-                    error_demux_->get_input_port(0));
+                    controller_->get_input_port(1));
 
     // Splits the RBP output into positions (q) and velocities (v).
-    builder.Connect(plant_->get_output_port(0),
+    builder.Connect(controller_->get_output_port(0),
                     rbp_state_demux_->get_input_port(0));
-
-    // Connects PID controller.
-    builder.Connect(error_demux_->get_output_port(0),
-                    controller_->get_error_port());
-    builder.Connect(error_demux_->get_output_port(1),
-                    controller_->get_error_derivative_port());
 
     // Connects the gravity compensator to the output generalized positions.
     builder.Connect(rbp_state_demux_->get_output_port(0),
                     gravity_compensator_->get_input_port(0));
     builder.Connect(gravity_compensator_->get_output_port(0),
-                    gcomp_minus_pid_->get_input_port(0));
-
-    // Adds feedback.
-    builder.Connect(controller_->get_output_port(0),
-                    controller_inverter_->get_input_port());
-    builder.Connect(controller_inverter_->get_output_port(),
-                    gcomp_minus_pid_->get_input_port(1));
-
-    builder.Connect(gcomp_minus_pid_->get_output_port(),
-                    plant_->get_input_port(0));
+                    controller_->get_input_port(0));
 
     // Connects to publisher for visualization.
-    builder.Connect(plant_->get_output_port(0),
+    builder.Connect(controller_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
 
-    builder.ExportOutput(plant_->get_output_port(0));
+    builder.ExportOutput(controller_->get_output_port(0));
     builder.BuildInto(this);
   }
 
@@ -299,26 +263,21 @@ class KukaDemo : public systems::Diagram<T> {
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
         this->GetMutableSubsystemContext(context, controller_);
-    controller_->set_integral_value(controller_context, VectorX<T>::Zero(7));
+    controller_->SetDefaultState(controller_context);
 
     Context<T>* plant_context =
-        this->GetMutableSubsystemContext(context, plant_);
+        controller_->GetMutableSubsystemContext(controller_context, plant_);
     plant_->SetZeroConfiguration(plant_context);
   }
 
  private:
-  RigidBodyPlant<T>* plant_;
-  PidController<T>* controller_;
-  Demultiplexer<T>* error_demux_;
-  Demultiplexer<T>* rbp_state_demux_;
-  Gain<T>* controller_inverter_;
-  Gain<T>* error_inverter_;
-  GravityCompensator<T>* gravity_compensator_;
-  Adder<T>* state_minus_target_;
-  Adder<T>* gcomp_minus_pid_;
-  TimeVaryingPolynomialSource<T>* desired_plan_;
+  RigidBodyPlant<T>* plant_{nullptr};
+  PidControlledSystem<T>* controller_{nullptr};
+  Demultiplexer<T>* rbp_state_demux_{nullptr};
+  GravityCompensator<T>* gravity_compensator_{nullptr};
+  TimeVaryingPolynomialSource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
-  RigidBodyTreeLcmPublisher* viz_publisher_;
+  RigidBodyTreeLcmPublisher* viz_publisher_{nullptr};
   drake::lcm::DrakeLcm lcm_;
 };
 

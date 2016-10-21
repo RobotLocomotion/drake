@@ -1,6 +1,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]) {
   double kDuration = 0.75;
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  logging::HandleSpdlogGflags();
   kDuration = FLAGS_duration;
 
   const int kNumDof = 7;

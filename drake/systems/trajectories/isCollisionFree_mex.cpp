@@ -25,7 +25,7 @@ Date: Nov 12 2013
 #include <matrix.h>
 
 #include <math.h>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
@@ -167,6 +167,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x,
 }
 
 /* Main mex funtion*/
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Get x (state) from which funnel is to be executed
   const mxArray *x;

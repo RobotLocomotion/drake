@@ -71,7 +71,7 @@ template <typename T>
 class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
-  /// the world in @p tree.
+  /// the world in @p tree.  @p tree must not be `nullptr`.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree);
 
   ~RigidBodyPlant() override;

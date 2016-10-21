@@ -7,8 +7,7 @@
 namespace drake {
 namespace solvers {
 
-class DRAKE_EXPORT GurobiSolver
-    : public MathematicalProgramSolverInterface {
+class DRAKE_EXPORT GurobiSolver : public MathematicalProgramSolverInterface {
  public:
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.

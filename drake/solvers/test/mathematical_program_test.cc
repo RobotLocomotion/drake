@@ -181,6 +181,31 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars.value()(1), 1);
   });
 }
+// Tests a quadratic optimization problem, with only quadratic cost
+// 0.5 *x'*Q*x + b'*x
+// The optimal solution is -inverse(Q)*b
+GTEST_TEST(testMathematicalProgram, QuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(4);
+
+  Vector4d Qdiag(1.0, 2.0, 3.0, 4.0);
+  Matrix4d Q = Qdiag.asDiagonal();
+  Q(1, 2) = 0.1;
+  Q(2, 3) = -0.02;
+
+  Vector4d b(1.0, -0.5, 1.3, 2.5);
+  prog.AddQuadraticCost(Q, b);
+
+  Matrix4d Q_transpose = Q;
+  Q_transpose.transposeInPlace();
+  Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
+  Vector4d expected = -Q_symmetric.ldlt().solve(b);
+  prog.SetInitialGuess({x}, Vector4d::Zero());
+  RunNonlinearProgram(prog, [&]() {
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                MatrixCompareType::absolute));
+  });
+}
 
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
@@ -907,6 +932,9 @@ MathematicalProgram prog;
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 }
+
+// TODO(hongkai.dai@tri.global): add a test to solve an second order conic
+// problem through nonlinear solver.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

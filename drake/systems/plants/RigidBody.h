@@ -360,7 +360,8 @@ class DRAKE_EXPORT RigidBody {
   void AddCollisionElementsToClique(int clique_id);
 
  public:
-  friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
+  DRAKE_EXPORT friend std::ostream& operator<<(
+      std::ostream& out, const RigidBody& b);
 
  public:
 #ifndef SWIG
