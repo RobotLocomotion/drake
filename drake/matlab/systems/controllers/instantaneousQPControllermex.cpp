@@ -11,7 +11,7 @@
  *   some matrices might be better off using RowMajor
  */
 
-#include "InstantaneousQPController.h"
+#include "drake/systems/controllers/InstantaneousQPController.h"
 
 #include <cmath>
 #include <limits>

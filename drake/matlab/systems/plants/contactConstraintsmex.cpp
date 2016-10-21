@@ -4,8 +4,8 @@
 #include "drake/matlab/util/mexify.h"
 #include "drake/matlab/util/standardMexConversions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/KinematicsCache.h"
 
-#include "KinematicsCache.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace std;
