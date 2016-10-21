@@ -345,7 +345,8 @@ class IntegratorBase {
   /** Gets the error estimate (used only for integrators that support accuracy
    * estimation).
    */
-  const ContinuousState<T>* get_error_estimate() const { return err_est_.get(); }
+  const ContinuousState<T>* get_error_estimate() const {
+    return err_est_.get(); }
 
   /**
    *  Gets the scaling matrix for generalized coordinate and velocity
@@ -533,7 +534,7 @@ class IntegratorBase {
 
  private:
   // Calls DoIntegrate and does necessary pre-initialization and post-cleanup.
-  void Integrate(const T& dt){
+  void Integrate(const T& dt) {
     DoIntegrate(dt);
     last_step_size_ = dt;
   }
