@@ -5,10 +5,10 @@
 namespace drake {
 namespace systems {
 
-/// An Affine system. Given an input vector `u`, an output vector 'y', a state
-/// vector `x`, its derivative @f['\dot{x}'@f] and state space coefficient
-/// matrices `A`, `B`, `C`, and `D`, this system implements the following
-/// equations:
+/// A continuous Affine system. Given an input vector `u`, an output
+/// vector 'y', a state vector `x`, its derivative @f['\dot{x}'@f] and
+/// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
+/// implements the following equations:
 /// @f[
 ///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
 ///   y = Cx + Du + y_0
@@ -44,7 +44,7 @@ class AffineSystemPlant : public LeafSystem<T> {
                     const Eigen::Ref<const VectorX<T>>& y0);
 
   /// The input to this system is direct feedthrough only if the coefficient
-  /// matrix D is zero.
+  /// matrix `D` is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
 
   /// LeafSystem override.
@@ -54,7 +54,7 @@ class AffineSystemPlant : public LeafSystem<T> {
   /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;
 
-  /// Returns the port containing output state.
+  /// Returns the port containing the output state.
   const SystemPortDescriptor<T>& get_output_port() const;
 
   void EvalOutput(const Context<T>& context,
