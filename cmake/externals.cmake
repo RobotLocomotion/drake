@@ -5,7 +5,14 @@ find_package(Git REQUIRED)
 if(CMAKE_GENERATOR STREQUAL "Ninja")
   # The Ninja generator does not support Fortran, so manually find the Fortran
   # compiler and set any flags passed in by environment variable
-  find_program(CMAKE_Fortran_COMPILER "$ENV{FC}" DOC "Fortran compiler")
+  find_program(CMAKE_Fortran_COMPILER
+    NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
+    DOC "Fortran compiler")
+  if(CMAKE_Fortran_COMPILER)
+    message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+  else()
+    message(FATAL_ERROR "Could NOT find Fortran compiler")
+  endif()
   set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
     "Flags for Fortran compiler")
 else()
