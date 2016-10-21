@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -21,6 +22,8 @@
 // Includes for the planner.
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
+
+DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -282,6 +285,8 @@ class KukaDemo : public systems::Diagram<T> {
 };
 
 int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+
   KukaDemo<double> model;
   Simulator<double> simulator(model);
 
@@ -295,7 +300,7 @@ int DoMain() {
   simulator.Initialize();
 
   // Simulate for 20 seconds.
-  simulator.StepTo(20.0);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
 }
@@ -306,6 +311,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::kuka_iiwa_arm::controlled_kuka::DoMain();
 }
