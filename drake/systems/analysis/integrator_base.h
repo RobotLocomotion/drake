@@ -627,8 +627,10 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
-    } else if (dt_max < DT_GROWTH * current_step_size)
-      current_step_size = dt_max;  // dt_max is roughly current step.
+    } else {
+      if (dt_max < DT_GROWTH * current_step_size)
+        current_step_size = dt_max;  // dt_max is roughly current step.
+    }
 
     // Attempt to take the step.
     integrator->Integrate(current_step_size);
