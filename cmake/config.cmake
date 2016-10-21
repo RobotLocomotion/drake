@@ -45,7 +45,8 @@ function(drake_setup_matlab)
         "${_matlab_bindir}" DIRECTORY CACHE)
 
       if(MATLAB_EXECUTABLE)
-        # MATLAB 7.12 (R2011a) introduced the rng() function
+        # MATLAB 7.12 (R2011a) introduced the rng() function so it is a lower
+        # bound on the oldest MATLAB version that Drake can support
         find_package(Matlab 7.12 MODULE
           COMPONENTS
             MAIN_PROGRAM
