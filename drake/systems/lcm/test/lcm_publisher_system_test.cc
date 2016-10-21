@@ -127,6 +127,33 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
   TestPublisher(channel_name, &lcm, &dut);
 }
 
+// Tests LcmPublisherSystem using a Serializer.
+GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // The "device under test".
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+  ASSERT_NE(dut.get(), nullptr);
+
+  // Establishes the context, output, and input for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
+  const lcmt_drake_signal sample_data{
+    2, { 1.0, 2.0, }, { "x", "y", }, 12345,
+  };
+  context->SetInputPort(
+      kPortNumber, std::make_unique<FreestandingInputPort>(
+          std::make_unique<Value<lcmt_drake_signal>>(sample_data)));
+
+  // Verifies that a correct message is published.
+  dut->Publish(*context.get());
+  const auto& bytes = lcm.get_last_published_message(channel_name);
+  drake::lcmt_drake_signal received_message{};
+  received_message.decode(bytes.data(), 0, bytes.size());
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace systems
