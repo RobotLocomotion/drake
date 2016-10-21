@@ -45,6 +45,22 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);
 }
 
+/// Verifies accuracy estimation and error control are supported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double DT = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  RungeKutta3Integrator<double> integrator(
+      spring_mass, context.get());
+
+  EXPECT_GE(integrator.get_error_order(), 1);
+  EXPECT_EQ(integrator.supports_accuracy_estimation(), true);
+  EXPECT_EQ(integrator.supports_error_control(), true);
+  EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
+  EXPECT_NO_THROW(integrator.request_initial_step_size_target(DT));
+}
+
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -154,6 +170,13 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
   // Check the solution.
   EXPECT_NEAR(C1 * std::cos(kOmega * T_FINAL) + C2 * std::sin(kOmega * T_FINAL),
               kXFinal, 1e-5);
+
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_last_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_NE(integrator.get_error_estimate(), nullptr);
 }
 
 }  // namespace

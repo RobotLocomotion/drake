@@ -54,6 +54,23 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_THROW(integrator.Step(DT, DT), std::logic_error);
 }
 
+/// Verifies accuracy estimation and error control are unsupported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double DT = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, DT, context.get());
+
+  EXPECT_EQ(integrator.get_error_order(), 0);
+  EXPECT_EQ(integrator.supports_accuracy_estimation(), false);
+  EXPECT_EQ(integrator.supports_error_control(), false);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(DT),
+               std::logic_error);
+}
+
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -107,8 +124,13 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Check the solution.
   EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,
               1e-5);
-}
 
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_last_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

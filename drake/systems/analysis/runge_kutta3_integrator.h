@@ -78,7 +78,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
  private:
   void DoInitialize() override;
   bool DoStep(const T& dt) override;
-  void Integrate(const T& dt) override;
+  void DoIntegrate(const T& dt) override;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;

@@ -46,7 +46,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   bool supports_error_control() const override { return false; }
 
  private:
-  void Integrate(const T& dt) override;
+  void DoIntegrate(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
@@ -57,7 +57,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-void RungeKutta2Integrator<T>::Integrate(const T& dt) {
+void RungeKutta2Integrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state()->

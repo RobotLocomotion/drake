@@ -50,7 +50,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
   int64_t get_error_order() const override { return 0; }
 
  private:
-  void Integrate(const T& dt) override;
+  void DoIntegrate(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -61,7 +61,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-void ExplicitEulerIntegrator<T>::Integrate(const T& dt) {
+void ExplicitEulerIntegrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state()->

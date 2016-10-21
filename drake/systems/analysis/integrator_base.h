@@ -345,7 +345,7 @@ class IntegratorBase {
   /** Gets the error estimate (used only for integrators that support accuracy
    * estimation).
    */
-  const ContinuousState<T>& get_error_estimate() const { return *err_est_; }
+  const ContinuousState<T>* get_error_estimate() const { return err_est_.get(); }
 
   /**
    *  Gets the scaling matrix for generalized coordinate and velocity
@@ -474,7 +474,7 @@ class IntegratorBase {
    * is called during the default DoStep() method.
    * @param dt The integration step to take.
    */
-  virtual void Integrate(const T& dt) = 0;
+  virtual void DoIntegrate(const T& dt) = 0;
 
   // Sets the ideal next step size.
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
@@ -532,6 +532,12 @@ class IntegratorBase {
   }
 
  private:
+  // Calls DoIntegrate and does necessary pre-initialization and post-cleanup.
+  void Integrate(const T& dt){
+    DoIntegrate(dt);
+    last_step_size_ = dt;
+  }
+
   // Reference to the system being simulated.
   const System<T>& system_;
 
@@ -649,7 +655,6 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       xc->SetFromVector(integrator->get_interval_start_state());
       derivs0->SetFromVector(integrator->get_interval_start_state_deriv());
     } else {  // Step succeeded.
-      integrator->last_step_size_ = current_step_size;
       integrator->ideal_next_step_size_ = current_step_size;
       if (std::isnan(integrator->get_actual_initial_step_size_taken()))
         integrator->set_actual_initial_step_size_taken(
@@ -678,9 +683,9 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   const auto& z_scal = integrator->get_misc_state_scaling_matrix();
 
   // Get the generalized position, velocity, and miscellaneous state vectors.
-  const VectorBase<T>& gc = err_est.get_generalized_position();
-  const VectorBase<T>& gv = err_est.get_generalized_velocity();
-  const VectorBase<T>& gz = err_est.get_misc_continuous_state();
+  const VectorBase<T>& gc = err_est->get_generalized_position();
+  const VectorBase<T>& gv = err_est->get_generalized_velocity();
+  const VectorBase<T>& gz = err_est->get_misc_continuous_state();
 
   // Initialize Ndq_ and scaled_q_err_, if necessary.
   if (Ndq == nullptr) {

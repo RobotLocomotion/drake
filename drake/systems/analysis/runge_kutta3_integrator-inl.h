@@ -35,7 +35,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& dt_max) {
 }
 
 template <class T>
-void RungeKutta3Integrator<T>::Integrate(const T& dt) {
+void RungeKutta3Integrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc = IntegratorBase<T>::get_mutable_context()
       ->get_mutable_state()
