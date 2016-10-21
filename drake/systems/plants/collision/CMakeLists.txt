@@ -5,6 +5,13 @@ if(Bullet_FOUND)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
   set(bullet "yes" CACHE STRING "yes")
 endif()
+
+drake_find_package(fcl CONFIG)
+
+if(fcl_FOUND)
+  list(APPEND drakeCollision_SRC_FILES fcl_model.cc)
+endif()
+
 set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} unusable_model.cc)
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
@@ -14,6 +21,11 @@ if(Bullet_FOUND)
   target_include_directories(drakeCollision PUBLIC ${BULLET_INCLUDE_DIRS})
   target_link_libraries(drakeCollision ${BULLET_LIBRARIES})
 endif()
+
+if(fcl_FOUND)
+  target_link_libraries(drakeCollision fcl)
+endif()
+
 target_link_libraries(drakeCollision drakeShapes drakeCommon)
 
 pods_install_libraries(drakeCollision)
