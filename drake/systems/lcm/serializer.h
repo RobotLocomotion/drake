@@ -44,12 +44,12 @@ class DRAKE_EXPORT SerializerInterface {
 };
 
 /**
- * %Serializer is specific to a single LcmtMessage type, and translates between
- * LCM message bytes and drake::systems::Value<LcmtMessage> objects.
+ * %Serializer is specific to a single LcmMessage type, and translates between
+ * LCM message bytes and drake::systems::Value<LcmMessage> objects.
  *
- * @tparam LcmtMessage message type to serialize, e.g., lcmt_drake_signal.
+ * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
  */
-template <typename LcmtMessage>
+template <typename LcmMessage>
 class Serializer : public SerializerInterface {
  public:
   Serializer() {}
@@ -59,14 +59,14 @@ class Serializer : public SerializerInterface {
     // NOTE: We create the message using value-initialization ("{}") to ensure
     // the POD fields are zeroed (instead of using default construction ("()"),
     // which would leave the POD data uninitialized.)
-    return std::make_unique<Value<LcmtMessage>>(LcmtMessage{});
+    return std::make_unique<Value<LcmMessage>>(LcmMessage{});
   }
 
   void Deserialize(
       const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
     DRAKE_DEMAND(abstract_value != nullptr);
-    LcmtMessage& message = abstract_value->GetMutableValue<LcmtMessage>();
+    LcmMessage& message = abstract_value->GetMutableValue<LcmMessage>();
     int consumed = message.decode(message_bytes, 0, message_length);
     DRAKE_THROW_UNLESS(consumed == message_length);
   }
@@ -74,7 +74,7 @@ class Serializer : public SerializerInterface {
   void Serialize(const AbstractValue& abstract_value,
                  std::vector<uint8_t>* message_bytes) const override {
     DRAKE_DEMAND(message_bytes != nullptr);
-    const LcmtMessage& message = abstract_value.GetValue<LcmtMessage>();
+    const LcmMessage& message = abstract_value.GetValue<LcmMessage>();
     const int message_length = message.getEncodedSize();
     message_bytes->resize(message_length);
     int consumed = message.encode(message_bytes->data(), 0, message_length);

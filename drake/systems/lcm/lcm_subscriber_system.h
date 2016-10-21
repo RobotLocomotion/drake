@@ -26,20 +26,20 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
  public:
   /**
    * Factory method that returns a subscriber System that provides
-   * Value<LcmtMessage> message objects on is sole abstract-valued output port.
+   * Value<LcmMessage> message objects on is sole abstract-valued output port.
    *
-   * @tparam LcmtMessage message type to deserialize, e.g., lcmt_drake_signal.
+   * @tparam LcmMessage message type to deserialize, e.g., lcmt_drake_signal.
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
-  template <typename LcmtMessage>
+  template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm) {
     return std::make_unique<LcmSubscriberSystem>(
-        channel, std::make_unique<Serializer<LcmtMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
   /**
@@ -142,7 +142,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
   // Will be non-null iff our output port is vector-valued.
   const LcmAndVectorBaseTranslator* const translator_{};
 
-  // Converts LCM message bytes to Value<LcmtMessage> objects.
+  // Converts LCM message bytes to Value<LcmMessage> objects.
   // Will be non-null iff our output port is abstract-valued.
   const std::unique_ptr<SerializerInterface> serializer_;
 
