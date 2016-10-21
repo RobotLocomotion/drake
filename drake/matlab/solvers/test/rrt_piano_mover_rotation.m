@@ -6,7 +6,7 @@ function rrt_piano_mover_rotation(n_obstacles, planning_mode, n_smoothing_passes
   end
   if nargin < 2 || isempty(planning_mode), planning_mode = 'rrt'; end
   if nargin < 3 || isempty(n_smoothing_passes), n_smoothing_passes = 10; end
-  urdf = fullfile(getDrakePath, 'systems', 'plants', 'test', 'FallingBrick.urdf');
+  urdf = fullfile(getDrakePath, 'matlab', 'systems', 'plants', 'test', 'FallingBrick.urdf');
   options.floating = true;
   r = RigidBodyManipulator(urdf, options);
   box_size = [1;1;1];

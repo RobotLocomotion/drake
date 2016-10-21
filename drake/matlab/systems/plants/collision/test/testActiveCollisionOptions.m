@@ -1,5 +1,5 @@
 function testActiveCollisionOptions()
-  urdf = [getDrakePath(), '/systems/plants/test/FallingBrick.urdf'];
+  urdf = [getDrakePath(), '/matlab/systems/plants/test/FallingBrick.urdf'];
   options.floating = true;
   options.terrain = RigidBodyFlatTerrain;
 

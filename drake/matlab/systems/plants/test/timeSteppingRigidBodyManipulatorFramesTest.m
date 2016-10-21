@@ -7,7 +7,7 @@ function timeSteppingRigidBodyManipulatorFramesTest
 % see https://github.com/RobotLocomotion/drake/issues/468
 
 S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
-urdf = [getDrakePath() '/systems/plants/test/ActuatedPendulum.urdf'];
+urdf = [getDrakePath() '/matlab/systems/plants/test/ActuatedPendulum.urdf'];
 p = TimeSteppingRigidBodyManipulator(urdf,.01);
 
 % Check simulation w/out sensors

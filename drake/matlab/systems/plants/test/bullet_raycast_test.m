@@ -14,7 +14,7 @@ end
 options.floating = true;
 options.terrain = [];
 
-rb = RigidBodyManipulator([getDrakePath '/systems/plants/test/FallingBrick.urdf'], options);
+rb = RigidBodyManipulator([getDrakePath '/matlab/systems/plants/test/FallingBrick.urdf'], options);
 
 
 % world is rb.body(1)
