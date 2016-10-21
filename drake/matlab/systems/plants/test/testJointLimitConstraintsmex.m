@@ -21,7 +21,7 @@ valuecheck(phi_mex, phi);
 valuecheck(J_mex, J);
 
 %also test the case where only some joints have limits
-robot = RigidBodyManipulator(fullfile('../../../examples/Atlas/urdf/robotiq_tendons.urdf'));
+robot = RigidBodyManipulator(fullfile('../../../../examples/Atlas/urdf/robotiq_tendons.urdf'));
 
 x0 = robot.getInitialState;
 q = x0(1:robot.num_positions);

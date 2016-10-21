@@ -1,6 +1,6 @@
 function testMex
 
-p = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
+p = PlanarRigidBodyManipulator('../../../../examples/Acrobot/Acrobot.urdf');
 
 nq = p.getNumStates()/2;
 
@@ -41,7 +41,7 @@ for i=1:100
   valuecheck(dJm,dJ,1e-8);
 end
 
-p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
+p = RigidBodyManipulator('../../../../examples/FurutaPendulum/FurutaPendulum.urdf');
 
 nq = p.getNumStates()/2;
 
@@ -94,7 +94,7 @@ for i=1:100
 end
 
 w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
-p = RigidBodyManipulator('../../../examples/Pendulum/test/PendulumWithFriction.urdf');
+p = RigidBodyManipulator('../../../../examples/Pendulum/test/PendulumWithFriction.urdf');
 warning(w);
 
 nq = p.getNumStates()/2;

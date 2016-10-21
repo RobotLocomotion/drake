@@ -54,7 +54,7 @@ l_leg_hpz = find(strcmp(coords,'l_leg_hpz'));
 r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 
 tspan = [0,1];
-nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
+nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
 q_seed = q_nom+1e-2*randn(nq,1);
 ikoptions = IKoptions(robot);

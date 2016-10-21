@@ -9,7 +9,7 @@ warning(w);
 nq = r.getNumPositions();
 
 
-nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
+nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
 q_seed = q_nom+0.1*randn(nq,1);
 v = randn(r.getNumVelocities(),1);

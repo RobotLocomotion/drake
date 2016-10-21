@@ -21,7 +21,7 @@ cost = double(cost);
 ikoption = IKoptions(r);
 ikoption = ikoption.setQ(diag(cost(1:r.getNumPositions)));
 
-nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
+nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q0 = nom_data.xstar(1:r.getNumPositions);
 l_foot = r.findLinkId('l_foot');
 r_foot = r.findLinkId('r_foot');

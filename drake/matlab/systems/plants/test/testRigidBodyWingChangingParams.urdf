@@ -1,6 +1,6 @@
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyWingChangingParams">
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="testRigidBodyWingChangingParams">
 
  <parameter name="cs_chord" value="0.0402" ub="1000" lb="0.0001" />
  <parameter name="cs_span" value="0.31115" ub="1000" lb="0.0001" />

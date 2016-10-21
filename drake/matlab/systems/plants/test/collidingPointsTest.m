@@ -2,7 +2,7 @@ function collidingPointsTest(visualize)
   
   checkDependency('bullet');
   options.floating = true;
-  urdf = fullfile('../../../examples/Atlas/urdf/atlas_convex_hull.urdf');
+  urdf = fullfile('../../../../examples/Atlas/urdf/atlas_convex_hull.urdf');
   robot = RigidBodyManipulator(urdf);
   q = zeros(robot.num_positions,1);
   kinsol = robot.doKinematics(q);

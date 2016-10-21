@@ -4,8 +4,8 @@ function testFloatingBaseDynamics
 % https://github.com/RobotLocomotion/drake/issues/311
 
 for urdf = {'FallingBrick.urdf',...
-    '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
-    '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
+    '../../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
+    '../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
 urdf=urdf{1};
 options.floating = 'rpy';

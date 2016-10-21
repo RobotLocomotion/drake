@@ -1,6 +1,6 @@
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyBluffBody">
+  xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="testRigidBodyBluffBody">
 
  <parameter name="drag_area" value="0.01" ub="1000" lb="0" />
 

@@ -23,7 +23,7 @@ end
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 
-nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
+nom_data = load('../../../../../examples/Atlas/data/atlas_fp.mat');
 q = nom_data.xstar(1:nq);
 
 shrinkFactor = 0.9;

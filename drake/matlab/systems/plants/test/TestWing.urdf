@@ -1,6 +1,6 @@
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="Test_Wing">
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="Test_Wing">
   <link
     name="Wing">
     <inertial>

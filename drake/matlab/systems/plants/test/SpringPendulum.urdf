@@ -2,7 +2,7 @@
 
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="SpringPendulum">
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="SpringPendulum">
   <material name="green">
     <color rgba=".3 .6 .4 1" />
   </material>

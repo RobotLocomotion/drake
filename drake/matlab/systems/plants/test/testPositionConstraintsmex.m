@@ -2,7 +2,7 @@ function testPositionConstraintsmex(urdf)
 
 %create a robot with a lot of positions constraints
 if nargin<1 || isempty(urdf)
-  urdf = fullfile('../../../examples/Atlas/urdf/robotiq.urdf');
+  urdf = fullfile('../../../../examples/Atlas/urdf/robotiq.urdf');
 end
 robot = RigidBodyManipulator(urdf);
 
