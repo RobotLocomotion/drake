@@ -134,8 +134,7 @@ class VectorBase {
     using std::max;
     T nrm(0);
     const int sz = size();
-    for (int i=0; i< sz; ++i)
-    {
+    for (int i=0; i< sz; ++i) {
       T val = abs(GetAtIndex(i));
       nrm = max(nrm, val);
     }
