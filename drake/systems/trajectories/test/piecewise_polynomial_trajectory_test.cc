@@ -9,7 +9,7 @@ namespace systems {
 namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
-typedef PiecewisePolynomialTrajectory<double> PPTrajType;
+typedef PiecewisePolynomialTrajectory PPTrajType;
 
 GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const Polynomiald a = 3;
@@ -40,7 +40,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   ppMatrix[0](0) = a;
   ppMatrix[0](1) = y;
   ppMatrix[0](2) = y2;
-//  const std::vector<double> matrixTimes{0.0, 3};
+
   const PiecewisePolynomialType ppFromMatrix(ppMatrix, {0.0, 3});
   const PPTrajType ppTrajFromMatrix {ppFromMatrix};
   EXPECT_EQ(ppTrajFromMatrix.length(), 3);
