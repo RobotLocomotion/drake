@@ -1,7 +1,7 @@
 // faster alternative to Matlab ppval
 // @author Michael Kaess
 
-package drake.systems.trajectories;
+package drake.matlab.systems.trajectories.dev;
 
 public class JavaPP {
 

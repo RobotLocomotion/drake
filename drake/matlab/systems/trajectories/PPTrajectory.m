@@ -647,7 +647,7 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
       newtraj.pp.coefs = [obj.pp.coefs; trajAtEnd.pp.coefs];
 
       % update javapp (could also construct a new object)
-%      newtraj.javapp = drake.systems.trajectories.JavaPP(...
+%      newtraj.javapp = drake.matlab.systems.trajectories.dev.JavaPP(...
 %          newtraj.pp.breaks, newtraj.pp.coefs, newtraj.pp.order, newtraj.pp.dim);
       newtraj = setOutputFrame(PPTrajectory(newtraj.pp),getOutputFrame(obj));
       
