@@ -413,7 +413,7 @@ class IntegratorBase {
    * unit quaternions.
    *
    * Assume the existence of a m x n matrix N and its pseudo-inverse N+ such
-   * that N * N+ = I (the identity matrix), v = N * qdot, and qdot = N+ * v,
+   * that N * N+ = I (the identity matrix), v = N+ * qdot, and qdot = N * v,
    * where qdot represents the time derivatives of the configuration variables
    * and v represents the velocity variables. qdot and v may generally be
    * distinct, as in the case where q corresponds to unit quaternions and v
@@ -424,12 +424,12 @@ class IntegratorBase {
    * errors in generalized configuration (x), as the following derivation shows:
    *
    * <pre>
-   * v = N * qdot
-   * dx/dt = N * dq/dt                  Use synonyms for qdot and v
-   * dx = N * dq                        Change time derivatives to differentials
-   * W_v * dx = W_v * N * dq            Pre-multiply both sides by W_v
-   * N+ * W_v * dx = N+ * W_v * N * dq  Pre-multiply both sides by N+
-   * N+ * W_v * dx = W_q * dq           Assign W_q := N+*W_v*N
+   * v = N+ * qdot
+   * dx/dt = N+ * dq/dt                 Use synonyms for qdot and v
+   * dx = N+ * dq                       Change time derivatives to differentials
+   * W_v * dx = W_v * N+ * dq           Pre-multiply both sides by W_v
+   * N * W_v * dx = N * W_v * N+ * dq   Pre-multiply both sides by N
+   * N * W_v * dx = W_q * dq            Assign W_q := N*W_v*N+
    * </pre>
    *
    * - [Nikravesh 1988] P. Nikravesh. Computer-Aided  Analysis of Mechanical
