@@ -27,7 +27,6 @@ class DRAKE_EXPORT Trajectory {
    * length() is the number of rows in the matrix.
   */
   virtual Eigen::Index length() const = 0;
-
 };
 
 }  // namespace drake
