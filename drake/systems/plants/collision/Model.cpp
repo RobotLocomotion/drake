@@ -15,7 +15,7 @@ ElementId Model::addElement(const Element& element) {
   return id;
 }
 
-bool Model::removeElement(const ElementId& id) {
+bool Model::removeElement(ElementId id) {
   return elements.erase(id) > 0;
 }
 
@@ -47,7 +47,7 @@ void Model::getTerrainContactPoints(ElementId id0,
   }
 }
 
-bool Model::updateElementWorldTransform(const ElementId id,
+bool Model::updateElementWorldTransform(ElementId id,
                                         const Isometry3d& T_elem_to_world) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
@@ -74,18 +74,18 @@ bool Model::transformCollisionFrame(
 }
 
 bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
-                           const bool use_margins,
+                           bool use_margins,
                            vector<PointPair>& closest_points) {
   return false;
 }
 
-bool collisionPointsAllToAll(const bool use_margins,
+bool collisionPointsAllToAll(bool use_margins,
                              vector<PointPair>& points) {
   return false;
 }
 
 bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
-                           const bool use_margins,
+                           bool use_margins,
                            vector<PointPair>& closest_points) {
   return false;
 }
