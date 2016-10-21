@@ -101,7 +101,7 @@ void AutomotiveSimulator<T>::AddBoxcar(
   const std::string urdf_filename =
       GetDrakePath() + "/automotive/models/boxcar.urdf";
   const parsers::ModelInstanceIdTable table =
-      parsers::urdf::AddModelInstanceFromUrdfFile(
+      parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(
           urdf_filename, rigid_body_tree_.get());
   DRAKE_DEMAND(table.size() == 1);
   const int model_instance_id = table.begin()->second;
