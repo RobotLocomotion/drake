@@ -39,7 +39,7 @@ class AffineLinearSystemTest : public ::testing::Test {
         0, make_unique<FreestandingInputPort>(std::move(input_vector_)));
   }
 
-  // Helper method to create free standing input ports, i.e., that are
+  // Helper method to create free standing input ports, i.e., those that are
   // not connected to any other output port in the system.
   // Used to test standalone systems not part of a Diagram.
   static std::unique_ptr <FreestandingInputPort> MakeInput(
