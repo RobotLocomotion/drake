@@ -12,7 +12,7 @@ namespace {
 /*
  * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
- * The pamater of this QP is randomly generated.
+ * The pamaters of this QP are randomly generated.
  */
 GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   MathematicalProgram prog;
@@ -20,6 +20,7 @@ GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   auto z = prog.AddContinuousVariables(2, "z");
   auto y = prog.AddContinuousVariables(2, "y");
 
+  // Randomly generated vector.
   Eigen::Matrix<double, 2, 4> CE_xy;
   CE_xy << 0.3147, 0.1324, 0.4575, 0.4572, 0.4058, -0.4025, 0.4649, -0.0146;
   Eigen::Matrix<double, 2, 1> ce0_xy;
@@ -37,6 +38,7 @@ GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   ci_z_upper << -10;
   ci_z_lower << -std::numeric_limits<double>::infinity();
 
+  // Randomly generated matrix.
   Eigen::Matrix<double, 6, 6> G;
   G << 0.6472, -0.1517, -0.1019, -0.4394, 0.1772, 0.1697, -0.1517, 0.3755,
       0.0967, 0.3431, 0.2979, 0.1124, -0.1019, 0.0967, 0.1902, 0.0987, 0.2064,

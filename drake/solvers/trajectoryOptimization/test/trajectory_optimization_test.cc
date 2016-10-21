@@ -65,10 +65,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddTimeIntervalBounds(
       Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(0.01),
       Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(10));
-  std::vector<int> interval_indices(3);
-  interval_indices[0] = 1;
-  interval_indices[1] = 2;
-  interval_indices[2] = 3;
+  std::vector<int> interval_indices{1, 2, 3};
   direct_traj.AddTimeIntervalBounds(Eigen::Vector3d(0.2, 0.3, 0.4),
                                     Eigen::Vector3d(5, 5, 5), interval_indices);
   Eigen::Matrix<double, kNumTimeSamples - 1, 1> h_lb =
