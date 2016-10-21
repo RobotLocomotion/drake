@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -15,14 +15,18 @@ namespace lcm {
 
 /**
  * %SerializerInterface translates between LCM message bytes and
- * drake::systems::AbstractValue objects.  See Serializer for a
- * message-specific concrete subclass.
+ * drake::systems::AbstractValue objects that contain LCM messages, e.g., a
+ * Value<lcmt_drake_signal>.  See Serializer for a message-specific concrete
+ * subclass.
  */
 class DRAKE_EXPORT SerializerInterface {
  public:
-  SerializerInterface();
   virtual ~SerializerInterface();
 
+  /**
+   * Creates a value-initialized (zeroed) instance of the message object.
+   * The result can be used as the output object filled in by Deserialize.
+   */
   virtual std::unique_ptr<AbstractValue> CreateDefaultValue() const = 0;
 
   /**
@@ -41,15 +45,18 @@ class DRAKE_EXPORT SerializerInterface {
   // Disable copy and assign.
   SerializerInterface(const SerializerInterface&) = delete;
   SerializerInterface& operator=(const SerializerInterface&) = delete;
+
+ protected:
+  SerializerInterface() {}
 };
 
 /**
- * %Serializer is specific to a single LcmtMessage type, and translates between
- * LCM message bytes and drake::systems::Value<LcmtMessage> objects.
+ * %Serializer is specific to a single LcmMessage type, and translates between
+ * LCM message bytes and drake::systems::Value<LcmMessage> objects.
  *
- * @tparam LcmtMessage message type to serialize, e.g., lcmt_drake_signal.
+ * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
  */
-template <typename LcmtMessage>
+template <typename LcmMessage>
 class Serializer : public SerializerInterface {
  public:
   Serializer() {}
@@ -59,14 +66,14 @@ class Serializer : public SerializerInterface {
     // NOTE: We create the message using value-initialization ("{}") to ensure
     // the POD fields are zeroed (instead of using default construction ("()"),
     // which would leave the POD data uninitialized.)
-    return std::make_unique<Value<LcmtMessage>>(LcmtMessage{});
+    return std::make_unique<Value<LcmMessage>>(LcmMessage{});
   }
 
   void Deserialize(
       const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
     DRAKE_DEMAND(abstract_value != nullptr);
-    LcmtMessage& message = abstract_value->GetMutableValue<LcmtMessage>();
+    LcmMessage& message = abstract_value->GetMutableValue<LcmMessage>();
     int consumed = message.decode(message_bytes, 0, message_length);
     DRAKE_THROW_UNLESS(consumed == message_length);
   }
@@ -74,7 +81,7 @@ class Serializer : public SerializerInterface {
   void Serialize(const AbstractValue& abstract_value,
                  std::vector<uint8_t>* message_bytes) const override {
     DRAKE_DEMAND(message_bytes != nullptr);
-    const LcmtMessage& message = abstract_value.GetValue<LcmtMessage>();
+    const LcmMessage& message = abstract_value.GetValue<LcmMessage>();
     const int message_length = message.getEncodedSize();
     message_bytes->resize(message_length);
     int consumed = message.encode(message_bytes->data(), 0, message_length);

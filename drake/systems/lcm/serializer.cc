@@ -4,7 +4,6 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-SerializerInterface::SerializerInterface() {}
 SerializerInterface::~SerializerInterface() {}
 
 }  // namespace lcm

@@ -26,25 +26,25 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
  public:
   /**
    * Factory method that returns a subscriber System that provides
-   * Value<LcmtMessage> message objects on is sole abstract-valued output port.
+   * Value<LcmMessage> message objects on its sole abstract-valued output port.
    *
-   * @tparam LcmtMessage message type to deserialize, e.g., lcmt_drake_signal.
+   * @tparam LcmMessage message type to deserialize, e.g., lcmt_drake_signal.
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
-   * @param[in] lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
-  template <typename LcmtMessage>
+  template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm) {
     return std::make_unique<LcmSubscriberSystem>(
-        channel, std::make_unique<Serializer<LcmtMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
   /**
    * Constructor that returns a subscriber System that provides message objects
-   * on is sole abstract-valued output port.  The type of the message object is
+   * on its sole abstract-valued output port.  The type of the message object is
    * determined by the @p serializer.
    *
    * @param[in] channel The LCM channel on which to subscribe.
@@ -52,7 +52,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] serializer The serializer that converts between byte vectors
    * and LCM message objects.
    *
-   * @param[in] lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
   LcmSubscriberSystem(const std::string& channel,
                       std::unique_ptr<SerializerInterface> serializer,
@@ -60,7 +60,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
 
   /**
    * Constructor that returns a subscriber System that provides vector data on
-   * is sole vector-valued output port.  The message contents are mapped to
+   * its sole vector-valued output port.  The message contents are mapped to
    * vector data by the @p translator.
    *
    * @param[in] channel The LCM channel on which to subscribe.
@@ -70,7 +70,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    * reference must remain valid for the lifetime of this `LcmSubscriberSystem`
    * object.
    *
-   * @param[in] lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator& translator,
@@ -78,7 +78,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
 
   /**
    * Constructor that returns a subscriber System that provides vector data on
-   * is sole vector-valued output port.  The message contents are mapped to
+   * its sole vector-valued output port.  The message contents are mapped to
    * vector data by the a translator found in the @p translator_dictionary.
    *
    * @param[in] channel The LCM channel on which to subscribe.
@@ -86,7 +86,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
    * @param[in] translator_dictionary A dictionary for obtaining the appropriate
    * translator for a particular LCM channel.
    *
-   * @param[in] lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
   LcmSubscriberSystem(const std::string& channel,
                       const LcmTranslatorDictionary& translator_dictionary,
@@ -142,7 +142,7 @@ class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
   // Will be non-null iff our output port is vector-valued.
   const LcmAndVectorBaseTranslator* const translator_{};
 
-  // Converts LCM message bytes to Value<LcmtMessage> objects.
+  // Converts LCM message bytes to Value<LcmMessage> objects.
   // Will be non-null iff our output port is abstract-valued.
   const std::unique_ptr<SerializerInterface> serializer_;
 

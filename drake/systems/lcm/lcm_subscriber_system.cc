@@ -15,6 +15,14 @@ using drake::lcm::DrakeLcmInterface;
 
 using std::make_unique;
 
+// TODO(jwnimmer-tri) The "serializer xor translator" disjoint implementations
+// within the method bodies below are not ideal, because of the code smell, and
+// because it is likely confusing for users.  We should take further steps to
+// make the Value<LcmMessage> port the primary output port, and find a better
+// phrasing for the vector-valued output port for users.  For now though, this
+// implementation serves as a transition point where we don't have to rewrite
+// the old code yet, but still can supply the AbstractValue port for new code.
+
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator* translator,

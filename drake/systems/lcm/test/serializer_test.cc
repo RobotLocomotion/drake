@@ -24,7 +24,7 @@ GTEST_TEST(SerializerTest, BasicTest) {
   // The device under test.
   auto dut = std::make_unique<Serializer<lcmt_drake_signal>>();
 
-  // The default value should be zero'd.
+  // The default value should be zeroed.
   auto abstract_value = dut->CreateDefaultValue();
   const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
   EXPECT_EQ(value.dim, 0);
