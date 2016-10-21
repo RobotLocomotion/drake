@@ -17,7 +17,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot), desired_joints_(robot.get_num_velocities()) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -28,11 +28,12 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
     // Setup gains.
+    int dim = robot.get_num_velocities();
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
-    Kp_joints_ = Eigen::VectorXd::Constant(robot.get_num_positions(), 20);
-    Kd_joints_ = Eigen::VectorXd::Constant(robot.get_num_velocities(), 8);
 
+    desired_joints_.mutable_Kp() = Eigen::VectorXd::Constant(dim, 20);;
+    desired_joints_.mutable_Kd() = Eigen::VectorXd::Constant(dim, 8);;
     desired_pelvis_.mutable_Kp() = Eigen::Vector6d::Constant(20);
     desired_pelvis_.mutable_Kd() = Eigen::Vector6d::Constant(8);
     desired_torso_.mutable_Kp() = Eigen::Vector6d::Constant(20);
@@ -67,10 +68,10 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     result.mutable_w_com() = comdd_weight_;
 
     // Setup tracking for generalized accelerations.
-    result.mutable_desired_vd() =
-        (Kp_joints_.array() * (desired_q_ - robot_status->position()).array() -
-         Kd_joints_.array() * robot_status->velocity().array()).matrix();
-    result.mutable_w_vd() = vd_weight_;
+    int dim = robot_.get_num_velocities();
+
+    result.mutable_desired_joint_motions().mutable_setpoint() = desired_joints_;
+    result.mutable_desired_joint_motions().mutable_weights() = vd_weight_ * Eigen::VectorXd::Constant(dim, 1);
 
     // Setup tracking for various body parts.
     DesiredBodyMotion pelvdd_d(*robot_status->robot().FindBody("pelvis"));
@@ -126,7 +127,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
-    desired_q_ = robot_status.position();
+    desired_joints_.mutable_desired_position() = robot_status.position();
     desired_pelvis_.mutable_desired_pose() = robot_status.pelvis().pose();
     desired_torso_.mutable_desired_pose() = robot_status.torso().pose();
   }
@@ -152,15 +153,13 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
 
+  VectorSetpoint desired_joints_;
   CartesianSetpoint desired_pelvis_;
   CartesianSetpoint desired_torso_;
-  Eigen::Vector3d desired_com_;
-  Eigen::VectorXd desired_q_;
 
+  Eigen::Vector3d desired_com_;
   Eigen::Vector3d Kp_com_;
   Eigen::Vector3d Kd_com_;
-  Eigen::VectorXd Kp_joints_;
-  Eigen::VectorXd Kd_joints_;
 
   double comdd_weight_;
   double pelvisdd_weight_;

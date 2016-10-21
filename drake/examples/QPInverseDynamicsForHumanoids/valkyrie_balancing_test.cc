@@ -12,8 +12,8 @@ namespace qp_inverse_dynamics {
 QPInput GenerateQPInput(
     const HumanoidStatus& robot_status, const Eigen::Vector3d& desired_com,
     const Eigen::Vector3d& Kp_com, const Eigen::Vector3d& Kd_com,
-    const Eigen::VectorXd& desired_joints, const Eigen::VectorXd& Kp_joints,
-    const Eigen::VectorXd& Kd_joints, const CartesianSetpoint& desired_pelvis,
+    const VectorSetpoint& desired_joints,
+    const CartesianSetpoint& desired_pelvis,
     const CartesianSetpoint& desired_torso) {
   // Make input.
   QPInput input(robot_status.robot());
@@ -28,10 +28,8 @@ QPInput GenerateQPInput(
   input.mutable_w_com() = 1e3;
 
   // Minimize acceleration in the generalized coordinates.
-  input.mutable_desired_vd() =
-      (Kp_joints.array() * (desired_joints - robot_status.position()).array() -
-       Kd_joints.array() * robot_status.velocity().array()).matrix();
-  input.mutable_w_vd() = 1;
+  input.mutable_desired_joint_motions().mutable_setpoint() = desired_joints;
+  input.mutable_desired_joint_motions().mutable_weights() = Eigen::VectorXd::Constant(desired_joints.size(), 1);
 
   // Setup tracking for various body parts.
   DesiredBodyMotion pelvdd_d(*robot_status.robot().FindBody("pelvis"));
@@ -41,7 +39,6 @@ QPInput GenerateQPInput(
 
   DesiredBodyMotion torsodd_d(*robot_status.robot().FindBody("torso"));
   torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
-  torsodd_d.mutable_weights()[1] = -1;
   torsodd_d.mutable_weights().segment<3>(3).setZero();
   torsodd_d.mutable_setpoint() = desired_torso;
   input.mutable_desired_body_motions().push_back(torsodd_d);
@@ -108,12 +105,11 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // Setup a tracking problem.
+  int dim = robot.get_num_velocities();
   Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
   Eigen::Vector3d Kd_com = Eigen::Vector3d::Constant(12);
-  Eigen::VectorXd Kp_joints =
-      Eigen::VectorXd::Constant(robot_status.robot().get_num_positions(), 20);
-  Eigen::VectorXd Kd_joints =
-      Eigen::VectorXd::Constant(robot_status.robot().get_num_velocities(), 8);
+  Eigen::VectorXd Kp_joints = Eigen::VectorXd::Constant(dim, 20);
+  Eigen::VectorXd Kd_joints = Eigen::VectorXd::Constant(dim, 8);
   Eigen::Vector6d Kp_pelvis = Eigen::Vector6d::Constant(20);
   Eigen::Vector6d Kd_pelvis = Eigen::Vector6d::Constant(8);
   Eigen::Vector6d Kp_torso = Eigen::Vector6d::Constant(20);
@@ -121,12 +117,17 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
   Eigen::Vector3d desired_com = robot_status.com();
   Eigen::VectorXd desired_q = robot_status.position();
+
+  VectorSetpoint desired_joints(desired_q, Eigen::VectorXd::Zero(dim), Eigen::VectorXd::Zero(dim), Kp_joints, Kd_joints);
   CartesianSetpoint desired_pelvis(
       robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
       Eigen::Vector6d::Zero(), Kp_pelvis, Kd_pelvis);
   CartesianSetpoint desired_torso(robot_status.torso().pose(),
                                   Eigen::Vector6d::Zero(),
                                   Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
+
+  input =
+        GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_joints, desired_pelvis, desired_torso);
 
   // Perturb initial condition.
   v[robot_status.name_to_velocity_index().at("torsoPitch")] += 0.1;
@@ -144,9 +145,9 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-10);
 
   while (time < 2) {
-    input =
-        GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_q,
-                        Kp_joints, Kd_joints, desired_pelvis, desired_torso);
+    input.mutable_desired_comdd() =
+      (Kp_com.array() * (desired_com - robot_status.com()).array() -
+       Kd_com.array() * robot_status.comd().array()).matrix();
     int status = con.Control(robot_status, input, &output);
 
     if (status) break;
@@ -160,6 +161,8 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
     robot_status.Update(time, q, v, output.joint_torque(),
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+
+    //std::cout << output;
   }
 
   // Check final state.

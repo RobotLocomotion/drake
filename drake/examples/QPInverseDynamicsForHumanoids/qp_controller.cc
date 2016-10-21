@@ -133,6 +133,8 @@ void QPController::ResizeQP(
       prog_.AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
                              Eigen::VectorXd::Zero(num_basis_), {basis});
   cost_basis_reg_->set_description("basis reg cost");
+  basis_reg_mat_ = Eigen::MatrixXd::Identity(num_basis_, num_basis_);
+  basis_reg_vec_ = Eigen::VectorXd::Zero(num_basis_);
 }
 
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
@@ -306,13 +308,15 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     contact_ctr++;
   }
   // Regularize vd to desired_vd.
-  cost_vd_reg_->UpdateQuadraticAndLinearTerms(
-      input.w_vd() * Eigen::MatrixXd::Identity(num_vd_, num_vd_),
-      input.w_vd() * (-input.desired_vd()));
+  vd_reg_vec_ = -input.desired_joint_motions().ComputeAcceleration(rs.position(), rs.velocity());
+  vd_reg_mat_ = input.desired_joint_motions().weights().asDiagonal();
+  cost_vd_reg_->UpdateQuadraticAndLinearTerms(vd_reg_mat_,
+      (input.desired_joint_motions().weights().array() * vd_reg_vec_.array()).matrix());
+
   // Regularize basis to zero.
   cost_basis_reg_->UpdateQuadraticAndLinearTerms(
-      input.w_basis_reg() * Eigen::MatrixXd::Identity(num_basis_, num_basis_),
-      Eigen::VectorXd::Zero(num_basis_));
+      input.w_basis_reg() * basis_reg_mat_,
+      basis_reg_vec_);
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.
@@ -325,7 +329,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     std::cerr << "solution not found\n";
     return -1;
   }
-  Eigen::VectorXd solution = prog_.GetSolutionVectorValues();
+  solution_ = prog_.GetSolutionVectorValues();
 
   ////////////////////////////////////////////////////////////////////
   // Examples of inspecting each cost / eq, ineq term
@@ -335,28 +339,26 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   output->mutable_costs().resize(costs.size());
   ctr = 0;
+  Eigen::VectorXd tmp_vec;
   for (auto& cost_b : costs) {
-    Eigen::VectorXd val;
     std::shared_ptr<solvers::Constraint> cost = cost_b.constraint();
-    cost->Eval(cost_b.VariableListToVectorXd(), val);
+    cost->Eval(cost_b.VariableListToVectorXd(), tmp_vec);
     output->mutable_cost(ctr).first = cost->get_description();
-    output->mutable_cost(ctr).second = val(0);
+    output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
   }
 
   for (auto& eq_b : eqs) {
     std::shared_ptr<solvers::LinearEqualityConstraint> eq = eq_b.constraint();
-    Eigen::VectorXd X = eq_b.VariableListToVectorXd();
-    DRAKE_ASSERT((eq->A() * X - eq->lower_bound()).isZero(EPSILON));
+    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound()).isZero(EPSILON));
   }
 
   for (auto& ineq_b : ineqs) {
     std::shared_ptr<solvers::LinearConstraint> ineq = ineq_b.constraint();
-    Eigen::VectorXd X = ineq_b.VariableListToVectorXd();
-    X = ineq->A() * X;
-    for (int i = 0; i < X.size(); i++) {
-      DRAKE_ASSERT(X[i] >= ineq->lower_bound()[i] - EPSILON &&
-                   X[i] <= ineq->upper_bound()[i] + EPSILON);
+    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
+    for (int i = 0; i < tmp_vec.size(); i++) {
+      DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - EPSILON &&
+                   tmp_vec[i] <= ineq->upper_bound()[i] + EPSILON);
     }
   }
 
@@ -421,7 +423,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   // Set output joint torques.
-  output->mutable_joint_torque() = torque_linear_ * solution + torque_constant_;
+  output->mutable_joint_torque() = torque_linear_ * solution_ + torque_constant_;
 
   ////////////////////////////////////////////////////////////////////
   // Sanity check:
@@ -462,7 +464,7 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
         << std::endl;
   }
 
-  out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
+  // out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
   out << "weight_vd: " << input.w_vd() << std::endl;
 
   out << "weight_basis_reg: " << input.w_basis_reg() << std::endl;
