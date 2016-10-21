@@ -22,7 +22,7 @@ function collisionDetectGradTest(visualize,n_debris)
 
   if visualize
     v = r.constructVisualizer(struct('use_collision_geometry',true));
-    lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'testCollisionGrad');
+    lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'testCollisionGrad');
   end
   nq = getNumPositions(r);
   load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);

@@ -127,7 +127,7 @@ classdef ForceClosureContacts < ForceClosureContactsBase
       end
       if(obj.use_lcmgl)
         for i = 1:obj.num_contacts
-          lcmgl_force = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('force%d',i));
+          lcmgl_force = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('force%d',i));
           lcmgl_force.glColor3f(1,0,0);
           lcmgl_force.drawVector(sol.contact_pos(:,i),sol.f(:,i)*force_scalar,0.01*force_scalar,0.04*force_scalar,0.04*force_scalar);
           lcmgl_force.switchBuffers();

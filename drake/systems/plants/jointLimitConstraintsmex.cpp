@@ -1,6 +1,6 @@
 #include <mex.h>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace Eigen;

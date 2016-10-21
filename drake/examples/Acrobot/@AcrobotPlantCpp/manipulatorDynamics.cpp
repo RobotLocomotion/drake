@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/util/drakeGradientUtil.h"
 
 using namespace Eigen;

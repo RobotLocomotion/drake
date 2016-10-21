@@ -1,6 +1,4 @@
-find_package(Bullet)
-
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   drake_add_cc_test(rbt_collisions_test)
   target_link_libraries(rbt_collisions_test drakeRBM)
 

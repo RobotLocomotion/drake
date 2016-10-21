@@ -63,7 +63,7 @@ if(geometry == 1)
   verts = bsxfun(@times,palm_pos0+[0.13;0;0],ones(1,8))+repmat(box_size/2,1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
   shrink_factor = 0.8;
   grasped_polyhedron = GraspedPolyhedron(verts,shrink_factor);
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
   lcmgl.glColor3f(0,0,1);
   lcmgl.polyhedron(verts(1,:),verts(2,:),verts(3,:));
   lcmgl.switchBuffers();
@@ -75,7 +75,7 @@ if(geometry == 1)
   verts = bsxfun(@times,palm_pos0+[0.13;0.05;0],ones(1,2*N_slice))+[reshape(x_cylinder(:,1:end-1),1,[]);reshape(y_cylinder(:,1:end-1),1,[]);reshape(z_cylinder(:,1:end-1),1,[])];
 %   verts = bsxfun(@times,palm_pos0+[0.13;0;0],ones(1,8))+repmat(box_size/2,1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
   ikgrasp = OptimalPolyhedronGraspLinFC(verts,grasped_polyhedron.inner_sphere_center,3,1,4,shrink_factor,Qw,struct('robot',hand));
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
   lcmgl.glColor3f(0,0,1);
   lcmgl.polyhedron(verts(1,:),verts(2,:),verts(3,:));
   lcmgl.switchBuffers();
@@ -84,7 +84,7 @@ elseif(geometry == 2)
   cylinder_height = 0.1;
   cylinder_center = palm_pos0+[0.13;0;0.0];
   ikgrasp = OptimalCylinderSideGraspLinFC([1;0;0;0],cylinder_center,cylinder_radius,cylinder_height,cylinder_center,3,2,4,Qw,struct('robot',hand));%,'lin_fc_flag',true,'num_fc_edges',4));
-%   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'cylinder');
+%   lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'cylinder');
 %   lcmgl.glColor3f(0,0,1);
 %   lcmgl.glTranslated(0,0,-cylinder_height);
 %   lcmgl.cylinder(zeros(3,1),cylinder_radius,cylinder_radius,cylinder_height*2,20,20);
@@ -99,7 +99,7 @@ elseif(geometry == 3)
 %   verts = bsxfun(@times,palm_pos0+[0.13;0;0],ones(1,8))+repmat(box_size/2,1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
   grasped_polyhedron = GraspedPolyhedron(verts,0.8);
   ikgrasp = OptimalPolyhedronGraspLinFC(verts,grasped_polyhedron.inner_sphere_center,3,1,4,0.8,Qw,struct('robot',hand));
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
   lcmgl.glColor3f(0,0,1);
   lcmgl.polyhedron(verts(1,:),verts(2,:),verts(3,:));
   lcmgl.switchBuffers();

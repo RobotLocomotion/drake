@@ -203,7 +203,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       % the equivalent ellipsoid with the specified density.  @default is
       % the density of wood (walnut).
       checkDependency('lcmgl');
-      obj.lcmgl_inertia_ellipsoids = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Inertia Ellipsoid');
+      obj.lcmgl_inertia_ellipsoids = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Inertia Ellipsoid');
       if nargin>1
         obj.inertia_ellipsoids_density=density;
       end

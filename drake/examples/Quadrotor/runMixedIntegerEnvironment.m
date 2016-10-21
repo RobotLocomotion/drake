@@ -147,7 +147,7 @@ xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
 v.playback(xtraj_sim, struct('slider', true));
 
 lc = lcm.lcm.LCM.getSingleton();
-lcmgl = drake.util.BotLCMGLClient(lc, 'quad_trajectory');
+lcmgl = drake.matlab.util.BotLCMGLClient(lc, 'quad_trajectory');
 lcmgl.glBegin(lcmgl.LCMGL_LINES);
 lcmgl.glColor3f(0.0,0.0,1.0);
 

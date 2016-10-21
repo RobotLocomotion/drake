@@ -27,7 +27,7 @@ classdef OcTree < handle
 
     function enableLCMGL(obj,lcmgl_channel)
       if (checkDependency('lcmgl'))
-        obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), lcmgl_channel);
+        obj.lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), lcmgl_channel);
       end
     end
     

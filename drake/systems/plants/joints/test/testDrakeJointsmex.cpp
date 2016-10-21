@@ -10,7 +10,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;

@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <iostream>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include <vector>
 #include "drake/systems/controllers/zmpUtil.h"
 #include <stdexcept>

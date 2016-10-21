@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include "drake/solvers/qpSpline/splineGeneration.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include <iostream>
 
 using namespace std;

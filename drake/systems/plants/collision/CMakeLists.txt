@@ -1,7 +1,7 @@
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp Model.cpp)
-find_package(Bullet)
+drake_find_package(Bullet MODULE)
 
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
   set(bullet "yes" CACHE STRING "yes")
 endif()
@@ -9,7 +9,7 @@ set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} unusable_model.cc)
 
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
 
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   target_compile_definitions(drakeCollision PUBLIC BULLET_COLLISION)
   target_include_directories(drakeCollision PUBLIC ${BULLET_INCLUDE_DIRS})
   target_link_libraries(drakeCollision ${BULLET_LIBRARIES})
