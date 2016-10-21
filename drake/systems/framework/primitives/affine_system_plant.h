@@ -5,7 +5,7 @@
 namespace drake {
 namespace systems {
 
-/// A continuous Affine system. Given an input vector `u`, an output
+/// A continuous affine system. Given an input vector `u`, an output
 /// vector 'y', a state vector `x`, its derivative @f['\dot{x}'@f] and
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
 /// implements the following equations:

@@ -5,10 +5,10 @@
 namespace drake {
 namespace systems {
 
-/// A continuous Linear system that is a specialization of an affine system where the
-/// inital time derivative of the system state `xDot0` and the initial
-/// system output `y0` are both zero. Given an input signal `u` and a
-/// state `x` the output of this sytem 'y' is :
+/// A continuous linear system that is a specialization of an affine system
+/// where the inital time derivative of the system state `xDot0` and the
+/// initial system output `y0` are both zero. Given an input signal `u` and a
+/// state `x` the output of this sytem 'y' is:
 /// <pre>
 ///   \dot{x} = Ax + Bu
 ///   y = Cx + Du
