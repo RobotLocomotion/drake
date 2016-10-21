@@ -126,19 +126,10 @@ endif()
 
 # set up matlab build
 include(../cmake/mex.cmake)
-if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
-  if(DISABLE_MATLAB)
-    message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
-  else()
-    # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test and matlab_add_mex
-    find_package(Matlab MODULE REQUIRED
-      COMPONENTS
-        MAIN_PROGRAM
-        MEX_COMPILER
-        MX_LIBRARY
-        SIMULINK)
-  endif()
+if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
+  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+  unset(MATLAB_EXECUTABLE CACHE)
+  unset(Matlab_FOUND CACHE)
 endif()
 
 enable_testing()

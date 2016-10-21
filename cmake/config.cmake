@@ -30,23 +30,29 @@ function(drake_setup_matlab)
 
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled.")
-    unset(MATLAB_EXECUTABLE CACHE) # TODO unset MATLAB_FOUND instead (see below)
+    unset(MATLAB_EXECUTABLE CACHE)
+    unset(Matlab_FOUND CACHE)
   else()
     # Look for the MATLAB executable. This does not use find_package(Matlab)
     # because that is "really good at finding MATLAB", and we only want to
     # enable matlab support if the matlab executable is in the user's PATH.
     find_program(MATLAB_EXECUTABLE matlab)
     if(MATLAB_EXECUTABLE)
-      message(STATUS "Found MATLAB: ${MATLAB_EXECUTABLE}")
-
       # Determine the MATLAB root.
       get_filename_component(_matlab_realpath "${MATLAB_EXECUTABLE}" REALPATH)
       get_filename_component(_matlab_bindir "${_matlab_realpath}" DIRECTORY)
-      get_filename_component(MATLAB_ROOT_DIR
+      get_filename_component(Matlab_ROOT_DIR
         "${_matlab_bindir}" DIRECTORY CACHE)
 
-      # TODO find_package(Matlab) and delete mex_setup
-      # TODO change MATLAB_EXECUTABLE in options.cmake to MATLAB_FOUND
+      if(MATLAB_EXECUTABLE)
+        # MATLAB 7.12 (R2011a) introduced the rng() function
+        find_package(Matlab 7.12 MODULE
+          COMPONENTS
+           MAIN_PROGRAM
+           MEX_COMPILER
+           MX_LIBRARY
+           SIMULINK)
+      endif()
     else()
       message(STATUS "MATLAB was not found.")
     endif()
@@ -69,7 +75,7 @@ function(drake_setup_java_for_matlab)
 
     # Ask matlab for its JVM version
     execute_process(
-      COMMAND "${MATLAB_EXECUTABLE}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
+      COMMAND "${Matlab_MAIN_PROGRAM}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
       TIMEOUT 450
       RESULT_VARIABLE _result
@@ -149,7 +155,7 @@ macro(drake_setup_java)
   # If matlab is in use, try to determine its JVM version, as we need to build
   # all externals to the same version (on success, this will set the Java
   # compile flags)
-  if(MATLAB_EXECUTABLE AND NOT DISABLE_MATLAB)
+  if(Matlab_FOUND AND NOT DISABLE_MATLAB)
     drake_setup_java_for_matlab()
   else()
     unset(CMAKE_JAVA_COMPILE_FLAGS CACHE)
