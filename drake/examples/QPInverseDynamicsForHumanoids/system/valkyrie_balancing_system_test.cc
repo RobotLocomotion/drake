@@ -13,6 +13,9 @@
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_lcm_utils.h"
+
 namespace drake {
 
 using systems::DiagramBuilder;
@@ -50,15 +53,19 @@ void test() {
       builder.AddSystem(std::make_unique<ValkyrieSystem>(robot));
   PlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
+  RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
+      builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(robot));
 
   RigidBodyTreeLcmPublisher* viz_publisher = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
         robot, &lcm);
 
   builder.Connect(qp_con->get_output_port_qp_output(),
                   val_sim->get_input_port_qp_output());
-  builder.Connect(val_sim->get_output_port_humanoid_status(),
+  builder.Connect(val_sim->get_output_port_robot_state_msg(),
+                  rs_msg_to_rs->get_input_port_robot_state_msg());
+  builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
                   qp_con->get_input_port_humanoid_status());
-  builder.Connect(val_sim->get_output_port_humanoid_status(),
+  builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
                   plan_eval->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
@@ -93,7 +100,7 @@ void test() {
   // Thus, the tolerances on feet velocities are smaller than those for the
   // generalized position and velocity.
   std::unique_ptr<examples::qp_inverse_dynamics::HumanoidStatus> rs1 =
-      val_sim->GetHumanoidStatusFromContext(*val_sim_context);
+      val_sim->MakeHumanoidStatusFromContext(*val_sim_context);
 
   EXPECT_TRUE(rs1->foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(rs1->foot(Side::RIGHT).velocity().norm() < 1e-6);

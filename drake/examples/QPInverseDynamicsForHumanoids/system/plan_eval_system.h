@@ -55,7 +55,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // output: qp input
     QPInput& result = output->GetMutableData(output_port_index_qp_input_)
                          ->GetMutableValue<QPInput>();
-    result.mutable_desired_body_accelerations().clear();
+    result.mutable_desired_body_motions().clear();
     result.mutable_contact_info().clear();
 
     // Weights are set arbitrarily by the control designer, these typically
@@ -73,17 +73,17 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     result.mutable_w_vd() = vd_weight_;
 
     // Setup tracking for various body parts.
-    DesiredBodyAcceleration pelvdd_d(*robot_status->robot().FindBody("pelvis"));
-    pelvdd_d.mutable_weight() = pelvisdd_weight_;
-    pelvdd_d.mutable_acceleration() = desired_pelvis_.ComputeTargetAcceleration(
-        robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-    result.mutable_desired_body_accelerations().push_back(pelvdd_d);
+    DesiredBodyMotion pelvdd_d(*robot_status->robot().FindBody("pelvis"));
+    pelvdd_d.mutable_weights() = pelvisdd_weight_ * Eigen::Vector6d::Constant(1);
+    pelvdd_d.mutable_setpoint() = desired_pelvis_;
+    result.mutable_desired_body_motions().push_back(pelvdd_d);
 
-    DesiredBodyAcceleration torsodd_d(*robot_status->robot().FindBody("torso"));
-    torsodd_d.mutable_weight() = torsodd_weight_;
-    torsodd_d.mutable_acceleration() = desired_torso_.ComputeTargetAcceleration(
-        robot_status->torso().pose(), robot_status->torso().velocity());
-    result.mutable_desired_body_accelerations().push_back(torsodd_d);
+    DesiredBodyMotion torsodd_d(*robot_status->robot().FindBody("torso"));
+    torsodd_d.mutable_weights() = torsodd_weight_ * Eigen::Vector6d::Constant(1);
+    torsodd_d.mutable_weights().segment<3>(3).setZero();
+    torsodd_d.mutable_weights()[1] = -1;
+    torsodd_d.mutable_setpoint() = desired_torso_;
+    result.mutable_desired_body_motions().push_back(torsodd_d);
 
     // Set weight for the basis regularization term.
     result.mutable_w_basis_reg() = basis_weight_;
@@ -152,8 +152,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
 
-  CartesianSetPoint desired_pelvis_;
-  CartesianSetPoint desired_torso_;
+  CartesianSetpoint desired_pelvis_;
+  CartesianSetpoint desired_torso_;
   Eigen::Vector3d desired_com_;
   Eigen::VectorXd desired_q_;
 

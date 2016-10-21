@@ -22,9 +22,9 @@ namespace qp_inverse_dynamics {
 *The first terms 3 are angular accelerations, and the last 3 are linear
 *accelerations.
 */
-class CartesianSetPoint {
+class CartesianSetpoint {
  public:
-  CartesianSetPoint() {
+  CartesianSetpoint() {
     pose_d_.setIdentity();
     vel_d_.setZero();
     acc_d_.setZero();
@@ -39,7 +39,7 @@ class CartesianSetPoint {
    * @param Kp Position gain
    * @param Kd Velocity gain
    */
-  CartesianSetPoint(const Eigen::Isometry3d& pose_d,
+  CartesianSetpoint(const Eigen::Isometry3d& pose_d,
                     const Eigen::Vector6d& vel_d, const Eigen::Vector6d& acc_d,
                     const Eigen::Vector6d& Kp, const Eigen::Vector6d& Kd) {
     pose_d_ = pose_d;
@@ -58,8 +58,8 @@ class CartesianSetPoint {
   Eigen::Vector6d ComputeTargetAcceleration(const Eigen::Isometry3d& pose,
                                             const Eigen::Vector6d& vel) const {
     // feedforward acc + velocity feedback
-    Eigen::Vector6d qdd = acc_d_;
-    qdd += (Kd_.array() * (vel_d_ - vel).array()).matrix();
+    Eigen::Vector6d acc = acc_d_;
+    acc += (Kd_.array() * (vel_d_ - vel).array()).matrix();
 
     // pose feedback
     // H^w_d = desired orientation in the world frame,
@@ -73,12 +73,12 @@ class CartesianSetPoint {
     Eigen::Vector3d rot_err = angle_axis_err.axis() * angle_axis_err.angle();
 
     // orientation
-    qdd.segment<3>(0) += (Kp_.segment<3>(0).array() * rot_err.array()).matrix();
+    acc.segment<3>(0) += (Kp_.segment<3>(0).array() * rot_err.array()).matrix();
 
     // position
-    qdd.segment<3>(3) += (Kp_.segment<3>(3).array() * pos_err.array()).matrix();
+    acc.segment<3>(3) += (Kp_.segment<3>(3).array() * pos_err.array()).matrix();
 
-    return qdd;
+    return acc;
   }
 
   // Getters
@@ -102,6 +102,75 @@ class CartesianSetPoint {
 
   Eigen::Vector6d Kp_;  ///< Position gains
   Eigen::Vector6d Kd_;  ///< Velocity gains
+};
+
+inline std::ostream& operator<<(std::ostream& out, const CartesianSetpoint& setpoint) {
+  Eigen::Vector3d rpy = math::rotmat2rpy(setpoint.desired_pose().linear());
+  out << "pose: (" << setpoint.desired_pose().translation().transpose()
+      << "), (" << rpy.transpose() << ")" << std::endl;
+  out << "velocity: " << setpoint.desired_velocity().transpose() << std::endl;
+  out << "acceleration: " << setpoint.desired_acceleration().transpose() << std::endl;
+  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
+  out << "Kd: " << setpoint.Kd().transpose() << std::endl;
+  return out;
+}
+
+class VectorSetpoint {
+ public:
+  VectorSetpoint() {}
+
+  /**
+   * @param pos_d Desired position
+   * @param vel_d Desired velocity
+   * @param acc_d Desired feedforward acceleration
+   * @param Kp Position gain
+   * @param Kd Velocity gain
+   */
+  VectorSetpoint(const Eigen::VectorXd& pos_d, const Eigen::VectorXd& vel_d, const Eigen::VectorXd& acc_d, const Eigen::VectorXd& Kp, const Eigen::VectorXd& Kd) {
+    if (pos_d.size() != vel_d.size() ||
+        pos_d.size() != acc_d.size() ||
+        pos_d.size() != Kp.size() ||
+        pos_d.size() != Kd.size()) {
+      throw std::runtime_error("Setpoints and gains have different dimensions.");
+    }
+    pos_d_ = pos_d;
+    vel_d_ = vel_d;
+    acc_d_ = acc_d;
+    Kp_ = Kp;
+    Kd_ = Kd;
+  }
+
+  Eigen::VectorXd ComputeTargetAcceleration(const Eigen::VectorXd& pos, const Eigen::VectorXd& vel) const {
+    if (pos.size() != vel.size() ||
+        pos.size() != pos_d_.size()) {
+      throw std::runtime_error("Setpoints and states have different dimensions.");
+    }
+    Eigen::VectorXd acc = acc_d_;
+    acc += (Kp_.array() * (pos_d_ - pos).array()).matrix();
+    acc += (Kd_.array() * (vel_d_ - vel).array()).matrix();
+    return acc;
+  }
+
+  // Getters
+  inline const Eigen::VectorXd& desired_position() const { return pos_d_; }
+  inline const Eigen::VectorXd& desired_velocity() const { return vel_d_; }
+  inline const Eigen::VectorXd& desired_acceleration() const { return acc_d_; }
+  inline const Eigen::VectorXd& Kp() const { return Kp_; }
+  inline const Eigen::VectorXd& Kd() const { return Kd_; }
+
+  // Setters
+  inline Eigen::VectorXd& mutable_desired_position() { return pos_d_; }
+  inline Eigen::VectorXd& mutable_desired_velocity() { return vel_d_; }
+  inline Eigen::VectorXd& mutable_desired_acceleration() { return acc_d_; }
+  inline Eigen::VectorXd& mutable_Kp() { return Kp_; }
+  inline Eigen::VectorXd& mutable_Kd() { return Kd_; }
+
+ private:
+  Eigen::VectorXd pos_d_;
+  Eigen::VectorXd vel_d_;
+  Eigen::VectorXd acc_d_;
+  Eigen::VectorXd Kp_;
+  Eigen::VectorXd Kd_;
 };
 
 /**
@@ -406,28 +475,54 @@ class BodyAcceleration {
   inline Eigen::Vector6d& mutable_acceleration() { return acceleration_; }
 };
 
-/**
- * In addition to the desired task space acceleration, this class also holds
- * a weighting scalar used in the cost function of some optimization.
- */
-class DesiredBodyAcceleration : public BodyAcceleration {
+class DesiredBodyMotion {
  private:
-  double weight_;
+  const RigidBody& body_;
+  CartesianSetpoint setpoint_;
+  Eigen::Vector6d weights_;
+  bool control_during_contact_;
 
  public:
-  explicit DesiredBodyAcceleration(const RigidBody& body)
-      : BodyAcceleration(body), weight_(0) {}
+  explicit DesiredBodyMotion(const RigidBody& body)
+    : body_(body), weights_(Eigen::Vector6d::Zero()) {}
+
+  Eigen::Vector6d ComputeAcceleration(const RigidBodyTree& robot, const KinematicsCache<double> &cache) const {
+    Eigen::Isometry3d pose = robot.relativeTransform(cache, 0, body_.get_body_index());
+    Eigen::Vector6d velocity = GetTaskSpaceVel(robot, cache, body_);
+    return setpoint_.ComputeTargetAcceleration(pose, velocity);
+  }
 
   inline bool is_valid() const {
-    return BodyAcceleration::is_valid() && std::isfinite(weight_) &&
-           weight_ >= 0;
+    bool ret = true;
+    for (int i = 0; i < weights_.size(); i++) {
+      ret &= std::isfinite(weights_[i]);
+    }
+    return ret;
+  }
+
+  inline std::string get_row_name(int i) const {
+    const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
+    if (i < 0 || i >=6)
+      throw std::runtime_error("index must be within [0, 5]");
+    return body_.get_name() + row_name[i];
+  }
+  inline bool is_row_constrained(int i) const {
+    if (i < 0 || i >=6)
+      throw std::runtime_error("index must be within [0, 5]");
+    return weights_[i] < 0;
   }
 
   // Getters
-  inline double weight() const { return weight_; }
+  inline const RigidBody& body() const { return body_; }
+  inline const std::string& name() const { return body_.get_name(); }
+  inline const Eigen::Vector6d& weights() const { return weights_; }
+  inline const CartesianSetpoint& setpoint() const { return setpoint_; }
+  inline bool control_during_contact() const { return control_during_contact_; }
 
   // Setters
-  inline double& mutable_weight() { return weight_; }
+  inline Eigen::Vector6d& mutable_weights() { return weights_; }
+  inline bool& mutable_control_during_contact() { return control_during_contact_; }
+  inline CartesianSetpoint& mutable_setpoint() { return setpoint_; }
 };
 
 /**
@@ -438,10 +533,11 @@ class QPInput {
   // Names for each generalized coordinate
   std::vector<std::string> coord_names_;
   // Contact information
-  std::vector<ContactInformation> contact_info_;
+  std::list<ContactInformation> contact_info_;
 
   // Desired task space accelerations for specific bodies
-  std::vector<DesiredBodyAcceleration> desired_body_accelerations_;
+  std::list<DesiredBodyMotion> desired_body_motions_;
+
   // Desired task space accelerations for the center of mass
   Eigen::Vector3d desired_comdd_;
   // Desired generalized coordinate accelerations
@@ -476,9 +572,9 @@ class QPInput {
 
     valid &= desired_comdd_.allFinite();
     valid &= desired_vd_.allFinite();
-    for (const DesiredBodyAcceleration& desired_body_acceleration :
-         desired_body_accelerations_) {
-      valid &= desired_body_acceleration.is_valid();
+    for (const DesiredBodyMotion& desired_body_motion :
+         desired_body_motions_) {
+      valid &= desired_body_motion.is_valid();
     }
 
     valid &= std::isfinite(w_com_);
@@ -499,19 +595,12 @@ class QPInput {
   inline const std::string& coord_name(size_t idx) const {
     return coord_names_.at(idx);
   }
-  inline const ContactInformation& contact_info(size_t idx) const {
-    return contact_info_.at(idx);
-  }
-  inline const std::vector<ContactInformation>& contact_info() const {
+  inline const std::list<ContactInformation>& contact_info() const {
     return contact_info_;
   }
-  inline const std::vector<DesiredBodyAcceleration>&
-  desired_body_accelerations() const {
-    return desired_body_accelerations_;
-  }
-  inline const DesiredBodyAcceleration& desired_body_acceleration(
-      size_t idx) const {
-    return desired_body_accelerations_.at(idx);
+  inline const std::list<DesiredBodyMotion>&
+  desired_body_motions() const {
+    return desired_body_motions_;
   }
   inline const Eigen::Vector3d& desired_comdd() const { return desired_comdd_; }
   inline const Eigen::VectorXd& desired_vd() const { return desired_vd_; }
@@ -521,20 +610,19 @@ class QPInput {
   inline double& mutable_w_vd() { return w_vd_; }
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
 
-  inline std::vector<ContactInformation>& mutable_contact_info() {
+  inline std::list<ContactInformation>& mutable_contact_info() {
     return contact_info_;
   }
-  inline ContactInformation& mutable_contact_info(size_t idx) {
-    return contact_info_.at(idx);
+  inline std::list<DesiredBodyMotion>&
+  mutable_desired_body_motions() {
+    return desired_body_motions_;
   }
-  inline std::vector<DesiredBodyAcceleration>&
-  mutable_desired_body_accelerations() {
-    return desired_body_accelerations_;
-  }
-  inline DesiredBodyAcceleration& mutable_desired_body_acceleration(
+  /*
+  inline DesiredBodyMotion& mutable_desired_body_motion(
       size_t idx) {
-    return desired_body_accelerations_.at(idx);
+    return desired_body_motions_.at(idx);
   }
+  */
   inline Eigen::Vector3d& mutable_desired_comdd() { return desired_comdd_; }
   inline Eigen::VectorXd& mutable_desired_vd() { return desired_vd_; }
 };
@@ -685,7 +773,8 @@ class QPController {
   int num_basis_;
   int num_torque_;
   int num_variable_;
-  int num_body_acceleration_;
+  int num_body_motion_as_cost_;
+  int num_body_motion_as_eq_;
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
@@ -703,7 +792,8 @@ class QPController {
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_comdd_;
   // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
   std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>>
-      cost_body_accelerations_;
+      cost_body_motion_;
+  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_vd_reg_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
 
@@ -719,8 +809,8 @@ class QPController {
    */
   void ResizeQP(
       const RigidBodyTree& robot,
-      const std::vector<ContactInformation>& all_contacts,
-      const std::vector<DesiredBodyAcceleration>& all_body_accelerations);
+      const std::list<ContactInformation>& all_contacts,
+      const std::list<DesiredBodyMotion>& all_body_accelerations);
 
   /**
    * Zeros out the temporary matrices.

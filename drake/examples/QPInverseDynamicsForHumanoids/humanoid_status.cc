@@ -1,4 +1,5 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 
 #include <iostream>
 
@@ -15,22 +16,12 @@ const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
 const Eigen::Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
     Eigen::Matrix3d(Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
 
-void HumanoidStatus::Update(
-    double t, const Eigen::Ref<const Eigen::VectorXd>& q,
-    const Eigen::Ref<const Eigen::VectorXd>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
-    const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
-    const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
-  if (q.size() != position_.size() || v.size() != velocity_.size() ||
-      joint_torque.size() != joint_torque_.size()) {
-    throw std::runtime_error("robot state update dimension mismatch.");
-  }
+void HumanoidStatus::ParseLcmMessage(const bot_core::robot_state_t& msg) {
+  DecodeRobotStateLcmMsg(msg, name_to_position_index_, &time_, &position_, &velocity_, &joint_torque_, &foot_wrench_raw_[Side::LEFT], &foot_wrench_raw_[Side::RIGHT]);
+  Update();
+}
 
-  time_ = t;
-  position_ = q;
-  velocity_ = v;
-  joint_torque_ = joint_torque;
-
+void HumanoidStatus::Update() {
   cache_.initialize(position_, velocity_);
   robot_.doKinematics(cache_, true);
 
@@ -54,8 +45,6 @@ void HumanoidStatus::Update(
     body_of_interest.Update(robot_, cache_);
 
   // ft sensor
-  foot_wrench_raw_[Side::LEFT] = l_wrench;
-  foot_wrench_raw_[Side::RIGHT] = r_wrench;
   for (int i = 0; i < 2; i++) {
     // Make H1 = H_sensor_to_sole.
     // Assuming the sole frame has the same orientation as the foot frame.
