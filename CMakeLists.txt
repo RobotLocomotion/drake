@@ -234,21 +234,6 @@ drake_add_external(libbot PUBLIC CMAKE
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
-# director
-drake_add_external(director PUBLIC CMAKE
-  SOURCE_SUBDIR distro/superbuild
-  CMAKE_ARGS
-    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
-    -DUSE_LCMGL=ON
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC
-  DEPENDS director)
-
 # xfoil
 # The Ninja generator does not support Fortran.
 drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
@@ -260,9 +245,6 @@ drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
 # also find it useful, especially to build drake with ninja using fewer than
 # the default number of jobs.
 option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
-if(SKIP_DRAKE_BUILD)
-  set(DRAKE_BUILD_COMMANDS BUILD_COMMAND : INSTALL_COMMAND :)
-endif()
 
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
@@ -270,7 +252,6 @@ endif()
 drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
@@ -310,7 +291,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     bot_core_lcmtypes
     bullet
     ccd
-    director
     dreal
     eigen
     gflags
@@ -336,6 +316,22 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     yalmip
     yaml_cpp
 )
+
+# director
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_DRAKE=OFF
+    -DUSE_LCM=${HAVE_LCM}
+    -DUSE_LCMGL=${HAVE_LIBBOT}
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
+  DEPENDS bot_core_lcmtypes drake lcm libbot)
+
+# signalscope
+drake_add_external(signalscope PUBLIC
+  DEPENDS director)
 
 # END external projects
 ###############################################################################
