@@ -93,3 +93,6 @@
 [submodule "externals/ccd"]
 	path = externals/ccd
 	url = https://github.com/danfis/libccd.git
+[submodule "externals/fcl"]
+	path = externals/fcl
+	url = https://github.com/flexible-collision-library/fcl.git

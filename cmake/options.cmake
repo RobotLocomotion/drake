@@ -214,7 +214,11 @@ macro(drake_setup_options)
 
   drake_optional_external(BULLET ON "Bullet library for collision detection")
 
-  drake_optional_external(CCD ON "Convex shape Collision Detection library")
+  drake_optional_external(CCD ON "Convex shape collision detection library")
+
+  drake_optional_external(FCL ON
+    DEPENDS "WITH_CCD"
+    "Flexible collision detection library")
 
   if(NOT WIN32)
     # Not win32 yet; builds, but requires manual installation of VTKk, etc.
