@@ -33,7 +33,8 @@ void TestGainSystem(const Gain<T>& gain_system,
   // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state()->size());
   auto output = gain_system.AllocateOutput(*context);
-  auto input = make_unique<BasicVector<double>>(gain_system.get_gain().size());
+  auto input = make_unique<BasicVector<double>>(
+      gain_system.get_gain_vector().size());
 
   // Checks that the number of input ports in the Gain system and the Context
   // are consistent.
@@ -57,13 +58,21 @@ void TestGainSystem(const Gain<T>& gain_system,
 }
 
 // Tests the ability to use a double as the gain.
-GTEST_TEST(GainTest, VectorThroughGainSystem) {
+GTEST_TEST(GainTest, GainScalarTest) {
   const double kGain{2.0};
   const int kSize = 3;
-  const auto gain_system = make_unique<Gain<double>>(kGain, kSize);
+  const auto gain_system = make_unique<Gain<double>>(kGain, kSize);;
   const Eigen::Vector3d input_vector(1.0, 3.14, 2.18);
-  const Eigen::Vector3d expected_output(1.0 * kGain, 3.14 * kGain,
-                                        2.18 * kGain);
+  const Eigen::Vector3d expected_output(kGain * input_vector);
+
+  // Verifies the gain accessors are OK.
+  EXPECT_NO_THROW(gain_system->get_gain());
+  EXPECT_EQ(gain_system->get_gain(), kGain);
+  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  EXPECT_EQ(gain_system->get_gain_vector(),
+            VectorX<double>::Ones(kSize) * kGain);
+
+  // Tests ability to compute the gain of a vector.
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
 
@@ -73,7 +82,14 @@ GTEST_TEST(GainTest, GainVectorTest) {
   const auto gain_system = make_unique<Gain<double>>(gain_values);
   const Eigen::Vector4d input_vector(9.81, 5.46, 16.24, 98.12);
   const Eigen::Vector4d expected_output(
-      1.0 * 9.81, 2.0 * 5.46, 3.0 * 16.24, 4.0 * 98.12);
+      gain_values.array() * input_vector.array());
+
+  // Verifies the gain accessors are OK.
+  EXPECT_THROW(gain_system->get_gain(), std::runtime_error);
+  EXPECT_NO_THROW(gain_system->get_gain_vector());
+  EXPECT_EQ(gain_system->get_gain_vector(), gain_values);
+
+  // Tests ability to compute the gain of a vector.
   TestGainSystem(*gain_system, input_vector, expected_output);
 }
 

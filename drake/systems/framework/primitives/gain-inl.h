@@ -18,19 +18,36 @@
 namespace drake {
 namespace systems {
 
+// TODO(amcastro-tri): remove the size parameter from the constructor once
+// #3109 supporting automatic sizes is resolved.
 template <typename T>
 Gain<T>::Gain(const T& k, int size) : Gain(VectorX<T>::Ones(size) * k) { }
 
 template <typename T>
 Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
-  // TODO(amcastro-tri): remove the size parameter from the constructor once
-  // #3109 supporting automatic sizes is resolved.
+  DRAKE_DEMAND(k.size() > 0);
   this->DeclareInputPort(kVectorValued, k.size(), kContinuousSampling);
   this->DeclareOutputPort(kVectorValued, k.size(), kContinuousSampling);
 }
 
 template <typename T>
-const VectorX<T>& Gain<T>::get_gain() const {
+const T& Gain<T>::get_gain() const {
+  T first_value = k_[0];
+
+  // Ensures all of the gains are the same. If it is not, the
+  for (size_t i = 1; i < k_.size(); ++i) {
+    if (first_value != k_[i]) {
+      throw std::runtime_error("drake::systems::Gain::get_gain(): Error! The "
+          "gain cannot be represented as a single scalar value. Please use "
+          "get_gain_vector() instead.");
+    }
+  }
+
+  return k_[0];
+}
+
+template <typename T>
+const VectorX<T>& Gain<T>::get_gain_vector() const {
   return k_;
 }
 

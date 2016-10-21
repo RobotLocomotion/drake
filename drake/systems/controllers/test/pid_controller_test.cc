@@ -57,9 +57,32 @@ class PidControllerTest : public ::testing::Test {
 
 // Tests getter methods for controller constants.
 TEST_F(PidControllerTest, Getters) {
-  ASSERT_EQ(kp_, controller_.get_Kp());
-  ASSERT_EQ(ki_, controller_.get_Ki());
-  ASSERT_EQ(kd_, controller_.get_Kd());
+  ASSERT_EQ(kp_, controller_.get_Kp_vector());
+  ASSERT_EQ(ki_, controller_.get_Ki_vector());
+  ASSERT_EQ(kd_, controller_.get_Kd_vector());
+
+  EXPECT_NO_THROW(controller_.get_Kp());
+  EXPECT_NO_THROW(controller_.get_Ki());
+  EXPECT_NO_THROW(controller_.get_Kd());
+}
+
+TEST_F(PidControllerTest, GetterVectors) {
+  const Eigen::Vector2d kp{1.0, 2.0};
+  const Eigen::Vector2d ki{1.0, 2.0};
+  const Eigen::Vector2d kd{1.0, 2.0};
+  PidController<double> controller{kp, ki, kd};
+
+  EXPECT_NO_THROW(controller.get_Kp_vector());
+  EXPECT_NO_THROW(controller.get_Ki_vector());
+  EXPECT_NO_THROW(controller.get_Kd_vector());
+
+  ASSERT_EQ(kp, controller.get_Kp_vector());
+  ASSERT_EQ(ki, controller.get_Ki_vector());
+  ASSERT_EQ(kd, controller.get_Kd_vector());
+
+  EXPECT_THROW(controller.get_Kp(), std::runtime_error);
+  EXPECT_THROW(controller.get_Ki(), std::runtime_error);
+  EXPECT_THROW(controller.get_Kd(), std::runtime_error);
 }
 
 // Evaluates the output and asserts correctness.
