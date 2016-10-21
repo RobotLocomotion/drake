@@ -1,8 +1,6 @@
-#include "drake/systems/framework/primitives/time_varying_polynomial_traj_src.h"
+#include "drake/systems/framework/primitives/time_varying_trajectory_source.h"
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -19,13 +17,13 @@ namespace drake {
 namespace systems {
 namespace {
 
-class TimeVaryingPolynomialTrajSrcTest : public ::testing::Test {
+class TimeVaryingTrajectorySourceTest : public ::testing::Test {
  protected:
-  TimeVaryingPolynomialTrajSrcTest()
+  TimeVaryingTrajectorySourceTest()
       : kppTraj(PiecewisePolynomial<double>(MatrixXd::Constant(2, 1, 1.5))) {}
 
   void SetUp() override {
-    source_ = make_unique<TimeVaryingPolynomialTrajSrc<double>>(kppTraj);
+    source_ = make_unique<TimeVaryingTrajectorySource<double>>(kppTraj);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
@@ -36,14 +34,14 @@ class TimeVaryingPolynomialTrajSrcTest : public ::testing::Test {
     return make_unique<FreestandingInputPort>(std::move(data));
   }
 
-  const PiecewisePolynomialTrajectory<double> kppTraj;
+  const PiecewisePolynomialTrajectory kppTraj;
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-TEST_F(TimeVaryingPolynomialTrajSrcTest, OutputTest) {
+TEST_F(TimeVaryingTrajectorySourceTest, OutputTest) {
   ASSERT_EQ(0, context_->get_num_input_ports());
   ASSERT_EQ(1, output_->get_num_ports());
 
@@ -60,7 +58,7 @@ TEST_F(TimeVaryingPolynomialTrajSrcTest, OutputTest) {
 }
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
-TEST_F(TimeVaryingPolynomialTrajSrcTest, ConstantVectorSourceIsStateless) {
+TEST_F(TimeVaryingTrajectorySourceTest, ConstantVectorSourceIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 

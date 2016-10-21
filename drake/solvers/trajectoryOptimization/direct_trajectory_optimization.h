@@ -220,12 +220,12 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   /**
    * Get the input trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomialTrajectory<double> ReconstructInputTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const;
 
   /**
    * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomialTrajectory<double> ReconstructStateTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
 
  protected:
   /**

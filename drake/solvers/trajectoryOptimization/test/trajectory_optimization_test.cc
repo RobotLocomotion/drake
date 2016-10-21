@@ -125,7 +125,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
     EXPECT_LE(times_out[i] - times_out[i - 1], h_ub(i - 1) + 1E-10);
   }
 
-  PiecewisePolynomialTrajectory<double> input_traj =
+  PiecewisePolynomialTrajectory input_traj =
       direct_traj.ReconstructInputTrajectory();
 
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
@@ -139,7 +139,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
                               input_traj.value(times_out[kInputConstraintHi]),
                               1e-6, MatrixCompareType::absolute));
 
-  PiecewisePolynomialTrajectory<double> state_traj =
+  PiecewisePolynomialTrajectory state_traj =
       direct_traj.ReconstructStateTrajectory();
   EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
                               1e-10, MatrixCompareType::absolute));
