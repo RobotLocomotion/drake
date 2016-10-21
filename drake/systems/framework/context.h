@@ -61,11 +61,24 @@ class Context {
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
+  /// Returns a mutable pointer to the continuous state, devoid of second-order
+  /// structure. The vector may be of size zero.
+  VectorBase<T>* get_mutable_continuous_state_vector() {
+    return get_mutable_continuous_state()->get_mutable_vector();
+  }
+
   /// Returns a const pointer to the continuous component of the state,
   /// which may be of size zero.
   const ContinuousState<T>* get_continuous_state() const {
     return get_state().get_continuous_state();
   }
+
+  /// Returns a reference to the continuous state vector, devoid of second-order
+  /// structure. The vector may be of size zero.
+  const VectorBase<T>& get_continuous_state_vector() const {
+    return get_continuous_state()->get_vector();
+  }
+
 
   /// Returns a mutable pointer to the difference component of the state,
   /// which may be of size zero.

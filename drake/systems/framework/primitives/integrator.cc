@@ -27,7 +27,7 @@ void Integrator<T>::set_integral_value(
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
   VectorBase<T>* state_vector =
-      context->get_mutable_continuous_state()->get_mutable_state();
+      context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
   state_vector->SetFromVector(value);
@@ -57,7 +57,7 @@ void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-  derivatives->get_mutable_state()->SetFromVector(input->get_value());
+  derivatives->SetFromVector(input->get_value());
 }
 
 template <typename T>
