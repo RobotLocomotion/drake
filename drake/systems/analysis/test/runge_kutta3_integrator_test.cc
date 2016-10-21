@@ -1,8 +1,5 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 
-// TODO(edrumwri): Remove this and fix corresponding build errors.
-#include "drake/systems/analysis/runge_kutta3_integrator-inl.h"
-
 #include <cmath>
 
 #include "gtest/gtest.h"
@@ -14,7 +11,7 @@ namespace systems {
 namespace {
 
 GTEST_TEST(IntegratorTest, MiscAPI) {
-  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup the integration step size.
   const double DT = 1e-3;
@@ -33,7 +30,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
   // Create the mass spring system
-  MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Create a context
   auto context = spring_mass.CreateDefaultContext();
@@ -59,7 +56,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kMass = 2.0;      // kg
 
   // Create the spring-mass system
-  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
 
   // Create a context
   auto context = spring_mass.CreateDefaultContext();
@@ -113,7 +110,7 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
   const double kMass = 2.0;      // kg
 
   // Create the spring-mass system
-  MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
 
   // Create a context
   auto context = spring_mass.CreateDefaultContext();
