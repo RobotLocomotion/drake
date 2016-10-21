@@ -50,7 +50,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
 /**
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
  * @p tree. Let the "base bodies" be the bodies in the model that do not have
- * parent joints. The base bodies bodies are connected to the world via
+ * parent joints. The base bodies are connected to the world via
  * systems::plants::joints::kRollPitchYaw joints. When these joints are at their
  * zero positions, the base body's frames are coincident with the world's
  * coordinate frame.
@@ -122,7 +122,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * parent joints.  This method connects the base bodies to an existing
  * body in @p tree via joints of type @p floating_base_type. The body in the
  * tree to which to which these joints attach and the transform between this
- * body and the base bodies's frames when the joints are in their zero positions
+ * body and the base bodies' frames when the joints are in their zero positions
  * is determined by @p weld_to_frame.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
@@ -203,7 +203,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * to @p tree. Let the "base bodies" be the bodies in the model that do not have
  * parent joints. This method connects the model instance's base bodies to the
  * world via systems::plants::joints::kRollPitchYaw joints. When
- * this joint is at its zero position, the base bodies's frames are coincident
+ * this joint is at its zero position, the base bodies' frames are coincident
  * with the world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
@@ -230,7 +230,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * to @p tree. Let the "base bodies" be the bodies in the model that do not have
  * parent joints. This method connects the model instance's base bodies to the
  * world via joints of type @p floating_base_type. When these joints are at
- * their zero positions, the base bodies's frames are coincident with the
+ * their zero positions, the base bodies' frames are coincident with the
  * world's coordinate frame.
  *
  * @param[in] urdf_filename The name of the file containing a URDF
