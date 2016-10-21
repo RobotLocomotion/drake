@@ -1,18 +1,16 @@
-pods_find_pkg_config(gurobi)
+drake_find_package(gurobi PKG_CONFIG)
 
 if(gurobi_FOUND)
   drake_add_mex(fastQPmex fastQPmex.cpp)
   target_link_libraries(fastQPmex drakeQP)
-  pods_use_pkg_config_packages(fastQPmex gurobi)
   drake_add_mex(gurobiQPmex gurobiQPmex.cpp)
   target_link_libraries(gurobiQPmex drakeQP)
-  pods_use_pkg_config_packages(gurobiQPmex gurobi)
 endif()
 
 drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(lqrmex drakeCommon)
 
-find_package(snopt_c)
+drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND)
   drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
