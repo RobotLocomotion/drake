@@ -233,7 +233,7 @@ macro(drake_setup_options)
     # compatibility issues:
     # https://github.com/RobotLocomotion/drake/issues/2578
     drake_optional_external(IPOPT ON
-      DEPENDS "NOT APPLE OR NOT MATLAB_EXECUTABLE"
+      DEPENDS "NOT APPLE OR NOT Matlab_FOUND"
       "Interior Point Optimizer, for solving non-linear optimizations")
 
     drake_optional_external(OCTOMAP ON
@@ -250,22 +250,22 @@ macro(drake_setup_options)
   # The following projects are default ON when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF.
   drake_optional_external(SPOTLESS ON
-    DEPENDS "NOT DISABLE_MATLAB\;MATLAB_EXECUTABLE"
+    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "polynomial optimization front-end for MATLAB")
 
   # The following projects are default OFF when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF. Some of them may also be hidden
   # on Windows regardless of the status of MATLAB.
   drake_optional_external(IRIS OFF
-    DEPENDS "NOT DISABLE_MATLAB\;MATLAB_EXECUTABLE\;NOT WIN32\;WITH_MOSEK"
+    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND\;WITH_MOSEK"
     "fast approximate convex segmentation")
 
   drake_optional_external(SEDUMI OFF
-    DEPENDS "NOT DISABLE_MATLAB\;MATLAB_EXECUTABLE\;NOT WIN32"
+    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "semi-definite programming solver")
 
   drake_optional_external(YALMIP OFF
-    DEPENDS "NOT DISABLE_MATLAB\;MATLAB_EXECUTABLE\;NOT WIN32"
+    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "free optimization front-end for MATLAB")
 
   # END external projects that are only needed when MATLAB is in use

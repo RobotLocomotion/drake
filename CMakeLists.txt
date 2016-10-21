@@ -133,13 +133,13 @@ drake_add_external(nlopt PUBLIC CMAKE
 
 # sedumi
 drake_add_external(sedumi CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # snopt
-if(MATLAB_EXECUTABLE)
+if(Matlab_FOUND)
   set(SNOPT_EXTRA_CMAKE_ARGS
     -DBUILD_SNOPT_C_MEX=ON
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 else()
   set(SNOPT_EXTRA_CMAKE_ARGS
     -DBUILD_SNOPT_C_MEX=OFF)
@@ -154,7 +154,7 @@ drake_add_external(snopt CMAKE
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
@@ -185,10 +185,10 @@ drake_add_external(swig_matlab PUBLIC
     ${MAKE_COMMAND} install)
 
 # textbook
-if(MATLAB_EXECUTABLE)
+if(Matlab_FOUND)
   set(TEXTBOOK_CMAKE_ARGS
     -DBUILD_TESTING=ON
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 else()
   set(TEXTBOOK_CMAKE_ARGS -DBUILD_TESTING=OFF)
 endif()
@@ -214,7 +214,7 @@ drake_add_external(iris PUBLIC CMAKE
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
     -DIRIS_WITH_MOSEK=OFF
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR}
   DEPENDS eigen mosek)
 
 
