@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
 
 #include <Eigen/Dense>
@@ -67,30 +68,13 @@ class BasicVector : public VectorBase<T> {
   }
 
   const T& GetAtIndex(int index) const override {
-    if (index >= size()) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for state vector of size " +
-                              std::to_string(size()));
-    }
+    DRAKE_THROW_UNLESS(index < size());
     return values_[index];
   }
 
   T& GetAtIndex(int index) override {
-    if (index >= size()) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for state vector of size " +
-                              std::to_string(size()));
-    }
+    DRAKE_THROW_UNLESS(index < size());
     return values_[index];
-  }
-
-  void SetAtIndex(int index, const T& value) override {
-    if (index >= size()) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for state vector of size " +
-                              std::to_string(size()));
-    }
-    values_[index] = value;
   }
 
   void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {

@@ -164,9 +164,9 @@ class LeafSystem : public System<T> {
     periodic_events_ = {event};
   }
 
-  /// Declares that this System should reserve continuous state with @p num_z
-  /// miscellaneous state variables. Has no effect if AllocateContinuousState
-  /// is overridden.
+  /// Declares that this System should reserve continuous state with
+  /// @p num_state_variables state variables, which have no second-order
+  /// structure. Has no effect if AllocateContinuousState is overridden.
   void DeclareContinuousState(int num_state_variables) {
     const int num_q = 0, num_v = 0;
     DeclareContinuousState(num_q, num_v, num_state_variables);
@@ -185,10 +185,12 @@ class LeafSystem : public System<T> {
   /// Declares that this System should reserve continuous state with @p num_q
   /// generalized positions, @p num_v generalized velocities, and @p num_z
   /// miscellaneous state variables, stored in the a vector Cloned from
-  /// @p model_vector. Throws if @p model_vector has the wrong size. Has no
-  /// effect if AllocateContinuousState is overridden.
+  /// @p model_vector. Aborts if @p model_vector is nullptr or has the wrong
+  /// size. Has no effect if AllocateContinuousState is overridden.
   void DeclareContinuousState(std::unique_ptr<BasicVector<T>> model_vector,
                               int num_q, int num_v, int num_z) {
+    DRAKE_DEMAND(model_vector != nullptr);
+    DRAKE_DEMAND(model_vector->size() == num_q + num_v + num_z);
     model_continuous_state_vector_ = std::move(model_vector);
     num_generalized_positions_ = num_q;
     num_generalized_velocities_ = num_v;

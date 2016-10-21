@@ -4,7 +4,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -32,14 +32,14 @@ class VectorBase {
   virtual int size() const = 0;
 
   /// Returns the element at the given index in the vector. Throws
-  /// std::out_of_range if the index is >= size().
+  /// std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
   virtual const T& GetAtIndex(int index) const = 0;
 
   /// Returns the element at the given index in the vector. Throws
-  /// std::out_of_range if the index is >= size().
+  /// std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
@@ -49,18 +49,18 @@ class VectorBase {
   const T& operator[](std::size_t idx) const { return GetAtIndex(idx); }
 
   /// Replaces the state at the given index with the value. Throws
-  /// std::out_of_range if the index is >= size().
-  ///
-  /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory.
-  virtual void SetAtIndex(int index, const T& value) = 0;
+  /// std::runtime_error if the index is >= size().
+  void SetAtIndex(int index, const T& value) {
+    GetAtIndex(index) = value;
+  }
 
   /// Replaces the entire state with the contents of value. Throws
-  /// if value is not a column vector with size() rows.
+  /// std::runtime_error if value is not a column vector with size() rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
   virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
+    DRAKE_THROW_UNLESS(value.rows() == size());
     for (int i = 0; i < value.rows(); ++i) {
       SetAtIndex(i, value[i]);
     }

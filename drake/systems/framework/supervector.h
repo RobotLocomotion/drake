@@ -45,11 +45,6 @@ class Supervector : public VectorBase<T> {
     return target.first->GetAtIndex(target.second);
   }
 
-  void SetAtIndex(int index, const T& value) override {
-    const auto target = GetSubvectorAndOffset(index);
-    target.first->SetAtIndex(target.second, value);
-  }
-
  private:
   // Given an index into the supervector, returns the subvector that
   // contains that index, and its offset within the subvector. This operation

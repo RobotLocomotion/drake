@@ -30,7 +30,7 @@ TEST_F(SubvectorTest, NullptrVector) {
 TEST_F(SubvectorTest, EmptySubvector) {
   Subvector<int> subvec(vector_.get());
   EXPECT_EQ(0, subvec.size());
-  EXPECT_THROW(subvec.GetAtIndex(0), std::out_of_range);
+  EXPECT_THROW(subvec.GetAtIndex(0), std::runtime_error);
 }
 
 TEST_F(SubvectorTest, OutOfBoundsSubvector) {
@@ -41,7 +41,7 @@ TEST_F(SubvectorTest, Access) {
   Subvector<int> subvec(vector_.get(), 1, kSubVectorLength);
   EXPECT_EQ(2, subvec.GetAtIndex(0));
   EXPECT_EQ(3, subvec.GetAtIndex(1));
-  EXPECT_THROW(subvec.GetAtIndex(2), std::out_of_range);
+  EXPECT_THROW(subvec.GetAtIndex(2), std::runtime_error);
 }
 
 TEST_F(SubvectorTest, Copy) {
