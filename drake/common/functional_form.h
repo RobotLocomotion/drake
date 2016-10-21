@@ -14,7 +14,7 @@
 
 namespace drake {
 
-/** @brief Represent an abstract form of a function of zero or more variables.
+/** Represent an abstract form of a function of zero or more variables.
  *
  * We define a functional form to be a set of input variables along with an
  * abstract description of how the variables are combined to express the
@@ -369,7 +369,7 @@ class DRAKE_EXPORT FunctionalForm {
       FunctionalForm
       sqrt(FunctionalForm const& x);
 
-  /** @brief Represent a set of Variable instances.
+  /** Represent a set of Variable instances.
    *
    * The set contains a list of Variable instances ordered according
    * to the @ref VariableOrdering "Variable Ordering" without duplicates.
@@ -461,7 +461,7 @@ bool operator>(FunctionalForm const&, FunctionalForm const&) = delete;
 bool operator>=(FunctionalForm const&, FunctionalForm const&) = delete;
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-/** @brief Represent a variable in a FunctionalForm.
+/** Represent a variable in a FunctionalForm.
  *
  * A FunctionalForm is defined with respect to zero or more variables that an
  * expression combines in some form.  Instances of Variable serve as
