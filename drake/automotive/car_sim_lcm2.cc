@@ -247,7 +247,25 @@ int main() {
   //     [steering angle, throttle, brake].
   //
   // These values need to be processed before they can be sent into the PID
-  // controller, which as an input port of size 6
+  // controller, which has an input port of size 6. In
+  // drake-distro/drake/automotive/car_simulation.cc, method
+  // CreateVehicleSystem(), the values of the PID controller are multipled by
+  // a matrix called `map_driving_cmd_to_x_d`, which serves as a translator
+  // from the reference signal provided by the driving command to the reference
+  // signal to provide to the PID controller.
+  //
+  // Here is the gain matrix that we want to have:
+  //
+  // -------------------------------------------------------
+  // Index |   kSteeringAngle   |   kThrottle   |   kBrake
+  // -------------------------------------------------------
+  //   0   |         1          |       0       |      0
+  //   1   |         0          |       0       |      0
+  //   2   |         0          |       0       |      0
+  //   3   |         0          |       0       |      0
+  //   4   |         0          |       20      |     -20
+  //   5   |         0          |       20      |     -20
+  // -------------------------------------------------------
   //
   // The RigidBodyPlant has three actuators, each accepting a torque as input.
   // Here is the order:
