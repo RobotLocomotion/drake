@@ -21,25 +21,25 @@ namespace drake {
  * output.  The form may be one of:
  *
  * - @anchor zero
- *   A @b zero value with no variables (<tt>0</tt>).
+ *   A @b zero value with no variables (`0`).
  * - @anchor constant
- *   A @b constant value with no variables (<tt>c</tt>).
+ *   A @b constant value with no variables (`c`).
  * - @anchor linear
- *   A @b linear combination of one or more variables (<tt>b'*x</tt>).
+ *   A @b linear combination of one or more variables (<code>b'*x</code>).
  * - @anchor affine
- *   An @b affine combination of one or more variables (<tt>b'*x + c</tt>).
+ *   An @b affine combination of one or more variables (<code>b'*x + c</code>).
  * - @anchor polynomial
  *   A @b polynomial combination of one or more variables
- *   (<tt>... + x'*A*x + b'*x + c</tt>).
+ *   (<code>... + x'*A*x + b'*x + c</code>).
  * - @anchor differentiable
  *   A @b differentiable (almost everywhere) combination of one or more
- *   variables (<tt>f(x)</tt> such that <tt>f'(x)</tt> exists for
+ *   variables (`f(x)` such that <code>f'(x)</code> exists for
  *   <i> almost all @c x in the domain of interest</i>).
  * - @anchor arbitrary
- *   An @b arbitrary combination of one or more variables (<tt>f(x)</tt>).
+ *   An @b arbitrary combination of one or more variables (`f(x)`).
  * - @anchor undefined
  *   An @b undefined combination of zero or more variables
- *   (<tt>f(x)</tt> where @c f contains an undefined operation).
+ *   (`f(x)` where @c f contains an undefined operation).
  *
  * Each variable is represented by an instance of the Variable class
  * which serves as a placeholder providing a distinguishing identifier.
@@ -400,7 +400,7 @@ class DRAKE_EXPORT FunctionalForm {
 
 #if defined(DRAKE_DOXYGEN_CXX)
     /** Type used to iterate through the set.  The iterator dereferences
-        to <tt>const Variable</tt> and supports bidirectional iteration but
+        to `const Variable` and supports bidirectional iteration but
         is otherwise of an unspecified type.  */
     typedef unspecified_bidirectional_const_iterator<Variable> const_iterator;
 #else
