@@ -4,8 +4,8 @@ if(Bullet_FOUND)
   drake_add_cc_test(rigid_body_plant_test)
   target_link_libraries(rigid_body_plant_test drakeRigidBodyPlant drakeRBSystem)
 
-  drake_add_cc_test(contact_result_test)
-  target_link_libraries(contact_result_test drakeRigidBodyPlant drakeRBSystem)
+  drake_add_cc_test(compute_contact_result_test)
+  target_link_libraries(compute_contact_result_test drakeRigidBodyPlant drakeRBSystem)
 
   if (lcm_FOUND)
     drake_add_cc_test(viewer_draw_translator_test)

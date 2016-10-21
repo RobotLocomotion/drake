@@ -9,6 +9,16 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 
+// The ContactResult class is largely a container for the data that is computed
+//  by the RigidBodyPlant while determining contact forces.  This test confirms
+//  that for a known set of contacts, that the expected contact forces are
+//  generated and stashed into the ContactResult data structure.
+//
+//  Thus, a rigid body tree is created with a known configuration such that the
+//  contacts and corresponding contact forces are known.  The RigidBodyPlant's
+//  EvalOutput is invoked on the ContactResult port and the ContactResult
+//  contents are evaluated to see if they contain the expected results.
+
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
