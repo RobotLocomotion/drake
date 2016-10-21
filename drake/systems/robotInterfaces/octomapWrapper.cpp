@@ -4,7 +4,7 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace octomap;

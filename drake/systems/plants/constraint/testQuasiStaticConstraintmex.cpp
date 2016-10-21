@@ -1,7 +1,7 @@
 #include <mex.h>
 
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
