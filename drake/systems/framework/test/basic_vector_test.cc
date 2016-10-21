@@ -61,6 +61,19 @@ GTEST_TEST(BasicVectorTest, Mutate) {
   EXPECT_EQ(expected, vec.get_value());
 }
 
+// Tests that the BasicVector can be addressed as an array.
+GTEST_TEST(BasicVectorTest, ArrayOperator) {
+  BasicVector<int> vec(2);
+  vec[0] = 76;
+  vec[1] = 42;
+
+  Eigen::Vector2i expected;
+  expected << 76, 42;
+  EXPECT_EQ(expected, vec.get_value());
+  EXPECT_EQ(76, vec[0]);
+  EXPECT_EQ(42, vec[1]);
+}
+
 // Tests that the BasicVector can be set from another vector.
 GTEST_TEST(BasicVectorTest, SetWholeVector) {
   BasicVector<int> vec(2);

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
@@ -96,14 +97,17 @@ class ContinuousState {
   virtual ~ContinuousState() {}
 
   /// Returns the size of the entire continuous state vector.
-  int size() const { return get_state().size(); }
+  int size() const { return get_vector().size(); }
+
+  T& operator[](std::size_t idx) { return (*state_)[idx]; }
+  const T& operator[](std::size_t idx) const { return (*state_)[idx]; }
 
   /// Returns the entire continuous state vector.
-  const VectorBase<T>& get_state() const { return *state_; }
+  const VectorBase<T>& get_vector() const { return *state_; }
 
   /// Returns a mutable pointer to the entire continuous state vector, which
   /// is never nullptr.
-  VectorBase<T>* get_mutable_state() { return state_.get(); }
+  VectorBase<T>* get_mutable_vector() { return state_.get(); }
 
   /// Returns the subset of the state vector that is generalized position `q`.
   const VectorBase<T>& get_generalized_position() const {
@@ -143,11 +147,11 @@ class ContinuousState {
   /// Sets the entire continuous state vector from an Eigen expression.
   void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_ASSERT(value.size() == state_->size());
-    this->get_mutable_state()->SetFromVector(value);
+    this->get_mutable_vector()->SetFromVector(value);
   }
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.
-  VectorX<T> CopyToVector() const { return this->get_state().CopyToVector(); }
+  VectorX<T> CopyToVector() const { return this->get_vector().CopyToVector(); }
 
   // ContinuousState is not copyable or moveable.
   ContinuousState(const ContinuousState& other) = delete;

@@ -100,14 +100,14 @@ TEST_F(PidControllerTest, EvalTimeDerivatives) {
   controller_.SetDefaultState(context_.get());
 
   controller_.EvalTimeDerivatives(*context_, derivatives_.get());
-  ASSERT_EQ(3, derivatives_->get_state().size());
+  ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());
   ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());
   ASSERT_EQ(3, derivatives_->get_misc_continuous_state().size());
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal_, derivatives_->get_state().CopyToVector());
+  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
 }
 
 }  // namespace

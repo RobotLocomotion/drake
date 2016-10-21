@@ -119,7 +119,7 @@ void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_continuous_state()->get_mutable_state()
+  context->get_mutable_continuous_state_vector()
       ->SetFromVector(x);
 }
 
@@ -193,7 +193,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+      context.get_continuous_state_vector()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
@@ -346,7 +346,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   xdot << kinsol.transformPositionDotMappingToVelocityMapping(
       MatrixX<T>::Identity(nq, nq)) * v, vdot.value();
 
-  derivatives->get_mutable_state()->SetFromVector(xdot);
+  derivatives->SetFromVector(xdot);
 }
 
 template <typename T>
@@ -357,7 +357,7 @@ void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+      context.get_continuous_state_vector()).get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();

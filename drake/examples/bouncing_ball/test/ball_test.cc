@@ -18,7 +18,7 @@ class BallTest : public ::testing::Test {
   }
 
   systems::VectorBase<double>* continuous_state() {
-    return context_->get_mutable_continuous_state()->get_mutable_state();
+    return context_->get_mutable_continuous_state_vector();
   }
 
   const systems::VectorBase<double>& generalized_position() {
@@ -64,7 +64,7 @@ TEST_F(BallTest, Output) {
 
 TEST_F(BallTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results will be saved.
-  const auto result = derivatives_->get_mutable_state();
+  const auto result = derivatives_->get_mutable_vector();
 
   // Evaluate time derivatives.
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
