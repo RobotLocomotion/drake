@@ -574,7 +574,6 @@ class IntegratorBase {
 
   // Vectors used in error norm calculations.
   std::unique_ptr<VectorBase<T>> Ndq_;
-  VectorX<T> WvNdq_;
   VectorX<T> scaled_err_;
   std::unique_ptr<VectorBase<T>> scaled_q_err_;
 
@@ -671,7 +670,6 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   auto& scaled_err = integrator->scaled_err_;
   auto& Ndq = integrator->Ndq_;
   auto& scaled_q_err = integrator->scaled_q_err_;
-  auto& WvNdq = integrator->WvNdq_;
 
   // Get scaling matrices.
   const auto& v_scal = integrator->get_generalized_state_scaling_matrix();
@@ -699,8 +697,8 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   // Compute W_q*dq = N'*W_v*N*dq.
   scaled_err = gc.CopyToVector();
   system.MapConfigurationDerivativesToVelocity(context, scaled_err, Ndq.get());
-  WvNdq = v_scal * Ndq->CopyToVector();
-  system.MapVelocityToConfigurationDerivatives(context, WvNdq,
+  system.MapVelocityToConfigurationDerivatives(context, 
+                                               v_scal * Ndq->CopyToVector(), 
                                                scaled_q_err.get());
   double q_nrm =
       scaled_q_err->CopyToVector().template lpNorm<Eigen::Infinity>();
