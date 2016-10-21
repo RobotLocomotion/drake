@@ -1,4 +1,4 @@
-#include "drake/systems/plants/constraint/constructPtrRigidBodyConstraint.h"
+#include "drake/matlab/systems/plants/constraint/constructPtrRigidBodyConstraint.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyTree.h"

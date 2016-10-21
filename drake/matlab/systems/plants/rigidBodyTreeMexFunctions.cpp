@@ -1,14 +1,14 @@
-#include "drake/systems/plants/rigidBodyTreeMexFunctions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexFunctions.h"
 
 #include <typeinfo>
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace std;
 using namespace Eigen;
