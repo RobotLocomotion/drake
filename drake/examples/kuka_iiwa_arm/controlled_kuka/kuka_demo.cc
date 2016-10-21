@@ -260,6 +260,12 @@ class KukaDemo : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
+  Context<T>* get_kuka_context(Context<T>* context) const {
+    Context<T>* controller_context =
+        this->GetMutableSubsystemContext(context, controller_);
+    return controller_->GetMutableSubsystemContext(controller_context, plant_);
+  }
+
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
         this->GetMutableSubsystemContext(context, controller_);
@@ -284,13 +290,13 @@ class KukaDemo : public systems::Diagram<T> {
 int DoMain() {
   KukaDemo<double> model;
   Simulator<double> simulator(model);
-
+  Context<double>* context = simulator.get_mutable_context();
   // Zeroes the state and initializes controller state.
-  model.SetDefaultState(simulator.get_mutable_context());
+  model.SetDefaultState(context);
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
   model.get_kuka_plant().set_state_vector(
-      simulator.get_mutable_context(), desired_state);
+      model.get_kuka_context(context), desired_state);
 
   simulator.Initialize();
 
