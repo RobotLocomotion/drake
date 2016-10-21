@@ -9,8 +9,8 @@ testAtlasQuat();
 checkGradients(createFallingBrick('quat'));
 checkGradients(createAtlas('quat'));
 
-checkMex(RigidBodyManipulator('MassSpringDamper.urdf'));
-% checkGradients(RigidBodyManipulator('MassSpringDamper.urdf')); currently causes a Matlab crash due to https://github.com/RobotLocomotion/drake/issues/997
+checkMex(RigidBodyManipulator('../../../../systems/plants/test/MassSpringDamper.urdf'));
+% checkGradients(RigidBodyManipulator('../../../../systems/plants/test/MassSpringDamper.urdf')); currently causes a Matlab crash due to https://github.com/RobotLocomotion/drake/issues/997
 end
 
 function robot = createFallingBrick(floating_type)

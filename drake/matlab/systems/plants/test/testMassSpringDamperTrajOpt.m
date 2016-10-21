@@ -4,7 +4,7 @@ x0 = [1 1]';
 xf = [0 0]';
 tf0 = 3;
 
-p = RigidBodyManipulator('MassSpringDamper.urdf');
+p = RigidBodyManipulator('../../../../systems/plants/test/MassSpringDamper.urdf');
 
 N = 11;
 prog = DircolTrajectoryOptimization(p,N,tf0);
