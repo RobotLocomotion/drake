@@ -627,8 +627,10 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
-    } else if (dt_max < DT_GROWTH * current_step_size)
-      current_step_size = dt_max;  // dt_max is roughly current step.
+    } else {
+      if (dt_max < DT_GROWTH * current_step_size)
+        current_step_size = dt_max;  // dt_max is roughly current step.
+    }
 
     // Attempt to take the step.
     integrator->Integrate(current_step_size);
@@ -697,8 +699,8 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   // Compute W_q*dq = N'*W_v*N*dq.
   scaled_err = gc.CopyToVector();
   system.MapConfigurationDerivativesToVelocity(context, scaled_err, Ndq.get());
-  system.MapVelocityToConfigurationDerivatives(context, 
-                                               v_scal * Ndq->CopyToVector(), 
+  system.MapVelocityToConfigurationDerivatives(context,
+                                               v_scal * Ndq->CopyToVector(),
                                                scaled_q_err.get());
   double q_nrm =
       scaled_q_err->CopyToVector().template lpNorm<Eigen::Infinity>();
