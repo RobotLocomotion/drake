@@ -100,6 +100,11 @@ class BasicVector : public VectorBase<T> {
 
   void SetZero() override { values_.setZero(); }
 
+  /// Computes the infinity norm for this vector.
+  T NormInf() const override {
+    return values_.template lpNorm<Eigen::Infinity>();
+  }
+
   /// Copies the entire vector to a new BasicVector, with the same concrete
   /// implementation type.
   ///
