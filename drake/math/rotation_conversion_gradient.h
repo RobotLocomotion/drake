@@ -85,11 +85,11 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 
   Scalar sqterm = R(2, 1) * R(2, 1) + R(2, 2) * R(2, 2);
 
-  using namespace std;
   // droll_dq
   drpy.row(0) = (R(2, 2) * dR32_dq - R(2, 1) * dR33_dq) / sqterm;
 
   // dpitch_dq
+  using namespace std;  // NOLINT(build/namespaces)
   Scalar sqrt_sqterm = sqrt(sqterm);
   drpy.row(1) =
       (-sqrt_sqterm * dR31_dq +
@@ -161,7 +161,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
   Scalar val = B.maxCoeff(&ind, &max_col);
 
   ReturnType dq(drake::kQuaternionSize, nq);
-  using namespace std;
+  using namespace std;  // NOLINT(build/namespaces)
   switch (ind) {
     case 0: {
       // val = trace(M)

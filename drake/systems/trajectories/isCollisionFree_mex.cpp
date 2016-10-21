@@ -167,6 +167,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x,
 }
 
 /* Main mex funtion*/
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Get x (state) from which funnel is to be executed
   const mxArray *x;

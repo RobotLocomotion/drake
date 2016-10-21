@@ -1,10 +1,12 @@
 #include "QuaternionFloatingJoint.h"
+
 #include <random>
 
 #include "drake/math/random_rotation.h"
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::normal_distribution;
 
 std::string QuaternionFloatingJoint::get_position_name(int index) const {
   switch (index) {

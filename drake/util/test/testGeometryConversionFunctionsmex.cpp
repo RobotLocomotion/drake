@@ -16,6 +16,7 @@ using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::initializeAutoDiff;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 2 || nlhs != 13) {
     mexErrMsgIdAndTxt(

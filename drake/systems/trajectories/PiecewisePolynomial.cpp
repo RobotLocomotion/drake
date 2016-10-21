@@ -3,8 +3,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/test/random_polynomial_matrix.h"
 
-using namespace std;
-using namespace Eigen;
+using std::runtime_error;
+using std::vector;
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(

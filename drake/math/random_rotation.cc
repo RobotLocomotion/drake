@@ -2,7 +2,8 @@
 
 #include "drake/math/axis_angle.h"
 
-using namespace Eigen;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
 
 namespace drake {
 namespace math {

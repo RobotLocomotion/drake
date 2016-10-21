@@ -1,8 +1,15 @@
 #include "drake/systems/plants/RigidBodyTree.h"
+
 #include <iostream>
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Dynamic;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::Ref;
+using Eigen::Vector3d;
+using Eigen::VectorXi;
+using std::vector;
 
 // Computes surface tangent vectors for a single normal vector
 // INPUTS:

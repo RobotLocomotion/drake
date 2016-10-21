@@ -139,7 +139,6 @@ class VectorBase {
       T val = abs(GetAtIndex(i));
       nrm = max(nrm, val);
     }
-//      nrm = max(nrm, abs(GetAtIndex(i)));
 
     return nrm;
   }

@@ -10,8 +10,18 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Isometry3d;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixXd;
+using Eigen::SparseMatrix;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::initializeAutoDiffTuple;

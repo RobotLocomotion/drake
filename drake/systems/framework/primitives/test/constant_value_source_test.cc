@@ -49,15 +49,9 @@ TEST_F(ConstantValueSourceTest, Output) {
             output_->get_data(0)->GetValue<std::string>());
 }
 
-// Tests that inputs cannot be set for a ConstantValueSource.
-TEST_F(ConstantValueSourceTest, ShouldNotBePossibleToConnectInputs) {
-  EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
-               std::out_of_range);
-}
-
 // Tests that ConstantValueSource allocates no state variables in the context_.
 TEST_F(ConstantValueSourceTest, ConstantValueSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_continuous_state());
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

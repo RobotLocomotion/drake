@@ -932,6 +932,9 @@ MathematicalProgram prog;
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 }
+
+// TODO(hongkai.dai@tri.global): add a test to solve an second order conic
+// problem through nonlinear solver.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

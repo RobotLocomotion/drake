@@ -7,7 +7,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/functional_form.h"
-#include "drake/common/polynomial.h"
 
 namespace drake {
 namespace systems {
@@ -40,16 +39,6 @@ GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
   expected << 0, 0, 0;
   EXPECT_EQ(expected, vec.get_value());
 }
-
-// Disabling tests in accordance with Issue #3845.
-/*
-// Tests that the BasicVector<Polynomiald> is initialized to zero.
-GTEST_TEST(BasicVectorTest, PolynomialInitiallyZero) {
-  BasicVector<Polynomiald> vec(1);
-  EXPECT_TRUE(vec.get_value()[0].IsApprox(Polynomiald(0.0),
-                                          Eigen::NumTraits<double>::epsilon()));
-}
-*/
 
 // Tests that the BasicVector<FunctionalForm> is initialized to undefined.
 GTEST_TEST(BasicVectorTest, FunctionalFormInitiallyUndefined) {
@@ -101,13 +90,6 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   Eigen::Vector3i next_value;
   next_value << 3, 4, 5;
   EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
-}
-
-// Tests that the infinity norm is correct.
-GTEST_TEST(BasicVectorTest, InfinityNorm) {
-  BasicVector<int> vec(2);
-  vec.get_mutable_value() << 3, 5;
-  EXPECT_EQ(vec.NormInf(), 5);
 }
 
 // Tests all += * operations for BasicVector.

@@ -28,7 +28,3 @@ if(WITH_DIRECTOR)
              SIZE medium)
   endif()
 endif()
-
-if(MATLAB_FOUND)
-  drake_add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
-endif()

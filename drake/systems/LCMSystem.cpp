@@ -8,6 +8,7 @@
 #include <sys/select.h>
 #endif
 
+// NOLINTNEXTLINE(build/namespaces) This code will be deleted soon.
 using namespace drake;
 
 bool waitForLCM(lcm::LCM& lcm, double timeout) {

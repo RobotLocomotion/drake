@@ -5,8 +5,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::VectorXd;
+using std::cout;
+using std::cerr;
+using std::endl;
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
