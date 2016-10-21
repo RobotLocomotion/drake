@@ -71,8 +71,6 @@ TEST_F(LinearSystemTest, Derivatives) {
 // Tests that the outputs are correctly computed.
 TEST_F(LinearSystemTest, Output) {
   // Sets the context's input port.
-//  Eigen::Vector2d u(2);
-//  u << 5.6, -10.1;
   Eigen::Vector2d u(5.6, -10.1);
   SetInput(u);
 
