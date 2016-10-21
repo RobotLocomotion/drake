@@ -1,3 +1,4 @@
+#include "drake/systems/framework/primitives/affine_system_plant.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -56,8 +57,7 @@ TEST_F(AffineSystemTest, Derivatives) {
   Eigen::Vector2d u(1, 4);
   SetInput(u);
 
-  Eigen::VectorXd x(2);
-  x << 0.1, 0.25;
+  Eigen::Vector2d x(0.1, 0.25);
   SetState(x);
 
   derivatives_ = system_->AllocateTimeDerivatives();
@@ -73,13 +73,11 @@ TEST_F(AffineSystemTest, Derivatives) {
 // Tests that the outputs are correctly computed.
 TEST_F(AffineSystemTest, Output) {
   // Sets the context's input port.
-  Eigen::Vector2d u(2);
-  u << 5.6, -10.1;
+  Eigen::Vector2d u(5.6, -10.1);
   SetInput(u);
 
   // Sets the state
-  Eigen::VectorXd x(2);
-  x << 0.8, -22.1;
+  Eigen::Vector2d x(0.8, -22.1);
   SetState(x);
 
   system_->EvalOutput(*context_, &system_output_);

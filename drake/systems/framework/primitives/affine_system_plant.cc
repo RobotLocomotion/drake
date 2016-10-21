@@ -22,14 +22,14 @@ AffineSystemPlant<T>::AffineSystemPlant(
     const Eigen::Ref<const VectorX<T>>& y0)
     : A_(A), B_(B), C_(C), D_(D), XDot0_(xdot0), Y0_(y0),
       kNumInputs(B.cols()), kNumOutputs(y0.size()), kNumStates(xdot0.size()) {
-  DRAKE_ASSERT(kNumStates == A.rows());
-  DRAKE_ASSERT(kNumStates == A.cols());
-  DRAKE_ASSERT(kNumStates == B.rows());
-  DRAKE_ASSERT(kNumStates == C.cols());
-  DRAKE_ASSERT(kNumInputs == B.cols());
-  DRAKE_ASSERT(kNumInputs == D.cols());
-  DRAKE_ASSERT(kNumOutputs == C.rows());
-  DRAKE_ASSERT(kNumOutputs == D.rows());
+  DRAKE_DEMAND(kNumStates == A.rows());
+  DRAKE_DEMAND(kNumStates == A.cols());
+  DRAKE_DEMAND(kNumStates == B.rows());
+  DRAKE_DEMAND(kNumStates == C.cols());
+  DRAKE_DEMAND(kNumInputs == B.cols());
+  DRAKE_DEMAND(kNumInputs == D.cols());
+  DRAKE_DEMAND(kNumOutputs == C.rows());
+  DRAKE_DEMAND(kNumOutputs == D.rows());
 
   // Declares input port.
   this->DeclareInputPort(kVectorValued, kNumInputs,
