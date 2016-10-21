@@ -22,6 +22,7 @@ set(sources
   primitives/gain.cc
   primitives/integrator.cc
   primitives/linear_system_plant.cc
+  primitives/mimo_gain.cc
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/time_varying_polynomial_source.cc
