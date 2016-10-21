@@ -37,13 +37,16 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
    */
   bool supports_accuracy_estimation() const override { return false; }
 
+  /// Integrator does not provide an error estimate.
+  int64_t get_error_order() const override { return 0; }
+
   /**
    * The RK2 integrator does not support error control.
    */
   bool supports_error_control() const override { return false; }
 
  private:
-  bool DoStep(const T& dt) override;
+  void Integrate(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
@@ -54,7 +57,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
+void RungeKutta2Integrator<T>::Integrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state()->
@@ -80,11 +83,6 @@ bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   // TODO(sherm1) Use better operators when available.
   xc->PlusEqScaled(dt * 0.5, xcdot1);
   xc->PlusEqScaled(-dt * 0.5, xcdot0);
-
-  IntegratorBase<T>::UpdateStatistics(dt);
-
-  // Fixed step integrator always returns true
-  return true;
 }
 }  // systems
 }  // drake
