@@ -17,14 +17,34 @@ using std::make_unique;
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator, DrakeLcmInterface* lcm)
+    const LcmAndVectorBaseTranslator* translator,
+    std::unique_ptr<SerializerInterface> serializer,
+    drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
-      translator_(translator) {
+      translator_(translator),
+      serializer_(std::move(serializer)) {
+  DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
   DRAKE_DEMAND(lcm);
+
   lcm->Subscribe(channel_, this);
-  DeclareOutputPort(kVectorValued, translator_.get_vector_size(),
-      kContinuousSampling);
+  if (translator_ != nullptr) {
+    DeclareOutputPort(kVectorValued, translator_->get_vector_size(),
+                      kContinuousSampling);
+  } else {
+    DeclareAbstractOutputPort(kContinuousSampling);
+  }
 }
+
+LcmSubscriberSystem::LcmSubscriberSystem(
+    const std::string& channel,
+    std::unique_ptr<SerializerInterface> serializer,
+    DrakeLcmInterface* lcm)
+    : LcmSubscriberSystem(channel, nullptr, std::move(serializer), lcm) {}
+
+LcmSubscriberSystem::LcmSubscriberSystem(
+    const std::string& channel,
+    const LcmAndVectorBaseTranslator& translator, DrakeLcmInterface* lcm)
+    : LcmSubscriberSystem(channel, &translator, nullptr, lcm) {}
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
@@ -49,18 +69,53 @@ const std::string& LcmSubscriberSystem::get_channel_name() const {
 
 void LcmSubscriberSystem::EvalOutput(const Context<double>&,
                                      SystemOutput<double>* output) const {
-  VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
-  std::lock_guard<std::mutex> lock(received_message_mutex_);
-  if (!received_message_.empty()) {
-    translator_.Deserialize(
-        received_message_.data(), received_message_.size(), output_vector);
+  DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
+
+  if (translator_ != nullptr) {
+    VectorBase<double>* const output_vector = output->GetMutableVectorData(0);
+    DRAKE_ASSERT(output_vector != nullptr);
+
+    std::lock_guard<std::mutex> lock(received_message_mutex_);
+    if (!received_message_.empty()) {
+      translator_->Deserialize(
+          received_message_.data(), received_message_.size(), output_vector);
+    }
+  } else {
+    AbstractValue* const output_value = output->GetMutableData(0);
+    DRAKE_ASSERT(output_value != nullptr);
+
+    std::lock_guard<std::mutex> lock(received_message_mutex_);
+    if (!received_message_.empty()) {
+      serializer_->Deserialize(
+          received_message_.data(), received_message_.size(), output_value);
+    }
   }
 }
 
+// This is called no matter what output port type we are using.
+std::unique_ptr<SystemOutput<double>>
+LcmSubscriberSystem::AllocateOutput(const Context<double>& context) const {
+  DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
+
+  if (translator_ != nullptr) {
+    // For vector-valued output, the base class implementation is correct.
+    return LeafSystem<double>::AllocateOutput(context);
+  } else {
+    // For abstract-valued output, we need to roll our own.
+    auto output = std::make_unique<LeafSystemOutput<double>>();
+    output->get_mutable_ports()->emplace_back(
+        std::make_unique<OutputPort>(serializer_->CreateDefaultValue()));
+    return std::unique_ptr<SystemOutput<double>>(output.release());
+  }
+}
+
+// This is only called if our output port is vector-valued.
 std::unique_ptr<BasicVector<double>> LcmSubscriberSystem::AllocateOutputVector(
     const SystemPortDescriptor<double>& descriptor) const {
   DRAKE_DEMAND(descriptor.get_index() == 0);
-  auto result = translator_.AllocateOutputVector();
+  DRAKE_DEMAND(translator_ != nullptr);
+  DRAKE_DEMAND(serializer_.get() == nullptr);
+  auto result = translator_->AllocateOutputVector();
   if (result) {
     return result;
   }
@@ -87,7 +142,8 @@ void LcmSubscriberSystem::HandleMessage(const std::string& channel,
 }
 
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
-  return translator_;
+  DRAKE_DEMAND(translator_ != nullptr);
+  return *translator_;
 }
 
 }  // namespace lcm
