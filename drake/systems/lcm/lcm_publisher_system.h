@@ -19,26 +19,26 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
    * Factory method that returns a publisher System that takes
-   * Value<LcmtMessage> message objects on is sole abstract-valued input port.
+   * Value<LcmMessage> message objects on its sole abstract-valued input port.
    *
-   * @tparam LcmtMessage message type to serialize, e.g., lcmt_drake_signal.
+   * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] lcm A non-null pointer to the LCM subsystem to publish on.
    * The pointer must remain valid for the lifetime of this object.
    */
-  template <typename LcmtMessage>
+  template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm) {
     return std::make_unique<LcmPublisherSystem>(
-        channel, std::make_unique<Serializer<LcmtMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
   /**
    * Constructor that returns a publisher System that takes message objects
-   * on is sole abstract-valued input port.  The type of the message object is
+   * on its sole abstract-valued input port.  The type of the message object is
    * determined by the @p serializer.
    *
    * @param[in] channel The LCM channel on which to publish.
@@ -55,7 +55,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Constructor that returns a publisher System that takes vector data on
-   * is sole vector-valued input port.  The vector data  are mapped to
+   * its sole vector-valued input port.  The vector data are mapped to
    * message contents by the @p translator.
    *
    * @param[in] channel The LCM channel on which to publish.
@@ -74,7 +74,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Constructor that returns a publisher System that takes vector data on
-   * is sole vector-valued input port.  The vector data  are mapped to
+   * its sole vector-valued input port.  The vector data are mapped to
    * message contents by the translator found in the @p translator_dictionary.
    *
    * @param[in] channel The LCM channel on which to publish.
@@ -139,7 +139,7 @@ class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   // Will be non-null iff our input port is vector-valued.
   const LcmAndVectorBaseTranslator* const translator_{};
 
-  // Converts Value<LcmtMessage> objects into LCM message bytes.
+  // Converts Value<LcmMessage> objects into LCM message bytes.
   // Will be non-null iff our input port is abstract-valued.
   std::unique_ptr<SerializerInterface> serializer_;
 
