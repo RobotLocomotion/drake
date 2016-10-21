@@ -2,6 +2,7 @@
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 #include "drake/systems/robotInterfaces/Side.h"
+#include "bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -179,12 +180,28 @@ class HumanoidStatus {
               const Eigen::Ref<const Eigen::VectorXd>& v,
               const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
               const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
-              const Eigen::Ref<const Eigen::Vector6d>& r_wrench);
+              const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
+    if (q.size() != position_.size() || v.size() != velocity_.size() ||
+        joint_torque.size() != joint_torque_.size()) {
+      throw std::runtime_error("robot state update dimension mismatch.");
+    }
+    time_ = t;
+    position_ = q;
+    velocity_ = v;
+    joint_torque_ = joint_torque;
+    foot_wrench_raw_[Side::LEFT] = l_wrench;
+    foot_wrench_raw_[Side::RIGHT] = r_wrench;
+    Update();
+  }
+
+  void Update();
 
   /**
    * Returns a nominal q.
    */
   Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
+
+  void ParseLcmMessage(const bot_core::robot_state_t& msg);
 
   // Getters
   inline const RigidBodyTree& robot() const { return robot_; }

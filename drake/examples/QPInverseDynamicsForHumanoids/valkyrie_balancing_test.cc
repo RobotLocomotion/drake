@@ -13,8 +13,8 @@ QPInput GenerateQPInput(
     const HumanoidStatus& robot_status, const Eigen::Vector3d& desired_com,
     const Eigen::Vector3d& Kp_com, const Eigen::Vector3d& Kd_com,
     const Eigen::VectorXd& desired_joints, const Eigen::VectorXd& Kp_joints,
-    const Eigen::VectorXd& Kd_joints, const CartesianSetPoint& desired_pelvis,
-    const CartesianSetPoint& desired_torso) {
+    const Eigen::VectorXd& Kd_joints, const CartesianSetpoint& desired_pelvis,
+    const CartesianSetpoint& desired_torso) {
   // Make input.
   QPInput input(robot_status.robot());
 
@@ -34,17 +34,17 @@ QPInput GenerateQPInput(
   input.mutable_w_vd() = 1;
 
   // Setup tracking for various body parts.
-  DesiredBodyAcceleration pelvdd_d(*robot_status.robot().FindBody("pelvis"));
-  pelvdd_d.mutable_weight() = 1e1;
-  pelvdd_d.mutable_acceleration() = desired_pelvis.ComputeTargetAcceleration(
-      robot_status.pelvis().pose(), robot_status.pelvis().velocity());
-  input.mutable_desired_body_accelerations().push_back(pelvdd_d);
+  DesiredBodyMotion pelvdd_d(*robot_status.robot().FindBody("pelvis"));
+  pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
+  pelvdd_d.mutable_setpoint() = desired_pelvis;
+  input.mutable_desired_body_motions().push_back(pelvdd_d);
 
-  DesiredBodyAcceleration torsodd_d(*robot_status.robot().FindBody("torso"));
-  torsodd_d.mutable_weight() = 1e1;
-  torsodd_d.mutable_acceleration() = desired_torso.ComputeTargetAcceleration(
-      robot_status.torso().pose(), robot_status.torso().velocity());
-  input.mutable_desired_body_accelerations().push_back(torsodd_d);
+  DesiredBodyMotion torsodd_d(*robot_status.robot().FindBody("torso"));
+  torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
+  torsodd_d.mutable_weights()[1] = -1;
+  torsodd_d.mutable_weights().segment<3>(3).setZero();
+  torsodd_d.mutable_setpoint() = desired_torso;
+  input.mutable_desired_body_motions().push_back(torsodd_d);
 
   // Weights are set arbitrarily by the control designer, these typically
   // require tuning.
@@ -121,10 +121,10 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
   Eigen::Vector3d desired_com = robot_status.com();
   Eigen::VectorXd desired_q = robot_status.position();
-  CartesianSetPoint desired_pelvis(
+  CartesianSetpoint desired_pelvis(
       robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
       Eigen::Vector6d::Zero(), Kp_pelvis, Kd_pelvis);
-  CartesianSetPoint desired_torso(robot_status.torso().pose(),
+  CartesianSetpoint desired_torso(robot_status.torso().pose(),
                                   Eigen::Vector6d::Zero(),
                                   Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
 

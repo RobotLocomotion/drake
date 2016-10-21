@@ -1,0 +1,15 @@
+package drake;
+
+struct lcmt_contact_information {
+  string body_name;
+
+  double mu;
+
+  int32_t num_contact_points;
+  double contact_points[3][num_contact_points];
+
+  // Specified in the body frame
+  double normal[3];
+
+  int32_t num_basis_per_contact_point;
+}
