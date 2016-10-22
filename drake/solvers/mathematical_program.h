@@ -954,20 +954,6 @@ class DRAKE_EXPORT MathematicalProgram {
    * "GUROBI" -- Parameter name and values as specified in GUROBI Reference
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
-   *
-   * "Mosek" -- Accepts two parameters:
-   * - "maxormin"
-   *   + Maximize or minimize current problem using either "max" or "min".
-   * - "problemtype"
-   *   + Currently only accepts "linear", "quadratic", and "sdp".
-   * - "constant"
-   *   + Adds a constant value to the objective of quadratic and SDP problems.
-   * - "conesubscript"
-   *   + Denotes which variable x_i satisfies the cone relation:
-   *   + x_i >= (sqrt(sum(x_j^2))), i!=j
-   * TODO(alexdunyak): Calling MathematicalProgram::Solve will not invoke mosek
-   * at this
-   * time.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option, double option_value) {

@@ -16,6 +16,30 @@ void RunMosekSolver(MathematicalProgram *prog) {
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
+// Test a simple linear programming problem with zero cost, i.e. a feasibility
+// problem
+//    0 <= x0 + 2x1 + 3x2 <= 10
+// -inf <=       x1 - 2x2 <= 3
+//           x1 >= 1
+GTEST_TEST(testMosek, MosekLinearProgram0) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(3, "x");
+  Eigen::Matrix<double, 2, 3> A;
+  A<< 1, 2, 3,
+      0, 1, -2;
+  Eigen::Vector2d b_lb(0, -std::numeric_limits<double>::infinity());
+  Eigen::Vector2d b_ub(10, 3);
+  prog.AddLinearConstraint(A, b_lb, b_ub);
+  prog.AddBoundingBoxConstraint(drake::Vector1d(1.0), drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+
+  RunMosekSolver(&prog);
+
+  Eigen::Vector2d A_times_x = A * x.value();
+  EXPECT_GE(A_times_x(0), 0 - 1e-10);
+  EXPECT_LE(A_times_x(0), 10 + 1e-10);
+  EXPECT_LE(A_times_x(1), 3 + 1E-10);
+  EXPECT_GE(x.value().coeff(1), 1 - 1E-10);
+}
 // Test a simple linear programming problem with only bounding box constraint
 // on x.
 // min x0 - 2*x1
@@ -85,7 +109,7 @@ GTEST_TEST(testMosek, MosekLinearProgram2) {
  *     x2 >= 0
  *     x1 + x2 = 1
  */
-GTEST_TEST(testMosek, MosekQuadraticProgram) {
+GTEST_TEST(testMosek, MosekQuadraticProgram1) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");
 
@@ -115,6 +139,7 @@ GTEST_TEST(testMosek, MosekQuadraticProgram) {
   Eigen::Vector2d x_expected(0.25, 0.75);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-9, MatrixCompareType::absolute));
 }
+
 /*
 GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
