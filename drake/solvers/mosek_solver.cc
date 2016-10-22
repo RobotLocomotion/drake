@@ -272,6 +272,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
+  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // Mosek parameter are added by enum, not by string.
   if(rescode == MSK_RES_OK) {
     MSKsolstae solsta;
     if(rescode == MSK_RES_OK) {
