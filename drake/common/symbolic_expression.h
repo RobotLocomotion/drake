@@ -214,13 +214,13 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT Expression sinh(const Expression& e);
   friend DRAKE_EXPORT Expression cosh(const Expression& e);
   friend DRAKE_EXPORT Expression tanh(const Expression& e);
-  friend DRAKE_EXPORT Expression max(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1,
-                                     const Expression& e2);
   friend DRAKE_EXPORT Expression min(double v1, const Expression& e2);
   friend DRAKE_EXPORT Expression min(const Expression& e1, double v2);
   friend DRAKE_EXPORT Expression min(const Expression& e1,
+                                     const Expression& e2);
+  friend DRAKE_EXPORT Expression max(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression max(const Expression& e1, double v2);
+  friend DRAKE_EXPORT Expression max(const Expression& e1,
                                      const Expression& e2);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
