@@ -4,6 +4,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -68,8 +70,8 @@ Vector4<typename Derived::Scalar> rotmat2axis(
   Eigen::AngleAxis<typename Derived::Scalar> eigen_angleAxis(R);
   Eigen::Vector4d a;
   a.head<3>() = eigen_angleAxis.axis();
-  a(3) = eigen_angleAxis.angle();  // In Eigen, 0 <- angle <= 2*PI.
-  EXPECT_TRUE(a(3) >= 0 && a(3) <= 2 * M_PI);
+  a(3) = eigen_angleAxis.angle();  // Eigen's algorithm has 0 <- angle <= 2*PI.
+  DRAKE_ASSERT(a(3) >= 0 && a(3) <= 2 * M_PI);
   return a;
 }
 
@@ -79,8 +81,6 @@ Vector4<typename Derived::Scalar> rotmat2axis(
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
  * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
  * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
- * This accurate algorithm avoids numerical round-off issues encountered by some
- * algorithms when pitch angle is within 1E-6 of PI/2 or -PI/2.
  * @see rpy2rotmat
  */
 template <typename Derived>
