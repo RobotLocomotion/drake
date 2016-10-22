@@ -43,6 +43,8 @@ enum class ExpressionKind {
   Sinh,      ///< hyperbolic sine
   Cosh,      ///< hyperbolic cosine
   Tanh,      ///< hyperbolic tangent
+  Min,       ///< min
+  Max,       ///< max
   // TODO(soonho): add Integral
 };
 
@@ -56,6 +58,7 @@ Its syntax tree is as follows:
     E := Var | Constant | - E | E + E | E - E | E * E | E / E | log(E) | abs(E)
        | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E) | asin(E)
        | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
+       | min(E, E) | max(E, E)
 \endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -211,6 +214,14 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT Expression sinh(const Expression& e);
   friend DRAKE_EXPORT Expression cosh(const Expression& e);
   friend DRAKE_EXPORT Expression tanh(const Expression& e);
+  friend DRAKE_EXPORT Expression max(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression max(const Expression& e1, double v2);
+  friend DRAKE_EXPORT Expression max(const Expression& e1,
+                                     const Expression& e2);
+  friend DRAKE_EXPORT Expression min(double v1, const Expression& e2);
+  friend DRAKE_EXPORT Expression min(const Expression& e1, double v2);
+  friend DRAKE_EXPORT Expression min(const Expression& e1,
+                                     const Expression& e2);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                const Expression& e);
@@ -589,6 +600,26 @@ class ExpressionTanh : public UnaryExpressionCell {
 
  private:
   double DoEvaluate(double v) const override;
+};
+
+/** Symbolic expression representing min function. */
+class ExpressionMin : public BinaryExpressionCell {
+ public:
+  explicit ExpressionMin(const Expression& e1, const Expression& e2);
+  std::ostream& Display(std::ostream& os) const override;
+
+ private:
+  double DoEvaluate(double v1, double v2) const override;
+};
+
+/** Symbolic expression representing max function. */
+class ExpressionMax : public BinaryExpressionCell {
+ public:
+  explicit ExpressionMax(const Expression& e1, const Expression& e2);
+  std::ostream& Display(std::ostream& os) const override;
+
+ private:
+  double DoEvaluate(double v1, double v2) const override;
 };
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
