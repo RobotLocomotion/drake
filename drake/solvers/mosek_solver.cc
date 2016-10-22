@@ -12,9 +12,9 @@ namespace drake {
 namespace solvers {
 namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
-template<typename _Binding>
+template<typename Binding>
 MSKrescodee AddLinearConstraintsFromBindings(MSKtask_t* task,
-                                             const std::list<_Binding>& constraint_list,
+                                             const std::list<Binding>& constraint_list,
                                              bool is_equality_constraint) {
   for (const auto &binding : constraint_list) {
     auto constraint = binding.constraint();
@@ -89,6 +89,7 @@ MSKrescodee AddLinearConstraintsFromBindings(MSKtask_t* task,
   }
   return MSK_RES_OK;
 }
+
 MSKrescodee AddLinearConstraints(MSKtask_t* task,
                                  const MathematicalProgram& prog) {
   MSKrescodee rescode = AddLinearConstraintsFromBindings(task,
@@ -150,7 +151,32 @@ MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram &prog) {
   // Add the cost in the form 0.5 * x' * Q_all * x + linear_terms' * x
   MSKrescodee rescode = MSK_RES_OK;
   int xDim = prog.num_vars();
+  // Mosek takes the lower triangular part of Q_all. Q_lower_triplets include
+  // the triplets (row_index, col_index, val) on the lower triangular part
+  // of Q_all.
+  std::vector<Eigen::Triplet<double>> Q_lower_triplets;
   std::vector<Eigen::Triplet<double>> linear_term_triplets;
+  for(const auto& binding : prog.quadratic_costs()) {
+    const auto& constraint = binding.constraint();
+    const auto& Q = constraint->Q();
+    const auto& b = constraint->b();
+    const auto& var_indices = binding.variable_indices();
+    for (int i = 0; i < Q.rows(); ++i) {
+      int var_index_i = var_indices[i];
+      for  (int j = 0; j < i; ++j) {
+        double Qij = (Q(i, j) + Q(j, i))/2;
+        if (std::abs(Qij) > std::numeric_limits<double>::epsilon()) {
+          Q_lower_triplets.push_back(Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
+        }
+      }
+      if (std::abs(Q(i, i)) > std::numeric_limits<double>::epsilon()) {
+        Q_lower_triplets.push_back(Eigen::Triplet<double>(var_index_i, var_indices[i], Q(i, i)));
+      }
+      if (std::abs(b(i)) > std::numeric_limits<double>::epsilon()) {
+        linear_term_triplets.push_back(Eigen::Triplet<double>(var_index_i, 0, b(i)));
+      }
+    }
+  }
   for(const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
@@ -163,6 +189,27 @@ MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram &prog) {
       }
     }
   }
+
+  Eigen::SparseMatrix<double> Q_lower(xDim, xDim);
+  Q_lower.setFromTriplets(Q_lower_triplets.begin(), Q_lower_triplets.end());
+  int Q_nnz = Q_lower.nonZeros();
+  std::vector<MSKint32t> qrow(Q_nnz);
+  std::vector<MSKint32t> qcol(Q_nnz);
+  std::vector<double> qval(Q_nnz);
+  int Q_nnz_count = 0;
+  for (int i = 0; i < Q_lower.outerSize(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(Q_lower, i); it; ++it) {
+      qrow[Q_nnz_count] = it.row();
+      qcol[Q_nnz_count] = it.col();
+      qval[Q_nnz_count] = it.value();
+      Q_nnz_count++;
+    }
+  }
+  rescode = MSK_putqobj(*task, Q_nnz, qrow.data(), qcol.data(), qval.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
   Eigen::SparseMatrix<double, Eigen::ColMajor> linear_terms(xDim, 1);
   linear_terms.setFromTriplets(linear_term_triplets.begin(), linear_term_triplets.end());
   for(Eigen::SparseMatrix<double, Eigen::ColMajor>::InnerIterator it(linear_terms, 0); it; ++it) {
@@ -213,10 +260,22 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     rescode = MSK_optimizetrm(task, &trmcode);
   }
 
+  // Determines the solution type.
+  // TODO(hongkai.dai@tri.global) : add the integer solution type. And test
+  // the non-default optimizer.
+  MSKsoltypee solution_type;
+  if (prog.quadratic_costs().empty() && prog.lorentz_cone_constraints().empty()
+      && prog.rotated_lorentz_cone_constraints().empty()) {
+    solution_type = MSK_SOL_BAS;
+  }
+  else {
+    solution_type = MSK_SOL_ITR;
+  }
+
   if(rescode == MSK_RES_OK) {
     MSKsolstae solsta;
     if(rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, MSK_SOL_BAS, &solsta);
+      rescode = MSK_getsolsta(task, solution_type, &solsta);
     }
     if(rescode == MSK_RES_OK) {
       switch (solsta) {
@@ -224,8 +283,10 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_NEAR_OPTIMAL: {
           result = SolutionResult::kSolutionFound;
           Eigen::VectorXd sol_vector(num_vars);
-          MSK_getxx(task, MSK_SOL_BAS, sol_vector.data());
-          prog.SetDecisionVariableValues(sol_vector);
+          rescode = MSK_getxx(task, solution_type, sol_vector.data());
+          if(rescode == MSK_RES_OK) {
+            prog.SetDecisionVariableValues(sol_vector);
+          }
           break;
         }
         case MSK_SOL_STA_DUAL_INFEAS_CER:
