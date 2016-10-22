@@ -12,7 +12,7 @@ namespace {
 /*
  * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
- * The pamaters of this QP are randomly generated.
+ * The parameters of this QP are randomly generated.
  */
 GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   MathematicalProgram prog;
