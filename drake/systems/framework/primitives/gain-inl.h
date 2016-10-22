@@ -35,7 +35,7 @@ const T& Gain<T>::get_gain() const {
   T first_value = k_[0];
 
   // Ensures all of the gains are the same. If it is not, the
-  for (size_t i = 1; i < k_.size(); ++i) {
+  for (int i = 1; i < k_.size(); ++i) {
     if (first_value != k_[i]) {
       throw std::runtime_error("drake::systems::Gain::get_gain(): Error! The "
           "gain cannot be represented as a single scalar value. Please use "
