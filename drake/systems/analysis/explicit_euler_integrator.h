@@ -46,8 +46,11 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    */
   bool supports_error_control() const override { return false; }
 
+  /// Integrator does not provide an error estimate.
+  int64_t get_error_order() const override { return 0; }
+
  private:
-  bool DoStep(const T& dt) override;
+  void DoIntegrate(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -58,10 +61,11 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
+void ExplicitEulerIntegrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>* xc = context->get_mutable_continuous_state_vector();
+  VectorBase<T>* xc = context->get_mutable_continuous_state()->
+      get_mutable_state();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
@@ -70,14 +74,9 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
 
   // Compute derivative and update configuration and velocity.
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot = derivs_->get_vector();
+  const auto& xcdot = derivs_->get_state();
   xc->PlusEqScaled(dt, xcdot);  // xc += dt * xcdot
   context->set_time(context->get_time() + dt);
-
-  IntegratorBase<T>::UpdateStatistics(dt);
-
-  // Fixed step integrator always returns true
-  return true;
 }
 }  // systems
 }  // drake
