@@ -37,11 +37,18 @@ class Gain : public LeafSystem<T> {
   /// Constructs a %Gain system where different gains can be applied to each
   /// input value.
   ///
-  /// @param[in] k the gain vector constants so that `y = k * u`.
+  /// @param[in] k the gain vector constants so that `y_i = k_i * u_i` where
+  /// subscript `i` indicates the i-th element of the vector.
   explicit Gain(const VectorX<T>& k);
 
-  /// Returns the gain constant.
-  const VectorX<T>& get_gain() const;
+  /// Returns the gain constant. This method should only be called if the gain
+  /// can be represented as a scalar value, i.e., every element in the gain
+  /// vector is the same. It will throw a `std::runtime_error` if the gain
+  /// cannot be represented as a single scalar value.
+  const T& get_gain() const;
+
+  /// Returns the gain vector constant.
+  const VectorX<T>& get_gain_vector() const;
 
   /// Sets the output port value to the product of the gain and the input port
   /// value. The gain is specified in the constructor.

@@ -32,12 +32,13 @@ if(gurobi_FOUND)
 endif()
 
 pods_find_pkg_config(ipopt)
+drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)
   add_ik_gtest(testIKpointwise)
 endif()
-if (snopt_c_FOUND)
+if(snopt_c_FOUND)
   add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKtraj)
 endif()
@@ -204,4 +205,3 @@ drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND 
 drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust)
 
 # ==== Below this line is C++ and MATLAB shared code ====
-

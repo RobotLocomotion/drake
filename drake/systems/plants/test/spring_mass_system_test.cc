@@ -48,11 +48,11 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector<double>*>(
-        context_->get_mutable_continuous_state()->get_mutable_state());
+        context_->get_mutable_continuous_state_vector());
     output_ = dynamic_cast<const SpringMassStateVector<double>*>(
         system_output_->get_vector_data(0));
     derivatives_ = dynamic_cast<SpringMassStateVector<double>*>(
-        system_derivatives_->get_mutable_state());
+        system_derivatives_->get_mutable_vector());
   }
 
   void InitializeState(const double position, const double velocity) {
@@ -259,12 +259,12 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
   system.EvalTimeDerivatives(context, derivs0.get());
-  const int nx = derivs0->get_state().size();
-  const VectorX<double> xdot0 = derivs0->get_state().CopyToVector();
+  const int nx = derivs0->size();
+  const VectorX<double> xdot0 = derivs0->CopyToVector();
   MatrixX<double> d_xdot_dx(nx, nx);
 
   auto temp_context = context.Clone();
-  auto x = temp_context->get_mutable_continuous_state()->get_mutable_state();
+  auto x = temp_context->get_mutable_continuous_state_vector();
 
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateTimeDerivatives();
@@ -273,7 +273,7 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
     const double xi = x->GetAtIndex(i);
     x->SetAtIndex(i, xi + perturb);
     system.EvalTimeDerivatives(*temp_context, derivs.get());
-    d_xdot_dx.col(i) = (derivs->get_state().CopyToVector() - xdot0) / perturb;
+    d_xdot_dx.col(i) = (derivs->CopyToVector() - xdot0) / perturb;
     x->SetAtIndex(i, xi);  // repair Context
   }
 
@@ -286,8 +286,8 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
   VectorBase<double>* xc =
-      context.get_mutable_continuous_state()->get_mutable_state();
-  const auto& dxc = derivs.get_state();
+      context.get_mutable_continuous_state_vector();
+  const auto& dxc = derivs.get_vector();
   xc->PlusEqScaled(h, dxc);  // xc += h*dxc
   context.set_time(t + h);
 }
@@ -336,10 +336,10 @@ void StepImplicitEuler(double h, const System<double>& system,
   ContinuousState<double>* xc = context.get_mutable_continuous_state();
 
   // Invalidate all xc-dependent quantities.
-  VectorBase<double>* x1 = xc->get_mutable_state();
+  VectorBase<double>* x1 = xc->get_mutable_vector();
 
   const auto vx0 = x1->CopyToVector();
-  const auto& dx0 = derivs.get_state();
+  const auto& dx0 = derivs.get_vector();
   x1->PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
   context.set_time(t + h);   // t=t1
   const int nx = static_cast<int>(vx0.size());
@@ -349,7 +349,7 @@ void StepImplicitEuler(double h, const System<double>& system,
   // Here I'm just iterating a fixed number of time that I know is plenty!
   for (int i = 0; i < 6; ++i) {
     system.EvalTimeDerivatives(context, &derivs);
-    const auto& dx1 = derivs.get_state();
+    const auto& dx1 = derivs.get_vector();
     const auto vx1 = x1->CopyToVector();
     const auto vdx1 = dx1.CopyToVector();
     const auto err = vx1 - (vx0 + h * vdx1);

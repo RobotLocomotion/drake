@@ -55,24 +55,39 @@ PidController<T>::PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Kp() const {
+const T& PidController<T>::get_Kp() const {
   return proportional_gain_->get_gain();
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Ki() const {
+const T& PidController<T>::get_Ki() const {
   return integral_gain_->get_gain();
 }
 
 template <typename T>
-const VectorX<T>& PidController<T>::get_Kd() const {
+const T& PidController<T>::get_Kd() const {
   return derivative_gain_->get_gain();
 }
 
 template <typename T>
+const VectorX<T>& PidController<T>::get_Kp_vector() const {
+  return proportional_gain_->get_gain_vector();
+}
+
+template <typename T>
+const VectorX<T>& PidController<T>::get_Ki_vector() const {
+  return integral_gain_->get_gain_vector();
+}
+
+template <typename T>
+const VectorX<T>& PidController<T>::get_Kd_vector() const {
+  return derivative_gain_->get_gain_vector();
+}
+
+template <typename T>
 bool PidController<T>::has_any_direct_feedthrough() const {
-  if (get_Kp() == VectorX<T>::Zero(get_Kp().size()) &&
-      get_Kd() == VectorX<T>::Zero(get_Kd().size())) {
+  if (get_Kp_vector() == VectorX<T>::Zero(get_Kp_vector().size()) &&
+      get_Kd_vector() == VectorX<T>::Zero(get_Kd_vector().size())) {
     return false;
   }
   return true;

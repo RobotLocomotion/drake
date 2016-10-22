@@ -84,12 +84,12 @@ class PendulumSystem : public systems::LeafSystem<T> {
 
   static const PendulumStateVector<T>& get_state(
       const MyContinuousState& cstate) {
-    return dynamic_cast<const PendulumStateVector<T>&>(cstate.get_state());
+    return dynamic_cast<const PendulumStateVector<T>&>(cstate.get_vector());
   }
 
   static PendulumStateVector<T>* get_mutable_state(
       MyContinuousState* cstate) {
-    return dynamic_cast<PendulumStateVector<T>*>(cstate->get_mutable_state());
+    return dynamic_cast<PendulumStateVector<T>*>(cstate->get_mutable_vector());
   }
 
   static PendulumStateVector<T>* get_mutable_output(MyOutput* output) {

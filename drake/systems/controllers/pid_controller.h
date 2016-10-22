@@ -43,25 +43,46 @@ class PidController : public Diagram<T> {
   /// @param size number of elements in the signal to be processed.
   PidController(const T& Kp, const T& Ki, const T& Kd, int size);
 
-  /// Constructs a %PidController system where the gains can have more than one
+  /// Constructs a %PidController system where each gain can have a different
   /// value.
   ///
-  /// @param Kp the proportional vector constant.
-  /// @param Ki the integral vector constant.
-  /// @param Kd the derivative vector constant.
+  /// @param Kp the vector of proportional gain constants.
+  /// @param Ki the vector of integral gain constants.
+  /// @param Kd the vector of derivative gain constants.
   PidController(const VectorX<T>& Kp, const VectorX<T>& Ki,
                 const VectorX<T>& Kd);
 
   ~PidController() override {}
 
-  /// Returns the proportional constant.
-  const VectorX<T>& get_Kp() const;
+  /// Returns the proportional gain constant. This method should only be called
+  /// if the proportional gain can be represented as a scalar value, i.e., every
+  /// element in the proportional gain vector is the same. It will throw a
+  /// `std::runtime_error` if the proportional gain cannot be represented as a
+  /// scalar value.
+  const T& get_Kp() const;
 
-  /// Returns the integral constant.
-  const VectorX<T>& get_Ki() const;
+  /// Returns the integral gain constant. This method should only be called if
+  /// the integral gain can be represented as a scalar value, i.e., every
+  /// element in the integral gain vector is the same. It will throw a
+  /// `std::runtime_error` if the integral gain cannot be represented as a
+  /// scalar value.
+  const T& get_Ki() const;
 
-  /// Returns the derivative constant.
-  const VectorX<T>& get_Kd() const;
+  /// Returns the derivative gain constant. This method should only be called if
+  /// the derivative gain can be represented as a scalar value, i.e., every
+  /// element in the derivative gain vector is the same. It will throw a
+  /// `std::runtime_error` if the derivative gain cannot be represented as a
+  /// scalar value.
+  const T& get_Kd() const;
+
+  /// Returns the proportional vector constant.
+  const VectorX<T>& get_Kp_vector() const;
+
+  /// Returns the integral vector constant.
+  const VectorX<T>& get_Ki_vector() const;
+
+  /// Returns the derivative vector constant.
+  const VectorX<T>& get_Kd_vector() const;
 
   // System<T> overrides
   /// A PID controller directly feedthroughs the error signal to the output when

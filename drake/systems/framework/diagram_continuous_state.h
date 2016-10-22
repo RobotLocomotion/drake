@@ -61,7 +61,7 @@ class DiagramContinuousState : public ContinuousState<T> {
 
   // Returns the entire state vector in @p xc.
   static VectorBase<T>* x_selector(ContinuousState<T>& xc) {
-    return xc.get_mutable_state();
+    return xc.get_mutable_vector();
   }
   // Returns the generalized position vector in @p xc.
   static VectorBase<T>* q_selector(ContinuousState<T>& xc) {

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -40,22 +41,14 @@ class Subvector : public VectorBase<T> {
 
   int size() const override { return num_elements_; }
 
-  const T GetAtIndex(int index) const override {
-    if (index >= size()) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for subvector of size " +
-                              std::to_string(size()));
-    }
+  const T& GetAtIndex(int index) const override {
+    DRAKE_THROW_UNLESS(index < size());
     return vector_->GetAtIndex(first_element_ + index);
   }
 
-  void SetAtIndex(int index, const T& value) override {
-    if (index >= size()) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for subvector of size " +
-                              std::to_string(size()));
-    }
-    vector_->SetAtIndex(first_element_ + index, value);
+  T& GetAtIndex(int index) override {
+    DRAKE_THROW_UNLESS(index < size());
+    return vector_->GetAtIndex(first_element_ + index);
   }
 
  private:
