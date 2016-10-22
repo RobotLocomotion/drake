@@ -1,17 +1,18 @@
-// @file This file includes the conversion from a roll pitch yaw representation,
-// that does use quaternion.h
-// We break roll_pitch_yaw.h into two half-files
-//      roll_pitch_yaw_no_using_quaternion.h
-// and  roll_pitch_yaw_using_quaternion.h,
-// so that quaternion.h can include roll_pitch_yaw_no_using_quaternion.h
-// to call rpy2rotmat in quaternion.h, without causing circular dependency
-// problem.
-// Most users should include roll_pitch_yaw.h, and ignore the half-files
-// roll_pitch_yaw_no_using_quaternion.h and roll_pitch_yaw_using_quaternion.h
+/** @file
+ * This file includes conversions from roll-pitch-yaw representation,
+ * that <b>do</b> depend on quaternion.h.
+ *
+ * The old file roll_pitch_yaw.h was separated into two half-files, namely:
+ * roll_pitch_yaw_not_using_quaternion.h and roll_pitch_yaw_using_quaternion.h,
+ * so quaternion.h can include roll_pitch_yaw_not_using_quaternion.h
+ * to call rpy2rotmat in quaternion.h, without circular dependency problems.
+ *
+ * Most users should just include roll_pitch_yaw.h (ignore the half-files).
+ */
 #pragma once
 
 #include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw_no_using_quaternion.h"
+#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 
 namespace drake {
 namespace math {
