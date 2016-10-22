@@ -16,7 +16,7 @@ template<typename Binding>
 MSKrescodee AddLinearConstraintsFromBindings(MSKtask_t* task,
                                              const std::list<Binding>& constraint_list,
                                              bool is_equality_constraint) {
-  for (const auto &binding : constraint_list) {
+  for (const auto& binding : constraint_list) {
     auto constraint = binding.constraint();
     std::vector<int> var_indices = binding.variable_indices();
     const Eigen::MatrixXd& A = constraint->A();
@@ -147,12 +147,106 @@ MSKrescodee AddBoundingBoxConstraints(MSKtask_t* task, const MathematicalProgram
   return rescode;
 }
 
-/*MSKrescodee AddLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram &prog) {
+/*
+ * Add Lorentz cone constraints.
+ * Mosek does not allow two cones to share variables. To overcome this,
+ * for every lorentz cone x0 >= sqrt(x1^2 + ... + xN^2),
+ * we will add a new set of variable (y0, ..., yN), with the constraint
+ * y0 >= sqrt(y1^2 + ... + yN^2)
+ * y0 = x0, ..., yN = xN
+ * @param is_new_variable  Refer to the documentation on is_new_variable in
+ * MosekSolver::Solve() function
+ */
+MSKrescodee AddLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram& prog, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
-  return rescode;
-}*/
+  for(auto const& binding : prog.lorentz_cone_constraints()) {
+    const std::vector<int>& cone_var_indices = binding.variable_indices();
+    int num_cone_vars = static_cast<int>(cone_var_indices.size());
+    MSKint32t num_total_vars;
+    rescode = MSK_getnumvar(*task, &num_total_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    rescode = MSK_appendvars(*task, num_cone_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    is_new_variable->resize(num_total_vars + num_cone_vars);
+    std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
+    for (int i = 0; i < num_cone_vars; ++i) {
+      is_new_variable->at(num_total_vars + i) = true;
+      new_cone_var_indices[i] = num_total_vars + i;
+      rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR, -MSK_INFINITY, MSK_INFINITY);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+    }
 
-MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram &prog) {
+    rescode = MSK_appendcone(*task, MSK_CT_QUAD, 0.0, cone_var_indices.size(), new_cone_var_indices.data());
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+
+    // Add the linear constraint y0 = x0, y1 = x1, ..., yN = xN
+    int num_lin_cons;
+    rescode = MSK_getnumcon(*task, &num_lin_cons);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    rescode = MSK_appendcons(*task, num_cone_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    for (int i = 0; i < num_cone_vars; ++i) {
+      MSKint32t var_indices_i[2] = {cone_var_indices[i], new_cone_var_indices[i]};
+      double val_i[2] = {1, -1};
+      rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+    }
+  }
+  return rescode;
+}
+
+MSKrescodee AddRotatedLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram& prog) {
+  MSKrescodee rescode = MSK_RES_OK;
+  MSKint32t numvar;
+  MSKint32t num_linear_con;
+  rescode = MSK_getnumvar(*task, &numvar);
+  if(rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  rescode = MSK_getnumcon(*task, &num_linear_con);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  int rotated_lorentz_cone_count = 0;
+  for(auto const& binding : prog.rotated_lorentz_cone_constraints()) {
+    const std::vector<int>& var_indices = binding.variable_indices();
+    // In Mosek, the rotated Lorentz cone is defined as
+    // 2*x0*x1 >= x2^2 + ... + xN^2, x0 >= 0, x1 >= 0
+    // Our RotatedLorentzCone is defined as
+    //   x0*x1 >= x2^2 + ... + xN^2, x0 >= 0, x1 >= 0
+    // So we need to introduce a new slack variable here z = x0 / 2,
+    // and enforce the constraint
+    //  2*z*x1 >= x2^2 + ... + xN^2, z >=0, x1 >=0, z = x0 / 2
+    rescode = MSK_appendvars(*task, 1);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    std::vector<MSKint32t> rotated_lorentz_cone_var_indices(var_indices);
+    rotated_lorentz_cone_var_indices[0] = numvar + rotated_lorentz_cone_count;
+    rescode = MSK_appendcone(*task, MSK_CT_RQUAD, 0.0, rotated_lorentz_cone_var_indices.size(), rotated_lorentz_cone_var_indices.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Add the linear constraint that z = x0 / 2;
+    rescode = MSK_appendcons(*task, 1);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    MSKint32t lin_con_var_indices[2] = {rotated_lorentz_cone_var_indices[0], var_indices[0]};
+    double lin_con_val[2] = {1, -0.5};
+    rescode = MSK_putarow(*task, num_linear_con + rotated_lorentz_cone_count, 2, lin_con_var_indices, lin_con_val);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_putconbound(*task, num_linear_con + rotated_lorentz_cone_count, MSK_BK_FX, 0.0, 0.0);
+    rotated_lorentz_cone_count++;
+  }
+  return rescode;
+}
+
+MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram& prog) {
   // Add the cost in the form 0.5 * x' * Q_all * x + linear_terms' * x
   MSKrescodee rescode = MSK_RES_OK;
   int xDim = prog.num_vars();
@@ -185,7 +279,7 @@ MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram &prog) {
   for(const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for(const DecisionVariableView &var : binding.variable_list()) {
+    for(const DecisionVariableView& var : binding.variable_list()) {
       for(int i = 0; i < static_cast<int>(var.size()); ++i) {
         if(std::abs(c(var_count)) > std::numeric_limits<double>::epsilon()) {
           linear_term_triplets.push_back(Eigen::Triplet<double>(var.index() + i, 0, c(var_count)));
@@ -236,6 +330,16 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   MSKtask_t task = NULL;
   MSKrescodee rescode;
 
+  // When solving optimization problem with Mosek, we sometimes need to add
+  // new variables to Mosek, so that the solver can parse the constraint.
+  // is_new_variable has the same length as the number of variables in Mosek
+  // i.e. the invariant is  MSKint32t num_mosek_vars;
+  //                        MSK_getnumvar(task, num_mosek_vars);
+  //                        assert(is_new_variable.length() ==  num_mosek_vars);
+  // is_new_variable[i] is true if the variable is not a part of the variable
+  // in MathematicalProgram prog, but added to Mosek solver.
+  std::vector<bool> is_new_variable(num_vars, false);
+
   // Create the Mosek environment.
   rescode = MSK_makeenv(&env, NULL);
   if (rescode == MSK_RES_OK) {
@@ -256,6 +360,16 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // Add linear constraints.
   if(rescode == MSK_RES_OK) {
     rescode = AddLinearConstraints(&task, prog);
+  }
+
+  // Add Lorentz cone constraints.
+  if(rescode == MSK_RES_OK) {
+    rescode = AddLorentzConeConstraints(&task, prog, &is_new_variable);
+  }
+
+  // Add rotated Lorentz cone constraints.
+  if(rescode == MSK_RES_OK) {
+    rescode = AddRotatedLorentzConeConstraints(&task, prog);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
@@ -289,8 +403,20 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_OPTIMAL:
         case MSK_SOL_STA_NEAR_OPTIMAL: {
           result = SolutionResult::kSolutionFound;
+          MSKint32t num_mosek_vars;
+          rescode = MSK_getnumvar(task, &num_mosek_vars);
+          DRAKE_ASSERT(rescode == MSK_RES_OK);
+          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+          DRAKE_ASSERT(rescode == MSK_RES_OK);
           Eigen::VectorXd sol_vector(num_vars);
-          rescode = MSK_getxx(task, solution_type, sol_vector.data());
+          int var_count = 0;
+          for(int i = 0; i < num_mosek_vars; ++i) {
+            if(!is_new_variable[i]) {
+              sol_vector(var_count) = mosek_sol_vector(i);
+              var_count++;
+            }
+          }
           if(rescode == MSK_RES_OK) {
             prog.SetDecisionVariableValues(sol_vector);
           }
