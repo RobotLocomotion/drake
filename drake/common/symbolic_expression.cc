@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_expression.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <iomanip>
@@ -742,6 +743,30 @@ ostream& ExpressionTanh::Display(ostream& os) const {
 
 double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
 
+ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Min, e1, e2} {}
+
+ostream& ExpressionMin::Display(ostream& os) const {
+  os << "min(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  return os;
+}
+
+double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
+  return std::min(v1, v2);
+}
+
+ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Max, e1, e2} {}
+
+ostream& ExpressionMax::Display(ostream& os) const {
+  os << "max(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  return os;
+}
+
+double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
+  return std::max(v1, v2);
+}
+
 ostream& operator<<(ostream& os, const Expression& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
   return e.ptr_->Display(os);
@@ -919,5 +944,55 @@ Expression tanh(const Expression& e) {
   }
   return Expression{make_shared<ExpressionTanh>(e)};
 }
+Expression min(const Expression& e1, const Expression& e2) {
+  // simplification #1: min(x, x) -> x
+  if (e1.EqualTo(e2)) {
+    return e1;
+  }
+  // simplification #2: constant folding
+  if (e1.get_kind() == ExpressionKind::Constant &&
+      e2.get_kind() == ExpressionKind::Constant) {
+    const double v1 =
+        static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+    const double v2 =
+        static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
+    return Expression{std::min(v1, v2)};
+  }
+  return Expression{make_shared<ExpressionMin>(e1, e2)};
+}
+
+Expression min(const Expression& e1, const double v2) {
+  return min(e1, Expression{v2});
+}
+
+Expression min(const double v1, const Expression& e2) {
+  return min(Expression{v1}, e2);
+}
+
+Expression max(const Expression& e1, const Expression& e2) {
+  // simplification #1: max(x, x) -> x
+  if (e1.EqualTo(e2)) {
+    return e1;
+  }
+  // simplification #2: constant folding
+  if (e1.get_kind() == ExpressionKind::Constant &&
+      e2.get_kind() == ExpressionKind::Constant) {
+    const double v1 =
+        static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+    const double v2 =
+        static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
+    return Expression{std::max(v1, v2)};
+  }
+  return Expression{make_shared<ExpressionMax>(e1, e2)};
+}
+
+Expression max(const Expression& e1, const double v2) {
+  return max(e1, Expression{v2});
+}
+
+Expression max(const double v1, const Expression& e2) {
+  return max(Expression{v1}, e2);
+}
+
 }  // namespace symbolic
 }  // namespace drake
