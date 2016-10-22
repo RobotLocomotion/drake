@@ -7,7 +7,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-GTEST_TEST(testMosek, testLP) {
+/*GTEST_TEST(testMosek, testLP) {
   MosekSolver mosek_solver;
   testLinearPrograms(mosek_solver);
 }
@@ -15,8 +15,12 @@ GTEST_TEST(testMosek, testLP) {
 GTEST_TEST(testMosek, testQP) {
   MosekSolver mosek_solver;
   testQuadraticPrograms(mosek_solver);
-}
+}*/
 
+GTEST_TEST(testMosek, testSOCP) {
+  MosekSolver mosek_solver;
+  testSecondOrderConicPrograms(mosek_solver);
+}
 /*
 GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
