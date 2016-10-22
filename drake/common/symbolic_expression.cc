@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_expression.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <iomanip>
@@ -188,9 +189,9 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   // simplification #2 : Expression(c1) - Expression(c2) => Expression(c1 - c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
-    double const v1 =
+    const double v1 =
         static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value();
-    double const v2 =
+    const double v2 =
         static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value();
     lhs = Expression{v1 - v2};
     return lhs;
@@ -199,15 +200,15 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression& operator-=(Expression& lhs, double const rhs) {
+Expression& operator-=(Expression& lhs, const double rhs) {
   lhs -= Expression{rhs};
   return lhs;
 }
 
 Expression operator-(Expression e) {
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
-      static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
+    const double v =
+        static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{-v};
   } else {
     return Expression{make_shared<ExpressionNeg>(e)};
@@ -230,12 +231,12 @@ Expression operator*(Expression lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression operator*(double const lhs, const Expression& rhs) {
+Expression operator*(const double lhs, const Expression& rhs) {
   // Uses () to avoid a conflict between cpplint and clang-format.
   return (Expression{lhs}) * rhs;
 }
 
-Expression operator*(Expression lhs, double const rhs) {
+Expression operator*(Expression lhs, const double rhs) {
   lhs *= Expression{rhs};
   return lhs;
 }
@@ -272,9 +273,9 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // simplification #7 : Expression(c1) * Expression(c2) => Expression(c1 * c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
-    double const v1 =
+    const double v1 =
         static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value();
-    double const v2 =
+    const double v2 =
         static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value();
     lhs = Expression{v1 * v2};
     return lhs;
@@ -283,7 +284,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression& operator*=(Expression& lhs, double const rhs) {
+Expression& operator*=(Expression& lhs, const double rhs) {
   lhs *= Expression{rhs};
   return lhs;
 }
@@ -293,13 +294,13 @@ Expression operator/(Expression lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression operator/(double const lhs, const Expression& rhs) {
+Expression operator/(const double lhs, const Expression& rhs) {
   Expression ret{lhs};
   ret /= rhs;
   return ret;
 }
 
-Expression operator/(Expression lhs, double const rhs) {
+Expression operator/(Expression lhs, const double rhs) {
   lhs /= Expression{rhs};
   return lhs;
 }
@@ -312,9 +313,9 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
   // simplification #2 : Expression(c1) / Expression(c2) => Expression(c1 / c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
-    double const v1 =
+    const double v1 =
         static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value();
-    double const v2 =
+    const double v2 =
         static_pointer_cast<ExpressionConstant>(rhs.ptr_)->get_value();
     if (v2 == 0.0) {
       ostringstream oss;
@@ -333,7 +334,7 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression& operator/=(Expression& lhs, double const rhs) {
+Expression& operator/=(Expression& lhs, const double rhs) {
   lhs /= Expression{rhs};
   return lhs;
 }
@@ -365,7 +366,7 @@ bool UnaryExpressionCell::EqualTo(const ExpressionCell& e) const {
 }
 
 double UnaryExpressionCell::Evaluate(const Environment& env) const {
-  double const v{e_.Evaluate(env)};
+  const double v{e_.Evaluate(env)};
   return DoEvaluate(v);
 }
 
@@ -393,8 +394,8 @@ bool BinaryExpressionCell::EqualTo(const ExpressionCell& e) const {
 }
 
 double BinaryExpressionCell::Evaluate(const Environment& env) const {
-  double const v1{e1_.Evaluate(env)};
-  double const v2{e2_.Evaluate(env)};
+  const double v1{e1_.Evaluate(env)};
+  const double v2{e2_.Evaluate(env)};
   return DoEvaluate(v1, v2);
 }
 
@@ -429,7 +430,7 @@ ostream& ExpressionVar::Display(ostream& os) const {
   return os;
 }
 
-ExpressionConstant::ExpressionConstant(double const v)
+ExpressionConstant::ExpressionConstant(const double v)
     : ExpressionCell{ExpressionKind::Constant, hash<double>{}(v)}, v_{v} {
   Expression::check_nan(v_);
 }
@@ -522,7 +523,7 @@ double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
 ExpressionLog::ExpressionLog(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Log, e} {}
 
-void ExpressionLog::check_domain(double const v) {
+void ExpressionLog::check_domain(const double v) {
   if (!(v >= 0)) {
     ostringstream oss;
     oss << "log(" << v << ") : numerical argument out of domain. " << v
@@ -564,7 +565,7 @@ double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e} {}
 
-void ExpressionSqrt::check_domain(double const v) {
+void ExpressionSqrt::check_domain(const double v) {
   if (!(v >= 0)) {
     ostringstream oss;
     oss << "sqrt(" << v << ") : numerical argument out of domain. " << v
@@ -586,12 +587,12 @@ double ExpressionSqrt::DoEvaluate(const double v) const {
 ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2} {}
 
-static bool is_int(double const v) {
+static bool is_int(const double v) {
   double intpart;  // dummy variable
   return modf(v, &intpart) == 0.0;
 }
 
-void ExpressionPow::check_domain(double const v1, double const v2) {
+void ExpressionPow::check_domain(const double v1, const double v2) {
   if (std::isfinite(v1) && (v1 < 0.0) && std::isfinite(v2) && !is_int(v2)) {
     ostringstream oss;
     oss << "pow(" << v1 << ", " << v2
@@ -620,7 +621,7 @@ ostream& ExpressionSin::Display(ostream& os) const {
   return os;
 }
 
-double ExpressionSin::DoEvaluate(double const v) const { return std::sin(v); }
+double ExpressionSin::DoEvaluate(const double v) const { return std::sin(v); }
 
 ExpressionCos::ExpressionCos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cos, e} {}
@@ -630,7 +631,7 @@ ostream& ExpressionCos::Display(ostream& os) const {
   return os;
 }
 
-double ExpressionCos::DoEvaluate(double const v) const { return std::cos(v); }
+double ExpressionCos::DoEvaluate(const double v) const { return std::cos(v); }
 
 ExpressionTan::ExpressionTan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tan, e} {}
@@ -640,12 +641,12 @@ ostream& ExpressionTan::Display(ostream& os) const {
   return os;
 }
 
-double ExpressionTan::DoEvaluate(double const v) const { return std::tan(v); }
+double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
 
 ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e} {}
 
-void ExpressionAsin::check_domain(double const v) {
+void ExpressionAsin::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
     ostringstream oss;
     oss << "asin(" << v << ") : numerical argument out of domain. " << v
@@ -659,7 +660,7 @@ ostream& ExpressionAsin::Display(ostream& os) const {
   return os;
 }
 
-double ExpressionAsin::DoEvaluate(double const v) const {
+double ExpressionAsin::DoEvaluate(const double v) const {
   check_domain(v);
   return std::asin(v);
 }
@@ -667,7 +668,7 @@ double ExpressionAsin::DoEvaluate(double const v) const {
 ExpressionAcos::ExpressionAcos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Acos, e} {}
 
-void ExpressionAcos::check_domain(double const v) {
+void ExpressionAcos::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
     ostringstream oss;
     oss << "acos(" << v << ") : numerical argument out of domain. " << v
@@ -681,7 +682,7 @@ ostream& ExpressionAcos::Display(ostream& os) const {
   return os;
 }
 
-double ExpressionAcos::DoEvaluate(double const v) const {
+double ExpressionAcos::DoEvaluate(const double v) const {
   check_domain(v);
   return std::acos(v);
 }
@@ -742,6 +743,30 @@ ostream& ExpressionTanh::Display(ostream& os) const {
 
 double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
 
+ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Min, e1, e2} {}
+
+ostream& ExpressionMin::Display(ostream& os) const {
+  os << "min(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  return os;
+}
+
+double ExpressionMin::DoEvaluate(const double v1, const double v2) const {
+  return std::min(v1, v2);
+}
+
+ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
+    : BinaryExpressionCell{ExpressionKind::Max, e1, e2} {}
+
+ostream& ExpressionMax::Display(ostream& os) const {
+  os << "max(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  return os;
+}
+
+double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
+  return std::max(v1, v2);
+}
+
 ostream& operator<<(ostream& os, const Expression& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
   return e.ptr_->Display(os);
@@ -750,7 +775,7 @@ ostream& operator<<(ostream& os, const Expression& e) {
 Expression log(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     ExpressionLog::check_domain(v);
     return Expression{std::log(v)};
@@ -761,7 +786,7 @@ Expression log(const Expression& e) {
 Expression abs(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::fabs(v)};
   }
@@ -771,7 +796,7 @@ Expression abs(const Expression& e) {
 Expression exp(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::exp(v)};
   }
@@ -781,7 +806,7 @@ Expression exp(const Expression& e) {
 Expression sqrt(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     ExpressionSqrt::check_domain(v);
     return Expression{std::sqrt(v)};
@@ -793,9 +818,9 @@ Expression pow(const Expression& e1, const Expression& e2) {
   // simplification
   if (e1.get_kind() == ExpressionKind::Constant &&
       e2.get_kind() == ExpressionKind::Constant) {
-    double const v1 =
+    const double v1 =
         static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
-    double const v2 =
+    const double v2 =
         static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
     ExpressionPow::check_domain(v1, v2);
     return Expression{std::pow(v1, v2)};
@@ -803,18 +828,18 @@ Expression pow(const Expression& e1, const Expression& e2) {
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
 
-Expression pow(const Expression& e1, double const v2) {
+Expression pow(const Expression& e1, const double v2) {
   return pow(e1, Expression{v2});
 }
 
-Expression pow(double const v1, const Expression& e2) {
+Expression pow(const double v1, const Expression& e2) {
   return pow(Expression{v1}, e2);
 }
 
 Expression sin(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::sin(v)};
   }
@@ -823,7 +848,7 @@ Expression sin(const Expression& e) {
 
 Expression cos(const Expression& e) {  // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::cos(v)};
   }
@@ -833,7 +858,7 @@ Expression cos(const Expression& e) {  // simplification
 
 Expression tan(const Expression& e) {  // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::tan(v)};
   }
@@ -842,7 +867,7 @@ Expression tan(const Expression& e) {  // simplification
 
 Expression asin(const Expression& e) {  // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     ExpressionAsin::check_domain(v);
     return Expression{std::asin(v)};
@@ -852,7 +877,7 @@ Expression asin(const Expression& e) {  // simplification
 
 Expression acos(const Expression& e) {  // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     ExpressionAcos::check_domain(v);
     return Expression{std::acos(v)};
@@ -862,7 +887,7 @@ Expression acos(const Expression& e) {  // simplification
 
 Expression atan(const Expression& e) {  // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::atan(v)};
   }
@@ -873,27 +898,27 @@ Expression atan2(const Expression& e1, const Expression& e2) {
   // simplification
   if (e1.get_kind() == ExpressionKind::Constant &&
       e2.get_kind() == ExpressionKind::Constant) {
-    double const v1 =
+    const double v1 =
         static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
-    double const v2 =
+    const double v2 =
         static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
     return Expression{std::atan2(v1, v2)};
   }
   return Expression{make_shared<ExpressionAtan2>(e1, e2)};
 }
 
-Expression atan2(const Expression& e1, double const v2) {
+Expression atan2(const Expression& e1, const double v2) {
   return atan2(e1, Expression{v2});
 }
 
-Expression atan2(double const v1, const Expression& e2) {
+Expression atan2(const double v1, const Expression& e2) {
   return atan2(Expression{v1}, e2);
 }
 
 Expression sinh(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::sinh(v)};
   }
@@ -903,7 +928,7 @@ Expression sinh(const Expression& e) {
 Expression cosh(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::cosh(v)};
   }
@@ -913,11 +938,62 @@ Expression cosh(const Expression& e) {
 Expression tanh(const Expression& e) {
   // simplification
   if (e.get_kind() == ExpressionKind::Constant) {
-    double const v =
+    const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     return Expression{std::tanh(v)};
   }
   return Expression{make_shared<ExpressionTanh>(e)};
 }
+
+Expression min(const Expression& e1, const Expression& e2) {
+  // simplification #1: min(x, x) -> x
+  if (e1.EqualTo(e2)) {
+    return e1;
+  }
+  // simplification #2: constant folding
+  if (e1.get_kind() == ExpressionKind::Constant &&
+      e2.get_kind() == ExpressionKind::Constant) {
+    const double v1 =
+        static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+    const double v2 =
+        static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
+    return Expression{std::min(v1, v2)};
+  }
+  return Expression{make_shared<ExpressionMin>(e1, e2)};
+}
+
+Expression min(const Expression& e1, const double v2) {
+  return min(e1, Expression{v2});
+}
+
+Expression min(const double v1, const Expression& e2) {
+  return min(Expression{v1}, e2);
+}
+
+Expression max(const Expression& e1, const Expression& e2) {
+  // simplification #1: max(x, x) -> x
+  if (e1.EqualTo(e2)) {
+    return e1;
+  }
+  // simplification #2: constant folding
+  if (e1.get_kind() == ExpressionKind::Constant &&
+      e2.get_kind() == ExpressionKind::Constant) {
+    const double v1 =
+        static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+    const double v2 =
+        static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
+    return Expression{std::max(v1, v2)};
+  }
+  return Expression{make_shared<ExpressionMax>(e1, e2)};
+}
+
+Expression max(const Expression& e1, const double v2) {
+  return max(e1, Expression{v2});
+}
+
+Expression max(const double v1, const Expression& e2) {
+  return max(Expression{v1}, e2);
+}
+
 }  // namespace symbolic
 }  // namespace drake
