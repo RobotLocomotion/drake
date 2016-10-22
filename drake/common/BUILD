@@ -22,6 +22,7 @@ cc_library(
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "never_destroyed.h",
         "text_logging.h",
     ],
     linkstatic = 1,

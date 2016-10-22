@@ -1,36 +1,34 @@
 #include "drake/common/text_logging.h"
 
 #include <mutex>
-#include <stdexcept>
+
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 
 #ifdef HAVE_SPDLOG
 
 namespace {
-// Returns a new pointer (caller-owned) to a shared_ptr to a logger.
-//
-// NOTE: This function assumes that it is mutexed, as in the initializer of
-// a static local.
-std::shared_ptr<logging::logger>* onetime_create_log() {
-  std::shared_ptr<logging::logger>* result =
-      new std::shared_ptr<logging::logger>(spdlog::get("console"));
-  if (!*result) {
+// Returns the default logger.  NOTE: This function assumes that it is mutexed,
+// as in the initializer of a static local.
+std::shared_ptr<logging::logger> onetime_create_log() {
+  // Check if anyone has already set up a logger named "console".  If so, we
+  // will just return it; if not, we'll create our own default one.
+  std::shared_ptr<logging::logger> result(spdlog::get("console"));
+  if (!result) {
     // We use the logger_mt (instead of logger_st) so more than one thread can
     // use this logger and have their messages be staggered by line, instead of
     // co-mingling their character bytes.
-    *result = spdlog::stderr_logger_mt("console");
+    result = spdlog::stderr_logger_mt("console");
   }
   return result;
 }
 }  // namespace
 
 logging::logger* log() {
-  // The following line creates a static shared_ptr to the logger; this
-  // guarantees the underling logger object will not be freed.
-  static const std::shared_ptr<logging::logger>* const g_logger =
-      onetime_create_log();
-  return g_logger->get();
+  static const never_destroyed<std::shared_ptr<logging::logger>> g_logger(
+      onetime_create_log());
+  return g_logger.access().get();
 }
 
 #else  // HAVE_SPDLOG
