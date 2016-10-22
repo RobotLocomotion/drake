@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -21,6 +22,8 @@
 // Includes for the planner.
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
+
+DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -260,6 +263,12 @@ class KukaDemo : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
+  Context<T>* get_kuka_context(Context<T>* context) const {
+    Context<T>* controller_context =
+        this->GetMutableSubsystemContext(context, controller_);
+    return controller_->GetMutableSubsystemContext(controller_context, plant_);
+  }
+
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
         this->GetMutableSubsystemContext(context, controller_);
@@ -282,20 +291,22 @@ class KukaDemo : public systems::Diagram<T> {
 };
 
 int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+
   KukaDemo<double> model;
   Simulator<double> simulator(model);
-
+  Context<double>* context = simulator.get_mutable_context();
   // Zeroes the state and initializes controller state.
-  model.SetDefaultState(simulator.get_mutable_context());
+  model.SetDefaultState(context);
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
   model.get_kuka_plant().set_state_vector(
-      simulator.get_mutable_context(), desired_state);
+      model.get_kuka_context(context), desired_state);
 
   simulator.Initialize();
 
   // Simulate for 20 seconds.
-  simulator.StepTo(20.0);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
 }
@@ -306,6 +317,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::kuka_iiwa_arm::controlled_kuka::DoMain();
 }

@@ -25,7 +25,7 @@ classdef LinearizedFrictionCone < FrictionCone
       assert(ischar(cone_name));
       if(use_lcmgl)
         for j = 1:obj.num_fc_edges
-          h = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('%s_edge%d',cone_name,j));
+          h = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,sprintf('%s_edge%d',cone_name,j));
           h.glColor4f(1,0,0,0.5);
           face_vertex = [obj.contact_pos, obj.contact_pos+obj.fc_edges(:,j)*cone_length, obj.contact_pos+obj.fc_edges(:,mod(j,obj.num_fc_edges)+1)*cone_length];
           h.polygon(face_vertex(1,:),face_vertex(2,:),face_vertex(3,:));

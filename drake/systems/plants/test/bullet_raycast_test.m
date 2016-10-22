@@ -96,7 +96,7 @@ if (distance' ~= distance2)
 end
 
 if (use_visualizer == 1)
-    lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'raycasting');
+    lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'raycasting');
     lcmgl.glColor3f(1, 0, 0);
 end
 

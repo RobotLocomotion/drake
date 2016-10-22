@@ -61,7 +61,7 @@ if(geometry == 1)
   box_size = [0.2;0.04;0.04];
   verts = repmat(box_size/2,1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
   ikgrasp = SynthesizeGraspFreeFaces(verts,3,1,0.8);%,struct('lin_fc_flag',true,'num_fc_edges',4));
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'box');
   lcmgl.glColor3f(0,0,1);
   lcmgl.box([0;0;0],box_size);
   lcmgl.switchBuffers();
@@ -70,7 +70,7 @@ elseif(geometry == 2)
   cylinder_height = 0.1;
   cylinder_quat = [1;0;0;0];
   ikgrasp = SynthesizeGraspCylinderSide(cylinder_quat,palm_pos0+[0.13;0;0.0],cylinder_radius,cylinder_height,3,2,struct('robot',hand,'lin_fc_flag',true,'num_fc_edges',4));
-%   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'cylinder');
+%   lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'cylinder');
 %   lcmgl.glColor3f(0,0,1);
 %   lcmgl.glTranslated(0,0,-cylinder_height);
 %   lcmgl.cylinder(zeros(3,1),cylinder_radius,cylinder_radius,cylinder_height*2,20,20);

@@ -1,3 +1,7 @@
+option(CHECK_DEPENDENCY_STRICT
+  "Fail the test if a MATLAB dependency check fails" OFF)
+mark_as_advanced(CHECK_DEPENDENCY_STRICT)
+
 option(TEST_TIMEOUT_MULTIPLIER
   "Positive integer by which to multiply test timeouts" 1)
 mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
@@ -212,7 +216,6 @@ function(drake_add_matlab_test)
   if(_REQUIRES)
     foreach(_require ${_REQUIRES})
       string(TOUPPER ${_require} _require_upper)
-      string(REPLACE - _ _require_upper ${_require_upper})
       if(NOT WITH_${_require_upper} AND NOT ${_require}_FOUND AND NOT EXISTS "${CMAKE_INSTALL_PREFIX}/matlab/addpath_${_require}.m")
         message(STATUS
           "Not running ${_NAME} because ${_require} was not installed")
@@ -231,8 +234,13 @@ function(drake_add_matlab_test)
   set(_test_precommand
     "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
 
-  set(_exit_status
-    "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
+  if(CHECK_DEPENDENCY_STRICT)
+    set(_exit_status 1)
+  else()
+    set(_exit_status
+      "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
+  endif()
+
   set(_test_command
     "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
 

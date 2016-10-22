@@ -42,8 +42,8 @@ if(lcm_FOUND)
     drakeSystemAnalysis)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
-  find_package(NLopt)
-  find_package(snopt_c)
+  drake_find_package(snopt_c CONFIG)
+  drake_find_package(NLopt CONFIG)
 
   if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
     drake_add_test(NAME pendulum_run_swing_up

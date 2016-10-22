@@ -1,8 +1,8 @@
-find_package(Bullet)
+drake_find_package(Bullet MODULE)
 
 add_executable(urdfKinTest urdfKinTest.cpp)
 target_link_libraries(urdfKinTest drakeRBM)
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   add_executable(urdfCollisionTest urdfCollisionTest.cpp)
   target_link_libraries(urdfCollisionTest drakeRBM)
 endif()
@@ -31,14 +31,14 @@ if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-find_package(snopt_c)
 pods_find_pkg_config(ipopt)
+drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)
   add_ik_gtest(testIKpointwise)
 endif()
-if (snopt_c_FOUND)
+if(snopt_c_FOUND)
   add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKtraj)
 endif()
@@ -53,7 +53,7 @@ if(lcm_FOUND)
   drake_add_cc_test(testMassSpringDamper EXTENSION cpp)
   target_link_libraries(testMassSpringDamper drakeRBSystem)
 
-  if(BULLET_FOUND AND bot2-core_FOUND)
+  if(Bullet_FOUND AND bot2-core_FOUND)
     drake_add_cc_test(lidarTest EXTENSION cpp)
     target_link_libraries(lidarTest drakeRBSystem drakeLCMTypes lcmtypes_bot2-core-cpp lcm)
   endif()
@@ -108,8 +108,8 @@ if(Matlab_FOUND)
   add_ikoptions_mex(testIKoptionsmex)
 endif()
 
-find_package(avl)
-find_package(xfoil)
+drake_find_package(avl CONFIG)
+drake_find_package(xfoil CONFIG)
 
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)
@@ -205,4 +205,3 @@ drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND 
 drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust)
 
 # ==== Below this line is C++ and MATLAB shared code ====
-

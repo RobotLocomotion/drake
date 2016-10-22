@@ -24,7 +24,7 @@
 #include <blas.h>
 
 #include <math.h>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include <memory>
 #include <algorithm>
 

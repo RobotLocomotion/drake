@@ -14,11 +14,11 @@ if(Matlab_FOUND)
   drake_add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
 endif()
 
-find_package(Bullet)
+drake_find_package(Bullet MODULE)
 
-if(BULLET_FOUND AND Matlab_FOUND)
-  find_package(BLAS)
-  find_package(snopt_c)
+if(Bullet_FOUND AND Matlab_FOUND)
+  find_package(BLAS MODULE)
+  drake_find_package(snopt_c CONFIG)
 
   if(BLAS_FOUND AND snopt_c_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)

@@ -89,8 +89,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal = context->get_state().
-      get_continuous_state()->get_state().GetAtIndex(0);
+  const double kXFinal = context->get_continuous_state_vector().GetAtIndex(0);
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);

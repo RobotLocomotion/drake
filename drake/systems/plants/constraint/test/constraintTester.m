@@ -24,7 +24,7 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
   end
   
   checkDependency('lcmgl');
-  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),testName);
+  lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),testName);
   v = r.constructVisualizer();
 
   problem.solver = 'fmincon';

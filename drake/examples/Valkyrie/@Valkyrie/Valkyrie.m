@@ -32,7 +32,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
         % (this affects input frames)
         obj.external_force = findLinkId(obj,options.external_force);
         options_ef.weld_to_link = obj.external_force;
-        obj = obj.addRobotFromURDF(fullfile(getDrakePath,'util','three_dof_force.urdf'), ...
+        obj = obj.addRobotFromURDF(fullfile(getDrakePath,'matlab','util','three_dof_force.urdf'), ...
           [0; 0; 0], [0; 0; 0], options_ef);
       end
 

@@ -7,7 +7,6 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/functional_form.h"
-#include "drake/common/polynomial.h"
 
 namespace drake {
 namespace systems {
@@ -41,13 +40,6 @@ GTEST_TEST(BasicVectorTest, IntInitiallyZero) {
   EXPECT_EQ(expected, vec.get_value());
 }
 
-// Tests that the BasicVector<Polynomiald> is initialized to zero.
-GTEST_TEST(BasicVectorTest, PolynomialInitiallyZero) {
-  BasicVector<Polynomiald> vec(1);
-  EXPECT_TRUE(vec.get_value()[0].IsApprox(Polynomiald(0.0),
-                                          Eigen::NumTraits<double>::epsilon()));
-}
-
 // Tests that the BasicVector<FunctionalForm> is initialized to undefined.
 GTEST_TEST(BasicVectorTest, FunctionalFormInitiallyUndefined) {
   BasicVector<FunctionalForm> vec(1);
@@ -67,6 +59,19 @@ GTEST_TEST(BasicVectorTest, Mutate) {
   Eigen::Vector2i expected;
   expected << 1, 2;
   EXPECT_EQ(expected, vec.get_value());
+}
+
+// Tests that the BasicVector can be addressed as an array.
+GTEST_TEST(BasicVectorTest, ArrayOperator) {
+  BasicVector<int> vec(2);
+  vec[0] = 76;
+  vec[1] = 42;
+
+  Eigen::Vector2i expected;
+  expected << 76, 42;
+  EXPECT_EQ(expected, vec.get_value());
+  EXPECT_EQ(76, vec[0]);
+  EXPECT_EQ(42, vec[1]);
 }
 
 // Tests that the BasicVector can be set from another vector.

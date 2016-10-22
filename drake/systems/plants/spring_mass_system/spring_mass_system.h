@@ -223,12 +223,13 @@ class DRAKE_EXPORT SpringMassSystem
 
   static const SpringMassStateVector<T>& get_state(
       const MyContinuousState& cstate) {
-    return dynamic_cast<const SpringMassStateVector<T>&>(cstate.get_state());
+    return dynamic_cast<const SpringMassStateVector<T>&>(cstate.get_vector());
   }
 
   static SpringMassStateVector<T>* get_mutable_state(
       MyContinuousState* cstate) {
-    return dynamic_cast<SpringMassStateVector<T>*>(cstate->get_mutable_state());
+    return dynamic_cast<SpringMassStateVector<T>*>(
+        cstate->get_mutable_vector());
   }
 
   static const SpringMassStateVector<T>& get_output(const MyOutput& output) {

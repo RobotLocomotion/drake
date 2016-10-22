@@ -96,7 +96,7 @@ classdef Quadrotor < RigidBodyManipulator
         warning('lcmgl dependency is missing.  skipping visualization'); 
         return;
       end
-      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'QuadrotorPlan');
+      lcmgl = drake.matlab.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'QuadrotorPlan');
       
       typecheck(traj_opt,'DirectTrajectoryOptimization');
 

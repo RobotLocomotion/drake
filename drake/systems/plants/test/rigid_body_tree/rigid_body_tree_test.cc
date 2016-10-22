@@ -21,7 +21,7 @@ namespace {
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::parsers::AddFloatingJoint;
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
+using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using drake::systems::plants::joints::kQuaternion;
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -202,7 +202,7 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string filename =
       drake::GetDrakePath() +
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
-  AddModelInstanceFromUrdfFile(filename, tree_.get());
+  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   VectorX<double> q;
   VectorX<double> v;
@@ -228,7 +228,7 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
 
   ModelInstanceIdTable model_instance_id_table =
-      AddModelInstanceFromUrdfFile(filename, tree_.get());
+      AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   const int kExpectedTableSize = 1;
   const int kExpectedModelInstanceId = 0;
@@ -268,16 +268,16 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
       "/systems/plants/test/rigid_body_tree/four_dof_robot.urdf";
 
   ModelInstanceIdTable model_instance_id_table_1 =
-      AddModelInstanceFromUrdfFile(filename_2dof_robot,
-                                                         tree_.get());
+      AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_2dof_robot,
+                                                      tree_.get());
 
   ModelInstanceIdTable model_instance_id_table_2 =
-      AddModelInstanceFromUrdfFile(filename_3dof_robot,
-                                                         tree_.get());
+      AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_3dof_robot,
+                                                      tree_.get());
 
   ModelInstanceIdTable model_instance_id_table_3 =
-      AddModelInstanceFromUrdfFile(filename_4dof_robot,
-                                                         tree_.get());
+      AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_4dof_robot,
+                                                      tree_.get());
 
   const std::string kTwoDofModelName = "two_dof_robot";
   const std::string kThreeDofModelName = "three_dof_robot";
@@ -347,7 +347,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   for (int i = 0; i < kNumModelInstances; ++i) {
     ModelInstanceIdTable model_instance_id_table =
-        AddModelInstanceFromUrdfFile(file_name, tree_.get());
+        AddModelInstanceFromUrdfFileWithRpyJointToWorld(file_name, tree_.get());
     model_instance_id_list.push_back(model_instance_id_table["two_dof_robot"]);
   }
 

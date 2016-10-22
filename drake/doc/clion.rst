@@ -49,7 +49,6 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
    * ``CC=gcc-4.9``
    * ``CXX=g++-4.9``
    * ``FC=gfortran-4.9``
-   * ``F77=gfortran-4.9``      
 
 9. Click OK. CLion will take about a minute to reload the CMake Project. If
    everything is in order, there should be no errors or warnings. For fun,
