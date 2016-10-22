@@ -3,102 +3,14 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
-
+#include "drake/solvers/test/optimization_program_examples.h"
 
 namespace drake {
 namespace solvers {
-namespace {
-
-void RunMosekSolver(MathematicalProgram *prog) {
+namespace test {
+GTEST_TEST(testMosek, testLP) {
   MosekSolver mosek_solver;
-  SolutionResult result = SolutionResult::kUnknownError;
-  ASSERT_NO_THROW(result = mosek_solver.Solve(*prog));
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-}
-
-// Test a simple linear programming problem with zero cost, i.e. a feasibility
-// problem
-//    0 <= x0 + 2x1 + 3x2 <= 10
-// -inf <=       x1 - 2x2 <= 3
-//           x1 >= 1
-GTEST_TEST(testMosek, MosekLinearProgram0) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(3, "x");
-  Eigen::Matrix<double, 2, 3> A;
-  A<< 1, 2, 3,
-      0, 1, -2;
-  Eigen::Vector2d b_lb(0, -std::numeric_limits<double>::infinity());
-  Eigen::Vector2d b_ub(10, 3);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
-  prog.AddBoundingBoxConstraint(drake::Vector1d(1.0), drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
-
-  RunMosekSolver(&prog);
-
-  Eigen::Vector2d A_times_x = A * x.value();
-  EXPECT_GE(A_times_x(0), 0 - 1e-10);
-  EXPECT_LE(A_times_x(0), 10 + 1e-10);
-  EXPECT_LE(A_times_x(1), 3 + 1E-10);
-  EXPECT_GE(x.value().coeff(1), 1 - 1E-10);
-}
-// Test a simple linear programming problem with only bounding box constraint
-// on x.
-// min x0 - 2*x1
-//     0 <= x0 <= 2
-//    -1 <= x1 <= 4
-// The optimal solution is (0, 4)
-GTEST_TEST(testMosek, MosekLinearProgram1) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2, "x");
-  prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
-  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
-  RunMosekSolver(&prog);
-  EXPECT_TRUE(x.value().isApprox(Eigen::Vector2d(0, 4)));
-}
-
-// Test a simple linear programming problem
-// Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
-// min -3x0 - x1 - 5x2 - x3
-// s.t     3x0 +  x1 + 2x2        = 30
-//         2x0 +  x1 + 3x2 +  x3 >= 15
-//               2x1       + 3x3 <= 25
-// -inf <=  x0 + 2x1       + x3  <= inf
-// -100 <=  x0       + 2x2       <= 40
-//           0 <= x0 <= inf
-//           0 <= x1 <= 10
-//           0 <= x2 <= inf
-//           0 <= x3 <= inf
-// The optimal solution is at (0, 0, 15, 25/3)
-GTEST_TEST(testMosek, MosekLinearProgram2) {
-  MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(4, "x");
-  // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
-  // to test adding multiple costs.
-  Eigen::RowVector3d c1(-3, -1, -4);
-  Eigen::RowVector2d c2(-1, -1);
-
-  prog.AddLinearCost(c1, {x(0), x(1), x(2)});
-  prog.AddLinearCost(c2, {x(2), x(3)});
-
-  Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, drake::Vector1d(30), {x(0), x(1), x(2)});
-
-  Eigen::Matrix<double, 4, 4> A;
-  A << 2, 1, 3, 1,
-       0, 2, 0, 3,
-       1, 2, 0, 1,
-       1, 0, 2, 0;
-  Eigen::Vector4d b_lb(15, -std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(), -100);
-  Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), 25, std::numeric_limits<double>::infinity(), 40);
-  prog.AddLinearConstraint(A, b_lb, b_ub);
-
-  prog.AddBoundingBoxConstraint(drake::Vector1d(0), drake::Vector1d(10), {x(1)});
-  prog.AddBoundingBoxConstraint(Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), {x(0), x(2), x(3)});
-
-  RunMosekSolver(&prog);
-
-  Eigen::Vector4d x_expected(0, 0, 15, 25.0/3.0);
-  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10, MatrixCompareType::absolute));
-
+  testLinearPrograms(mosek_solver);
 }
 /*
  * Test a simple Quadratic Program.
@@ -134,7 +46,9 @@ GTEST_TEST(testMosek, MosekQuadraticProgram1) {
 
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), drake::Vector1d(1));
 
-  RunMosekSolver(&prog);
+  MosekSolver mosek_solver;
+  SolutionResult result = mosek_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   Eigen::Vector2d x_expected(0.25, 0.75);
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-9, MatrixCompareType::absolute));
@@ -238,6 +152,6 @@ GTEST_TEST(testMosek, MosekSemiDefiniteProgram) {
                               MatrixCompareType::absolute));
 }
 */
-}  // Anonymous namespace
+}  // namespace test
 }  // namespace solvers
 }  // namespace drake
