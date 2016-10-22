@@ -147,6 +147,11 @@ MSKrescodee AddBoundingBoxConstraints(MSKtask_t* task, const MathematicalProgram
   return rescode;
 }
 
+/*MSKrescodee AddLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram &prog) {
+  MSKrescodee rescode = MSK_RES_OK;
+  return rescode;
+}*/
+
 MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram &prog) {
   // Add the cost in the form 0.5 * x' * Q_all * x + linear_terms' * x
   MSKrescodee rescode = MSK_RES_OK;
