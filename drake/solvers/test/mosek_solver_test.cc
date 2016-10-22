@@ -77,45 +77,45 @@ GTEST_TEST(testMosek, MosekLinearProgram2) {
 
 }
 /*
-GTEST_TEST(testMosek, MosekQuadraticCost) {
-  // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
-  MathematicalProgram prog2;
-  auto x = prog2.AddContinuousVariables(3);
-  // Build the objective matrix and send it to the program.
-  Eigen::Matrix3d Q;
-  Q << 2, 0, -1,
-       0, 0.2, 0,
-       -1, 0, 2;
-  Eigen::Vector3d c;
-  c << 0, -1, 0;
-  prog2.AddCost(std::make_shared<QuadraticConstraint>(Q, c, 0, 0));
-  // Build the constraint matrix and send it to the program.
-  Eigen::Vector3d linearcon;
-  linearcon << 1, 1, 1;
-  std::shared_ptr<QuadraticConstraint> ptrtocon =
-      std::make_shared<QuadraticConstraint>(
-          Eigen::Matrix3d::Constant(0), linearcon, 1,
-          std::numeric_limits<double>::infinity());
-  prog2.AddConstraint(ptrtocon);
-  // Create the bounding box.
-  Eigen::Vector3d bboxlow, bboxhigh;
-  bboxlow << 0, 0, 0;
-  bboxhigh << std::numeric_limits<double>::infinity(),
-              std::numeric_limits<double>::infinity(),
-              std::numeric_limits<double>::infinity();
-  prog2.AddBoundingBoxConstraint(bboxlow, bboxhigh);
-  MosekSolver msk;
-  SolutionResult result = SolutionResult::kUnknownError;
-  prog2.SetSolverOption("Mosek", "maxormin", "min");
-  prog2.SetSolverOption("Mosek", "problemtype", "quadratic");
-  ASSERT_NO_THROW(result = msk.Solve(prog2));
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  Eigen::Vector3d solutions;
-  solutions << 5.975006e-05, 5, 5.975006e-05;
-  EXPECT_TRUE(CompareMatrices(solutions, x.value(), 1e-7,
-                              MatrixCompareType::absolute));
-}
+ * Test a simple Quadratic Program.
+ * The example is taken from
+ * http://cvxopt.org/examples/tutorial/qp.html
+ * min 2x1^2 + x2^2 + x1x2 + x1 + x2
+ * s.t x1 >= 0
+ *     x2 >= 0
+ *     x1 + x2 = 1
+ */
+GTEST_TEST(testMosek, MosekQuadraticProgram) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(2, "x");
 
+  // Deliberately add the cost as the sum of a quadratic cost
+  // 2x1^2 + x2^2 + x1x2 + x1
+  // add a linear cost
+  // x2
+  Eigen::Matrix2d Q;
+  Q << 4, 2,
+       0, 2;
+  Eigen::Vector2d b(1, 0);
+  prog.AddQuadraticCost(Q, b, {x});
+  prog.AddLinearCost(drake::Vector1d(1.0), {x(1)});
+
+  // Deliberately add two bounding box constraints
+  // (x1, x2) >= (0, 0)
+  // and
+  // x2 >= -1
+  // to test multiple bounding box constraints.
+  prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, 0), Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), {x});
+  prog.AddBoundingBoxConstraint(drake::Vector1d(-1), drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), drake::Vector1d(1));
+
+  RunMosekSolver(&prog);
+
+  Eigen::Vector2d x_expected(0.25, 0.75);
+  EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-9, MatrixCompareType::absolute));
+}
+/*
 GTEST_TEST(testMosek, MosekQuadraticConstraintAndCost) {
   // http://docs.mosek.com/7.1/capi/Quadratic_optimization.html
   MathematicalProgram prog2;
