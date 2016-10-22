@@ -44,8 +44,6 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(system_->GetC(), C_);
   EXPECT_EQ(system_->GetD(), D_);
   EXPECT_EQ(system_->GetY0(), Y0_);
-  EXPECT_EQ(system_->GetXDot0(), Eigen::VectorXd::Zero(2, 1));
-  EXPECT_EQ(system_->GetY0(), Eigen::VectorXd::Zero(2, 1));
   EXPECT_EQ(1, system_->get_num_output_ports());
   EXPECT_EQ(1, system_->get_num_input_ports());
 }
