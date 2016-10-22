@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <name>val_description</name>
+  <version>0.0.0</version>
+  <description>The val_description package</description>
+
+  <maintainer email="jordan.t.lack@nasa.gov">jordan</maintainer>
+
+  <license>NASA-1.3</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>xacro</build_depend>
+  <run_depend>xacro</run_depend>
+
+
+  <export>
+
+  </export>
+</package>

@@ -418,7 +418,7 @@
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
-    <collision group="right_hand">
+    <collision>
       <geometry>
         <mesh filename="package://val_description/model/meshes/arms/palm_right.dae"/>
       </geometry>
@@ -1006,7 +1006,7 @@
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
-    <collision group="left_hand">
+    <collision>
       <geometry>
         <mesh filename="package://val_description/model/meshes/arms/palm_left.dae"/>
       </geometry>
@@ -1578,25 +1578,25 @@
       </geometry>
     </visual>    
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
     <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
     </visual>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
     <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
@@ -1866,25 +1866,25 @@
       </geometry>
     </visual>    
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
     <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
     </visual>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
     <visual group="heel">
-      <origin rpy="0 0 0" xyz="-0.058 -0.055 -0.09"/>
+      <origin rpy="0 0 0" xyz="-0.038 -0.055 -0.09"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
@@ -2956,9 +2956,6 @@
   <frame link="rightFoot" name="r_foot_sole" rpy="0 0 0" xyz="0.067 0 -0.09"/>
   <frame link="leftFoot" name="l_foot_toe" rpy="0 0 0" xyz="0.172  0 -0.09"/>
   <frame link="rightFoot" name="r_foot_toe" rpy="0 0 0" xyz="0.172 0 -0.09"/>
-  <frame link="rightFoot" name="r_foot_force_torque" rpy="3.14 0.0 0.0" xyz="0.0215646 0.0 -0.051054"/>
-  <frame link="leftFoot" name="l_foot_force_torque" rpy="3.14 0.0 0.0" xyz="0.0215646 0.0 -0.051054"/>
-
   <!-- end drake feet mods-->
   <!-- drake left hand frames-->
   <link name="l_hand_force_torque">

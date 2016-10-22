@@ -1,0 +1,35 @@
+KpGains:
+  'torsoYaw': 100.0
+  'torsoPitch': 600.0
+  'torsoRoll': 600.0
+  'lowerNeckPitch': 30.0
+  'neckYaw': 30.0
+  'upperNeckPitch': 30.0
+  'rightShoulderPitch': 100.0
+  'rightShoulderRoll': 100.0
+  'rightShoulderYaw': 50.0
+  'rightElbowPitch': 50.0
+  'rightForearmYaw': 30.0
+  'rightWristRoll': 30.0
+  'rightWristPitch': 30.0
+  'leftShoulderPitch': 100.0
+  'leftShoulderRoll': 100.0
+  'leftShoulderYaw': 50.0
+  'leftElbowPitch': 30.0
+  'leftForearmYaw': 30.0
+  'leftWristRoll': 30.0
+  'leftWristPitch': 30.0
+  'rightHipYaw': 100.0
+  'rightHipRoll': 500.0
+  'rightHipPitch': 550.0
+  'rightKneePitch': 50.0
+  'rightAnklePitch': 30.0
+  'rightAnkleRoll': 30.0
+  'leftHipYaw': 100.0
+  'leftHipRoll': 500.0
+  'leftHipPitch': 550.0
+  'leftKneePitch': 50.0
+  'leftAnklePitch': 30.0
+  'leftAnkleRoll': 30.0
+
+dampingRatio: 0.2
