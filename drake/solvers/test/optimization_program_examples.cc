@@ -1,5 +1,4 @@
 #pragma once
-#pragma GCC diagnostic ignored "-Wunused-function"
 #include "drake/solvers/mathematical_program.h"
 
 #include "gtest/gtest.h"
@@ -639,7 +638,7 @@ const MathematicalProgramSolverInterface& solver) {
 
   // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
   // converge to true optimal yet.
-  EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 1e-4,
+  EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 2e-4,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(std::abs(objective_value_qp - objective_value_socp) < 1E-6);
 }
@@ -696,7 +695,7 @@ void testQuadraticPrograms(const MathematicalProgramSolverInterface& solver) {
 
 void testSecondOrderConicPrograms(const MathematicalProgramSolverInterface& solver) {
   TestEllipsoidsSeparation(solver);
-  //TestQPasSOCP(solver);
+  TestQPasSOCP(solver);
 }
 } // namespace test
 } // namespace solvers

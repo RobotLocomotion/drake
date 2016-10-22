@@ -197,51 +197,61 @@ MSKrescodee AddLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram
   return rescode;
 }
 
-MSKrescodee AddRotatedLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram& prog) {
+/*
+ * Add rotated Lorentz cone.
+ * Mosek does not allow two cones to share variables. To overcome this,
+ * for every rotated lorentz
+ * cone x0 * x1>= sqrt(x2^2 + ... + xN^2), x0 >= 0, x1 >=0
+ * we will add a new set of variable (y0, ..., yN), with the constraint
+ * 2*y0*y1 >= sqrt(y2^2 + ... + yN^2), y0 >= 0, y1 >=0
+ * y0 = x0 / 2, y1 = x1, ..., yN = xN
+ * @param is_new_variable  Refer to the documentation on is_new_variable in
+ * MosekSolver::Solve() function
+ */
+MSKrescodee AddRotatedLorentzConeConstraints(MSKtask_t* task, const MathematicalProgram& prog, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
-  MSKint32t numvar;
-  MSKint32t num_linear_con;
-  rescode = MSK_getnumvar(*task, &numvar);
-  if(rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  rescode = MSK_getnumcon(*task, &num_linear_con);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  int rotated_lorentz_cone_count = 0;
   for(auto const& binding : prog.rotated_lorentz_cone_constraints()) {
-    const std::vector<int>& var_indices = binding.variable_indices();
-    // In Mosek, the rotated Lorentz cone is defined as
-    // 2*x0*x1 >= x2^2 + ... + xN^2, x0 >= 0, x1 >= 0
-    // Our RotatedLorentzCone is defined as
-    //   x0*x1 >= x2^2 + ... + xN^2, x0 >= 0, x1 >= 0
-    // So we need to introduce a new slack variable here z = x0 / 2,
-    // and enforce the constraint
-    //  2*z*x1 >= x2^2 + ... + xN^2, z >=0, x1 >=0, z = x0 / 2
-    rescode = MSK_appendvars(*task, 1);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+    const std::vector<int>& cone_var_indices = binding.variable_indices();
+    int num_cone_vars = static_cast<int>(cone_var_indices.size());
+    MSKint32t num_total_vars;
+    rescode = MSK_getnumvar(*task, &num_total_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    rescode = MSK_appendvars(*task, num_cone_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    is_new_variable->resize(num_total_vars + num_cone_vars);
+    std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
+    for (int i = 0; i < num_cone_vars; ++i) {
+      is_new_variable->at(num_total_vars + i) = true;
+      new_cone_var_indices[i] = num_total_vars + i;
+      rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR, -MSK_INFINITY, MSK_INFINITY);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
     }
-    std::vector<MSKint32t> rotated_lorentz_cone_var_indices(var_indices);
-    rotated_lorentz_cone_var_indices[0] = numvar + rotated_lorentz_cone_count;
-    rescode = MSK_appendcone(*task, MSK_CT_RQUAD, 0.0, rotated_lorentz_cone_var_indices.size(), rotated_lorentz_cone_var_indices.data());
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+
+    rescode = MSK_appendcone(*task, MSK_CT_RQUAD, 0.0, cone_var_indices.size(), new_cone_var_indices.data());
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+
+    // Add the linear constraint y0 = x0/2, y1 = x1, ..., yN = xN
+    int num_lin_cons;
+    rescode = MSK_getnumcon(*task, &num_lin_cons);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    rescode = MSK_appendcons(*task, num_cone_vars);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+
+    MSKint32t var_indices_i[2] = {cone_var_indices[0], new_cone_var_indices[0]};
+    double val_i[2] = {1, -2};
+    rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices_i, val_i);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, 0.0, 0.0);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+
+    for (int i = 1; i < num_cone_vars; ++i) {
+      MSKint32t var_indices_i[2] = {cone_var_indices[i], new_cone_var_indices[i]};
+      double val_i[2] = {1, -1};
+      rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
+      DRAKE_ASSERT(rescode == MSK_RES_OK);
     }
-    // Add the linear constraint that z = x0 / 2;
-    rescode = MSK_appendcons(*task, 1);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
-    }
-    MSKint32t lin_con_var_indices[2] = {rotated_lorentz_cone_var_indices[0], var_indices[0]};
-    double lin_con_val[2] = {1, -0.5};
-    rescode = MSK_putarow(*task, num_linear_con + rotated_lorentz_cone_count, 2, lin_con_var_indices, lin_con_val);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
-    }
-    rescode = MSK_putconbound(*task, num_linear_con + rotated_lorentz_cone_count, MSK_BK_FX, 0.0, 0.0);
-    rotated_lorentz_cone_count++;
   }
   return rescode;
 }
@@ -369,7 +379,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   // Add rotated Lorentz cone constraints.
   if(rescode == MSK_RES_OK) {
-    rescode = AddRotatedLorentzConeConstraints(&task, prog);
+    rescode = AddRotatedLorentzConeConstraints(&task, prog, &is_new_variable);
   }
 
   SolutionResult result = SolutionResult::kUnknownError;
