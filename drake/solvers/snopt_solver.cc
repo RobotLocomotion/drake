@@ -282,14 +282,17 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
         std::numeric_limits<double>::infinity());
   }
   for (auto const& binding : prog.bounding_box_constraints()) {
-    auto const& c = binding.constraint();
+    const auto& c = binding.constraint();
+    const auto& lb = c->lower_bound();
+    const auto& ub = c->upper_bound();
+    int var_count = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
-      auto const lb = c->lower_bound(), ub = c->upper_bound();
       for (size_t k = 0; k < v.size(); k++) {
         xlow[v.index() + k] = std::max<snopt::doublereal>(
-            static_cast<snopt::doublereal>(lb(k)), xlow[v.index() + k]);
+            static_cast<snopt::doublereal>(lb(var_count)), xlow[v.index() + k]);
         xupp[v.index() + k] = std::min<snopt::doublereal>(
-            static_cast<snopt::doublereal>(ub(k)), xupp[v.index() + k]);
+            static_cast<snopt::doublereal>(ub(var_count)), xupp[v.index() + k]);
+        var_count++;
       }
     }
   }

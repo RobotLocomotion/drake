@@ -218,14 +218,16 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
 
     for (auto const& binding : problem_->bounding_box_constraints()) {
-      auto const& c = binding.constraint();
-      const Eigen::VectorXd& lower_bound = c->lower_bound();
-      const Eigen::VectorXd& upper_bound = c->upper_bound();
+      const auto& c = binding.constraint();
+      const auto& lower_bound = c->lower_bound();
+      const auto& upper_bound = c->upper_bound();
+      int var_count = 0;
       for (const DecisionVariableView& v : binding.variable_list()) {
         for (size_t k = 0; k < v.size(); k++) {
           const int idx = v.index() + k;
-          x_l[idx] = std::max(lower_bound(k), x_l[idx]);
-          x_u[idx] = std::min(upper_bound(k), x_u[idx]);
+          x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
+          x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
+          var_count++;
         }
       }
     }
