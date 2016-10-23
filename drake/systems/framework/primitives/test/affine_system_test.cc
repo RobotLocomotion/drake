@@ -67,7 +67,7 @@ TEST_F(AffineSystemTest, Derivatives) {
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u + XDot0_;
 
-  EXPECT_EQ(expected_derivatives, derivatives_->get_state().CopyToVector());
+  EXPECT_EQ(expected_derivatives, derivatives_->get_vector().CopyToVector());
 }
 
 // Tests that the outputs are correctly computed.
