@@ -5,6 +5,7 @@
 #include "ipopt_solver.h"
 #include "linear_system_solver.h"
 #include "moby_lcp_solver.h"
+#include "mosek_solver.h"
 #include "nlopt_solver.h"
 #include "snopt_solver.h"
 
@@ -27,6 +28,11 @@ AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 AttributesSet kGurobiCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
      kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+
+// Mosek solver capabilities.
+AttributesSet kMosekCapabilities =
+    (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
+        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
@@ -59,7 +65,8 @@ MathematicalProgram::MathematicalProgram()
       moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      gurobi_solver_(new GurobiSolver()) {}
+      gurobi_solver_(new GurobiSolver()),
+      mosek_solver_(new MosekSolver()){}
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
@@ -76,6 +83,9 @@ SolutionResult MathematicalProgram::Solve() {
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
+  } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
+      mosek_solver_->available()) {
+    return mosek_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
