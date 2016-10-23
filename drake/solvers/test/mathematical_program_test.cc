@@ -111,7 +111,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
 
 GTEST_TEST(testMathematicalProgram, boundingboxTest) {
   // A simple test program to test if the bounding box constraints are added
-  // correctly
+  // correctly.
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4);
 
@@ -846,7 +846,10 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
-  Q << 1.0, 0.0, 0.0, 1.0;
+  // clang-format off
+  Q << 1.0, 0.0,
+       0.0, 1.0;
+  // clang-format on
   VectorXd c(2);
   c << -1.0, -1.0;
 
