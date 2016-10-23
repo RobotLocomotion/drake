@@ -115,8 +115,10 @@ GTEST_TEST(testMathematicalProgram, boundingboxTest) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4);
 
-  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(1, -1), {x(1), x(3)});
-  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, -0.2, -0.1), {x(0), x(1), x(2)});
+  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(1, -1),
+                                {x(1), x(3)});
+  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, -0.2, -0.1),
+                                {x(0), x(1), x(2)});
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
@@ -844,8 +846,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
-  Q << 1.0, 0.0,
-       0.0, 1.0;
+  Q << 1.0, 0.0, 0.0, 1.0;
   VectorXd c(2);
   c << -1.0, -1.0;
 
