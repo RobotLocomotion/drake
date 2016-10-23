@@ -25,6 +25,9 @@ target_link_libraries(integrator_test drakeSystemFramework)
 drake_add_cc_test(linear_system_test)
 target_link_libraries(linear_system_test drakeSystemFramework)
 
+drake_add_cc_test(mimo_gain_test)
+target_link_libraries(mimo_gain_test drakeSystemFramework)
+
 drake_add_cc_test(multiplexer_test)
 target_link_libraries(multiplexer_test drakeSystemFramework)
 

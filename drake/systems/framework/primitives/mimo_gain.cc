@@ -6,11 +6,13 @@
 namespace drake {
 namespace systems {
 
+const int kNumStates = 0;
+
 template <typename T>
 MimoGain<T>::MimoGain(const Eigen::Ref<const MatrixX<T>> &D)
-    : LinearSystemPlant<T>(VectorX<T>::Zero(0, 0),        // A
-                           VectorX<T>::Zero(0, 0),        // B
-                           VectorX<T>::Zero(D.rows(), 1), // C
+    : LinearSystemPlant<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
+                           MatrixX<T>::Zero(kNumStates, D.cols()),    // B
+                           MatrixX<T>::Zero(D.rows(), kNumStates),    // C
                            D) { }
 
 template class DRAKE_EXPORT MimoGain<double>;

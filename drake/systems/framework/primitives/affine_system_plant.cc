@@ -64,7 +64,7 @@ void AffineSystemPlant<T>::EvalOutput(const Context<T>& context,
   // TODO(naveenoid): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+      context.get_continuous_state()->get_vector()).get_value();
 
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   DRAKE_DEMAND(input);
@@ -83,7 +83,7 @@ void AffineSystemPlant<T>::EvalTimeDerivatives(
   // TODO(naveenoid): provide nicer accessor to an Eigen representation for
   // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+      context.get_continuous_state()->get_vector()).get_value();
 
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   DRAKE_DEMAND(input);
