@@ -66,7 +66,7 @@ MathematicalProgram::MathematicalProgram()
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
       gurobi_solver_(new GurobiSolver()),
-      mosek_solver_(new MosekSolver()){}
+      mosek_solver_(new MosekSolver()) {}
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
