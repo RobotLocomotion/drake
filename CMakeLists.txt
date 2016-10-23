@@ -325,7 +325,7 @@ drake_add_external(director PUBLIC CMAKE
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_SYSTEM_LCM=ON
-    -DUSE_SYSTEM_VTK=ON  # If OFF, Directory will build VTK5 from source.
+    -DUSE_SYSTEM_VTK=ON  # If OFF, Director will build VTK5 from source.
     -DUSE_EXTERNAL_INSTALL=ON
   INSTALL_COMMAND :
   DEPENDS bot_core_lcmtypes drake lcm libbot)
