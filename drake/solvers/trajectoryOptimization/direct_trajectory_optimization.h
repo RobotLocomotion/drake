@@ -107,32 +107,6 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   }
 
   /**
-   * Add bounds on a set of time intervals, such that
-   * lower_bound(i) <= h_vars_(interval_indices[i]) <= upper_bound(i)
-   * where h_vars_[j] is the time interval between j'th and j+1'th sample
-   * (starting
-   * from 0'th sample).
-   * @param lower_bound  A vector of lower bounds.
-   * @param upper_bound  A vector of upper bounds.
-   * @param interval_indices A vector of interval indices.
-   */
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound,
-                             const std::vector<int>& interval_indices);
-
-  /**
-   * Add bounds on all time intervals, such that
-   * lower_bound(i) <= h_vars_(i) <= upper_bound(i)
-   * where h_vars_[i] is the time interval between i'th and i+1'th sample
-   * (starting
-   * from 0'th sample).
-   * @param lower_bound  A vector of lower bounds.
-   * @param upper_bound  A vector of upper bounds.
-   */
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound);
-
-  /**
    * Add a cost to the initial state.
    */
   template <typename ConstraintT>
