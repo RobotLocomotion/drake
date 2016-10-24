@@ -493,6 +493,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
 
           WrenchVector<T> wrench;
+          // This contact model produces responses that only have a force
+          //  component (i.e., the torque portion of the wrench is zero.)
+          //  In contrast, other models (e.g., torsional friction model) can
+          //  also introduce a "pure torque" component to the wrench.
           wrench.template head<3>().setZero();
           wrench.template tail<3>() = R.transpose() * fA;
 
