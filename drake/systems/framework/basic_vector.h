@@ -142,7 +142,16 @@ class BasicVector : public VectorBase<T> {
 // debugging purposes.
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const BasicVector<T>& vec) {
-  os << "[" << vec.get_value().transpose() << "]";
+  std::stringstream s;
+
+  Eigen::VectorBlock<const VectorX<T>> v = vec.get_value();
+  for (int i = 0; i < v.size(); ++i) {
+    s << v[i];
+    if (i < v.size() - 1)
+      s << ", ";
+  }
+
+  os << "[" << s.str() << "]";
   return os;
 }
 
