@@ -691,13 +691,13 @@ bool RigidBodyTree::AllPairsClosestPoints(
   for (const auto& body : bodies) {
     body->appendCollisionElementIdsFromThisBody(ids_to_check);
   }
-  return SetAllPairsClosestPairs(cache, ids_to_check, pairs, use_margins);
+  return AllPairsClosestPointsInSet(cache, ids_to_check, pairs, use_margins);
 }
 
-bool RigidBodyTree::SetAllPairsClosestPairs(
-    const KinematicsCache<double>& cache,
-    const vector<DrakeCollision::ElementId>& ids_to_check,
-    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
+bool RigidBodyTree::AllPairsClosestPointsInSet(
+    const KinematicsCache<double> &cache,
+    const vector<DrakeCollision::ElementId> &ids_to_check,
+    std::vector<DrakeCollision::PointPair> *pairs, bool use_margins) {
   updateDynamicCollisionElements(cache);
   return collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
                                                  *pairs);
