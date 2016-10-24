@@ -85,7 +85,7 @@ GTEST_TEST(GainTest, GainVectorTest) {
       gain_values.array() * input_vector.array());
 
   // Verifies the gain accessors are OK.
-  EXPECT_THROW(gain_system->get_gain(), std::runtime_error);
+  EXPECT_DEATH(gain_system->get_gain(), ".*");
   EXPECT_NO_THROW(gain_system->get_gain_vector());
   EXPECT_EQ(gain_system->get_gain_vector(), gain_values);
 
