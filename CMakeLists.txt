@@ -102,6 +102,7 @@ drake_add_external(ipopt PUBLIC
       F77=${CMAKE_Fortran_COMPILER}
       FC=${CMAKE_Fortran_COMPILER}
       FFLAGS=${CMAKE_Fortran_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
    ./configure
     --with-blas=BUILD
     --with-lapack=BUILD
@@ -119,6 +120,7 @@ drake_add_external(ipopt PUBLIC
       F77=${CMAKE_Fortran_COMPILER}
       FC=${CMAKE_Fortran_COMPILER}
       FFLAGS=${CMAKE_Fortran_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
     ${MAKE_COMMAND} install)
 
 # nlopt
@@ -172,6 +174,7 @@ drake_add_external(swig_matlab PUBLIC
       CFLAGS=${CMAKE_C_FLAGS}
       CXX=${CMAKE_CXX_COMPILER}
       CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
     ./configure
       --prefix=${CMAKE_INSTALL_PREFIX}
       --with-matlab
@@ -182,6 +185,7 @@ drake_add_external(swig_matlab PUBLIC
       CFLAGS=${CMAKE_C_FLAGS}
       CXX=${CMAKE_CXX_COMPILER}
       CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
     ${MAKE_COMMAND} install)
 
 # textbook
