@@ -11,6 +11,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"
 #include "drake/math/rotation_matrix.h"
@@ -265,8 +266,8 @@ class DRAKE_EXPORT RigidBodyTree {
    * Returns true if @p body is part of a model instance whose ID is in
    * @p model_instance_id_set.
    */
-  bool is_part_of_model_instances(const RigidBody& body,
-      const std::set<int>& model_instance_id_set) const;
+  bool is_part_of_model_instances(
+      const RigidBody& body, const std::set<int>& model_instance_id_set) const;
 
   /**
    * Computes the total combined mass of a set of model instances.
@@ -279,7 +280,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * @p model_instance_id_set.
    */
   double getMass(const std::set<int>& model_instance_id_set =
-      default_model_instance_id_set) const;
+                     default_model_instance_id_set) const;
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kSpaceDimension, 1> centerOfMass(
@@ -814,9 +815,9 @@ class DRAKE_EXPORT RigidBodyTree {
    * @returns                   True if the method ran successfully.
    */
   bool SetAllPairsClosestPairs(
-      const KinematicsCache<double> &cache,
-      const std::vector<DrakeCollision::ElementId> &ids_to_check,
-      std::vector<DrakeCollision::PointPair> *pairs, bool use_margins);
+      const KinematicsCache<double>& cache,
+      const std::vector<DrakeCollision::ElementId>& ids_to_check,
+      std::vector<DrakeCollision::PointPair>* pairs, bool use_margins);
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
@@ -921,8 +922,8 @@ class DRAKE_EXPORT RigidBodyTree {
    * @throws std::logic_error if no rigid body with the specified \p body_name
    * and \p model_id was found or if multiple matching rigid bodies were found.
    */
-  int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
-      const;
+  int FindBodyIndex(const std::string& body_name,
+                    int model_instance_id = -1) const;
 
   /**
    * Returns a vector of indexes of bodies that are the children of the body at
@@ -933,12 +934,12 @@ class DRAKE_EXPORT RigidBodyTree {
    * RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindChildrenOfBody(int parent_body_index,
-      int model_instance_id = -1) const;
+                                      int model_instance_id = -1) const;
 
-  /**
-   * This is a deprecated version of `FindBodyIndex(...)`. Please use
-   * `FindBodyIndex(...)` instead.
-   */
+/**
+ * This is a deprecated version of `FindBodyIndex(...)`. Please use
+ * `FindBodyIndex(...)` instead.
+ */
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
 #endif
@@ -965,7 +966,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * matching rigid bodies are found.
    */
   RigidBody* FindChildBodyOfJoint(const std::string& joint_name,
-      int model_instance_id = -1) const;
+                                  int model_instance_id = -1) const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
@@ -994,7 +995,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * matching rigid bodies are found.
    */
   int FindIndexOfChildBodyOfJoint(const std::string& joint_name,
-      int model_instance_id = -1) const;
+                                  int model_instance_id = -1) const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
@@ -1082,7 +1083,8 @@ class DRAKE_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions_ : num_velocities_;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -1090,9 +1092,8 @@ class DRAKE_EXPORT RigidBodyTree {
       RigidBody& body = *bodies[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
                                          : body.getJoint().get_num_velocities();
-      int col_start =
-          in_terms_of_qdot ? body.get_position_start_index() :
-              body.get_velocity_start_index();
+      int col_start = in_terms_of_qdot ? body.get_position_start_index()
+                                       : body.get_velocity_start_index();
       full.middleCols(col_start, ncols_joint) =
           compact.middleCols(compact_col_start, ncols_joint);
       compact_col_start += ncols_joint;
@@ -1147,7 +1148,6 @@ class DRAKE_EXPORT RigidBodyTree {
    * system.
    */
   int get_num_velocities() const;
-
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
