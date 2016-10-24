@@ -34,11 +34,10 @@ Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
 template <typename T>
 const T& Gain<T>::get_gain() const {
   if (!k_.isConstant(k_[0])) {
-    std::stringstream ss;
-    ss << "drake::systems::Gain::get_gain(): Error! The gain vector, [" << k_
-       << "], cannot be represented as a scalar value. Please use "
-       << "drake::systems::Gain::get_gain_vector() instead.";
-    DRAKE_ABORT_MSG(ss.str().c_str());
+    std::stringstream s;
+    s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
+      << "value. Please use drake::systems::Gain::get_gain_vector() instead.";
+    DRAKE_ABORT_MSG(s.str().c_str());
   }
   return k_[0];
 }
