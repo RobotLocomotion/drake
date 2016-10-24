@@ -814,10 +814,10 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            tested collision elements.
    * @returns                   True if the method ran successfully.
    */
-  bool SetAllPairsClosestPairs(
-      const KinematicsCache<double>& cache,
-      const std::vector<DrakeCollision::ElementId>& ids_to_check,
-      std::vector<DrakeCollision::PointPair>* pairs, bool use_margins);
+  bool AllPairsClosestPointsInSet(
+      const KinematicsCache<double> &cache,
+      const std::vector<DrakeCollision::ElementId> &ids_to_check,
+      std::vector<DrakeCollision::PointPair> *pairs, bool use_margins);
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
