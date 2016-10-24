@@ -292,7 +292,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
             static_cast<snopt::doublereal>(lb(var_count)), xlow[v.index() + k]);
         xupp[v.index() + k] = std::min<snopt::doublereal>(
             static_cast<snopt::doublereal>(ub(var_count)), xupp[v.index() + k]);
-        var_count++;
+        ++var_count;
       }
     }
   }

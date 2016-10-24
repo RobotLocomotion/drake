@@ -109,15 +109,18 @@ void RunNonlinearProgram(MathematicalProgram& prog,
   }
 }
 
-GTEST_TEST(testMathematicalProgram, boundingboxTest) {
+GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4);
 
-  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(1, -1),
+  // Deliberately add two constraints on overlapped decision variables.
+  // For x(1), the lower bound of the second constraint are used; while
+  // the upper bound of the first variable is used.
+  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
                                 {x(1), x(3)});
-  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, -0.2, -0.1),
+  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
                                 {x(0), x(1), x(2)});
 
   Vector4d lb(-1, -0.5, -3, -2);

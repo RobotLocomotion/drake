@@ -227,7 +227,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
           const int idx = v.index() + k;
           x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
           x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
-          var_count++;
+          ++var_count;
         }
       }
     }

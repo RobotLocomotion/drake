@@ -315,7 +315,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram &prog) const {
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) { x[idx] = xlow[idx]; }
         if (x[idx] > xupp[idx]) { x[idx] = xupp[idx]; }
-        var_count++;
+        ++var_count;
       }
     }
   }
