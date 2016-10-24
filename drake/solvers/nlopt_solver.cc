@@ -304,16 +304,18 @@ SolutionResult NloptSolver::Solve(MathematicalProgram &prog) const {
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
   for (auto const& binding : prog.bounding_box_constraints()) {
-    auto const& c = binding.constraint();
-    const Eigen::VectorXd& lower_bound = c->lower_bound();
-    const Eigen::VectorXd& upper_bound = c->upper_bound();
+    const auto& c = binding.constraint();
+    const auto& lower_bound = c->lower_bound();
+    const auto& upper_bound = c->upper_bound();
+    int var_count = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
       for (size_t k = 0; k < v.size(); k++) {
         const int idx = v.index() + k;
-        xlow[idx] = std::max(lower_bound(k), xlow[idx]);
-        xupp[idx] = std::min(upper_bound(k), xupp[idx]);
+        xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
+        xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) { x[idx] = xlow[idx]; }
         if (x[idx] > xupp[idx]) { x[idx] = xupp[idx]; }
+        ++var_count;
       }
     }
   }
