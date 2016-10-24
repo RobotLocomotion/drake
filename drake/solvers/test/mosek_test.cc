@@ -1,8 +1,3 @@
-// TODO(hongkai.dai@tri.global) : This test is going to be disabled temporarily.
-// The constraint and cost is formulated incorrectly. It only works because
-// mosek_solver.cc and mosek_wrapper.cc were also incorrect when parsing
-// the constraints and cost. We will re-write mosek_solver.cc and
-// mosek_wrapper.cc
 #include "drake/solvers/mosek_solver.h"
 
 #include <iostream>
