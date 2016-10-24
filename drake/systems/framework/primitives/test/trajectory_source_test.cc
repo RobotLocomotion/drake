@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/time_varying_trajectory_source.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
 
 #include <memory>
 
@@ -17,13 +17,13 @@ namespace drake {
 namespace systems {
 namespace {
 
-class TimeVaryingTrajectorySourceTest : public ::testing::Test {
+class TrajectorySourceTest : public ::testing::Test {
  protected:
-  TimeVaryingTrajectorySourceTest()
+  TrajectorySourceTest()
       : kppTraj(PiecewisePolynomial<double>(MatrixXd::Constant(2, 1, 1.5))) {}
 
   void SetUp() override {
-    source_ = make_unique<TimeVaryingTrajectorySource<double>>(kppTraj);
+    source_ = make_unique<TrajectorySource<double>>(kppTraj);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
@@ -41,7 +41,7 @@ class TimeVaryingTrajectorySourceTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-TEST_F(TimeVaryingTrajectorySourceTest, OutputTest) {
+TEST_F(TrajectorySourceTest, OutputTest) {
   ASSERT_EQ(0, context_->get_num_input_ports());
   ASSERT_EQ(1, output_->get_num_ports());
 
@@ -58,7 +58,7 @@ TEST_F(TimeVaryingTrajectorySourceTest, OutputTest) {
 }
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
-TEST_F(TimeVaryingTrajectorySourceTest, ConstantVectorSourceIsStateless) {
+TEST_F(TrajectorySourceTest, ConstantVectorSourceIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 

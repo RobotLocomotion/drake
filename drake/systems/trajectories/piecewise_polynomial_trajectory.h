@@ -24,11 +24,16 @@ class DRAKE_EXPORT PiecewisePolynomialTrajectory : public Trajectory {
   }
 
   /**
-   * @return The length of the output vector, which is also the number of rows
-   * in the PiecewisePolynomial. If the output is a matrix, length() is the
-   * number of rows in the matrix.
+   * @return The number of rows of the output vector, which is also
+   * the number of rows in the PiecewisePolynomial.
    */
-  Eigen::Index length() const override { return pp_.rows(); }
+  Eigen::Index rows() const override { return pp_.rows(); }
+
+  /**
+   * @return The number of columns of the output vector, which is also
+   * the number of columns in the PiecewisePolynomial.
+   */
+  Eigen::Index cols() const override { return pp_.cols(); }
 
  private:
   const PiecewisePolynomial<double> pp_;
