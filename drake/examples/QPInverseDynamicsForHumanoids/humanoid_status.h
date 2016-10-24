@@ -148,6 +148,40 @@ class HumanoidStatus {
     nominal_position_[name_to_position_index().at("leftShoulderYaw")] = 0.5;
     nominal_position_[name_to_position_index().at("leftElbowPitch")] =
         -M_PI / 2.;
+
+    leg_joint_names_.insert("rightHipYaw");
+    leg_joint_names_.insert("rightHipRoll");
+    leg_joint_names_.insert("rightHipPitch");
+    leg_joint_names_.insert("rightKneePitch");
+    leg_joint_names_.insert("rightAnklePitch");
+    leg_joint_names_.insert("rightAnkleRoll");
+    leg_joint_names_.insert("leftHipYaw");
+    leg_joint_names_.insert("leftHipRoll");
+    leg_joint_names_.insert("leftHipPitch");
+    leg_joint_names_.insert("leftKneePitch");
+    leg_joint_names_.insert("leftAnklePitch");
+    leg_joint_names_.insert("leftAnkleRoll");
+
+    back_joint_names_.insert("torsoYaw");
+    back_joint_names_.insert("torsoPitch");
+    back_joint_names_.insert("torsoRoll");
+
+    arm_joint_names_.insert("rightShoulderPitch");
+    arm_joint_names_.insert("rightShoulderRoll");
+    arm_joint_names_.insert("rightShoulderYaw");
+    arm_joint_names_.insert("rightElbowPitch");
+    arm_joint_names_.insert("rightForearmYaw");
+    arm_joint_names_.insert("rightWristRoll");
+    arm_joint_names_.insert("rightWristPitch");
+    arm_joint_names_.insert("leftShoulderPitch");
+    arm_joint_names_.insert("leftShoulderRoll");
+    arm_joint_names_.insert("leftShoulderYaw");
+    arm_joint_names_.insert("leftElbowPitch");
+    arm_joint_names_.insert("leftForearmYaw");
+    arm_joint_names_.insert("leftWristRoll");
+    arm_joint_names_.insert("leftWristPitch");
+
+    neck_joint_names_.insert("lowerNeckPitch");
   }
 
   void UpdateFromOther(const HumanoidStatus& other) {
@@ -215,16 +249,25 @@ class HumanoidStatus {
   }
   inline const std::unordered_map<std::string, int>& name_to_velocity_index()
       const {
-    return name_to_position_index_;
+    return name_to_velocity_index_;
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
     return actuator_name_to_actuator_index_;
   }
+  inline const std::set<std::string>& leg_joint_names() const { return leg_joint_names_; }
+  inline const std::set<std::string>& arm_joint_names() const { return arm_joint_names_; }
+  inline const std::set<std::string>& back_joint_names() const { return back_joint_names_; }
+  inline const std::set<std::string>& neck_joint_names() const { return neck_joint_names_; }
+
   inline double time() const { return time_; }
   inline const Eigen::VectorXd& position() const { return position_; }
   inline const Eigen::VectorXd& velocity() const { return velocity_; }
   inline const Eigen::VectorXd& joint_torque() const { return joint_torque_; }
+  inline double position(int i) const { return position_[i]; }
+  inline double velocity(int i) const { return velocity_[i]; }
+  inline double joint_torque(int i) const { return joint_torque_[i]; }
+
   inline const Eigen::MatrixXd& M() const { return M_; }
   inline const Eigen::VectorXd& bias_term() const { return bias_term_; }
   inline const Eigen::Vector3d& com() const { return com_; }
@@ -309,6 +352,11 @@ class HumanoidStatus {
   std::unordered_map<std::string, int> name_to_velocity_index_;
   /// Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
+
+  std::set<std::string> leg_joint_names_;
+  std::set<std::string> arm_joint_names_;
+  std::set<std::string> back_joint_names_;
+  std::set<std::string> neck_joint_names_;
 
   double time_;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -17,7 +18,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot), desired_joints_(robot.get_num_velocities()) {
+  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot), qp_input_(MakeExampleQPInput(robot)) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -28,23 +29,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
     // Setup gains.
-    int dim = robot.get_num_velocities();
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
-
-    desired_joints_.mutable_Kp() = Eigen::VectorXd::Constant(dim, 20);;
-    desired_joints_.mutable_Kd() = Eigen::VectorXd::Constant(dim, 8);;
-    desired_pelvis_.mutable_Kp() = Eigen::Vector6d::Constant(20);
-    desired_pelvis_.mutable_Kd() = Eigen::Vector6d::Constant(8);
-    desired_torso_.mutable_Kp() = Eigen::Vector6d::Constant(20);
-    desired_torso_.mutable_Kd() = Eigen::Vector6d::Constant(8);
-
-    // Setup weights.
-    comdd_weight_ = 1e3;
-    pelvisdd_weight_ = 1e1;
-    torsodd_weight_ = 1e1;
-    vd_weight_ = 1;
-    basis_weight_ = 1e-6;
   }
 
   void EvalOutput(const Context<double>& context,
@@ -56,22 +42,42 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // output: qp input
     QPInput& result = output->GetMutableData(output_port_index_qp_input_)
                          ->GetMutableValue<QPInput>();
+
+    for (const std::string& joint_name : robot_status->arm_joint_names()) {
+      int idx = robot_status->name_to_position_index().at(joint_name);
+      result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
+    }
+    for (const std::string& joint_name : robot_status->neck_joint_names()) {
+      int idx = robot_status->name_to_position_index().at(joint_name);
+      result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
+    }
+
+    result.mutable_desired_comdd() =
+        (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
+         Kd_com_.array() * robot_status->comd().array()).matrix();
+
+    result.mutable_desired_joint_motions().mutable_setpoint() = qp_input_.desired_joint_motions().setpoint();
+
+    std::list<DesiredBodyMotion>::const_iterator it = qp_input_.desired_body_motions().begin();
+    for (DesiredBodyMotion& body_motion : result.mutable_desired_body_motions()) {
+      body_motion.mutable_setpoint() = it->setpoint();
+      it++;
+    }
+
+    /*
     result.mutable_desired_body_motions().clear();
     result.mutable_contact_info().clear();
 
     // Weights are set arbitrarily by the control designer, these typically
     // require tuning.
     // Setup tracking for center of mass acceleration.
-    result.mutable_desired_comdd() =
-        (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array()).matrix();
     result.mutable_w_com() = comdd_weight_;
 
     // Setup tracking for generalized accelerations.
     int dim = robot_.get_num_velocities();
 
     result.mutable_desired_joint_motions().mutable_setpoint() = desired_joints_;
-    result.mutable_desired_joint_motions().mutable_weights() = vd_weight_ * Eigen::VectorXd::Constant(dim, 1);
+    result.mutable_desired_joint_motions().mutable_weights() = -vd_weight_ * Eigen::VectorXd::Constant(dim, 1);
 
     // Setup tracking for various body parts.
     DesiredBodyMotion pelvdd_d(*robot_status->robot().FindBody("pelvis"));
@@ -82,7 +88,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     DesiredBodyMotion torsodd_d(*robot_status->robot().FindBody("torso"));
     torsodd_d.mutable_weights() = torsodd_weight_ * Eigen::Vector6d::Constant(1);
     torsodd_d.mutable_weights().segment<3>(3).setZero();
-    torsodd_d.mutable_weights()[1] = -1;
+    //torsodd_d.mutable_weights()[1] = -1;
     torsodd_d.mutable_setpoint() = desired_torso_;
     result.mutable_desired_body_motions().push_back(torsodd_d);
 
@@ -109,15 +115,15 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
     result.mutable_contact_info().push_back(left_foot_contact);
     result.mutable_contact_info().push_back(right_foot_contact);
+    */
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    QPInput qpinput(robot_);
     output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<QPInput>(qpinput)));
+        std::unique_ptr<AbstractValue>(new Value<QPInput>(qp_input_)));
     return std::move(output);
   }
 
@@ -127,9 +133,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
-    desired_joints_.mutable_desired_position() = robot_status.position();
-    desired_pelvis_.mutable_desired_pose() = robot_status.pelvis().pose();
-    desired_torso_.mutable_desired_pose() = robot_status.torso().pose();
+    TrackThis(robot_status, &qp_input_);
   }
 
   /**
@@ -153,19 +157,11 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
 
-  VectorSetpoint desired_joints_;
-  CartesianSetpoint desired_pelvis_;
-  CartesianSetpoint desired_torso_;
+  QPInput qp_input_;
 
   Eigen::Vector3d desired_com_;
   Eigen::Vector3d Kp_com_;
   Eigen::Vector3d Kd_com_;
-
-  double comdd_weight_;
-  double pelvisdd_weight_;
-  double torsodd_weight_;
-  double vd_weight_;
-  double basis_weight_;
 };
 
 }  // namespace qp_inverse_dynamics
