@@ -13,7 +13,6 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/mimo_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-// #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
@@ -23,7 +22,6 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
 
 using std::make_unique;
 using std::move;
-using std::unique_ptr;
 
 namespace drake {
 
@@ -31,14 +29,12 @@ using parsers::sdf::AddModelInstancesFromSdfFile;
 using lcm::DrakeLcm;
 using systems::ConstantVectorSource;
 using systems::Context;
-using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::MimoGain;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
-using systems::plants::joints::kQuaternion;
 
 namespace automotive {
 namespace {
@@ -51,23 +47,14 @@ int main() {
   auto tree = make_unique<RigidBodyTree>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-      kQuaternion, nullptr /* weld to frame */, tree.get());
-
-  // DEBUG print statement.
-  for (auto& actuator : tree->actuators) {
-    std::cout << "Actuator: " << actuator.name_ << std::endl;
-  }
-
+      systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
+      tree.get());
   AddFlatTerrainToWorld(tree.get());
 
   // Instantiates a RigidBodyPlant to simulate the MBD model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
   plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
       500 /* penetration_damping */, 10 /* friction_coefficient */);
-
-  // DEBUG
-  std::cout << "plant->get_input_port(0).get_size() = "
-            << plant->get_input_port(0).get_size() << std::endl;
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
@@ -76,14 +63,6 @@ int main() {
   const Vector3<double> Kd(80,  100, 100);
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), Kp, Ki, Kd);
-
-  // DEBUG print statement.
-  std::cout << "Size of controller's input port 0: "
-            << controller->get_input_port(0).get_size() << std::endl;
-
-  // DEBUG print statement.
-  std::cout << "Size of controller's input port 1: "
-            << controller->get_input_port(1).get_size() << std::endl;
 
   // Instantiates a system for visualizing the MBD model.
   lcm::DrakeLcm lcm;
@@ -102,10 +81,6 @@ int main() {
   auto command_subscriber =
       builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
           "DRIVING_COMMAND", driving_command_translator, &lcm);
-
-  // DEBUG print statement.
-  std::cout << "Size of command subscriber's output port 0: "
-            << command_subscriber->get_output_port(0).get_size() << std::endl;
 
   // Instantiates a MIMO gain system to covert from user command space to
   // actuator command space. As mentioned above, the user command space consists
