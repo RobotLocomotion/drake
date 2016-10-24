@@ -32,6 +32,9 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
     const Vector3<T>& contact_point = detail->get_application_point();
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
 
+    // summing these wrenches work because, at this point, the torques in the
+    //  component wrenches are "pure torques" -- abstractions of torques which
+    //  arise from contact models.
     wrench += contact_wrench;
 
     T weight = contact_wrench.template tail<3>().norm();
