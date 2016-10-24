@@ -155,6 +155,15 @@ GTEST_TEST(BasicVectorTest, StringStream) {
   EXPECT_EQ(s.str(), "hello [1, 2.2, 3.3] world");
 }
 
+// Tests ability to stream a BasicVector of size zero into a string.
+GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
+  BasicVector<double> vec(0);
+  std::stringstream s;
+  s << "foo " << vec << " bar";
+  EXPECT_EQ(s.str(), "foo [] bar");
+}
+
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

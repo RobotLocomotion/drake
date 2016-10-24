@@ -5,7 +5,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
 #include "drake/common/drake_throw.h"
@@ -143,16 +142,16 @@ class BasicVector : public VectorBase<T> {
 // debugging purposes.
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const BasicVector<T>& vec) {
-  std::stringstream s;
+  os << "[";
 
   Eigen::VectorBlock<const VectorX<T>> v = vec.get_value();
   for (int i = 0; i < v.size(); ++i) {
-    s << v[i];
-    if (i < v.size() - 1)
-      s << ", ";
+    if (i > 0)
+       os << ", ";
+    os << v[i];
   }
 
-  os << "[" << s.str() << "]";
+  os << "]";
   return os;
 }
 
