@@ -141,7 +141,7 @@ class BasicVector : public VectorBase<T> {
 // Allows a BasicVector<T> to be streamed into a string. This is useful for
 // debugging purposes.
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const BasicVector<T> const& vec) {
+std::ostream& operator<<(std::ostream& os, const BasicVector<T>& vec) {
   os << "[" << vec.get_value().transpose() << "]";
   return os;
 }
