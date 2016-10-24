@@ -1,6 +1,8 @@
 #include "drake/systems/framework/basic_vector.h"
 
+#include <iostream>
 #include <cmath>
+#include <sstream>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -143,6 +145,15 @@ GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   ogvec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
   ans5 << 346, 446;
   EXPECT_EQ(ans5, ogvec.get_value());
+}
+
+// Tests ability to stream a BasicVector into a string.
+GTEST_TEST(BasicVectorTest, StringStream) {
+  BasicVector<double> vec(3);
+  vec.get_mutable_value() << 1.0, 2.2, 3.3;
+  std::stringstream s;
+  s << "hello " << vec << " world";
+  EXPECT_EQ(s.str(), "hello [  1 2.2 3.3] world");
 }
 
 }  // namespace
