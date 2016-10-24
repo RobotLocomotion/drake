@@ -4,6 +4,9 @@
 #include <set>
 #include <stdexcept>
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
+
 using Eigen::Dynamic;
 using Eigen::Matrix;
 using Eigen::PolynomialSolver;
@@ -528,11 +531,13 @@ template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
 Polynomial<CoefficientType>::VariableNameToId(const string name,
                                               const unsigned int m) {
+  DRAKE_THROW_UNLESS(IsValidVariableName(name));
   unsigned int multiplier = 1;
   VarType name_part = 0;
-  for (int i = (int)name.size() - 1; i >= 0; i--) {
-    VarType offset = static_cast<VarType>(
-        strchr(kNameChars, name[i]) - kNameChars);
+  for (int i = static_cast<int>(name.size()) - 1; i >= 0; i--) {
+    const char* const character_match = strchr(kNameChars, name[i]);
+    DRAKE_ASSERT(character_match);
+    VarType offset = static_cast<VarType>(character_match - kNameChars);
     name_part += (offset + 1) * multiplier;
     multiplier *= kNumNameChars + 1;
   }

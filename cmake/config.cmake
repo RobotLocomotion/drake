@@ -30,23 +30,30 @@ function(drake_setup_matlab)
 
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled.")
-    unset(MATLAB_EXECUTABLE CACHE) # TODO unset MATLAB_FOUND instead (see below)
+    unset(MATLAB_EXECUTABLE CACHE)
+    unset(Matlab_FOUND CACHE)
   else()
     # Look for the MATLAB executable. This does not use find_package(Matlab)
     # because that is "really good at finding MATLAB", and we only want to
     # enable matlab support if the matlab executable is in the user's PATH.
     find_program(MATLAB_EXECUTABLE matlab)
     if(MATLAB_EXECUTABLE)
-      message(STATUS "Found MATLAB: ${MATLAB_EXECUTABLE}")
-
       # Determine the MATLAB root.
       get_filename_component(_matlab_realpath "${MATLAB_EXECUTABLE}" REALPATH)
       get_filename_component(_matlab_bindir "${_matlab_realpath}" DIRECTORY)
-      get_filename_component(MATLAB_ROOT_DIR
+      get_filename_component(Matlab_ROOT_DIR
         "${_matlab_bindir}" DIRECTORY CACHE)
 
-      # TODO find_package(Matlab) and delete mex_setup
-      # TODO change MATLAB_EXECUTABLE in options.cmake to MATLAB_FOUND
+      if(MATLAB_EXECUTABLE)
+        # MATLAB 7.12 (R2011a) introduced the rng() function so it is a lower
+        # bound on the oldest MATLAB version that Drake can support
+        find_package(Matlab 7.12 MODULE
+          COMPONENTS
+            MAIN_PROGRAM
+            MEX_COMPILER
+            MX_LIBRARY
+            SIMULINK)
+      endif()
     else()
       message(STATUS "MATLAB was not found.")
     endif()
@@ -58,61 +65,72 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_setup_java_for_matlab)
   if(NOT MATLAB_JVM_VERSION)
-    # Set arguments for running MATLAB
-    set(_args -nodesktop -nodisplay -nosplash)
-    set(_input_file /dev/null)
-    if(WIN32)
-      set(_args ${_args} -wait)
-      set(_input_file NUL)
-    endif()
-    set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
+    if(NOT Matlab VERSION_GREATER 8.1)  # R2013a
+      set(MATLAB_JVM_VERSION 1.6 CACHE INTERNAL "")
+    elseif(NOT Matlab VERSION_GREATER 9.1)  # R2016b
+      set(MATLAB_JVM_VERSION 1.7 CACHE INTERNAL "")
+    else()
+      message(STATUS "Detecting MATLAB JVM version")
 
-    # Ask matlab for its JVM version
-    execute_process(
-      COMMAND "${MATLAB_EXECUTABLE}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
-      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-      TIMEOUT 450
-      RESULT_VARIABLE _result
-      OUTPUT_QUIET
-      INPUT_FILE ${_input_file})
+      # Set arguments for running MATLAB
+      set(_args -nodesktop -nodisplay -nosplash)
+      set(_input_file /dev/null)
+      if(WIN32)
+        set(_args ${_args} -wait)
+        set(_input_file NUL)
+      endif()
+      set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
-    if(_result EQUAL 0)
-      if(EXISTS ${_logfile})
-        file(READ ${_logfile} _output)
+      # Ask MATLAB for its JVM version
+      execute_process(
+        COMMAND "${Matlab_MAIN_PROGRAM}" ${_args} -logfile "${_logfile}" -r "version -java,quit"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+        TIMEOUT 450
+        RESULT_VARIABLE _result
+        OUTPUT_QUIET
+        INPUT_FILE ${_input_file})
 
-        # Test for a valid result
-        if(_output MATCHES "Java ([0-9]+\\.[0-9]+)\\.([0-9_.]+)")
-          set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
-          set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
+      if(_result EQUAL 0)
+        if(EXISTS ${_logfile})
+          file(READ ${_logfile} _output)
 
-          # Compare against JDK version
-          if(MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
-            message(STATUS
-              "The MATLAB JVM version is ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+          # Test for a valid result
+          if(_output MATCHES "Java ([0-9]+\\.[0-9]+)\\.([0-9_.]+)")
+            set(MATLAB_JVM_VERSION ${CMAKE_MATCH_1} CACHE INTERNAL "")
           else()
             message(WARNING
-              "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
-              "installed Java Development Kit version (${_jdk_version})")
-
-            # If JDK is newer, set build options to build Java code compatible
-            # with the MATLAB JVM
-            if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
-              set(CMAKE_JAVA_COMPILE_FLAGS
-                -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
-                CACHE INTERNAL "")
-            endif()
+              "Could not determine MATLAB JVM version because regular expression was not matched")
           endif()
         else()
           message(WARNING
-            "Could not determine MATLAB JVM version because regular expression was not matched")
+            "Could not determine MATLAB JVM version because MATLAB log file was not created")
         endif()
       else()
         message(WARNING
-          "Could not determine MATLAB JVM version because MATLAB log file was not created")
+          "Could not determine MATLAB JVM version because MATLAB exited with nonzero result ${_result}")
       endif()
-    else()
-      message(WARNING
-        "Could not determine MATLAB JVM version because MATLAB exited with nonzero result ${_result}")
+    endif()
+
+    if(MATLAB_JVM_VERSION)
+      set(_jdk_version "${Java_VERSION_MAJOR}.${Java_VERSION_MINOR}")
+
+      # Compare against JDK version
+      if(MATLAB_JVM_VERSION VERSION_EQUAL _jdk_version)
+        message(STATUS
+          "The MATLAB JVM version is ${MATLAB_JVM_VERSION}")
+      else()
+        message(WARNING
+          "MATLAB JVM version (${MATLAB_JVM_VERSION}) does not match "
+          "installed Java Development Kit version (${_jdk_version})")
+
+        # If JDK is newer, set build options to build Java code compatible
+        # with the MATLAB JVM
+        if(MATLAB_JVM_VERSION VERSION_LESS _jdk_version)
+          set(CMAKE_JAVA_COMPILE_FLAGS
+          -source ${MATLAB_JVM_VERSION} -target ${MATLAB_JVM_VERSION}
+          CACHE INTERNAL "")
+        endif()
+      endif()
     endif()
   endif()
 endfunction()
@@ -149,7 +167,7 @@ macro(drake_setup_java)
   # If matlab is in use, try to determine its JVM version, as we need to build
   # all externals to the same version (on success, this will set the Java
   # compile flags)
-  if(MATLAB_EXECUTABLE AND NOT DISABLE_MATLAB)
+  if(Matlab_FOUND AND NOT DISABLE_MATLAB)
     drake_setup_java_for_matlab()
   else()
     unset(CMAKE_JAVA_COMPILE_FLAGS CACHE)
