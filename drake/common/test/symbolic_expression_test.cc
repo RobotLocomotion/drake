@@ -362,6 +362,13 @@ GTEST_TEST(ExpressionTest, CompatibleWithVector) {
   vec.push_back(Expression{123.0});
 }
 
+GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
+  // make sure that symbolic::Expression is nothrow move-constructible so that
+  // it can be moved (not copied) when a STL container (i.e. vector<Expression>)
+  // is resized.
+  EXPECT_TRUE(std::is_nothrow_move_constructible<Expression>::value);
+}
+
 TEST_F(SymbolicExpressionTest, Log) {
   EXPECT_DOUBLE_EQ(log(pi_).Evaluate(), std::log(3.141592));
   EXPECT_DOUBLE_EQ(log(one_).Evaluate(), std::log(1.0));
