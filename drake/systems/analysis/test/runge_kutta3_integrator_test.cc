@@ -54,7 +54,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   RungeKutta3Integrator<double> integrator(
       spring_mass, context.get());
 
-  EXPECT_GE(integrator.get_error_order(), 1);
+  EXPECT_GE(integrator.get_error_estimate_order(), 1);
   EXPECT_EQ(integrator.supports_accuracy_estimation(), true);
   EXPECT_EQ(integrator.supports_error_control(), true);
   EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
@@ -108,7 +108,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Get the final position.
   const double kXFinal =
-      context->get_state().get_continuous_state()->get_state().GetAtIndex(0);
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(C1 * std::cos(kOmega * T_FINAL) + C2 * std::sin(kOmega * T_FINAL),
@@ -165,14 +165,14 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
 
   // Get the final position.
   const double kXFinal =
-      context->get_state().get_continuous_state()->get_state().GetAtIndex(0);
+      context->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(C1 * std::cos(kOmega * T_FINAL) + C2 * std::sin(kOmega * T_FINAL),
               kXFinal, 1e-5);
 
   // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_last_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);

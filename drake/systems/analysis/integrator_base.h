@@ -6,8 +6,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
 
-#include "drake/systems/vector.h"
-
 namespace drake {
 namespace systems {
 
@@ -115,7 +113,8 @@ class IntegratorBase {
    * information, see <pre>Sherman, et al. Procedia IUTAM 2:241-261 (2011),
    * Section 3.3.
    * http://dx.doi.org/10.1016/j.piutam.2011.04.023
-   * @throws std::logic_error if integrator does not support accuracy estimation
+   * @throws std::logic_error if integrator does not support accuracy
+   *         estimation.
    */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
@@ -251,7 +250,7 @@ class IntegratorBase {
     actual_initial_step_size_taken_ = nan();
     smallest_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
-    last_step_size_ = nan();
+    prev_step_size_ = nan();
     ideal_next_step_size_ = nan();
     num_steps_taken_ = 0;
     error_test_failures_ = 0;
@@ -290,16 +289,6 @@ class IntegratorBase {
    */
   const T& get_ideal_next_step_size() const { return ideal_next_step_size_; }
 
-  /**
- * Returns the number of failures to accept an integration step due to
- * not meeting error tolerances since the last call to ResetStatistics()
- * or Initialize().
- */
-  int64_t get_error_test_failures() const { return error_test_failures_; }
-
-  // Sets the number of integration step failures due to error tolerance fails.
-  void set_error_test_failures(int64_t fails) { error_test_failures_ = fails; }
-
   /** Returns a const reference to the internally-maintained Context holding
    * the most recent state in the trajectory. This is suitable for publishing or
    * extracting information about this trajectory step.
@@ -326,7 +315,7 @@ class IntegratorBase {
   /// Gets a constant reference to the system.
   const System<T>& get_system() const { return system_; }
 
-  /// Indicates whether the integrator been initialized.
+  /// Indicates whether the integrator has been initialized.
   bool is_initialized() const { return initialization_done_; }
 
   /**
@@ -334,16 +323,18 @@ class IntegratorBase {
    *  error estimate. If the integrator does not provide an error estimate,
    *  the derived class implementation should return 0.
    */
-  virtual int64_t get_error_order() const = 0;
+  virtual int get_error_estimate_order() const = 0;
 
-  /// Gets the size of the last integration step.
+  /// Gets the size of the last (previous) integration step.
   /**
    * If no integration steps have been taken, value will be NaN.
    */
-  const T& get_last_integration_step_size() const { return last_step_size_; }
+  const T& get_previous_integration_step_size() const {
+    return prev_step_size_; }
 
   /** Gets the error estimate (used only for integrators that support accuracy
-   * estimation).
+   * estimation). If the error estimate has not been computed, nullptr
+   * is returned.
    */
   const ContinuousState<T>* get_error_estimate() const {
     return err_est_.get(); }
@@ -365,37 +356,48 @@ class IntegratorBase {
   auto& get_mutable_generalized_state_scaling_matrix() { return v_scal_; }
 
   /**
-   *  Gets the scaling matrix for miscellaneous state variables.
+   *  Gets the scaling matrix for miscellaneous continuous state variables.
    *  Only used for integrators that support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
   const auto& get_misc_state_scaling_matrix() const { return z_scal_; }
 
   /**
-   *  Gets a mutable scaling matrix for miscellaneous state variables.
-   *  Only used for integrators that support accuracy estimation.
+   *  Gets a mutable scaling matrix for miscellaneous continuous state
+   *  variables. Only used for integrators that support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
   auto& get_mutable_misc_state_scaling_matrix() { return z_scal_; }
 
  protected:
-  /// Default code for an error controlled step.
   /**
+* Returns the number of failures to accept an integration step due to
+* not meeting error tolerances since the last call to ResetStatistics()
+* or Initialize().
+*/
+  int64_t get_error_test_failures() const { return error_test_failures_; }
+
+  // Sets the number of integration step failures due to error tolerance fails.
+  void set_error_test_failures(int64_t fails) { error_test_failures_ = fails; }
+
+  /**
+   * Default code for an error controlled step.
    * Integrators may use a different function than this one to step with
    * error control, but this default method is expected to function well in
    * most circumstances.
-   * @param dt_max The maximum step size to be taken. The integrator may
+   * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
    *               requirements.
-   * @param integrator A pointer to the integrator to drive in an error
+   * @param[in] integrator A pointer to the integrator to drive in an error
    *                   controlled fashion. If the integrator does not
    *                   support accuracy estimation, throws a logic_error.
-   * @param derivs0 A pointer to the state derivatives at the system's
+   * @param[in,out] derivs0 A pointer to the state derivatives at the system's
    *                current time (t0), *which must have already been evaluated
    *                at t0*. These values may be modified on return.
    * @throws std::logic_error if integrator does not support accuracy estimation
    */
-  static void StepErrorControlled(const T& dt, IntegratorBase<T>* integrator,
+  static void StepErrorControlled(const T& dt_max,
+                                  IntegratorBase<T>* integrator,
                                   ContinuousState<T>* derivs0);
 
   /**
@@ -418,11 +420,12 @@ class IntegratorBase {
    * where qdot represents the time derivatives of the configuration variables
    * and v represents the velocity variables. qdot and v may generally be
    * distinct, as in the case where q corresponds to unit quaternions and v
-   * corresponds to an angular velocity vector. [Nikravesh 1988]shows how such a
-   * matrix N can be determined and also describes the relationship between the
-   * transpose of this matrix and its pseudo-inverse. Given this relationship,
-   * we can relate scaled errors in configuration coordinates (q) to scaled
-   * errors in generalized configuration (x), as the following derivation shows:
+   * corresponds to an angular velocity vector. [Nikravesh 1988] shows how such
+   * a matrix N can be determined and also describes the relationship between
+   * the transpose of this matrix and its pseudo-inverse. Given this
+   * relationship, we can relate scaled errors in configuration coordinates (q)
+   * to scaled errors in generalized configuration (x), as the following
+   * derivation shows:
    *
    * <pre>
    * v = N+ * qdot
@@ -477,27 +480,6 @@ class IntegratorBase {
    */
   virtual void DoIntegrate(const T& dt) = 0;
 
-  // Sets the ideal next step size.
-  void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
-
-  // Sets the actual initial step size taken.
-  void set_actual_initial_step_size_taken(const T& dt) {
-    actual_initial_step_size_taken_ = dt;
-  }
-
-  // Sets the smallest step size taken
-  void set_smallest_step_size_taken(const T& dt) {
-    smallest_step_size_taken_ = dt;
-  }
-
-  // Sets the largest step size taken
-  void set_largest_step_size_taken(const T& dt) {
-    largest_step_size_taken_ = dt;
-  }
-
-  // Sets the number of steps taken.
-  void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
-
   // Updates the integrator statistics.
   void UpdateStatistics(const T& dt) {
     // Handle first step specially.
@@ -533,10 +515,31 @@ class IntegratorBase {
   }
 
  private:
+  // Sets the ideal next step size.
+  void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
+
+  // Sets the actual initial step size taken.
+  void set_actual_initial_step_size_taken(const T& dt) {
+    actual_initial_step_size_taken_ = dt;
+  }
+
+  // Sets the smallest step size taken
+  void set_smallest_step_size_taken(const T& dt) {
+    smallest_step_size_taken_ = dt;
+  }
+
+  // Sets the largest step size taken
+  void set_largest_step_size_taken(const T& dt) {
+    largest_step_size_taken_ = dt;
+  }
+
+  // Sets the number of steps taken.
+  void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
+
   // Calls DoIntegrate and does necessary pre-initialization and post-cleanup.
   void Integrate(const T& dt) {
     DoIntegrate(dt);
-    last_step_size_ = dt;
+    prev_step_size_ = dt;
   }
 
   // Reference to the system being simulated.
@@ -560,7 +563,7 @@ class IntegratorBase {
   T min_step_size_{nan()};
 
   // The last step taken by the integrator
-  T last_step_size_{nan()};
+  T prev_step_size_{nan()};
 
   // Statistics.
   T actual_initial_step_size_taken_{nan()};
@@ -596,24 +599,23 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
                                             IntegratorBase<T>* integrator,
                                             ContinuousState<T>* derivs0) {
   // Constants for integration growth and shrinkage.
-  const double DT_SHRINK = 0.95;
-  const double DT_GROWTH = 1.001;
+  const double kDTShrink = 0.95;
+  const double kDTGrow = 1.001;
 
-  // Verify that the integrator supports error estimates
+  // Verify that the integrator supports error estimates.
   if (!integrator->supports_accuracy_estimation())
-    throw std::logic_error("StepErrorControlled requires accuracy estimation.");
+    throw std::logic_error("StepErrorControlled() requires accuracy "
+                               "estimation.");
 
   // Save continuous variables and time derivative because we'll revert state
   // multiple times.
   VectorBase<T>* xc = integrator->get_mutable_context()
-                          ->get_mutable_state()
-                          ->get_mutable_continuous_state()
-                          ->get_mutable_state();
+                          ->get_mutable_continuous_state_vector();
   integrator->xc0_save_ = xc->CopyToVector();
   auto& context = integrator->get_context();
   integrator->xcdot0_save_ = derivs0->CopyToVector();
 
-  // Set the "current" step size
+  // Set the "current" step size.
   T current_step_size = integrator->get_ideal_next_step_size();
   if (std::isnan(current_step_size)) {
     // Integrator has not taken a step. Set the current step size to the
@@ -630,12 +632,12 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     // to take due to a need to stop at dt_max, make a note of that so the
     // step size adjuster won't try to grow from the current step.
     bool dt_was_artificially_limited = false;
-    if (dt_max < DT_SHRINK * current_step_size) {
+    if (dt_max < kDTShrink * current_step_size) {
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
     } else {
-      if (dt_max < DT_GROWTH * current_step_size)
+      if (dt_max < kDTGrow * current_step_size)
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
 
@@ -643,7 +645,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     integrator->Integrate(current_step_size);
 
     //--------------------------------------------------------------------
-    double err_nrm = CalcErrorNorm(integrator);
+    const double err_nrm = CalcErrorNorm(integrator);
     step_succeeded = integrator->AdjustStepSize(
         err_nrm, dt_was_artificially_limited, current_step_size);
 
@@ -666,8 +668,8 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
 template <class T>
 double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
-  auto& context = integrator->get_context();
-  auto& system = integrator->get_system();
+  const auto& context = integrator->get_context();
+  const auto& system = integrator->get_system();
 
   // Verify that the integrator supports accuracy estimation.
   if (!integrator->supports_accuracy_estimation())
@@ -683,7 +685,8 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   const auto& v_scal = integrator->get_generalized_state_scaling_matrix();
   const auto& z_scal = integrator->get_misc_state_scaling_matrix();
 
-  // Get the generalized position, velocity, and miscellaneous state vectors.
+  // Get the generalized position, velocity, and miscellaneous continuous
+  // state vectors.
   const VectorBase<T>& gc = err_est->get_generalized_position();
   const VectorBase<T>& gv = err_est->get_generalized_velocity();
   const VectorBase<T>& gz = err_est->get_misc_continuous_state();
@@ -711,6 +714,7 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   double q_nrm =
       scaled_q_err->CopyToVector().template lpNorm<Eigen::Infinity>();
 
+  // TODO(edrumwri): Record the worst offender.
   // Infinity norm of the concatenation of multiple vectors is equal to the
   // maximum of the infinity norms of the individual vectors.
   return std::max(z_nrm, std::max(q_nrm, v_nrm));
@@ -728,7 +732,7 @@ bool IntegratorBase<T>::AdjustStepSize(double err,
   const double kHysteresisHigh = 1.2;
 
   /// Get the order for the integrator's error estimate.
-  int err_order = get_error_order();
+  int err_order = get_error_estimate_order();
 
   /// Indicator for new step size not set properly.
   double new_step_size = -1.0;

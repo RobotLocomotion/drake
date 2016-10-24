@@ -73,7 +73,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   bool supports_error_control() const override { return true; }
 
   /// This integrator provides third order error estimates.
-  int64_t get_error_order() const override { return 3; }
+  int get_error_estimate_order() const override { return 3; }
 
  private:
   void DoInitialize() override;

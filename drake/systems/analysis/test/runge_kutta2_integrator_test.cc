@@ -52,7 +52,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   RungeKutta2Integrator<double> integrator(
       spring_mass, DT, context.get());
 
-  EXPECT_EQ(integrator.get_error_order(), 0);
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_accuracy_estimation(), false);
   EXPECT_EQ(integrator.supports_error_control(), false);
   EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
@@ -106,15 +106,15 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal = context->get_state().
-      get_continuous_state()->get_state().GetAtIndex(0);
+  const double kXFinal = context->get_state().get_continuous_state()->
+      get_vector().GetAtIndex(0);
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);
   EXPECT_NEAR(true_sol, kXFinal, 1e-5);
 
   // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_last_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);

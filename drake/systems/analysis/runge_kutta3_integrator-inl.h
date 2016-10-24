@@ -30,7 +30,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& dt_max) {
   // Call the generic error controlled stepper.
   IntegratorBase<T>::StepErrorControlled(dt_max, this, derivs0_.get());
 
-  const T& dt = IntegratorBase<T>::get_last_integration_step_size();
+  const T& dt = IntegratorBase<T>::get_previous_integration_step_size();
   return (dt == dt_max);
 }
 
@@ -38,16 +38,14 @@ template <class T>
 void RungeKutta3Integrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc = IntegratorBase<T>::get_mutable_context()
-      ->get_mutable_state()
-      ->get_mutable_continuous_state()
-      ->get_mutable_state();
+      ->get_mutable_continuous_state_vector();
 
   // Setup ta and tb.
   T ta = IntegratorBase<T>::get_context().get_time();
   T tb = ta + dt;
 
   // Get the derivative at the current state (x0) and time (t0).
-  const auto& xcdot0 = derivs0_->get_state();
+  const auto& xcdot0 = derivs0_->get_vector();
 
   // Get the system and the context.
   auto& system = IntegratorBase<T>::get_system();
@@ -57,14 +55,14 @@ void RungeKutta3Integrator<T>::DoIntegrate(const T& dt) {
   IntegratorBase<T>::get_mutable_context()->set_time(ta + dt * 0.5);
   xc->PlusEqScaled(dt * 0.5, xcdot0);
   system.EvalTimeDerivatives(context, derivs1_.get());
-  const auto& xcdot1 = derivs1_->get_state();
+  const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=1, x(1)).
   IntegratorBase<T>::get_mutable_context()->set_time(tb);
   xc->SetFromVector(IntegratorBase<T>::get_interval_start_state());
   xc->PlusEqScaled({{dt * -1.0, xcdot0}, {dt * 2.0, xcdot1}});
   system.EvalTimeDerivatives(context, derivs2_.get());
-  const auto& xcdot2 = derivs2_->get_state();
+  const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.
   const double ONE_SIXTH = 1.0/6.0;

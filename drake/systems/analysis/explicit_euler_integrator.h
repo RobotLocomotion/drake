@@ -47,7 +47,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
   bool supports_error_control() const override { return false; }
 
   /// Integrator does not provide an error estimate.
-  int64_t get_error_order() const override { return 0; }
+  int get_error_estimate_order() const override { return 0; }
 
  private:
   void DoIntegrate(const T& dt) override;
@@ -64,8 +64,7 @@ template <class T>
 void ExplicitEulerIntegrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>* xc = context->get_mutable_continuous_state()->
-      get_mutable_state();
+  VectorBase<T>* xc = context->get_mutable_continuous_state_vector();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
@@ -74,7 +73,7 @@ void ExplicitEulerIntegrator<T>::DoIntegrate(const T& dt) {
 
   // Compute derivative and update configuration and velocity.
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot = derivs_->get_state();
+  const auto& xcdot = derivs_->get_vector();
   xc->PlusEqScaled(dt, xcdot);  // xc += dt * xcdot
   context->set_time(context->get_time() + dt);
 }

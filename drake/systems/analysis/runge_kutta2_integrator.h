@@ -38,7 +38,7 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   bool supports_accuracy_estimation() const override { return false; }
 
   /// Integrator does not provide an error estimate.
-  int64_t get_error_order() const override { return 0; }
+  int get_error_estimate_order() const override { return 0; }
 
   /**
    * The RK2 integrator does not support error control.
@@ -61,7 +61,7 @@ void RungeKutta2Integrator<T>::DoIntegrate(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state()->
-      get_mutable_state();
+      get_mutable_vector();
 
   // TODO(sherm1) This should be calculating into the cache so that
   // Publish() doesn't have to recalculate if it wants to output derivatives.
@@ -70,7 +70,7 @@ void RungeKutta2Integrator<T>::DoIntegrate(const T& dt) {
 
   // First stage is an explicit Euler step:
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot0 = derivs0_->get_state();
+  const auto& xcdot0 = derivs0_->get_vector();
   xc->PlusEqScaled(dt, xcdot0);  // xc += dt * xcdot0
   T t = IntegratorBase<T>::get_context().get_time() + dt;
   IntegratorBase<T>::get_mutable_context()->set_time(t);
@@ -78,7 +78,7 @@ void RungeKutta2Integrator<T>::DoIntegrate(const T& dt) {
   // use derivative at t+dt
   IntegratorBase<T>::get_system().EvalTimeDerivatives(
       *IntegratorBase<T>::get_mutable_context(), derivs1_.get());
-  const auto& xcdot1 = derivs1_->get_state();
+  const auto& xcdot1 = derivs1_->get_vector();
 
   // TODO(sherm1) Use better operators when available.
   xc->PlusEqScaled(dt * 0.5, xcdot1);
