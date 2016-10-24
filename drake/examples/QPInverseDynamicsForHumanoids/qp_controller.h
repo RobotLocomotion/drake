@@ -260,6 +260,8 @@ class ContactInformation {
           "Number of basis per contact point must be >= 3.");
   }
 
+
+
   /**
    * Computes a matrix (Basis) that converts a vector of scalars (Beta) to
    * the stacked point contact forces (F).

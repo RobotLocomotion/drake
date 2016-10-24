@@ -43,10 +43,10 @@ GTEST_TEST(ValueTest, Mutation) {
   EXPECT_EQ(7, erased.GetValue<int>());
   erased.SetValueOrThrow<int>(8);
   EXPECT_EQ(8, erased.GetValue<int>());
-  erased.SetFrom(Value<int>(9));
-  EXPECT_EQ(9, erased.GetValue<int>());
-  erased.SetFromOrThrow(Value<int>(10));
-  EXPECT_EQ(10, erased.GetValue<int>());
+  //erased.SetFrom(Value<int>(9));
+  //EXPECT_EQ(9, erased.GetValue<int>());
+  //erased.SetFromOrThrow(Value<int>(10));
+  //EXPECT_EQ(10, erased.GetValue<int>());
 }
 
 GTEST_TEST(ValueTest, BadCast) {
@@ -55,7 +55,7 @@ GTEST_TEST(ValueTest, BadCast) {
   EXPECT_THROW(erased.GetValueOrThrow<int>(), std::bad_cast);
   EXPECT_THROW(erased.GetMutableValueOrThrow<int>(), std::bad_cast);
   EXPECT_THROW(erased.SetValueOrThrow<int>(3), std::bad_cast);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<int>(2)), std::bad_cast);
+  //EXPECT_THROW(erased.SetFromOrThrow(Value<int>(2)), std::bad_cast);
 }
 
 class PrintInterface {

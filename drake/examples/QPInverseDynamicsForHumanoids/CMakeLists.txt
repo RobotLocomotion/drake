@@ -11,11 +11,12 @@ target_link_libraries(drakeQPController
   lcmtypes_bot2-core-cpp
   drakeSide)
 
-#if(snopt_c_FOUND)
+drake_find_package(snopt_c CONFIG)
+if(snopt_c_FOUND)
   drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
   target_link_libraries(valkyrie_balancing_test
     drakeQPController
     GTest::GTest GTest::Main)
-  #endif()
+endif()
 
 add_subdirectory(system)
