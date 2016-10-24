@@ -38,12 +38,12 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
 
   // Setup tracking for various body parts.
   DesiredBodyMotion pelvdd_d(*robot.FindBody("pelvis"));
-  pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
+  pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
   pelvdd_d.mutable_weights().segment<3>(3).setZero();
   input.mutable_desired_body_motions().push_back(pelvdd_d);
 
   DesiredBodyMotion torsodd_d(*robot.FindBody("torso"));
-  torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
+  torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
   torsodd_d.mutable_weights().segment<3>(3).setZero();
   input.mutable_desired_body_motions().push_back(torsodd_d);
 

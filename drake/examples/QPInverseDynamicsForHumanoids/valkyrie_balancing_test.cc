@@ -86,14 +86,8 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
     v += output.vd() * dt;
     time += dt;
 
-    //std::cout << "rs.q: " << robot_status.position().transpose() << std::endl;
-    //std::cout << "rs.v: " << robot_status.velocity().transpose() << std::endl;
-    //std::cout << input;
-    //exit(0);
-
     robot_status.Update(time, q, v, output.joint_torque(),
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
-    //std::cout << output;
   }
 
   // Check final state.

@@ -90,9 +90,9 @@ void test() {
   // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
   // reasonable amount of time.
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      *diagram, 4e-3, simulator.get_mutable_context());
+      *diagram, 3e-3, simulator.get_mutable_context());
   simulator.Initialize();
-  simulator.StepTo(2.0);
+  simulator.StepTo(4.0);
 
   // Check final state.
   // Since the feet have equality constraints set to 0 in the qp controller,
