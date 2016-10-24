@@ -18,7 +18,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot), qp_input_(MakeExampleQPInput(robot)) {
+  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -29,8 +29,15 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
     // Setup gains.
+    int dim = robot.get_num_positions();
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
+    Kp_pelvis_ = Eigen::Vector6d::Constant(20);
+    Kd_pelvis_ = Eigen::Vector6d::Constant(8);
+    Kp_torso_ = Eigen::Vector6d::Constant(20);
+    Kd_torso_ = Eigen::Vector6d::Constant(8);
+    Kp_joints_ = Eigen::VectorXd::Constant(dim, 20);
+    Kd_joints_ = Eigen::VectorXd::Constant(dim, 8);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -52,70 +59,14 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
       result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
     }
 
+    // Update desired accelerations.
     result.mutable_desired_comdd() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
          Kd_com_.array() * robot_status->comd().array()).matrix();
 
-    result.mutable_desired_joint_motions().mutable_setpoint() = qp_input_.desired_joint_motions().setpoint();
-
-    std::list<DesiredBodyMotion>::const_iterator it = qp_input_.desired_body_motions().begin();
-    for (DesiredBodyMotion& body_motion : result.mutable_desired_body_motions()) {
-      body_motion.mutable_setpoint() = it->setpoint();
-      it++;
-    }
-
-    /*
-    result.mutable_desired_body_motions().clear();
-    result.mutable_contact_info().clear();
-
-    // Weights are set arbitrarily by the control designer, these typically
-    // require tuning.
-    // Setup tracking for center of mass acceleration.
-    result.mutable_w_com() = comdd_weight_;
-
-    // Setup tracking for generalized accelerations.
-    int dim = robot_.get_num_velocities();
-
-    result.mutable_desired_joint_motions().mutable_setpoint() = desired_joints_;
-    result.mutable_desired_joint_motions().mutable_weights() = -vd_weight_ * Eigen::VectorXd::Constant(dim, 1);
-
-    // Setup tracking for various body parts.
-    DesiredBodyMotion pelvdd_d(*robot_status->robot().FindBody("pelvis"));
-    pelvdd_d.mutable_weights() = pelvisdd_weight_ * Eigen::Vector6d::Constant(1);
-    pelvdd_d.mutable_setpoint() = desired_pelvis_;
-    result.mutable_desired_body_motions().push_back(pelvdd_d);
-
-    DesiredBodyMotion torsodd_d(*robot_status->robot().FindBody("torso"));
-    torsodd_d.mutable_weights() = torsodd_weight_ * Eigen::Vector6d::Constant(1);
-    torsodd_d.mutable_weights().segment<3>(3).setZero();
-    //torsodd_d.mutable_weights()[1] = -1;
-    torsodd_d.mutable_setpoint() = desired_torso_;
-    result.mutable_desired_body_motions().push_back(torsodd_d);
-
-    // Set weight for the basis regularization term.
-    result.mutable_w_basis_reg() = basis_weight_;
-
-    // Make contact points for the left foot.
-    ContactInformation left_foot_contact(
-        *robot_status->robot().FindBody("leftFoot"), 4);
-    left_foot_contact.mutable_contact_points().push_back(
-        Eigen::Vector3d(0.2, 0.05, -0.09));
-    left_foot_contact.mutable_contact_points().push_back(
-        Eigen::Vector3d(0.2, -0.05, -0.09));
-    left_foot_contact.mutable_contact_points().push_back(
-        Eigen::Vector3d(-0.05, -0.05, -0.09));
-    left_foot_contact.mutable_contact_points().push_back(
-        Eigen::Vector3d(-0.05, 0.05, -0.09));
-
-    // Mirror the left foot.
-    ContactInformation right_foot_contact(
-        *robot_status->robot().FindBody("rightFoot"), 4);
-    right_foot_contact.mutable_contact_points() =
-        left_foot_contact.contact_points();
-
-    result.mutable_contact_info().push_back(left_foot_contact);
-    result.mutable_contact_info().push_back(right_foot_contact);
-    */
+    result.mutable_desired_joint_motions().mutable_accelerations() = joint_PDff_.ComputeTargetAcceleration(robot_status->position(), robot_status->velocity());
+    result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() = pelvis_PDff_.ComputeTargetAcceleration(robot_status->pelvis().pose(), robot_status->pelvis().velocity());
+    result.mutable_desired_body_motions().at("torso").mutable_accelerations() = torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(), robot_status->torso().velocity());
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -123,7 +74,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<QPInput>(qp_input_)));
+        std::unique_ptr<AbstractValue>(new Value<QPInput>(MakeExampleQPInput(robot_))));
     return std::move(output);
   }
 
@@ -133,7 +84,10 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
-    TrackThis(robot_status, &qp_input_);
+    pelvis_PDff_ = CartesianSetpoint(robot_status.pelvis().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
+    torso_PDff_ = CartesianSetpoint(robot_status.torso().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
+    int dim = robot_status.position().size();
+    joint_PDff_ = VectorSetpoint(robot_status.position(), Eigen::VectorXd::Zero(dim), Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
   }
 
   /**
@@ -157,11 +111,20 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
 
-  QPInput qp_input_;
+  VectorSetpoint joint_PDff_;
+  CartesianSetpoint pelvis_PDff_;
+  CartesianSetpoint torso_PDff_;
 
   Eigen::Vector3d desired_com_;
   Eigen::Vector3d Kp_com_;
   Eigen::Vector3d Kd_com_;
+
+  Eigen::Vector6d Kp_pelvis_;
+  Eigen::Vector6d Kd_pelvis_;
+  Eigen::Vector6d Kp_torso_;
+  Eigen::Vector6d Kd_torso_;
+  Eigen::VectorXd Kp_joints_;
+  Eigen::VectorXd Kd_joints_;
 };
 
 }  // namespace qp_inverse_dynamics

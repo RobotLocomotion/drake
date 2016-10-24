@@ -41,8 +41,9 @@ ContactInformation DecodeContactInformation(const lcmt_contact_information& msg,
 }
 
 lcmt_body_motion EncodeDesiredBodyMotion(const DesiredBodyMotion& body_motion) {
-  const CartesianSetpoint& setpoint = body_motion.setpoint();
   lcmt_body_motion msg;
+  /*
+  const CartesianSetpoint& setpoint = body_motion.setpoint();
   msg.body_name = body_motion.body().get_name();
   for (int i = 0; i < 3; i++)
     msg.position[i] = setpoint.desired_pose().translation()[i];
@@ -59,13 +60,14 @@ lcmt_body_motion EncodeDesiredBodyMotion(const DesiredBodyMotion& body_motion) {
     msg.weight[i] = body_motion.weights()[i];
   }
   msg.control_during_contact = body_motion.control_during_contact();
-
+  */
   return msg;
 }
 
 DesiredBodyMotion DecodeDesiredBodyMotion(const lcmt_body_motion& msg, const RigidBodyTree& robot) {
   DesiredBodyMotion result(*robot.FindBody(msg.body_name));
 
+  /*
   Eigen::Isometry3d pose;
   Eigen::Quaterniond quat(msg.rotation[0], msg.rotation[1], msg.rotation[2], msg.rotation[3]);
   pose.translation() = Eigen::Vector3d(msg.position[0], msg.position[1], msg.position[2]);
@@ -82,6 +84,7 @@ DesiredBodyMotion DecodeDesiredBodyMotion(const lcmt_body_motion& msg, const Rig
   for (int i = 0; i < 6; i++)
     result.mutable_weights()[i] = msg.weight[i];
   result.mutable_control_during_contact() = msg.control_during_contact;
+  */
   return result;
 }
 
