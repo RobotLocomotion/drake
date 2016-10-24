@@ -529,6 +529,7 @@ class BodyAcceleration {
   inline Eigen::Vector6d& mutable_acceleration() { return acceleration_; }
 };
 
+/*
 class DesiredBodyMotion {
  private:
   const RigidBody& body_;
@@ -648,6 +649,73 @@ class DesiredJointMotions {
   inline Eigen::VectorXd& mutable_override_accelerations() { return override_acc_; }
   inline void set_override(bool flag) { use_override_ = flag; }
 };
+*/
+
+class DesiredBodyMotion {
+ private:
+  const RigidBody& body_;
+  Eigen::Vector6d accelerations_;
+  Eigen::Vector6d weights_;
+  bool control_during_contact_;
+
+ public:
+  explicit DesiredBodyMotion(const RigidBody& body)
+    : body_(body), accelerations_(Eigen::Vector6d::Zero()), weights_(Eigen::Vector6d::Zero()), control_during_contact_(false) {}
+
+  inline bool is_valid() const {
+    return accelerations_.allFinite() && weights_.allFinite();
+  }
+
+  inline std::string get_row_name(int i) const {
+    const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
+    if (i < 0 || i >=6)
+      throw std::runtime_error("index must be within [0, 5]");
+    return row_name[i];
+  }
+
+  // Getters
+  inline const RigidBody& body() const { return body_; }
+  inline const std::string& name() const { return body_.get_name(); }
+  inline const Eigen::Vector6d& weights() const { return weights_; }
+  inline const Eigen::Vector6d& accelerations() const { return accelerations_; }
+  inline bool control_during_contact() const { return control_during_contact_; }
+
+  // Setters
+  inline Eigen::Vector6d& mutable_weights() { return weights_; }
+  inline Eigen::Vector6d& mutable_accelerations() { return accelerations_; }
+  inline bool& mutable_control_during_contact() { return control_during_contact_; }
+};
+
+class DesiredJointMotions {
+ private:
+  std::vector<std::string> names_;
+  Eigen::VectorXd weights_;
+  Eigen::VectorXd accelerations_;
+
+ public:
+  DesiredJointMotions() {}
+  explicit DesiredJointMotions(const std::vector<std::string>& names)
+  : names_(names), weights_(Eigen::VectorXd::Zero(names.size())), accelerations_(Eigen::VectorXd::Zero(names.size())) {}
+
+  bool is_valid(int dim) const {
+    bool ret = static_cast<int>(names_.size()) == weights_.size();
+    ret &= weights_.size() == accelerations_.size();
+    ret &= weights_.allFinite();
+    ret &= accelerations_.allFinite();
+    return ret;
+  }
+
+  // Getters
+  inline int size() const { return accelerations_.size(); }
+  inline const std::vector<std::string>& names() const { return names_; }
+  inline const std::string& name(int i) const { return names_.at(i); }
+  inline const Eigen::VectorXd& weights() const { return weights_; }
+  inline const Eigen::VectorXd& accelerations() const { return accelerations_; }
+
+  // Setters
+  inline Eigen::VectorXd& mutable_weights() { return weights_; }
+  inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
+};
 
 /**
  * Input to the QP inverse dynamics controller
@@ -658,7 +726,7 @@ class QPInput {
   std::list<ContactInformation> contact_info_;
 
   // Desired task space accelerations for specific bodies
-  std::list<DesiredBodyMotion> desired_body_motions_;
+  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
 
   DesiredJointMotions desired_joint_motions_;
 
@@ -674,9 +742,12 @@ class QPInput {
   double w_basis_reg_;
 
  public:
-  explicit QPInput(const RigidBodyTree& r) : desired_joint_motions_(r) {}
-
-  QPInput(const QPInput& other) : contact_info_(other.contact_info()), desired_body_motions_(other.desired_body_motions()), desired_joint_motions_(other.desired_joint_motions()), desired_comdd_(other.desired_comdd()), w_com_(other.w_com()), w_basis_reg_(other.w_basis_reg()) {}
+  explicit QPInput(const RigidBodyTree& r) {
+    std::vector<std::string> names(r.get_num_positions());
+    for (int i = 0; i < r.get_num_positions(); i++)
+      names[i] = r.get_position_name(i);
+    desired_joint_motions_ = DesiredJointMotions(names);
+  }
 
   /**
    * Checks validity of this QPInput.
@@ -687,9 +758,8 @@ class QPInput {
     int valid = num_vd == desired_joint_motions_.size();
     valid &= desired_comdd_.allFinite();
     valid &= desired_joint_motions_.is_valid(num_vd);
-    for (const DesiredBodyMotion& desired_body_motion :
-         desired_body_motions_) {
-      valid &= desired_body_motion.is_valid();
+    for (auto it = desired_body_motions_.begin(); it != desired_body_motions_.end(); it++) {
+      valid &= it->second.is_valid();
     }
 
     valid &= std::isfinite(w_com_);
@@ -710,8 +780,7 @@ class QPInput {
   inline const std::list<ContactInformation>& contact_info() const {
     return contact_info_;
   }
-  inline const std::list<DesiredBodyMotion>&
-  desired_body_motions() const {
+  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions() const {
     return desired_body_motions_;
   }
   inline const DesiredJointMotions& desired_joint_motions() const { return desired_joint_motions_; }
@@ -725,8 +794,7 @@ class QPInput {
   inline std::list<ContactInformation>& mutable_contact_info() {
     return contact_info_;
   }
-  inline std::list<DesiredBodyMotion>&
-  mutable_desired_body_motions() {
+  inline std::map<std::string, DesiredBodyMotion>& mutable_desired_body_motions() {
     return desired_body_motions_;
   }
   inline DesiredJointMotions& mutable_desired_joint_motions() { return desired_joint_motions_; }
@@ -938,7 +1006,7 @@ class QPController {
   void ResizeQP(
       const RigidBodyTree& robot,
       const std::list<ContactInformation>& all_contacts,
-      const std::list<DesiredBodyMotion>& all_body_accelerations,
+      const std::map<std::string, DesiredBodyMotion>& all_body_accelerations,
       const DesiredJointMotions& all_joint_motions);
 
   /**

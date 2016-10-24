@@ -22,7 +22,7 @@ static void FindCostAndEqConstraintRows(const Eigen::VectorXd& weights, std::lis
 void QPController::ResizeQP(
     const RigidBodyTree& robot,
     const std::list<ContactInformation>& all_contacts,
-    const std::list<DesiredBodyMotion>& all_body_motions,
+    const std::map<std::string, DesiredBodyMotion>& all_body_motions,
     const DesiredJointMotions& all_joint_motions) {
   // Figure out dimensions.
   int num_contact_body = all_contacts.size();
@@ -42,7 +42,8 @@ void QPController::ResizeQP(
   std::vector<std::list<int>> body_motion_row_idx_as_cost(all_body_motions.size());
   std::vector<std::list<int>> body_motion_row_idx_as_eq(all_body_motions.size());
   int ctr = 0;
-  for (const auto& body_motion : all_body_motions) {
+  for (auto it = all_body_motions.begin(); it != all_body_motions.end(); it++) {
+    const DesiredBodyMotion& body_motion = it->second;
     FindCostAndEqConstraintRows(body_motion.weights(), &body_motion_row_idx_as_cost[ctr], &body_motion_row_idx_as_eq[ctr]);
     if (body_motion_row_idx_as_cost.size() > 0)
       num_body_motion_as_cost++;
@@ -326,12 +327,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   std::list<int> row_idx_as_cost;
   std::list<int> row_idx_as_eq;
 
-  for (const DesiredBodyMotion& body_motion_d : input.desired_body_motions()) {
+  for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++) {
+    const DesiredBodyMotion& body_motion_d = it->second;
     body_J_[contact_ctr] = GetTaskSpaceJacobian(
         rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
     body_Jdv_[contact_ctr] = GetTaskSpaceJacobianDotTimesV(
         rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
-    Eigen::Vector6d linear_term = body_Jdv_[contact_ctr] - body_motion_d.ComputeAcceleration(rs.robot(), rs.cache());
+    Eigen::Vector6d linear_term = body_Jdv_[contact_ctr] - body_motion_d.accelerations();
 
     // Find the rows that correspond to cost and equality constraints.
     FindCostAndEqConstraintRows(body_motion_d.weights(), &row_idx_as_cost, &row_idx_as_eq);
@@ -382,7 +384,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     for (int d : row_idx_as_eq) {
       vd_reg_mat_.row(row_ctr).setZero();
       vd_reg_mat_(row_ctr, d) = 1;
-      vd_reg_vec_[row_ctr] = input.desired_joint_motions().ComputeAcceleration(d, rs.position(d), rs.velocity(d));
+      vd_reg_vec_[row_ctr] = input.desired_joint_motions().accelerations()[d];
       eq_name += std::to_string(d);
       row_ctr++;
     }
@@ -398,7 +400,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     for (int d : row_idx_as_cost) {
       double weight = input.desired_joint_motions().weights()[d];
       vd_reg_mat_(d, d) = weight;
-      vd_reg_vec_[d] = -weight * input.desired_joint_motions().ComputeAcceleration(d, rs.position(d), rs.velocity(d));
+      vd_reg_vec_[d] = -weight * input.desired_joint_motions().accelerations()[d];
     }
     cost_joint_motion_->UpdateQuadraticAndLinearTerms(vd_reg_mat_, vd_reg_vec_);
   }
@@ -501,7 +503,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   output->mutable_body_accelerations().clear();
   ctr = 0;
-  for (const DesiredBodyMotion& body_motion_d : input.desired_body_motions()) {
+  for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++) {
+    const DesiredBodyMotion& body_motion_d = it->second;
     BodyAcceleration body_acceleration(body_motion_d.body());
     // Compute accelerations.
     body_acceleration.mutable_acceleration() =
@@ -546,16 +549,14 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
   out << "weight_com: " << input.w_com() << std::endl;
 
-  for (const DesiredBodyMotion& body_motion_d :
-       input.desired_body_motions()) {
-    out << "desired_" << body_motion_d.name()
-        << "_setpoint: " << body_motion_d.setpoint();
-    out << "weight_" << body_motion_d.name() << ": " << body_motion_d.weights().transpose()
+  for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++) {
+    out << "desired " << it->first << " acc: " << it->second.accelerations();
+    out << "weights: " << it->second.weights().transpose()
         << std::endl;
   }
 
-  out << "desired joint motions: " << std::endl;
-  out << input.desired_joint_motions().setpoint();
+  out << "desired joint acc: " << std::endl;
+  out << input.desired_joint_motions().accelerations();
   out << "weights: " << input.desired_joint_motions().weights().transpose() << std::endl;
 
   out << "weight_basis_reg: " << input.w_basis_reg() << std::endl;

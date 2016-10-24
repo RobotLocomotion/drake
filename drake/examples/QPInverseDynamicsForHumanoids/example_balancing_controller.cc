@@ -4,27 +4,6 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-void TrackThis(const HumanoidStatus& rs, QPInput* input) {
-  int dim = rs.robot().get_num_velocities();
-  input->mutable_desired_joint_motions().mutable_setpoint() =
-      VectorSetpoint(rs.position(),
-                     Eigen::VectorXd::Zero(dim),
-                     Eigen::VectorXd::Zero(dim),
-                     Eigen::VectorXd::Constant(dim, 20),
-                     Eigen::VectorXd::Constant(dim, 8));
-
-  for (DesiredBodyMotion& body_motion : input->mutable_desired_body_motions()) {
-    const RigidBody& body = body_motion.body();
-    Eigen::Isometry3d pose_d = rs.robot().relativeTransform(rs.cache(), 0, body.get_body_index());
-    body_motion.mutable_setpoint() =
-      CartesianSetpoint(pose_d,
-                        Eigen::Vector6d::Zero(),
-                        Eigen::Vector6d::Zero(),
-                        Eigen::Vector6d::Constant(20),
-                        Eigen::Vector6d::Constant(8));
-  }
-}
-
 QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   int dim = robot.get_num_velocities();
   QPInput input(robot);
@@ -40,12 +19,12 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   DesiredBodyMotion pelvdd_d(*robot.FindBody("pelvis"));
   pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
   pelvdd_d.mutable_weights().segment<3>(3).setZero();
-  input.mutable_desired_body_motions().push_back(pelvdd_d);
+  input.mutable_desired_body_motions().emplace(pelvdd_d.name(), pelvdd_d);
 
   DesiredBodyMotion torsodd_d(*robot.FindBody("torso"));
   torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
   torsodd_d.mutable_weights().segment<3>(3).setZero();
-  input.mutable_desired_body_motions().push_back(torsodd_d);
+  input.mutable_desired_body_motions().emplace(torsodd_d.name(), torsodd_d);
 
   // Weights are set arbitrarily by the control designer, these typically
   // require tuning.
