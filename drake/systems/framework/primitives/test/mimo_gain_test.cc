@@ -31,7 +31,7 @@ class MimoGainTest : public AffineLinearSystemTest {
   }
 
  protected:
-  const int kNumStates_{0}; // MimoGain systems have no state variables.
+  const int kNumStates_{0};  // MimoGain systems have no state variables.
   unique_ptr<LinearSystemPlant<double>> system_;
 };
 

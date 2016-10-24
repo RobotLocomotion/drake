@@ -26,7 +26,7 @@ namespace systems {
 template<typename T>
 class MimoGain: public LinearSystemPlant<T> {
  public:
-  MimoGain(const Eigen::Ref<const MatrixX<T>> &D);
+  explicit MimoGain(const Eigen::Ref<const MatrixX<T>> &D);
 };
 
 }  // namespace systems
