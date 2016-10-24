@@ -193,6 +193,14 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
       nnz_jac_g += num_grad;
     }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
     for (const auto& c : problem_->linear_constraints()) {
       m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
       nnz_jac_g += num_grad;
@@ -234,6 +242,14 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       constraint_idx += GetConstraintBounds(
           *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
     }
@@ -314,6 +330,18 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                   // populated by each call to
                                   // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->lorentz_cone_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
         grad_idx +=
             GetGradientMatrix(*(c.constraint()), c.variable_list(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
@@ -420,6 +448,16 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = constraint_cache_->grad.data();
 
     for (const auto& c : problem_->generic_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
                                  result, grad);
       result += c.constraint()->num_constraints();
