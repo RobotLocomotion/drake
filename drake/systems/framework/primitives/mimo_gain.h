@@ -11,7 +11,7 @@ namespace systems {
 /// is:
 ///
 /// <pre>
-///   y = Cx + Du
+///   y = Du
 /// </pre>
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.

@@ -19,6 +19,7 @@
 // #include "drake/systems/framework/primitives/constant_vector_source.h"
 // #include "drake/systems/framework/primitives/demultiplexer.h"
 // #include "drake/systems/framework/primitives/gain.h"
+#include "drake/systems/framework/primitives/mimo_gain.h"
 // #include "drake/systems/framework/primitives/pid_controller.h"
 // #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -58,6 +59,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 // using systems::Gain;
 // using systems::GravityCompensator;
+using systems::MimoGain;
 // using systems::PidController;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
@@ -209,28 +211,89 @@ int main() {
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       kQuaternion, nullptr /* weld to frame */, tree.get());
 
+  // DEBUG print statement.
   for (auto& actuator : tree->actuators) {
     std::cout << "Actuator: " << actuator.name_ << std::endl;
   }
 
   AddFlatTerrainToWorld(tree.get());
 
-  // Instantiates a system for visualizing the MBD model.
-  lcm::DrakeLcm lcm;
-  auto publisher = builder.AddSystem<RigidBodyTreeLcmPublisher>(*tree, &lcm);
-
-  // Instantiates a RigidBodyPlant based on the MBD model.
+  // Instantiates a RigidBodyPlant to simulate the MBD model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
   plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
       500 /* penetration_damping */, 10 /* friction_coefficient */);
 
-  // Instantiates a Pid controller that controls the RigidBodyPlant.
+  // Instantiates a PID controller for controlling the actuators in the
+  // RigidBodyPlant.
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), 0. /* Kp */, 0. /* Ki */, 0. /* Kd */);
 
+  // DEBUG print statement.
   std::cout << "Size of controller's input port 0: "
             << controller->get_input_port(0).get_size() << std::endl;
 
+  // DEBUG print statement.
+  std::cout << "Size of controller's input port 1: "
+            << controller->get_input_port(1).get_size() << std::endl;
+
+  // Instantiates a system for visualizing the MBD model.
+  lcm::DrakeLcm lcm;
+  auto publisher = builder.AddSystem<RigidBodyTreeLcmPublisher>(
+      dynamic_cast<const RigidBodyPlant<double>*>(controller->system())->
+          get_rigid_body_tree(), &lcm);
+
+  // Instantiates a system for receiving user commands. The user command
+  // consists of the following three-vector:
+  //
+  // [steering angle position, throttle velocity, brake velocity]
+  //
+  static const DrivingCommandTranslator driving_command_translator;
+  auto command_subscriber =
+      builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
+          "DRIVING_COMMAND", driving_command_translator, &lcm);
+
+  // DEBUG print statement.
+  std::cout << "Size of command subscriber's output port 0: "
+            << command_subscriber->get_output_port(0).get_size() << std::endl;
+
+  // Instantiates a MIMO gain system to covert from user command space to
+  // actuator command space. As mentioned above, the user command space consists
+  // of the following three-vector:
+  //
+  // [steering angle position, throttle velocity, brake velocity]
+  //
+  // The actuator command space consists of a six-vector:
+  //
+  // [steering angle position, left wheel position, right wheel position,
+  //  steering angle velocity, left wheel velocity, right wheel velocity]
+  //
+  // The MimoGain system computes the following equation where `y` is the
+  // actuator command, `D` is the gain`, and `u` is the user command:
+  //
+  //   y = Du
+  //
+  // The user's steering angle position command can be passed straight
+  // through. The user's throttle and brake commands need to be multipled by
+  // a gain of 20 and -20 to get the reference velocities for the left and right
+  // wheels, respectively. Thus, the gain (`D`) should be:
+  //
+  // -------------------------------------------------------
+  // Index |   kSteeringAngle   |   kThrottle   |   kBrake
+  // -------------------------------------------------------
+  //   0   |         1          |       0       |      0
+  //   1   |         0          |       0       |      0
+  //   2   |         0          |       0       |      0
+  //   3   |         0          |       0       |      0
+  //   4   |         0          |       20      |     -20
+  //   5   |         0          |       20      |     -20
+  // -------------------------------------------------------
+  MatrixX<double> mimo_gain(controller->get_input_port(0).get_size(),
+                            command_subscriber->get_output_port(0).get_size());
+  mimo_gain.setZero();
+  auto user_to_actuator_cmd_sys =
+      builder.template AddSystem<MimoGain<double>>(mimo_gain);
+
+  // DEBUG constant vector source.
   VectorX<double> constant_vector(controller->get_input_port(0).get_size());
   constant_vector.setZero();
   auto constant_zero_source =
@@ -274,24 +337,22 @@ int main() {
   //     1: left wheel
   //     2: right wheel
   //
-  static const DrivingCommandTranslator driving_command_translator;
-  auto command_subscriber =
-      builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
-          "DRIVING_COMMAND", driving_command_translator, &lcm);
-
-  std::cout << "Size of command subscriber's output port 0: "
-            << command_subscriber->get_output_port(0).get_size() << std::endl;
-
-  std::cout << "Size of controller's input port 1: "
-            << controller->get_input_port(1).get_size() << std::endl;
 
   // Connects the feedforward control signal (all zeros).
   builder.Connect(constant_zero_source->get_output_port(),
                   controller->get_input_port(0));
 
-  // Connects the desired state of the system.
+  // Makes the connection that converts from user commands to actuator commands.
   builder.Connect(command_subscriber->get_output_port(0),
+                  user_to_actuator_cmd_sys->get_input_port());
+
+  // Makes the connection that converts from actuator commands to the actuator
+  // controller.
+  builder.Connect(user_to_actuator_cmd_sys->get_output_port(),
                   controller->get_input_port(1));
+
+  // Makes the connection that takes the controller's output and publishes it
+  // on an LCM channel for visualization.
   builder.Connect(controller->get_output_port(0),
                   publisher->get_input_port(0));
 
