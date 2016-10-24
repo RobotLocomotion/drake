@@ -1,6 +1,5 @@
 #include "drake/systems/framework/basic_vector.h"
 
-#include <iostream>
 #include <cmath>
 #include <sstream>
 
