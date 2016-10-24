@@ -52,7 +52,8 @@ class DRAKE_EXPORT SampledContactManifold : public ContactManifold<T> {
 
   /** Reports the number of distinct contact details for this manifold. */
   int get_num_contacts() const override {
-    return static_cast<int>(contact_details_.size()); }
+    return static_cast<int>(contact_details_.size());
+  }
 
   /**
    * Get the ith contact detail in the manifold.

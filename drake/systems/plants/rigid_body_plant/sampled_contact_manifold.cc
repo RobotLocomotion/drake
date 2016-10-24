@@ -8,8 +8,9 @@ SampledContactManifold<T>::SampledContactManifold() : ContactManifold<T>() {}
 
 template <typename T>
 SampledContactManifold<T>::SampledContactManifold(
-    const SampledContactManifold<T>& other) : ContactManifold<T>(other) {
-  for (const auto & detail : other.contact_details_) {
+    const SampledContactManifold<T>& other)
+    : ContactManifold<T>(other) {
+  for (const auto& detail : other.contact_details_) {
     std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
     contact_details_.push_back(std::move(copy));
   }
@@ -27,7 +28,7 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   Vector3<T> point = Vector3<T>::Zero();
   T scale = 0;
 
-  for (const auto & detail : contact_details_) {
+  for (const auto& detail : contact_details_) {
     const Vector3<T>& contact_point = detail->get_application_point();
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
 
@@ -43,12 +44,12 @@ ContactDetail<T> SampledContactManifold<T>::ComputeNetResponse() const {
   if (scale > kEpsilon) point /= scale;
 
   auto accum_torque = wrench.template head<3>();
-  for (const auto & detail : contact_details_) {
+  for (const auto& detail : contact_details_) {
     const Vector3<T>& contact_point = detail->get_application_point();
     // cross product doesn't work on "head"
     const WrenchVector<T>& contact_wrench = detail->get_wrench();
-    accum_torque += (contact_point - point).cross(
-        contact_wrench.template tail<3>());
+    accum_torque +=
+        (contact_point - point).cross(contact_wrench.template tail<3>());
   }
 
   return ContactDetail<T>(point, wrench);
@@ -63,7 +64,7 @@ const ContactDetail<T>* SampledContactManifold<T>::get_ith_contact(
   throw std::logic_error(
       "Attempted to acquire a contact detail with an invalid index: " +
       std::to_string(i) + " from a valid range of [0, " +
-  std::to_string(contact_details_.size()) + "].");
+      std::to_string(contact_details_.size()) + "].");
 }
 
 template <typename T>

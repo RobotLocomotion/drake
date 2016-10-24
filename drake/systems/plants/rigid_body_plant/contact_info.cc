@@ -8,20 +8,20 @@ namespace systems {
 template <typename T>
 ContactInfo<T>::ContactInfo(DrakeCollision::ElementId element1,
                             DrakeCollision::ElementId element2,
-                            std::unique_ptr<ContactManifold<T>> manifold) :
-    element1_(element1), element2_(element2), contact_manifold_(move(manifold))
-{}
+                            std::unique_ptr<ContactManifold<T>> manifold)
+    : element1_(element1),
+      element2_(element2),
+      contact_manifold_(move(manifold)) {}
 
 template <typename T>
-ContactInfo<T>::ContactInfo(const ContactInfo<T>& other) :
-    element1_(other.element1_),
-    element2_(other.element2_),
-    contact_manifold_(move(other.contact_manifold_->Clone())) {
-}
+ContactInfo<T>::ContactInfo(const ContactInfo<T>& other)
+    : element1_(other.element1_),
+      element2_(other.element2_),
+      contact_manifold_(move(other.contact_manifold_->Clone())) {}
 
 template <typename T>
 ContactInfo<T>& ContactInfo<T>::operator=(const ContactInfo<T>& other) {
-  if ( this == &other) return *this;
+  if (this == &other) return *this;
   element1_ = other.element1_;
   element2_ = other.element2_;
   contact_manifold_ = move(other.contact_manifold_->Clone());
