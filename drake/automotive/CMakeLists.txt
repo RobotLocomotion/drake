@@ -84,4 +84,6 @@ if(lcm_FOUND)
       drakeSystemAnalysis
       drakeSystemControllers
       drakeLCMSystem2)
+
+  add_test(NAME car_sim_lcm2 COMMAND car_sim_lcm2 -simulation_sec 0.1)
 endif()

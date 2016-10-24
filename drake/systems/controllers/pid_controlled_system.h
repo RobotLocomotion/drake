@@ -54,6 +54,15 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> system,
                       const T& Kp, const T& Ki, const T& Kd);
+
+  /// @param[in] system The system to be controlled.
+  /// @param[in] Kp the proportional vector constant.
+  /// @param[in] Ki the integral vector constant.
+  /// @param[in] Kd the derivative vector constant.
+  PidControlledSystem(std::unique_ptr<System<T>> systems,
+                      const VectorX<T>& Kp, const VectorX<T>& Ki,
+                      const VectorX<T>& Kd);
+
   ~PidControlledSystem() override;
 
   System<T>* system() { return system_; }

@@ -10,7 +10,16 @@ namespace systems {
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> system,
-    const T& Kp, const T& Ki, const T& Kd) {
+    const T& Kp, const T& Ki, const T& Kd)
+    : PidControlledSystem(std::move(system),
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kp,
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Ki,
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kd) { }
+
+template <typename T>
+PidControlledSystem<T>::PidControlledSystem(
+    std::unique_ptr<System<T>> system,
+    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
   DiagramBuilder<T> builder;
   system_ = builder.template AddSystem(std::move(system));
 
@@ -31,7 +40,7 @@ PidControlledSystem<T>::PidControlledSystem(
   state_minus_target_ = builder.template AddSystem<Adder<T>>(
       2, num_states);
   controller_ = builder.template AddSystem<PidController<T>>(
-      Kp, Ki, Kd, num_positions);
+      Kp, Ki, Kd);
 
   // Split the input into two signals one with the positions and one
   // with the velocities.

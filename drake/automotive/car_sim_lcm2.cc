@@ -1,30 +1,19 @@
-// #include <iostream>
-// #include <memory>
-
-// #include <gtest/gtest.h>
+#include <gflags/gflags.h>
 
 #include "drake/automotive/automotive_common.h"
 #include "drake/automotive/car_simulation.h"
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/common/drake_path.h"
-// #include "drake/math/roll_pitch_yaw.h"
+#include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
-
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
-// #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-// #include "drake/systems/framework/primitives/adder.h"
-// #include "drake/systems/framework/primitives/constant_vector_source.h"
-// #include "drake/systems/framework/primitives/demultiplexer.h"
-// #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/mimo_gain.h"
-// #include "drake/systems/framework/primitives/pid_controller.h"
-// #include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
@@ -35,6 +24,9 @@
 // Includes for the planner.
 // #include "drake/systems/plants/IKoptions.h"
 // #include "drake/systems/plants/RigidBodyIK.h"
+
+DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
+    "Number of seconds to simulate.");
 
 // using Eigen::Vector2d;
 // using Eigen::Vector3d;
@@ -203,6 +195,7 @@ namespace {
 // };
 
 int main() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   DiagramBuilder<double> builder;
 
   // Instantiates an Multibody Dynamics (MBD) model of the world.
@@ -223,10 +216,17 @@ int main() {
   plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
       500 /* penetration_damping */, 10 /* friction_coefficient */);
 
+  // DEBUG
+  std::cout << "plant->get_input_port(0).get_size() = "
+            << plant->get_input_port(0).get_size() << std::endl;
+
   // Instantiates a PID controller for controlling the actuators in the
-  // RigidBodyPlant.
+  // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
+  const Vector3<double> Kp(400,   0,   0);
+  const Vector3<double> Ki(0,     0,   0);
+  const Vector3<double> Kd(80,  100, 100);
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
-      std::move(plant), 0. /* Kp */, 0. /* Ki */, 0. /* Kd */);
+      std::move(plant), Kp, Ki, Kd);
 
   // DEBUG print statement.
   std::cout << "Size of controller's input port 0: "
@@ -241,6 +241,8 @@ int main() {
   auto publisher = builder.AddSystem<RigidBodyTreeLcmPublisher>(
       dynamic_cast<const RigidBodyPlant<double>*>(controller->system())->
           get_rigid_body_tree(), &lcm);
+
+  lcm.StartReceiveThread();
 
   // Instantiates a system for receiving user commands. The user command
   // consists of the following three-vector:
@@ -287,72 +289,38 @@ int main() {
   //   4   |         0          |       20      |     -20
   //   5   |         0          |       20      |     -20
   // -------------------------------------------------------
-  MatrixX<double> mimo_gain(controller->get_input_port(0).get_size(),
+  MatrixX<double> mimo_gain(controller->get_input_port(1).get_size(),
                             command_subscriber->get_output_port(0).get_size());
-  mimo_gain.setZero();
+  mimo_gain <<
+      1,  0,   0,
+      0,  0,   0,
+      0,  0,   0,
+      0,  0,   0,
+      0, 20, -20,
+      0, 20, -20;
   auto user_to_actuator_cmd_sys =
       builder.template AddSystem<MimoGain<double>>(mimo_gain);
 
-  // DEBUG constant vector source.
+  // Instantiates a constant vector source for the feedforward torque command.
+  // The feedforward torque is zero.
   VectorX<double> constant_vector(controller->get_input_port(0).get_size());
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
 
-  // VectorX<double> constant_value2(controller->get_input_port(1).get_size());
-  // constant_value2.setZero();
-  // auto constant_source2 =
-  //     builder.template AddSystem<ConstantVectorSource<double>>(constant_value2);
-
-  // The output of vector of the command subscriber is a DrivingCommand<double>,
-  // which is a BasicVector<double> of length 3:
-  //
-  //     [steering angle, throttle, brake].
-  //
-  // These values need to be processed before they can be sent into the PID
-  // controller, which has an input port of size 6. In
-  // drake-distro/drake/automotive/car_simulation.cc, method
-  // CreateVehicleSystem(), the values of the PID controller are multipled by
-  // a matrix called `map_driving_cmd_to_x_d`, which serves as a translator
-  // from the reference signal provided by the driving command to the reference
-  // signal to provide to the PID controller.
-  //
-  // Here is the gain matrix that we want to have:
-  //
-  // -------------------------------------------------------
-  // Index |   kSteeringAngle   |   kThrottle   |   kBrake
-  // -------------------------------------------------------
-  //   0   |         1          |       0       |      0
-  //   1   |         0          |       0       |      0
-  //   2   |         0          |       0       |      0
-  //   3   |         0          |       0       |      0
-  //   4   |         0          |       20      |     -20
-  //   5   |         0          |       20      |     -20
-  // -------------------------------------------------------
-  //
-  // The RigidBodyPlant has three actuators, each accepting a torque as input.
-  // Here is the order:
-  //
-  //     0: steering
-  //     1: left wheel
-  //     2: right wheel
-  //
-
-  // Connects the feedforward control signal (all zeros).
+  // Connects the feedforward torque command.
   builder.Connect(constant_zero_source->get_output_port(),
                   controller->get_input_port(0));
 
-  // Makes the connection that converts from user commands to actuator commands.
+  // Connects the system that converts from user commands to actuator commands.
   builder.Connect(command_subscriber->get_output_port(0),
                   user_to_actuator_cmd_sys->get_input_port());
 
-  // Makes the connection that converts from actuator commands to the actuator
-  // controller.
+  // Connects the controller, which includes the plant being controlled.
   builder.Connect(user_to_actuator_cmd_sys->get_output_port(),
                   controller->get_input_port(1));
 
-  // Makes the connection that takes the controller's output and publishes it
-  // on an LCM channel for visualization.
+  // Connects the LCM publisher, which is used for visualization.
   builder.Connect(controller->get_output_port(0),
                   publisher->get_input_port(0));
 
@@ -375,15 +343,8 @@ int main() {
                                              rigid_body_plant);
   rigid_body_plant->SetZeroConfiguration(plant_context);
 
-  // VectorX<double> desired_state = VectorX<double>::Zero(14);
-  // model.get_kuka_plant().set_state_vector(
-  //     simulator.get_mutable_context(), desired_state);
-
   simulator.Initialize();
-
-  // Simulate for 20 seconds.
-  simulator.StepTo(20.0);
-
+  simulator.StepTo(FLAGS_simulation_sec);
   return 0;
 }
 
@@ -391,6 +352,7 @@ int main() {
 }  // namespace automotive
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::automotive::main();
 }
