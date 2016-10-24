@@ -7,6 +7,7 @@
 
 #include "drake/systems/framework/primitives/gain.h"
 
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -32,17 +33,12 @@ Gain<T>::Gain(const VectorX<T>& k) : k_(k) {
 
 template <typename T>
 const T& Gain<T>::get_gain() const {
-  T first_value = k_[0];
-
-  // Ensures all of the gains are the same. If it is not, the
-  for (int i = 1; i < k_.size(); ++i) {
-    if (first_value != k_[i]) {
-      throw std::runtime_error("drake::systems::Gain::get_gain(): Error! The "
-          "gain cannot be represented as a single scalar value. Please use "
-          "get_gain_vector() instead.");
-    }
+  if (!k_.isConstant(k_[0])) {
+    std::stringstream s;
+    s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
+      << "value. Please use drake::systems::Gain::get_gain_vector() instead.";
+    DRAKE_ABORT_MSG(s.str().c_str());
   }
-
   return k_[0];
 }
 
