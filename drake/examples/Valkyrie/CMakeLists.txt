@@ -47,6 +47,17 @@ if (lcm_FOUND)
   pods_install_libraries(drakeRobotStateEncoder)
   drake_install_headers(robot_state_encoder.h)
 
+  add_library_with_exports(LIB_NAME drakeRobotStateDecoder SOURCE_FILES
+      robot_state_decoder.cc)
+  target_link_libraries(drakeRobotStateDecoder
+      drakeLCMSystem2
+      drakeLCMUtil
+      drakeRigidBodyPlant
+      drakeRobotStateLcmTypeUtil
+      )
+  pods_install_libraries(drakeRobotStateDecoder)
+  drake_install_headers(robot_state_decoder.h)
+
   add_executable(valkyrie_simulation valkyrie_simulation.cc)
   target_link_libraries(valkyrie_simulation
       drakeRigidBodyPlant
