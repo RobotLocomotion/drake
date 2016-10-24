@@ -1,5 +1,9 @@
 #include "drake/common/symbolic_formula.h"
 
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_assert.h"
@@ -12,6 +16,10 @@
 namespace drake {
 namespace symbolic {
 namespace {
+
+using std::unordered_map;
+using std::unordered_set;
+using std::vector;
 
 // Provides common variables that are used by the following tests.
 class SymbolicFormulaTest : public ::testing::Test {
@@ -347,6 +355,35 @@ TEST_F(SymbolicFormulaTest, DrakeAssert) {
   DRAKE_THROW_UNLESS(not_f_or_);
   DRAKE_THROW_UNLESS(f_forall_);
   DRAKE_THROW_UNLESS(mutable_f);
+}
+
+// This test checks whether symbolic::Formula is compatible with
+// std::unordered_set.
+GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
+  unordered_set<Formula> uset;
+  uset.emplace(Formula::True());
+  uset.emplace(Formula::False());
+}
+
+// This test checks whether symbolic::Formula is compatible with
+// std::unordered_map.
+GTEST_TEST(FormulaTest, CompatibleWithUnorderedMap) {
+  unordered_map<Formula, Formula> umap;
+  umap.emplace(Formula::True(), Formula::False());
+}
+
+// This test checks whether symbolic::Formula is compatible with
+// std::vector.
+GTEST_TEST(FormulaTest, CompatibleWithVector) {
+  vector<Formula> vec;
+  vec.push_back(Formula::True());
+}
+
+GTEST_TEST(FormulaTest, NoThrowMoveConstructible) {
+  // make sure that symbolic::Formula is nothrow move-constructible so that
+  // it can be moved (not copied) when a STL container (i.e. vector<Formula>)
+  // is resized.
+  EXPECT_TRUE(std::is_nothrow_move_constructible<Formula>::value);
 }
 
 }  // namespace
