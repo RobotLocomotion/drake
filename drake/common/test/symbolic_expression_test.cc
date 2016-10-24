@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_expression.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -36,6 +37,8 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression z_{var_z_};
 
   const Expression x_plus_y_{x_ + y_};
+
+  const Expression x_plus_z_{x_ + z_};
 
   const Expression zero_{0.0};
   const Expression one_{1.0};
@@ -90,20 +93,23 @@ TEST_F(SymbolicExpressionTest, Hash) {
 }
 
 TEST_F(SymbolicExpressionTest, HashBinary) {
-  const Expression e1{x_plus_y_ + x_plus_y_};
-  const Expression e2{x_plus_y_ - x_plus_y_};
-  const Expression e3{x_plus_y_ * x_plus_y_};
-  const Expression e4{x_plus_y_ / x_plus_y_};
-  const Expression e5{pow(x_plus_y_, x_plus_y_)};
-  const Expression e6{atan2(x_plus_y_, x_plus_y_)};
+  const Expression e1{x_plus_y_ + x_plus_z_};
+  const Expression e2{x_plus_y_ - x_plus_z_};
+  const Expression e3{x_plus_y_ * x_plus_z_};
+  const Expression e4{x_plus_y_ / x_plus_z_};
+  const Expression e5{pow(x_plus_y_, x_plus_z_)};
+  const Expression e6{atan2(x_plus_y_, x_plus_z_)};
+  const Expression e7{min(x_plus_y_, x_plus_z_)};
+  const Expression e8{max(x_plus_y_, x_plus_z_)};
 
-  // e1, ..., e6 share the same sub-expressions, but their hash values should be
+  // e1, ..., e8 share the same sub-expressions, but their hash values should be
   // distinct.
   unordered_set<size_t> hash_set;
-  for (auto const& e : {e1, e2, e3, e4, e5, e6}) {
+  const vector<Expression> exprs{e1, e2, e3, e4, e5, e6, e7, e8};
+  for (auto const& e : exprs) {
     hash_set.insert(e.get_hash());
   }
-  EXPECT_EQ(hash_set.size(), 6u);
+  EXPECT_EQ(hash_set.size(), exprs.size());
 }
 
 TEST_F(SymbolicExpressionTest, HashUnary) {
@@ -124,11 +130,12 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   // e0, ..., e12 share the same sub-expression, but their hash values should be
   // distinct.
   unordered_set<size_t> hash_set;
-  for (auto const& e :
-       {e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12}) {
+  const vector<Expression> exprs{e0, e1, e2, e3,  e4,  e5, e6,
+                                 e7, e8, e9, e10, e11, e12};
+  for (auto const& e : exprs) {
     hash_set.insert(e.get_hash());
   }
-  EXPECT_EQ(hash_set.size(), 13u);
+  EXPECT_EQ(hash_set.size(), exprs.size());
 }
 
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
@@ -631,6 +638,120 @@ TEST_F(SymbolicExpressionTest, Tanh) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env), std::tanh(2 * 3.2 * 3.141592) +
                                         std::tanh(2) + std::tanh(3.2));
+}
+
+TEST_F(SymbolicExpressionTest, Min1) {
+  // min(E, E) -> E
+  EXPECT_TRUE(min(x_plus_y_, x_plus_y_).EqualTo(x_plus_y_));
+}
+
+TEST_F(SymbolicExpressionTest, Min2) {
+  EXPECT_DOUBLE_EQ(min(pi_, pi_).Evaluate(), std::min(3.141592, 3.141592));
+  EXPECT_DOUBLE_EQ(min(pi_, one_).Evaluate(), std::min(3.141592, 1.0));
+  EXPECT_DOUBLE_EQ(min(pi_, two_).Evaluate(), std::min(3.141592, 2.0));
+  EXPECT_DOUBLE_EQ(min(pi_, zero_).Evaluate(), std::min(3.141592, 0.0));
+  EXPECT_DOUBLE_EQ(min(pi_, neg_one_).Evaluate(), std::min(3.141592, -1.0));
+  EXPECT_DOUBLE_EQ(min(pi_, neg_pi_).Evaluate(), std::min(3.141592, -3.141592));
+
+  EXPECT_DOUBLE_EQ(min(one_, pi_).Evaluate(), std::min(1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(one_, one_).Evaluate(), std::min(1.0, 1.0));
+  EXPECT_DOUBLE_EQ(min(one_, two_).Evaluate(), std::min(1.0, 2.0));
+  EXPECT_DOUBLE_EQ(min(one_, zero_).Evaluate(), std::min(1.0, 0.0));
+  EXPECT_DOUBLE_EQ(min(one_, neg_one_).Evaluate(), std::min(1.0, -1.0));
+  EXPECT_DOUBLE_EQ(min(one_, neg_pi_).Evaluate(), std::min(1.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(min(two_, pi_).Evaluate(), std::min(2.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(two_, one_).Evaluate(), std::min(2.0, 1.0));
+  EXPECT_DOUBLE_EQ(min(two_, two_).Evaluate(), std::min(2.0, 2.0));
+  EXPECT_DOUBLE_EQ(min(two_, zero_).Evaluate(), std::min(2.0, 0.0));
+  EXPECT_DOUBLE_EQ(min(two_, neg_one_).Evaluate(), std::min(2.0, -1.0));
+  EXPECT_DOUBLE_EQ(min(two_, neg_pi_).Evaluate(), std::min(2.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(min(zero_, pi_).Evaluate(), std::min(0.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(zero_, one_).Evaluate(), std::min(0.0, 1.0));
+  EXPECT_DOUBLE_EQ(min(zero_, two_).Evaluate(), std::min(0.0, 2.0));
+  EXPECT_DOUBLE_EQ(min(zero_, zero_).Evaluate(), std::min(0.0, 0.0));
+  EXPECT_DOUBLE_EQ(min(zero_, neg_one_).Evaluate(), std::min(0.0, -1.0));
+  EXPECT_DOUBLE_EQ(min(zero_, neg_pi_).Evaluate(), std::min(0.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(min(neg_one_, pi_).Evaluate(), std::min(-1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(neg_one_, one_).Evaluate(), std::min(-1.0, 1.0));
+  EXPECT_DOUBLE_EQ(min(neg_one_, two_).Evaluate(), std::min(-1.0, 2.0));
+  EXPECT_DOUBLE_EQ(min(neg_one_, zero_).Evaluate(), std::min(-1.0, 0.0));
+  EXPECT_DOUBLE_EQ(min(neg_one_, neg_one_).Evaluate(), std::min(-1.0, -1.0));
+  EXPECT_DOUBLE_EQ(min(neg_one_, neg_pi_).Evaluate(),
+                   std::min(-1.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(min(neg_pi_, pi_).Evaluate(), std::min(-3.141592, 3.141592));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, one_).Evaluate(), std::min(-3.141592, 1.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, two_).Evaluate(), std::min(-3.141592, 2.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, zero_).Evaluate(), std::min(-3.141592, 0.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_one_).Evaluate(),
+                   std::min(-3.141592, -1.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_pi_).Evaluate(),
+                   std::min(-3.141592, -3.141592));
+
+  const Expression e{min(x_ * y_ * pi_, sin(x_) + sin(y_))};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::min(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+}
+
+TEST_F(SymbolicExpressionTest, Max1) {
+  // max(E, E) -> E
+  EXPECT_TRUE(max(x_plus_y_, x_plus_y_).EqualTo(x_plus_y_));
+}
+
+TEST_F(SymbolicExpressionTest, Max2) {
+  EXPECT_DOUBLE_EQ(max(pi_, pi_).Evaluate(), std::max(3.141592, 3.141592));
+  EXPECT_DOUBLE_EQ(max(pi_, one_).Evaluate(), std::max(3.141592, 1.0));
+  EXPECT_DOUBLE_EQ(max(pi_, two_).Evaluate(), std::max(3.141592, 2.0));
+  EXPECT_DOUBLE_EQ(max(pi_, zero_).Evaluate(), std::max(3.141592, 0.0));
+  EXPECT_DOUBLE_EQ(max(pi_, neg_one_).Evaluate(), std::max(3.141592, -1.0));
+  EXPECT_DOUBLE_EQ(max(pi_, neg_pi_).Evaluate(), std::max(3.141592, -3.141592));
+
+  EXPECT_DOUBLE_EQ(max(one_, pi_).Evaluate(), std::max(1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(one_, one_).Evaluate(), std::max(1.0, 1.0));
+  EXPECT_DOUBLE_EQ(max(one_, two_).Evaluate(), std::max(1.0, 2.0));
+  EXPECT_DOUBLE_EQ(max(one_, zero_).Evaluate(), std::max(1.0, 0.0));
+  EXPECT_DOUBLE_EQ(max(one_, neg_one_).Evaluate(), std::max(1.0, -1.0));
+  EXPECT_DOUBLE_EQ(max(one_, neg_pi_).Evaluate(), std::max(1.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(max(two_, pi_).Evaluate(), std::max(2.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(two_, one_).Evaluate(), std::max(2.0, 1.0));
+  EXPECT_DOUBLE_EQ(max(two_, two_).Evaluate(), std::max(2.0, 2.0));
+  EXPECT_DOUBLE_EQ(max(two_, zero_).Evaluate(), std::max(2.0, 0.0));
+  EXPECT_DOUBLE_EQ(max(two_, neg_one_).Evaluate(), std::max(2.0, -1.0));
+  EXPECT_DOUBLE_EQ(max(two_, neg_pi_).Evaluate(), std::max(2.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(max(zero_, pi_).Evaluate(), std::max(0.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(zero_, one_).Evaluate(), std::max(0.0, 1.0));
+  EXPECT_DOUBLE_EQ(max(zero_, two_).Evaluate(), std::max(0.0, 2.0));
+  EXPECT_DOUBLE_EQ(max(zero_, zero_).Evaluate(), std::max(0.0, 0.0));
+  EXPECT_DOUBLE_EQ(max(zero_, neg_one_).Evaluate(), std::max(0.0, -1.0));
+  EXPECT_DOUBLE_EQ(max(zero_, neg_pi_).Evaluate(), std::max(0.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(max(neg_one_, pi_).Evaluate(), std::max(-1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(neg_one_, one_).Evaluate(), std::max(-1.0, 1.0));
+  EXPECT_DOUBLE_EQ(max(neg_one_, two_).Evaluate(), std::max(-1.0, 2.0));
+  EXPECT_DOUBLE_EQ(max(neg_one_, zero_).Evaluate(), std::max(-1.0, 0.0));
+  EXPECT_DOUBLE_EQ(max(neg_one_, neg_one_).Evaluate(), std::max(-1.0, -1.0));
+  EXPECT_DOUBLE_EQ(max(neg_one_, neg_pi_).Evaluate(),
+                   std::max(-1.0, -3.141592));
+
+  EXPECT_DOUBLE_EQ(max(neg_pi_, pi_).Evaluate(), std::max(-3.141592, 3.141592));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, one_).Evaluate(), std::max(-3.141592, 1.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, two_).Evaluate(), std::max(-3.141592, 2.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, zero_).Evaluate(), std::max(-3.141592, 0.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_one_).Evaluate(),
+                   std::max(-3.141592, -1.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_pi_).Evaluate(),
+                   std::max(-3.141592, -3.141592));
+
+  const Expression e{max(x_ * y_ * pi_, sin(x_) + sin(y_))};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
 }
 
 TEST_F(SymbolicExpressionTest, GetVariables) {

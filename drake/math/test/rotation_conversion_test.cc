@@ -32,6 +32,11 @@ using std::numeric_limits;
 namespace drake {
 namespace math {
 namespace {
+
+// kSweepSize is an even number, so that no samples are taken at zero. This
+// test scales as O(N^4) in sweep size, so be cautious about turning it up!
+const int kSweepSize = 6;
+
 Vector4d EigenQuaternionToOrderWXYZ(const Quaterniond& q) {
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
@@ -236,12 +241,12 @@ class RotationConversionTest : public ::testing::Test {
         Vector3d(M_PI * 0.9, -0.5 * M_PI + 1E-6, 0.8 * M_PI));
 
     // non-singular cases
-    auto roll =
-        Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.99 * M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.49 * M_PI,
-                                            0.49 * M_PI);
-    auto yaw =
-        Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -0.99 * M_PI, M_PI);
+    auto roll = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                           -0.99 * M_PI, M_PI);
+    auto pitch = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                            -0.49 * M_PI, 0.49 * M_PI);
+    auto yaw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
+                                          -0.99 * M_PI, M_PI);
     for (int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
         for (int k = 0; k < yaw.size(); ++k) {
@@ -340,10 +345,10 @@ class RotationConversionTest : public ::testing::Test {
     addAngleAxisTestCase((-1 + 1E-10) * M_PI, axis);
 
     // non-singularity cases
-    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20,
+    auto a_x = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_y = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_z = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto a_angle = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize,
                                               -0.95 * M_PI, 0.95 * M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
@@ -362,10 +367,10 @@ class RotationConversionTest : public ::testing::Test {
 
   void setupQuaternionTestCases() {
     // Set up a variety of general tests for quaternions.
-    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
-    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, 20, -1, 1);
+    auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qy = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
+    auto qz = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
     for (int i = 0; i < qw.size(); ++i) {
       for (int j = 0; j < qx.size(); ++j) {
         for (int k = 0; k < qy.size(); ++k) {
