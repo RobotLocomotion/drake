@@ -260,7 +260,9 @@ class ContactInformation {
           "Number of basis per contact point must be >= 3.");
   }
 
+  ContactInformation(const ContactInformation& other) : body_(other.body()), contact_points_(other.contact_points()), normal_(other.normal()), num_basis_per_contact_point_(other.num_basis_per_contact_point()), mu_(other.mu()) {
 
+  }
 
   /**
    * Computes a matrix (Basis) that converts a vector of scalars (Beta) to
@@ -541,6 +543,8 @@ class DesiredBodyMotion {
   explicit DesiredBodyMotion(const RigidBody& body)
     : body_(body), weights_(Eigen::Vector6d::Zero()), override_acc_(Eigen::Vector6d::Zero()), use_override_(false) {}
 
+  DesiredBodyMotion(const DesiredBodyMotion& other) : body_(other.body()), setpoint_(other.setpoint()), weights_(other.weights()), control_during_contact_(other.control_during_contact()), override_acc_(other.override_acceleration()), use_override_(other.is_overriding_acceleration()) {}
+
   Eigen::Vector6d ComputeAcceleration(const RigidBodyTree& robot, const KinematicsCache<double> &cache) const {
     if (!use_override_) {
       Eigen::Isometry3d pose = robot.relativeTransform(cache, 0, body_.get_body_index());
@@ -564,7 +568,7 @@ class DesiredBodyMotion {
     const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
     if (i < 0 || i >=6)
       throw std::runtime_error("index must be within [0, 5]");
-    return body_.get_name() + row_name[i];
+    return row_name[i];
   }
 
   // Getters
@@ -572,13 +576,15 @@ class DesiredBodyMotion {
   inline const std::string& name() const { return body_.get_name(); }
   inline const Eigen::Vector6d& weights() const { return weights_; }
   inline const CartesianSetpoint& setpoint() const { return setpoint_; }
+  inline const Eigen::Vector6d& override_acceleration() const { return override_acc_; }
   inline bool control_during_contact() const { return control_during_contact_; }
+  inline bool is_overriding_acceleration() const { return use_override_; }
 
   // Setters
   inline Eigen::Vector6d& mutable_weights() { return weights_; }
   inline bool& mutable_control_during_contact() { return control_during_contact_; }
   inline CartesianSetpoint& mutable_setpoint() { return setpoint_; }
-  inline Eigen::Vector6d& mutable_override_accelerations() { return override_acc_; }
+  inline Eigen::Vector6d& mutable_override_acceleration() { return override_acc_; }
   inline void set_override(bool flag) { use_override_ = flag; }
 };
 
@@ -669,6 +675,8 @@ class QPInput {
 
  public:
   explicit QPInput(const RigidBodyTree& r) : desired_joint_motions_(r) {}
+
+  QPInput(const QPInput& other) : contact_info_(other.contact_info()), desired_body_motions_(other.desired_body_motions()), desired_joint_motions_(other.desired_joint_motions()), desired_comdd_(other.desired_comdd()), w_com_(other.w_com()), w_basis_reg_(other.w_basis_reg()) {}
 
   /**
    * Checks validity of this QPInput.
@@ -878,8 +886,17 @@ class QPController {
   int num_basis_;
   int num_torque_;
   int num_variable_;
+
+  // 1 cost / eqaulity constraint term per body motion
+  // E.g. if pelvis's desired body motion has weight (1, 1, ,0, 0, -1, -1),
+  // num_body_motion_as_cost_ and num_body_motion_as_eq_ are incremented by 1.
+  // The cost term is:
+  // qdd^T * J(1:4,:)^T * J(1:4,:) * qdd + J(1:4,:)^T * (Jdv(1:4,:) - pelvdd_d(1:4))
+  // The eq term is:
+  // J(5:6,:) * qdd + Jdv(5:6,:) = pelvdd_d(5:6)
   int num_body_motion_as_cost_;
   int num_body_motion_as_eq_;
+  // Same as for body_motiom, replace J with the identity matrix.
   int num_joint_motion_as_cost_;
   int num_joint_motion_as_eq_;
 
@@ -895,7 +912,7 @@ class QPController {
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>>
       eq_contacts_;
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
-  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_joint_motion_;
+  std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_joint_motion_;
 
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_contact_wrench_;
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
