@@ -299,10 +299,10 @@ TEST_F(SymbolicExpressionTest, MUL2) {
   Expression e1{x_ * y_};
   Expression e2{e1 * e1};
   EXPECT_EQ(e1.to_string(), "(x * y)");
-  EXPECT_EQ(e2.to_string(), "((x * y) * (x * y))");
+  EXPECT_EQ(e2.to_string(), "pow((x * y), 2)");
   e1 *= z_;
   EXPECT_EQ(e1.to_string(), "((x * y) * z)");
-  EXPECT_EQ(e2.to_string(), "((x * y) * (x * y))");  // e2 doesn't change.
+  EXPECT_EQ(e2.to_string(), "pow((x * y), 2)");  // e2 doesn't change.
 }
 
 TEST_F(SymbolicExpressionTest, Div1) {
@@ -406,7 +406,12 @@ TEST_F(SymbolicExpressionTest, Exp) {
                                         std::exp(2.0) + std::exp(3.2));
 }
 
-TEST_F(SymbolicExpressionTest, Sqrt) {
+TEST_F(SymbolicExpressionTest, Sqrt1) {
+  // sqrt(x * x) => x
+  EXPECT_TRUE(sqrt(x_plus_y_ * x_plus_y_).EqualTo(abs(x_plus_y_)));
+}
+
+TEST_F(SymbolicExpressionTest, Sqrt2) {
   EXPECT_DOUBLE_EQ(sqrt(pi_).Evaluate(), std::sqrt(3.141592));
   EXPECT_DOUBLE_EQ(sqrt(one_).Evaluate(), std::sqrt(1.0));
   EXPECT_DOUBLE_EQ(sqrt(zero_).Evaluate(), std::sqrt(0.0));
@@ -419,7 +424,17 @@ TEST_F(SymbolicExpressionTest, Sqrt) {
                                         std::sqrt(2.0) + std::sqrt(3.2));
 }
 
-TEST_F(SymbolicExpressionTest, Pow) {
+TEST_F(SymbolicExpressionTest, Pow1) {
+  // pow(x, 0.0) => 1.0
+  EXPECT_TRUE(pow(x_plus_y_, Expression::Zero()).EqualTo(Expression::One()));
+  // pow(x, 1.0) => x
+  EXPECT_TRUE(pow(x_plus_y_, Expression::One()).EqualTo(x_plus_y_));
+
+  // sqrt(x) * sqrt(x) => pow(sqrt(x), 2) => x
+  EXPECT_TRUE((sqrt(x_plus_y_) * sqrt(x_plus_y_)).EqualTo(x_plus_y_));
+}
+
+TEST_F(SymbolicExpressionTest, Pow2) {
   EXPECT_DOUBLE_EQ(pow(pi_, pi_).Evaluate(), std::pow(3.141592, 3.141592));
   EXPECT_DOUBLE_EQ(pow(pi_, one_).Evaluate(), std::pow(3.141592, 1));
   EXPECT_DOUBLE_EQ(pow(pi_, two_).Evaluate(), std::pow(3.141592, 2));
@@ -799,7 +814,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
   const Expression e2{cos(x_ * x_ + pow(y_, 2) * z_)};
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
-  EXPECT_EQ(e2.to_string(), "cos(((x * x) + (pow(y, 2) * z)))");
+  EXPECT_EQ(e2.to_string(), "cos((pow(x, 2) + (pow(y, 2) * z)))");
 }
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
