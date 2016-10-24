@@ -17,6 +17,7 @@ LinearSystemPlant<T>::LinearSystemPlant(
                          C, D,
                          VectorX<T>::Zero(C.rows(), C.cols())) {
 }
+
 template class DRAKE_EXPORT LinearSystemPlant<double>;
 template class DRAKE_EXPORT LinearSystemPlant<AutoDiffXd>;
 
