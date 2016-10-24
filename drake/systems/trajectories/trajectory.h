@@ -23,10 +23,14 @@ class DRAKE_EXPORT Trajectory {
       double t) const = 0;
 
   /**
-   * @return The length of the output vector. If the output is a matrix,
-   * length() is the number of rows in the matrix.
-  */
-  virtual Eigen::Index length() const = 0;
+   * @return The number of rows in the matrix returned by value().
+   */
+  virtual Eigen::Index rows() const = 0;
+
+  /**
+   * @return The number of columns in the matrix returned by value().
+   */
+  virtual Eigen::Index cols() const = 0;
 };
 
 }  // namespace drake
