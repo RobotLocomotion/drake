@@ -760,8 +760,8 @@ void RigidBodyTree<T>::potentialCollisions(
 
 template <typename T>
 bool RigidBodyTree::AllPairsClosestPoints(
-    const KinematicsCache<double> &cache,
-    std::vector<DrakeCollision::PointPair> * pairs, bool use_margins) {
+    const KinematicsCache<double>& cache,
+    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const auto& body : bodies) {
     body->appendCollisionElementIdsFromThisBody(ids_to_check);
@@ -771,10 +771,9 @@ bool RigidBodyTree::AllPairsClosestPoints(
 
 template <typename T>
 bool RigidBodyTree::SetAllPairsClosestPairs(
-    const KinematicsCache<double> &cache,
-    const vector<DrakeCollision::ElementId> &ids_to_check,
-    std::vector<DrakeCollision::PointPair> *pairs,
-    bool use_margins) {
+    const KinematicsCache<double>& cache,
+    const vector<DrakeCollision::ElementId>& ids_to_check,
+    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
   updateDynamicCollisionElements(cache);
   return collision_model_->closestPointsAllToAll(
       ids_to_check, use_margins, *pairs);

@@ -794,8 +794,8 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            tested collision elements.
    * @returns                   True if the method ran successfully.
    */
-  bool AllPairsClosestPoints(const KinematicsCache<double> &cache,
-                             std::vector<DrakeCollision::PointPair> * pairs,
+  bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
+                             std::vector<DrakeCollision::PointPair>* pairs,
                              bool use_margins = true);
 
   /**
