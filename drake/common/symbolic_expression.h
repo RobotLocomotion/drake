@@ -70,20 +70,25 @@ allow sharing sub-expressions.
 
 \note The sharing of sub-expressions is not yet implemented.
 
-The following simple simplifications using identity and unity are implemented:
+The following simple simplifications are implemented:
 \verbatim
-    E + 0          ->  E
-    0 + E          ->  E
-    E - 0          ->  E
-    E - E          ->  0
-    E * 1          ->  E
-    1 * E          ->  E
-    E * -1         -> -E
-   -1 * E          -> -E
-    E * 0          ->  0
-    0 * E          ->  0
-    E / 1          ->  E
-    E / E          ->  1
+    E + 0             ->  E
+    0 + E             ->  E
+    E - 0             ->  E
+    E - E             ->  0
+    E * 1             ->  E
+    1 * E             ->  E
+    E * -1            -> -E
+   -1 * E             -> -E
+    E * 0             ->  0
+    0 * E             ->  0
+    E / 1             ->  E
+    E / E             ->  1
+    pow(E, 0)         ->  1
+    pow(E, 1)         ->  E
+    E * E             ->  E^2 (= pow(E, 2))
+    sqrt(E * E)       ->  |E| (= abs(E))
+    sqrt(E) * sqrt(E) -> E
 \endverbatim
 
 Constant folding is implemented:
@@ -271,6 +276,10 @@ class UnaryExpressionCell : public ExpressionCell {
   bool EqualTo(const ExpressionCell& c) const override;
   /** Evaluate expression under a given environment \p env. */
   double Evaluate(const Environment& env) const override;
+  /** Returns the first expression. */
+  const Expression& get_1st_expression() const { return e1_; }
+  /** Returns the second expression. */
+  const Expression& get_2nd_expression() const { return e2_; }
 
  protected:
   /** Default constructor (DELETED). */
@@ -285,8 +294,6 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
   /** Constructs UnaryExpressionCell of kind \p k with \p hash and \p e. */
   UnaryExpressionCell(ExpressionKind k, const Expression& e);
-  /** Returns the nested expression. */
-  const Expression& get_expression() const { return e_; }
   /** Returns the evaluation result f(\p v ). */
   virtual double DoEvaluate(double v) const = 0;
 
@@ -303,6 +310,8 @@ class BinaryExpressionCell : public ExpressionCell {
   bool EqualTo(const ExpressionCell& c) const override;
   /** Evaluate expression under a given environment \p env. */
   double Evaluate(const Environment& env) const override;
+  /** Returns the nested expression. */
+  const Expression& get_expression() const { return e_; }
 
  protected:
   /** Default constructor (DELETED). */
@@ -319,10 +328,6 @@ class BinaryExpressionCell : public ExpressionCell {
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
                        const Expression& e2);
-  /** Returns the first expression. */
-  const Expression& get_1st_expression() const { return e1_; }
-  /** Returns the second expression. */
-  const Expression& get_2nd_expression() const { return e2_; }
   /** Returns the evaluation result f(\p v1, \p v2 ). */
   virtual double DoEvaluate(double v1, double v2) const = 0;
 

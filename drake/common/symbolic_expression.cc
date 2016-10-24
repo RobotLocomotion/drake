@@ -232,7 +232,13 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     lhs = Expression::Zero();
     return lhs;
   }
-  // simplification #7 : Expression(c1) * Expression(c2) => Expression(c1 * c2)
+  // simplification #7 : x * x => x^2 (=pow(x,2))
+  if (lhs.EqualTo(rhs)) {
+    lhs = pow(lhs, 2.0);
+    return lhs;
+  }
+  // simplification #8 : Expression(c1) * Expression(c2) => Expression(c1 *
+  // c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
     const double v1 =
@@ -746,26 +752,47 @@ Expression exp(const Expression& e) {
 }
 
 Expression sqrt(const Expression& e) {
-  // simplification
+  // simplification: constant folding
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v =
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value();
     ExpressionSqrt::check_domain(v);
     return Expression{std::sqrt(v)};
   }
+  // simplification: sqrt(pow(x, 2)) => abs(x)
+  if (e.get_kind() == ExpressionKind::Pow) {
+    const auto e_pow = static_pointer_cast<ExpressionPow>(e.ptr_);
+    if (e_pow->get_2nd_expression().EqualTo(Expression{2.0})) {
+      return abs(e_pow->get_1st_expression());
+    }
+  }
   return Expression{make_shared<ExpressionSqrt>(e)};
 }
 
 Expression pow(const Expression& e1, const Expression& e2) {
   // simplification
-  if (e1.get_kind() == ExpressionKind::Constant &&
-      e2.get_kind() == ExpressionKind::Constant) {
-    const double v1 =
-        static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+  if (e2.get_kind() == ExpressionKind::Constant) {
     const double v2 =
         static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value();
-    ExpressionPow::check_domain(v1, v2);
-    return Expression{std::pow(v1, v2)};
+    if (e1.get_kind() == ExpressionKind::Constant) {
+      // constant folding
+      const double v1 =
+          static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value();
+      ExpressionPow::check_domain(v1, v2);
+      return Expression{std::pow(v1, v2)};
+    }
+    if (v2 == 2.0 && e1.get_kind() == ExpressionKind::Sqrt) {
+      // pow(sqrt(x), 2) => x
+      return static_pointer_cast<ExpressionSqrt>(e1.ptr_)->get_expression();
+    }
+    // pow(x, 0) => 1
+    if (v2 == 0.0) {
+      return Expression::One();
+    }
+    // pow(x, 1) => x
+    if (v2 == 1.0) {
+      return e1;
+    }
   }
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
