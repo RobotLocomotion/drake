@@ -2,24 +2,22 @@
 // Created by Pang Tao on 21/10/16.
 //
 #include <iostream>
+#include "drake/examples/Valkyrie_PT/Valkyrie_plant.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-
 // Includes for the planner.
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 
 
-
 using drake::BotVisualizer;
-
 using Eigen::VectorXd;
 
-
+/*
 namespace drake {
     class ValkyriePlant {
     public:
@@ -94,9 +92,7 @@ namespace drake {
     }
 }
 
-
-
-
+*/
 
 
 int main() {
@@ -118,12 +114,12 @@ int main() {
     std::make_shared<BotVisualizer<ValkyriePlant::StateVector>>(lcm, tree);
     auto sys_with_vis = cascade(val_sys, visualizer);
 
-    //drake::SimulationOptions options;
-    //options.initial_step_size = 5e-5;
-    //options.realtime_factor = 0.0;
+    drake::SimulationOptions options;
+    options.initial_step_size = 5e-5;
+    options.realtime_factor = 0.0;
 
     double final_time = std::numeric_limits<double>::infinity();
-    runLCM(sys_with_vis, lcm, 0, final_time);
+    runLCM(sys_with_vis, lcm, 0, final_time, val_sys->get_initial_state(), options);
 
 
 
