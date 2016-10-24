@@ -405,7 +405,7 @@ void RigidBodyPlant<T>::ComputeContactResults(
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_state()).get_value();
+      context.get_continuous_state_vector()).get_value();
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);
