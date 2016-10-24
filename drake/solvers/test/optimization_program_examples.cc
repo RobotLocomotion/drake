@@ -24,8 +24,8 @@ void RunSolver(MathematicalProgram* prog,
 //    0 <= x0 + 2x1 + 3x2 <= 10
 // -inf <=       x1 - 2x2 <= 3
 //           x1 >= 1
-void testLinearProgramFeasibility(
-    const MathematicalProgramSolverInterface& solver) {
+void TestLinearProgramFeasibility(
+    const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3, "x");
   Eigen::Matrix<double, 2, 3> A;
@@ -56,7 +56,7 @@ void testLinearProgramFeasibility(
 //      x0 - 2x1 <= 4
 //      x1 >= 2
 // The optimal solution is x0 = 1, x1 = 2
-void testLinearProgram0(const MathematicalProgramSolverInterface& solver) {
+void TestLinearProgram0(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");
 
@@ -86,7 +86,7 @@ void testLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 //     0 <= x0 <= 2
 //    -1 <= x1 <= 4
 // The optimal solution is (0, 4)
-void testLinearProgram1(const MathematicalProgramSolverInterface& solver) {
+void TestLinearProgram1(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");
   prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
@@ -110,7 +110,7 @@ void testLinearProgram1(const MathematicalProgramSolverInterface& solver) {
 //           0 <= x2 <= inf
 //           0 <= x3 <= inf
 // The optimal solution is at (0, 0, 15, 25/3)
-void testLinearProgram2(const MathematicalProgramSolverInterface& solver) {
+void TestLinearProgram2(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(4, "x");
   // We deliberately break the cost to c1' * [x0;x1;x2] + c2'*[x2;x3] here
@@ -159,7 +159,7 @@ void testLinearProgram2(const MathematicalProgramSolverInterface& solver) {
  *     x2 >= 0
  *     x1 + x2 = 1
  */
-void testQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
+void TestQuadraticProgram0(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2, "x");
 
@@ -202,7 +202,7 @@ void testQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 //        -20 <=         y + 2 z <= 100
 //       -inf <=   x +   y + 2 z <= inf
 //               3 x +   y + 3 z  = 3
-void testQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
+void TestQuadraticProgram1(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
 
@@ -253,7 +253,7 @@ void testQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
 // to enable test reproducibility.
 // The test also verifies the quadratic program works when
 // matrix Q has off-diagonal terms.
-void testQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
+void TestQuadraticProgram2(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(5);
   Eigen::MatrixXd Q = Eigen::MatrixXd::Constant(5, 5, 0.0);
@@ -289,7 +289,7 @@ void testQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
 // + 0.5 * x.tail<4>()'*Q2 * x.tail<4>() + b2'*x.tail<4>()
 // This is to test that we can add multiple costs for the same variables (in
 // this case, the quadratic costs on x(2), x(3) are added for twice).
-void testQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
+void TestQuadraticProgram3(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   const DecisionVariableView x = prog.AddContinuousVariables(6, "x");
   Eigen::MatrixXd Q1 = Eigen::MatrixXd::Constant(4, 4, 0.0);
@@ -337,7 +337,7 @@ void testQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
 //     x(0) + 2*x(2) = 2
 // The optimal solution should be
 // x(0) = 4/5, x(1) = 1/5, x(2) = 3/5
-void testQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
+void TestQuadraticProgram4(const MathematicalProgramSolverInterface &solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
 
@@ -738,21 +738,136 @@ void TestQPasSOCP(const MathematicalProgramSolverInterface& solver) {
   b_ub(1) = 4;
   SolveQPasSOCP(Q, c, A, b_lb, b_ub, solver);
 }
+
+/*
+ * This example is taken from the paper
+ * Applications of second-order cone programming
+ * By M.S.Lobo, L.Vandenberghe, S.Boyd and H.Lebret,
+ * Section 3.6
+ * http://www.seas.ucla.edu/~vandenbe/publications/socp.pdf
+ * The problem tries to find the equilibrium state of a mechanical
+ * system, which consists of N nodes at position (x1,y1), (x2,y2), ..., (xN,yN) in R2.
+ * The nodes are connected by springs with given coefficient.
+ * The equilibrium point is obtained when the total energy is minimized
+ * namely min sum_i weight_i * yi + stiffness/2 * t_i^2
+ *        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length <= t_i
+ *             0 <= t_i
+ *             (x1,y1) = end_pos1
+ *             (xN,yN) = end_pos2
+ * By introducing a slack variable z >= t_1^2 + ... + t_(N-1)^2, the problem becomes
+ * an SOCP, with both Lorentz cone and rotated Lorentz cone constraints
+ *
+ */
+void FindSpingEquilibrium(const Eigen::VectorXd& weight, double spring_rest_length, double spring_stiffness, const Eigen::Vector2d& end_pos1, const Eigen::Vector2d& end_pos2, const MathematicalProgramSolverInterface& solver) {
+  int num_nodes = weight.rows();
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(num_nodes, "x");
+  auto y = prog.AddContinuousVariables(num_nodes, "y");
+  auto t = prog.AddContinuousVariables(num_nodes-1, "t");
+  prog.AddBoundingBoxConstraint(end_pos1, end_pos1, {x(0), y(0)});
+  prog.AddBoundingBoxConstraint(end_pos2, end_pos2, {x(num_nodes-1), y(num_nodes-1)});
+  prog.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(num_nodes-1), Eigen::VectorXd::Constant(num_nodes-1, std::numeric_limits<double>::infinity()), {t});
+  auto t_plus_l0 = prog.AddContinuousVariables(num_nodes - 1, "t_plus_l0"); // The slack variable equals to t_i + spring_rest_length
+  Eigen::MatrixXd A1(num_nodes - 1, 2*(num_nodes - 1));
+  A1 << Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1), -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
+  prog.AddLinearEqualityConstraint(A1, Eigen::VectorXd::Constant(num_nodes - 1, spring_rest_length), {t_plus_l0, t});
+  // x_diff(i) = x(i+1) - x(i)
+  // y_diff(i) = y(i+1) - y(i)
+  auto x_diff = prog.AddContinuousVariables(num_nodes - 1, "xd");
+  auto y_diff = prog.AddContinuousVariables(num_nodes - 1, "yd");
+  Eigen::MatrixXd A2(num_nodes - 1, 2*num_nodes - 1);
+  A2.setZero();
+  A2.block(0, 0, num_nodes-1, num_nodes-1) = -Eigen::MatrixXd::Identity(num_nodes-1, num_nodes - 1);
+  A2.block(0, 1, num_nodes-1, num_nodes-1) += Eigen::MatrixXd::Identity(num_nodes-1, num_nodes - 1);
+  A2.block(0, num_nodes, num_nodes-1, num_nodes-1) = -Eigen::MatrixXd::Identity(num_nodes-1, num_nodes - 1);
+  prog.AddLinearEqualityConstraint(A2, Eigen::VectorXd::Zero(num_nodes - 1), {x, x_diff});
+  prog.AddLinearEqualityConstraint(A2, Eigen::VectorXd::Zero(num_nodes - 1), {y, y_diff});
+
+  // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
+  for(int i = 0; i < num_nodes-1; ++i) {
+    prog.AddLorentzConeConstraint({t_plus_l0(i),x_diff(i),y_diff(i)});
+  }
+
+  // Add constraint z >= t_1^2 + .. + t_(N-1)^2
+  auto z = prog.AddContinuousVariables(2, "z");
+  prog.AddBoundingBoxConstraint(drake::Vector1d(1), drake::Vector1d(1), {z(0)});
+  prog.AddRotatedLorentzConeConstraint({z, t});
+
+  prog.AddLinearCost(drake::Vector1d(spring_stiffness/2), {z(1)});
+  prog.AddLinearCost(weight.transpose(), {y});
+
+  RunSolver(&prog, solver);
+
+  std::string solver_name;
+  int solver_result;
+  prog.GetSolverResult(&solver_name, &solver_result);
+  double precision = 1e-3;
+  // The precision of Gurobi solver is not as good as Mosek, in
+  // this problem.
+  if(solver_name == "Gurobi") {
+    precision = 2e-2;
+  }
+  for(int i = 0; i < num_nodes - 1; ++i) {
+    Eigen::Vector2d spring(x.value()(i+1) - x.value()(i), y.value()(i+1) - y.value()(i));
+    if(spring.norm() < spring_rest_length) {
+      EXPECT_LE(t.value()(i), 1E-3);
+      EXPECT_GE(t.value()(i), 0 - 1E-10);
+    }
+    else {
+      EXPECT_TRUE(std::abs(spring.norm() - spring_rest_length - t.value()(i)) < 1E-3);
+    }
+  }
+  EXPECT_TRUE(std::abs(z.value()(1) - t.value().squaredNorm()) < 1E-3);
+  // Now test equilibrium.
+  for(int i = 1; i < num_nodes - 1; i++) {
+    Eigen::Vector2d left_spring(x.value().coeff(i-1) - x.value().coeff(i), y.value().coeff(i-1) - y.value().coeff(i));
+    Eigen::Vector2d left_spring_force;
+    double left_spring_length = left_spring.norm();
+    if(left_spring_length < spring_rest_length) {
+      left_spring_force.setZero();
+    }
+    else {
+      left_spring_force = (left_spring_length - spring_rest_length) * spring_stiffness * left_spring / left_spring_length;
+    }
+    Eigen::Vector2d right_spring(x.value().coeff(i+1) - x.value().coeff(i), y.value().coeff(i+1) - y.value().coeff(i));
+    Eigen::Vector2d right_spring_force;
+    double right_spring_length = right_spring.norm();
+    if(right_spring_length < spring_rest_length) {
+      right_spring_force.setZero();
+    }
+    else {
+      right_spring_force = (right_spring_length - spring_rest_length) * spring_stiffness * right_spring/right_spring_length;
+    }
+    Eigen::Vector2d weight_i(0, -weight(i));
+    EXPECT_TRUE(CompareMatrices(weight_i + left_spring_force + right_spring_force, Eigen::Vector2d::Zero(), precision, MatrixCompareType::absolute));
+  }
+}
+
+void TestFindSpringEquilibrium(const MathematicalProgramSolverInterface& solver) {
+  Eigen::VectorXd weight(5);
+  weight << 1, 2, 3, 2.5, 4;
+  double spring_rest_length = 0.2;
+  double spring_stiffness_coefficient = 10;
+  Eigen::Vector2d end_pos1(0, 1);
+  Eigen::Vector2d end_pos2(1, 0.9);
+
+  FindSpingEquilibrium(weight, spring_rest_length, spring_stiffness_coefficient, end_pos1, end_pos2, solver);
+}
 }  // namespace
 
 void testLinearPrograms(const MathematicalProgramSolverInterface& solver) {
-  testLinearProgramFeasibility(solver);
-  testLinearProgram0(solver);
-  testLinearProgram1(solver);
-  testLinearProgram2(solver);
+  TestLinearProgramFeasibility(solver);
+  TestLinearProgram0(solver);
+  TestLinearProgram1(solver);
+  TestLinearProgram2(solver);
 }
 
 void testQuadraticPrograms(const MathematicalProgramSolverInterface& solver) {
-  testQuadraticProgram0(solver);
-  testQuadraticProgram1(solver);
-  testQuadraticProgram2(solver);
-  testQuadraticProgram3(solver);
-  testQuadraticProgram4(solver);
+  TestQuadraticProgram0(solver);
+  TestQuadraticProgram1(solver);
+  TestQuadraticProgram2(solver);
+  TestQuadraticProgram3(solver);
+  TestQuadraticProgram4(solver);
   TestQPonUnitBallExample(solver);
 }
 
@@ -760,6 +875,7 @@ void testSecondOrderConicPrograms(
     const MathematicalProgramSolverInterface& solver) {
   TestEllipsoidsSeparation(solver);
   TestQPasSOCP(solver);
+  TestFindSpringEquilibrium(solver);
 }
 }  // namespace test
 }  // namespace solvers
