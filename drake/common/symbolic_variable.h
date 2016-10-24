@@ -14,23 +14,23 @@ namespace symbolic {
 /** Represents a symbolic variable. */
 class DRAKE_EXPORT Variable {
  public:
-  /** Deletes default constructor. */
+  /** Default constructor (DELETED). */
   Variable() = delete;
 
   /** Constructs a variable with a string . */
   explicit Variable(const std::string& name);
 
   /** Move-construct a set from an rvalue. */
-  Variable(Variable&& f) = default;
+  Variable(Variable&& v) = default;
 
   /** Copy-construct a set from an lvalue. */
-  Variable(const Variable& f) = default;
+  Variable(const Variable& v) = default;
 
   /** Move-assign (DELETED). */
-  Variable& operator=(Variable&& f) = delete;
+  Variable& operator=(Variable&& v) = delete;
 
   /** Copy-assign (DELETED). */
-  Variable& operator=(const Variable& f) = delete;
+  Variable& operator=(const Variable& v) = delete;
 
   size_t get_id() const;
   size_t get_hash() const { return std::hash<size_t>{}(id_); }
