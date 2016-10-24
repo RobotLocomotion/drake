@@ -233,9 +233,9 @@ MSKrescodee AddRotatedLorentzConeConstraints(
     rescode = MSK_appendcons(*task, num_cone_vars);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
 
-    MSKint32t var_indices_i[2] = {cone_var_indices[0], new_cone_var_indices[0]};
-    double val_i[2] = {1, -2};
-    rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices_i, val_i);
+    MSKint32t var_indices0[2] = {cone_var_indices[0], new_cone_var_indices[0]};
+    double val0[2] = {1, -2};
+    rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices0, val0);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
     rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, 0.0, 0.0);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
