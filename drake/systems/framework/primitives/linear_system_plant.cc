@@ -17,6 +17,8 @@ LinearSystemPlant<T>::LinearSystemPlant(
                          C, D,
                          VectorX<T>::Zero(C.rows(), 1)) {
 }
+// TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
+// i.e. in initializing xDot0 and y0 with a zero matrix.
 template class DRAKE_EXPORT LinearSystemPlant<double>;
 template class DRAKE_EXPORT LinearSystemPlant<AutoDiffXd>;
 
