@@ -3,73 +3,12 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
-
-QPInput GenerateQPInput(
-    const HumanoidStatus& robot_status, const Eigen::Vector3d& desired_com,
-    const Eigen::Vector3d& Kp_com, const Eigen::Vector3d& Kd_com,
-    const VectorSetpoint& desired_joints,
-    const CartesianSetpoint& desired_pelvis,
-    const CartesianSetpoint& desired_torso) {
-  // Make input.
-  QPInput input(robot_status.robot());
-
-  // These represent the desired motions for the robot, and are typically
-  // outputs of motion planner or hand-crafted behavior state machines.
-
-  // Setup a PD tracking law for center of mass.
-  input.mutable_desired_comdd() =
-      (Kp_com.array() * (desired_com - robot_status.com()).array() -
-       Kd_com.array() * robot_status.comd().array()).matrix();
-  input.mutable_w_com() = 1e3;
-
-  // Minimize acceleration in the generalized coordinates.
-  input.mutable_desired_joint_motions().mutable_setpoint() = desired_joints;
-  input.mutable_desired_joint_motions().mutable_weights() = Eigen::VectorXd::Constant(desired_joints.size(), 1);
-
-  // Setup tracking for various body parts.
-  DesiredBodyMotion pelvdd_d(*robot_status.robot().FindBody("pelvis"));
-  pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
-  pelvdd_d.mutable_setpoint() = desired_pelvis;
-  input.mutable_desired_body_motions().push_back(pelvdd_d);
-
-  DesiredBodyMotion torsodd_d(*robot_status.robot().FindBody("torso"));
-  torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(1e1);
-  torsodd_d.mutable_weights().segment<3>(3).setZero();
-  torsodd_d.mutable_setpoint() = desired_torso;
-  input.mutable_desired_body_motions().push_back(torsodd_d);
-
-  // Weights are set arbitrarily by the control designer, these typically
-  // require tuning.
-  input.mutable_w_basis_reg() = 1e-6;
-
-  // Make contact points.
-  ContactInformation left_foot_contact(
-      *robot_status.robot().FindBody("leftFoot"), 4);
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(0.2, 0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(0.2, -0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(-0.05, -0.05, -0.09));
-  left_foot_contact.mutable_contact_points().push_back(
-      Eigen::Vector3d(-0.05, 0.05, -0.09));
-
-  ContactInformation right_foot_contact(
-      *robot_status.robot().FindBody("rightFoot"), 4);
-  right_foot_contact.mutable_contact_points() =
-      left_foot_contact.contact_points();
-
-  input.mutable_contact_info().push_back(left_foot_contact);
-  input.mutable_contact_info().push_back(right_foot_contact);
-
-  return input;
-}
-
 // In this test, the Valkyrie robot is initialized to a nominal configuration
 // with zero velocities, and the qp controller is setup to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.
@@ -84,7 +23,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   std::string urdf =
       drake::GetDrakePath() +
       std::string(
-          "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
+          "/examples/Valkyrie/urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
   HumanoidStatus robot_status(robot);
 
@@ -105,32 +44,17 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // Setup a tracking problem.
-  int dim = robot.get_num_velocities();
   Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
   Eigen::Vector3d Kd_com = Eigen::Vector3d::Constant(12);
-  Eigen::VectorXd Kp_joints = Eigen::VectorXd::Constant(dim, 20);
-  Eigen::VectorXd Kd_joints = Eigen::VectorXd::Constant(dim, 8);
-  Eigen::Vector6d Kp_pelvis = Eigen::Vector6d::Constant(20);
-  Eigen::Vector6d Kd_pelvis = Eigen::Vector6d::Constant(8);
-  Eigen::Vector6d Kp_torso = Eigen::Vector6d::Constant(20);
-  Eigen::Vector6d Kd_torso = Eigen::Vector6d::Constant(8);
 
   Eigen::Vector3d desired_com = robot_status.com();
-  Eigen::VectorXd desired_q = robot_status.position();
 
-  VectorSetpoint desired_joints(desired_q, Eigen::VectorXd::Zero(dim), Eigen::VectorXd::Zero(dim), Kp_joints, Kd_joints);
-  CartesianSetpoint desired_pelvis(
-      robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
-      Eigen::Vector6d::Zero(), Kp_pelvis, Kd_pelvis);
-  CartesianSetpoint desired_torso(robot_status.torso().pose(),
-                                  Eigen::Vector6d::Zero(),
-                                  Eigen::Vector6d::Zero(), Kp_torso, Kd_torso);
-
-  input =
-        GenerateQPInput(robot_status, desired_com, Kp_com, Kd_com, desired_joints, desired_pelvis, desired_torso);
+  // Get an example controller that tracks a fixed point.
+  input = MakeExampleQPInput(robot);
+  TrackThis(robot_status, &input);
 
   // Perturb initial condition.
-  v[robot_status.name_to_velocity_index().at("torsoPitch")] += 0.1;
+  q[robot_status.name_to_position_index().at("torsoPitch")] += 0.1;
   robot_status.Update(
       0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
@@ -150,7 +74,10 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
        Kd_com.array() * robot_status.comd().array()).matrix();
     int status = con.Control(robot_status, input, &output);
 
-    if (status) break;
+    if (status) {
+      //std::cout << input;
+      break;
+    }
 
     // Dummy integration.
     // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's
@@ -159,9 +86,13 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
     v += output.vd() * dt;
     time += dt;
 
+    //std::cout << "rs.q: " << robot_status.position().transpose() << std::endl;
+    //std::cout << "rs.v: " << robot_status.velocity().transpose() << std::endl;
+    //std::cout << input;
+    //exit(0);
+
     robot_status.Update(time, q, v, output.joint_torque(),
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
-
     //std::cout << output;
   }
 

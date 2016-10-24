@@ -2,6 +2,7 @@ add_library(drakeQPController
   qp_controller.cc
   rigid_body_tree_utils.cc
   humanoid_status.cc
+  example_balancing_controller.cc
   lcm_utils.cc)
 target_link_libraries(drakeQPController
   drakeRBSystem

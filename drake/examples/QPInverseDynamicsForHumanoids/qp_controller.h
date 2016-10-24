@@ -214,6 +214,15 @@ class VectorSetpoint {
   Eigen::VectorXd Kd_;
 };
 
+inline std::ostream& operator<<(std::ostream& out, const VectorSetpoint& setpoint) {
+  out << "pos: " << setpoint.desired_position().transpose() << std::endl;
+  out << "vel: " << setpoint.desired_velocity().transpose() << std::endl;
+  out << "acc: " << setpoint.desired_acceleration().transpose() << std::endl;
+  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
+  out << "Kd: " << setpoint.Kd().transpose() << std::endl;
+  return out;
+}
+
 /**
  * This class describes contact related information for each body in contact
  * with the world.
@@ -555,11 +564,6 @@ class DesiredBodyMotion {
       throw std::runtime_error("index must be within [0, 5]");
     return body_.get_name() + row_name[i];
   }
-  inline bool is_row_constrained(int i) const {
-    if (i < 0 || i >=6)
-      throw std::runtime_error("index must be within [0, 5]");
-    return weights_[i] < 0;
-  }
 
   // Getters
   inline const RigidBody& body() const { return body_; }
@@ -659,8 +663,6 @@ class QPInput {
   // Prefix w_ indicates weights.
   double w_com_;
 
-  double w_vd_;
-
   double w_basis_reg_;
 
  public:
@@ -682,8 +684,6 @@ class QPInput {
 
     valid &= std::isfinite(w_com_);
     valid &= w_com_ >= 0;
-    valid &= std::isfinite(w_vd_);
-    valid &= w_vd_ >= 0;
     valid &= std::isfinite(w_basis_reg_);
     valid &= w_basis_reg_ >= 0;
 
@@ -692,7 +692,6 @@ class QPInput {
 
   // Getters
   inline double w_com() const { return w_com_; }
-  inline double w_vd() const { return w_vd_; }
   inline double w_basis_reg() const { return w_basis_reg_; }
 
   inline const std::string& coord_name(size_t idx) const {
@@ -711,7 +710,6 @@ class QPInput {
 
   // Setters
   inline double& mutable_w_com() { return w_com_; }
-  inline double& mutable_w_vd() { return w_vd_; }
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
 
   inline std::list<ContactInformation>& mutable_contact_info() {
@@ -880,6 +878,8 @@ class QPController {
   int num_variable_;
   int num_body_motion_as_cost_;
   int num_body_motion_as_eq_;
+  int num_joint_motion_as_cost_;
+  int num_joint_motion_as_eq_;
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
@@ -892,14 +892,17 @@ class QPController {
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_dynamics_;
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>>
       eq_contacts_;
+  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
+  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_joint_motion_;
+
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_contact_wrench_;
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
+
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_comdd_;
   // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
-  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>>
-      cost_body_motion_;
-  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
-  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_vd_reg_;
+  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>> cost_body_motion_;
+  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_joint_motion_;
+
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
 
   /**
@@ -911,11 +914,13 @@ class QPController {
    * @param robot Model
    * @param all_contacts Information about contacts
    * @param all_body_accelerations Desired body accelerations to be tracked
+   * @param all_joint_motions Desired joint accelerations to be tracked
    */
   void ResizeQP(
       const RigidBodyTree& robot,
       const std::list<ContactInformation>& all_contacts,
-      const std::list<DesiredBodyMotion>& all_body_accelerations);
+      const std::list<DesiredBodyMotion>& all_body_accelerations,
+      const DesiredJointMotions& all_joint_motions);
 
   /**
    * Zeros out the temporary matrices.

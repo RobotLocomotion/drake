@@ -40,7 +40,6 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     zero_torque_ = Eigen::VectorXd::Zero(robot_.actuators.size());
 
-    std::cout << get_num_input_ports() << " " << get_num_output_ports() << std::endl;
     DRAKE_ASSERT(this->get_num_input_ports() == 1);
     DRAKE_ASSERT(this->get_num_output_ports() == 2);
 
