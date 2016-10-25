@@ -46,3 +46,16 @@ cc_test(
     size = "small",
     linkstatic=1,
     testonly=1)
+
+cc_test(
+    name = "parameters_test",
+    srcs = ["parameters_test.cc"],
+    deps = [
+        "//drake/common", 
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
+        "@gtest//:main",
+    ],
+    size = "small",
+    linkstatic=1,
+    testonly=1)
