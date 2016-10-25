@@ -24,7 +24,7 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
-class AffineSystemPlant : public LeafSystem<T> {
+class AffineSystem : public LeafSystem<T> {
  public:
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
@@ -36,7 +36,7 @@ class AffineSystemPlant : public LeafSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
-  AffineSystemPlant(const Eigen::Ref<const MatrixX<T>>& A,
+  AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
                     const Eigen::Ref<const MatrixX<T>>& B,
                     const Eigen::Ref<const VectorX<T>>& xDot0,
                     const Eigen::Ref<const MatrixX<T>>& C,
