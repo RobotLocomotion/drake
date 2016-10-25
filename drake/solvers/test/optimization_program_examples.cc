@@ -23,15 +23,18 @@ void RunSolver(MathematicalProgram* prog,
 // problem
 //    0 <= x0 + 2x1 + 3x2 <= 10
 // -inf <=       x1 - 2x2 <= 3
+//   -1 <= 0x0+ 0x1 + 0x2 <= 0
 //           x1 >= 1
 void TestLinearProgramFeasibility(
     const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3, "x");
-  Eigen::Matrix<double, 2, 3> A;
-  A << 1, 2, 3, 0, 1, -2;
-  Eigen::Vector2d b_lb(0, -std::numeric_limits<double>::infinity());
-  Eigen::Vector2d b_ub(10, 3);
+  Eigen::Matrix<double, 3, 3> A;
+  A << 1, 2, 3,
+      0, 1, -2,
+      0, 0,  0;
+  Eigen::Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
+  Eigen::Vector3d b_ub(10, 3, 0);
   prog.AddLinearConstraint(A, b_lb, b_ub);
   prog.AddBoundingBoxConstraint(
       drake::Vector1d(1.0),
@@ -39,22 +42,24 @@ void TestLinearProgramFeasibility(
 
   RunSolver(&prog, solver);
 
-  Eigen::Vector2d A_times_x = A * x.value();
+  Eigen::Vector3d A_times_x = A * x.value();
   EXPECT_GE(A_times_x(0), 0 - 1e-10);
   EXPECT_LE(A_times_x(0), 10 + 1e-10);
   EXPECT_LE(A_times_x(1), 3 + 1E-10);
+  EXPECT_LE(A_times_x(2), 0 + 1E-10);
+  EXPECT_GE(A_times_x(2), 0 - 1E-10);
   EXPECT_GE(x.value().coeff(1), 1 - 1E-10);
 }
 
 // Adapt from the linear programming example
 // http://cvxopt.org/examples/tutorial/lp.html
 // Solve the following linear program
-// min  2x0 + x1
-// s.t -x0 + x1 <= 1
-//      x0 + x1 >= 2
-//      x0 >= 0
-//      x0 - 2x1 <= 4
+// min     2x0 + x1
+// s.t  -inf <= -x0 + x1 <= 1
+//         2 <= x0 + x1  <=inf
+//      -inf <= x0 - 2x1 <= 4
 //      x1 >= 2
+//      x0 >= 0
 // The optimal solution is x0 = 1, x1 = 2
 void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
@@ -101,8 +106,8 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
 // Adapt from http://docs.mosek.com/7.1/capi/Linear_optimization.html
 // min -3x0 - x1 - 5x2 - x3
 // s.t     3x0 +  x1 + 2x2        = 30
-//         2x0 +  x1 + 3x2 +  x3 >= 15
-//               2x1       + 3x3 <= 25
+//   15 <= 2x0 +  x1 + 3x2 +  x3 <= inf
+//  -inf<=       2x1       + 3x3 <= 25
 // -inf <=  x0 + 2x1       + x3  <= inf
 // -100 <=  x0       + 2x2       <= 40
 //           0 <= x0 <= inf
@@ -168,6 +173,7 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   // add a linear cost
   // x2
   Eigen::Matrix2d Q;
+  // The quadratic cost is 0.5*x'*Q*x+b'*x.
   Q << 4, 2, 0, 2;
   Eigen::Vector2d b(1, 0);
   prog.AddQuadraticCost(Q, b, {x});
@@ -197,11 +203,13 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 
 /// Adapt from the simple test on the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
-//  subj to        x + 2 y + 3 z >= 4
+//  subj to 4 <=   x + 2 y + 3 z <= inf
 //                -x -   y       <= -1
-//        -20 <=         y + 2 z <= 100
+//        -20 <=   x +   y + 2 z <= 100
 //       -inf <=   x +   y + 2 z <= inf
 //               3 x +   y + 3 z  = 3
+//                 x, y, z >= 0
+//   The optimal solution is (0, 1, 2/3)
 void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
@@ -211,15 +219,15 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   Q(1, 2) = 1;
   Q(1, 0) = 1;
   Q(2, 1) = 1;
-
-  prog.AddBoundingBoxConstraint(
-      Eigen::MatrixXd::Constant(3, 1, 0),
-      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()));
-
   Eigen::VectorXd b(3);
   b << 2.0, 0.0, 0.0;
-
   prog.AddQuadraticCost(Q, b);
+
+  prog.AddBoundingBoxConstraint(
+      Eigen::MatrixXd::Zero(3, 1),
+      Eigen::MatrixXd::Constant(3, 1, std::numeric_limits<double>::infinity()));
+
+
 
   // This test handles the case that in one LinearConstraint,
   // some rows have active upper bounds;
@@ -753,6 +761,8 @@ void TestQPasSOCP(const MathematicalProgramSolverInterface& solver) {
  * (spring_length - spring_rest_length) * spring_stiffness,
  * if spring_length >= spring_rest_length;
  * otherwise the spring force is zero.
+ * weight_i is the mass * gravity_acceleration
+ * of the i'th link.
  * The equilibrium point is obtained when the total energy is minimized
  * namely min sum_i weight_i * yi + stiffness/2 * t_i^2
  *        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length

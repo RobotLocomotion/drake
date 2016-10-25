@@ -59,18 +59,18 @@ MSKrescodee AddLinearConstraintsFromBindings(
           return rescode;
         }
       }
-      std::vector<MSKint32t> A_nnz_col_idx;
-      std::vector<double> A_nnz_val;
-      A_nnz_col_idx.reserve(A.cols());
-      A_nnz_val.reserve(A.cols());
+      std::vector<MSKint32t> A_nonzero_col_idx;
+      std::vector<double> A_nonzero_val;
+      A_nonzero_col_idx.reserve(A.cols());
+      A_nonzero_val.reserve(A.cols());
       for (int j = 0; j < A.cols(); ++j) {
-        if (std::abs(A(i, j)) > std::numeric_limits<double>::epsilon()) {
-          A_nnz_col_idx.push_back(var_indices[j]);
-          A_nnz_val.push_back(A(i, j));
+        if (std::abs(A(i, j)) > Eigen::NumTraits<double>::epsilon()) {
+          A_nonzero_col_idx.push_back(var_indices[j]);
+          A_nonzero_val.push_back(A(i, j));
         }
       }
-      rescode = MSK_putarow(*task, constraint_idx + i, A_nnz_val.size(),
-                            A_nnz_col_idx.data(), A_nnz_val.data());
+      rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
+                            A_nonzero_col_idx.data(), A_nonzero_val.data());
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
@@ -153,9 +153,13 @@ MSKrescodee AddLorentzConeConstraints(MSKtask_t* task,
     int num_cone_vars = static_cast<int>(cone_var_indices.size());
     MSKint32t num_total_vars;
     rescode = MSK_getnumvar(*task, &num_total_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendvars(*task, num_cone_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     is_new_variable->resize(num_total_vars + num_cone_vars);
     std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
     for (int i = 0; i < num_cone_vars; ++i) {
@@ -163,27 +167,39 @@ MSKrescodee AddLorentzConeConstraints(MSKtask_t* task,
       new_cone_var_indices[i] = num_total_vars + i;
       rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
 
     rescode = MSK_appendcone(*task, MSK_CT_QUAD, 0.0, cone_var_indices.size(),
                              new_cone_var_indices.data());
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     // Add the linear constraint y0 = x0, y1 = x1, ..., yN = xN
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendcons(*task, num_cone_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     for (int i = 0; i < num_cone_vars; ++i) {
       MSKint32t var_indices_i[2] = {cone_var_indices[i],
                                     new_cone_var_indices[i]};
       double val_i[2] = {1, -1};
       rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
       rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
   }
   return rescode;
@@ -209,9 +225,13 @@ MSKrescodee AddRotatedLorentzConeConstraints(
     int num_cone_vars = static_cast<int>(cone_var_indices.size());
     MSKint32t num_total_vars;
     rescode = MSK_getnumvar(*task, &num_total_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendvars(*task, num_cone_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     is_new_variable->resize(num_total_vars + num_cone_vars);
     std::vector<MSKint32t> new_cone_var_indices(num_cone_vars);
     for (int i = 0; i < num_cone_vars; ++i) {
@@ -219,35 +239,51 @@ MSKrescodee AddRotatedLorentzConeConstraints(
       new_cone_var_indices[i] = num_total_vars + i;
       rescode = MSK_putvarbound(*task, new_cone_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
 
     rescode = MSK_appendcone(*task, MSK_CT_RQUAD, 0.0, cone_var_indices.size(),
                              new_cone_var_indices.data());
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     // Add the linear constraint y0 = x0/2, y1 = x1, ..., yN = xN
     int num_lin_cons;
     rescode = MSK_getnumcon(*task, &num_lin_cons);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_appendcons(*task, num_cone_vars);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     MSKint32t var_indices0[2] = {cone_var_indices[0], new_cone_var_indices[0]};
     double val0[2] = {1, -2};
     rescode = MSK_putarow(*task, num_lin_cons, 2, var_indices0, val0);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = MSK_putconbound(*task, num_lin_cons, MSK_BK_FX, 0.0, 0.0);
-    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
 
     for (int i = 1; i < num_cone_vars; ++i) {
       MSKint32t var_indices_i[2] = {cone_var_indices[i],
                                     new_cone_var_indices[i]};
       double val_i[2] = {1, -1};
       rescode = MSK_putarow(*task, num_lin_cons + i, 2, var_indices_i, val_i);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
       rescode = MSK_putconbound(*task, num_lin_cons + i, MSK_BK_FX, 0.0, 0.0);
-      DRAKE_ASSERT(rescode == MSK_RES_OK);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
   }
   return rescode;
@@ -271,16 +307,16 @@ MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram& prog) {
       int var_index_i = var_indices[i];
       for (int j = 0; j < i; ++j) {
         double Qij = (Q(i, j) + Q(j, i)) / 2;
-        if (std::abs(Qij) > std::numeric_limits<double>::epsilon()) {
+        if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
           Q_lower_triplets.push_back(
               Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
         }
       }
-      if (std::abs(Q(i, i)) > std::numeric_limits<double>::epsilon()) {
+      if (std::abs(Q(i, i)) > Eigen::NumTraits<double>::epsilon()) {
         Q_lower_triplets.push_back(
             Eigen::Triplet<double>(var_index_i, var_indices[i], Q(i, i)));
       }
-      if (std::abs(b(i)) > std::numeric_limits<double>::epsilon()) {
+      if (std::abs(b(i)) > Eigen::NumTraits<double>::epsilon()) {
         linear_term_triplets.push_back(
             Eigen::Triplet<double>(var_index_i, 0, b(i)));
       }
@@ -291,7 +327,7 @@ MSKrescodee AddCosts(MSKtask_t* task, const MathematicalProgram& prog) {
     const auto& c = binding.constraint()->A();
     for (const DecisionVariableView& var : binding.variable_list()) {
       for (int i = 0; i < static_cast<int>(var.size()); ++i) {
-        if (std::abs(c(var_count)) > std::numeric_limits<double>::epsilon()) {
+        if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(
               Eigen::Triplet<double>(var.index() + i, 0, c(var_count)));
         }
@@ -347,7 +383,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // new variables to Mosek, so that the solver can parse the constraint.
   // is_new_variable has the same length as the number of variables in Mosek
   // i.e. the invariant is  MSKint32t num_mosek_vars;
-  //                        MSK_getnumvar(task, num_mosek_vars);
+  //                        MSK_getnumvar(task, &num_mosek_vars);
   //                        assert(is_new_variable.length() ==  num_mosek_vars);
   // is_new_variable[i] is true if the variable is not a part of the variable
   // in MathematicalProgram prog, but added to Mosek solver.
