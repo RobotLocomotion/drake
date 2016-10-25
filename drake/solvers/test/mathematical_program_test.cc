@@ -77,6 +77,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void CheckSolverType(MathematicalProgram& prog,
                      std::string desired_solver_name) {
   std::string solver_name;
@@ -85,6 +86,7 @@ void CheckSolverType(MathematicalProgram& prog,
   EXPECT_EQ(solver_name, desired_solver_name);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
@@ -239,6 +241,7 @@ class TestProblem1Cost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -315,6 +318,7 @@ class TestProblem2Cost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -410,6 +414,7 @@ class LowerBoundTestCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -441,6 +446,7 @@ class LowerBoundTestConstraint : public Constraint {
   template <typename ScalarType>
   void EvalImpl(
       const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
@@ -510,6 +516,7 @@ class SixHumpCamelCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -541,6 +548,7 @@ class GloptipolyConstrainedExampleCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -570,6 +578,7 @@ class GloptipolyConstrainedExampleConstraint
  private:
   template <typename ScalarType>
   void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
+                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Matrix<ScalarType, Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -

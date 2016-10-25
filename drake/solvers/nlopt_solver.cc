@@ -44,6 +44,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
 // http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
 // Note : NLopt uses the term "Objective" which corresponds to the Drake usage
 // of "Cost".
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
                      void* f_data) {
   const MathematicalProgram* prog =
