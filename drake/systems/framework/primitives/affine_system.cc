@@ -54,15 +54,12 @@ template <typename T>
 void AffineSystem<T>::EvalOutput(const Context<T>& context,
                                       SystemOutput<T>* output) const {
   // TODO(naveenoid): Perhaps cache the output of this function.
-
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
-
-  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
+  
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_vector()).get_value();
 
@@ -80,8 +77,6 @@ void AffineSystem<T>::EvalTimeDerivatives(
 
     DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_vector()).get_value();
 
