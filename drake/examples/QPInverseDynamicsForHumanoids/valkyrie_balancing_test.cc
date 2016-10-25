@@ -24,7 +24,8 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   std::string urdf =
       drake::GetDrakePath() +
       std::string(
-          "/examples/Valkyrie/urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+          "/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
   HumanoidStatus robot_status(&robot);
 
@@ -40,9 +41,8 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   v.setZero();
   Eigen::VectorXd q_ini = q;
 
-  robot_status.Update(
-      0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
-      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
+                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // Setup a tracking problem.
   Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
@@ -52,15 +52,23 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
   // Get an example controller that tracks a fixed point.
   input = MakeExampleQPInput(robot);
-  VectorSetpoint joint_PDff(q, Eigen::VectorXd::Zero(q.size()), Eigen::VectorXd::Zero(q.size()), Eigen::VectorXd::Constant(q.size(), 20), Eigen::VectorXd::Constant(q.size(), 8));
-  CartesianSetpoint pelvis_PDff(robot_status.pelvis().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20), Eigen::Vector6d::Constant(8));
-  CartesianSetpoint torso_PDff(robot_status.torso().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20), Eigen::Vector6d::Constant(8));
+  VectorSetpoint joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
+                            Eigen::VectorXd::Zero(q.size()),
+                            Eigen::VectorXd::Constant(q.size(), 20),
+                            Eigen::VectorXd::Constant(q.size(), 8));
+  CartesianSetpoint pelvis_PDff(
+      robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
+      Eigen::Vector6d::Constant(8));
+  CartesianSetpoint torso_PDff(robot_status.torso().pose(),
+                               Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
+                               Eigen::Vector6d::Constant(20),
+                               Eigen::Vector6d::Constant(8));
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoPitch")] += 1;
-  robot_status.Update(
-      0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
-      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
+                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
   // reasonable amount of time.
@@ -84,14 +92,20 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
     // Update desired accelerations.
     input.mutable_desired_body_motions().at("pelvis").mutable_accelerations() =
-      pelvis_PDff.ComputeTargetAcceleration(robot_status.pelvis().pose(), robot_status.pelvis().velocity());
+        pelvis_PDff.ComputeTargetAcceleration(robot_status.pelvis().pose(),
+                                              robot_status.pelvis().velocity());
     input.mutable_desired_body_motions().at("torso").mutable_accelerations() =
-      torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(), robot_status.torso().velocity());
+        torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(),
+                                             robot_status.torso().velocity());
     input.mutable_desired_joint_motions().mutable_accelerations() =
-      joint_PDff.ComputeTargetAcceleration(robot_status.position(), robot_status.velocity());
-    input.mutable_desired_centroidal_momentum_dot().mutable_momentum_dot().segment<3>(3) =
-      (Kp_com.array() * (desired_com - robot_status.com()).array() -
-       Kd_com.array() * robot_status.comd().array()).matrix() * robot.getMass();
+        joint_PDff.ComputeTargetAcceleration(robot_status.position(),
+                                             robot_status.velocity());
+    input.mutable_desired_centroidal_momentum_dot()
+        .mutable_momentum_dot()
+        .segment<3>(3) =
+        (Kp_com.array() * (desired_com - robot_status.com()).array() -
+         Kd_com.array() * robot_status.comd().array()).matrix() *
+        robot.getMass();
 
     int status = con.Control(robot_status, input, &output);
 
@@ -109,6 +123,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
     robot_status.Update(time, q, v, output.joint_torque(),
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+    tick_ctr++;
   }
 
   // Check final state.
@@ -119,6 +134,10 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
 
+  for (int i = 0; i < q.size(); i++) {
+    std::cout << "rs.q: " << robot.get_position_name(i) << " "
+              << (q[i] - q_ini[i]) << std::endl;
+  }
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
                                      drake::MatrixCompareType::absolute));
   EXPECT_TRUE(drake::CompareMatrices(

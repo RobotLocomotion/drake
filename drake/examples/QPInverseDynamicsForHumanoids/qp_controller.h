@@ -185,8 +185,8 @@ class ContactInformation {
     Eigen::VectorXd Jdv(3 * contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       Jdv.segment<3>(3 * i) =
-          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, contact_points_[i])
-              .bottomRows<3>();
+          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_,
+                                        contact_points_[i]).bottomRows<3>();
     }
     return Jdv;
   }
@@ -221,7 +221,8 @@ class ContactInformation {
   }
 };
 
-inline std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
+inline std::ostream& operator<<(std::ostream& out,
+                                const ContactInformation& contact) {
   out << "contact: " << contact.name() << std::endl;
   for (size_t j = 0; j < contact.contact_points().size(); j++)
     out << contact.contact_points()[j].transpose() << std::endl;
@@ -343,14 +344,18 @@ class DesiredBodyMotion {
 
  public:
   explicit DesiredBodyMotion(const RigidBody* body)
-    : body_(body), accelerations_(Eigen::Vector6d::Zero()), weights_(Eigen::Vector6d::Zero()), control_during_contact_(false) {}
+      : body_(body),
+        accelerations_(Eigen::Vector6d::Zero()),
+        weights_(Eigen::Vector6d::Zero()),
+        control_during_contact_(false) {}
 
   inline bool is_valid() const {
     return accelerations_.allFinite() && weights_.allFinite();
   }
 
   inline std::string get_row_name(int i) const {
-    const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
+    const static std::string row_name[6] = {"[R]", "[P]", "[Y]",
+                                            "[X]", "[Y]", "[Z]"};
     if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
@@ -366,12 +371,17 @@ class DesiredBodyMotion {
   // Setters
   inline Eigen::Vector6d& mutable_weights() { return weights_; }
   inline Eigen::Vector6d& mutable_accelerations() { return accelerations_; }
-  inline bool& mutable_control_during_contact() { return control_during_contact_; }
+  inline bool& mutable_control_during_contact() {
+    return control_during_contact_;
+  }
 };
 
-inline std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input) {
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredBodyMotion& input) {
   for (int i = 0; i < 6; i++) {
-    out << "desired " << input.name() << input.get_row_name(i) << " acc: " << input.accelerations()[i] << " weight: " << input.weights()[i] << std::endl;
+    out << "desired " << input.name() << input.get_row_name(i)
+        << " acc: " << input.accelerations()[i]
+        << " weight: " << input.weights()[i] << std::endl;
   }
   return out;
 }
@@ -393,7 +403,9 @@ class DesiredJointMotions {
  public:
   DesiredJointMotions() {}
   explicit DesiredJointMotions(const std::vector<std::string>& names)
-  : names_(names), weights_(Eigen::VectorXd::Zero(names.size())), accelerations_(Eigen::VectorXd::Zero(names.size())) {}
+      : names_(names),
+        weights_(Eigen::VectorXd::Zero(names.size())),
+        accelerations_(Eigen::VectorXd::Zero(names.size())) {}
 
   bool is_valid(int dim) const {
     bool ret = static_cast<int>(names_.size()) == weights_.size();
@@ -415,9 +427,11 @@ class DesiredJointMotions {
   inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
 };
 
-inline std::ostream& operator<<(std::ostream& out, const DesiredJointMotions& input) {
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredJointMotions& input) {
   for (int i = 0; i < input.size(); i++) {
-    out << "desired " << input.name(i) << " acc: " << input.accelerations()[i] << " weight: " << input.weights()[i] << std::endl;
+    out << "desired " << input.name(i) << " acc: " << input.accelerations()[i]
+        << " weight: " << input.weights()[i] << std::endl;
   }
   return out;
 }
@@ -437,14 +451,18 @@ class DesiredCentroidalMomentumChange {
   Eigen::Vector6d momentum_dot_;
 
  public:
-  DesiredCentroidalMomentumChange() : weights_(Eigen::Vector6d::Zero()), momentum_dot_(Eigen::Vector6d::Zero()) {}
+  DesiredCentroidalMomentumChange()
+      : weights_(Eigen::Vector6d::Zero()),
+        momentum_dot_(Eigen::Vector6d::Zero()) {}
 
   bool is_valid() const {
     return weights_.allFinite() && momentum_dot_.allFinite();
   }
 
   inline std::string get_row_name(int i) const {
-    const static std::string row_name[6] = {"AngMom[R]", "AngMom[P]", "AngMom[Y]", "LinMom[X]", "LinMom[Y]", "LinMom[Z]"};
+    const static std::string row_name[6] = {"AngMom[R]", "AngMom[P]",
+                                            "AngMom[Y]", "LinMom[X]",
+                                            "LinMom[Y]", "LinMom[Z]"};
     if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
@@ -459,9 +477,12 @@ class DesiredCentroidalMomentumChange {
   inline Eigen::Vector6d& mutable_momentum_dot() { return momentum_dot_; }
 };
 
-inline std::ostream& operator<<(std::ostream& out, const DesiredCentroidalMomentumChange& input) {
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredCentroidalMomentumChange& input) {
   for (int i = 0; i < 6; i++) {
-    out << "desired " << input.get_row_name(i) << " change: " << input.momentum_dot()[i] << " weight: " << input.weights()[i] << std::endl;
+    out << "desired " << input.get_row_name(i)
+        << " change: " << input.momentum_dot()[i]
+        << " weight: " << input.weights()[i] << std::endl;
   }
   return out;
 }
@@ -480,7 +501,8 @@ class QPInput {
   // Desired joint accelerations
   DesiredJointMotions desired_joint_motions_;
 
-  // Desired centroidal momentum change (change of overall linar and angular momentum)
+  // Desired centroidal momentum change (change of overall linar and angular
+  // momentum)
   DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
 
   // Weight for regularizing basis vectors
@@ -502,7 +524,8 @@ class QPInput {
   bool is_valid(int num_vd) const {
     int valid = num_vd == desired_joint_motions_.size();
     valid &= desired_joint_motions_.is_valid(num_vd);
-    for (auto it = desired_body_motions_.begin(); it != desired_body_motions_.end(); it++) {
+    for (auto it = desired_body_motions_.begin();
+         it != desired_body_motions_.end(); it++) {
       valid &= it->second.is_valid();
     }
     valid &= desired_centroidal_momentum_dot_.is_valid();
@@ -522,11 +545,17 @@ class QPInput {
   inline const std::list<ContactInformation>& contact_info() const {
     return contact_info_;
   }
-  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions() const {
+  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions()
+      const {
     return desired_body_motions_;
   }
-  inline const DesiredJointMotions& desired_joint_motions() const { return desired_joint_motions_; }
-  inline const DesiredCentroidalMomentumChange& desired_centroidal_momentum_dot() const { return desired_centroidal_momentum_dot_; }
+  inline const DesiredJointMotions& desired_joint_motions() const {
+    return desired_joint_motions_;
+  }
+  inline const DesiredCentroidalMomentumChange&
+  desired_centroidal_momentum_dot() const {
+    return desired_centroidal_momentum_dot_;
+  }
 
   // Setters
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
@@ -534,11 +563,17 @@ class QPInput {
   inline std::list<ContactInformation>& mutable_contact_info() {
     return contact_info_;
   }
-  inline std::map<std::string, DesiredBodyMotion>& mutable_desired_body_motions() {
+  inline std::map<std::string, DesiredBodyMotion>&
+  mutable_desired_body_motions() {
     return desired_body_motions_;
   }
-  inline DesiredJointMotions& mutable_desired_joint_motions() { return desired_joint_motions_; }
-  inline DesiredCentroidalMomentumChange& mutable_desired_centroidal_momentum_dot() { return desired_centroidal_momentum_dot_; }
+  inline DesiredJointMotions& mutable_desired_joint_motions() {
+    return desired_joint_motions_;
+  }
+  inline DesiredCentroidalMomentumChange&
+  mutable_desired_centroidal_momentum_dot() {
+    return desired_centroidal_momentum_dot_;
+  }
 };
 std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
@@ -606,7 +641,9 @@ class QPOutput {
     return coord_names_.at(idx);
   }
   inline const Eigen::Vector3d& comdd() const { return comdd_; }
-  inline const Eigen::Vector6d& centroidal_momentum_dot() const { return centroidal_momentum_dot_; }
+  inline const Eigen::Vector6d& centroidal_momentum_dot() const {
+    return centroidal_momentum_dot_;
+  }
   inline const Eigen::VectorXd& vd() const { return vd_; }
   inline const std::vector<BodyAcceleration>& body_accelerations() const {
     return body_accelerations_;
@@ -630,7 +667,9 @@ class QPOutput {
 
   // Setters
   inline Eigen::Vector3d& mutable_comdd() { return comdd_; }
-  inline Eigen::Vector6d& mutable_centroidal_momentum_dot() { return centroidal_momentum_dot_; }
+  inline Eigen::Vector6d& mutable_centroidal_momentum_dot() {
+    return centroidal_momentum_dot_;
+  }
   inline Eigen::VectorXd& mutable_vd() { return vd_; }
   inline std::vector<BodyAcceleration>& mutable_body_accelerations() {
     return body_accelerations_;
@@ -729,7 +768,8 @@ class QPController {
   // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>>
       eq_contacts_;
-  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
+  std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>>
+      eq_body_motion_;
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_joint_motion_;
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_cen_mom_dot_;
 
@@ -737,7 +777,8 @@ class QPController {
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
 
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_cen_mom_dot_;
-  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>> cost_body_motion_;
+  std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>>
+      cost_body_motion_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_joint_motion_;
 
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_basis_reg_;
@@ -751,17 +792,16 @@ class QPController {
    * @param robot Model
    * @param input input to the QP
    */
-  void ResizeQP(
-      const RigidBodyTree& robot,
-      const QPInput& input);
+  void ResizeQP(const RigidBodyTree& robot, const QPInput& input);
 
   template <typename DerivedA, typename DerivedB>
-  void AddAsConstraints(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b, const std::list<int>& idx, std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq) {
-    if (idx.empty())
-      return;
+  void AddAsConstraints(
+      const Eigen::MatrixBase<DerivedA>& A,
+      const Eigen::MatrixBase<DerivedB>& b, const std::list<int>& idx,
+      std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq) {
+    if (idx.empty()) return;
     if (A.rows() != b.rows() || A.rows() > tmp_vd_mat_.rows() ||
-        b.cols() != 1 ||
-        A.cols() != tmp_vd_mat_.cols()) {
+        b.cols() != 1 || A.cols() != tmp_vd_mat_.cols()) {
       throw std::runtime_error("Invalid input dimension.");
     }
 
@@ -771,16 +811,19 @@ class QPController {
       tmp_vd_vec_.row(row_ctr) = b.row(d);
       row_ctr++;
     }
-    eq->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
+    eq->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr),
+                         tmp_vd_vec_.head(row_ctr));
   }
 
   template <typename DerivedA, typename DerivedB, typename DerivedW>
-  void AddAsCosts(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b, const Eigen::MatrixBase<DerivedW>& weights, const std::list<int>& idx, std::shared_ptr<drake::solvers::QuadraticConstraint> cost) {
-    if (idx.empty())
-      return;
+  void AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
+                  const Eigen::MatrixBase<DerivedB>& b,
+                  const Eigen::MatrixBase<DerivedW>& weights,
+                  const std::list<int>& idx,
+                  std::shared_ptr<drake::solvers::QuadraticConstraint> cost) {
+    if (idx.empty()) return;
     if (A.rows() != b.rows() || A.rows() != weights.rows() ||
-        A.rows() > tmp_vd_mat_.rows() ||
-        b.cols() != 1 || weights.cols() != 1 ||
+        A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 || weights.cols() != 1 ||
         A.cols() != tmp_vd_mat_.cols()) {
       throw std::runtime_error("Invalid input dimension.");
     }

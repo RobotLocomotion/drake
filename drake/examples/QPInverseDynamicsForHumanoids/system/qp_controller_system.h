@@ -39,9 +39,6 @@ class QPControllerSystem : public systems::LeafSystem<double> {
 
     QPOutput& qp_output = output->GetMutableData(output_port_index_qp_input_)
                               ->GetMutableValue<QPOutput>();
-    //std::cout << "rs.q: " << rs->position().transpose() << std::endl;
-    //std::cout << "rs.v: " << rs->velocity().transpose() << std::endl;
-    //std::cout << *qp_input;
 
     if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
       throw std::runtime_error("System2QP: QP canot solve\n");
