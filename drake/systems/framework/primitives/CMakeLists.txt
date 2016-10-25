@@ -13,7 +13,7 @@ drake_install_headers(
   multiplexer.h
   pass_through.h
   pass_through-inl.h
-  time_varying_polynomial_source.h
+  trajectory_source.h
   zero_order_hold.h)
 
 add_subdirectory(test)

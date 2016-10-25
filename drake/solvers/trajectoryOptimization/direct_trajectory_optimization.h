@@ -8,6 +8,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 namespace drake {
 namespace solvers {
@@ -217,14 +218,14 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
                         std::vector<double>* times) const;
 
   /**
-   * Get the input trajectory as a PiecewisePolynomial
+   * Get the input trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomial<double> ReconstructInputTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const;
 
   /**
-   * Get the state trajectory as a PiecewisePolynomial
+   * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomial<double> ReconstructStateTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
 
  protected:
   /**

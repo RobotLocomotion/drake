@@ -12,7 +12,7 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 #include "drake/util/drakeAppUtil.h"
 
@@ -62,14 +62,14 @@ int do_main(int argc, char* argv[]) {
     return 1;
   }
 
-  const PiecewisePolynomialType pp_traj =
+  const PiecewisePolynomialTrajectory pp_traj =
       dircol_traj.ReconstructInputTrajectory();
-  const PiecewisePolynomialType pp_xtraj =
+  const PiecewisePolynomialTrajectory pp_xtraj =
       dircol_traj.ReconstructStateTrajectory();
   auto input_source = builder.AddSystem<
-    systems::TimeVaryingPolynomialSource>(pp_traj);
+    systems::TrajectorySource>(pp_traj);
   auto state_source = builder.AddSystem<
-    systems::TimeVaryingPolynomialSource>(pp_xtraj);
+    systems::TrajectorySource>(pp_xtraj);
 
   lcm::DrakeLcm lcm;
   RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",

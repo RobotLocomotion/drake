@@ -241,16 +241,18 @@ void DirectTrajectoryOptimization::GetResultSamples(
   }
 }
 
-PiecewisePolynomial<double>
+PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
-                                                     GetInputVector());
+  return PiecewisePolynomialTrajectory(
+    PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetInputVector()));
 }
 
-PiecewisePolynomial<double>
+PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
-                                                     GetStateVector());
+  return PiecewisePolynomialTrajectory(
+    PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetStateVector()));
 }
 
 }  // solvers
