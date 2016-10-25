@@ -4,7 +4,8 @@ if(lcm_FOUND)
     lcm_publisher_system.cc
     lcm_subscriber_system.cc
     lcm_translator_dictionary.cc
-    lcmt_drake_signal_translator.cc)
+    lcmt_drake_signal_translator.cc
+    serializer.cc)
   add_dependencies(drakeLCMSystem2 drake_lcmtypes_hpp)
   target_link_libraries(drakeLCMSystem2
     drakeSystemFramework
