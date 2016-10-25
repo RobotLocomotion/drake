@@ -12,18 +12,20 @@ static void FindCostAndEqConstraintRows(const Eigen::VectorXd& weights, std::lis
   cost_idx->clear();
   eq_idx->clear();
   for (int i = 0; i < weights.size(); i++) {
-    if (weights[i] >= 0)
+    if (weights[i] > 0)
       cost_idx->push_back(i);
-    else
+    else if (weights[i] < 0)
       eq_idx->push_back(i);
   }
 }
 
 void QPController::ResizeQP(
     const RigidBodyTree& robot,
-    const std::list<ContactInformation>& all_contacts,
-    const std::map<std::string, DesiredBodyMotion>& all_body_motions,
-    const DesiredJointMotions& all_joint_motions) {
+    const QPInput& input) {
+  const std::list<ContactInformation>& all_contacts = input.contact_info();
+  const std::map<std::string, DesiredBodyMotion>& all_body_motions = input.desired_body_motions();
+  const DesiredJointMotions& all_joint_motions = input.desired_joint_motions();
+  const DesiredCentroidalMomentumChange& cen_mom_change = input.desired_centroidal_momentum_change();
   // Figure out dimensions.
   int num_contact_body = all_contacts.size();
   int num_vd = robot.get_num_velocities();
@@ -45,26 +47,36 @@ void QPController::ResizeQP(
   for (auto it = all_body_motions.begin(); it != all_body_motions.end(); it++) {
     const DesiredBodyMotion& body_motion = it->second;
     FindCostAndEqConstraintRows(body_motion.weights(), &body_motion_row_idx_as_cost[ctr], &body_motion_row_idx_as_eq[ctr]);
-    if (body_motion_row_idx_as_cost.size() > 0)
+
+    if (body_motion_row_idx_as_cost[ctr].size() > 0)
       num_body_motion_as_cost++;
-    if (body_motion_row_idx_as_eq.size() > 0)
+    if (body_motion_row_idx_as_eq[ctr].size() > 0)
       num_body_motion_as_eq++;
     ctr++;
   }
 
-  std::list<int> joint_motion_as_cost_row_idx;
-  std::list<int> joint_motion_as_eq_row_idx;
-  FindCostAndEqConstraintRows(all_joint_motions.weights(), &joint_motion_as_cost_row_idx, &joint_motion_as_eq_row_idx);
-  int num_joint_motion_as_cost = (joint_motion_as_cost_row_idx.size() > 0) ? 1 : 0;
-  int num_joint_motion_as_eq = (joint_motion_as_eq_row_idx.size() > 0) ? 1 : 0;
+  // Figure out size of the constrained dimensions of desired joint motions.
+  std::list<int> cost_row_idx;
+  std::list<int> eq_row_idx;
+  FindCostAndEqConstraintRows(all_joint_motions.weights(), &cost_row_idx, &eq_row_idx);
+  int num_joint_motion_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
+  int num_joint_motion_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
 
+  // Figure out size of the constrained dimensions of centroidal momentum change.
+  FindCostAndEqConstraintRows(cen_mom_change.weights(), &cost_row_idx, &eq_row_idx);
+  int num_cen_mom_chg_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
+  int num_cen_mom_chg_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
+
+  // Structure of the QP remains the same, no need to make a new MathematicalProgram.
   if (num_contact_body == num_contact_body_ && num_vd == num_vd_ &&
       num_basis == num_basis_ && num_point_force == num_point_force_ &&
       num_torque == num_torque_ && num_variable == num_variable_ &&
       num_body_motion_as_cost == num_body_motion_as_cost_ &&
       num_body_motion_as_eq == num_body_motion_as_eq_ &&
       num_joint_motion_as_cost == num_joint_motion_as_cost_ &&
-      num_joint_motion_as_eq == num_joint_motion_as_eq_) {
+      num_joint_motion_as_eq == num_joint_motion_as_eq_ &&
+      num_joint_motion_as_eq == num_joint_motion_as_eq_ &&
+      num_joint_motion_as_cost == num_joint_motion_as_cost_) {
     return;
   }
 
@@ -78,6 +90,21 @@ void QPController::ResizeQP(
   num_body_motion_as_eq_ = num_body_motion_as_eq;
   num_joint_motion_as_cost_ = num_joint_motion_as_cost;
   num_joint_motion_as_eq_ = num_joint_motion_as_eq;
+  num_cen_mom_chg_as_cost_ = num_cen_mom_chg_as_cost;
+  num_cen_mom_chg_as_eq_ = num_cen_mom_chg_as_eq;
+
+  std::cout << "num_contact_body_ " << num_contact_body_ << std::endl;
+  std::cout << "num_vd_ " << num_vd_ << std::endl;
+  std::cout << "num_basis_ " << num_basis_ << std::endl;
+  std::cout << "num_point_force_ " << num_point_force_ << std::endl;
+  std::cout << "num_torque_ " << num_torque_ << std::endl;
+  std::cout << "num_variable_ " << num_variable_ << std::endl;
+  std::cout << "num_body_motion_as_cost_ " << num_body_motion_as_cost_ << std::endl;
+  std::cout << "num_body_motion_as_eq_ " << num_body_motion_as_eq_ << std::endl;
+  std::cout << "num_joint_motion_as_cost_ " << num_joint_motion_as_cost_ << std::endl;
+  std::cout << "num_joint_motion_as_eq_ " << num_joint_motion_as_eq_ << std::endl;
+  std::cout << "num_cen_mom_chg_as_cost_ " << num_cen_mom_chg_as_cost_ << std::endl;
+  std::cout << "num_cen_mom_chg_as_eq_ " << num_cen_mom_chg_as_eq_ << std::endl;
 
   // The order of insertion is important, the rest of the program assumes this
   // layout.
@@ -130,11 +157,23 @@ void QPController::ResizeQP(
   ineq_torque_limit_->set_description("torque limit ineq");
 
   // Allocate cost terms.
-  Eigen::MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
-  Eigen::VectorXd tmp_vector_vd(num_vd_);
-  // CoMdd
-  cost_comdd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_comdd_->set_description("com cost");
+  tmp_vd_vec_.resize(num_vd_);
+  tmp_vd_mat_.resize(num_vd_, num_vd_);
+
+  // Setup cost / eq constraints for centroidal momentum change.
+  if (num_cen_mom_chg_as_cost_) {
+    cost_cen_mom_chg_ = prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd});
+    cost_cen_mom_chg_->set_description("centroidal momentum change cost");
+  } else {
+    cost_cen_mom_chg_ = nullptr;
+  }
+  if (num_cen_mom_chg_as_eq_) {
+    // Dimension doesn't matter, will be reset when updating the constaint.
+    eq_cen_mom_chg_ = prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd});
+    eq_cen_mom_chg_->set_description("centroidal momentum change eq");
+  } else {
+    eq_cen_mom_chg_ = nullptr;
+  }
 
   // Setup cost / eq constraints for body motion.
   body_Jdv_.resize(all_body_motions.size());
@@ -144,29 +183,32 @@ void QPController::ResizeQP(
   int cost_ctr = 0, eq_ctr = 0;
   for (const auto& row_idx_as_cost : body_motion_row_idx_as_cost) {
     if (row_idx_as_cost.size() > 0) {
-      cost_body_motion_[cost_ctr++] = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+      cost_body_motion_[cost_ctr++] = prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd});
     }
   }
   for (const auto& row_idx_as_eq : body_motion_row_idx_as_eq) {
     if (row_idx_as_eq.size() > 0) {
       // Dimension doesn't matter, will be reset when updating the constaint.
-      eq_body_motion_[eq_ctr++] = prog_.AddLinearEqualityConstraint(tmp_matrix_vd, tmp_vector_vd, {vd});
+      eq_body_motion_[eq_ctr++] = prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd});
     }
   }
   DRAKE_ASSERT(cost_ctr == num_body_motion_as_cost_);
   DRAKE_ASSERT(eq_ctr == num_body_motion_as_eq_);
 
   // Setup cost / eq constraints for joint motion.
-  cost_joint_motion_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
-  cost_joint_motion_->set_description("vd cost");
+  if (num_joint_motion_as_cost_ > 0) {
+    cost_joint_motion_ = prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd});
+    cost_joint_motion_->set_description("vd cost");
+  } else {
+    cost_joint_motion_ = nullptr;
+  }
   if (num_joint_motion_as_eq_ > 0) {
     // Dimension doesn't matter, will be reset when updating the constaint.
-    eq_joint_motion_ = prog_.AddLinearEqualityConstraint(tmp_matrix_vd, tmp_vector_vd, {vd});
+    eq_joint_motion_ = prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd});
+    eq_joint_motion_->set_description("vd eq");
   } else {
     eq_joint_motion_ = nullptr;
   }
-  vd_reg_vec_.resize(num_vd_);
-  vd_reg_mat_.resize(num_vd_, num_vd_);
 
   // Regularize basis.
   cost_basis_reg_ =
@@ -185,9 +227,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   // Resize and zero temporary matrices.
-  ResizeQP(rs.robot(), input.contact_info(),
-           input.desired_body_motions(),
-           input.desired_joint_motions());
+  ResizeQP(rs.robot(), input);
   SetTempMatricesToZero();
 
   ////////////////////////////////////////////////////////////////////
@@ -317,60 +357,34 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Cost function:
   // CoM term (task space acceleration costs)
   // w * (J * vd + Jdv - desired_comdd)^T * (J * vd + Jdv - desired_comdd)
-  cost_comdd_->UpdateQuadraticAndLinearTerms(
-      input.w_com() * rs.J_com().transpose() * rs.J_com(),
-      input.w_com() * rs.J_com().transpose() *
-          (rs.Jdot_times_v_com() - input.desired_comdd()));
-
-  // Body motion
-  int cost_ctr = 0, eq_ctr = 0, contact_ctr = 0;
   std::list<int> row_idx_as_cost;
   std::list<int> row_idx_as_eq;
+  FindCostAndEqConstraintRows(input.desired_centroidal_momentum_change().weights(), &row_idx_as_cost, &row_idx_as_eq);
+  Eigen::Vector6d linear_term = rs.centroidal_momentum_matrix_dot_times_v() - input.desired_centroidal_momentum_change().momentum_dot();
+  AddAsCosts(rs.centroidal_momentum_matrix(), linear_term, input.desired_centroidal_momentum_change().weights(), row_idx_as_cost, cost_cen_mom_chg_);
+  AddAsConstraints(rs.centroidal_momentum_matrix(), -linear_term, row_idx_as_eq, eq_cen_mom_chg_);
 
+  // Body motion
+  int contact_ctr = 0, cost_ctr = 0, eq_ctr = 0;
   for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++) {
     const DesiredBodyMotion& body_motion_d = it->second;
     body_J_[contact_ctr] = GetTaskSpaceJacobian(
-        rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
+        rs.robot(), rs.cache(), *body_motion_d.body(), Eigen::Vector3d::Zero());
     body_Jdv_[contact_ctr] = GetTaskSpaceJacobianDotTimesV(
-        rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
-    Eigen::Vector6d linear_term = body_Jdv_[contact_ctr] - body_motion_d.accelerations();
+        rs.robot(), rs.cache(), *body_motion_d.body(), Eigen::Vector3d::Zero());
+    linear_term = body_Jdv_[contact_ctr] - body_motion_d.accelerations();
 
     // Find the rows that correspond to cost and equality constraints.
     FindCostAndEqConstraintRows(body_motion_d.weights(), &row_idx_as_cost, &row_idx_as_eq);
-
-    // Process eqaulity constraints.
-    if (row_idx_as_eq.size() > 0) {
-      int row_ctr = 0;
-      std::string eq_name = body_motion_d.name();
-      // Reuse vd_reg_mat_ and vd_reg_vec_, because they have the correct dimension.
-      for (int d : row_idx_as_eq) {
-        vd_reg_mat_.row(row_ctr) = body_J_[contact_ctr].row(d);
-        vd_reg_vec_.row(row_ctr) = -linear_term.row(d);
-        eq_name += body_motion_d.get_row_name(d);
-        row_ctr++;
-      }
-      eq_name += " eq";
-      eq_body_motion_[eq_ctr]->UpdateConstraint(vd_reg_mat_.topRows(row_ctr), vd_reg_vec_.head(row_ctr));
-      eq_body_motion_[eq_ctr]->set_description(eq_name);
-      eq_ctr++;
-    }
-
-    // Process cost terms.
-    if (row_idx_as_cost.size() > 0) {
-      std::string cost_name = body_motion_d.name();
-      // Reuse vd_reg_mat_ and vd_reg_vec_, because they have the correct dimension.
-      vd_reg_mat_.setZero();
-      vd_reg_vec_.setZero();
-      for (int d : row_idx_as_cost) {
-        double weight = body_motion_d.weights()[d];
-        vd_reg_mat_ += weight * body_J_[contact_ctr].row(d).transpose() * body_J_[contact_ctr].row(d);
-        vd_reg_vec_ += weight * body_J_[contact_ctr].row(d).transpose() * linear_term.row(d);
-        cost_name += body_motion_d.get_row_name(d);
-      }
-      cost_name += " cost";
-      cost_body_motion_[cost_ctr]->UpdateQuadraticAndLinearTerms(vd_reg_mat_, vd_reg_vec_);
-      cost_body_motion_[cost_ctr]->set_description(cost_name);
+    if (!row_idx_as_cost.empty()) {
+      AddAsCosts(body_J_[contact_ctr], linear_term, body_motion_d.weights(), row_idx_as_cost, cost_body_motion_[cost_ctr]);
+      cost_body_motion_[cost_ctr]->set_description(body_motion_d.name() + " cost");
       cost_ctr++;
+    }
+    if (!row_idx_as_eq.empty()) {
+      AddAsConstraints(body_J_[contact_ctr], -linear_term, row_idx_as_eq, eq_body_motion_[eq_ctr]);
+      eq_body_motion_[eq_ctr]->set_description(body_motion_d.name() + " eq");
+      eq_ctr++;
     }
     contact_ctr++;
   }
@@ -380,29 +394,25 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Process eq constraints.
   if (row_idx_as_eq.size() > 0) {
     int row_ctr = 0;
-    std::string eq_name = "vd_";
     for (int d : row_idx_as_eq) {
-      vd_reg_mat_.row(row_ctr).setZero();
-      vd_reg_mat_(row_ctr, d) = 1;
-      vd_reg_vec_[row_ctr] = input.desired_joint_motions().accelerations()[d];
-      eq_name += std::to_string(d);
+      tmp_vd_mat_.row(row_ctr).setZero();
+      tmp_vd_mat_(row_ctr, d) = 1;
+      tmp_vd_vec_[row_ctr] = input.desired_joint_motions().accelerations()[d];
       row_ctr++;
     }
-    eq_name += " eq";
-    eq_joint_motion_->UpdateConstraint(vd_reg_mat_.topRows(row_ctr), vd_reg_vec_.head(row_ctr));
-    eq_joint_motion_->set_description(eq_name);
+    eq_joint_motion_->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
   }
   // Procecss cost terms.
   if (row_idx_as_cost.size() > 0) {
-    vd_reg_mat_.setZero();
-    vd_reg_vec_.setZero();
+    tmp_vd_mat_.setZero();
+    tmp_vd_vec_.setZero();
 
     for (int d : row_idx_as_cost) {
       double weight = input.desired_joint_motions().weights()[d];
-      vd_reg_mat_(d, d) = weight;
-      vd_reg_vec_[d] = -weight * input.desired_joint_motions().accelerations()[d];
+      tmp_vd_mat_(d, d) = weight;
+      tmp_vd_vec_[d] = -weight * input.desired_joint_motions().accelerations()[d];
     }
-    cost_joint_motion_->UpdateQuadraticAndLinearTerms(vd_reg_mat_, vd_reg_vec_);
+    cost_joint_motion_->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
   }
 
   // Regularize basis to zero.
@@ -543,29 +553,25 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   return 0;
 }
 
+
+
+
+
+
 std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "===============================================\n";
   out << "QPInput:\n";
-  out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
-  out << "weight_com: " << input.w_com() << std::endl;
+  out << input.desired_centroidal_momentum_change();
 
-  for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++) {
-    out << "desired " << it->first << " acc: " << it->second.accelerations();
-    out << "weights: " << it->second.weights().transpose()
-        << std::endl;
-  }
+  for (auto it = input.desired_body_motions().begin(); it != input.desired_body_motions().end(); it++)
+    out << it->second;
 
-  out << "desired joint acc: " << std::endl;
-  out << input.desired_joint_motions().accelerations();
-  out << "weights: " << input.desired_joint_motions().weights().transpose() << std::endl;
+  out << input.desired_joint_motions();
 
   out << "weight_basis_reg: " << input.w_basis_reg() << std::endl;
 
-  for (const ContactInformation& contact : input.contact_info()) {
-    out << "contact: " << contact.name() << std::endl;
-    for (size_t j = 0; j < contact.contact_points().size(); j++)
-      out << contact.contact_points()[j].transpose() << std::endl;
-  }
+  for (const ContactInformation& contact : input.contact_info())
+    out << contact;
 
   return out;
 }

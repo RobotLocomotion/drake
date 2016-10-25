@@ -12,7 +12,7 @@ namespace qp_inverse_dynamics {
 
 lcmt_contact_information EncodeContactInformation(const ContactInformation& contact_info) {
   lcmt_contact_information msg;
-  msg.body_name = contact_info.body().get_name();
+  msg.body_name = contact_info.body()->get_name();
   msg.mu = contact_info.mu();
   msg.num_contact_points = contact_info.num_contact_points();
   msg.num_basis_per_contact_point = contact_info.num_basis_per_contact_point();
@@ -30,7 +30,7 @@ lcmt_contact_information EncodeContactInformation(const ContactInformation& cont
 }
 
 ContactInformation DecodeContactInformation(const lcmt_contact_information& msg, const RigidBodyTree& robot) {
-  ContactInformation contact_info(*robot.FindBody(msg.body_name), msg.num_basis_per_contact_point);
+  ContactInformation contact_info(robot.FindBody(msg.body_name), msg.num_basis_per_contact_point);
   contact_info.mutable_contact_points().resize(msg.num_contact_points);
   for (int i = 0; i < msg.num_contact_points; i++) {
     contact_info.mutable_contact_points()[i] = Eigen::Vector3d(msg.contact_points[0][i], msg.contact_points[1][i], msg.contact_points[2][i]);
@@ -65,7 +65,7 @@ lcmt_body_motion EncodeDesiredBodyMotion(const DesiredBodyMotion& body_motion) {
 }
 
 DesiredBodyMotion DecodeDesiredBodyMotion(const lcmt_body_motion& msg, const RigidBodyTree& robot) {
-  DesiredBodyMotion result(*robot.FindBody(msg.body_name));
+  DesiredBodyMotion result(robot.FindBody(msg.body_name));
 
   /*
   Eigen::Isometry3d pose;

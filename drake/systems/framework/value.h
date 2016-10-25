@@ -37,10 +37,10 @@ class DRAKE_EXPORT AbstractValue {
   /// Copies the value in @p other to this value.
   /// In Debug builds, if the types don't match, std::bad_cast will be
   /// thrown.  In Release builds, this is not guaranteed.
-  //virtual void SetFrom(const AbstractValue& other) = 0;
+  virtual void SetFrom(const AbstractValue& other) = 0;
 
   /// Like SetFrom, but throws on mismatched types even in Release builds.
-  //virtual void SetFromOrThrow(const AbstractValue& other) = 0;
+  virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
@@ -155,7 +155,6 @@ class Value : public AbstractValue {
     return std::make_unique<Value<T>>(*this);
   }
 
-  /*
   void SetFrom(const AbstractValue& other) override {
     value_ = other.GetValue<T>();
   }
@@ -163,7 +162,6 @@ class Value : public AbstractValue {
   void SetFromOrThrow(const AbstractValue& other) override {
     value_ = other.GetValueOrThrow<T>();
   }
-  */
 
   /// Returns a const reference to the stored value.
   const T& get_value() const { return value_; }

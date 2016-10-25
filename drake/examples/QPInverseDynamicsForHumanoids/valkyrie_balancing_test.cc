@@ -2,8 +2,9 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {
@@ -56,7 +57,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   CartesianSetpoint torso_PDff(robot_status.torso().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20), Eigen::Vector6d::Constant(8));
 
   // Perturb initial condition.
-  q[robot_status.name_to_position_index().at("torsoPitch")] += 0.1;
+  v[robot_status.name_to_position_index().at("torsoPitch")] += 1;
   robot_status.Update(
       0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
@@ -88,9 +89,10 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(), robot_status.torso().velocity());
     input.mutable_desired_joint_motions().mutable_accelerations() =
       joint_PDff.ComputeTargetAcceleration(robot_status.position(), robot_status.velocity());
-    input.mutable_desired_comdd() =
+    input.mutable_desired_centroidal_momentum_change().mutable_momentum_dot().segment<3>(3) =
       (Kp_com.array() * (desired_com - robot_status.com()).array() -
-       Kd_com.array() * robot_status.comd().array()).matrix();
+       Kd_com.array() * robot_status.comd().array()).matrix() * robot.getMass();
+
     int status = con.Control(robot_status, input, &output);
 
     if (status) {

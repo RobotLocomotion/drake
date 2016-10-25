@@ -5,223 +5,11 @@
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
-
-/**
-*This is used to compute target task space acceleration, which is the input
-*to the inverse dynamics controller.
-*The target acceleration is computed by:
-*acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
-*where x is pose, xd is velocity, and xdd is acceleration.
-*Variables with superscript * are the set points, and Kp and Kd are the
-*position and velocity gains.
-*The first terms 3 are angular accelerations, and the last 3 are linear
-*accelerations.
-*/
-class CartesianSetpoint {
- public:
-  CartesianSetpoint() {
-    pose_d_.setIdentity();
-    vel_d_.setZero();
-    acc_d_.setZero();
-    Kp_.setZero();
-    Kd_.setZero();
-  }
-
-  /**
-   * @param pose_d Desired pose
-   * @param vel_d Desired velocity
-   * @param acc_d Desired feedforward acceleration
-   * @param Kp Position gain
-   * @param Kd Velocity gain
-   */
-  CartesianSetpoint(const Eigen::Isometry3d& pose_d,
-                    const Eigen::Vector6d& vel_d, const Eigen::Vector6d& acc_d,
-                    const Eigen::Vector6d& Kp, const Eigen::Vector6d& Kd) {
-    pose_d_ = pose_d;
-    vel_d_ = vel_d;
-    acc_d_ = acc_d;
-    Kp_ = Kp;
-    Kd_ = Kd;
-  }
-
-  /**
-   * Computes target acceleration using PD feedback + feedfoward acceleration.
-   * @param pose Measured pose
-   * @param vel Measured velocity
-   * @return Computed spatial acceleration.
-   */
-  Eigen::Vector6d ComputeTargetAcceleration(const Eigen::Isometry3d& pose,
-                                            const Eigen::Vector6d& vel) const {
-    // feedforward acc + velocity feedback
-    Eigen::Vector6d acc = acc_d_;
-    acc += (Kd_.array() * (vel_d_ - vel).array()).matrix();
-
-    // pose feedback
-    // H^w_d = desired orientation in the world frame,
-    // H^w_m = measured orientation in the world frame,
-    // E = a small rotation in the world frame from measured to desired.
-    // H^w_d = E * H^w_m, E = H^w_d * H^w_m.transpose()
-    Eigen::Matrix3d R_err = pose_d_.linear() * pose.linear().transpose();
-    Eigen::AngleAxisd angle_axis_err(R_err);
-
-    Eigen::Vector3d pos_err = pose_d_.translation() - pose.translation();
-    Eigen::Vector3d rot_err = angle_axis_err.axis() * angle_axis_err.angle();
-
-    // orientation
-    acc.segment<3>(0) += (Kp_.segment<3>(0).array() * rot_err.array()).matrix();
-
-    // position
-    acc.segment<3>(3) += (Kp_.segment<3>(3).array() * pos_err.array()).matrix();
-
-    return acc;
-  }
-
-  bool is_valid() const {
-    bool ret = pose_d_.translation().allFinite();
-    ret &= Eigen::Matrix3d::Identity().isApprox(pose_d_.linear() * pose_d_.linear().transpose(), EPSILON);
-    ret &= vel_d_.allFinite();
-    ret &= acc_d_.allFinite();
-    ret &= Kp_.allFinite();
-    ret &= Kd_.allFinite();
-    return ret;
-  }
-
-  // Getters
-  inline const Eigen::Isometry3d& desired_pose() const { return pose_d_; }
-  inline const Eigen::Vector6d& desired_velocity() const { return vel_d_; }
-  inline const Eigen::Vector6d& desired_acceleration() const { return acc_d_; }
-  inline const Eigen::Vector6d& Kp() const { return Kp_; }
-  inline const Eigen::Vector6d& Kd() const { return Kd_; }
-
-  // Setters
-  inline Eigen::Isometry3d& mutable_desired_pose() { return pose_d_; }
-  inline Eigen::Vector6d& mutable_desired_velocity() { return vel_d_; }
-  inline Eigen::Vector6d& mutable_desired_acceleration() { return acc_d_; }
-  inline Eigen::Vector6d& mutable_Kp() { return Kp_; }
-  inline Eigen::Vector6d& mutable_Kd() { return Kd_; }
-
- private:
-  Eigen::Isometry3d pose_d_;  ///< Desired pose
-  Eigen::Vector6d vel_d_;     ///< Desired velocity
-  Eigen::Vector6d acc_d_;     ///< Desired acceleration
-
-  Eigen::Vector6d Kp_;  ///< Position gains
-  Eigen::Vector6d Kd_;  ///< Velocity gains
-};
-
-inline std::ostream& operator<<(std::ostream& out, const CartesianSetpoint& setpoint) {
-  Eigen::Vector3d rpy = math::rotmat2rpy(setpoint.desired_pose().linear());
-  out << "pose: (" << setpoint.desired_pose().translation().transpose()
-      << "), (" << rpy.transpose() << ")" << std::endl;
-  out << "velocity: " << setpoint.desired_velocity().transpose() << std::endl;
-  out << "acceleration: " << setpoint.desired_acceleration().transpose() << std::endl;
-  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
-  out << "Kd: " << setpoint.Kd().transpose() << std::endl;
-  return out;
-}
-
-class VectorSetpoint {
- public:
-  VectorSetpoint() {}
-  VectorSetpoint(int dim) {
-    pos_d_ = Eigen::VectorXd::Zero(dim);
-    vel_d_ = Eigen::VectorXd::Zero(dim);
-    acc_d_ = Eigen::VectorXd::Zero(dim);
-    Kp_ = Eigen::VectorXd::Zero(dim);
-    Kd_ = Eigen::VectorXd::Zero(dim);
-  }
-
-  /**
-   * @param pos_d Desired position
-   * @param vel_d Desired velocity
-   * @param acc_d Desired feedforward acceleration
-   * @param Kp Position gain
-   * @param Kd Velocity gain
-   */
-  VectorSetpoint(const Eigen::VectorXd& pos_d, const Eigen::VectorXd& vel_d, const Eigen::VectorXd& acc_d, const Eigen::VectorXd& Kp, const Eigen::VectorXd& Kd) {
-    if (pos_d.size() != vel_d.size() ||
-        pos_d.size() != acc_d.size() ||
-        pos_d.size() != Kp.size() ||
-        pos_d.size() != Kd.size()) {
-      throw std::runtime_error("Setpoints and gains have different dimensions.");
-    }
-    pos_d_ = pos_d;
-    vel_d_ = vel_d;
-    acc_d_ = acc_d;
-    Kp_ = Kp;
-    Kd_ = Kd;
-  }
-
-  double ComputeTargetAcceleration(int idx, double pos, double vel) const {
-    if (idx < 0 || idx >= pos_d_.size())
-      throw std::runtime_error("Index out of bound.");
-    double acc = acc_d_[idx];
-    acc += Kp_[idx] * (pos_d_[idx] - pos);
-    acc += Kd_[idx] * (vel_d_[idx] - vel);
-    return acc;
-  }
-
-  Eigen::VectorXd ComputeTargetAcceleration(const Eigen::VectorXd& pos, const Eigen::VectorXd& vel) const {
-    if (pos.size() != vel.size() ||
-        pos.size() != pos_d_.size()) {
-      throw std::runtime_error("Setpoints and states have different dimensions.");
-    }
-    Eigen::VectorXd acc(pos_d_.size());
-    for (int i = 0; i < size(); i++)
-      acc[i] = ComputeTargetAcceleration(i, pos[i], vel[i]);
-    return acc;
-  }
-
-  bool is_valid(int dim) const {
-    bool ret = pos_d_.size() == vel_d_.size() &&
-      pos_d_.size() == acc_d_.size() &&
-      pos_d_.size() == Kp_.size() &&
-      pos_d_.size() == Kd_.size() &&
-      pos_d_.size() == dim;
-    ret &= pos_d_.allFinite();
-    ret &= vel_d_.allFinite();
-    ret &= acc_d_.allFinite();
-    ret &= Kp_.allFinite();
-    ret &= Kd_.allFinite();
-    return ret;
-  }
-
-  // Getters
-  inline const Eigen::VectorXd& desired_position() const { return pos_d_; }
-  inline const Eigen::VectorXd& desired_velocity() const { return vel_d_; }
-  inline const Eigen::VectorXd& desired_acceleration() const { return acc_d_; }
-  inline const Eigen::VectorXd& Kp() const { return Kp_; }
-  inline const Eigen::VectorXd& Kd() const { return Kd_; }
-  inline int size() const { return pos_d_.size(); }
-
-  // Setters
-  inline Eigen::VectorXd& mutable_desired_position() { return pos_d_; }
-  inline Eigen::VectorXd& mutable_desired_velocity() { return vel_d_; }
-  inline Eigen::VectorXd& mutable_desired_acceleration() { return acc_d_; }
-  inline Eigen::VectorXd& mutable_Kp() { return Kp_; }
-  inline Eigen::VectorXd& mutable_Kd() { return Kd_; }
-
- private:
-  Eigen::VectorXd pos_d_;
-  Eigen::VectorXd vel_d_;
-  Eigen::VectorXd acc_d_;
-  Eigen::VectorXd Kp_;
-  Eigen::VectorXd Kd_;
-};
-
-inline std::ostream& operator<<(std::ostream& out, const VectorSetpoint& setpoint) {
-  out << "pos: " << setpoint.desired_position().transpose() << std::endl;
-  out << "vel: " << setpoint.desired_velocity().transpose() << std::endl;
-  out << "acc: " << setpoint.desired_acceleration().transpose() << std::endl;
-  out << "Kp: " << setpoint.Kp().transpose() << std::endl;
-  out << "Kd: " << setpoint.Kd().transpose() << std::endl;
-  return out;
-}
 
 /**
  * This class describes contact related information for each body in contact
@@ -232,7 +20,7 @@ inline std::ostream& operator<<(std::ostream& out, const VectorSetpoint& setpoin
  */
 class ContactInformation {
  private:
-  const RigidBody& body_;  ///< Link in contact
+  const RigidBody* body_;  ///< Link in contact
   /// Offsets of the contact point specified in the body frame.
   std::vector<Eigen::Vector3d> contact_points_;
 
@@ -251,17 +39,13 @@ class ContactInformation {
   /*
    * @param num_basis_per_contact_point number of basis per contact point
    */
-  ContactInformation(const RigidBody& b, int num_basis_per_contact_point)
+  ContactInformation(const RigidBody* b, int num_basis_per_contact_point)
       : body_(b), num_basis_per_contact_point_(num_basis_per_contact_point) {
     normal_ = Eigen::Vector3d(0, 0, 1);
     mu_ = 1;
     if (num_basis_per_contact_point_ < 3)
       throw std::runtime_error(
           "Number of basis per contact point must be >= 3.");
-  }
-
-  ContactInformation(const ContactInformation& other) : body_(other.body()), contact_points_(other.contact_points()), normal_(other.normal()), num_basis_per_contact_point_(other.num_basis_per_contact_point()), mu_(other.mu()) {
-
   }
 
   /**
@@ -282,7 +66,7 @@ class ContactInformation {
         3 * contact_points_.size(),
         num_basis_per_contact_point_ * contact_points_.size());
     Eigen::Matrix3d body_rot =
-        robot.relativeTransform(cache, 0, body_.get_body_index()).linear();
+        robot.relativeTransform(cache, 0, body_->get_body_index()).linear();
     basis.setZero();
 
     Eigen::Vector3d t1, t2, tangent_vec, base;
@@ -331,11 +115,11 @@ class ContactInformation {
       std::vector<Eigen::Vector3d>* contact_points,
       Eigen::Vector3d* reference_point) const {
     *reference_point =
-        robot.transformPoints(cache, offset, body_.get_body_index(), 0);
+        robot.transformPoints(cache, offset, body_->get_body_index(), 0);
     contact_points->resize(contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       (*contact_points)[i] = robot.transformPoints(cache, contact_points_[i],
-                                                   body_.get_body_index(), 0);
+                                                   body_->get_body_index(), 0);
     }
   }
 
@@ -382,7 +166,7 @@ class ContactInformation {
     Eigen::MatrixXd J(3 * contact_points_.size(), robot.get_num_velocities());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
-          GetTaskSpaceJacobian(robot, cache, body_, contact_points_[i])
+          GetTaskSpaceJacobian(robot, cache, *body_, contact_points_[i])
               .bottomRows<3>();
     }
     return J;
@@ -401,13 +185,13 @@ class ContactInformation {
     Eigen::VectorXd Jdv(3 * contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       Jdv.segment<3>(3 * i) =
-          GetTaskSpaceJacobianDotTimesV(robot, cache, body_, contact_points_[i])
+          GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, contact_points_[i])
               .bottomRows<3>();
     }
     return Jdv;
   }
 
-  inline const std::string& name() const { return body_.get_name(); }
+  inline const std::string& name() const { return body_->get_name(); }
   inline int num_contact_points() const {
     return static_cast<int>(contact_points_.size());
   }
@@ -421,7 +205,7 @@ class ContactInformation {
     return contact_points_;
   }
   inline const Eigen::Vector3d& normal() const { return normal_; }
-  inline const RigidBody& body() const { return body_; }
+  inline const RigidBody* body() const { return body_; }
   inline int num_basis_per_contact_point() const {
     return num_basis_per_contact_point_;
   }
@@ -437,13 +221,22 @@ class ContactInformation {
   }
 };
 
+inline std::ostream& operator<<(std::ostream& out, const ContactInformation& contact) {
+  out << "contact: " << contact.name() << std::endl;
+  for (size_t j = 0; j < contact.contact_points().size(); j++)
+    out << contact.contact_points()[j].transpose() << std::endl;
+  out << "normal: " << contact.normal().transpose() << std::endl;
+  out << "mu: " << contact.mu() << std::endl;
+  return out;
+}
+
 /**
  * This class holds the contact force / wrench related information, and works
  * closely with ContactInformation.
  */
 class ResolvedContact {
  private:
-  const RigidBody& body_;
+  const RigidBody* body_;
   // Stacked scalars for all the basis vectors.
   Eigen::VectorXd basis_;
 
@@ -461,11 +254,11 @@ class ResolvedContact {
   Eigen::Vector3d reference_point_;
 
  public:
-  explicit ResolvedContact(const RigidBody& body) : body_(body) {}
+  explicit ResolvedContact(const RigidBody* body) : body_(body) {}
 
   // Getters
-  inline const RigidBody& body() const { return body_; }
-  inline const std::string& name() const { return body_.get_name(); }
+  inline const RigidBody* body() const { return body_; }
+  inline const std::string& name() const { return body_->get_name(); }
   inline const Eigen::VectorXd& basis() const { return basis_; }
   inline const std::vector<Eigen::Vector3d>& point_forces() const {
     return point_forces_;
@@ -511,155 +304,45 @@ class ResolvedContact {
  */
 class BodyAcceleration {
  protected:
-  const RigidBody& body_;
+  const RigidBody* body_;
   Eigen::Vector6d acceleration_;
 
  public:
-  explicit BodyAcceleration(const RigidBody& body)
+  explicit BodyAcceleration(const RigidBody* body)
       : body_(body), acceleration_(Eigen::Vector6d::Zero()) {}
 
   inline bool is_valid() const { return acceleration_.allFinite(); }
 
   // Getters
-  inline const RigidBody& body() const { return body_; }
-  inline const std::string& name() const { return body_.get_name(); }
+  inline const RigidBody* body() const { return body_; }
+  inline const std::string& name() const { return body_->get_name(); }
+  /**
+   * @return Task space acceleration. The first three elements are angular.
+   */
   inline const Eigen::Vector6d& acceleration() const { return acceleration_; }
 
   // Setter
   inline Eigen::Vector6d& mutable_acceleration() { return acceleration_; }
 };
 
-/*
+/**
+ * A wrapper class specified desired body motion (acceleration) for a rigid
+ * body and their corresponding weights for the QP.
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * The first three elements for weights and accelerations are angular.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
 class DesiredBodyMotion {
  private:
-  const RigidBody& body_;
-  CartesianSetpoint setpoint_;
-  Eigen::Vector6d weights_;
-  bool control_during_contact_;
-
-  Eigen::Vector6d override_acc_;
-  bool use_override_;
-
- public:
-  explicit DesiredBodyMotion(const RigidBody& body)
-    : body_(body), weights_(Eigen::Vector6d::Zero()), override_acc_(Eigen::Vector6d::Zero()), use_override_(false) {}
-
-  DesiredBodyMotion(const DesiredBodyMotion& other) : body_(other.body()), setpoint_(other.setpoint()), weights_(other.weights()), control_during_contact_(other.control_during_contact()), override_acc_(other.override_acceleration()), use_override_(other.is_overriding_acceleration()) {}
-
-  Eigen::Vector6d ComputeAcceleration(const RigidBodyTree& robot, const KinematicsCache<double> &cache) const {
-    if (!use_override_) {
-      Eigen::Isometry3d pose = robot.relativeTransform(cache, 0, body_.get_body_index());
-      Eigen::Vector6d velocity = GetTaskSpaceVel(robot, cache, body_);
-      return setpoint_.ComputeTargetAcceleration(pose, velocity);
-    } else {
-      return override_acc_;
-    }
-  }
-
-  inline bool is_valid() const {
-    bool ret = weights_.allFinite();
-    if (!use_override_)
-      ret &= setpoint_.is_valid();
-    else
-      ret &= override_acc_.allFinite();
-    return ret;
-  }
-
-  inline std::string get_row_name(int i) const {
-    const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
-    if (i < 0 || i >=6)
-      throw std::runtime_error("index must be within [0, 5]");
-    return row_name[i];
-  }
-
-  // Getters
-  inline const RigidBody& body() const { return body_; }
-  inline const std::string& name() const { return body_.get_name(); }
-  inline const Eigen::Vector6d& weights() const { return weights_; }
-  inline const CartesianSetpoint& setpoint() const { return setpoint_; }
-  inline const Eigen::Vector6d& override_acceleration() const { return override_acc_; }
-  inline bool control_during_contact() const { return control_during_contact_; }
-  inline bool is_overriding_acceleration() const { return use_override_; }
-
-  // Setters
-  inline Eigen::Vector6d& mutable_weights() { return weights_; }
-  inline bool& mutable_control_during_contact() { return control_during_contact_; }
-  inline CartesianSetpoint& mutable_setpoint() { return setpoint_; }
-  inline Eigen::Vector6d& mutable_override_acceleration() { return override_acc_; }
-  inline void set_override(bool flag) { use_override_ = flag; }
-};
-
-class DesiredJointMotions {
- private:
-  std::vector<std::string> names_;
-  VectorSetpoint setpoint_;
-  Eigen::VectorXd weights_;
-
-  Eigen::VectorXd override_acc_;
-  bool use_override_;
-
- public:
-  explicit DesiredJointMotions(const RigidBodyTree& robot) {
-    int dim = robot.get_num_positions();
-    names_.resize(dim);
-    for (int i = 0; i < dim; i++)
-      names_[i] = robot.get_position_name(i);
-    weights_ = Eigen::VectorXd::Zero(dim);
-    setpoint_ = VectorSetpoint(dim);
-    override_acc_ = Eigen::VectorXd::Zero(dim);
-    use_override_ = false;
-  }
-
-  inline Eigen::VectorXd ComputeAcceleration(const Eigen::VectorXd& pos, const Eigen::VectorXd& vel) const {
-    if (!use_override_)
-      return setpoint_.ComputeTargetAcceleration(pos, vel);
-    else
-      return override_acc_;
-  }
-
-  inline double ComputeAcceleration(int idx, double pos, double vel) const {
-    if (!use_override_)
-      return setpoint_.ComputeTargetAcceleration(idx, pos, vel);
-    else
-      return override_acc_[idx];
-  }
-
-  bool is_valid(int dim) const {
-    bool ret = static_cast<int>(names_.size()) == setpoint_.size();
-    ret &= setpoint_.size() == weights_.size();
-    ret &= weights_.allFinite();
-    if (!use_override_)
-      ret &= setpoint_.is_valid(dim);
-    else
-      ret &= override_acc_.allFinite();
-    return ret;
-  }
-
-  // Getters
-  inline int size() const { return setpoint_.size(); }
-  inline const std::vector<std::string>& names() const { return names_; }
-  inline const std::string& name(int i) const { return names_.at(i); }
-  inline const Eigen::VectorXd& weights() const { return weights_; }
-  inline const VectorSetpoint& setpoint() const { return setpoint_; }
-  inline const Eigen::VectorXd& override_accelerations() const { return override_acc_; }
-
-  // Setters
-  inline Eigen::VectorXd& mutable_weights() { return weights_; }
-  inline VectorSetpoint& mutable_setpoint() { return setpoint_; }
-  inline Eigen::VectorXd& mutable_override_accelerations() { return override_acc_; }
-  inline void set_override(bool flag) { use_override_ = flag; }
-};
-*/
-
-class DesiredBodyMotion {
- private:
-  const RigidBody& body_;
+  const RigidBody* body_;
   Eigen::Vector6d accelerations_;
   Eigen::Vector6d weights_;
   bool control_during_contact_;
 
  public:
-  explicit DesiredBodyMotion(const RigidBody& body)
+  explicit DesiredBodyMotion(const RigidBody* body)
     : body_(body), accelerations_(Eigen::Vector6d::Zero()), weights_(Eigen::Vector6d::Zero()), control_during_contact_(false) {}
 
   inline bool is_valid() const {
@@ -668,14 +351,14 @@ class DesiredBodyMotion {
 
   inline std::string get_row_name(int i) const {
     const static std::string row_name[6] = {"[R]", "[P]", "[Y]", "[X]", "[Y]", "[Z]"};
-    if (i < 0 || i >=6)
+    if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
     return row_name[i];
   }
 
   // Getters
-  inline const RigidBody& body() const { return body_; }
-  inline const std::string& name() const { return body_.get_name(); }
+  inline const RigidBody* body() const { return body_; }
+  inline const std::string& name() const { return body_->get_name(); }
   inline const Eigen::Vector6d& weights() const { return weights_; }
   inline const Eigen::Vector6d& accelerations() const { return accelerations_; }
   inline bool control_during_contact() const { return control_during_contact_; }
@@ -686,6 +369,21 @@ class DesiredBodyMotion {
   inline bool& mutable_control_during_contact() { return control_during_contact_; }
 };
 
+inline std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input) {
+  for (int i = 0; i < 6; i++) {
+    out << "desired " << input.name() << input.get_row_name(i) << " acc: " << input.accelerations()[i] << " weight: " << input.weights()[i] << std::endl;
+  }
+  return out;
+}
+
+/**
+ * A wrapper class specifying desired joint motion (acceleration) and their
+ * corresponding weights for the QP.
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
 class DesiredJointMotions {
  private:
   std::vector<std::string> names_;
@@ -717,6 +415,57 @@ class DesiredJointMotions {
   inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
 };
 
+inline std::ostream& operator<<(std::ostream& out, const DesiredJointMotions& input) {
+  for (int i = 0; i < input.size(); i++) {
+    out << "desired " << input.name(i) << " acc: " << input.accelerations()[i] << " weight: " << input.weights()[i] << std::endl;
+  }
+  return out;
+}
+
+/**
+ * A wrapper class specifying desired centroidal momentum change and their
+ * corresponding weights for the QP.
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * The first three terms are angular.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
+class DesiredCentroidalMomentumChange {
+ private:
+  Eigen::Vector6d weights_;
+  Eigen::Vector6d momentum_dot_;
+
+ public:
+  DesiredCentroidalMomentumChange() : weights_(Eigen::Vector6d::Zero()), momentum_dot_(Eigen::Vector6d::Zero()) {}
+
+  bool is_valid() const {
+    return weights_.allFinite() && momentum_dot_.allFinite();
+  }
+
+  inline std::string get_row_name(int i) const {
+    const static std::string row_name[6] = {"AngMom[R]", "AngMom[P]", "AngMom[Y]", "LinMom[X]", "LinMom[Y]", "LinMom[Z]"};
+    if (i < 0 || i >= 6)
+      throw std::runtime_error("index must be within [0, 5]");
+    return row_name[i];
+  }
+
+  // Getters
+  inline const Eigen::Vector6d& weights() const { return weights_; }
+  inline const Eigen::Vector6d& momentum_dot() const { return momentum_dot_; }
+
+  // Setters
+  inline Eigen::Vector6d& mutable_weights() { return weights_; }
+  inline Eigen::Vector6d& mutable_momentum_dot() { return momentum_dot_; }
+};
+
+inline std::ostream& operator<<(std::ostream& out, const DesiredCentroidalMomentumChange& input) {
+  for (int i = 0; i < 6; i++) {
+    out << "desired " << input.get_row_name(i) << " change: " << input.momentum_dot()[i] << " weight: " << input.weights()[i] << std::endl;
+  }
+  return out;
+}
+
 /**
  * Input to the QP inverse dynamics controller
  */
@@ -728,17 +477,13 @@ class QPInput {
   // Desired task space accelerations for specific bodies
   std::map<std::string, DesiredBodyMotion> desired_body_motions_;
 
+  // Desired joint accelerations
   DesiredJointMotions desired_joint_motions_;
 
-  // Desired task space accelerations for the center of mass
-  Eigen::Vector3d desired_comdd_;
-  // Desired generalized coordinate accelerations
-  // Eigen::VectorXd desired_vd_;
+  // Desired centroidal momentum change (change of overall linar and angular momentum)
+  DesiredCentroidalMomentumChange desired_centroidal_momentum_change_;
 
-  // These are weights for each cost term.
-  // Prefix w_ indicates weights.
-  double w_com_;
-
+  // Weight for regularizing basis vectors
   double w_basis_reg_;
 
  public:
@@ -756,14 +501,12 @@ class QPInput {
    */
   bool is_valid(int num_vd) const {
     int valid = num_vd == desired_joint_motions_.size();
-    valid &= desired_comdd_.allFinite();
     valid &= desired_joint_motions_.is_valid(num_vd);
     for (auto it = desired_body_motions_.begin(); it != desired_body_motions_.end(); it++) {
       valid &= it->second.is_valid();
     }
+    valid &= desired_centroidal_momentum_change_.is_valid();
 
-    valid &= std::isfinite(w_com_);
-    valid &= w_com_ >= 0;
     valid &= std::isfinite(w_basis_reg_);
     valid &= w_basis_reg_ >= 0;
 
@@ -771,7 +514,6 @@ class QPInput {
   }
 
   // Getters
-  inline double w_com() const { return w_com_; }
   inline double w_basis_reg() const { return w_basis_reg_; }
 
   inline const std::string& coord_name(size_t idx) const {
@@ -784,11 +526,9 @@ class QPInput {
     return desired_body_motions_;
   }
   inline const DesiredJointMotions& desired_joint_motions() const { return desired_joint_motions_; }
-
-  inline const Eigen::Vector3d& desired_comdd() const { return desired_comdd_; }
+  inline const DesiredCentroidalMomentumChange& desired_centroidal_momentum_change() const { return desired_centroidal_momentum_change_; }
 
   // Setters
-  inline double& mutable_w_com() { return w_com_; }
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
 
   inline std::list<ContactInformation>& mutable_contact_info() {
@@ -798,7 +538,7 @@ class QPInput {
     return desired_body_motions_;
   }
   inline DesiredJointMotions& mutable_desired_joint_motions() { return desired_joint_motions_; }
-  inline Eigen::Vector3d& mutable_desired_comdd() { return desired_comdd_; }
+  inline DesiredCentroidalMomentumChange& mutable_desired_centroidal_momentum_change() { return desired_centroidal_momentum_change_; }
 };
 std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
@@ -913,8 +653,8 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output);
 class QPController {
  private:
   // These are temporary matrices and vectors used by the controller.
-  Eigen::MatrixXd vd_reg_mat_;
-  Eigen::VectorXd vd_reg_vec_;
+  Eigen::MatrixXd tmp_vd_mat_;
+  Eigen::VectorXd tmp_vd_vec_;
   Eigen::MatrixXd basis_reg_mat_;
   Eigen::VectorXd basis_reg_vec_;
 
@@ -954,12 +694,16 @@ class QPController {
   int num_basis_;
   int num_torque_;
   int num_variable_;
-
-  // 1 cost / eqaulity constraint term per body motion
+  // One cost / eqaulity constraint term per body motion.
+  // For each dimension (row) of the desired body motion, it is considered as a
+  // cost term if it's corresponding weight is >= 0, and a constraint if the
+  // weight is < 0.
   // E.g. if pelvis's desired body motion has weight (1, 1, ,0, 0, -1, -1),
-  // num_body_motion_as_cost_ and num_body_motion_as_eq_ are incremented by 1.
+  // num_body_motion_as_cost_ and num_body_motion_as_eq_ are both incremented
+  // by 1.
   // The cost term is:
-  // qdd^T * J(1:4,:)^T * J(1:4,:) * qdd + J(1:4,:)^T * (Jdv(1:4,:) - pelvdd_d(1:4))
+  // 0.5 * qdd^T * J(1:4,:)^T * J(1:4,:) * qdd
+  // + J(1:4,:)^T * (Jdv(1:4,:) - pelvdd_d(1:4))
   // The eq term is:
   // J(5:6,:) * qdd + Jdv(5:6,:) = pelvdd_d(5:6)
   int num_body_motion_as_cost_;
@@ -967,26 +711,27 @@ class QPController {
   // Same as for body_motiom, replace J with the identity matrix.
   int num_joint_motion_as_cost_;
   int num_joint_motion_as_eq_;
+  int num_cen_mom_chg_as_cost_;
+  int num_cen_mom_chg_as_eq_;
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
   drake::solvers::MathematicalProgram prog_;
-  // TODO(siyuan.feng@tri.global): switch to other faster solvers when they are
-  // ready: gurobi / fastQP
-  drake::solvers::SnoptSolver solver_;
+  drake::solvers::GurobiSolver solver_;
 
   // pointers to different cost / constraint terms inside prog_
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_dynamics_;
+  // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>>
       eq_contacts_;
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_joint_motion_;
+  std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_cen_mom_chg_;
 
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_contact_wrench_;
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
 
-  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_comdd_;
-  // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
+  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_cen_mom_chg_;
   std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>> cost_body_motion_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_joint_motion_;
 
@@ -999,15 +744,51 @@ class QPController {
    * Size change typically happens when contact state changes (making / breaking
    * contacts).
    * @param robot Model
-   * @param all_contacts Information about contacts
-   * @param all_body_accelerations Desired body accelerations to be tracked
-   * @param all_joint_motions Desired joint accelerations to be tracked
+   * @param input input to the QP
    */
   void ResizeQP(
       const RigidBodyTree& robot,
-      const std::list<ContactInformation>& all_contacts,
-      const std::map<std::string, DesiredBodyMotion>& all_body_accelerations,
-      const DesiredJointMotions& all_joint_motions);
+      const QPInput& input);
+
+  template <typename DerivedA, typename DerivedB>
+  void AddAsConstraints(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b, const std::list<int>& idx, std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq) {
+    if (idx.empty())
+      return;
+    if (A.rows() != b.rows() || A.rows() > tmp_vd_mat_.rows() ||
+        b.cols() != 1 ||
+        A.cols() != tmp_vd_mat_.cols()) {
+      throw std::runtime_error("Invalid input dimension.");
+    }
+
+    int row_ctr = 0;
+    for (int d : idx) {
+      tmp_vd_mat_.row(row_ctr) = A.row(d);
+      tmp_vd_vec_.row(row_ctr) = b.row(d);
+      row_ctr++;
+    }
+    eq->UpdateConstraint(tmp_vd_mat_.topRows(row_ctr), tmp_vd_vec_.head(row_ctr));
+  }
+
+  template <typename DerivedA, typename DerivedB, typename DerivedW>
+  void AddAsCosts(const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedB>& b, const Eigen::MatrixBase<DerivedW>& weights, const std::list<int>& idx, std::shared_ptr<drake::solvers::QuadraticConstraint> cost) {
+    if (idx.empty())
+      return;
+    if (A.rows() != b.rows() || A.rows() != weights.rows() ||
+        A.rows() > tmp_vd_mat_.rows() ||
+        b.cols() != 1 || weights.cols() != 1 ||
+        A.cols() != tmp_vd_mat_.cols()) {
+      throw std::runtime_error("Invalid input dimension.");
+    }
+
+    tmp_vd_mat_.setZero();
+    tmp_vd_vec_.setZero();
+    for (int d : idx) {
+      double weight = weights[d];
+      tmp_vd_mat_ += weight * A.row(d).transpose() * A.row(d);
+      tmp_vd_vec_ += weight * A.row(d).transpose() * b.row(d);
+    }
+    cost->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
+  }
 
   /**
    * Zeros out the temporary matrices.

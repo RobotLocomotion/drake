@@ -38,7 +38,7 @@ AbstractValue& ModalState::get_mutable_modal_state(int index) {
 void ModalState::CopyFrom(const ModalState& other) {
   DRAKE_DEMAND(size() == other.size());
   for (int i = 0; i < size(); i++) {
-    //data_[i]->SetFrom(other.get_modal_state(i));
+    data_[i]->SetFrom(other.get_modal_state(i));
   }
 }
 
