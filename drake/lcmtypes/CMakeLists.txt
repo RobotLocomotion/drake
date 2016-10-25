@@ -13,8 +13,6 @@ lcm_wrap_types(
   ${java_args}
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
-  lcmt_contact_information.lcm
-  lcmt_body_motion.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
@@ -25,7 +23,6 @@ lcm_wrap_types(
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
   lcmt_piecewise_polynomial.lcm
-  lcmt_new_qp_controller_input.lcm
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
   lcmt_qp_controller_input.lcm
