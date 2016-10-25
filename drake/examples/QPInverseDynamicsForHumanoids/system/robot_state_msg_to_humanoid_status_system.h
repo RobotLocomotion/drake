@@ -3,6 +3,7 @@
 #include "bot_core/robot_state_t.hpp"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 
 namespace drake {
 namespace examples {
@@ -10,7 +11,7 @@ namespace qp_inverse_dynamics {
 
 class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
  public:
-  explicit RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree* robot) : robot_(robot) {
     input_port_index_lcm_msg_ = DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_humanoid_status_ = DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
 
@@ -21,7 +22,15 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
     const bot_core::robot_state_t* msg = EvalInputValue<bot_core::robot_state_t>(context, input_port_index_lcm_msg_);
     HumanoidStatus& hum_status = output->GetMutableData(output_port_index_humanoid_status_)
                               ->GetMutableValue<HumanoidStatus>();
-    hum_status.ParseLcmMessage(*msg);
+
+    Eigen::VectorXd pos(hum_status.position().size());
+    Eigen::VectorXd vel(hum_status.velocity().size());
+    Eigen::VectorXd joint_torque(hum_status.joint_torque().size());
+    Eigen::Vector6d l_foot_wrench, r_foot_wrench;
+    double time;
+
+    DecodeRobotStateLcmMsg(*msg, hum_status.name_to_position_index(), &time, &pos, &vel, &joint_torque, &l_foot_wrench, &r_foot_wrench);
+    hum_status.Update(time, pos, vel, joint_torque, l_foot_wrench, r_foot_wrench);
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -43,7 +52,7 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree* robot_;
 
   int input_port_index_lcm_msg_;
   int output_port_index_humanoid_status_;

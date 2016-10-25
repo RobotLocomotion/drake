@@ -1,8 +1,8 @@
 #pragma once
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -19,7 +19,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree* robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -30,7 +30,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
     // Setup gains.
-    int dim = robot.get_num_positions();
+    int dim = robot_->get_num_positions();
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
     Kp_pelvis_ = Eigen::Vector6d::Constant(20);
@@ -51,6 +51,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     QPInput& result = output->GetMutableData(output_port_index_qp_input_)
                          ->GetMutableValue<QPInput>();
 
+    // Update weights.
     for (const std::string& joint_name : robot_status->arm_joint_names()) {
       int idx = robot_status->name_to_position_index().at(joint_name);
       result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
@@ -61,9 +62,9 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     }
 
     // Update desired accelerations.
-    result.mutable_desired_centroidal_momentum_change().mutable_momentum_dot().segment<3>(3) =
+    result.mutable_desired_centroidal_momentum_dot().mutable_momentum_dot().segment<3>(3) =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array()).matrix() * robot_.getMass();
+         Kd_com_.array() * robot_status->comd().array()).matrix() * robot_->getMass();
 
     result.mutable_desired_joint_motions().mutable_accelerations() = joint_PDff_.ComputeTargetAcceleration(robot_status->position(), robot_status->velocity());
     result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() = pelvis_PDff_.ComputeTargetAcceleration(robot_status->pelvis().pose(), robot_status->pelvis().velocity());
@@ -75,7 +76,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<QPInput>(MakeExampleQPInput(robot_))));
+        std::unique_ptr<AbstractValue>(new Value<QPInput>(MakeExampleQPInput(*robot_))));
     return std::move(output);
   }
 
@@ -107,11 +108,12 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree* robot_;
 
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;
 
+  // Gains and setpoints.
   VectorSetpoint joint_PDff_;
   CartesianSetpoint pelvis_PDff_;
   CartesianSetpoint torso_PDff_;

@@ -73,9 +73,9 @@ class ContactInformation {
     double theta;
 
     // Computes the tangent vectors that are perpendicular to normal_.
-    if (fabs(1 - normal_[2]) < EPSILON) {
+    if (fabs(1 - normal_[2]) < Eigen::NumTraits<double>::epsilon()) {
       t1 << 1, 0, 0;
-    } else if (fabs(1 + normal_[2]) < EPSILON) {
+    } else if (fabs(1 + normal_[2]) < Eigen::NumTraits<double>::epsilon()) {
       // same for the reflected case
       t1 << -1, 0, 0;
     } else {
@@ -481,7 +481,7 @@ class QPInput {
   DesiredJointMotions desired_joint_motions_;
 
   // Desired centroidal momentum change (change of overall linar and angular momentum)
-  DesiredCentroidalMomentumChange desired_centroidal_momentum_change_;
+  DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
 
   // Weight for regularizing basis vectors
   double w_basis_reg_;
@@ -505,7 +505,7 @@ class QPInput {
     for (auto it = desired_body_motions_.begin(); it != desired_body_motions_.end(); it++) {
       valid &= it->second.is_valid();
     }
-    valid &= desired_centroidal_momentum_change_.is_valid();
+    valid &= desired_centroidal_momentum_dot_.is_valid();
 
     valid &= std::isfinite(w_basis_reg_);
     valid &= w_basis_reg_ >= 0;
@@ -526,7 +526,7 @@ class QPInput {
     return desired_body_motions_;
   }
   inline const DesiredJointMotions& desired_joint_motions() const { return desired_joint_motions_; }
-  inline const DesiredCentroidalMomentumChange& desired_centroidal_momentum_change() const { return desired_centroidal_momentum_change_; }
+  inline const DesiredCentroidalMomentumChange& desired_centroidal_momentum_dot() const { return desired_centroidal_momentum_dot_; }
 
   // Setters
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
@@ -538,7 +538,7 @@ class QPInput {
     return desired_body_motions_;
   }
   inline DesiredJointMotions& mutable_desired_joint_motions() { return desired_joint_motions_; }
-  inline DesiredCentroidalMomentumChange& mutable_desired_centroidal_momentum_change() { return desired_centroidal_momentum_change_; }
+  inline DesiredCentroidalMomentumChange& mutable_desired_centroidal_momentum_dot() { return desired_centroidal_momentum_dot_; }
 };
 std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
@@ -553,8 +553,11 @@ class QPOutput {
   // Tracked body motion
   std::vector<BodyAcceleration> body_accelerations_;
 
-  // Computed task space accelerations for the center of mass
+  // Computed accelerations for the center of mass in the world frame
   Eigen::Vector3d comdd_;
+  // Computed centroidal momentum dot in the world frame, the last 3 should
+  // equal to comdd_ * mass
+  Eigen::Vector6d centroidal_momentum_dot_;
   // Computed generalized coordinate accelerations
   Eigen::VectorXd vd_;
   // Computed joint torque
@@ -587,7 +590,7 @@ class QPOutput {
     ret &= vd_.size() == num_vd;
     ret &= joint_torque_.size() == num_actuators;
 
-    ret &= comdd_.allFinite();
+    ret &= centroidal_momentum_dot_.allFinite();
     ret &= vd_.allFinite();
     ret &= joint_torque_.allFinite();
 
@@ -603,6 +606,7 @@ class QPOutput {
     return coord_names_.at(idx);
   }
   inline const Eigen::Vector3d& comdd() const { return comdd_; }
+  inline const Eigen::Vector6d& centroidal_momentum_dot() const { return centroidal_momentum_dot_; }
   inline const Eigen::VectorXd& vd() const { return vd_; }
   inline const std::vector<BodyAcceleration>& body_accelerations() const {
     return body_accelerations_;
@@ -626,6 +630,7 @@ class QPOutput {
 
   // Setters
   inline Eigen::Vector3d& mutable_comdd() { return comdd_; }
+  inline Eigen::Vector6d& mutable_centroidal_momentum_dot() { return centroidal_momentum_dot_; }
   inline Eigen::VectorXd& mutable_vd() { return vd_; }
   inline std::vector<BodyAcceleration>& mutable_body_accelerations() {
     return body_accelerations_;
@@ -711,8 +716,8 @@ class QPController {
   // Same as for body_motiom, replace J with the identity matrix.
   int num_joint_motion_as_cost_;
   int num_joint_motion_as_eq_;
-  int num_cen_mom_chg_as_cost_;
-  int num_cen_mom_chg_as_eq_;
+  int num_cen_mom_dot_as_cost_;
+  int num_cen_mom_dot_as_eq_;
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
@@ -726,12 +731,12 @@ class QPController {
       eq_contacts_;
   std::vector<std::shared_ptr<drake::solvers::LinearEqualityConstraint>> eq_body_motion_;
   std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_joint_motion_;
-  std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_cen_mom_chg_;
+  std::shared_ptr<drake::solvers::LinearEqualityConstraint> eq_cen_mom_dot_;
 
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_contact_wrench_;
   std::shared_ptr<drake::solvers::LinearConstraint> ineq_torque_limit_;
 
-  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_cen_mom_chg_;
+  std::shared_ptr<drake::solvers::QuadraticConstraint> cost_cen_mom_dot_;
   std::vector<std::shared_ptr<drake::solvers::QuadraticConstraint>> cost_body_motion_;
   std::shared_ptr<drake::solvers::QuadraticConstraint> cost_joint_motion_;
 

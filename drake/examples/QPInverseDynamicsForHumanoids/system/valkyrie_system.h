@@ -31,23 +31,23 @@ class ValkyrieSystem : public LeafSystem<double> {
    * Input: qp output
    * Output: humanoid status
    */
-  explicit ValkyrieSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit ValkyrieSystem(const RigidBodyTree* robot) : robot_(robot) {
     input_port_index_qp_output_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_robot_state_msg_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
-    output_port_index_raw_state_ = DeclareOutputPort(systems::kVectorValued, robot_.get_num_positions() + robot_.get_num_velocities(), systems::kInheritedSampling).get_index();
+    output_port_index_raw_state_ = DeclareOutputPort(systems::kVectorValued, robot_->get_num_positions() + robot_->get_num_velocities(), systems::kInheritedSampling).get_index();
 
-    zero_torque_ = Eigen::VectorXd::Zero(robot_.actuators.size());
+    zero_torque_ = Eigen::VectorXd::Zero(robot_->actuators.size());
 
     DRAKE_ASSERT(this->get_num_input_ports() == 1);
     DRAKE_ASSERT(this->get_num_output_ports() == 2);
 
     set_name("Dummy Valkyrie System");
 
-    joint_names_.resize(robot.get_num_positions() - 6);
-    for (int i = 6; i < robot.get_num_positions(); i++) {
-      joint_names_[i-6] = robot.get_position_name(i);
+    joint_names_.resize(robot_->get_num_positions() - 6);
+    for (int i = 6; i < robot_->get_num_positions(); i++) {
+      joint_names_[i-6] = robot_->get_position_name(i);
     }
   }
 
@@ -56,8 +56,8 @@ class ValkyrieSystem : public LeafSystem<double> {
 
   std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
       const override {
-    int num_q = robot_.get_num_positions();
-    int num_v = robot_.get_num_velocities();
+    int num_q = robot_->get_num_positions();
+    int num_v = robot_->get_num_velocities();
     int num_x = num_q + num_v;
     return std::make_unique<ContinuousState<double>>(
         std::make_unique<BasicVector<double>>(num_x), num_q, num_v, 0);
@@ -67,11 +67,6 @@ class ValkyrieSystem : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    /*
-    HumanoidStatus rs(robot_);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<HumanoidStatus>(rs)));
-    */
     output->add_port(
         std::unique_ptr<AbstractValue>(new Value<bot_core::robot_state_t>(bot_core::robot_state_t())));
 
@@ -87,14 +82,6 @@ class ValkyrieSystem : public LeafSystem<double> {
     Eigen::VectorXd q = state.get_generalized_position().CopyToVector();
     Eigen::VectorXd v = state.get_generalized_velocity().CopyToVector();
 
-    /*
-    // Set output.
-    HumanoidStatus& rs =
-        output->GetMutableData(output_port_index_robot_state_msg_)
-            ->GetMutableValue<HumanoidStatus>();
-    rs.Update(context.get_time(), q, v, zero_torque_, Eigen::Vector6d::Zero(),
-              Eigen::Vector6d::Zero());
-    */
     bot_core::robot_state_t& msg =
         output->GetMutableData(output_port_index_robot_state_msg_)
             ->GetMutableValue<bot_core::robot_state_t>();
@@ -102,11 +89,11 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     // Set state output.
     BasicVector<double>* output_x = output->GetMutableVectorData(output_port_index_raw_state_);
-    for (int i = 0; i < robot_.get_num_positions(); i++) {
+    for (int i = 0; i < robot_->get_num_positions(); i++) {
       output_x->SetAtIndex(i, q[i]);
     }
-    for (int i = 0; i < robot_.get_num_velocities(); i++) {
-      output_x->SetAtIndex(i+robot_.get_num_positions(), v[i]);
+    for (int i = 0; i < robot_->get_num_velocities(); i++) {
+      output_x->SetAtIndex(i+robot_->get_num_positions(), v[i]);
     }
   }
 
@@ -151,8 +138,8 @@ class ValkyrieSystem : public LeafSystem<double> {
     VectorBase<double>* q = state.get_mutable_generalized_position();
     VectorBase<double>* v = state.get_mutable_generalized_velocity();
 
-    if (q->size() != robot_.get_num_positions() ||
-        v->size() != robot_.get_num_velocities()) {
+    if (q->size() != robot_->get_num_positions() ||
+        v->size() != robot_->get_num_velocities()) {
       throw std::runtime_error("time deriv dimension mismatch.");
     }
 
@@ -212,8 +199,8 @@ class ValkyrieSystem : public LeafSystem<double> {
     const VectorBase<double>& q = state.get_generalized_position();
     const VectorBase<double>& v = state.get_generalized_velocity();
 
-    if (q.size() != robot_.get_num_positions() ||
-        v.size() != robot_.get_num_velocities()) {
+    if (q.size() != robot_->get_num_positions() ||
+        v.size() != robot_->get_num_velocities()) {
       throw std::runtime_error("time deriv dimension mismatch.");
     }
 
@@ -243,7 +230,7 @@ class ValkyrieSystem : public LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree* robot_;
   // only used for publishing.
   std::vector<std::string> joint_names_;
 
