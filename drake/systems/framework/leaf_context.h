@@ -8,6 +8,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
+#include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_base.h"
@@ -100,6 +101,32 @@ class LeafContext : public Context<T> {
     return cache_.Get(ticket);
   }
 
+  // =========================================================================
+  // Accessors and Mutators for Parameters.
+  // TODO(david-german-tri): Add accessors for modal parameters.
+
+  /// Sets the parameters to @p params, deleting whatever was there before.
+  void set_parameters(std::unique_ptr<Parameters<T>> params) {
+    parameters_ = std::move(params);
+  }
+
+  /// Returns the number of vector-valued parameters.
+  int num_numeric_parameters() const {
+    return parameters_->num_numeric_parameters();
+  }
+
+  /// Returns a const pointer to the vector-valued parameter at @p index.
+  /// Asserts if @p index doesn't exist.
+  const BasicVector<T>* get_numeric_parameter(int index) const {
+    return parameters_->get_numeric_parameter(index);
+  }
+
+  /// Returns a mutable pointer to element @p index of the vector-valued
+  /// parameters. Asserts if @p index doesn't exist.
+  BasicVector<T>* get_mutable_numeric_parameter(int index) {
+    return parameters_->get_mutable_numeric_parameter(index);
+  }
+
  protected:
   /// The caller owns the returned memory.
   Context<T>* DoClone() const override {
@@ -120,6 +147,9 @@ class LeafContext : public Context<T> {
     // Make deep copies of the difference and modal states.
     context->set_difference_state(get_state().get_difference_state()->Clone());
     context->set_modal_state(get_state().get_modal_state()->Clone());
+
+    // Make deep copies of the parameters.
+    context->set_parameters(parameters_->Clone());
 
     // Make deep copies of the inputs into FreestandingInputPorts.
     // TODO(david-german-tri): Preserve version numbers as well.
@@ -155,6 +185,9 @@ class LeafContext : public Context<T> {
 
   // The internal state of the System.
   State<T> state_;
+
+  // The parameters of the system.
+  std::unique_ptr<Parameters<T>> parameters_;
 
   // The cache. The System may insert arbitrary key-value pairs, and configure
   // invalidation on a per-entry basis.

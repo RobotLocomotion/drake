@@ -14,6 +14,7 @@ set(sources
   leaf_system.cc
   modal_state.cc
   output_port_listener_interface.cc
+  parameters.cc
   primitives/adder.cc
   primitives/affine_system.cc
   primitives/constant_value_source.cc
@@ -61,6 +62,7 @@ set(installed_headers
   leaf_system.h
   modal_state.h
   output_port_listener_interface.h
+  parameters.h
   state.h
   subvector.h
   supervector.h
