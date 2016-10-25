@@ -46,11 +46,7 @@ class AffineSystem : public LeafSystem<T> {
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
-
-  /// LeafSystem override.
-  std::unique_ptr<ContinuousState<T>>
-  AllocateContinuousState() const override;
-
+  
   /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;
 
