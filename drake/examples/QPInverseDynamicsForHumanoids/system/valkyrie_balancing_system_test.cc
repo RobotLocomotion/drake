@@ -14,7 +14,7 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_lcm_utils.h"
+//#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_lcm_utils.h"
 
 namespace drake {
 

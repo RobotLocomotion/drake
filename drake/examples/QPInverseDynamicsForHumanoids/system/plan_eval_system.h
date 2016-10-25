@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -60,9 +61,9 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     }
 
     // Update desired accelerations.
-    result.mutable_desired_comdd() =
+    result.mutable_desired_centroidal_momentum_change().mutable_momentum_dot().segment<3>(3) =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array()).matrix();
+         Kd_com_.array() * robot_status->comd().array()).matrix() * robot_.getMass();
 
     result.mutable_desired_joint_motions().mutable_accelerations() = joint_PDff_.ComputeTargetAcceleration(robot_status->position(), robot_status->velocity());
     result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() = pelvis_PDff_.ComputeTargetAcceleration(robot_status->pelvis().pose(), robot_status->pelvis().velocity());

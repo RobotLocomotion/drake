@@ -9,20 +9,23 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   QPInput input(robot);
 
   // Setup a PD tracking law for center of mass.
-  input.mutable_desired_comdd() = Eigen::Vector3d::Zero();
-  input.mutable_w_com() = 1e3;
+  input.mutable_desired_centroidal_momentum_change().mutable_weights() = Eigen::Vector6d::Constant(1);
+  // Wipe out the weights for the angular part.
+  input.mutable_desired_centroidal_momentum_change().mutable_weights().segment<3>(0).setZero();
 
   // Minimize acceleration in the generalized coordinates.
   input.mutable_desired_joint_motions().mutable_weights() = Eigen::VectorXd::Constant(dim, 1e-2);
 
   // Setup tracking for various body parts.
-  DesiredBodyMotion pelvdd_d(*robot.FindBody("pelvis"));
+  DesiredBodyMotion pelvdd_d(robot.FindBody("pelvis"));
   pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
+  // Wipe out the weights for the position part.
   pelvdd_d.mutable_weights().segment<3>(3).setZero();
   input.mutable_desired_body_motions().emplace(pelvdd_d.name(), pelvdd_d);
 
-  DesiredBodyMotion torsodd_d(*robot.FindBody("torso"));
+  DesiredBodyMotion torsodd_d(robot.FindBody("torso"));
   torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
+  // Wipe out the weights for the position part.
   torsodd_d.mutable_weights().segment<3>(3).setZero();
   input.mutable_desired_body_motions().emplace(torsodd_d.name(), torsodd_d);
 
@@ -32,7 +35,7 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
 
   // Make contact points.
   ContactInformation left_foot_contact(
-      *robot.FindBody("leftFoot"), 4);
+      robot.FindBody("leftFoot"), 4);
   left_foot_contact.mutable_contact_points().push_back(
       Eigen::Vector3d(0.2, 0.05, -0.09));
   left_foot_contact.mutable_contact_points().push_back(
@@ -43,7 +46,7 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
       Eigen::Vector3d(-0.05, 0.05, -0.09));
 
   ContactInformation right_foot_contact(
-      *robot.FindBody("rightFoot"), 4);
+      robot.FindBody("rightFoot"), 4);
   right_foot_contact.mutable_contact_points() =
       left_foot_contact.contact_points();
 
