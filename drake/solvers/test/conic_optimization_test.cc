@@ -1,9 +1,14 @@
 #pragma once
-#include "drake/solvers/mathematical_program.h"
 
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -12,8 +17,10 @@ namespace {
 
 void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
-  SolutionResult result = solver.Solve(*prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  if (solver.available()) {
+    SolutionResult result = solver.Solve(*prog);
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  }
 }
 /////////////////////////
 ///// Linear Program ////
@@ -923,6 +930,51 @@ void testSecondOrderConicPrograms(
   TestEllipsoidsSeparation(solver);
   TestQPasSOCP(solver);
   TestFindSpringEquilibrium(solver);
+}
+
+GTEST_TEST(TestConicProgramming, testLinearProgramming) {
+  std::vector<MathematicalProgramSolverInterface*> solvers;
+  GurobiSolver gurobi_solver;
+  MosekSolver mosek_solver;
+  if (gurobi_solver.available()) {
+    solvers.push_back(&gurobi_solver);
+  }
+  if (mosek_solver.available()) {
+    solvers.push_back(&mosek_solver);
+  }
+  for (const auto& solver : solvers) {
+    testLinearPrograms(*solver);
+  }
+}
+
+GTEST_TEST(TestConicProgramming, testQuadraticProgramming) {
+  std::vector<MathematicalProgramSolverInterface*> solvers;
+  GurobiSolver gurobi_solver;
+  MosekSolver mosek_solver;
+  if (gurobi_solver.available()) {
+    solvers.push_back(&gurobi_solver);
+  }
+  if (mosek_solver.available()) {
+    solvers.push_back(&mosek_solver);
+  }
+  for (const auto& solver : solvers) {
+    testQuadraticPrograms(*solver);
+  }
+}
+
+GTEST_TEST(TestConicProgramming, testSecondOrderConeProgramming) {
+  std::vector<MathematicalProgramSolverInterface*> solvers;
+  GurobiSolver gurobi_solver;
+  MosekSolver mosek_solver;
+  if (gurobi_solver.available()) {
+    solvers.push_back(&gurobi_solver);
+  }
+  if (mosek_solver.available()) {
+    solvers.push_back(&mosek_solver);
+  }
+  for (const auto& solver : solvers) {
+    testSecondOrderConicPrograms(*solver);
+  }
 }
 }  // namespace test
 }  // namespace solvers
