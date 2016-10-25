@@ -26,6 +26,7 @@ class InitialCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(1) * x(1);
   }
@@ -37,6 +38,7 @@ class FinalCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(2) * x(2);
   }

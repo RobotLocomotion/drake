@@ -279,6 +279,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
 }
 
 // Add both LinearConstraints and LinearEqualityConstraints to gurobi
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
                        double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.

@@ -176,8 +176,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
   virtual ~IpoptSolver_NLP() {}
 
-  virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
-                            Index& nnz_h_lag, IndexStyleEnum& index_style) {
+  virtual bool get_nlp_info(
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& n, Index& m, Index& nnz_jac_g,
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& nnz_h_lag, IndexStyleEnum& index_style) {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
@@ -283,6 +286,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
+  // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
   virtual bool eval_f(Index n, const Number* x, bool new_x, Number& obj_value) {
     if (new_x || !cost_cache_->is_x_equal(n, x)) {
       EvaluateCosts(n, x);
