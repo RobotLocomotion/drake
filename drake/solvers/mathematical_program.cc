@@ -1,13 +1,13 @@
-#include "mathematical_program.h"
+#include "drake/solvers/mathematical_program.h"
 
-#include "equality_constrained_qp_solver.h"
-#include "gurobi_solver.h"
-#include "ipopt_solver.h"
-#include "linear_system_solver.h"
-#include "moby_lcp_solver.h"
-#include "mosek_solver.h"
-#include "nlopt_solver.h"
-#include "snopt_solver.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/linear_system_solver.h"
+#include "drake/solvers/moby_lcp_solver.h"
+#include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/nlopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -85,6 +85,9 @@ SolutionResult MathematicalProgram::Solve() {
     return equality_constrained_qp_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
       mosek_solver_->available()) {
+    // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
+    // faster than Gurobi for convex optimization problem. But we should run
+    // a more thorough comparison.
     return mosek_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
