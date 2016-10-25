@@ -512,7 +512,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
                               drake::Vector1d(1.0), 1e-8,
                               MatrixCompareType::absolute));
 
-  // Now check if the solution is meaning, that it really finds a separating
+  // Now check if the solution is meaningful, that it really finds a separating
   // hyperplane.
   // The separating hyperplane exists if and only if p* <= 1
   double p_star = t.value().coeff(0) + t.value().coeff(1);
@@ -629,7 +629,6 @@ void TestEllipsoidsSeparation(
  * @param A A matrix
  * @param b_lb A column vector
  * @param b_ub A column vector
- * @return The optimal solution x*.
  */
 template <typename DerivedQ, typename DerivedC, typename DerivedA,
           typename DerivedBlower, typename DerivedBupper>
@@ -748,6 +747,12 @@ void TestQPasSOCP(const MathematicalProgramSolverInterface& solver) {
  * system, which consists of N nodes at position (x1,y1), (x2,y2), ..., (xN,yN)
  * in R2.
  * The nodes are connected by springs with given coefficient.
+ * The spring generate force when it is stretched,
+ * but not when it is compressed.
+ * Namely, the spring force is
+ * (spring_length - spring_rest_length) * spring_stiffness,
+ * if spring_length >= spring_rest_length;
+ * otherwise the spring force is zero.
  * The equilibrium point is obtained when the total energy is minimized
  * namely min sum_i weight_i * yi + stiffness/2 * t_i^2
  *        s.t  sqrt((x(i) - x(i+1))^2 + (y(i) - y(i+1))^2) - spring_rest_length
