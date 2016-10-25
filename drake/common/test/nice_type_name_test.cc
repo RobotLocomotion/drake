@@ -27,7 +27,9 @@ namespace {
 // Can't test much of NiceTypeName::Demangle because its behavior is compiler-
 // and platform-specific. Everyone should agree on simple types though.
 GTEST_TEST(NiceTypeNameTest, Demangle) {
+  // NOLINTNEXTLINE(readability/casting) False positive.
   EXPECT_EQ(NiceTypeName::Demangle(typeid(bool).name()), "bool");
+  // NOLINTNEXTLINE(readability/casting) False positive.
   EXPECT_EQ(NiceTypeName::Demangle(typeid(int).name()), "int");
   EXPECT_EQ(NiceTypeName::Demangle(typeid(unsigned).name()), "unsigned int");
 }
