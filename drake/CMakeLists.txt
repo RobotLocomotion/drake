@@ -129,7 +129,7 @@ include(../cmake/mex.cmake)
 if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
   message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
   unset(MATLAB_EXECUTABLE CACHE)
-  unset(Matlab_FOUND CACHE)
+  unset(Matlab_FOUND)
 endif()
 
 enable_testing()
