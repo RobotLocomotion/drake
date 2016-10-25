@@ -2,9 +2,10 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -13,7 +14,6 @@
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
 
 namespace drake {
 

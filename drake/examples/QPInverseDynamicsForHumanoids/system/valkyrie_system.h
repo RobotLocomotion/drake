@@ -36,7 +36,11 @@ class ValkyrieSystem : public LeafSystem<double> {
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_robot_state_msg_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
-    output_port_index_raw_state_ = DeclareOutputPort(systems::kVectorValued, robot_->get_num_positions() + robot_->get_num_velocities(), systems::kInheritedSampling).get_index();
+    output_port_index_raw_state_ =
+        DeclareOutputPort(
+            systems::kVectorValued,
+            robot_->get_num_positions() + robot_->get_num_velocities(),
+            systems::kInheritedSampling).get_index();
 
     zero_torque_ = Eigen::VectorXd::Zero(robot_->actuators.size());
 
@@ -47,7 +51,7 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     joint_names_.resize(robot_->get_num_positions() - 6);
     for (int i = 6; i < robot_->get_num_positions(); i++) {
-      joint_names_[i-6] = robot_->get_position_name(i);
+      joint_names_[i - 6] = robot_->get_position_name(i);
     }
   }
 
@@ -67,11 +71,11 @@ class ValkyrieSystem : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<bot_core::robot_state_t>(bot_core::robot_state_t())));
+    output->add_port(std::unique_ptr<AbstractValue>(
+        new Value<bot_core::robot_state_t>(bot_core::robot_state_t())));
 
-    output->get_mutable_ports()->emplace_back(
-          new systems::OutputPort(AllocateOutputVector(get_output_port_raw_state())));
+    output->get_mutable_ports()->emplace_back(new systems::OutputPort(
+        AllocateOutputVector(get_output_port_raw_state())));
     return std::move(output);
   }
 
@@ -85,15 +89,18 @@ class ValkyrieSystem : public LeafSystem<double> {
     bot_core::robot_state_t& msg =
         output->GetMutableData(output_port_index_robot_state_msg_)
             ->GetMutableValue<bot_core::robot_state_t>();
-    EncodeRobotStateLcmMsg(joint_names_, context.get_time(), q, v, zero_torque_, Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), &msg);
+    EncodeRobotStateLcmMsg(joint_names_, context.get_time(), q, v, zero_torque_,
+                           Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
+                           &msg);
 
     // Set state output.
-    BasicVector<double>* output_x = output->GetMutableVectorData(output_port_index_raw_state_);
+    BasicVector<double>* output_x =
+        output->GetMutableVectorData(output_port_index_raw_state_);
     for (int i = 0; i < robot_->get_num_positions(); i++) {
       output_x->SetAtIndex(i, q[i]);
     }
     for (int i = 0; i < robot_->get_num_velocities(); i++) {
-      output_x->SetAtIndex(i+robot_->get_num_positions(), v[i]);
+      output_x->SetAtIndex(i + robot_->get_num_positions(), v[i]);
     }
   }
 

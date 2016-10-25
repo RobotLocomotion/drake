@@ -52,7 +52,8 @@ class BodyOfInterest {
 
     vel_ = GetTaskSpaceVel(robot, cache, *body_, offset_);
     J_ = GetTaskSpaceJacobian(robot, cache, *body_, offset_);
-    Jdot_times_v_ = GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, offset_);
+    Jdot_times_v_ =
+        GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, offset_);
   }
 
   inline const std::string& name() const { return name_; }
@@ -238,10 +239,18 @@ class HumanoidStatus {
       const {
     return actuator_name_to_actuator_index_;
   }
-  inline const std::set<std::string>& leg_joint_names() const { return leg_joint_names_; }
-  inline const std::set<std::string>& arm_joint_names() const { return arm_joint_names_; }
-  inline const std::set<std::string>& back_joint_names() const { return back_joint_names_; }
-  inline const std::set<std::string>& neck_joint_names() const { return neck_joint_names_; }
+  inline const std::set<std::string>& leg_joint_names() const {
+    return leg_joint_names_;
+  }
+  inline const std::set<std::string>& arm_joint_names() const {
+    return arm_joint_names_;
+  }
+  inline const std::set<std::string>& back_joint_names() const {
+    return back_joint_names_;
+  }
+  inline const std::set<std::string>& neck_joint_names() const {
+    return neck_joint_names_;
+  }
 
   inline double time() const { return time_; }
   inline const Eigen::VectorXd& position() const { return position_; }

@@ -49,7 +49,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
     // output: qp input
     QPInput& result = output->GetMutableData(output_port_index_qp_input_)
-                         ->GetMutableValue<QPInput>();
+                          ->GetMutableValue<QPInput>();
 
     // Update weights.
     for (const std::string& joint_name : robot_status->arm_joint_names()) {
@@ -62,21 +62,30 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     }
 
     // Update desired accelerations.
-    result.mutable_desired_centroidal_momentum_dot().mutable_momentum_dot().segment<3>(3) =
+    result.mutable_desired_centroidal_momentum_dot()
+        .mutable_momentum_dot()
+        .segment<3>(3) =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array()).matrix() * robot_->getMass();
+         Kd_com_.array() * robot_status->comd().array()).matrix() *
+        robot_->getMass();
 
-    result.mutable_desired_joint_motions().mutable_accelerations() = joint_PDff_.ComputeTargetAcceleration(robot_status->position(), robot_status->velocity());
-    result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() = pelvis_PDff_.ComputeTargetAcceleration(robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-    result.mutable_desired_body_motions().at("torso").mutable_accelerations() = torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(), robot_status->torso().velocity());
+    result.mutable_desired_joint_motions().mutable_accelerations() =
+        joint_PDff_.ComputeTargetAcceleration(robot_status->position(),
+                                              robot_status->velocity());
+    result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() =
+        pelvis_PDff_.ComputeTargetAcceleration(
+            robot_status->pelvis().pose(), robot_status->pelvis().velocity());
+    result.mutable_desired_body_motions().at("torso").mutable_accelerations() =
+        torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(),
+                                              robot_status->torso().velocity());
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<QPInput>(MakeExampleQPInput(*robot_))));
+    output->add_port(std::unique_ptr<AbstractValue>(
+        new Value<QPInput>(MakeExampleQPInput(*robot_))));
     return std::move(output);
   }
 
@@ -86,10 +95,16 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
-    pelvis_PDff_ = CartesianSetpoint(robot_status.pelvis().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
-    torso_PDff_ = CartesianSetpoint(robot_status.torso().pose(), Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
+    pelvis_PDff_ =
+        CartesianSetpoint(robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
+                          Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
+    torso_PDff_ =
+        CartesianSetpoint(robot_status.torso().pose(), Eigen::Vector6d::Zero(),
+                          Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
     int dim = robot_status.position().size();
-    joint_PDff_ = VectorSetpoint(robot_status.position(), Eigen::VectorXd::Zero(dim), Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
+    joint_PDff_ =
+        VectorSetpoint(robot_status.position(), Eigen::VectorXd::Zero(dim),
+                       Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
   }
 
   /**

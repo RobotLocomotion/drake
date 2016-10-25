@@ -10,7 +10,13 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names, double time, const Eigen::VectorXd& q, const Eigen::VectorXd& qd, const Eigen::VectorXd& joint_torque, const Eigen::Matrix<double, 6, 1>& l_foot_wrench, const Eigen::Matrix<double, 6, 1>& r_foot_wrench, bot_core::robot_state_t* msg) {
+void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names,
+                            double time, const Eigen::VectorXd& q,
+                            const Eigen::VectorXd& qd,
+                            const Eigen::VectorXd& joint_torque,
+                            const Eigen::Matrix<double, 6, 1>& l_foot_wrench,
+                            const Eigen::Matrix<double, 6, 1>& r_foot_wrench,
+                            bot_core::robot_state_t* msg) {
   if (q.size() != qd.size() || q.size() != joint_torque.size() + 6 ||
       joint_names.size() != static_cast<size_t>(joint_torque.size())) {
     throw std::runtime_error("invalid dimension");
@@ -56,7 +62,8 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names, double 
   Eigen::Vector3d rpydot = qd.segment<3>(3);
   Eigen::Vector4d quat = math::rpy2quat(rpy);
   Eigen::Matrix3d phi = Eigen::Matrix3d::Zero();
-  angularvel2rpydotMatrix(rpy, phi, (Eigen::MatrixXd*) nullptr, (Eigen::MatrixXd*) nullptr);
+  angularvel2rpydotMatrix(rpy, phi, (Eigen::MatrixXd*)nullptr,
+                          (Eigen::MatrixXd*)nullptr);
   Eigen::Vector3d omega = phi.inverse() * rpydot;
 
   msg->pose.rotation.w = quat[0];
@@ -68,7 +75,12 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names, double 
   msg->twist.angular_velocity.z = omega[2];
 }
 
-void DecodeRobotStateLcmMsg(const bot_core::robot_state_t& msg, const std::unordered_map<std::string, int>& q_name_to_index, double* time, Eigen::VectorXd* q, Eigen::VectorXd* qd, Eigen::VectorXd* joint_torque, Eigen::Matrix<double, 6, 1>* l_foot_wrench, Eigen::Matrix<double, 6, 1>* r_foot_wrench) {
+void DecodeRobotStateLcmMsg(
+    const bot_core::robot_state_t& msg,
+    const std::unordered_map<std::string, int>& q_name_to_index, double* time,
+    Eigen::VectorXd* q, Eigen::VectorXd* qd, Eigen::VectorXd* joint_torque,
+    Eigen::Matrix<double, 6, 1>* l_foot_wrench,
+    Eigen::Matrix<double, 6, 1>* r_foot_wrench) {
   if (q->size() != qd->size() || q->size() != joint_torque->size() + 6) {
     throw std::runtime_error("invalid output state dimension");
   }
@@ -90,7 +102,8 @@ void DecodeRobotStateLcmMsg(const bot_core::robot_state_t& msg, const std::unord
       }
       (*q)[it->second] = static_cast<double>(msg.joint_position.at(i));
       (*qd)[it->second] = static_cast<double>(msg.joint_velocity.at(i));
-      (*joint_torque)[it->second - 6] = static_cast<double>(msg.joint_effort.at(i));
+      (*joint_torque)[it->second - 6] =
+          static_cast<double>(msg.joint_effort.at(i));
     }
   }
 
@@ -102,11 +115,15 @@ void DecodeRobotStateLcmMsg(const bot_core::robot_state_t& msg, const std::unord
   (*qd)[1] = static_cast<double>(msg.twist.linear_velocity.y);
   (*qd)[2] = static_cast<double>(msg.twist.linear_velocity.z);
 
-  Eigen::Vector4d quat(msg.pose.rotation.w, msg.pose.rotation.x, msg.pose.rotation.y, msg.pose.rotation.z);
+  Eigen::Vector4d quat(msg.pose.rotation.w, msg.pose.rotation.x,
+                       msg.pose.rotation.y, msg.pose.rotation.z);
   Eigen::Vector3d rpy = math::quat2rpy(quat);
-  Eigen::Vector3d omega(msg.twist.angular_velocity.x, msg.twist.angular_velocity.y, msg.twist.angular_velocity.z);
+  Eigen::Vector3d omega(msg.twist.angular_velocity.x,
+                        msg.twist.angular_velocity.y,
+                        msg.twist.angular_velocity.z);
   Eigen::Matrix3d phi = Eigen::Matrix3d::Zero();
-  angularvel2rpydotMatrix(rpy, phi, (Eigen::MatrixXd*) nullptr, (Eigen::MatrixXd*) nullptr);
+  angularvel2rpydotMatrix(rpy, phi, (Eigen::MatrixXd*)nullptr,
+                          (Eigen::MatrixXd*)nullptr);
   Eigen::Vector3d rpydot = phi * omega;
 
   (*q)[3] = rpy[0];

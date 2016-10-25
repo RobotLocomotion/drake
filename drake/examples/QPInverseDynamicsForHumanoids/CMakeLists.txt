@@ -10,8 +10,6 @@ add_library(drakeQPController
 target_link_libraries(drakeQPController
   drakeRBSystem
   drakeOptimization
-  drakeLCMTypes
-  lcmtypes_bot2-core-cpp
   drakeSide)
 
 drake_find_package(gurobi PKG_CONFIG)
