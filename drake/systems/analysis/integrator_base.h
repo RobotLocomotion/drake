@@ -189,8 +189,8 @@ class IntegratorBase {
       const auto& contstate = context_->get_state().get_continuous_state();
       const int gv_size = contstate->get_generalized_velocity().size();
       const int misc_size = contstate->get_misc_continuous_state().size();
-      if (v_scal_.size() != gv_size) v_scal_.setIdentity(gv_size);
-      if (z_scal_.size() != misc_size) z_scal_.setIdentity(misc_size);
+      if (v_scal_.size() != gv_size) v_scal_.setOnes(gv_size);
+      if (z_scal_.size() != misc_size) z_scal_.setOnes(misc_size);
     }
 
     // Call the derived integrator initialization routine (if any)
@@ -346,34 +346,39 @@ class IntegratorBase {
   }
 
   /**
-   *  Gets the scaling matrix for generalized coordinate and velocity
-   *  state variables. Only used for integrators that support accuracy
-   *  estimation.
+   *  Gets the scaling vector (equivalent to a diagonal matrix) for generalized
+   *  coordinate and velocity state variables. Only used for integrators that
+   *  support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
-  const auto& get_generalized_state_scaling_matrix() const { return v_scal_; }
+  const Eigen::VectorXd& get_generalized_state_scaling_vector() const {
+    return v_scal_; }
 
   /**
-   *  Gets a mutable scaling matrix for generalized coordinate and
-   *  velocity state variables. Only used for integrators that support accuracy
-   *  estimation.
+   *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
+   *  generalized coordinate and velocity state variables. Only used for
+   *  integrators that support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
-  auto& get_mutable_generalized_state_scaling_matrix() { return v_scal_; }
+  Eigen::VectorXd& get_mutable_generalized_state_scaling_vector() {
+    return v_scal_; }
 
   /**
-   *  Gets the scaling matrix for miscellaneous continuous state variables.
-   *  Only used for integrators that support accuracy estimation.
+   *  Gets the scaling vector (equivalent to a diagonal matrix) for
+   *  miscellaneous continuous state variables. Only used for integrators that
+   *  support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
-  const auto& get_misc_state_scaling_matrix() const { return z_scal_; }
+  const Eigen::VectorXd& get_misc_state_scaling_vector() const {
+    return z_scal_; }
 
   /**
-   *  Gets a mutable scaling matrix for miscellaneous continuous state
-   *  variables. Only used for integrators that support accuracy estimation.
+   *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
+   *  miscellaneous continuous state variables. Only used for integrators that
+   *  support accuracy estimation.
    *  @sa CalcErrorNorm()
    */
-  auto& get_mutable_misc_state_scaling_matrix() { return z_scal_; }
+  Eigen::VectorXd& get_mutable_misc_state_scaling_vector() { return z_scal_; }
 
  protected:
   /**
@@ -584,7 +589,7 @@ class IntegratorBase {
   int64_t error_test_failures_{0};
 
   // Eigen matrices for scaling error estimates.
-  Eigen::DiagonalMatrix<double, Eigen::Dynamic> v_scal_, z_scal_;
+  Eigen::VectorXd v_scal_, z_scal_;
 
   // State and time derivative copies for reversion during error-controlled
   // integration.
@@ -692,8 +697,8 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   auto& scaled_q_err = integrator->scaled_q_err_;
 
   // Get scaling matrices.
-  const auto& v_scal = integrator->get_generalized_state_scaling_matrix();
-  const auto& z_scal = integrator->get_misc_state_scaling_matrix();
+  const auto& v_scal = integrator->get_generalized_state_scaling_vector();
+  const auto& z_scal = integrator->get_misc_state_scaling_vector();
 
   // Get the generalized position, velocity, and miscellaneous continuous
   // state vectors.
