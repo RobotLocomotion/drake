@@ -19,8 +19,9 @@ namespace systems {
 ///
 /// The passed in plant must meet the following properties:
 ///
-/// * Input port zero must be all of the control inputs (size N). It is
-///   typically the generalized effort (e.g., force or torque) command.
+/// * Input port zero must be all of the control inputs (size N). When the plant
+///   is a dynamics model, this is typically the generalized effort (e.g., force
+///   or torque) command.
 ///
 /// * Output port zero must be of size N * 2, where the first N elements are the
 ///   position states of the plant, and the second N elements are the velocity
@@ -34,7 +35,7 @@ namespace systems {
 /// * Input port one is the desired position and velocity state of the plant.
 ///
 /// * The output port is the current state of the plant (it is the direct
-///   passthrough of the plant's output port).
+///   pass-through of the plant's output port).
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
