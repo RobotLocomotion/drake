@@ -12,97 +12,33 @@
 // Includes for the planner.
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
-
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using drake::BotVisualizer;
-using Eigen::VectorXd;
-
-/*
-namespace drake {
-    class ValkyriePlant {
-    public:
-        template<typename T>
-        using InputVector = drake::RigidBodySystem::InputVector<T>;
-        template<typename T>
-        using StateVector = drake::RigidBodySystem::StateVector<T>;
-        template<typename T>
-        using OutputVector = drake::RigidBodySystem::OutputVector<T>;
-
-        ValkyriePlant() {
-            sys_.reset(new drake::RigidBodySystem());
-            sys_->AddModelInstanceFromFile(
-                    GetDrakePath() + "/examples/Valkyrie_PT/val_description/urdf/valkyrie_sim_drake.urdf",
-                    systems::plants::joints::kQuaternion);
-            x0_ = VectorXd::Zero(sys_->getNumStates());
-            SetInitialConfiguration();
-        }
-
-        const std::shared_ptr<RigidBodyTree>& get_rigid_body_tree() const;
-
-        const VectorXd& get_initial_state() const;
-
-        bool isTimeVarying() const;
-
-        size_t getNumInputs() const;
-
-        StateVector<double> output(const double& t,
-                                   const StateVector<double>& x,
-                                   const InputVector<double>& u) const;
-
-        StateVector<double> dynamics(const double& t,
-                                     const StateVector<double>& x,
-                                     const InputVector<double>& u) const;
-
-    private:
-        std::unique_ptr<drake::RigidBodySystem> sys_;
-        VectorXd x0_;
-        void SetInitialConfiguration() {
-            RigidBodyTree* tree = sys_->getRigidBodyTree().get();
-            x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
-        }
-    };
-
-    //-------------------------implementation---------------------------------
-    const VectorXd& ValkyriePlant::get_initial_state() const { return x0_;}
-
-    const std::shared_ptr<RigidBodyTree>& ValkyriePlant::get_rigid_body_tree() const {
-        return sys_->getRigidBodyTree();
-    }
-
-    bool ValkyriePlant::isTimeVarying() const {
-        return sys_->isTimeVarying();
-    }
-
-    size_t ValkyriePlant::getNumInputs() const {
-        return sys_->getNumInputs();
-    }
-
-    ValkyriePlant::StateVector<double>
-    ValkyriePlant::output(const double& t,
-                       const StateVector<double>& x,
-                       const InputVector<double>& u) const {
-        return sys_->output(t, x, u);
-    }
-
-    ValkyriePlant::StateVector<double>
-    ValkyriePlant::dynamics(const double& t,
-                         const StateVector<double>& x,
-                         const InputVector<double>& u) const {
-        return sys_->dynamics(t, x, u);
-    }
-}
-
-*/
-
+using drake::ValkyriePlant;
+using namespace std;
 
 int main() {
-    using drake::ValkyriePlant;
 
     std::cout << "Have you had lunch?" << std::endl;
     std::shared_ptr<ValkyriePlant> val_sys = std::make_shared<ValkyriePlant>();
     auto const& tree = val_sys->get_rigid_body_tree();
 
     std::cout << "Number of positions: "<< tree->get_num_positions() << std::endl;
+    for(int i=0;i<tree->get_num_positions();i++) {
+        cout << i << ":" << tree->get_position_name(i) << endl;
+    }
+
+    std::cout << "Number of velocities: "<< tree->get_num_velocities() << std::endl;
+    for(int i=0;i<tree->get_num_velocities();i++) {
+        cout << i << ":" << tree->get_velocity_name(i) << " " << tree->get_position_name(i) << endl;
+    }
+
+    std::cout << "Number of links: " << tree->get_num_bodies() << endl;
+    for(int i=0;i<tree->get_num_bodies();i++) {
+        cout << i << ":" << tree->getBodyOrFrameName(i) << endl;
+    }
+
 
 
     //show it in drake visualizer!

@@ -17,7 +17,7 @@ ValkyriePlant::ValkyriePlant() {
 
   // TODO(amcastro-tri): this should not be here but there is no other way
   // to add terrain to the world right now. See #2318.
-  SetUpTerrain();
+  //SetUpTerrain();
 }
 
 const VectorXd& ValkyriePlant::get_initial_state() const { return x0_; }
