@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/linear_system_plant.h"
+#include "drake/systems/framework/primitives/linear_system.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -18,7 +18,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
 
   void Initialize() override {
     // Construct the system I/O objects.
-    system_ = make_unique<LinearSystemPlant<double>>(A_, B_, C_, D_);
+    system_ = make_unique<LinearSystem<double>>(A_, B_, C_, D_);
     system_->set_name("test_linear_system");
     context_ = system_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
@@ -31,7 +31,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
   }
 
  protected:
-  unique_ptr<LinearSystemPlant<double>> system_;
+  unique_ptr<LinearSystem<double>> system_;
 };
 
 // Tests that the linear system is correctly setup.

@@ -1,6 +1,6 @@
 # pragma once
 
-#include "drake/systems/framework/primitives/affine_system_plant.h"
+#include "drake/systems/framework/primitives/affine_system.h"
 
 namespace drake {
 namespace systems {
@@ -9,10 +9,10 @@ namespace systems {
 /// where the inital time derivative of the system state `xDot0` and the
 /// initial system output `y0` are both zero. Given an input signal `u` and a
 /// state `x` the output of this sytem 'y' is:
-/// <pre>
+/// @f[
 ///   \dot{x} = Ax + Bu
 ///   y = Cx + Du
-/// </pre>
+/// @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -24,9 +24,9 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template<typename T>
-class LinearSystemPlant: public AffineSystemPlant<T> {
+class LinearSystem: public AffineSystem<T> {
  public:
-  LinearSystemPlant(const Eigen::Ref<const MatrixX<T>> &A,
+  LinearSystem(const Eigen::Ref<const MatrixX<T>> &A,
                     const Eigen::Ref<const MatrixX<T>> &B,
                     const Eigen::Ref<const MatrixX<T>> &C,
                     const Eigen::Ref<const MatrixX<T>> &D);
