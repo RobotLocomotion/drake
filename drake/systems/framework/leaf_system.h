@@ -57,6 +57,8 @@ class LeafSystem : public System<T> {
     // Reserve discrete state via delegation to subclass.
     context->set_difference_state(this->AllocateDifferenceState());
     context->set_modal_state(this->AllocateModalState());
+    // Reserve parameters via delegation to subclass.
+    context->set_parameters(this->AllocateParameters());
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -132,6 +134,12 @@ class LeafSystem : public System<T> {
     return std::make_unique<ModalState>();
   }
 
+  /// Reserves the parameters as required by CreateDefaultContext. By default,
+  /// reserves no parameters. Systems with parameters should override.
+  virtual std::unique_ptr<Parameters<T>> AllocateParameters() const {
+    return std::make_unique<Parameters<T>>();
+  }
+
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can
   /// override to use output vector types other than BasicVector.  The
@@ -139,6 +147,23 @@ class LeafSystem : public System<T> {
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
       const SystemPortDescriptor<T>& descriptor) const {
     return std::make_unique<BasicVector<T>>(descriptor.get_size());
+  }
+
+  // =========================================================================
+  // New methods for subclasses to use
+
+  /// Extracts the numeric parameters of type U from the @p context. Asserts if
+  /// the context is not a LeafContext, or if it does not have a
+  /// vector-valued parameter of type U.
+  template <template <typename> class U = BasicVector>
+  const U<T>& GetNumericParameters(const Context<T>& context) const {
+    const systems::LeafContext<T>& leaf_context =
+        dynamic_cast<const systems::LeafContext<T>&>(context);
+    DRAKE_ASSERT(leaf_context.num_numeric_parameters() == 1);
+    const auto* const params = dynamic_cast<const U<T>*>(
+        leaf_context.get_numeric_parameter(0));
+    DRAKE_ASSERT(params != nullptr);
+    return *params;
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
