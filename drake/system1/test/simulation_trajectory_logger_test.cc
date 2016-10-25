@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_logger.h"
+#include "drake/system1/trajectory_logger.h"
 
 #include <memory>
 

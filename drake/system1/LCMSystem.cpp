@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "drake/systems/LCMSystem.h"
+#include "drake/system1/LCMSystem.h"
 
 #if defined(_WIN32)
 #include <Winsock2.h>

@@ -5,8 +5,8 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/vector.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeUtil.h"
 
