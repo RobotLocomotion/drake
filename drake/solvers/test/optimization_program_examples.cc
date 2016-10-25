@@ -204,8 +204,8 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 /// Adapt from the simple test on the Gurobi documentation.
 //  min    x^2 + x*y + y^2 + y*z + z^2 + 2 x
 //  subj to 4 <=   x + 2 y + 3 z <= inf
-//                -x -   y       <= -1
-//        -20 <=   x +   y + 2 z <= 100
+//       -inf <=  -x -   y       <= -1
+//        -20 <=         y + 2 z <= 100
 //       -inf <=   x +   y + 2 z <= inf
 //               3 x +   y + 3 z  = 3
 //                 x, y, z >= 0
@@ -235,11 +235,14 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   // some rows have both bounds;
   // some rows have none.
   Eigen::Matrix<double, 4, 3> A1;
-  A1 << 1, 2, 3, -1, -1, 0, 1, 1, 2, 3, 1, 3;
+  A1 << 1, 2, 3,
+       -1, -1, 0,
+        0, 1, 2,
+        1, 1, 2;
   Eigen::Vector4d b_lb(4, -std::numeric_limits<double>::infinity(),
-                       -std::numeric_limits<double>::infinity(), -20);
+                        -20, -std::numeric_limits<double>::infinity());
   Eigen::Vector4d b_ub(std::numeric_limits<double>::infinity(), -1,
-                       std::numeric_limits<double>::infinity(), 100);
+                       100, std::numeric_limits<double>::infinity());
   prog.AddLinearConstraint(A1, b_lb, b_ub);
   // This test also handles linear equality constraint
   prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3),
