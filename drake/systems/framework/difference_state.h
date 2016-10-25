@@ -42,6 +42,12 @@ class DifferenceState {
     }
   }
 
+  /// Constructs a difference state that owns a single @p datum vector.
+  explicit DifferenceState(std::unique_ptr<BasicVector<T>> datum) {
+    data_.push_back(datum.get());
+    owned_data_.push_back(std::move(datum));
+  }
+
   virtual ~DifferenceState() {}
 
   int size() const {
