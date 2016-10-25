@@ -3,7 +3,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
@@ -26,22 +26,22 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       std::string(
           "/examples/Valkyrie/urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
-  HumanoidStatus robot_status(robot);
+  HumanoidStatus robot_status(&robot);
 
   QPController con;
-  QPInput input(robot_status.robot());
-  QPOutput output(robot_status.robot());
+  QPInput input(robot);
+  QPOutput output(robot);
 
   // Setup initial condition.
-  Eigen::VectorXd q(robot_status.robot().get_num_positions());
-  Eigen::VectorXd v(robot_status.robot().get_num_velocities());
+  Eigen::VectorXd q(robot.get_num_positions());
+  Eigen::VectorXd v(robot.get_num_velocities());
 
   q = robot_status.GetNominalPosition();
   v.setZero();
   Eigen::VectorXd q_ini = q;
 
   robot_status.Update(
-      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // Setup a tracking problem.
@@ -59,7 +59,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoPitch")] += 1;
   robot_status.Update(
-      0, q, v, Eigen::VectorXd::Zero(robot_status.robot().actuators.size()),
+      0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
   // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
@@ -89,7 +89,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(), robot_status.torso().velocity());
     input.mutable_desired_joint_motions().mutable_accelerations() =
       joint_PDff.ComputeTargetAcceleration(robot_status.position(), robot_status.velocity());
-    input.mutable_desired_centroidal_momentum_change().mutable_momentum_dot().segment<3>(3) =
+    input.mutable_desired_centroidal_momentum_dot().mutable_momentum_dot().segment<3>(3) =
       (Kp_com.array() * (desired_com - robot_status.com()).array() -
        Kd_com.array() * robot_status.comd().array()).matrix() * robot.getMass();
 
@@ -122,7 +122,7 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
                                      drake::MatrixCompareType::absolute));
   EXPECT_TRUE(drake::CompareMatrices(
-      v, Eigen::VectorXd::Zero(robot_status.robot().get_num_velocities()), 1e-4,
+      v, Eigen::VectorXd::Zero(robot.get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
 }
 

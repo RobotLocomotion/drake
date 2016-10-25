@@ -13,7 +13,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
    * Input: humanoid status, qp input
    * Output: qp outout
    */
-  explicit QPControllerSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit QPControllerSystem(const RigidBodyTree* robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     input_port_index_qp_input_ =
@@ -52,7 +52,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    QPOutput out(robot_);
+    QPOutput out(*robot_);
     output->add_port(std::unique_ptr<AbstractValue>(new Value<QPOutput>(out)));
     return std::move(output);
   }
@@ -80,7 +80,7 @@ class QPControllerSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree* robot_;
 
   // TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
   // constraint for EvalOutput. It is because qp controller needs to allocate

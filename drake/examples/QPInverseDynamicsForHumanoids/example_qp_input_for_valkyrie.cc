@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/example_balancing_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 
 namespace drake {
 namespace examples {
@@ -9,9 +9,9 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   QPInput input(robot);
 
   // Setup a PD tracking law for center of mass.
-  input.mutable_desired_centroidal_momentum_change().mutable_weights() = Eigen::Vector6d::Constant(1);
+  input.mutable_desired_centroidal_momentum_dot().mutable_weights() = Eigen::Vector6d::Constant(1);
   // Wipe out the weights for the angular part.
-  input.mutable_desired_centroidal_momentum_change().mutable_weights().segment<3>(0).setZero();
+  input.mutable_desired_centroidal_momentum_dot().mutable_weights().segment<3>(0).setZero();
 
   // Minimize acceleration in the generalized coordinates.
   input.mutable_desired_joint_motions().mutable_weights() = Eigen::VectorXd::Constant(dim, 1e-2);

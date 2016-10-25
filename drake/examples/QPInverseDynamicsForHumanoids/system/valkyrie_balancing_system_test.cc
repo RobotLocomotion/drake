@@ -14,7 +14,6 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
-//#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_lcm_utils.h"
 
 namespace drake {
 
@@ -48,13 +47,13 @@ void test() {
   // Build diagram.
   DiagramBuilder<double> builder;
   QPControllerSystem* qp_con =
-      builder.AddSystem(std::make_unique<QPControllerSystem>(robot));
+      builder.AddSystem(std::make_unique<QPControllerSystem>(&robot));
   ValkyrieSystem* val_sim =
-      builder.AddSystem(std::make_unique<ValkyrieSystem>(robot));
+      builder.AddSystem(std::make_unique<ValkyrieSystem>(&robot));
   PlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
+      builder.AddSystem(std::make_unique<PlanEvalSystem>(&robot));
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
-      builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(robot));
+      builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(&robot));
 
   RigidBodyTreeLcmPublisher* viz_publisher = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
         robot, &lcm);
@@ -108,7 +107,7 @@ void test() {
   EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
-      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()),
+      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot()->get_num_velocities()),
       1e-4, MatrixCompareType::absolute));
 }
 

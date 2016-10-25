@@ -1,5 +1,4 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 
 #include <iostream>
 
@@ -16,33 +15,28 @@ const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
 const Eigen::Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
     Eigen::Matrix3d(Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
 
-void HumanoidStatus::ParseLcmMessage(const bot_core::robot_state_t& msg) {
-  DecodeRobotStateLcmMsg(msg, name_to_position_index_, &time_, &position_, &velocity_, &joint_torque_, &foot_wrench_raw_[Side::LEFT], &foot_wrench_raw_[Side::RIGHT]);
-  Update();
-}
-
 void HumanoidStatus::Update() {
   cache_.initialize(position_, velocity_);
-  robot_.doKinematics(cache_, true);
+  robot_->doKinematics(cache_, true);
 
-  M_ = robot_.massMatrix(cache_);
+  M_ = robot_->massMatrix(cache_);
   drake::eigen_aligned_std_unordered_map<RigidBody const*,
                                          drake::TwistVector<double>> f_ext;
-  bias_term_ = robot_.dynamicsBiasTerm(cache_, f_ext);
+  bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
   // com
-  com_ = robot_.centerOfMass(cache_);
-  J_com_ = robot_.centerOfMassJacobian(cache_);
-  Jdot_times_v_com_ = robot_.centerOfMassJacobianDotTimesV(cache_);
+  com_ = robot_->centerOfMass(cache_);
+  J_com_ = robot_->centerOfMassJacobian(cache_);
+  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_);
   comd_ = J_com_ * velocity_;
-  centroidal_momentum_matrix_ = robot_.centroidalMomentumMatrix(cache_);
+  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_);
   centroidal_momentum_matrix_dot_times_v_ =
-      robot_.centroidalMomentumMatrixDotTimesV(cache_);
+      robot_->centroidalMomentumMatrixDotTimesV(cache_);
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
   for (BodyOfInterest& body_of_interest : bodies_of_interest_)
-    body_of_interest.Update(robot_, cache_);
+    body_of_interest.Update(*robot_, cache_);
 
   // ft sensor
   for (int i = 0; i < 2; i++) {
