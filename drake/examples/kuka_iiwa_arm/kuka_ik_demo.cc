@@ -15,7 +15,7 @@
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 namespace examples {

@@ -6,10 +6,10 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/LinearSystem.h"
+#include "drake/system1/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/simulation_options.h"
+#include "drake/system1/simulation_options.h"
 
 namespace drake {
 namespace examples {

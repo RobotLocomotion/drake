@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "drake/systems/LCMSystem.h"
+#include "drake/system1/LCMSystem.h"
 
 using namespace std;
 

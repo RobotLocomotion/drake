@@ -2,8 +2,8 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/cascade_system.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
