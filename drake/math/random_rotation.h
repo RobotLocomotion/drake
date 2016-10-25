@@ -11,12 +11,16 @@
 namespace drake {
 namespace math {
 DRAKE_EXPORT Eigen::Vector4d UniformlyRandomAxisAngle(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::default_random_engine& generator);
 DRAKE_EXPORT Eigen::Vector4d UniformlyRandomQuat(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::default_random_engine& generator);
 DRAKE_EXPORT Eigen::Matrix3d UniformlyRandomRotmat(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::default_random_engine& generator);
 DRAKE_EXPORT Eigen::Vector3d UniformlyRandomRPY(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::default_random_engine& generator);
 }  // namespace math
 }  // namespace drake
