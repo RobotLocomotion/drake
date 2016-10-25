@@ -25,7 +25,7 @@ endfunction()
 #------------------------------------------------------------------------------
 # Find MATLAB.
 #------------------------------------------------------------------------------
-function(drake_setup_matlab)
+macro(drake_setup_matlab)
   option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
 
   if(DISABLE_MATLAB)
@@ -43,6 +43,8 @@ function(drake_setup_matlab)
       get_filename_component(_matlab_bindir "${_matlab_realpath}" DIRECTORY)
       get_filename_component(Matlab_ROOT_DIR
         "${_matlab_bindir}" DIRECTORY CACHE)
+      unset(_matlab_realpath)
+      unset(_matlab_bindir)
 
       if(MATLAB_EXECUTABLE)
         # MATLAB 7.12 (R2011a) introduced the rng() function so it is a lower
@@ -58,7 +60,7 @@ function(drake_setup_matlab)
       message(STATUS "MATLAB was not found.")
     endif()
   endif()
-endfunction()
+endmacro()
 
 #------------------------------------------------------------------------------
 # Determine the version of MATLAB's JVM and set Java build flags to match.
