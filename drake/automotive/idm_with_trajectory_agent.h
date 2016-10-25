@@ -40,6 +40,7 @@ class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 };
 
 }  // namespace automotive
