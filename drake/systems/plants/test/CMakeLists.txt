@@ -1,12 +1,8 @@
-find_package(Bullet)
-
-if(MATLAB_FOUND)
-  add_rbm_mex(compareParsersmex)
-endif()
+drake_find_package(Bullet MODULE)
 
 add_executable(urdfKinTest urdfKinTest.cpp)
 target_link_libraries(urdfKinTest drakeRBM)
-if(BULLET_FOUND)
+if(Bullet_FOUND)
   add_executable(urdfCollisionTest urdfCollisionTest.cpp)
   target_link_libraries(urdfCollisionTest drakeRBM)
 endif()
@@ -14,12 +10,9 @@ endif()
 add_executable(urdfManipulatorDynamicsTest urdfManipulatorDynamicsTest.cpp)
 target_link_libraries(urdfManipulatorDynamicsTest drakeRBM)
 
-if(NOT WIN32)
-  # this test does not compile on MSVC 2010 because of the use of variadic templates
-  add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
-  target_link_libraries(testKinematicsCacheChecks drakeRBM)
-  drake_add_test(NAME testKinematicsCacheChecks WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND testKinematicsCacheChecks)
-endif()
+add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
+target_link_libraries(testKinematicsCacheChecks drakeRBM)
+drake_add_test(NAME testKinematicsCacheChecks WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND testKinematicsCacheChecks)
 
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
@@ -38,14 +31,14 @@ if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-find_package(snopt_c)
 pods_find_pkg_config(ipopt)
+drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)
   add_ik_gtest(testIKpointwise)
 endif()
-if (snopt_c_FOUND)
+if(snopt_c_FOUND)
   add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKtraj)
 endif()
@@ -56,24 +49,11 @@ target_link_libraries(debugManipulatorDynamics drakeRBM)
 add_executable(benchmarkRigidBodyTree benchmarkRigidBodyTree.cpp)
 target_link_libraries(benchmarkRigidBodyTree drakeRBM)
 
-if(MATLAB_FOUND)
-  macro(add_ikoptions_mex)
-    add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
-  endmacro()
-  add_ikoptions_mex(testIKoptionsmex)
-endif()
-
-if(BULLET_FOUND)
-  drake_add_cc_test(bullet_collision_zero_rad_sphere_test EXTENSION cpp)
-  target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
-endif()
-
 if(lcm_FOUND)
   drake_add_cc_test(testMassSpringDamper EXTENSION cpp)
   target_link_libraries(testMassSpringDamper drakeRBSystem)
 
-  if(BULLET_FOUND AND bot2-core_FOUND)
+  if(Bullet_FOUND AND bot2-core_FOUND)
     drake_add_cc_test(lidarTest EXTENSION cpp)
     target_link_libraries(lidarTest drakeRBSystem drakeLCMTypes lcmtypes_bot2-core-cpp lcm)
   endif()
@@ -108,8 +88,28 @@ target_link_libraries(urdf_parser_test drakeRBM)
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBSystem)
 
-find_package(avl)
-find_package(xfoil)
+add_subdirectory(drake_joint)
+add_subdirectory(rigid_body_system)
+add_subdirectory(rigid_body_tree)
+
+# System2.0 Tests
+drake_add_cc_test(spring_mass_system_test)
+target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
+
+# ==== Below this line is MATLAB-specific code ====
+
+if(Matlab_FOUND)
+  add_rbm_mex(compareParsersmex)
+
+  macro(add_ikoptions_mex)
+    drake_add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
+  endmacro()
+  add_ikoptions_mex(testIKoptionsmex)
+endif()
+
+drake_find_package(avl CONFIG)
+drake_find_package(xfoil CONFIG)
 
 drake_add_matlab_test(NAME systems/plants/test/addRobotFromURDFStringTest OPTIONAL bullet COMMAND addRobotFromURDFStringTest)
 drake_add_matlab_test(NAME systems/plants/test/andresFallingBlockTest OPTIONAL bullet COMMAND andresFallingBlockTest SIZE large)
@@ -204,11 +204,4 @@ drake_add_matlab_test(NAME systems/plants/test/testIKtraj COMMAND testIKtraj SIZ
 drake_add_matlab_test(NAME systems/plants/test/testInertiasInWorldFrame COMMAND testInertiasInWorldFrame)
 drake_add_matlab_test(NAME systems/plants/test/testMassSpringDamperThrust COMMAND testMassSpringDamperThrust)
 
-add_subdirectory(drake_joint)
-add_subdirectory(rigid_body_system)
-add_subdirectory(rigid_body_tree)
-
-# System2.0 Tests
-drake_add_cc_test(spring_mass_system_test)
-target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
-
+# ==== Below this line is C++ and MATLAB shared code ====

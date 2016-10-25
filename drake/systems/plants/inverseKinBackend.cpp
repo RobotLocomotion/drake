@@ -285,7 +285,6 @@ void inverseKinBackend(
     }
 
     SolutionResult result = prog.Solve();
-    prog.PrintSolution();
     q_sol->col(t_index) = vars.value();
     info[t_index] = GetIKSolverInfo(prog, result);
   }

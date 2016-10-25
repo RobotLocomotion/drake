@@ -42,11 +42,12 @@ class PidControllerTest : public ::testing::Test {
     context_->SetInputPort(1, MakeInput(std::move(vec1)));
   }
 
-  const double kp_{2.0};
-  const double ki_{3.0};
-  const double kd_{1.0};
   const int port_size_{3};
-  PidController<double> controller_{kp_, ki_, kd_, port_size_};
+  const VectorX<double> kp_{VectorX<double>::Ones(port_size_) * 2.0};
+  const VectorX<double> ki_{VectorX<double>::Ones(port_size_) * 3.0};
+  const VectorX<double> kd_{VectorX<double>::Ones(port_size_) * 1.0};
+
+  PidController<double> controller_{kp_, ki_, kd_};
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
@@ -56,9 +57,32 @@ class PidControllerTest : public ::testing::Test {
 
 // Tests getter methods for controller constants.
 TEST_F(PidControllerTest, Getters) {
-  ASSERT_EQ(kp_, controller_.get_Kp());
-  ASSERT_EQ(ki_, controller_.get_Ki());
-  ASSERT_EQ(kd_, controller_.get_Kd());
+  ASSERT_EQ(kp_, controller_.get_Kp_vector());
+  ASSERT_EQ(ki_, controller_.get_Ki_vector());
+  ASSERT_EQ(kd_, controller_.get_Kd_vector());
+
+  EXPECT_NO_THROW(controller_.get_Kp());
+  EXPECT_NO_THROW(controller_.get_Ki());
+  EXPECT_NO_THROW(controller_.get_Kd());
+}
+
+TEST_F(PidControllerTest, GetterVectors) {
+  const Eigen::Vector2d kp{1.0, 2.0};
+  const Eigen::Vector2d ki{1.0, 2.0};
+  const Eigen::Vector2d kd{1.0, 2.0};
+  PidController<double> controller{kp, ki, kd};
+
+  EXPECT_NO_THROW(controller.get_Kp_vector());
+  EXPECT_NO_THROW(controller.get_Ki_vector());
+  EXPECT_NO_THROW(controller.get_Kd_vector());
+
+  ASSERT_EQ(kp, controller.get_Kp_vector());
+  ASSERT_EQ(ki, controller.get_Ki_vector());
+  ASSERT_EQ(kd, controller.get_Kd_vector());
+
+  EXPECT_DEATH(controller.get_Kp(), ".*");
+  EXPECT_DEATH(controller.get_Ki(), ".*");
+  EXPECT_DEATH(controller.get_Kd(), ".*");
 }
 
 // Evaluates the output and asserts correctness.
@@ -73,7 +97,8 @@ TEST_F(PidControllerTest, EvalOutput) {
   ASSERT_EQ(1, output_->get_num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
-  EXPECT_EQ(kp_ * error_signal_ + kd_ * error_rate_signal_,
+  EXPECT_EQ((kp_.array() * error_signal_.array() +
+            kd_.array() * error_rate_signal_.array()).matrix(),
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
@@ -82,7 +107,9 @@ TEST_F(PidControllerTest, EvalOutput) {
   controller_.set_integral_value(context_.get(), integral_value);
   controller_.EvalOutput(*context_, output_.get());
   EXPECT_EQ(
-      kp_ * error_signal_ + ki_ * integral_value + kd_ * error_rate_signal_,
+      (kp_.array() * error_signal_.array() +
+       ki_.array() * integral_value.array() +
+       kd_.array() * error_rate_signal_.array()).matrix(),
       output_vector->get_value());
 }
 
@@ -96,14 +123,14 @@ TEST_F(PidControllerTest, EvalTimeDerivatives) {
   controller_.SetDefaultState(context_.get());
 
   controller_.EvalTimeDerivatives(*context_, derivatives_.get());
-  ASSERT_EQ(3, derivatives_->get_state().size());
+  ASSERT_EQ(3, derivatives_->size());
   ASSERT_EQ(0, derivatives_->get_generalized_position().size());
   ASSERT_EQ(0, derivatives_->get_generalized_velocity().size());
   ASSERT_EQ(3, derivatives_->get_misc_continuous_state().size());
 
   // The only state in the PID controller_ is the integral of the input signal.
   // Therefore the time derivative of the state equals the input error signal.
-  EXPECT_EQ(error_signal_, derivatives_->get_state().CopyToVector());
+  EXPECT_EQ(error_signal_, derivatives_->CopyToVector());
 }
 
 }  // namespace

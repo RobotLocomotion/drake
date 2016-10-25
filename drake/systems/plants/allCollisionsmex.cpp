@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <iostream>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "rigidBodyTreeMexConversions.h"
 
@@ -14,6 +14,7 @@ using namespace std;
  * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 3) {
     mexErrMsgIdAndTxt("Drake:allCollisions:NotEnoughInputs",

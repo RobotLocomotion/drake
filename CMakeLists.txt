@@ -83,17 +83,45 @@ drake_add_external(google_styleguide PUBLIC
   BUILD_COMMAND :)
 
 # ipopt
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
+  get_filename_component(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}" NAME)
+  get_filename_component(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}" NAME)
+else()
+  set(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}")
+  set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
+endif()
+
 drake_add_external(ipopt PUBLIC
-  # TODO(sam.creasey) add an alternate build command for WIN32 which
-  # downloads the precopiled binary and installs that.
-  CONFIGURE_COMMAND ./configure
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+   ./configure
     --with-blas=BUILD
     --with-lapack=BUILD
     --prefix=${CMAKE_INSTALL_PREFIX}
     --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
     --disable-shared
     --with-pic
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${IPOPT_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${IPOPT_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
@@ -107,13 +135,13 @@ drake_add_external(nlopt PUBLIC CMAKE
 
 # sedumi
 drake_add_external(sedumi CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # snopt
-if(MATLAB_EXECUTABLE)
+if(Matlab_FOUND)
   set(SNOPT_EXTRA_CMAKE_ARGS
     -DBUILD_SNOPT_C_MEX=ON
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 else()
   set(SNOPT_EXTRA_CMAKE_ARGS
     -DBUILD_SNOPT_C_MEX=OFF)
@@ -128,7 +156,7 @@ drake_add_external(snopt CMAKE
 
 # spotless
 drake_add_external(spotless PUBLIC CMAKE
-  CMAKE_ARGS -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+  CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # octomap
 drake_add_external(octomap PUBLIC CMAKE
@@ -140,16 +168,31 @@ drake_add_external(octomap PUBLIC CMAKE
 # swig_matlab
 drake_add_external(swig_matlab PUBLIC
   PATCH_COMMAND ./autogen.sh
-  CONFIGURE_COMMAND ./configure
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --with-matlab
-  INSTALL_COMMAND ${MAKE_COMMAND} install)
+  CONFIGURE_COMMAND
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ./configure
+      --prefix=${CMAKE_INSTALL_PREFIX}
+      --with-matlab
+  INSTALL_COMMAND
+    # TODO(jamiesnape): Check whether environment variables are actually used
+    ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXX=${CMAKE_CXX_COMPILER}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ${MAKE_COMMAND} install)
 
 # textbook
-if(MATLAB_EXECUTABLE)
+if(Matlab_FOUND)
   set(TEXTBOOK_CMAKE_ARGS
     -DBUILD_TESTING=ON
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR})
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 else()
   set(TEXTBOOK_CMAKE_ARGS -DBUILD_TESTING=OFF)
 endif()
@@ -175,7 +218,7 @@ drake_add_external(iris PUBLIC CMAKE
     -DIRIS_WITH_CDD=ON
     -DIRIS_WITH_EIGEN=OFF
     -DIRIS_WITH_MOSEK=OFF
-    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
+    -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR}
   DEPENDS eigen mosek)
 
 
@@ -195,21 +238,6 @@ drake_add_external(libbot PUBLIC CMAKE
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
-# director
-drake_add_external(director PUBLIC CMAKE
-  SOURCE_SUBDIR distro/superbuild
-  CMAKE_ARGS
-    -DUSE_LCM=ON # TODO: predicate on whether we have LCM enabled?
-    -DUSE_LCMGL=ON
-    -DUSE_SYSTEM_LCM=ON
-    -DUSE_EXTERNAL_INSTALL=ON
-  INSTALL_COMMAND :
-  DEPENDS bot_core_lcmtypes lcm libbot)
-
-# signalscope
-drake_add_external(signalscope PUBLIC
-  DEPENDS director)
-
 # xfoil
 # The Ninja generator does not support Fortran.
 drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
@@ -221,9 +249,6 @@ drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
 # also find it useful, especially to build drake with ninja using fewer than
 # the default number of jobs.
 option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
-if(SKIP_DRAKE_BUILD)
-  set(DRAKE_BUILD_COMMANDS BUILD_COMMAND : INSTALL_COMMAND :)
-endif()
 
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
@@ -231,35 +256,45 @@ endif()
 drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  ${DRAKE_BUILD_COMMANDS}
   CMAKE_ARGS
     -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
     -DWITH_AVL:BOOL=${WITH_AVL}
+    -DWITH_BOT_CORE_LCMTYPES:BOOL=${WITH_BOT_CORE_LCMTYPES}
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_CCD:BOOL=${WITH_CCD}
     -DWITH_DIRECTOR:BOOL=${WITH_DIRECTOR}
     -DWITH_DREAL:BOOL=${WITH_DREAL}
+    -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
     -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
+    -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GUROBI:BOOL=${WITH_GUROBI}
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_IRIS:BOOL=${WITH_IRIS}
     -DWITH_LCM:BOOL=${WITH_LCM}
     -DWITH_LIBBOT:BOOL=${WITH_LIBBOT}
+    -DWITH_MESHCONVERTERS:BOOL=${WITH_MESHCONVERTERS}
     -DWITH_MOSEK:BOOL=${WITH_MOSEK}
     -DWITH_NLOPT:BOOL=${WITH_NLOPT}
     -DWITH_OCTOMAP:BOOL=${WITH_OCTOMAP}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
+    -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
+    -DWITH_SNOPT_C:BOOL=${WITH_SNOPT}   # TODO(jamiesnape): Fix naming inconsistency and duplication
+    -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
+    -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
+    -DWITH_SWIGMAKE:BOOL=${WITH_SWIGMAKE}
+    -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_XFOIL:BOOL=${WITH_XFOIL}
     -DWITH_YALMIP:BOOL=${WITH_YALMIP}
+    -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
   DEPENDS
     avl
     bot_core_lcmtypes
     bullet
     ccd
-    director
     dreal
     eigen
     gflags
@@ -280,10 +315,27 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     spotless
     swig_matlab
     swigmake
+    textbook
+    xfoil
     yalmip
     yaml_cpp
-    xfoil
 )
+
+# director
+drake_add_external(director PUBLIC CMAKE
+  SOURCE_SUBDIR distro/superbuild
+  CMAKE_ARGS
+    -DUSE_DRAKE=OFF
+    -DUSE_LCM=${HAVE_LCM}
+    -DUSE_LCMGL=${HAVE_LIBBOT}
+    -DUSE_SYSTEM_LCM=ON
+    -DUSE_EXTERNAL_INSTALL=ON
+  INSTALL_COMMAND :
+  DEPENDS bot_core_lcmtypes drake lcm libbot)
+
+# signalscope
+drake_add_external(signalscope PUBLIC
+  DEPENDS director)
 
 # END external projects
 ###############################################################################

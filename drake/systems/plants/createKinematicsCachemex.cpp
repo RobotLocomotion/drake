@@ -1,4 +1,4 @@
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
@@ -9,6 +9,7 @@ using namespace std;
  * * createKinematicsCachemex(model_ptr) to construct
  * * createKinematicsCachemex(cache_ptr) to destruct
  */
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs == 0 && nrhs == 1) {
     // if no output arguments, then assume the destructor is being called

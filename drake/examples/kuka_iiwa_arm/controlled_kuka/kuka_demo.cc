@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
@@ -13,14 +14,17 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
-#include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
+
+DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -42,14 +46,14 @@ using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
-using systems::TimeVaryingPolynomialSource;
+using systems::TrajectorySource;
 
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace controlled_kuka {
 namespace {
 
-unique_ptr<PiecewisePolynomial<double>> MakePlan() {
+unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   RigidBodyTree tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed);
@@ -170,7 +174,8 @@ unique_ptr<PiecewisePolynomial<double>> MakePlan() {
     }
     times.push_back(t[i]);
   }
-  auto pp_traj = make_unique<PPType>(polys, times);
+  auto pp_traj = make_unique<PiecewisePolynomialTrajectory>(
+      PPType(polys, times));
   return pp_traj;
 }
 
@@ -228,7 +233,7 @@ class KukaDemo : public systems::Diagram<T> {
 
     // Creates a plan and wraps it into a source system.
     poly_trajectory_ = MakePlan();
-    desired_plan_ = builder.template AddSystem<TimeVaryingPolynomialSource<T>>(
+    desired_plan_ = builder.template AddSystem<TrajectorySource<T>>(
         *poly_trajectory_);
 
     // Creates and adds LCM publisher for visualization.
@@ -260,6 +265,12 @@ class KukaDemo : public systems::Diagram<T> {
 
   const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
 
+  Context<T>* get_kuka_context(Context<T>* context) const {
+    Context<T>* controller_context =
+        this->GetMutableSubsystemContext(context, controller_);
+    return controller_->GetMutableSubsystemContext(controller_context, plant_);
+  }
+
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
         this->GetMutableSubsystemContext(context, controller_);
@@ -275,27 +286,29 @@ class KukaDemo : public systems::Diagram<T> {
   PidControlledSystem<T>* controller_{nullptr};
   Demultiplexer<T>* rbp_state_demux_{nullptr};
   GravityCompensator<T>* gravity_compensator_{nullptr};
-  TimeVaryingPolynomialSource<T>* desired_plan_{nullptr};
-  std::unique_ptr<PiecewisePolynomial<T>> poly_trajectory_;
+  TrajectorySource<T>* desired_plan_{nullptr};
+  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
   RigidBodyTreeLcmPublisher* viz_publisher_{nullptr};
   drake::lcm::DrakeLcm lcm_;
 };
 
 int DoMain() {
+  DRAKE_DEMAND(FLAGS_simulation_sec > 0);
+
   KukaDemo<double> model;
   Simulator<double> simulator(model);
-
+  Context<double>* context = simulator.get_mutable_context();
   // Zeroes the state and initializes controller state.
-  model.SetDefaultState(simulator.get_mutable_context());
+  model.SetDefaultState(context);
 
   VectorX<double> desired_state = VectorX<double>::Zero(14);
   model.get_kuka_plant().set_state_vector(
-      simulator.get_mutable_context(), desired_state);
+      model.get_kuka_context(context), desired_state);
 
   simulator.Initialize();
 
   // Simulate for 20 seconds.
-  simulator.StepTo(20.0);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
 }
@@ -306,6 +319,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::kuka_iiwa_arm::controlled_kuka::DoMain();
 }

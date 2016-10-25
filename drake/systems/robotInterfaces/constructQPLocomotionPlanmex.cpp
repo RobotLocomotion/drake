@@ -1,7 +1,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
 
 using namespace std;
@@ -279,6 +279,7 @@ QuadraticLyapunovFunction setUpLyapunovFunction(const mxArray* mex_V) {
   return V;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   string usage =
       "usage: ptr = constructQPLocomotionPlanmex(mex_model_ptr, "

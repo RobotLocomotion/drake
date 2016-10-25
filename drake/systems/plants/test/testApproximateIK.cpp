@@ -6,8 +6,10 @@
 #include <cstdlib>
 #include <limits>
 
-using namespace std;
-using namespace Eigen;
+// TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
+using namespace std;  // NOLINT(build/namespaces)
+using namespace Eigen;  // NOLINT(build/namespaces)
+
 int main() {
   RigidBodyTree* model =
       new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf");

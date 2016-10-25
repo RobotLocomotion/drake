@@ -26,6 +26,7 @@ class InitialCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(1) * x(1);
   }
@@ -37,6 +38,7 @@ class FinalCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(2) * x(2);
   }
@@ -60,6 +62,24 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   const int kNumStates(2);
   const int kNumTimeSamples(21);  // aka N.
   MyDirectTrajOpt direct_traj(kNumInputs, kNumStates, kNumTimeSamples, 0, 25);
+
+  // Add bounds on time intervals.
+  direct_traj.AddTimeIntervalBounds(
+      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(0.01),
+      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(10));
+  std::vector<int> interval_indices{1, 2, 3};
+  direct_traj.AddTimeIntervalBounds(Eigen::Vector3d(0.2, 0.3, 0.4),
+                                    Eigen::Vector3d(5, 5, 5), interval_indices);
+  Eigen::Matrix<double, kNumTimeSamples - 1, 1> h_lb =
+      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(0.01);
+  Eigen::Matrix<double, kNumTimeSamples - 1, 1> h_ub =
+      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(10);
+  h_lb(1) = 0.2;
+  h_lb(2) = 0.3;
+  h_lb(3) = 0.4;
+  h_ub(1) = 5;
+  h_ub(2) = 5;
+  h_ub(3) = 5;
 
   const double t_init_in(7);
   const Polynomiald y = Polynomiald("y");
@@ -102,21 +122,26 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   std::vector<double> times_out;
 
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
-  PiecewisePolynomial<double> input_traj =
+  for (int i = 1; i < kNumTimeSamples; ++i) {
+    EXPECT_GE(times_out[i] - times_out[i - 1], h_lb(i - 1) - 1E-10);
+    EXPECT_LE(times_out[i] - times_out[i - 1], h_ub(i - 1) + 1E-10);
+  }
+
+  PiecewisePolynomialTrajectory input_traj =
       direct_traj.ReconstructInputTrajectory();
 
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
                               1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(constrained_input,
                               input_traj.value(times_out[kInputConstraintLo]),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-6, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintHi),
                               1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(constrained_input,
                               input_traj.value(times_out[kInputConstraintHi]),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-6, MatrixCompareType::absolute));
 
-  PiecewisePolynomial<double> state_traj =
+  PiecewisePolynomialTrajectory state_traj =
       direct_traj.ReconstructStateTrajectory();
   EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
                               1e-10, MatrixCompareType::absolute));
@@ -146,8 +171,6 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   // First check that we have values not particularly near zero where
   // we're going to try to minimize next time.
   direct_traj.GetResultSamples(&inputs, &states, &times_out);
-  EXPECT_DOUBLE_EQ(states(1, 0), 1);
-  EXPECT_DOUBLE_EQ(states(1, kNumTimeSamples - 1), 15);
 
   direct_traj.AddInitialCostFunc(InitialCost());
   direct_traj.AddFinalCostFunc(FinalCost());

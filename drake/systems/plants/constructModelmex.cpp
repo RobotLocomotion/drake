@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
 #include "drake/systems/plants/joints/DrakeJoints.h"
@@ -38,6 +38,7 @@ void setLimits(const mxArray* pBodies, int i,
   fixed_axis_one_dof_joint->setJointLimits(joint_limit_min, joint_limit_max);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // DEBUG
   // mexPrintf("constructModelmex: START\n");

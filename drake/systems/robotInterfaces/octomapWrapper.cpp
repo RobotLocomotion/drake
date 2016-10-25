@@ -4,11 +4,12 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace octomap;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // Usage:
   //   Constructors/Destructor:

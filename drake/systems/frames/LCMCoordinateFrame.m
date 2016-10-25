@@ -62,7 +62,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       typecheck(lcmcoder,'LCMCoder');
       obj.lcmcoder = lcmcoder;
       msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
-      obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+      obj.monitor = drake.matlab.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
       setCoordinateNames(obj,lcmcoder.coordinateNames());
     end
     

@@ -1,9 +1,11 @@
 #include <Eigen/Sparse>
+
 #include "drake/common/eigen_types.h"
-#include "drake/util/mexify.h"
+#include "drake/matlab/util/mexify.h"
+#include "drake/matlab/util/standardMexConversions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+
 #include "KinematicsCache.h"
-#include "drake/util/standardMexConversions.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace std;
@@ -65,6 +67,7 @@ pair<MatrixX<Scalar>, vector<MatrixX<Scalar>>> contactConstraints(
   return make_pair(n, D);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   auto func_double = make_function(&contactConstraints<double>);
   auto func_autodiff_fixed_max =

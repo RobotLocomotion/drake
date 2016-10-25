@@ -1,9 +1,10 @@
 #include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 1 || nlhs != 1) {
     mexErrMsgTxt("usage: lcm_msg_data = getLastQPInput(obj);");

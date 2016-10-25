@@ -4,11 +4,12 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 5) {
     mexErrMsgIdAndTxt("Drake:approximateIKmex:NotEnoughInputs",

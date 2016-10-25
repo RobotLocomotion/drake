@@ -21,6 +21,8 @@ const double REG = 1e-8;
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
+// TODO(jwnimmer-tri) Someone with gurobi has to fix this.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
@@ -993,8 +995,8 @@ int InstantaneousQPController::setupAndSolveQP(
   if (qp_input.whole_body_data.num_constrained_dofs > 0) {
     // add joint acceleration constraints
     for (int i = 0; i < qp_input.whole_body_data.num_constrained_dofs; i++) {
-      Aeq(equality_ind, (int)condof[i] - 1) = 1;
-      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i] - 1];
+      Aeq(equality_ind, static_cast<int>(condof[i]) - 1) = 1;
+      beq[equality_ind++] = pid_out.qddot_des[static_cast<int>(condof[i]) - 1];
     }
   }
 
@@ -1042,7 +1044,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
   for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
-    if (std::isinf(double(bin(i)))) {
+    if (std::isinf(bin(i))) {
       Ain.row(i) = 0 * Ain.row(i);
       bin(i) = 0;
     }

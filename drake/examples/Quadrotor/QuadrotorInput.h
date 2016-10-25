@@ -40,6 +40,7 @@ class QuadrotorInput {
 
 bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t,
             QuadrotorInput<double>& x) {
+  // NOLINTNEXTLINE(readability/casting) This code will be deleted soon.
   t = double(msg.timestamp)/1000.0;
   x.motors = Eigen::Vector4d(msg.motors);
   return true;

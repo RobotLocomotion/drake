@@ -1,11 +1,12 @@
 #include <mex.h>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace Eigen;
 using namespace std;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 2 || nlhs < 2) {
     mexErrMsgIdAndTxt(

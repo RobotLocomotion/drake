@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <iostream>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "rigidBodyTreeMexConversions.h"
 
@@ -20,6 +20,7 @@ using namespace std;
  *                        active_collision_options);
  */
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // check number of arguments
   if (nrhs < 4) {

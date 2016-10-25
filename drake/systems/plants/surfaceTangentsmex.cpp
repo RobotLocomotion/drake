@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <iostream>
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <Eigen/Dense>
 
@@ -35,6 +35,7 @@ inline mxArray *getTangentsArray(RigidBodyTree *const model,
   return tangentCells;
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 2) {
     mexErrMsgIdAndTxt(

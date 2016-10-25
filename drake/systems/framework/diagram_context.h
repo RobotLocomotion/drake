@@ -157,9 +157,7 @@ class DiagramContext : public Context<T> {
   }
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
-    if (index < 0 || index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;
@@ -213,9 +211,7 @@ class DiagramContext : public Context<T> {
   /// Returns the input port at the given @p index, which of course belongs
   /// to the subsystem whose input was exposed at that index.
   const InputPort* GetInputPort(int index) const override {
-    if (index < 0 || index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     const PortIdentifier& id = input_ids_[index];
     SystemIndex system_index = id.first;
     PortIndex port_index = id.second;

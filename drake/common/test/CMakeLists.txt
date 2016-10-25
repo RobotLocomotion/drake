@@ -6,6 +6,21 @@ target_link_libraries(functional_form_test drakeCommon)
 drake_add_cc_test(nice_type_name_test)
 target_link_libraries(nice_type_name_test drakeCommon)
 
+drake_add_cc_test(symbolic_variable_test)
+target_link_libraries(symbolic_variable_test drakeCommon)
+
+drake_add_cc_test(symbolic_variables_test)
+target_link_libraries(symbolic_variables_test drakeCommon)
+
+drake_add_cc_test(symbolic_environment_test)
+target_link_libraries(symbolic_environment_test drakeCommon)
+
+drake_add_cc_test(symbolic_expression_test)
+target_link_libraries(symbolic_expression_test drakeCommon)
+
+drake_add_cc_test(symbolic_formula_test)
+target_link_libraries(symbolic_formula_test drakeCommon)
+
 drake_add_cc_test(sorted_vectors_have_intersection_test)
 target_link_libraries(sorted_vectors_have_intersection_test drakeCommon)
 

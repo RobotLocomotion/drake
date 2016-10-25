@@ -1,12 +1,13 @@
 #include <mex.h>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace std;
 using namespace Eigen;
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   /*
     IKoptionsmex(1, robot_ptr)  // construct IK options

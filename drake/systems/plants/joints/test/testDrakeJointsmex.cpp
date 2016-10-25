@@ -10,7 +10,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;
@@ -34,6 +34,7 @@ void safelySetField(mxArray* array, const string& fieldname, mxArray* data,
   mxSetFieldByNumber(array, index, fieldnum, data);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 1 || nlhs != 1) {
     mexErrMsgIdAndTxt("Drake:testDrakeJointsmex:BadInputs",
