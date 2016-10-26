@@ -433,9 +433,11 @@ class IntegratorBase {
   /**
    *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
    *  generalized coordinate and velocity state variables. Only used for
-   *  integrators that support accuracy estimation.
+   *  integrators that support accuracy estimation. Returns a VectorBlock
+   *  to make the values mutable without permitting changing the size of
+   *  the vector.
    */
-  Eigen::VectorXd& get_mutable_generalized_state_scaling_vector() {
+  Eigen::VectorBlock<double>& get_mutable_generalized_state_scaling_vector() {
     return v_scal_;
   }
 
@@ -451,9 +453,13 @@ class IntegratorBase {
   /**
    *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
    *  miscellaneous continuous state variables. Only used for integrators that
-   *  support accuracy estimation.
+   *  support accuracy estimation. Returns a VectorBlock
+   *  to make the values mutable without permitting changing the size of
+   *  the vector.
    */
-  Eigen::VectorXd& get_mutable_misc_state_scaling_vector() { return z_scal_; }
+  Eigen::VectorBlock<double>& get_mutable_misc_state_scaling_vector() {
+    return z_scal_;
+  }
 
   /**
    * @}
@@ -474,10 +480,11 @@ class IntegratorBase {
   void report_error_test_failure() { ++error_test_failures_; }
 
   /**
-   * Default code for an error controlled step.
-   * Integrators may use a different function than this one to step with
-   * error control, but this default method is expected to function well in
-   * most circumstances.
+   * Default code for taking a single error controlled step of @p dt_max
+   * or smaller. Integrators may use a different function than this one to
+   * effect integration with error control- this particular function is expected
+   * to be called by an integrator's DoStepAtMost() method- but this default
+   * method is expected to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
    *               requirements.
@@ -496,8 +503,9 @@ class IntegratorBase {
 
   /**
    * Computes the infinity norm of the error estimate. We use the infinity norm
-   * to capture the idea that the user specifies error tolerances in order to
-   * limit the largest error in any state vector component.
+   * to capture the idea that, by providing accuracy requirements, the user
+   * indirectly specifies error tolerances that act to  limit the largest error
+   * in any state vector component.
    * @param integrator The integrator to compute the error estimate from.
    * @throws std::logic_error If the integrator does not support accuracy
    *                          estimation.
@@ -506,24 +514,27 @@ class IntegratorBase {
   static double CalcErrorNorm(IntegratorBase<T>* integrator);
 
   /**
-   * Adjusts the integrator step size toward keeping state variables within
-   * error bounds on the next integration step. Note that it is not guaranteed
-   * that the (possibly) reduced step size will keep state variables within
-   * error bounds; however, the process of- (1) taking a trial integration step,
-   * (2) calculating the error, and (3) adjusting the step size- can be repeated
-   * until convergence. This code adapted from Simbody.
+   * Calculates the adjusted integrator step size toward keeping state variables
+   * within error bounds on the next integration step. Note that it is not
+   * guaranteed that the (possibly) reduced step size will keep state variables
+   * within error bounds; however, the process of- (1) taking a trial
+   * integration step, (2) calculating the error, and (3) adjusting the step
+   * size- can be repeated until convergence. This code adapted from Simbody.
    * @param[in] err
-   *      The norm of the integrator error.
+   *      The norm of the integrator error that was computed using
+   *       @p current_step_size.
    * @param[in] dt_was_artificially_limited
    *      `true` if step_size was artificially limited (by, e.g., a publishing
-   *      time)
-   * @param[in,out] step_size
-   *      The current step size on entry, the new step size on return.
+   *      time).
+   * @param[in] current_step_size
+   *      The current step size on entry.
+   * @param[out] new_step_size
+   *      The adjusted integration step size on return.
    * @returns `true` if the new step size is at least as large as the current,
    *          `false` otherwise.
    */
-  bool AdjustStepSize(double err, bool dt_was_artificially_limited,
-                      T& step_size) const;
+  bool CalcAdjustedStepSize(double err, bool dt_was_artificially_limited,
+                            const T &current_step_size, T& new_step_size) const;
 
   /** Derived classes can override this method to perform special
    * initialization. This method is called during the Initialize() method. This
@@ -715,7 +726,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
     //--------------------------------------------------------------------
     const double err_nrm = CalcErrorNorm(integrator);
-    step_succeeded = integrator->AdjustStepSize(
+    step_succeeded = integrator->CalcAdjustedStepSize(
         err_nrm, dt_was_artificially_limited, current_step_size);
 
     if (!step_succeeded) {
@@ -800,9 +811,9 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
 }
 
 template <class T>
-bool IntegratorBase<T>::AdjustStepSize(double err,
-                                       bool dt_was_artificially_limited,
-                                       T& step_size) const {
+bool IntegratorBase<T>::CalcAdjustedStepSize(double err,
+                                             bool dt_was_artificially_limited,
+                                             T &step_size) const {
   using std::pow;
 
   // Magic numbers come from Simbody.
