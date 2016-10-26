@@ -14,7 +14,6 @@
 #include "drake/systems/framework/primitives/constant_value_source.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
-
 namespace drake {
 
 using systems::DiagramBuilder;
@@ -35,12 +34,12 @@ namespace qp_inverse_dynamics {
 // simulation should be replaced later with real simulation.
 // The controller should drive the position and velocity close to zero in 2
 // seconds.
-//GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
+// GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
 void test() {
-  std::string urdf =
-      GetDrakePath() +
-      std::string(
-          "/examples/Valkyrie/urdf/urdf/valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  std::string urdf = GetDrakePath() + std::string(
+                                          "/examples/Valkyrie/urdf/urdf/"
+                                          "valkyrie_A_sim_drake_one_neck_dof_"
+                                          "wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf);
   lcm::DrakeLcm lcm;
 
@@ -52,11 +51,11 @@ void test() {
       builder.AddSystem(std::make_unique<ValkyrieSystem>(&robot));
   PlanEvalSystem* plan_eval =
       builder.AddSystem(std::make_unique<PlanEvalSystem>(&robot));
-  RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs =
-      builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(&robot));
+  RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs = builder.AddSystem(
+      std::make_unique<RobotStateMsgToHumanoidStatusSystem>(&robot));
 
-  RigidBodyTreeLcmPublisher* viz_publisher = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
-        robot, &lcm);
+  RigidBodyTreeLcmPublisher* viz_publisher =
+      builder.template AddSystem<RigidBodyTreeLcmPublisher>(robot, &lcm);
 
   builder.Connect(qp_con->get_output_port_qp_output(),
                   val_sim->get_input_port_qp_output());
@@ -68,7 +67,8 @@ void test() {
                   plan_eval->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
-  builder.Connect(val_sim->get_output_port_raw_state(), viz_publisher->get_input_port(0));
+  builder.Connect(val_sim->get_output_port_raw_state(),
+                  viz_publisher->get_input_port(0));
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
@@ -106,9 +106,10 @@ void test() {
 
   EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot()->get_num_velocities()),
-      1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(rs1->velocity(),
+                      Eigen::VectorXd::Zero(rs1->robot()->get_num_velocities()),
+                      1e-4, MatrixCompareType::absolute));
 }
 
 }  // end namespace qp_inverse_dynamics

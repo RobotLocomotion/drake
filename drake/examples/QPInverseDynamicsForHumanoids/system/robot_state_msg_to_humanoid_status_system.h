@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bot_core/robot_state_t.hpp"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
@@ -9,6 +8,16 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::Context;
+using systems::SystemOutput;
+using systems::SystemPortDescriptor;
+using systems::LeafSystemOutput;
+using systems::AbstractValue;
+using systems::Value;
+
+/**
+ * A translator from bot_core::robot_state_t to HumanoidStatus
+ */
 class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
  public:
   explicit RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree* robot)

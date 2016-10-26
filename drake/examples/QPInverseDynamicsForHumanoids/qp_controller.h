@@ -19,22 +19,6 @@ namespace qp_inverse_dynamics {
  * approximated by a set of basis vectors.
  */
 class ContactInformation {
- private:
-  const RigidBody* body_;  ///< Link in contact
-  /// Offsets of the contact point specified in the body frame.
-  std::vector<Eigen::Vector3d> contact_points_;
-
-  // TODO(siyuan.feng@tri.global): normal is currently assumed to be the same
-  // for all the contact points.
-  /// Contact normal specified in the body frame.
-  Eigen::Vector3d normal_;
-
-  /// Number of basis vectors per contact point
-  int num_basis_per_contact_point_;
-
-  /// Friction coeff
-  double mu_;
-
  public:
   /*
    * @param num_basis_per_contact_point number of basis per contact point
@@ -191,6 +175,14 @@ class ContactInformation {
     return Jdv;
   }
 
+  bool is_valid() const {
+    bool ret = fabs(normal_.norm() - 1) < Eigen::NumTraits<double>::epsilon();
+    for (const Eigen::Vector3d& pt : contact_points_) ret &= pt.allFinite();
+    ret &= mu_ >= 0;
+    ret &= num_basis_per_contact_point_ >= 3;
+    return ret;
+  }
+
   inline const std::string& name() const { return body_->get_name(); }
   inline int num_contact_points() const {
     return static_cast<int>(contact_points_.size());
@@ -219,6 +211,22 @@ class ContactInformation {
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
   }
+
+ private:
+  const RigidBody* body_;  ///< Link in contact
+  /// Offsets of the contact point specified in the body frame.
+  std::vector<Eigen::Vector3d> contact_points_;
+
+  // TODO(siyuan.feng@tri.global): normal is currently assumed to be the same
+  // for all the contact points.
+  /// Contact normal specified in the body frame.
+  Eigen::Vector3d normal_;
+
+  /// Number of basis vectors per contact point
+  int num_basis_per_contact_point_;
+
+  /// Friction coeff
+  double mu_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
@@ -236,26 +244,17 @@ inline std::ostream& operator<<(std::ostream& out,
  * closely with ContactInformation.
  */
 class ResolvedContact {
- private:
-  const RigidBody* body_;
-  // Stacked scalars for all the basis vectors.
-  Eigen::VectorXd basis_;
-
-  // Point contact forces in the world frame.
-  std::vector<Eigen::Vector3d> point_forces_;
-
-  // Contact points in the world frame.
-  std::vector<Eigen::Vector3d> contact_points_;
-
-  // The equivalent wrench of all the point forces, w.r.t a frame that has
-  // the same orientation as the world frame, but located at reference_point.
-  Eigen::Vector6d equivalent_wrench_;
-
-  // Reference point in the world frame for the equivalent wrench.
-  Eigen::Vector3d reference_point_;
-
  public:
   explicit ResolvedContact(const RigidBody* body) : body_(body) {}
+
+  bool is_valid() const {
+    bool ret = basis_.allFinite() && basis_.minCoeff() >= 0;
+    for (const Eigen::Vector3d& ptf : point_forces_) ret &= ptf.allFinite();
+    for (const Eigen::Vector3d& pt : contact_points_) ret &= pt.allFinite();
+    ret &= equivalent_wrench_.allFinite();
+    ret &= reference_point_.allFinite();
+    return ret;
+  }
 
   // Getters
   inline const RigidBody* body() const { return body_; }
@@ -298,16 +297,31 @@ class ResolvedContact {
     return equivalent_wrench_;
   }
   inline Eigen::Vector3d& mutable_reference_point() { return reference_point_; }
+
+ private:
+  const RigidBody* body_;
+  // Stacked scalars for all the basis vectors.
+  Eigen::VectorXd basis_;
+
+  // Point contact forces in the world frame.
+  std::vector<Eigen::Vector3d> point_forces_;
+
+  // Contact points in the world frame.
+  std::vector<Eigen::Vector3d> contact_points_;
+
+  // The equivalent wrench of all the point forces, w.r.t a frame that has
+  // the same orientation as the world frame, but located at reference_point.
+  Eigen::Vector6d equivalent_wrench_;
+
+  // Reference point in the world frame for the equivalent wrench.
+  Eigen::Vector3d reference_point_;
 };
 
 /**
- * This class holds task space acceleration for a rigid body.
+ * This class holds task space acceleration for a rigid body. The first three
+ * are angular acceleration.
  */
 class BodyAcceleration {
- protected:
-  const RigidBody* body_;
-  Eigen::Vector6d acceleration_;
-
  public:
   explicit BodyAcceleration(const RigidBody* body)
       : body_(body), acceleration_(Eigen::Vector6d::Zero()) {}
@@ -317,31 +331,30 @@ class BodyAcceleration {
   // Getters
   inline const RigidBody* body() const { return body_; }
   inline const std::string& name() const { return body_->get_name(); }
-  /**
-   * @return Task space acceleration. The first three elements are angular.
-   */
   inline const Eigen::Vector6d& acceleration() const { return acceleration_; }
 
   // Setter
   inline Eigen::Vector6d& mutable_acceleration() { return acceleration_; }
+
+ protected:
+  const RigidBody* body_;
+  Eigen::Vector6d acceleration_;
 };
 
 /**
- * A wrapper class specified desired body motion (acceleration) for a rigid
+ * A wrapper class specifying desired body motion (acceleration) for a rigid
  * body and their corresponding weights for the QP.
+ * The acceleration is expressed in a frame that has the same orientation as
+ * the world, and located at the origin of the body.
+ * The first three elements for weights and accelerations are angular.
+ *
  * If weight(i) < 0, acceleration(i) is treated as a constraint.
  * If weight(i) = 0, acceleration(i) is skipped.
  * If weight(i) > 0, acceleration(i) is treated as a cost.
- * The first three elements for weights and accelerations are angular.
+ * TODO: (siyuan.feng@tri.global) expand this to be expressed in other frame.
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
 class DesiredBodyMotion {
- private:
-  const RigidBody* body_;
-  Eigen::Vector6d accelerations_;
-  Eigen::Vector6d weights_;
-  bool control_during_contact_;
-
  public:
   explicit DesiredBodyMotion(const RigidBody* body)
       : body_(body),
@@ -374,6 +387,12 @@ class DesiredBodyMotion {
   inline bool& mutable_control_during_contact() {
     return control_during_contact_;
   }
+
+ private:
+  const RigidBody* body_;
+  Eigen::Vector6d accelerations_;
+  Eigen::Vector6d weights_;
+  bool control_during_contact_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
@@ -395,11 +414,6 @@ inline std::ostream& operator<<(std::ostream& out,
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
 class DesiredJointMotions {
- private:
-  std::vector<std::string> names_;
-  Eigen::VectorXd weights_;
-  Eigen::VectorXd accelerations_;
-
  public:
   DesiredJointMotions() {}
   explicit DesiredJointMotions(const std::vector<std::string>& names)
@@ -425,6 +439,11 @@ class DesiredJointMotions {
   // Setters
   inline Eigen::VectorXd& mutable_weights() { return weights_; }
   inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
+
+ private:
+  std::vector<std::string> names_;
+  Eigen::VectorXd weights_;
+  Eigen::VectorXd accelerations_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
@@ -439,17 +458,16 @@ inline std::ostream& operator<<(std::ostream& out,
 /**
  * A wrapper class specifying desired centroidal momentum change and their
  * corresponding weights for the QP.
+ * The change in momentum are expressed in the world frame.
+ * The first three terms are angular.
+ * Linear momentum change = com acceleration * mass.
+ *
  * If weight(i) < 0, acceleration(i) is treated as a constraint.
  * If weight(i) = 0, acceleration(i) is skipped.
  * If weight(i) > 0, acceleration(i) is treated as a cost.
- * The first three terms are angular.
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
 class DesiredCentroidalMomentumChange {
- private:
-  Eigen::Vector6d weights_;
-  Eigen::Vector6d momentum_dot_;
-
  public:
   DesiredCentroidalMomentumChange()
       : weights_(Eigen::Vector6d::Zero()),
@@ -475,6 +493,10 @@ class DesiredCentroidalMomentumChange {
   // Setters
   inline Eigen::Vector6d& mutable_weights() { return weights_; }
   inline Eigen::Vector6d& mutable_momentum_dot() { return momentum_dot_; }
+
+ private:
+  Eigen::Vector6d weights_;
+  Eigen::Vector6d momentum_dot_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
@@ -491,35 +513,20 @@ inline std::ostream& operator<<(std::ostream& out,
  * Input to the QP inverse dynamics controller
  */
 class QPInput {
- private:
-  // Contact information
-  std::list<ContactInformation> contact_info_;
-
-  // Desired task space accelerations for specific bodies
-  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
-
-  // Desired joint accelerations
-  DesiredJointMotions desired_joint_motions_;
-
-  // Desired centroidal momentum change (change of overall linar and angular
-  // momentum)
-  DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
-
-  // Weight for regularizing basis vectors
-  double w_basis_reg_;
-
  public:
   explicit QPInput(const RigidBodyTree& r) {
-    std::vector<std::string> names(r.get_num_positions());
-    for (int i = 0; i < r.get_num_positions(); i++)
-      names[i] = r.get_position_name(i);
+    std::vector<std::string> names(r.get_num_velocities());
+    // strip out the "dot" part from name
+    for (int i = 0; i < r.get_num_velocities(); i++)
+      names[i] =
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     desired_joint_motions_ = DesiredJointMotions(names);
   }
 
   /**
    * Checks validity of this QPInput.
-   * @param size Dimension of acceleration in the generalized coordinates.
-   * @return true if this QPInput is valid.
+   * @param num_vd Dimension of acceleration in the generalized coordinates.
+   * @return true if this is valid.
    */
   bool is_valid(int num_vd) const {
     int valid = num_vd == desired_joint_motions_.size();
@@ -528,6 +535,10 @@ class QPInput {
          it != desired_body_motions_.end(); it++) {
       valid &= it->second.is_valid();
     }
+
+    for (const ContactInformation& contact : contact_info_)
+      valid &= contact.is_valid();
+
     valid &= desired_centroidal_momentum_dot_.is_valid();
 
     valid &= std::isfinite(w_basis_reg_);
@@ -538,7 +549,6 @@ class QPInput {
 
   // Getters
   inline double w_basis_reg() const { return w_basis_reg_; }
-
   inline const std::string& coord_name(size_t idx) const {
     return desired_joint_motions_.name(idx);
   }
@@ -559,7 +569,6 @@ class QPInput {
 
   // Setters
   inline double& mutable_w_basis_reg() { return w_basis_reg_; }
-
   inline std::list<ContactInformation>& mutable_contact_info() {
     return contact_info_;
   }
@@ -574,40 +583,31 @@ class QPInput {
   mutable_desired_centroidal_momentum_dot() {
     return desired_centroidal_momentum_dot_;
   }
+
+ private:
+  // Contact information
+  std::list<ContactInformation> contact_info_;
+
+  // Desired task space accelerations for specific bodies
+  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
+
+  // Desired joint accelerations
+  DesiredJointMotions desired_joint_motions_;
+
+  // Desired centroidal momentum change (change of overall linar and angular
+  // momentum)
+  DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
+
+  // Weight for regularizing basis vectors
+  double w_basis_reg_;
 };
+
 std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
 /**
  * Output of the QP inverse dynamics controller
  */
 class QPOutput {
- private:
-  // Names for each generalized coordinate.
-  std::vector<std::string> coord_names_;
-
-  // Tracked body motion
-  std::vector<BodyAcceleration> body_accelerations_;
-
-  // Computed accelerations for the center of mass in the world frame
-  Eigen::Vector3d comdd_;
-  // Computed centroidal momentum dot in the world frame, the last 3 should
-  // equal to comdd_ * mass
-  Eigen::Vector6d centroidal_momentum_dot_;
-  // Computed generalized coordinate accelerations
-  Eigen::VectorXd vd_;
-  // Computed joint torque
-  Eigen::VectorXd joint_torque_;
-
-  // Computed contact wrench in the world frame.
-  // The first part of the pair is the reference point in the world frame,
-  // and the second is the wrench.
-  // std::vector<ComputedContactInformation> contact_
-  std::vector<ResolvedContact> resolved_contacts_;
-
-  // Pair of the name of cost term and cost value (only the quadratic and linear
-  // term, no constant term).
-  std::vector<std::pair<std::string, double>> costs_;
-
  public:
   explicit QPOutput(const RigidBodyTree& r) {
     coord_names_.resize(r.get_num_velocities());
@@ -620,11 +620,12 @@ class QPOutput {
     joint_torque_.resize(r.actuators.size());
   }
 
-  bool is_valid(int num_vd, int num_actuators) const {
+  bool is_valid(int num_vd, int num_actuators, double mass) const {
     bool ret = static_cast<int>(coord_names_.size()) == vd_.size();
     ret &= vd_.size() == num_vd;
     ret &= joint_torque_.size() == num_actuators;
 
+    ret &= comdd_.allFinite();
     ret &= centroidal_momentum_dot_.allFinite();
     ret &= vd_.allFinite();
     ret &= joint_torque_.allFinite();
@@ -632,6 +633,9 @@ class QPOutput {
     for (const BodyAcceleration& body_acceleration : body_accelerations_) {
       ret &= body_acceleration.is_valid();
     }
+
+    for (const ResolvedContact& contact : resolved_contacts_)
+      ret &= contact.is_valid();
 
     return ret;
   }
@@ -691,10 +695,52 @@ class QPOutput {
   inline std::pair<std::string, double>& mutable_cost(size_t i) {
     return costs_.at(i);
   }
+
+ private:
+  // Names for each generalized coordinate.
+  std::vector<std::string> coord_names_;
+
+  // Tracked body motion
+  std::vector<BodyAcceleration> body_accelerations_;
+
+  // Computed accelerations for the center of mass in the world frame
+  Eigen::Vector3d comdd_;
+  // Computed centroidal momentum dot in the world frame, the last 3 (linear
+  // part) = comdd_ * mass
+  Eigen::Vector6d centroidal_momentum_dot_;
+  // Computed generalized coordinate accelerations
+  Eigen::VectorXd vd_;
+  // Computed joint torque
+  Eigen::VectorXd joint_torque_;
+
+  // Computed contact wrench in the world frame.
+  // The first part of the pair is the reference point in the world frame,
+  // and the second is the wrench.
+  // std::vector<ComputedContactInformation> contact_
+  std::vector<ResolvedContact> resolved_contacts_;
+
+  // Pair of the name of cost term and cost value (only the quadratic and linear
+  // term, no constant term).
+  std::vector<std::pair<std::string, double>> costs_;
 };
+
 std::ostream& operator<<(std::ostream& out, const QPOutput& output);
 
 class QPController {
+ public:
+  /**
+   * Computes the generalized acceleration, joint torque and contact wrenches
+   * that best tracks the input given the current robot configuration.
+   * @param rs Robot configuration
+   * @param input Desired motions and objectives specified by a higher level
+   * controller
+   * @param output Container for outputs
+   * @return 0 if successful. < 0 if error.
+   */
+  int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);
+
+  static const double kUpperBoundForContactBasis;
+
  private:
   // These are temporary matrices and vectors used by the controller.
   Eigen::MatrixXd tmp_vd_mat_;
@@ -850,20 +896,6 @@ class QPController {
 
     JB_.setZero();
   }
-
- public:
-  /**
-   * Computes the generalized acceleration, joint torque and contact wrenches
-   * that best tracks the input given the current robot configuration.
-   * @param rs Robot configuration
-   * @param input Desired motions and objectives specified by a higher level
-   * controller
-   * @param output Container for outputs
-   * @return 0 if successful. < 0 if error.
-   */
-  int Control(const HumanoidStatus& rs, const QPInput& input, QPOutput* output);
-
-  static const double kUpperBoundForContactBasis;
 };
 
 }  // namespace qp_inverse_dynamics

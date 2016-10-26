@@ -10,7 +10,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names,
+void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
                             double time, const Eigen::VectorXd& q,
                             const Eigen::VectorXd& qd,
                             const Eigen::VectorXd& joint_torque,
@@ -18,12 +18,12 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& joint_names,
                             const Eigen::Matrix<double, 6, 1>& r_foot_wrench,
                             bot_core::robot_state_t* msg) {
   if (q.size() != qd.size() || q.size() != joint_torque.size() + 6 ||
-      joint_names.size() != static_cast<size_t>(joint_torque.size())) {
+      act_joint_names.size() != static_cast<size_t>(joint_torque.size())) {
     throw std::runtime_error("invalid dimension");
   }
 
   msg->utime = static_cast<long>(time * 1e6);
-  msg->joint_name = joint_names;
+  msg->joint_name = act_joint_names;
   msg->num_joints = static_cast<char>(msg->joint_name.size());
   msg->joint_position.resize(msg->num_joints);
   msg->joint_velocity.resize(msg->num_joints);
@@ -96,6 +96,9 @@ void DecodeRobotStateLcmMsg(
   // Set joint state.
   for (int i = 0; i < msg.num_joints; i++) {
     it = q_name_to_index.find(msg.joint_name.at(i));
+    // It's possible that the lcm message have more joints than what we care
+    // about,
+    // so we will just ignore the extra joints.
     if (it != q_name_to_index.end()) {
       if (it->second > q->size()) {
         throw std::runtime_error("state index output bound");
@@ -108,12 +111,18 @@ void DecodeRobotStateLcmMsg(
   }
 
   // Set floating base joint state.
-  (*q)[0] = static_cast<double>(msg.pose.translation.x);
-  (*q)[1] = static_cast<double>(msg.pose.translation.y);
-  (*q)[2] = static_cast<double>(msg.pose.translation.z);
-  (*qd)[0] = static_cast<double>(msg.twist.linear_velocity.x);
-  (*qd)[1] = static_cast<double>(msg.twist.linear_velocity.y);
-  (*qd)[2] = static_cast<double>(msg.twist.linear_velocity.z);
+  (*q)[q_name_to_index.at("base_x")] =
+      static_cast<double>(msg.pose.translation.x);
+  (*q)[q_name_to_index.at("base_y")] =
+      static_cast<double>(msg.pose.translation.y);
+  (*q)[q_name_to_index.at("base_z")] =
+      static_cast<double>(msg.pose.translation.z);
+  (*qd)[q_name_to_index.at("base_x")] =
+      static_cast<double>(msg.twist.linear_velocity.x);
+  (*qd)[q_name_to_index.at("base_y")] =
+      static_cast<double>(msg.twist.linear_velocity.y);
+  (*qd)[q_name_to_index.at("base_z")] =
+      static_cast<double>(msg.twist.linear_velocity.z);
 
   Eigen::Vector4d quat(msg.pose.rotation.w, msg.pose.rotation.x,
                        msg.pose.rotation.y, msg.pose.rotation.z);
@@ -126,12 +135,12 @@ void DecodeRobotStateLcmMsg(
                           (Eigen::MatrixXd*)nullptr);
   Eigen::Vector3d rpydot = phi * omega;
 
-  (*q)[3] = rpy[0];
-  (*q)[4] = rpy[1];
-  (*q)[5] = rpy[2];
-  (*qd)[3] = rpydot[0];
-  (*qd)[4] = rpydot[1];
-  (*qd)[5] = rpydot[2];
+  (*q)[q_name_to_index.at("base_roll")] = rpy[0];
+  (*q)[q_name_to_index.at("base_pitch")] = rpy[1];
+  (*q)[q_name_to_index.at("base_yaw")] = rpy[2];
+  (*qd)[q_name_to_index.at("base_roll")] = rpydot[0];
+  (*qd)[q_name_to_index.at("base_pitch")] = rpydot[1];
+  (*qd)[q_name_to_index.at("base_yaw")] = rpydot[2];
 
   // Set foot force torque
   l_foot_wrench->setZero();

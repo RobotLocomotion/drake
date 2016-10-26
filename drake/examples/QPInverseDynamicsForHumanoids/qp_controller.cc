@@ -566,7 +566,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   DRAKE_ASSERT((net_wrench - Ld).isZero(Eigen::NumTraits<double>::epsilon()));
 
   if (!output->is_valid(rs.robot()->get_num_velocities(),
-                        rs.robot()->actuators.size())) {
+                        rs.robot()->actuators.size(), rs.robot()->getMass())) {
     std::cerr << "output is invalid\n";
     return -1;
   }
