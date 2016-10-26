@@ -13,26 +13,6 @@ namespace qp_inverse_dynamics {
  * and the last 3 are linear.
  */
 class BodyOfInterest {
- private:
-  /// Name of the BodyOfInterest
-  std::string name_;
-  /// The link which this BOI is attached to
-  const RigidBody* body_;
-  /// Offset is specified in the body frame.
-  Eigen::Vector3d offset_;
-
-  Eigen::Isometry3d pose_;
-  /// This is the task space velocity, or twist of a frame that has the same
-  /// orientation as the world frame, but located at the origin of the body
-  /// frame.
-  Eigen::Vector6d vel_;
-  /// Task space Jacobian, xdot = J * v
-  Eigen::MatrixXd J_;
-  /// Task space Jd * v
-  Eigen::Vector6d Jdot_times_v_;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
  public:
   explicit BodyOfInterest(const std::string& name, const RigidBody* body,
                           const Eigen::Vector3d& off)
@@ -62,6 +42,26 @@ class BodyOfInterest {
   inline const Eigen::Vector6d& velocity() const { return vel_; }
   inline const Eigen::MatrixXd& J() const { return J_; }
   inline const Eigen::Vector6d& Jdot_times_v() const { return Jdot_times_v_; }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ private:
+  /// Name of the BodyOfInterest
+  std::string name_;
+  /// The link which this BOI is attached to
+  const RigidBody* body_;
+  /// Offset is specified in the body frame.
+  Eigen::Vector3d offset_;
+
+  Eigen::Isometry3d pose_;
+  /// This is the task space velocity, or twist of a frame that has the same
+  /// orientation as the world frame, but located at the origin of the body
+  /// frame.
+  Eigen::Vector6d vel_;
+  /// Task space Jacobian, xdot = J * v
+  Eigen::MatrixXd J_;
+  /// Task space Jd * v
+  Eigen::Vector6d Jdot_times_v_;
 };
 
 /**

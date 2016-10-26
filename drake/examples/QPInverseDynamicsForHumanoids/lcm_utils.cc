@@ -22,7 +22,7 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
     throw std::runtime_error("invalid dimension");
   }
 
-  msg->utime = static_cast<long>(time * 1e6);
+  msg->utime = static_cast<int64_t>(time * 1e6);
   msg->joint_name = act_joint_names;
   msg->num_joints = static_cast<char>(msg->joint_name.size());
   msg->joint_position.resize(msg->num_joints);

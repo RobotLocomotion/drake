@@ -8,6 +8,10 @@ namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;
 
+// Find the indices that correspond to cost and equality constraints based on
+// the sign of weights.
+// Cost terms have positive weights, and equality constraints have negative
+// weights.
 static void FindCostAndEqConstraintIndices(const Eigen::VectorXd& weights,
                                            std::list<int>* cost_idx,
                                            std::list<int>* eq_idx) {
