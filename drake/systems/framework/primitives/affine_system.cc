@@ -37,7 +37,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
   DRAKE_DEMAND(kNumOutputs == C.rows());
   DRAKE_DEMAND(kNumOutputs == D.rows());
 
-  // Declares input port.
+  // Declares input port for u.
   this->DeclareInputPort(kVectorValued, kNumInputs, kContinuousSampling);
 
   // Declares output port for y.
