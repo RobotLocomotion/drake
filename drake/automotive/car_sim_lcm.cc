@@ -143,7 +143,7 @@ int main() {
   // Instantiates a system for visualizing the MBD model.
   lcm::DrakeLcm lcm;
   auto publisher = builder.AddSystem<RigidBodyTreeLcmPublisher>(
-      dynamic_cast<const RigidBodyPlant<double>*>(controller->system())->
+      dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
           get_rigid_body_tree(), &lcm);
 
   lcm.StartReceiveThread();
@@ -237,7 +237,7 @@ int main() {
   // Zeroes the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
   RigidBodyPlant<double>* rigid_body_plant =
-      dynamic_cast<RigidBodyPlant<double>*>(controller->system());
+      dynamic_cast<RigidBodyPlant<double>*>(controller->plant());
   Context<double>* plant_context =
       controller->GetMutableSubsystemContext(controller_context,
                                              rigid_body_plant);

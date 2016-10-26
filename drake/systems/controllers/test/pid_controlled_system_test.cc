@@ -48,14 +48,14 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   // Our test "system" is just a multiplexer which takes the input and
   // outputs it twice.
   auto test_plant = std::make_unique<TestSystem>();
-  TestSystem* test_p = test_plant.get();
-  auto test_feedback_selector =
-      std::make_unique<MimoGain<double>>(test_plant->get_output_port(0).get_size());
+  TestSystem* plant_ptr = test_plant.get();
+  auto feedback_selector =
+      std::make_unique<MimoGain<double>>(
+          test_plant->get_output_port(0).get_size());
   const double Kp = 2.;
   const double Kd = .1;
   auto controller = builder.AddSystem<PidControlledSystem>(
-      std::move(test_plant), std::move(test_feedback_selector), Kp, 0., Kd);
-
+      std::move(test_plant), std::move(feedback_selector), Kp, 0., Kd);
   builder.Connect(input_source->get_output_port(),
                   controller->get_input_port(0));
   builder.Connect(state_source->get_output_port(),
@@ -70,11 +70,11 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   controller->SetDefaultState(controller_context);
   systems::Context<double>* test_context =
       controller->GetMutableSubsystemContext(
-          controller_context, test_p);
+          controller_context, plant_ptr);
 
   diagram->EvalOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input = test_p->GetInputValue(*test_context);
+  const double pid_input = plant_ptr->GetInputValue(*test_context);
   EXPECT_EQ(pid_input, input[0] + (state[0] - output_vec->get_value()[0]) * Kp +
             (state[1] - output_vec->get_value()[1]) * Kd);
 }

@@ -12,46 +12,46 @@ namespace systems {
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> system,
+    std::unique_ptr<System<T>> plant,
     const T& Kp, const T& Ki, const T& Kd)
-    : PidControlledSystem(std::move(system),
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kp,
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Ki,
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kd) { }
+    : PidControlledSystem(std::move(plant),
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp,
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki,
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd) { }
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> system,
+    std::unique_ptr<System<T>> plant,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd)
-    : PidControlledSystem(std::move(system),
-          std::make_unique<MimoGain<T>>(system->get_output_port(0).get_size()),
+    : PidControlledSystem(std::move(plant),
+          std::make_unique<MimoGain<T>>(plant->get_output_port(0).get_size()),
           Kp, Ki, Kd) { }
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> system,
+    std::unique_ptr<System<T>> plant,
     std::unique_ptr<MimoGain<T>> feedback_selector,
     const T& Kp, const T& Ki, const T& Kd)
-    : PidControlledSystem(std::move(system), std::move(feedback_selector),
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kp,
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Ki,
-          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kd) { }
+    : PidControlledSystem(std::move(plant), std::move(feedback_selector),
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp,
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki,
+          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd) { }
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> system,
+    std::unique_ptr<System<T>> plant,
     std::unique_ptr<MimoGain<T>> feedback_selector,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
   DiagramBuilder<T> builder;
-  system_ = builder.template AddSystem(std::move(system));
+  plant_ = builder.template AddSystem(std::move(plant));
   feedback_selector_ = builder.template AddSystem(std::move(feedback_selector));
 
-  DRAKE_ASSERT(system_->get_num_input_ports() >= 1);
-  DRAKE_ASSERT(system_->get_num_output_ports() >= 1);
-  DRAKE_ASSERT(system_->get_output_port(0).get_size() ==
+  DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
+  DRAKE_ASSERT(plant_->get_num_output_ports() >= 1);
+  DRAKE_ASSERT(plant_->get_output_port(0).get_size() ==
                feedback_selector_->get_input_port().get_size());
-  const int num_positions = system_->get_input_port(0).get_size();
-  const int num_states = num_positions * 2;
+  const int num_effort_commands = plant_->get_input_port(0).get_size();
+  const int num_states = num_effort_commands * 2;
 
   DRAKE_ASSERT(feedback_selector_->get_output_port().get_size() == num_states);
 
@@ -63,21 +63,20 @@ PidControlledSystem<T>::PidControlledSystem(
   // Split the input into two signals one with the positions and one
   // with the velocities.
   error_demux_ = builder.template AddSystem<Demultiplexer<T>>(
-      num_states, num_positions);
+      num_states, num_effort_commands);
 
   controller_inverter_ = builder.template AddSystem<Gain<T>>(
-      -1.0, num_positions);
+      -1.0, num_effort_commands);
   error_inverter_ = builder.template AddSystem<Gain<T>>(
       -1.0, num_states);
 
   // Create an adder to sum the provided input with the output of the
   // controller.
-  system_input_ = builder.template AddSystem<Adder<T>>(
-      2, num_positions);
+  plant_input_ = builder.template AddSystem<Adder<T>>(2, num_effort_commands);
 
   builder.Connect(error_inverter_->get_output_port(),
                   state_minus_target_->get_input_port(0));
-  builder.Connect(system_->get_output_port(0),
+  builder.Connect(plant_->get_output_port(0),
                   feedback_selector_->get_input_port());
   builder.Connect(feedback_selector_->get_output_port(),
                   state_minus_target_->get_input_port(1));
@@ -95,14 +94,14 @@ PidControlledSystem<T>::PidControlledSystem(
   builder.Connect(controller_->get_output_port(0),
                   controller_inverter_->get_input_port());
   builder.Connect(controller_inverter_->get_output_port(),
-                  system_input_->get_input_port(0));
+                  plant_input_->get_input_port(0));
 
-  builder.Connect(system_input_->get_output_port(),
-                  system_->get_input_port(0));
+  builder.Connect(plant_input_->get_output_port(),
+                  plant_->get_input_port(0));
 
-  builder.ExportInput(system_input_->get_input_port(1));
+  builder.ExportInput(plant_input_->get_input_port(1));
   builder.ExportInput(error_inverter_->get_input_port());
-  builder.ExportOutput(system_->get_output_port(0));
+  builder.ExportOutput(plant_->get_output_port(0));
   builder.BuildInto(this);
 }
 
@@ -117,7 +116,7 @@ void PidControlledSystem<T>::SetDefaultState(
       Diagram<T>::GetMutableSubsystemContext(context, controller_);
   controller_->set_integral_value(
       controller_context,
-      VectorX<T>::Zero(system_->get_input_port(0).get_size()));
+      VectorX<T>::Zero(plant_->get_input_port(0).get_size()));
 }
 
 template class DRAKE_EXPORT PidControlledSystem<double>;

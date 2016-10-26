@@ -59,8 +59,12 @@ std::vector<Eigen::Triplet<typename Derived::Scalar>> SparseMatrixToTriplets(
  */
 template <typename Derived>
 void SparseMatrixToRowColumnValueVectors(
-    const Derived& matrix, std::vector<Eigen::Index>& row_indices,
+    const Derived& matrix,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    std::vector<Eigen::Index>& row_indices,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<Eigen::Index>& col_indices,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<typename Derived::Scalar>& val) {
   row_indices.clear();
   col_indices.clear();
