@@ -296,7 +296,7 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   }
 
   // Iterate over the shapes.
-  for (auto const &shape : shapes) {
+  for (auto const& shape : shapes) {
     unsigned int indexOffset = 0;
 
     // For each face in the shape.
