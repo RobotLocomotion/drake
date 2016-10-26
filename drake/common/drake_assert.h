@@ -72,24 +72,33 @@ namespace drake {
 namespace detail {
 // Abort the program with an error message.
 DRAKE_EXPORT
-#if _MSC_VER
-__declspec(noreturn)
-#else /* gcc or clang --- gcc is ok with [[noreturn]], too; clang is not. */
-__attribute__((noreturn))
-#endif
+__attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
+namespace assert {
+template <typename Condition>
+// Allows for specialization of how to bool-convert Conditions used in
+// assertions, in case they are not intrinsically convertible.  See
+// symbolic_formula.h for an example use.  This is a public interface to
+// extend; it is intended to be specialized by unusual Scalar types that
+// require special handling.
+bool EvaluateCondition(const Condition& value) {
+  return value;
+}
+}  // namespace assert
 }  // namespace drake
 
 #define DRAKE_ABORT()                                           \
   ::drake::detail::Abort(nullptr, __func__, __FILE__, __LINE__)
 
-#define DRAKE_DEMAND(condition)                                   \
+#define DRAKE_DEMAND(condition)                                         \
   do {                                                                  \
     static_assert(                                                      \
-        std::is_convertible<decltype(condition), bool>::value,          \
+        std::is_convertible<                                            \
+            decltype(::drake::assert::EvaluateCondition(condition)),    \
+            bool>::value,                                               \
         "Condition should be bool-convertible.");                       \
-    if (!(condition)) {                                                 \
+    if (!::drake::assert::EvaluateCondition(condition)) {               \
       ::drake::detail::Abort(#condition, __func__, __FILE__, __LINE__); \
     }                                                                   \
   } while (0)
@@ -108,12 +117,14 @@ void Abort(const char* condition, const char* func, const char* file, int line);
   } while (0)
 #else
 // Assertions are disabled, so just typecheck the expression.
-# define DRAKE_ASSERT(condition) static_assert(                 \
-      std::is_convertible<decltype(condition), bool>::value,    \
-      "Condition should be bool-convertible.")
+# define DRAKE_ASSERT(condition) static_assert(                  \
+    std::is_convertible<                                         \
+        decltype(::drake::assert::EvaluateCondition(condition)), \
+        bool>::value,                                            \
+    "Condition should be bool-convertible.")
 # define DRAKE_ASSERT_VOID(expression) static_assert(           \
-      std::is_convertible<decltype(expression), void>::value,   \
-      "Expression should be void.")
+    std::is_convertible<decltype(expression), void>::value,     \
+    "Expression should be void.")
 #endif
 
 #endif  // DRAKE_DOXYGEN_CXX

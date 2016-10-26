@@ -2,6 +2,8 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
@@ -317,6 +319,36 @@ TEST_F(SymbolicFormulaTest, ToString) {
   EXPECT_EQ(f_forall_.to_string(),
             "forall({x, y}. (((x + y) > 0) or ((x * y) < 5)))");
 }
+
+// Confirm that formulas compile (and pass) Drake's assert-like checks.
+TEST_F(SymbolicFormulaTest, DrakeAssert) {
+  Formula mutable_f{x_ > 0};
+
+  DRAKE_ASSERT(f1_);
+  DRAKE_ASSERT(f2_);
+  DRAKE_ASSERT(f_and_);
+  DRAKE_ASSERT(f_or_);
+  DRAKE_ASSERT(not_f_or_);
+  DRAKE_ASSERT(f_forall_);
+  DRAKE_ASSERT(mutable_f);
+
+  DRAKE_DEMAND(f1_);
+  DRAKE_DEMAND(f2_);
+  DRAKE_DEMAND(f_and_);
+  DRAKE_DEMAND(f_or_);
+  DRAKE_DEMAND(not_f_or_);
+  DRAKE_DEMAND(f_forall_);
+  DRAKE_DEMAND(mutable_f);
+
+  DRAKE_THROW_UNLESS(f1_);
+  DRAKE_THROW_UNLESS(f2_);
+  DRAKE_THROW_UNLESS(f_and_);
+  DRAKE_THROW_UNLESS(f_or_);
+  DRAKE_THROW_UNLESS(not_f_or_);
+  DRAKE_THROW_UNLESS(f_forall_);
+  DRAKE_THROW_UNLESS(mutable_f);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
