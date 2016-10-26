@@ -16,14 +16,13 @@ void RunSolver(MathematicalProgram* prog,
                const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
     std::string solver_name;
     int solver_status;
     prog->GetSolverResult(&solver_name, &solver_status);
-    if (solver_status != SolutionResult::kSolutionFound) {
-      std::cout << "Solver " << solver_name << " fails to find the solution."
-                << std::endl;
-    }
+    EXPECT_EQ(result, SolutionResult::kSolutionFound)
+        << "Solver " << solver_name << " fails to find the solution."
+        << std::endl;
+    ;
   }
 }
 /////////////////////////
