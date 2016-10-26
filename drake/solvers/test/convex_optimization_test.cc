@@ -1,12 +1,11 @@
+#include <iostream>
+
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
-#include "drake/solvers/nlopt_solver.h"
-#include "drake/solvers/snopt_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -18,6 +17,13 @@ void RunSolver(MathematicalProgram* prog,
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog);
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    std::string solver_name;
+    int solver_status;
+    prog->GetSolverResult(&solver_name, &solver_status);
+    if (solver_status != SolutionResult::kSolutionFound) {
+      std::cout << "Solver " << solver_name << " fails to find the solution."
+                << std::endl;
+    }
   }
 }
 /////////////////////////
