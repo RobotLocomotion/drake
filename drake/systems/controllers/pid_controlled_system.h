@@ -63,29 +63,29 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   void SetDefaultState(Context<T>* context) const;
 
  private:
-  System<T>* plant_;
-  PidController<T>* controller_;
+  System<T>* plant_{nullptr};
+  PidController<T>* controller_{nullptr};
 
   // Takes as input the plant's error state vector and outputs separate position
   // and velocity state error vectors. These outputs are then inputted into the
   // PID controller.
-  Demultiplexer<T>* error_demux_;
+  Demultiplexer<T>* error_demux_{nullptr};
 
   // Inverts the PID controller's output command. The output of this system is
   // inputted into plant_input_.
-  Gain<T>* controller_inverter_;
+  Gain<T>* controller_inverter_{nullptr};
 
   // Inverts the PidControlledSystem input containing the desired state of the
   // plant. The output is inputted into state_minus_target_.
-  Gain<T>* error_inverter_;
+  Gain<T>* error_inverter_{nullptr};
 
   // Subtracts the desired state of the plant from the current state of the
   // plant. The resulting vector is inputted into error_demux_.
-  Adder<T>* state_minus_target_;
+  Adder<T>* state_minus_target_{nullptr};
 
   // Adds the PID controller's output command with the provided feed forward
   // command. The resulting command is then inputted into plant_.
-  Adder<T>* plant_input_;
+  Adder<T>* plant_input_{nullptr};
 };
 
 }  // namespace systems
