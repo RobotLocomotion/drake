@@ -150,15 +150,16 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 
 /**
  * Computes angle-axis orientation from a given quaternion.
- * @param quaternion  4 x 1 non-zero vector that does not have to be normalized.
- * @return [angle; x; y; z] 4 x 1 vector containing  0 <= angle <= 2*PI  and
- * unit vector [x; y; z].  The return value is independent of normalization.
+ * @tparam Scalar The element type which must be a valid Eigen scalar.
+ * @param quaternion 4 x 1 non-zero vector that does not have to be normalized.
+ * @return Angle-axis representation of quaternion with 0 <= angle <= 2*PI
+ * and axis as a unit vector. Return is independent of quaternion normalization.
  */
 template <typename Scalar>
 Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
-    const Eigen::Quaternion<Scalar>& eigen_quaternion) {
+    const Eigen::Quaternion<Scalar>& quaternion) {
   // Use Eigen's built-in algorithm which seems robust (checked by Mitiguy/Dai).
-  Eigen::AngleAxis<Scalar> angle_axis(eigen_quaternion);
+  Eigen::AngleAxis<Scalar> angle_axis(quaternion);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // Ensure unit vector is returned and angle is between 0 and 2*PI.
@@ -168,9 +169,11 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
   DRAKE_ASSERT(angle >= 0.0 && angle <= 2 * M_PI);
   // Normalization of Vector3 has 3 multiplies, 2 additions and one sqrt.
   // Each multiply has form (1+eps)*(1+eps) = 1 + 2*eps + eps^2.
-  // Lets use 3*(2*eps) = 6 eps for multiplies * 3 (for adds) + 1 for sqrt.
+  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
+  // Use: (3 mult * 2*eps) + (3 mults + 2 adds + 1 sqrt) * 1/2 eps = 9 eps.
   const Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
-  DRAKE_ASSERT(abs(norm - 1) < 19 * epsilon);
+  using std::abs;
+  DRAKE_ASSERT(abs(norm - 1) < 9 * epsilon);
 #endif
 
   return angle_axis;
@@ -178,9 +181,10 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
 
 /**
  * (Deprecated) Computes axis-angle orientation from a given quaternion.
- * @param quaternion a 4 x 1 vector that may or may not be normalized.
- * @return [angle; x; y; z] 4 x 1 vector containing  0 <= angle <= 2*PI  and
- * unit vector [x; y; z].  The return value is independent of normalization.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+ * @param quaternion 4 x 1 vector that may or may not be normalized.
+ * @return axis-angle [x; y; z; angle] of quaternion with axis as a unit vector
+ * and  0 <= angle <= 2*PI,  Return is independent of quaternion normalization.
  * (Deprecated) Use `QuaternionToAngleAxis()` instead.
  * @see QuaternionToAngleAxis()
  */
@@ -208,8 +212,9 @@ Vector4<typename Derived::Scalar> quat2axis(
 
 /**
  * Computes the rotation matrix from quaternion representation.
- * @param quaternion A 4 x 1 unit length quaternion, @p q=[w;x;y;z]
- * @return A 3 x 3 rotation matrix
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+ * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
+ * @return 3 x 3 rotation matrix
  */
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
@@ -243,22 +248,24 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 
 /**
  * Computes SpaceXYZ Euler angles from quaternion representation.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param quaternion 4x1 unit length vector with elements [ e0, e1, e2, e3 ].
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * <br>This accurate algorithm avoids numerical round-off issues encountered by
- * <br>some algorithms when pitch angle is within 1E-6 of PI/2 or -PI/2.
+ *
+ * This accurate algorithm avoids numerical round-off issues encountered by
+ * some algorithms when pitch angle is within 1E-6 of PI/2 or -PI/2.
  *
  * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
- * <br>http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
+ * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
  *
  * <h3>Theory</h3>
  *
- * This algorithm was created September 2016 by Paul Mitiguy for TRI (Toyota).
- * <br>We believe this is a new algorithm (not previously published).
- * <br>Some of the theory/formulation of this algorithm are provided below.
+ * This algorithm was created October 2016 by Paul Mitiguy for TRI (Toyota).
+ * We believe this is a new algorithm (not previously published).
+ * Some of the theory/formulation of this algorithm are provided below.
  *
  * <pre>
- * Notation: Angles q1, q2, q3 designate roll, pitch, and yaw.
+ * Notation: Angles q1, q2, q3 designate SpaceXYZ "roll, pitch, yaw" angles.
  *           Symbols e0, e1, e2, e3 are elements of the passed-in quaternion.
  *           e0 = cos(theta/2), e1 = L1*sin(theta/2), e2 = L2*sin(theta/2), ...
  *
@@ -271,14 +278,15 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  *          those 5 elements to reduce calculations involving e0, e1, e2, e3.
  *
  * Step 2.  Realize the quaternion passed to the function can be regarded as
- *          resulting from multiplication of 4x4 and 4x1 Euler matrices to give:
+ *          resulting from multiplication of certain 4x4 and 4x1 matrices, or
+ *          multiplying three rotation quaternions (Hamilton product), to give:
  *          e0 = sin(q1/2)*sin(q2/2)*sin(q3/2) + cos(q1/2)*cos(q2/2)*cos(q3/2)
  *          e1 = sin(q3/2)*cos(q1/2)*cos(q2/2) - sin(q1/2)*sin(q2/2)*cos(q3/2)
  *          e2 = sin(q1/2)*sin(q3/2)*cos(q2/2) + sin(q2/2)*cos(q1/2)*cos(q3/2)
  *          e3 = sin(q1/2)*cos(q2/2)*cos(q3/2) - sin(q2/2)*sin(q3/2)*cos(q1/2)
  *
- *          Reference for Step 2: Advanced Dynamics and Motion Simulation,
- *                                For professional engineers and scientists.
+ *          Reference for step 2:
+ * https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
  *
  * Step 3.  Since q2 has already been calculated (in Step 1), substitute
  *          cos(q2/2) = A and sin(q2/2) = f*A.
@@ -287,19 +295,19 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  *          and  -1 <= [f = tan(q2/2)] <= 1.
  *
  * Step 4.  Referring to Step 2 form: (1+f)*e1 + (1+f)*e3 and rearrange to:
- *          sin(0.5*q1+0.5*q3) = (e1+e3)/(A*(1-f))
+ *          sin(q1/2+q3/2) = (e1+e3)/(A*(1-f))
  *
  *          Referring to Step 2 form: (1+f)*e0 - (1+f)*e2 and rearrange to:
- *          cos(0.5*q1+0.5*q3) = (e0-e2)/(A*(1-f))
+ *          cos(q1/2+q3/2) = (e0-e2)/(A*(1-f))
  *
  *          Combine the two previous results to produce:
  *          1/2*( q1 + q3 ) = atan2( e1+e3, e0-e2 )
  *
  * Step 5.  Referring to Step 2 form: (1-f)*e1 - (1-f)*e3 and rearrange to:
- *          sin(0.5*q1-0.5*q3) = -(e1-e3)/(A*(1+f))
+ *          sin(q1/5-q3/5) = -(e1-e3)/(A*(1+f))
  *
  *          Referring to Step 2 form: (1-f)*e0 + (1-f)*e2 and rearrange to:
- *          cos(0.5*q1-0.5*q3) = (e0+e2)/(A*(1+f))
+ *          cos(q1/2-q3/2) = (e0+e2)/(A*(1+f))
  *
  *          Combine the two previous results to produce:
  *          1/2*( q1 - q3 ) = atan2( e3-e1, e0+e2 )
@@ -316,8 +324,10 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  *          -pi/2 <= q2 <= pi/2
  *          -pi   <= q3 <= pi
  *
- * Textbook reference: Advanced Dynamics and Motion Simulation,
+ * Textbook reference: Mitiguy, Paul, Advanced Dynamics and Motion Simulation,
  *                     For professional engineers and scientists (2017).
+ *                     Section 8.2, Euler rotation angles, pg 60.
+ *                     Available at www.MotionGenesis.com
  * </pre>
  * @author Paul Mitiguy
 **/
@@ -335,21 +345,21 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   using std::abs;
 
   // This algorithm is specific to SpaceXYZ order, including the calculation
-  // of theta2, the formulas for xA,yA, xB,yB, and values of theta1, theta3.
+  // of q2, the formulas for xA,yA, xB,yB, and values of q1, q3.
   // It is easily modified for other SpaceIJK and BodyIJI rotation sequences.
 
-  // Calculate theta2 using lots of information in the rotation matrix.
-  // Rsum = abs( cos(theta2) ) is inherently non-negative.
-  // Rik = sin(theta2) may be negative, zero, or positive.
+  // Calculate q2 using lots of information in the rotation matrix.
+  // Rsum = abs( cos(q2) ) is inherently non-negative.
+  // Rik = sin(q2) may be negative, zero, or positive.
   const Scalar R22 = R(2, 2);
   const Scalar R21 = R(2, 1);
   const Scalar R10 = R(1, 0);
   const Scalar R00 = R(0, 0);
-  const Scalar Rsum = sqrt((R22 * R22 + R21 * R21 + R10 * R10 + R00 * R00) / 2);
+  const Scalar Rsum = sqrt((R22*R22 + R21*R21 + R10*R10 + R00*R00) / 2);
   const Scalar R20 = R(2, 0);
-  const Scalar theta2 = atan2(-R20, Rsum);
+  const Scalar q2 = atan2(-R20, Rsum);
 
-  // Calculate theta1 and theta3 from Steps 2-6 (documented above).
+  // Calculate q1 and q3 from Steps 2-6 (documented above).
   const Scalar e0 = quaternion(0), e1 = quaternion(1);
   const Scalar e2 = quaternion(2), e3 = quaternion(3);
   const Scalar yA = e1 + e3, xA = e0 - e2;
@@ -359,18 +369,18 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
   const Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
   const Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
-  Scalar theta1 = zA - zB;  // First angle in rotation sequence.
-  Scalar theta3 = zA + zB;  // Third angle in rotation sequence.
+  Scalar q1 = zA - zB;   // First angle in rotation sequence.
+  Scalar q3 = zA + zB;   // Third angle in rotation sequence.
 
-  // If necessary, modify angles theta1 and/or theta3 to be between -pi and pi.
-  if (theta1 > M_PI) theta1 = theta1 - 2 * M_PI;
-  if (theta1 < -M_PI) theta1 = theta1 + 2 * M_PI;
-  if (theta3 > M_PI) theta3 = theta3 - 2 * M_PI;
-  if (theta3 < -M_PI) theta3 = theta3 + 2 * M_PI;
+  // If necessary, modify angles q1 and/or q3 to be between -pi and pi.
+  if (q1 > M_PI) q1 = q1 - 2 * M_PI;
+  if (q1 < -M_PI) q1 = q1 + 2 * M_PI;
+  if (q3 > M_PI) q3 = q3 - 2 * M_PI;
+  if (q3 < -M_PI) q3 = q3 + 2 * M_PI;
 
-  // Return in Drake/ROS conventional SpaceXYZ (roll-pitch-yaw) order
-  // (which is equivalent to BodyZYX theta1, theta2, theta3 order).
-  Vector3<Scalar> spaceXYZ_angles(theta1, theta2, theta3);
+  // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
+  // (which is equivalent to BodyZYX q3, q2, q1 order).
+  Vector3<Scalar> spaceXYZ_angles(q1, q2, q3);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // This algorithm converts from quaternion to SpaceXYZ.
@@ -379,13 +389,14 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // these rotation matrices are within epsilon of each other.
   // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
   // = 2.22E-16) and there are two sets of two multiplies and one addition for
-  // each rotation matrix element, I decided to test with 4.23E-14 epsilon.
-  // Note: (1+eps)*(1+eps)*(1+eps) = 1 + 3*eps + 3*eps^2 + eps^3 near 1 + 3*eps,
-  // so (1+4*eps)*(1+4*eps)*(1+4*eps) is near 1 + 3*(4^3)*eps = 1 + 192*eps.
+  // each rotation matrix element, I decided to test with 20 * epsilon:
+  // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
+  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
+  // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
   const Matrix3<Scalar> rotMatrix_quaternion = quat2rotmat(quaternion);
   const Matrix3<Scalar> rotMatrix_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
   DRAKE_ASSERT(
-      rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 192 * epsilon));
+      rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 20 * epsilon));
 #endif
 
   return spaceXYZ_angles;
