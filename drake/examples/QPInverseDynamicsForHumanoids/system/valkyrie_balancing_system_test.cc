@@ -28,14 +28,13 @@ namespace qp_inverse_dynamics {
 // In this test, the Valkyrie robot is initialized to a nominal configuration
 // with zero velocities, and the qp controller is setup to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.
-// The test forward simulates the closed loop system for 2 seconds.
+// The test forward simulates the closed loop system for 4 seconds.
 // The simulation does not perform forward dynamics computation, instead, it
 // integrates the computed acceleration from the controller. This dummy
 // simulation should be replaced later with real simulation.
-// The controller should drive the position and velocity close to zero in 2
+// The controller should drive the position and velocity close to zero in 4
 // seconds.
-// GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
-void test() {
+GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   std::string urdf = GetDrakePath() + std::string(
                                           "/examples/Valkyrie/urdf/urdf/"
                                           "valkyrie_A_sim_drake_one_neck_dof_"
@@ -83,13 +82,13 @@ void test() {
   // Set plan eval's desired to the initial state.
   plan_eval->SetupDesired(*rs0);
   // Perturb the initial condition.
-  val_sim->PerturbVelocity("torsoPitchdot", 0.3, val_sim_context);
+  val_sim->PerturbVelocity("torsoPitchdot", 1, val_sim_context);
 
   // Simulation.
-  // dt = 4e-3 is picked arbitrarily to ensure the test finishes within a
-  // reasonable amount of time.
+  // dt = 3e-3 is picked arbitrarily, with Gurobi, this one control call takes
+  // roughly 3ms.
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      *diagram, 1e-3, simulator.get_mutable_context());
+      *diagram, 3e-3, simulator.get_mutable_context());
   simulator.Initialize();
   simulator.StepTo(4.0);
 
@@ -116,7 +115,3 @@ void test() {
 }  // end namespace examples
 }  // end namespace drake
 
-int main() {
-  drake::examples::qp_inverse_dynamics::test();
-  return 0;
-}
