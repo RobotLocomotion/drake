@@ -288,7 +288,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   bool update_hit = false;
   bool publish_hit = false;
 
-  // StepOnceFixedSize until desired interval has completed.
+  // StepOnceAtFixedSize until desired interval has completed.
   UpdateActions<T> update_actions;
   while (context_->get_time() <= boundary_time) {
     // Starting a new step on the trajectory.
@@ -341,7 +341,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // Attempt to integrate.
     typename IntegratorBase<T>::StepResult result =
-        integrator_->Step(next_publish_dt, next_update_dt);
+        integrator_->StepOnceAtMost(next_publish_dt, next_update_dt);
     switch (result) {
       case IntegratorBase<T>::kReachedUpdateTime:
         update_hit = true;

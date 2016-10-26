@@ -27,7 +27,7 @@ template <class T>
 class IntegratorBase {
  public:
   /**
-   * Status returned by Step().
+   * Status returned by StepOnceAtMost().
    * When a step is successful, it will return an indication of what caused it
    * to stop where it did. When unsuccessful it will throw an exception so you
    * won't see any return value. When return of control is due ONLY to reaching
@@ -173,7 +173,7 @@ class IntegratorBase {
    * An integrator must be initialized before being used. The pointer to the
    * context must be set before Initialize() is called (or an std::logic_error
    * will be thrown). If Initialize() is not called, an exception will be
-   * thrown when attempting to call Step().
+   * thrown when attempting to call StepOnceAtMost().
    * @throws std::logic_error If the context has not been set.
    */
   void Initialize() {
@@ -241,14 +241,14 @@ class IntegratorBase {
    *                          of publish_dt or update_dt is negative.
    * @return The reason for the integration step ending.
    */
-  StepResult Step(const T& publish_dt, const T& update_dt);
+  StepResult StepOnceAtMost(const T& publish_dt, const T& update_dt);
 
   /** Forget accumulated statistics. These are reset to the values they have
    * post construction or immediately after `Initialize()`.
    */
   void ResetStatistics() {
     actual_initial_step_size_taken_ = nan();
-    smallest_step_size_taken_ = nan();
+    smallest_adapted_step_size_taken_ = nan();
     largest_step_size_taken_ = nan();
     prev_step_size_ = nan();
     ideal_next_step_size_ = nan();
@@ -262,11 +262,13 @@ class IntegratorBase {
   }
 
   /**
-   * The size of the smallest step taken since the last Initialize() or
-   * ResetStatistics() call.
+   * The size of the smallest step taken *as the result of a controlled
+   * integration step adjustment* since the last Initialize() or
+   * ResetStatistics() call. This value will be NaN for integrators without
+   * error control.
    */
-  const T& get_smallest_step_size_taken() const {
-    return smallest_step_size_taken_;
+  const T& get_smallest_adapted_step_size_taken() const {
+    return smallest_adapted_step_size_taken_;
   }
 
   /**
@@ -485,43 +487,41 @@ class IntegratorBase {
 
   /** Derived classes may re-implement this method to integrate the continuous
    * portion of this system forward by a single step of no greater size than
-   * dt_max. This method is called during the Step() method. This default
-   * implementation simply calls DoStepOnceFixedSize(dt_max).
+   * dt_max. This method is called during the StepOnceAtMost() method. This
+   * default implementation simply calls DoStepOnceFixedSize(dt_max).
    * @param dt The maximum integration step to take.
    * @returns `false` if the integrator does not take the full step of dt;
    *           otherwise, should return `true`.
    */
-  virtual bool DoStep(const T& dt_max);
+  virtual bool DoStepOnceAtMost(const T &dt_max);
 
   /** Derived classes must implement this method to integrate the continuous
    * portion of this system forward exactly by a single step of size dt. This
-   * method is called during the default DoStep() method.
+   * method is called during the default DoStepOnceAtMost() method.
    * @param dt The integration step to take.
    */
   virtual void DoStepOnceFixedSize(const T &dt) = 0;
 
-  // Updates the integrator statistics.
+  /** Updates the integrator statistics, accounting for a step just taken of
+   *  size dt.
+   */
   void UpdateStatistics(const T& dt) {
     // Handle first step specially.
     if (++num_steps_taken_ == 1) {
       set_actual_initial_step_size_taken(dt);
-      set_smallest_step_size_taken(dt);
       set_largest_step_size_taken(dt);
     } else {
-      if (dt < get_smallest_step_size_taken()) set_smallest_step_size_taken(dt);
-      if (dt > get_largest_step_size_taken()) set_largest_step_size_taken(dt);
+      if (dt > get_largest_step_size_taken())
+      set_largest_step_size_taken(dt);
     }
   }
 
-  // This a workaround for an apparent bug in clang 3.8 in which
-  // defining this as a static constexpr member kNaN failed to instantiate
-  // properly for the AutoDiffXd instantiation (worked in gcc and MSVC).
-  // Restore to sanity when some later clang is current.
-  static constexpr double nan() {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-
-  ContinuousState<T>& get_mutable_error_estimate() { return *err_est_; }
+  /**
+   * Gets an error estimate of the state variables recorded by the last call
+   * to StepOnceFixedSize(). If the integrator does not support error
+   * estimation, this function will return nullptr.
+   */
+  ContinuousState<T>* get_mutable_error_estimate() { return err_est_.get(); }
 
   /// Get the system state at the start of the last integration interval.
   const VectorX<T>& get_interval_start_state() const { return xc0_save_; }
@@ -535,14 +535,22 @@ class IntegratorBase {
   }
 
  private:
+  // This a workaround for an apparent bug in clang 3.8 in which
+  // defining this as a static constexpr member kNaN failed to instantiate
+  // properly for the AutoDiffXd instantiation (worked in gcc and MSVC).
+  // Restore to sanity when some later clang is current.
+  static constexpr double nan() {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
 
   void set_actual_initial_step_size_taken(const T& dt) {
     actual_initial_step_size_taken_ = dt;
   }
 
-  void set_smallest_step_size_taken(const T& dt) {
-    smallest_step_size_taken_ = dt;
+  void set_smallest_adapted_step_size_taken(const T &dt) {
+    smallest_adapted_step_size_taken_ = dt;
   }
 
   void set_largest_step_size_taken(const T& dt) {
@@ -553,8 +561,8 @@ class IntegratorBase {
 
   // Calls DoStepOnceFixedSize and does necessary pre-initialization and
   // post-cleanup. Note that statistics are updated in the method that calls
-  // this one (Step()).
-  void StepOnceFixedSize(const T &dt) {
+  // this one (StepOnceAtMost()).
+  void StepOnceAtFixedSize(const T &dt) {
     DoStepOnceFixedSize(dt);
     prev_step_size_ = dt;
   }
@@ -584,7 +592,7 @@ class IntegratorBase {
 
   // Statistics.
   T actual_initial_step_size_taken_{nan()};
-  T smallest_step_size_taken_{nan()};
+  T smallest_adapted_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
   int64_t error_test_failures_{0};
@@ -634,9 +642,10 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
   integrator->xc0_save_ = xc->CopyToVector();
   integrator->xcdot0_save_ = derivs0->CopyToVector();
 
-  // Set the "current" step size.
+  // Set the "current" step size. Contortion in the conditional is necessary
+  // to work around initial NaN value for double types.
   T current_step_size = integrator->get_ideal_next_step_size();
-  if (std::isnan(current_step_size)) {
+  if (!(current_step_size > 0)) {
     // Integrator has not taken a step. Set the current step size to the
     // initial step size.
     current_step_size = integrator->get_initial_step_size_target();
@@ -658,7 +667,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     }
 
     // Attempt to take the step.
-    integrator->StepOnceFixedSize(current_step_size);
+    integrator->StepOnceAtFixedSize(current_step_size);
 
     //--------------------------------------------------------------------
     const double err_nrm = CalcErrorNorm(integrator);
@@ -668,15 +677,20 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     if (!step_succeeded) {
       integrator->report_error_test_failure();
 
+      // Record the adaptive step size taken. Convoluted conditional is used
+      // to compensate for the default small adapted value being NaN.
+      if (!(integrator->get_smallest_adapted_step_size_taken() >
+             current_step_size))
+        integrator->set_smallest_adapted_step_size_taken(current_step_size);
+
       // Reset the time, state, and time derivative at t0.
       integrator->get_mutable_context()->set_time(current_time);
       xc->SetFromVector(integrator->get_interval_start_state());
       derivs0->SetFromVector(integrator->get_interval_start_state_deriv());
     } else {  // Step succeeded.
       integrator->ideal_next_step_size_ = current_step_size;
-      if (std::isnan(integrator->get_actual_initial_step_size_taken()))
-        integrator->set_actual_initial_step_size_taken(
-            integrator->ideal_next_step_size_);
+      if (!(integrator->get_actual_initial_step_size_taken() > 0))
+        integrator->set_actual_initial_step_size_taken(current_step_size);
     }
   } while (!step_succeeded);
 }
@@ -806,13 +820,13 @@ bool IntegratorBase<T>::AdjustStepSize(double err,
 }
 
 template <class T>
-bool IntegratorBase<T>::DoStep(const T& max_dt) {
-  StepOnceFixedSize(max_dt);
+bool IntegratorBase<T>::DoStepOnceAtMost(const T& max_dt) {
+  StepOnceAtFixedSize(max_dt);
   return true;
 }
 
 template <class T>
-typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
+typename IntegratorBase<T>::StepResult IntegratorBase<T>::StepOnceAtMost(
     const T& publish_dt, const T& update_dt) {
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
@@ -829,7 +843,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::Step(
   // Set dt and take the step.
   const T& dt = *stop_dts[0];
   if (dt < 0.0) throw std::logic_error("Negative dt.");
-  bool result = DoStep(dt);
+  bool result = DoStepOnceAtMost(dt);
 
   // Update generic statistics.
   UpdateStatistics(dt);

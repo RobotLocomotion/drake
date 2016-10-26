@@ -1,7 +1,7 @@
 # Source files used to build drakeSystemAnalysis
 set(sources
-  simulator.cc
   runge_kutta3_integrator.cc
+  simulator.cc
 )
 
 # Headers that should be installed with Drake so that they

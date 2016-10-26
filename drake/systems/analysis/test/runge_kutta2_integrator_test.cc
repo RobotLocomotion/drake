@@ -97,11 +97,11 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // StepOnceFixedSize for 1 second.
+  // StepOnceAtFixedSize for 1 second.
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
-    integrator.Step(INF, INF);
+    integrator.StepOnceAtMost(INF, INF);
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
@@ -116,7 +116,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }

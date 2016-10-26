@@ -102,9 +102,10 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // StepOnceFixedSize for 1 second.
+  // StepOnceAtFixedSize for 1 second.
   const double T_FINAL = 1.0;
-  for (double t = 0.0; t < T_FINAL; t += DT) integrator.Step(DT, DT);
+  for (double t = 0.0; t < T_FINAL; t += DT)
+    integrator.StepOnceAtMost(DT, DT);
 
   // Get the final position.
   const double kXFinal =
@@ -115,7 +116,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
               kXFinal, 1e-5);
 }
 
-// StepOnceFixedSize a purely continuous system with no sampling using error control.
+// Integrate a purely continuous system with no sampling using error control.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
 // where omega = sqrt(k/m)
@@ -155,11 +156,11 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // StepOnceFixedSize for 1 second.
+  // StepOnceAtFixedSize for 1 second.
   const double T_FINAL = 1.0;
   double t_remaining = T_FINAL - context->get_time();
   do {
-    integrator.Step(t_remaining, t_remaining);
+    integrator.StepOnceAtMost(t_remaining, t_remaining);
     t_remaining = T_FINAL - context->get_time();
   } while (t_remaining > 0.0);
 
@@ -174,7 +175,7 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_smallest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_NE(integrator.get_error_estimate(), nullptr);
 }

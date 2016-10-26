@@ -20,7 +20,7 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 }
 
 template <class T>
-bool RungeKutta3Integrator<T>::DoStep(const T& dt_max) {
+bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
   // TODO(edrumwri): move derivative evaluation at t0 to the simulator where
   // it can be used for efficient guard function zero finding.
   auto& system = IntegratorBase<T>::get_system();
@@ -70,17 +70,21 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   xc->PlusEqScaled({{dt * ONE_SIXTH, xcdot0}, {4.0 * dt * ONE_SIXTH, xcdot1},
                     {dt * ONE_SIXTH, xcdot2}});
 
+  // If the state of the system has changed, the error estimate will no
+  // longer be sized correctly. Verify that the error estimate is the
+  // correct size.
+  DRAKE_DEMAND(IntegratorBase<T>::get_error_estimate()->size() == xc->size());
+
   // Calculate the error estimate using an Eigen vector then copy it to the
   // continuous state vector, where the various state components can be
   // analyzed.
-  auto& err_est = IntegratorBase<T>::get_mutable_error_estimate();
   err_est_vec_ = -IntegratorBase<T>::get_interval_start_state();
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
   const int sz = err_est_vec_.size();
   for (int i=0; i< sz; ++i)                         // Eigen does not currently
     err_est_vec_[i] = std::abs(err_est_vec_[i]);    // support iterators.
-  err_est.SetFromVector(err_est_vec_);
+  IntegratorBase<T>::get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 }
 
 }  // systems
