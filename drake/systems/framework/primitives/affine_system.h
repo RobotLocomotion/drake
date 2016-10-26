@@ -37,11 +37,11 @@ class AffineSystem : public LeafSystem<T> {
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
   AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
-                    const Eigen::Ref<const MatrixX<T>>& B,
-                    const Eigen::Ref<const VectorX<T>>& xDot0,
-                    const Eigen::Ref<const MatrixX<T>>& C,
-                    const Eigen::Ref<const MatrixX<T>>& D,
-                    const Eigen::Ref<const VectorX<T>>& y0);
+               const Eigen::Ref<const MatrixX<T>>& B,
+               const Eigen::Ref<const VectorX<T>>& xDot0,
+               const Eigen::Ref<const MatrixX<T>>& C,
+               const Eigen::Ref<const MatrixX<T>>& D,
+               const Eigen::Ref<const VectorX<T>>& y0);
 
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is zero.
@@ -70,9 +70,9 @@ class AffineSystem : public LeafSystem<T> {
  private:
   const MatrixX<T> A_;
   const MatrixX<T> B_;
+  const VectorX<T> XDot0_;
   const MatrixX<T> C_;
   const MatrixX<T> D_;
-  const VectorX<T> XDot0_;
   const VectorX<T> Y0_;
   const int kNumInputs;
   const int kNumOutputs;

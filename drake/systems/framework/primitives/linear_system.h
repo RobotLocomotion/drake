@@ -1,4 +1,4 @@
-# pragma once
+#pragma once
 
 #include "drake/systems/framework/primitives/affine_system.h"
 
@@ -10,7 +10,7 @@ namespace systems {
 /// initial system output `y0` are both zero. Given an input signal `u` and a
 /// state `x` the output of this sytem 'y' is:
 /// @f[
-///   \dot{x} = Ax + Bu
+///   \dot{x} = Ax + Bu \newline
 ///   y = Cx + Du
 /// @f]
 ///
@@ -23,13 +23,13 @@ namespace systems {
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
-template<typename T>
-class LinearSystem: public AffineSystem<T> {
+template <typename T>
+class LinearSystem : public AffineSystem<T> {
  public:
-  LinearSystem(const Eigen::Ref<const MatrixX<T>> &A,
-                    const Eigen::Ref<const MatrixX<T>> &B,
-                    const Eigen::Ref<const MatrixX<T>> &C,
-                    const Eigen::Ref<const MatrixX<T>> &D);
+  LinearSystem(const Eigen::Ref<const MatrixX<T>>& A,
+               const Eigen::Ref<const MatrixX<T>>& B,
+               const Eigen::Ref<const MatrixX<T>>& C,
+               const Eigen::Ref<const MatrixX<T>>& D);
 };
 
 }  // namespace systems
