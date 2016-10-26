@@ -567,7 +567,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     net_wrench.segment<3>(0) +=
         (ref_point - rs.com()).cross(contact_wrench.segment<3>(3));
   }
-  DRAKE_ASSERT((net_wrench - Ld).isZero(Eigen::NumTraits<double>::epsilon()));
+  if (!(net_wrench - Ld).isZero(1e-5)) {
+    std::cerr << "change in centroidal momentum != net external wrench\n";
+    return -1;
+  }
 
   if (!output->is_valid(rs.robot()->get_num_velocities(),
                         rs.robot()->actuators.size(), rs.robot()->getMass())) {
