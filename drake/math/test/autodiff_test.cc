@@ -16,7 +16,7 @@ namespace drake {
 namespace math {
 namespace {
 
-class AutodiffTest : public ::testing::Test {
+class AutodiffMatrixConversionTest : public ::testing::Test {
  protected:
   typedef Eigen::AutoDiffScalar<VectorXd> Scalar;
 
@@ -54,7 +54,7 @@ class AutodiffTest : public ::testing::Test {
 };
 
 // Tests that ToValueMatrix extracts the values from the autodiff.
-TEST_F(AutodiffTest, ToValueMatrix) {
+TEST_F(AutodiffMatrixConversionTest, ToValueMatrix) {
   VectorXd values = autoDiffToValueMatrix(vec_);
 
   VectorXd expected(2);
@@ -66,7 +66,7 @@ TEST_F(AutodiffTest, ToValueMatrix) {
 }
 
 // Tests that ToGradientMatrix extracts the gradients from the autodiff.
-TEST_F(AutodiffTest, ToGradientMatrix) {
+TEST_F(AutodiffMatrixConversionTest, ToGradientMatrix) {
   MatrixXd gradients = autoDiffToGradientMatrix(vec_);
 
   MatrixXd expected(2, 2);
