@@ -10,15 +10,15 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
- *This is used to compute target task space acceleration, which is the input
- *to the inverse dynamics controller.
- *The target acceleration is computed by:
- *acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
- *where x is pose, xd is velocity, and xdd is acceleration.
- *Variables with superscript * are the set points, and Kp and Kd are the
- *position and velocity gains.
- *The first terms 3 are angular accelerations, and the last 3 are linear
- *accelerations.
+ * This is used to compute target task space acceleration, which is the input
+ * to the inverse dynamics controller.
+ * The target acceleration is computed by:
+ * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
+ * where x is pose, xd is velocity, and xdd is acceleration.
+ * Variables with superscript * are the set points, and Kp and Kd are the
+ * position and velocity gains.
+ * The first terms 3 are angular accelerations, and the last 3 are linear
+ * accelerations.
  */
 template <typename Scalar>
 class CartesianSetpoint {
@@ -135,16 +135,16 @@ class CartesianSetpoint {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  /// Desired pose
+  // Desired pose
   Eigen::Transform<Scalar, 3, Eigen::Isometry> pose_d_;
-  /// Desired velocity
+  // Desired velocity
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vel_d_;
-  /// Desired acceleration
+  // Desired acceleration
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc_d_;
 
-  /// Position gains
+  // Position gains
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kp_;
-  /// Velocity gains
+  // Velocity gains
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kd_;
 };
 
@@ -231,7 +231,7 @@ class VectorSetpoint {
           "Setpoints and states have different dimensions.");
     }
     Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc(pos_d_.size());
-    for (int i = 0; i < size(); i++)
+    for (int i = 0; i < size(); ++i)
       acc[i] = ComputeTargetAcceleration(i, pos[i], vel[i]);
     return acc;
   }
@@ -284,16 +284,16 @@ class VectorSetpoint {
   inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_Kd() { return Kd_; }
 
  private:
-  /// Desired position
+  // Desired position
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> pos_d_;
-  /// Desired velocity
+  // Desired velocity
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vel_d_;
-  /// Desired acceleration
+  // Desired acceleration
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc_d_;
 
-  /// Position gains
+  // Position gains
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kp_;
-  /// Velocity gains
+  // Velocity gains
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kd_;
 };
 

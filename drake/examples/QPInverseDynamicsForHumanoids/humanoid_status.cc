@@ -39,7 +39,7 @@ void HumanoidStatus::Update() {
     body_of_interest.Update(*robot_, cache_);
 
   // ft sensor
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; ++i) {
     // Make H1 = H_sensor_to_sole.
     // Assuming the sole frame has the same orientation as the foot frame.
     Eigen::Isometry3d H1;
@@ -65,7 +65,7 @@ void HumanoidStatus::Update() {
   Eigen::Vector2d cop_w[2];
   double Fz[2] = {foot_wrench_in_world_frame_[Side::LEFT][5],
                   foot_wrench_in_world_frame_[Side::RIGHT][5]};
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; ++i) {
     // Ignore CoP computation if normal force is small
     if (fabs(foot_wrench_raw_[i][5]) < 1) {
       cop_in_sole_frame_[i][0] = 0;
