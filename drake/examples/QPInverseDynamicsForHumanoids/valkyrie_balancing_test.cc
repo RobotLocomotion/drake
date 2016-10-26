@@ -52,18 +52,18 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
 
   // Get an example controller that tracks a fixed point.
   input = MakeExampleQPInput(robot);
-  VectorSetpoint joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
-                            Eigen::VectorXd::Zero(q.size()),
-                            Eigen::VectorXd::Constant(q.size(), 20),
-                            Eigen::VectorXd::Constant(q.size(), 8));
-  CartesianSetpoint pelvis_PDff(
+  VectorSetpoint<double> joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
+                                    Eigen::VectorXd::Zero(q.size()),
+                                    Eigen::VectorXd::Constant(q.size(), 20),
+                                    Eigen::VectorXd::Constant(q.size(), 8));
+  CartesianSetpoint<double> pelvis_PDff(
       robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
       Eigen::Vector6d::Constant(8));
-  CartesianSetpoint torso_PDff(robot_status.torso().pose(),
-                               Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
-                               Eigen::Vector6d::Constant(20),
-                               Eigen::Vector6d::Constant(8));
+  CartesianSetpoint<double> torso_PDff(
+      robot_status.torso().pose(), Eigen::Vector6d::Zero(),
+      Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
+      Eigen::Vector6d::Constant(8));
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoPitch")] += 1;

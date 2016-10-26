@@ -95,16 +95,16 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    */
   void SetupDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
-    pelvis_PDff_ =
-        CartesianSetpoint(robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
-                          Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
-    torso_PDff_ =
-        CartesianSetpoint(robot_status.torso().pose(), Eigen::Vector6d::Zero(),
-                          Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
+    pelvis_PDff_ = CartesianSetpoint<double>(
+        robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
+        Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
+    torso_PDff_ = CartesianSetpoint<double>(
+        robot_status.torso().pose(), Eigen::Vector6d::Zero(),
+        Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
     int dim = robot_status.position().size();
-    joint_PDff_ =
-        VectorSetpoint(robot_status.position(), Eigen::VectorXd::Zero(dim),
-                       Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
+    joint_PDff_ = VectorSetpoint<double>(
+        robot_status.position(), Eigen::VectorXd::Zero(dim),
+        Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
   }
 
   /**
@@ -129,9 +129,9 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   int output_port_index_qp_input_;
 
   // Gains and setpoints.
-  VectorSetpoint joint_PDff_;
-  CartesianSetpoint pelvis_PDff_;
-  CartesianSetpoint torso_PDff_;
+  VectorSetpoint<double> joint_PDff_;
+  CartesianSetpoint<double> pelvis_PDff_;
+  CartesianSetpoint<double> torso_PDff_;
 
   Eigen::Vector3d desired_com_;
   Eigen::Vector3d Kp_com_;

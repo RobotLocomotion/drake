@@ -6,6 +6,9 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * Helper function to make an example QPInput.
+ */
 QPInput MakeExampleQPInput(const RigidBodyTree& robot);
 
 }  // namespace qp_inverse_dynamics
