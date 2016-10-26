@@ -49,7 +49,7 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
  *
  * @param msg Lcm message
  * @param q_name_to_index A map from coordinate names to index, the joint_name
- *in \param msg is used for lookup.
+ * in \param msg is used for lookup.
  * @param time Pointer to decoded time
  * @param q Pointer to decoded generalized position
  * @param qd Pointer to decoded generalized velocity

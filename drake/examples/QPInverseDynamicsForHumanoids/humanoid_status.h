@@ -46,21 +46,21 @@ class BodyOfInterest {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  /// Name of the BodyOfInterest
+  // Name of the BodyOfInterest
   std::string name_;
-  /// The link which this BOI is attached to
+  // The link which this BOI is attached to
   const RigidBody* body_;
-  /// Offset is specified in the body frame.
+  // Offset is specified in the body frame.
   Eigen::Vector3d offset_;
 
   Eigen::Isometry3d pose_;
-  /// This is the task space velocity, or twist of a frame that has the same
-  /// orientation as the world frame, but located at the origin of the body
-  /// frame.
+  // This is the task space velocity, or twist of a frame that has the same
+  // orientation as the world frame, but located at the origin of the body
+  // frame.
   Eigen::Vector6d vel_;
-  /// Task space Jacobian, xdot = J * v
+  // Task space Jacobian, xdot = J * v
   Eigen::MatrixXd J_;
-  /// Task space Jd * v
+  // Task space Jd * v
   Eigen::Vector6d Jdot_times_v_;
 };
 
@@ -113,14 +113,14 @@ class HumanoidStatus {
     }
 
     name_to_position_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_->get_num_positions(); i++) {
+    for (int i = 0; i < robot_->get_num_positions(); ++i) {
       name_to_position_index_[robot_->get_position_name(i)] = i;
     }
     name_to_velocity_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_->get_num_velocities(); i++) {
+    for (int i = 0; i < robot_->get_num_velocities(); ++i) {
       name_to_velocity_index_[robot_->get_velocity_name(i)] = i;
     }
-    for (int i = 0; i < static_cast<int>(robot_->actuators.size()); i++) {
+    for (int i = 0; i < static_cast<int>(robot_->actuators.size()); ++i) {
       actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
     }
 
@@ -331,18 +331,18 @@ class HumanoidStatus {
   const RigidBodyTree* robot_;
   KinematicsCache<double> cache_;
 
-  /// Nominal position for the robot.
-  /// TODO(siyuan.feng@tri.global): should read this from the model file
-  /// eventually.
+  // Nominal position for the robot.
+  // TODO(siyuan.feng@tri.global): should read this from the model file
+  // eventually.
   Eigen::VectorXd nominal_position_;
 
-  /// Map body name to its index.
+  // Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
-  /// Map position name to its index.
+  // Map position name to its index.
   std::unordered_map<std::string, int> name_to_position_index_;
-  /// Map velocity name to its index.
+  // Map velocity name to its index.
   std::unordered_map<std::string, int> name_to_velocity_index_;
-  /// Map actuator name to its index.
+  // Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
 
   std::set<std::string> leg_joint_names_;
@@ -367,8 +367,8 @@ class HumanoidStatus {
   Eigen::MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
   Eigen::Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
 
-  /// Centroidal momentum = [angular; linear] momentum.
-  /// [angular; linear] = centroidal_momentum_matrix_ * v
+  // Centroidal momentum = [angular; linear] momentum.
+  // [angular; linear] = centroidal_momentum_matrix_ * v
   Eigen::MatrixXd centroidal_momentum_matrix_;
   Eigen::Vector6d centroidal_momentum_matrix_dot_times_v_;
   Eigen::Vector6d centroidal_momentum_;
@@ -376,20 +376,20 @@ class HumanoidStatus {
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
 
-  /// Center of pressure
+  // Center of pressure
   Eigen::Vector2d cop_;
-  /// Individual center of pressure in foot frame
+  // Individual center of pressure in foot frame
   Eigen::Vector2d cop_in_sole_frame_[2];
 
-  /// Wrench expressed in a frame that is aligned with the world frame, and
-  /// is located at the origin of the foot frame.
+  // Wrench expressed in a frame that is aligned with the world frame, and
+  // is located at the origin of the foot frame.
   Eigen::Vector6d foot_wrench_in_world_frame_[2];
 
-  /// Wrench expressed in a frame that is aligned with the foot frame, and
-  /// is offsetted from the foot frame by kFootToSoleOffset.
+  // Wrench expressed in a frame that is aligned with the foot frame, and
+  // is offsetted from the foot frame by kFootToSoleOffset.
   Eigen::Vector6d foot_wrench_in_sole_frame_[2];
 
-  /// Untransformed raw measurement from the foot force torque sensor
+  // Untransformed raw measurement from the foot force torque sensor
   Eigen::Vector6d foot_wrench_raw_[2];
 };
 

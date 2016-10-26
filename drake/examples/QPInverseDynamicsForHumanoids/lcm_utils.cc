@@ -30,7 +30,7 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
   msg->joint_effort.resize(msg->num_joints);
 
   // Skip the first 6 floating base
-  for (int i = 6; i < q.size(); i++) {
+  for (int i = 6; i < q.size(); ++i) {
     msg->joint_position[i - 6] = static_cast<float>(q[i]);
     msg->joint_velocity[i - 6] = static_cast<float>(qd[i]);
     msg->joint_effort[i - 6] = static_cast<float>(joint_torque[i - 6]);
@@ -43,7 +43,7 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
   msg->force_torque.r_foot_force_z = static_cast<float>(r_foot_wrench[5]);
   msg->force_torque.r_foot_torque_x = static_cast<float>(r_foot_wrench[0]);
   msg->force_torque.r_foot_torque_y = static_cast<float>(r_foot_wrench[1]);
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     msg->force_torque.l_hand_force[i] = 0;
     msg->force_torque.l_hand_torque[i] = 0;
     msg->force_torque.r_hand_force[i] = 0;
@@ -94,7 +94,7 @@ void DecodeRobotStateLcmMsg(
   std::unordered_map<std::string, int>::const_iterator it;
 
   // Set joint state.
-  for (int i = 0; i < msg.num_joints; i++) {
+  for (int i = 0; i < msg.num_joints; ++i) {
     it = q_name_to_index.find(msg.joint_name.at(i));
     // It's possible that the lcm message have more joints than what we care
     // about,

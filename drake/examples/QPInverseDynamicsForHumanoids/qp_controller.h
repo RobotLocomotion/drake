@@ -68,8 +68,8 @@ class ContactInformation {
     }
     t2 = t1.cross(normal_);
 
-    for (int i = 0; i < static_cast<int>(contact_points_.size()); i++) {
-      for (int k = 0; k < num_basis_per_contact_point_; k++) {
+    for (int i = 0; i < static_cast<int>(contact_points_.size()); ++i) {
+      for (int k = 0; k < num_basis_per_contact_point_; ++k) {
         theta = k * 2 * M_PI / num_basis_per_contact_point_;
         tangent_vec = cos(theta) * t1 + sin(theta) * t2;
         base = (normal_ + mu_ * tangent_vec).normalized();
@@ -101,7 +101,7 @@ class ContactInformation {
     *reference_point =
         robot.transformPoints(cache, offset, body_->get_body_index(), 0);
     contact_points->resize(contact_points_.size());
-    for (size_t i = 0; i < contact_points_.size(); i++) {
+    for (size_t i = 0; i < contact_points_.size(); ++i) {
       (*contact_points)[i] = robot.transformPoints(cache, contact_points_[i],
                                                    body_->get_body_index(), 0);
     }
@@ -148,7 +148,7 @@ class ContactInformation {
   Eigen::MatrixXd ComputeJacobianAtContactPoints(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
     Eigen::MatrixXd J(3 * contact_points_.size(), robot.get_num_velocities());
-    for (size_t i = 0; i < contact_points_.size(); i++) {
+    for (size_t i = 0; i < contact_points_.size(); ++i) {
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
           GetTaskSpaceJacobian(robot, cache, *body_, contact_points_[i])
               .bottomRows<3>();
@@ -167,7 +167,7 @@ class ContactInformation {
   Eigen::VectorXd ComputeJacobianDotTimesVAtContactPoints(
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
     Eigen::VectorXd Jdv(3 * contact_points_.size());
-    for (size_t i = 0; i < contact_points_.size(); i++) {
+    for (size_t i = 0; i < contact_points_.size(); ++i) {
       Jdv.segment<3>(3 * i) =
           GetTaskSpaceJacobianDotTimesV(robot, cache, *body_,
                                         contact_points_[i]).bottomRows<3>();
@@ -215,26 +215,25 @@ class ContactInformation {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBody* body_;  ///< Link in contact
-  /// Offsets of the contact point specified in the body frame.
+  const RigidBody* body_;
+  // Offsets of the contact point specified in the body frame.
   std::vector<Eigen::Vector3d> contact_points_;
 
   // TODO(siyuan.feng@tri.global): normal is currently assumed to be the same
   // for all the contact points.
-  /// Contact normal specified in the body frame.
+  // Contact normal specified in the body frame.
   Eigen::Vector3d normal_;
 
-  /// Number of basis vectors per contact point
   int num_basis_per_contact_point_;
 
-  /// Friction coeff
+  // Friction coeff
   double mu_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
                                 const ContactInformation& contact) {
   out << "contact: " << contact.name() << std::endl;
-  for (size_t j = 0; j < contact.contact_points().size(); j++)
+  for (size_t j = 0; j < contact.contact_points().size(); ++j)
     out << contact.contact_points()[j].transpose() << std::endl;
   out << "normal: " << contact.normal().transpose() << std::endl;
   out << "mu: " << contact.mu() << std::endl;
@@ -405,7 +404,7 @@ class DesiredBodyMotion {
 
 inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredBodyMotion& input) {
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 6; ++i) {
     out << "desired " << input.name() << input.get_row_name(i)
         << " acc: " << input.accelerations()[i]
         << " weight: " << input.weights()[i] << std::endl;
@@ -458,7 +457,7 @@ class DesiredJointMotions {
 
 inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredJointMotions& input) {
-  for (int i = 0; i < input.size(); i++) {
+  for (int i = 0; i < input.size(); ++i) {
     out << "desired " << input.name(i) << " acc: " << input.accelerations()[i]
         << " weight: " << input.weights()[i] << std::endl;
   }
@@ -513,7 +512,7 @@ class DesiredCentroidalMomentumChange {
 
 inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredCentroidalMomentumChange& input) {
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 6; ++i) {
     out << "desired " << input.get_row_name(i)
         << " change: " << input.momentum_dot()[i]
         << " weight: " << input.weights()[i] << std::endl;
@@ -529,7 +528,7 @@ class QPInput {
   explicit QPInput(const RigidBodyTree& r) {
     std::vector<std::string> names(r.get_num_velocities());
     // strip out the "dot" part from name
-    for (int i = 0; i < r.get_num_velocities(); i++)
+    for (int i = 0; i < r.get_num_velocities(); ++i)
       names[i] =
           r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
     desired_joint_motions_ = DesiredJointMotions(names);
@@ -544,7 +543,7 @@ class QPInput {
     int valid = num_vd == desired_joint_motions_.size();
     valid &= desired_joint_motions_.is_valid(num_vd);
     for (auto it = desired_body_motions_.begin();
-         it != desired_body_motions_.end(); it++) {
+         it != desired_body_motions_.end(); ++it) {
       valid &= it->second.is_valid();
     }
 
@@ -623,7 +622,7 @@ class QPOutput {
  public:
   explicit QPOutput(const RigidBodyTree& r) {
     coord_names_.resize(r.get_num_velocities());
-    for (int i = 0; i < r.get_num_velocities(); i++) {
+    for (int i = 0; i < r.get_num_velocities(); ++i) {
       // strip out the "dot" part from name
       coord_names_[i] =
           r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);

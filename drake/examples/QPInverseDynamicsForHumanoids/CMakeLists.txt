@@ -1,15 +1,15 @@
 set(qp_inverse_dynamics_controller_src
-  qp_controller.cc
-  rigid_body_tree_utils.cc
   humanoid_status.cc
-  example_qp_input_for_valkyrie.cc)
-set_source_files_properties(${qp_inverse_dynamics_controller_src} PROPERTIES COMPILE_FLAGS -g)
+  example_qp_input_for_valkyrie.cc
+  qp_controller.cc
+  rigid_body_tree_utils.cc)
+set_source_files_properties(${qp_inverse_dynamics_controller_src}
+  PROPERTIES COMPILE_FLAGS -g)
 
-add_library(drakeQPController
-  ${qp_inverse_dynamics_controller_src})
+add_library(drakeQPController ${qp_inverse_dynamics_controller_src})
 target_link_libraries(drakeQPController
-  drakeRBSystem
   drakeOptimization
+  drakeRBSystem
   drakeSide)
 
 drake_find_package(gurobi PKG_CONFIG)
@@ -22,7 +22,9 @@ endif()
 
 if(lcm_FOUND)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
-  target_link_libraries(drakeQPControllerLcmTranslator drakeLCMTypes lcmtypes_bot2-core-cpp)
+  target_link_libraries(drakeQPControllerLcmTranslator
+    drakeLCMTypes
+    lcmtypes_bot2-core-cpp)
 endif()
 
 add_subdirectory(system)

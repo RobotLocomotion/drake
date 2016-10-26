@@ -50,7 +50,7 @@ class ValkyrieSystem : public LeafSystem<double> {
     set_name("Dummy Valkyrie System");
 
     joint_names_.resize(robot_->get_num_positions() - 6);
-    for (int i = 6; i < robot_->get_num_positions(); i++) {
+    for (int i = 6; i < robot_->get_num_positions(); ++i) {
       joint_names_[i - 6] = robot_->get_position_name(i);
     }
   }
@@ -96,10 +96,10 @@ class ValkyrieSystem : public LeafSystem<double> {
     // Set state output.
     BasicVector<double>* output_x =
         output->GetMutableVectorData(output_port_index_raw_state_);
-    for (int i = 0; i < robot_->get_num_positions(); i++) {
+    for (int i = 0; i < robot_->get_num_positions(); ++i) {
       output_x->SetAtIndex(i, q[i]);
     }
-    for (int i = 0; i < robot_->get_num_velocities(); i++) {
+    for (int i = 0; i < robot_->get_num_velocities(); ++i) {
       output_x->SetAtIndex(i + robot_->get_num_positions(), v[i]);
     }
   }
@@ -124,11 +124,11 @@ class ValkyrieSystem : public LeafSystem<double> {
       throw std::runtime_error("time deriv dimension mismatch.");
     }
 
-    for (int i = 0; i < new_v->size(); i++) {
+    for (int i = 0; i < new_v->size(); ++i) {
       new_v->SetAtIndex(i, state_v.GetAtIndex(i));
     }
 
-    for (int i = 0; i < new_vd->size(); i++) {
+    for (int i = 0; i < new_vd->size(); ++i) {
       new_vd->SetAtIndex(i, vd(i));
     }
   }
@@ -152,7 +152,7 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     std::unique_ptr<HumanoidStatus> rs(new HumanoidStatus(robot_));
     q->SetFromVector(rs->GetNominalPosition());
-    for (int i = 0; i < v->size(); i++) {
+    for (int i = 0; i < v->size(); ++i) {
       v->SetAtIndex(i, 0.);
     }
 

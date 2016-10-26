@@ -17,7 +17,7 @@ static void FindCostAndEqConstraintIndices(const Eigen::VectorXd& weights,
                                            std::list<int>* eq_idx) {
   cost_idx->clear();
   eq_idx->clear();
-  for (int i = 0; i < weights.size(); i++) {
+  for (int i = 0; i < weights.size(); ++i) {
     if (weights[i] > 0)
       cost_idx->push_back(i);
     else if (weights[i] < 0)
@@ -52,7 +52,7 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   std::vector<std::list<int>> body_motion_row_idx_as_eq(
       all_body_motions.size());
   int ctr = 0;
-  for (auto it = all_body_motions.begin(); it != all_body_motions.end(); it++) {
+  for (auto it = all_body_motions.begin(); it != all_body_motions.end(); ++it) {
     const DesiredBodyMotion& body_motion = it->second;
     FindCostAndEqConstraintIndices(body_motion.weights(),
                                    &body_motion_row_idx_as_cost[ctr],
@@ -348,7 +348,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
       rs.robot()->B.bottomRows(num_torque_).transpose() * torque_linear_;
   inequality_upper_bound_ = inequality_lower_bound_ =
       -rs.robot()->B.bottomRows(num_torque_).transpose() * torque_constant_;
-  for (size_t i = 0; i < rs.robot()->actuators.size(); i++) {
+  for (size_t i = 0; i < rs.robot()->actuators.size(); ++i) {
     inequality_lower_bound_[i] += rs.robot()->actuators[i].effort_limit_min_;
     inequality_upper_bound_[i] += rs.robot()->actuators[i].effort_limit_max_;
   }
@@ -376,7 +376,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Body motion
   int contact_ctr = 0, cost_ctr = 0, eq_ctr = 0;
   for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); it++) {
+       it != input.desired_body_motions().end(); ++it) {
     const DesiredBodyMotion& body_motion_d = it->second;
     body_J_[contact_ctr] =
         GetTaskSpaceJacobian(*rs.robot(), rs.cache(), *body_motion_d.body(),
@@ -477,7 +477,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (auto& ineq_b : ineqs) {
     std::shared_ptr<solvers::LinearConstraint> ineq = ineq_b.constraint();
     tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
-    for (int i = 0; i < tmp_vec.size(); i++) {
+    for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] -
                                      1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] +
@@ -537,7 +537,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   output->mutable_body_accelerations().clear();
   ctr = 0;
   for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); it++) {
+       it != input.desired_body_motions().end(); ++it) {
     const DesiredBodyMotion& body_motion_d = it->second;
     BodyAcceleration body_acceleration(body_motion_d.body());
     // Compute accelerations.
@@ -587,7 +587,7 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << input.desired_centroidal_momentum_dot();
 
   for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); it++)
+       it != input.desired_body_motions().end(); ++it)
     out << it->second;
 
   out << input.desired_joint_motions();
@@ -603,7 +603,7 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
   out << "===============================================\n";
   out << "QPOutput:\n";
   out << "accelerations:\n";
-  for (int i = 0; i < output.vd().size(); i++) {
+  for (int i = 0; i < output.vd().size(); ++i) {
     out << output.coord_name(i) << ": " << output.vd()[i] << std::endl;
   }
 
@@ -621,7 +621,7 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
         << " wrench: " << contact_result.equivalent_wrench().transpose()
         << std::endl;
     out << "point forces:\n";
-    for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
+    for (size_t j = 0; j < contact_result.point_forces().size(); ++j) {
       out << contact_result.point_force(j).transpose() << " at "
           << contact_result.contact_point(j).transpose() << std::endl;
     }
@@ -629,7 +629,7 @@ std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
 
   out << "===============================================\n";
   out << "torque:\n";
-  for (int i = 0; i < output.joint_torque().size(); i++) {
+  for (int i = 0; i < output.joint_torque().size(); ++i) {
     out << output.coord_name(i + 6) << ": " << output.joint_torque()[i]
         << std::endl;
   }
