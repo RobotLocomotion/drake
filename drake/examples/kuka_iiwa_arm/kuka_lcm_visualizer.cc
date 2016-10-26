@@ -1,7 +1,7 @@
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
-#include "drake/systems/LCMSystem.h"
+#include "drake/system1/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 

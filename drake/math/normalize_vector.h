@@ -21,7 +21,9 @@ derivative.
 (D x / D y above means partial derivative of x with respect to y.) */
 template <typename Derived>
 void NormalizeVector(
-    const Eigen::MatrixBase<Derived>& x, typename Derived::PlainObject& x_norm,
+    const Eigen::MatrixBase<Derived>& x,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    typename Derived::PlainObject& x_norm,
     typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,
                                    1>::type* dx_norm = nullptr,
     typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,

@@ -3,7 +3,7 @@
 #include "KinematicsCache.h"
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"

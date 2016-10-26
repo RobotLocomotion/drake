@@ -22,6 +22,7 @@ Unreleased: changes on master, not yet released
 
 [//]: # "Altered functionality or APIs."
 ### Changed
+ - [#3902][] Moved all System 1.0 code to drake/system1/ subdirectory.
  - [#3253][] Moved all MATLAB code to drake/matlab/ subdirectory.
  - [#3605][] Deprecated `KinematicsCache::getNumPositions()` and `KinematicsCache::getNumVelocities()` in favor of `KinematicsCache::get_num_positions()` and `KinematicsCache::get_num_velocities()`.
  - [#3566][] Replaced `number_of_foo()` with `get_num_foo()`.
@@ -146,3 +147,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3276]: https://github.com/RobotLocomotion/drake/issues/3276
 [#3566]: https://github.com/RobotLocomotion/drake/issues/3276
 [#3685]: https://github.com/RobotLocomotion/drake/issues/3685
+[#3902]: https://github.com/RobotLocomotion/drake/issues/3902

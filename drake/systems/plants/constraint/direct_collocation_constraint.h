@@ -9,7 +9,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 
 namespace drake {
 namespace systems {

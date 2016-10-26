@@ -85,7 +85,8 @@ class DRAKE_EXPORT MosekWrapper {
 
   /** Optimizes variables in given linear constraints, works with either
   of the two previous object declarations.  **/
-  static SolutionResult Solve(MathematicalProgram &prog);
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  static SolutionResult Solve(MathematicalProgram& prog);
 
   std::vector<double> GetSolution() const { return solutions_; }
 
