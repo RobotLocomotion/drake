@@ -2,7 +2,7 @@ function testFloatingMassSpringDamperForceGradients()
 % Tests user gradients vs numerical gradients for consistency
 
 options.floating = true;
-p = RigidBodyManipulator('../../../../systems/plants/test/FloatingMassSpringDamper.urdf',options);
+p = RigidBodyManipulator('FloatingMassSpringDamper.urdf',options);
 fun = @(q,qd)vectorComputeSpatialForce(p,q,qd);
 
 % some random states to test
