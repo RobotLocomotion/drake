@@ -59,6 +59,7 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
 /**
  * Computes the angle axis representation from a rotation matrix.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param R  the 3 x 3 rotation matrix.
  * @return the angle-axis representation, a 4 x 1 vector as [x, y, z, angle].
  * [x, y, z] is a unit vector and 0 <= angle <= 2*PI.
@@ -70,13 +71,14 @@ Vector4<typename Derived::Scalar> rotmat2axis(
   Eigen::AngleAxis<typename Derived::Scalar> eigen_angleAxis(R);
   Eigen::Vector4d a;
   a.head<3>() = eigen_angleAxis.axis();
-  a(3) = eigen_angleAxis.angle();  // Eigen's algorithm has 0 <- angle <= 2*PI.
-  DRAKE_ASSERT(a(3) >= 0 && a(3) <= 2 * M_PI);
+  a(3) = eigen_angleAxis.angle();  // Eigen's algorithm has 0 <= angle <= 2*PI.
+  DRAKE_ASSERT(0 <= a(3) && a(3) <= 2 * M_PI);
   return a;
 }
 
 /**
  * Computes SpaceXYZ Euler angles from rotation matrix.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param R 3x3 rotation matrix.
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
  * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.

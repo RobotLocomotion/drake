@@ -1,6 +1,7 @@
-/** @file
+/**
+ * @file
  * This file includes conversions from roll-pitch-yaw representation,
- * that <b>do</b> depend on quaternion.h.
+ * that *do* depend on quaternion.h.
  *
  * The old file roll_pitch_yaw.h was separated into two half-files, namely:
  * roll_pitch_yaw_not_using_quaternion.h and roll_pitch_yaw_using_quaternion.h,
