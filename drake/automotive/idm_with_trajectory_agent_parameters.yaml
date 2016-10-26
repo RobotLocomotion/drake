@@ -1,0 +1,22 @@
+---
+-
+     name: a
+     doc: max acceleration
+-
+     name: b
+     doc: comfortable braking deceleration
+-
+     name: v_0
+     doc: desired velocity in free traffic
+-
+     name: s_0
+     doc: minimum desired net distance
+-
+     name: time_headway
+     doc: desired time headway to vehicle in front
+-
+     name: delta
+     doc: free-road exponent
+-
+     name: l_a
+     doc: length of leading car

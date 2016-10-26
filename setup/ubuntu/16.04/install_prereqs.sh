@@ -97,6 +97,7 @@ python-html5lib
 python-numpy
 python-sphinx
 python-vtk
+python-yaml
 unzip
 valgrind
 
