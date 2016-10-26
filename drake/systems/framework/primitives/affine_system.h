@@ -10,7 +10,7 @@ namespace systems {
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
 /// implements the following equations:
 /// @f[
-///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
+///   \dot{x} = Ax + Bu + \dot{x}_0 \\
 ///   y = Cx + Du + y_0
 /// @f]
 ///
@@ -46,7 +46,7 @@ class AffineSystem : public LeafSystem<T> {
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
-  
+
   /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;
 

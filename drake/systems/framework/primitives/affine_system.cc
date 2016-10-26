@@ -61,7 +61,7 @@ void AffineSystem<T>::EvalOutput(const Context<T>& context,
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_vector()).get_value();
+      context.get_continuous_state_vector()).get_value();
 
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   DRAKE_DEMAND(input);
@@ -78,7 +78,7 @@ void AffineSystem<T>::EvalTimeDerivatives(
     DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state()->get_vector()).get_value();
+      context.get_continuous_state_vector()).get_value();
 
   const BasicVector<T>* input = this->EvalVectorInput(context, 0);
   DRAKE_DEMAND(input);
