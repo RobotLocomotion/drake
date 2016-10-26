@@ -132,12 +132,14 @@ bool RigidBodyTree::transformCollisionFrame(
   return collision_model_->transformCollisionFrame(eid,
       transform_body_to_joint);
 }
+#endif
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
 // vector RigidBodyTree::bodies changes in size with the calls to bodies.erase
 // and bodies.insert.
 // A possibility would be to use std::sort or our own version of a quick sort.
-void RigidBodyTree::SortTree() {
+template<typename T>
+void RigidBodyTree<T>::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
   for (size_t i = 0; i < bodies.size() - 1; ) {
@@ -162,6 +164,7 @@ void RigidBodyTree::SortTree() {
   }
 }
 
+#if 0
 const RigidBodyActuator& RigidBodyTree::GetActuator(
     const std::string& name) const {
   for (const auto& actuator : actuators) {
@@ -172,8 +175,10 @@ const RigidBodyActuator& RigidBodyTree::GetActuator(
   throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
                               "\"");
 }
+#endif
 
-void RigidBodyTree::compile(void) {
+template<typename T>
+void RigidBodyTree<T>::compile(void) {
   SortTree();
 
   // Welds joints for links that have zero inertia and no children (as seen in
@@ -266,7 +271,7 @@ void RigidBodyTree::compile(void) {
     }
   }
 
-
+#if 0
   // Updates the static collision elements and terrain contact points.
   updateStaticCollisionElements();
 
@@ -278,11 +283,14 @@ void RigidBodyTree::compile(void) {
   }
 
   CreateCollisionCliques();
+#endif
 
   initialized_ = true;
 }
 
-void RigidBodyTree::CreateCollisionCliques() {
+#if 0
+template<typename T>
+void RigidBodyTree<T>::CreateCollisionCliques() {
   int clique_id = get_next_clique_id();
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
@@ -306,7 +314,9 @@ void RigidBodyTree::CreateCollisionCliques() {
     }
   }
 }
+#endif
 
+#if 0
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
@@ -438,8 +448,10 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   }
   return name_to_index_map;
 }
+#endif
 
-DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
+template<typename T>
+DrakeCollision::ElementId RigidBodyTree<T>::addCollisionElement(
     const DrakeCollision::Element& element, RigidBody& body,
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model_->addElement(element);
@@ -450,6 +462,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
   return id;
 }
 
+#if 0
 void RigidBodyTree::updateCollisionElements(
     const RigidBody& body,
     const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world) {
@@ -2068,9 +2081,11 @@ std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
     const {
   return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
 }
+#endif
 
-int RigidBodyTree::FindBodyIndex(const std::string& body_name,
-                                 int model_instance_id) const {
+template<typename T>
+int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
+                                    int model_instance_id) const {
   RigidBody* body = FindBody(body_name, "", model_instance_id);
   if (body == nullptr) {
     throw std::logic_error(
@@ -2082,6 +2097,7 @@ int RigidBodyTree::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
+#if 0
 std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
@@ -2114,9 +2130,11 @@ int RigidBodyTree::findLinkId(const std::string& link_name,
                               int model_instance_id) const {
   return FindBodyIndex(link_name, model_instance_id);
 }
+#endif
 
-RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
-                                               int model_instance_id) const {
+template<typename T>
+RigidBody* RigidBodyTree<T>::FindChildBodyOfJoint(const std::string& joint_name,
+                                                  int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -2183,12 +2201,14 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   }
 }
 
-int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
+template<typename T>
+int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
 }
 
+#if 0
 const RigidBody& RigidBodyTree::get_body(int body_index) const {
   DRAKE_DEMAND(body_index >= 0 &&
                      body_index < get_num_bodies());
@@ -2332,13 +2352,14 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const {
 size_t RigidBodyTree::getNumPositionConstraints() const {
   return loops.size() * 6;
 }
+#endif
 
-void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
+template<typename T>
+void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   // yuck!!
   frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);
 }
-#endif
 
 template<typename T>
 RigidBody* RigidBodyTree<T>::add_rigid_body(std::unique_ptr<RigidBody> body) {
@@ -2426,12 +2447,14 @@ void RigidBodyTree::addRobotFromSDF(
   drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
       floating_base_type, weld_to_frame, this);
 }
+#endif
 
-
-int RigidBodyTree::add_model_instance() {
+template<typename T>
+int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
 }
 
+#if 0
 int RigidBodyTree::get_num_model_instances() const {
   return num_model_instances_;
 }

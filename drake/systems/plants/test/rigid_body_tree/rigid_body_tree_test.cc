@@ -10,7 +10,7 @@
 #include "drake/systems/plants/joints/RevoluteJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-//#include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/parser_urdf.h"
 
 namespace drake {
 namespace systems {
@@ -19,7 +19,7 @@ namespace test {
 namespace {
 
 using drake::parsers::ModelInstanceIdTable;
-//using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
+using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using drake::systems::plants::joints::kQuaternion;
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -123,7 +123,6 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
               T_r1and2_to_world.matrix());
 }
 
-#if 0
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1_ to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
@@ -204,6 +203,11 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
+  // TODO FOR TOMORROW: Move typedef "RigidBodyTree<double> RBT" to be in
+  // RigidBodyTree.h and call it RigidBodyTreed.
+  // Next step the is to template the first template method here: doKinematics.
+
+#if 0
   VectorX<double> q;
   VectorX<double> v;
   q.resize(tree_->get_num_positions());
@@ -216,8 +220,10 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 
   KinematicsCache<double> cache = tree_->doKinematics(q_block, v_block);
   EXPECT_TRUE(cache.hasV());
+#endif
 }
 
+#if 0
 // Ensure's the model's instance ID was saved in model_instance_id_table.
 // Since only one model was added   (a 2-DOF robot), there should only be one
 // model in the table. Furthermore, it should be called "two_dof_robot" and
