@@ -61,8 +61,84 @@ int main() {
   const Vector3<double> Kp(400,   0,   0);
   const Vector3<double> Ki(0,     0,   0);
   const Vector3<double> Kd(80,  100, 100);
+
+  MatrixX<double> feedback_selector_matrix;
+  feedback_selector_matrix.setZero(plant->get_input_size() * 2,
+                                   plant->get_output_size());
+
+  // The feedback selector should output six values:
+  //
+  //   Index | Description
+  //   ----- | -----------
+  //     0   |   steering angle position
+  //     1   |   left wheel position
+  //     2   |   right wheel position
+  //     3   |   steering angle velocity
+  //     4   |   left wheel velocity
+  //     5   |   right wheel velocity
+  DRAKE_DEMAND(feedback_selector_matrix.rows() == 6);
+  const int kFeedbackIndexSteeringAnglePosition = 0;
+  const int kFeedbackIndexLeftWheelPosition     = 1;
+  const int kFeedbackIndexRightWheelPosition    = 2;
+  const int kFeedbackIndexSteeringAngleVelocity = 3;
+  const int kFeedbackIndexLeftWheelVelocity     = 4;
+  const int kFeedbackIndexRightWheelVelocity    = 5;
+
+  // The feedback selector should input 27 values:
+  //
+  //   Index   Description
+  //   ----- | -----------
+  //     0   |   base_x
+  //     1   |   base_y
+  //     2   |   base_z
+  //     3   |   base_qw
+  //     4   |   base_qx
+  //     5   |   base_qy
+  //     6   |   base_qz
+  //     7   |   steering
+  //     8   |   left_pin
+  //     9   |   left_wheel_joint
+  //     10  |   axle_tie_rod_arm
+  //     11  |   right_wheel_joint
+  //     12  |   rear_left_wheel_joint
+  //     13  |   rear_right_wheel_joint
+  //     14  |   base_wx
+  //     15  |   base_wy
+  //     16  |   base_wz
+  //     17  |   base_vx
+  //     18  |   base_vy
+  //     19  |   base_vz
+  //     20  |   steeringdot
+  //     21  |   left_pindot
+  //     22  |   left_wheel_jointdot
+  //     23  |   axle_tie_rod_armdot
+  //     24  |   right_wheel_jointdot
+  //     25  |   rear_left_wheel_jointdot
+  //     26  |   rear_right_wheel_jointdot
+  DRAKE_DEMAND(feedback_selector_matrix.cols() == 27);
+  const int kStateIndexSteeringAnglePosition = 7;
+  const int kStateIndexLeftWheelPosition     = 9;
+  const int kStateIndexRightWheelPosition    = 11;
+  const int kStateIndexSteeringAngleVelocity = 20;
+  const int kStateIndexLeftWheelVelocity     = 22;
+  const int kStateIndexRightWheelVelocity    = 24;
+  feedback_selector_matrix(kFeedbackIndexSteeringAnglePosition,
+                           kStateIndexSteeringAnglePosition) = 1;
+  feedback_selector_matrix(kFeedbackIndexLeftWheelPosition,
+                           kStateIndexLeftWheelPosition) = 1;
+  feedback_selector_matrix(kFeedbackIndexRightWheelPosition,
+                           kStateIndexRightWheelPosition) = 1;
+  feedback_selector_matrix(kFeedbackIndexSteeringAngleVelocity,
+                           kStateIndexSteeringAngleVelocity) = 1;
+  feedback_selector_matrix(kFeedbackIndexLeftWheelVelocity,
+                           kStateIndexLeftWheelVelocity) = 1;
+  feedback_selector_matrix(kFeedbackIndexRightWheelVelocity,
+                           kStateIndexRightWheelVelocity) = 1;
+  auto feedback_selector =
+      std::make_unique<MimoGain<double>>(feedback_selector_matrix);
+
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
-      std::move(plant), Kp, Ki, Kd);
+      std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
 
   // Instantiates a system for visualizing the MBD model.
   lcm::DrakeLcm lcm;
