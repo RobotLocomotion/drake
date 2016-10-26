@@ -1,4 +1,5 @@
 drake_add_cc_test(autodiff_test)
+drake_add_cc_test(autodiff_overloads_test)
 drake_add_cc_test(cross_product_test)
 drake_add_cc_test(eigen_sparse_triplet_test)
 drake_add_cc_test(expmap_test)

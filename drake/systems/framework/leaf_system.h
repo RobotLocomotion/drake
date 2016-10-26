@@ -9,7 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/number_traits.h"
-#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/difference_state.h"
