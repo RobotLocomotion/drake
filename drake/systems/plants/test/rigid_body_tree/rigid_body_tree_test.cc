@@ -9,7 +9,6 @@
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 #include "drake/systems/plants/joints/RevoluteJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_common.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
 
@@ -20,7 +19,6 @@ namespace test {
 namespace {
 
 using drake::parsers::ModelInstanceIdTable;
-using drake::parsers::AddFloatingJoint;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
 using drake::systems::plants::joints::kQuaternion;
 using Eigen::Isometry3d;
@@ -73,7 +71,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds floating joints that connect r1b1_ and r2b1_ to the rigid body tree's
   // world at zero offset.
   r1b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
-                                        "Base", Isometry3d::Identity()));
+                                        "base", Isometry3d::Identity()));
 
   r2b1->add_joint(
       r1b1, std::make_unique<RevoluteJoint>("Joint1", Isometry3d::Identity(),
@@ -105,13 +103,13 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
     T_r1and2_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
-      T_r1and2_to_world);
+  r1b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", T_r1and2_to_world));
 
-  AddFloatingJoint(kQuaternion,
-                   {r1b1->get_body_index(), r2b1->get_body_index()},
-                   weld_to_frame, nullptr /* pose_map */, tree_.get());
+  r2b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", T_r1and2_to_world));
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree_->FindBody("body1", "robot1")->getJoint();
@@ -130,9 +128,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // zero offset. Verifies that it is in the correct place.
   RigidBody* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
 
-  AddFloatingJoint(kQuaternion, {r1b1->get_body_index()},
-                   nullptr /* weld_to_frame */, nullptr /* pose_map */,
-                   tree_.get());
+  r1b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", Isometry3d::Identity()));
 
   // Adds rigid body r2b1_ to the rigid body tree and welds it to r1b1_ with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
@@ -146,12 +144,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
     T_r2_to_r1.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto r2b1_weld = std::allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
-      tree_->FindBody("body1", "robot1"), T_r2_to_r1);
-
-  AddFloatingJoint(kQuaternion, {r2b1->get_body_index()}, r2b1_weld,
-                   nullptr /* pose_map */, tree_.get());
+  r2b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", T_r2_to_r1));
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
@@ -170,9 +165,13 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree_->FindBody("body1", "robot2"), T_r3_and_r4_to_r2);
 
-  AddFloatingJoint(kQuaternion,
-                   {r3b1->get_body_index(), r4b1->get_body_index()},
-                   r3b1_and_r4b1_weld, nullptr /* pose_map */, tree_.get());
+  r3b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", T_r3_and_r4_to_r2));
+
+  r4b1->add_joint(&tree_->world(),
+                  std::make_unique<QuaternionFloatingJoint>(
+                      "base", T_r3_and_r4_to_r2));
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1")
                   ->getJoint()

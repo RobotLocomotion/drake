@@ -42,7 +42,6 @@ class AffineSystem : public LeafSystem<T> {
                const Eigen::Ref<const MatrixX<T>>& C,
                const Eigen::Ref<const MatrixX<T>>& D,
                const Eigen::Ref<const VectorX<T>>& y0);
-
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
