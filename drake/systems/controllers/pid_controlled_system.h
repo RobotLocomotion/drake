@@ -79,7 +79,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
-  PidControlledSystem(std::unique_ptr<System<T>>plant,
+  PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MimoGain<T>> feedback_selector,
                       const T& Kp, const T& Ki, const T& Kd);
 
