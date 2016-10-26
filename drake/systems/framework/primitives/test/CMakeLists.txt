@@ -25,17 +25,20 @@ target_link_libraries(integrator_test drakeSystemFramework)
 drake_add_cc_test(linear_system_test)
 target_link_libraries(linear_system_test drakeSystemFramework)
 
+drake_add_cc_test(mimo_gain_test)
+target_link_libraries(mimo_gain_test drakeSystemFramework)
+
 drake_add_cc_test(multiplexer_test)
 target_link_libraries(multiplexer_test drakeSystemFramework)
-
-drake_add_cc_test(trajectory_source_test)
-target_link_libraries(trajectory_source_test drakeSystemFramework)
 
 drake_add_cc_test(pass_through_test)
 target_link_libraries(pass_through_test drakeSystemFramework)
 
 drake_add_cc_test(pass_through_scalartype_test)
 target_link_libraries(pass_through_scalartype_test drakeSystemFramework)
+
+drake_add_cc_test(trajectory_source_test)
+target_link_libraries(trajectory_source_test drakeSystemFramework)
 
 drake_add_cc_test(zero_order_hold_test)
 target_link_libraries(zero_order_hold_test drakeSystemFramework)
