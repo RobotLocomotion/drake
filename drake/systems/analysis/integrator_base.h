@@ -388,8 +388,11 @@ class IntegratorBase {
   */
   int64_t get_error_test_failures() const { return error_test_failures_; }
 
-  // Sets the number of integration step failures due to error tolerance fails.
-  void set_error_test_failures(int64_t fails) { error_test_failures_ = fails; }
+  /**
+   * Increments the number of integration step failures due to error tolerance
+   * failure.
+   */
+  void report_error_test_failure() { error_test_failures_++; }
 
   /**
    * Default code for an error controlled step.
@@ -481,20 +484,21 @@ class IntegratorBase {
   virtual void DoInitialize() {}
 
   /** Derived classes may re-implement this method to integrate the continuous
-   * portion of this system forward by a maximum step of dt. This method
-   * is called during the Step() method.
+   * portion of this system forward by a single step of no greater size than
+   * dt_max. This method is called during the Step() method. This default
+   * implementation simply calls DoStepOnceFixedSize(dt_max).
    * @param dt The maximum integration step to take.
    * @returns `false` if the integrator does not take the full step of dt;
    *           otherwise, should return `true`.
    */
-  virtual bool DoStep(const T& dt);
+  virtual bool DoStep(const T& dt_max);
 
   /** Derived classes must implement this method to integrate the continuous
-   * portion of this system forward exactly by dt. This method
-   * is called during the default DoStep() method.
+   * portion of this system forward exactly by a single step of size dt. This
+   * method is called during the default DoStep() method.
    * @param dt The integration step to take.
    */
-  virtual void DoIntegrate(const T& dt) = 0;
+  virtual void DoStepOnceFixedSize(const T &dt) = 0;
 
   // Updates the integrator statistics.
   void UpdateStatistics(const T& dt) {
@@ -523,38 +527,35 @@ class IntegratorBase {
   const VectorX<T>& get_interval_start_state() const { return xc0_save_; }
 
   /**
-   *  Get the system state derivative at the start of the last integration
-   *  interval.
+   * Get the system state derivative at the start of the last integration
+   * interval.
    */
   const VectorX<T>& get_interval_start_state_deriv() const {
     return xcdot0_save_;
   }
 
  private:
-  // Sets the ideal next step size.
   void set_ideal_next_step_size(const T& dt) { ideal_next_step_size_ = dt; }
 
-  // Sets the actual initial step size taken.
   void set_actual_initial_step_size_taken(const T& dt) {
     actual_initial_step_size_taken_ = dt;
   }
 
-  // Sets the smallest step size taken
   void set_smallest_step_size_taken(const T& dt) {
     smallest_step_size_taken_ = dt;
   }
 
-  // Sets the largest step size taken
   void set_largest_step_size_taken(const T& dt) {
     largest_step_size_taken_ = dt;
   }
 
-  // Sets the number of steps taken.
   void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
-  // Calls DoIntegrate and does necessary pre-initialization and post-cleanup.
-  void Integrate(const T& dt) {
-    DoIntegrate(dt);
+  // Calls DoStepOnceFixedSize and does necessary pre-initialization and
+  // post-cleanup. Note that statistics are updated in the method that calls
+  // this one (Step()).
+  void StepOnceFixedSize(const T &dt) {
+    DoStepOnceFixedSize(dt);
     prev_step_size_ = dt;
   }
 
@@ -599,8 +600,8 @@ class IntegratorBase {
   std::unique_ptr<ContinuousState<T>> err_est_;
 
   // Vectors used in error norm calculations.
-  std::unique_ptr<VectorBase<T>> Ndq_;
-  VectorX<T> scaled_err_;
+  std::unique_ptr<VectorBase<T>> pinvN_dq_err_;
+  VectorX<T> unscaled_err_;
   std::unique_ptr<VectorBase<T>> scaled_q_err_;
 
   // Variable for indicating when an integrator has been initialized.
@@ -657,7 +658,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     }
 
     // Attempt to take the step.
-    integrator->Integrate(current_step_size);
+    integrator->StepOnceFixedSize(current_step_size);
 
     //--------------------------------------------------------------------
     const double err_nrm = CalcErrorNorm(integrator);
@@ -665,8 +666,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
         err_nrm, dt_was_artificially_limited, current_step_size);
 
     if (!step_succeeded) {
-      integrator->set_error_test_failures(
-          integrator->get_error_test_failures() + 1);
+      integrator->report_error_test_failure();
 
       // Reset the time, state, and time derivative at t0.
       integrator->get_mutable_context()->set_time(current_time);
@@ -692,8 +692,8 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
 
   // Get the error estimate and necessary vectors.
   const auto& err_est = integrator->get_error_estimate();
-  auto& scaled_err = integrator->scaled_err_;
-  auto& Ndq = integrator->Ndq_;
+  auto& unscaled_err = integrator->unscaled_err_;
+  auto& pinvN_dq_err = integrator->pinvN_dq_err_;
   auto& scaled_q_err = integrator->scaled_q_err_;
 
   // Get scaling matrices.
@@ -702,29 +702,34 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
 
   // Get the generalized position, velocity, and miscellaneous continuous
   // state vectors.
-  const VectorBase<T>& gq = err_est->get_generalized_position();
-  const VectorBase<T>& gv = err_est->get_generalized_velocity();
-  const VectorBase<T>& gz = err_est->get_misc_continuous_state();
+  const VectorBase<T>& gq_err = err_est->get_generalized_position();
+  const VectorBase<T>& gv_err = err_est->get_generalized_velocity();
+  const VectorBase<T>& gz_err = err_est->get_misc_continuous_state();
 
-  // Initialize Ndq_ and scaled_q_err_, if necessary.
-  if (Ndq == nullptr) {
-    Ndq = std::make_unique<BasicVector<T>>(gv.size());
-    scaled_q_err = std::make_unique<BasicVector<T>>(gq.size());
+  // (re-)Initialize pinvN_dq_err_ and scaled_q_err_, if necessary.
+  // Reinitialization might be required if the system state variables can
+  // change during the course of the simulation.
+  if (pinvN_dq_err == nullptr || pinvN_dq_err->size() != gv_err.size()) {
+    pinvN_dq_err = std::make_unique<BasicVector<T>>(gv_err.size());
+    scaled_q_err = std::make_unique<BasicVector<T>>(gq_err.size());
   }
 
-  // Computes the infinity norm of the scaled velocity variables.
-  scaled_err = gv.CopyToVector();
-  double v_nrm = (v_scal * scaled_err).template lpNorm<Eigen::Infinity>();
+  // Computes the infinity norm of the un-scaled velocity variables.
+  unscaled_err = gv_err.CopyToVector();
+  double v_nrm = (v_scal * unscaled_err).template lpNorm<Eigen::Infinity>();
 
   // Compute the infinity norm of the scaled auxiliary variables.
-  scaled_err = gz.CopyToVector();
-  double z_nrm = (z_scal * scaled_err).template lpNorm<Eigen::Infinity>();
+  unscaled_err = gz_err.CopyToVector();
+  double z_nrm = (z_scal * unscaled_err).template lpNorm<Eigen::Infinity>();
 
   // Compute W_q * dq = N * W_v * N+ * dq.
-  scaled_err = gq.CopyToVector();
-  system.MapConfigurationDerivativesToVelocity(context, scaled_err, Ndq.get());
-  system.MapVelocityToConfigurationDerivatives(
-      context, v_scal * Ndq->CopyToVector(), scaled_q_err.get());
+  unscaled_err = gq_err.CopyToVector();
+  system.MapConfigurationDerivativesToVelocity(context, unscaled_err,
+                                               pinvN_dq_err.get());
+  system.MapVelocityToConfigurationDerivatives(context,
+                                               v_scal *
+                                                   pinvN_dq_err->CopyToVector(),
+                                               scaled_q_err.get());
   double q_nrm =
       scaled_q_err->CopyToVector().template lpNorm<Eigen::Infinity>();
 
@@ -802,7 +807,7 @@ bool IntegratorBase<T>::AdjustStepSize(double err,
 
 template <class T>
 bool IntegratorBase<T>::DoStep(const T& max_dt) {
-  Integrate(max_dt);
+  StepOnceFixedSize(max_dt);
   return true;
 }
 

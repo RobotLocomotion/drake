@@ -97,7 +97,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // Integrate for 1 second.
+  // StepOnceFixedSize for 1 second.
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)

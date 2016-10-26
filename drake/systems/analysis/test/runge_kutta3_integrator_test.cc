@@ -102,7 +102,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // Integrate for 1 second.
+  // StepOnceFixedSize for 1 second.
   const double T_FINAL = 1.0;
   for (double t = 0.0; t < T_FINAL; t += DT) integrator.Step(DT, DT);
 
@@ -115,7 +115,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
               kXFinal, 1e-5);
 }
 
-// Integrate a purely continuous system with no sampling using error control.
+// StepOnceFixedSize a purely continuous system with no sampling using error control.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
 // where omega = sqrt(k/m)
@@ -155,7 +155,7 @@ GTEST_TEST(IntegratorTest, SpringMassStepEC) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // Integrate for 1 second.
+  // StepOnceFixedSize for 1 second.
   const double T_FINAL = 1.0;
   double t_remaining = T_FINAL - context->get_time();
   do {

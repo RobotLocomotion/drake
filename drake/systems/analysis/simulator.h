@@ -288,7 +288,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   bool update_hit = false;
   bool publish_hit = false;
 
-  // Integrate until desired interval has completed.
+  // StepOnceFixedSize until desired interval has completed.
   UpdateActions<T> update_actions;
   while (context_->get_time() <= boundary_time) {
     // Starting a new step on the trajectory.
