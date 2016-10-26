@@ -29,8 +29,11 @@ void cylindrical2cartesian(const Vector3<Scalar>& m_cylinder_axis,
                            const Vector3<Scalar>& cylinder_origin,
                            const Vector6<Scalar>& x_cylinder,
                            const Vector6<Scalar>& v_cylinder,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& x_cartesian,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& v_cartesian, Matrix6<Scalar>& J,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& Jdotv) {
   using std::cos;
   using std::sin;
@@ -100,8 +103,11 @@ void cartesian2cylindrical(const Vector3<Scalar>& m_cylinder_axis,
                            const Vector3<Scalar>& cylinder_origin,
                            const Vector6<Scalar>& x_cartesian,
                            const Vector6<Scalar>& v_cartesian,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& x_cylinder,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& v_cylinder, Matrix6<Scalar>& J,
+                           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references)
                            Vector6<Scalar>& Jdotv) {
   using std::atan2;
   using std::pow;
