@@ -22,7 +22,7 @@ endif()
 
 if(lcm_FOUND)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
-  target_link_libraries(drakeQPControllerLcmTranslator lcmtypes_bot2-core-cpp)
+  target_link_libraries(drakeQPControllerLcmTranslator drakeLCMTypes lcmtypes_bot2-core-cpp)
 endif()
 
 add_subdirectory(system)
