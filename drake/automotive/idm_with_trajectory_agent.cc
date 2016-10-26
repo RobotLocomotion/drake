@@ -3,6 +3,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/math/autodiff_overloads.h"
 
 namespace drake {
 namespace automotive {
