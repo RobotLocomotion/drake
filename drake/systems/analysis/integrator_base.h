@@ -331,9 +331,9 @@ class IntegratorBase {
    */
   virtual int get_error_estimate_order() const = 0;
 
-  /// Gets the size of the last (previous) integration step.
   /**
-   * If no integration steps have been taken, value will be NaN.
+   * Gets the size of the last (previous) integration step. If no integration
+   * steps have been taken, value will be NaN.
    */
   const T& get_previous_integration_step_size() const {
     return prev_step_size_;
@@ -383,14 +383,14 @@ class IntegratorBase {
    * such variables represent unit quaternions.
    *
    * Assume the existence of a nq x n matrix N and its pseudo-inverse N+ such
-   * that `N+ * N = I` (the identity matrix), `v = N+ * qdot`, and
-   * `qdot = N * v`, where `qdot` represents the time derivatives of the
-   * configuration  variables and `v = dx/dt` represents the velocity variables.
-   * `qdot` and `v` may generally be distinct, as in the case where `q`
-   * corresponds to unit quaternions and `v` corresponds to an angular velocity
-   * vector. [Nikravesh 1988] shows how such a matrix `N` can be determined and
-   * also describes the relationship between the transpose of this matrix and
-   * its pseudo-inverse. Given this relationship, we can relate scaled errors in
+   * that `N+ * N = I` (the identity matrix- note that N * N+ != I, as N
+   * non-square), `v = N+ * qdot`, and `qdot = N * v`, where `qdot` represents
+   * the time derivatives of the configuration variables and `v = dx/dt`
+   * represents the velocity variables. `qdot` and `v` may generally be
+   * distinct, as in the case where `q` corresponds to unit quaternions and
+   * `v` corresponds to an angular velocity vector. [Nikravesh 1988] shows how
+   * such a matrix `N` can be determined and provides more information. Given
+   * this relationship between `N` and `N+`, we can relate scaled errors in
    * configuration coordinates (`q`) to scaled errors in generalized
    * configuration (`x`), as the following derivation shows:
    *
@@ -471,7 +471,7 @@ class IntegratorBase {
    * Increments the number of integration step failures due to error tolerance
    * failure.
    */
-  void report_error_test_failure() { error_test_failures_++; }
+  void report_error_test_failure() { ++error_test_failures_; }
 
   /**
    * Default code for an error controlled step.
@@ -487,7 +487,8 @@ class IntegratorBase {
    * @param[in,out] derivs0 A pointer to the state derivatives at the system's
    *                current time (t0), *which must have already been evaluated
    *                at t0*. These values may be modified on return.
-   * @throws std::logic_error if integrator does not support accuracy estimation
+   * @throws std::logic_error if integrator does not support accuracy
+   *                          estimation.
    */
   static void StepErrorControlled(const T& dt_max,
                                   IntegratorBase<T>* integrator,
@@ -604,8 +605,7 @@ class IntegratorBase {
   void set_num_steps_taken(int64_t steps) { num_steps_taken_ = steps; }
 
   // Calls DoStepOnceFixedSize and does necessary pre-initialization and
-  // post-cleanup. Note that statistics are updated in the method that calls
-  // this one (StepOnceAtMost()).
+  // post-cleanup. This method does not update general integrator statistics.
   void StepOnceAtFixedSize(const T& dt) {
     DoStepOnceFixedSize(dt);
     prev_step_size_ = dt;
@@ -733,6 +733,8 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       derivs0->SetFromVector(integrator->get_interval_start_state_deriv());
     } else {  // Step succeeded.
       integrator->ideal_next_step_size_ = current_step_size;
+      // Convoluted conditional is used to compensate for the default small
+      // adapted value being NaN.
       if (!(integrator->get_actual_initial_step_size_taken() > 0))
         integrator->set_actual_initial_step_size_taken(current_step_size);
     }
@@ -767,10 +769,12 @@ double IntegratorBase<T>::CalcErrorNorm(IntegratorBase<T>* integrator) {
   // (re-)Initialize pinvN_dq_err_ and scaled_q_err_, if necessary.
   // Reinitialization might be required if the system state variables can
   // change during the course of the simulation.
-  if (pinvN_dq_err == nullptr || pinvN_dq_err->size() != gv_err.size()) {
+  if (pinvN_dq_err == nullptr) {
     pinvN_dq_err = std::make_unique<BasicVector<T>>(gv_err.size());
     scaled_q_err = std::make_unique<BasicVector<T>>(gq_err.size());
   }
+  DRAKE_ASSERT(pinvN_dq_err->size() == gv_err.size());
+  DRAKE_ASSERT(scaled_q_err->size() == gq_err.size());
 
   // Computes the infinity norm of the un-scaled velocity variables.
   unscaled_err = gv_err.CopyToVector();
@@ -799,7 +803,9 @@ template <class T>
 bool IntegratorBase<T>::AdjustStepSize(double err,
                                        bool dt_was_artificially_limited,
                                        T& step_size) const {
-  /// Magic numbers come from Simbody.
+  using std::pow;
+
+  // Magic numbers come from Simbody.
   const double kSafety = 0.9;
   const double kMinShrink = 0.1;
   const double kMaxGrow = 5.0;
@@ -820,7 +826,7 @@ bool IntegratorBase<T>::AdjustStepSize(double err,
     new_step_size = kMaxGrow * step_size;
   else  // Choose best step for skating just below the desired accuracy.
     new_step_size = kSafety * step_size *
-                    std::pow(get_accuracy_in_use() / err, 1.0 / err_order);
+                    pow(get_accuracy_in_use() / err, 1.0 / err_order);
 
   // If the new step is bigger than the old, don't make the change if the
   // old one was small for some unimportant reason (like reached a publishing
