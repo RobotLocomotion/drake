@@ -25,9 +25,4 @@ pods_install_pkg_config_file(drake-joints
   LIBS -ldrakeJoints
   REQUIRES
   VERSION 0.0.1)
-
-# ==== Below this line is MATLAB-specific code ====
-
-# ==== Below this line is C++ and MATLAB shared code ====
-
 add_subdirectory(test)

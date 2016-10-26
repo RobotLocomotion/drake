@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="Capsule">
+  <link name="capsule">
+    <visual>
+      <geometry>
+        <capsule radius="0.3" length="0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.3" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 0"/>
+    </inertial>
+  </link>
+</robot>
