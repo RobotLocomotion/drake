@@ -1,4 +1,4 @@
-# pragma once
+#pragma once
 
 #include "drake/systems/framework/primitives/affine_system.h"
 
@@ -23,13 +23,13 @@ namespace systems {
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
-template<typename T>
-class LinearSystem: public AffineSystem<T> {
+template <typename T>
+class LinearSystem : public AffineSystem<T> {
  public:
-  LinearSystem(const Eigen::Ref<const MatrixX<T>> &A,
-                    const Eigen::Ref<const MatrixX<T>> &B,
-                    const Eigen::Ref<const MatrixX<T>> &C,
-                    const Eigen::Ref<const MatrixX<T>> &D);
+  LinearSystem(const Eigen::Ref<const MatrixX<T>>& A,
+               const Eigen::Ref<const MatrixX<T>>& B,
+               const Eigen::Ref<const MatrixX<T>>& C,
+               const Eigen::Ref<const MatrixX<T>>& D);
 };
 
 }  // namespace systems
