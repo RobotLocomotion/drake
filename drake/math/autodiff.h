@@ -32,6 +32,41 @@ double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
   return ceil(x.value());
 }
 
+/// Overloads pow for an AutoDiffScalar base and exponent, implementing the
+/// chain rule.
+/// Must appear in global namespace so that ADL can select between this
+/// implementation and the STL one.
+template <typename DerTypeA, typename DerTypeB>
+Eigen::AutoDiffScalar<Eigen::Matrix<typename DerTypeA::Scalar,
+                                    DerTypeA::RowsAtCompileTime, 1>> pow(
+    const Eigen::AutoDiffScalar<DerTypeA>& base,
+    const Eigen::AutoDiffScalar<DerTypeB>& exponent) {
+  // The two AutoDiffScalars being exponentiated must have the same scalar type,
+  // and the same dimension.
+  static_assert(std::is_same<typename DerTypeA::Scalar,
+                             typename DerTypeB::Scalar>::value,
+                "The derivative types must match.");
+  static_assert(DerTypeA::RowsAtCompileTime == DerTypeB::RowsAtCompileTime,
+                "The derivative vectors must have the same size.");
+
+  const auto& x = base.value();
+  const auto& xgrad = base.derivatives();
+  const auto& y = exponent.value();
+  const auto& ygrad = exponent.derivatives();
+
+  return Eigen::AutoDiffScalar<Eigen::Matrix<typename DerTypeA::Scalar,
+                                             DerTypeA::RowsAtCompileTime, 1>>(
+      // The value is x ^ y.
+      pow(x, y),
+      // The multivariable chain rule states:
+      // df/dt = (δf/δx * dx/dt) + (δf/δy * dy/dt)
+      // δf/δx is y*x^(y-1)
+      y * pow(x, y - 1) * xgrad +
+      // δf/δy is (x^y)*ln(x)
+      pow(x, y) * log(x) * ygrad);
+}
+
+
 namespace drake {
 namespace math {
 
