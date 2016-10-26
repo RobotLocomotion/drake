@@ -10,7 +10,7 @@ ValkyriePlant::ValkyriePlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Valkyrie_PT/val_description/urdf/valkyrie_sim_drake.urdf",
-      systems::plants::joints::kQuaternion);
+      systems::plants::joints::kRollPitchYaw);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();
@@ -52,37 +52,68 @@ void ValkyriePlant::SetInitialConfiguration() {
   RigidBodyTree* tree = sys_->getRigidBodyTree().get();
   x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
-  // Magic numbers are initial conditions used in runAtlasWalking.m.
-    /*
-  x0_(2) = 0.844;    // base z
-  x0_(10) = 0.27;    // l_arm_shz
-  x0_(11) = 0.0;     // l_leg_hpz
-  x0_(12) = 0.055;   // l_leg_hpx
-  x0_(13) = -0.57;   // l_leg_hpy
-  x0_(14) = 1.13;    // l_leg_kny
-  x0_(15) = -0.55;   // l_leg_aky
-  x0_(16) = -0.055;  // l_leg_akx
-  x0_(17) = -1.33;   // l_arm_shx
-  x0_(18) = 2.153;   // l_arm_ely
-  x0_(19) = 0.5;     // l_arm_elx
-  x0_(20) = 0.0985;  // l_arm_uwy
-  x0_(21) = 0.0;     // l_arm_mwx
-  x0_(22) = 0.0008;  // l_arm_lwy
-  x0_(23) = -0.27;   // r_arm_shz
-  x0_(24) = 0.0;     // r_leg_hpz
-  x0_(25) = -0.055;  // r_leg_hpx
-  x0_(26) = -0.57;   // r_leg_hpy
-  x0_(27) = 1.13;    // r_leg_kny
-  x0_(28) = -0.55;   // r_leg_aky
-  x0_(29) = 0.055;   // r_leg_akx
-  x0_(30) = 1.33;    // r_arm_shx
-  x0_(31) = 2.153;   // r_arm_ely
-  x0_(32) = -0.5;    // r_arm_elx
-  x0_(33) = 0.0985;  // r_arm_uwy
-  x0_(34) = 0.0;     // r_arm_mwx
-  x0_(35) = 0.0008;  // r_arm_lwy
-  x0_(36) = 0.2564;  // neck_ay
-     */
+  // Magic numbers are initial conditions used in reach_start
+  /*
+  reach_start = [
+  0.0; //0
+  0.0;
+  1.025;
+  0.0;
+  0.0;
+  0.0; //5
+  0.0;
+  0.0;
+  0.0;
+  0.0;
+  0.0; //10
+  0.0;
+  0.30019663134302466;
+  1.25;
+  0.0;
+  0.7853981633974483; //15
+  1.571;
+  0.0;
+  0.0;
+  0.30019663134302466;
+  -1.25; //20
+  0.0;
+  -0.7853981633974483;
+  1.571;
+  0.0;
+  0.0; //25
+  0.0; //26
+  0.0;
+  -0.49;
+  1.205;
+  -0.71; //30
+  0.0; //31
+  0.0;
+  0.0;
+  -0.49;
+  1.205;//35
+  -0.71;//36
+  0.0];//37
+  */
+  x0_(2) = 1.025; //base_z
+
+  x0_(12) = 0.30019663134302466; //rightShoulderPitch
+  x0_(13) = 1.25; // rightShoulderRoll
+  x0_(15) = 0.7853981633974483; // rightElbowPitch
+  x0_(16) = 1.571; // rightForearmYaw
+
+  x0_(19) = 0.30019663134302466; // leftShoulderPitch
+  x0_(20) = -1.25; // leftShoulderRoll
+  x0_(22) = -0.7853981633974483; // leftElbowPitch
+  x0_(23) = 1.571; // leftForearmYaw
+
+  x0_(28) = -0.49; // rightHipPitch
+  x0_(29) = 1.205; // rightKneePitch
+  x0_(30) = -0.71; // rightAnklePitch
+
+  x0_(34) = -0.49; // leftHipPitch
+  x0_(35) = 1.025; // leftKneePitch
+  x0_(36) = -0.71; // leftAnklePitch
+
 }
 
 void ValkyriePlant::SetUpTerrain() {
