@@ -1,6 +1,6 @@
 # pragma once
 
-#include "drake/systems/framework/primitives/linear_system_plant.h"
+#include "drake/systems/framework/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -24,9 +24,17 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template<typename T>
-class MimoGain: public LinearSystemPlant<T> {
+class MimoGain: public LinearSystem<T> {
  public:
+  /**
+   * A constructor where the gain matrix `D` is a square identity matrix of size
+   * @p size.
+   */
   explicit MimoGain(int size);
+
+  /**
+   * A constructor where the gain matrix `D` is @p D.
+   */
   explicit MimoGain(const Eigen::Ref<const MatrixX<T>> &D);
 };
 

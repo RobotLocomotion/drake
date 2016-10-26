@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/mimo_gain.h"
+  #include "drake/systems/framework/primitives/mimo_gain.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -32,7 +32,7 @@ class MimoGainTest : public AffineLinearSystemTest {
 
  protected:
   const int kNumStates_{0};  // MimoGain systems have no state variables.
-  unique_ptr<LinearSystemPlant<double>> system_;
+  unique_ptr<LinearSystem<double>> system_;
 };
 
 // Tests that the linear system is correctly setup.

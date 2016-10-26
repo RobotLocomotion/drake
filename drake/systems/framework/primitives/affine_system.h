@@ -24,7 +24,7 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
-class AffineSystemPlant : public LeafSystem<T> {
+class AffineSystem : public LeafSystem<T> {
  public:
   /// Constructs an Affine system with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
@@ -36,7 +36,7 @@ class AffineSystemPlant : public LeafSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
-  AffineSystemPlant(const Eigen::Ref<const MatrixX<T>>& A,
+  AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
                     const Eigen::Ref<const MatrixX<T>>& B,
                     const Eigen::Ref<const VectorX<T>>& xDot0,
                     const Eigen::Ref<const MatrixX<T>>& C,
@@ -46,10 +46,6 @@ class AffineSystemPlant : public LeafSystem<T> {
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
-
-  /// LeafSystem override.
-  std::unique_ptr<ContinuousState<T>>
-  AllocateContinuousState() const override;
 
   /// Returns the input port containing the externally applied input.
   const SystemPortDescriptor<T>& get_input_port() const;

@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/affine_system_plant.h"
+#include "drake/systems/framework/primitives/affine_system.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -13,7 +13,7 @@ namespace systems {
 using std::make_unique;
 
 template <typename T>
-AffineSystemPlant<T>::AffineSystemPlant(
+AffineSystem<T>::AffineSystem(
     const Eigen::Ref<const MatrixX<T>>& A,
     const Eigen::Ref<const MatrixX<T>>& B,
     const Eigen::Ref<const VectorX<T>>& xdot0,
@@ -41,28 +41,25 @@ AffineSystemPlant<T>::AffineSystemPlant(
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& AffineSystemPlant<T>::get_input_port() const {
+const SystemPortDescriptor<T>& AffineSystem<T>::get_input_port() const {
   return System<T>::get_input_port(0);
 }
 
 template <typename T>
-const SystemPortDescriptor<T>& AffineSystemPlant<T>::get_output_port() const {
+const SystemPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
   return System<T>::get_output_port(0);
 }
 
 template <typename T>
-void AffineSystemPlant<T>::EvalOutput(const Context<T>& context,
+void AffineSystem<T>::EvalOutput(const Context<T>& context,
                                       SystemOutput<T>* output) const {
   // TODO(naveenoid): Perhaps cache the output of this function.
-
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
   BasicVector<T>* output_vector = output->GetMutableVectorData(0);
 
-  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_vector()).get_value();
 
@@ -75,13 +72,11 @@ void AffineSystemPlant<T>::EvalOutput(const Context<T>& context,
 }
 
 template <typename T>
-void AffineSystemPlant<T>::EvalTimeDerivatives(
+void AffineSystem<T>::EvalTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
 
     DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
-  // TODO(naveenoid): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
   auto x = dynamic_cast<const BasicVector<T>&>(
       context.get_continuous_state()->get_vector()).get_value();
 
@@ -92,16 +87,8 @@ void AffineSystemPlant<T>::EvalTimeDerivatives(
   derivatives->SetFromVector(A_ * x + B_ * u + XDot0_);
 }
 
-template <typename T>
-std::unique_ptr<ContinuousState<T>> AffineSystemPlant<T>::
-    AllocateContinuousState() const {
-  // For a first order system.
-  return make_unique<ContinuousState<T>>(
-      make_unique<BasicVector<T>>(kNumStates));
-}
-
-template class DRAKE_EXPORT AffineSystemPlant<double>;
-template class DRAKE_EXPORT AffineSystemPlant<AutoDiffXd>;
+template class DRAKE_EXPORT AffineSystem<double>;
+template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

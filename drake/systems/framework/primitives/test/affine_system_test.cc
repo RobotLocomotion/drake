@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/affine_system_plant.h"
+#include "drake/systems/framework/primitives/affine_system.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -21,7 +21,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
   void Initialize() override {
     // Construct the system I/O objects.
     system_ =
-        make_unique<AffineSystemPlant<double>>(A_, B_, XDot0_, C_, D_, Y0_);
+        make_unique<AffineSystem<double>>(A_, B_, XDot0_, C_, D_, Y0_);
     system_->set_name("test_affine_system");
     context_ = system_->CreateDefaultContext();
     system_derivatives_ = system_->AllocateTimeDerivatives();
@@ -35,7 +35,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
   }
 
  protected:
-  unique_ptr<AffineSystemPlant<double>> system_;
+  unique_ptr<AffineSystem<double>> system_;
 };
 
 // Tests that the affine system is correctly setup.

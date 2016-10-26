@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/linear_system_plant.h"
+#include "drake/systems/framework/primitives/linear_system.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -7,19 +7,19 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-LinearSystemPlant<T>::LinearSystemPlant(
+LinearSystem<T>::LinearSystem(
     const Eigen::Ref<const MatrixX<T>> &A,
     const Eigen::Ref<const MatrixX<T>> &B,
     const Eigen::Ref<const MatrixX<T>> &C,
     const Eigen::Ref<const MatrixX<T>> &D) :
-    AffineSystemPlant<T>(A, B,
+    AffineSystem<T>(A, B,
                          VectorX<T>::Zero(A.rows()),
                          C, D,
                          VectorX<T>::Zero(C.rows())) {
 }
 
-template class DRAKE_EXPORT LinearSystemPlant<double>;
-template class DRAKE_EXPORT LinearSystemPlant<AutoDiffXd>;
+template class DRAKE_EXPORT LinearSystem<double>;
+template class DRAKE_EXPORT LinearSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
