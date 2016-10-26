@@ -10,6 +10,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
+#include "drake/systems/framework/primitives/mimo_gain.h"
 
 namespace drake {
 namespace systems {
@@ -48,6 +49,9 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
  public:
+  /// A constructor where the gains are scalar values and all of the system's
+  /// output is part of the feedback signal.
+  ///
   /// @param[in] system The system to be controlled.
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
@@ -55,11 +59,43 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   PidControlledSystem(std::unique_ptr<System<T>> system,
                       const T& Kp, const T& Ki, const T& Kd);
 
+  /// A constructor where the gains are vector values and all of the system's
+  /// output is part of the feedback signal.
+  ///
   /// @param[in] system The system to be controlled.
   /// @param[in] Kp the proportional vector constant.
   /// @param[in] Ki the integral vector constant.
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> systems,
+                      const VectorX<T>& Kp, const VectorX<T>& Ki,
+                      const VectorX<T>& Kd);
+
+  /// A constructor where the gains are scalar values and some of the system's
+  /// output is part of the feedback signal as specified by
+  /// @p feedback_selector.
+  ///
+  /// @param[in] system The system to be controlled.
+  /// @param[in] feedback_selector The system that selects which part of the
+  /// system's output is part of the feedback to the controller.
+  /// @param[in] Kp the proportional constant.
+  /// @param[in] Ki the integral constant.
+  /// @param[in] Kd the derivative constant.
+  PidControlledSystem(std::unique_ptr<System<T>> system,
+                      std::unique_ptr<MimoGain<T>> feedback_selector,
+                      const T& Kp, const T& Ki, const T& Kd);
+
+  /// A constructor where the gains are vector values and some of the system's
+  /// output is part of the feedback signal as specified by
+  /// @p feedback_selector.
+  ///
+  /// @param[in] system The system to be controlled.
+  /// @param[in] feedback_selector The system that selects which part of the
+  /// system's output is part of the feedback to the controller.
+  /// @param[in] Kp the proportional vector constant.
+  /// @param[in] Ki the integral vector constant.
+  /// @param[in] Kd the derivative vector constant.
+  PidControlledSystem(std::unique_ptr<System<T>> systems,
+                      std::unique_ptr<MimoGain<T>> feedback_selector,
                       const VectorX<T>& Kp, const VectorX<T>& Ki,
                       const VectorX<T>& Kd);
 
@@ -73,13 +109,14 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   void SetDefaultState(Context<T>* context) const;
 
  private:
-  System<T>* system_;
-  PidController<T>* controller_;
-  Demultiplexer<T>* error_demux_;
-  Gain<T>* controller_inverter_;
-  Gain<T>* error_inverter_;
-  Adder<T>* state_minus_target_;
-  Adder<T>* system_input_;
+  System<T>* system_{};
+  PidController<T>* controller_{};
+  MimoGain<T>* feedback_selector_{};
+  Demultiplexer<T>* error_demux_{};
+  Gain<T>* controller_inverter_{};
+  Gain<T>* error_inverter_{};
+  Adder<T>* state_minus_target_{};
+  Adder<T>* system_input_{};
 };
 
 }  // namespace systems

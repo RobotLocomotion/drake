@@ -9,6 +9,15 @@ namespace systems {
 const int kNumStates = 0;
 
 template <typename T>
+MimoGain<T>::MimoGain(int size)
+    : LinearSystemPlant<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
+                           MatrixX<T>::Zero(kNumStates, size),        // B
+                           MatrixX<T>::Zero(size, kNumStates),        // C
+                           MatrixX<T>::Identity(size, size)) {
+
+                           std::cout << "MimoGain created with identity square matrix of size " << size << std::endl; }      // D
+
+template <typename T>
 MimoGain<T>::MimoGain(const Eigen::Ref<const MatrixX<T>> &D)
     : LinearSystemPlant<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
                            MatrixX<T>::Zero(kNumStates, D.cols()),    // B

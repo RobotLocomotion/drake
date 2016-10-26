@@ -1,5 +1,8 @@
 #include "pid_controlled_system.h"
 
+#include <iostream>
+#include <memory>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -19,23 +22,38 @@ PidControlledSystem<T>::PidControlledSystem(
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> system,
+    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd)
+    : PidControlledSystem(std::move(system),
+          std::make_unique<MimoGain<T>>(system->get_output_port(0).get_size()),
+          Kp, Ki, Kd) { }
+
+template <typename T>
+PidControlledSystem<T>::PidControlledSystem(
+    std::unique_ptr<System<T>> system,
+    std::unique_ptr<MimoGain<T>> feedback_selector,
+    const T& Kp, const T& Ki, const T& Kd)
+    : PidControlledSystem(std::move(system), std::move(feedback_selector),
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kp,
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Ki,
+          VectorX<T>::Ones(system->get_input_port(0).get_size()) * Kd) { }
+
+template <typename T>
+PidControlledSystem<T>::PidControlledSystem(
+    std::unique_ptr<System<T>> system,
+    std::unique_ptr<MimoGain<T>> feedback_selector,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
   DiagramBuilder<T> builder;
   system_ = builder.template AddSystem(std::move(system));
+  feedback_selector_ = builder.template AddSystem(std::move(feedback_selector));
 
   DRAKE_ASSERT(system_->get_num_input_ports() >= 1);
   DRAKE_ASSERT(system_->get_num_output_ports() >= 1);
+  DRAKE_ASSERT(system_->get_output_port(0).get_size() ==
+               feedback_selector_->get_input_port().get_size());
   const int num_positions = system_->get_input_port(0).get_size();
   const int num_states = num_positions * 2;
 
-  // TODO(sam.creasey) It would be nice to be able to handle the
-  // existence of extra values in the output port which are discarded
-  // because they're not relevant to the control we're applying here
-  // (see PidControlledSpringMassSystem which discards the energy
-  // information from the spring mass system).  Unfortunately, I can't
-  // find an easy way to do this now, and the current implementation
-  // is sufficient for most uses (including RigidBodyPlant).
-  DRAKE_ASSERT(system_->get_output_port(0).get_size() == num_states);
+  DRAKE_ASSERT(feedback_selector_->get_output_port().get_size() == num_states);
 
   state_minus_target_ = builder.template AddSystem<Adder<T>>(
       2, num_states);
@@ -60,6 +78,8 @@ PidControlledSystem<T>::PidControlledSystem(
   builder.Connect(error_inverter_->get_output_port(),
                   state_minus_target_->get_input_port(0));
   builder.Connect(system_->get_output_port(0),
+                  feedback_selector_->get_input_port());
+  builder.Connect(feedback_selector_->get_output_port(),
                   state_minus_target_->get_input_port(1));
 
   // Splits the error signal into positions and velocities components.

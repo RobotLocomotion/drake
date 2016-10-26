@@ -47,10 +47,13 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   // outputs it twice.
   auto test_sys = std::make_unique<TestSystem>();
   TestSystem* test_p = test_sys.get();
+  auto test_feedback_selector =
+      std::make_unique<MimoGain<double>>(test_sys->get_output_port(0).get_size());
   const double Kp = 2.;
   const double Kd = .1;
   auto controller = builder.AddSystem<PidControlledSystem>(
-      std::move(test_sys), Kp, 0., Kd);
+      std::move(test_sys), std::move(test_feedback_selector), Kp, 0., Kd);
+
   builder.Connect(input_source->get_output_port(),
                   controller->get_input_port(0));
   builder.Connect(state_source->get_output_port(),
