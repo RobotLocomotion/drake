@@ -471,7 +471,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (auto& eq_b : eqs) {
     std::shared_ptr<solvers::LinearEqualityConstraint> eq = eq_b.constraint();
     DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound())
-                     .isZero(Eigen::NumTraits<double>::epsilon()));
+                     .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
@@ -479,9 +479,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
     for (int i = 0; i < tmp_vec.size(); i++) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] -
-                                     Eigen::NumTraits<double>::epsilon() &&
+                                     1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] +
-                                     Eigen::NumTraits<double>::epsilon());
+                                     1e-6);
     }
   }
 
