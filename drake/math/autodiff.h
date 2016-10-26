@@ -8,30 +8,6 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
-/// Overloads round to mimic std::round from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double round(const Eigen::AutoDiffScalar<DerType>& x) {
-  return round(x.value());
-}
-
-/// Overloads floor to mimic std::floor from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double floor(const Eigen::AutoDiffScalar<DerType>& x) {
-  return floor(x.value());
-}
-
-/// Overloads ceil to mimic std::ceil from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
-  return ceil(x.value());
-}
-
 namespace drake {
 namespace math {
 
