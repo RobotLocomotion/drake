@@ -116,6 +116,32 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
               kXFinal, 1e-5);
 }
 
+// Test scaling vectors
+GTEST_TEST(IntegratorTest, Scaling) {
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+
+  // Create the spring-mass system
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+
+  // Create a context
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Create and initialize the integrator.
+  RungeKutta3Integrator<double> integrator(
+      spring_mass, context.get());  // Use default Context.
+  integrator.Initialize();
+
+  // Test scaling
+  EXPECT_EQ(integrator.get_mutable_generalized_state_scaling_vector().size(),
+            1);
+  EXPECT_EQ(integrator.get_mutable_generalized_state_scaling_vector().
+      lpNorm<Eigen::Infinity>(), 1);
+  EXPECT_EQ(integrator.get_misc_state_scaling_vector().size(), 1);
+  EXPECT_EQ(integrator.get_mutable_misc_state_scaling_vector().
+      lpNorm<Eigen::Infinity>(), 1);
+}
+
 // Integrate a purely continuous system with no sampling using error control.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)

@@ -437,8 +437,8 @@ class IntegratorBase {
    *  to make the values mutable without permitting changing the size of
    *  the vector.
    */
-  Eigen::VectorBlock<double>& get_mutable_generalized_state_scaling_vector() {
-    return v_scal_;
+  Eigen::VectorBlock<Eigen::VectorXd> get_mutable_generalized_state_scaling_vector() {
+    return v_scal_.head(v_scal_.rows());
   }
 
   /**
@@ -457,8 +457,8 @@ class IntegratorBase {
    *  to make the values mutable without permitting changing the size of
    *  the vector.
    */
-  Eigen::VectorBlock<double>& get_mutable_misc_state_scaling_vector() {
-    return z_scal_;
+  Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_scaling_vector() {
+    return z_scal_.head(z_scal_.rows());
   }
 
   /**
