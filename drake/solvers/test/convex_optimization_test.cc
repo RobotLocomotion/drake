@@ -22,7 +22,6 @@ void RunSolver(MathematicalProgram* prog,
     EXPECT_EQ(result, SolutionResult::kSolutionFound)
         << "Solver " << solver_name << " fails to find the solution."
         << std::endl;
-    ;
   }
 }
 /////////////////////////
