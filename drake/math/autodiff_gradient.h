@@ -71,6 +71,7 @@ template <typename Derived, typename DerivedGradient, typename DerivedAutoDiff>
 void initializeAutoDiffGivenGradientMatrix(
     const Eigen::MatrixBase<Derived>& val,
     const Eigen::MatrixBase<DerivedGradient>& gradient,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
   static_assert(static_cast<int>(Derived::SizeAtCompileTime) ==
                     static_cast<int>(DerivedGradient::RowsAtCompileTime),
