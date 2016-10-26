@@ -212,6 +212,8 @@ class ContactInformation {
     return num_basis_per_contact_point_;
   }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   const RigidBody* body_;  ///< Link in contact
   /// Offsets of the contact point specified in the body frame.
@@ -298,6 +300,8 @@ class ResolvedContact {
   }
   inline Eigen::Vector3d& mutable_reference_point() { return reference_point_; }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   const RigidBody* body_;
   // Stacked scalars for all the basis vectors.
@@ -336,6 +340,8 @@ class BodyAcceleration {
   // Setter
   inline Eigen::Vector6d& mutable_acceleration() { return acceleration_; }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  protected:
   const RigidBody* body_;
   Eigen::Vector6d acceleration_;
@@ -367,7 +373,7 @@ class DesiredBodyMotion {
   }
 
   inline std::string get_row_name(int i) const {
-    const static std::string row_name[6] = {"[R]", "[P]", "[Y]",
+    static const std::string row_name[6] = {"[R]", "[P]", "[Y]",
                                             "[X]", "[Y]", "[Z]"};
     if (i < 0 || i >= 6)
       throw std::runtime_error("index must be within [0, 5]");
@@ -387,6 +393,8 @@ class DesiredBodyMotion {
   inline bool& mutable_control_during_contact() {
     return control_during_contact_;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   const RigidBody* body_;
@@ -440,6 +448,8 @@ class DesiredJointMotions {
   inline Eigen::VectorXd& mutable_weights() { return weights_; }
   inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   std::vector<std::string> names_;
   Eigen::VectorXd weights_;
@@ -478,7 +488,7 @@ class DesiredCentroidalMomentumChange {
   }
 
   inline std::string get_row_name(int i) const {
-    const static std::string row_name[6] = {"AngMom[R]", "AngMom[P]",
+    static const std::string row_name[6] = {"AngMom[R]", "AngMom[P]",
                                             "AngMom[Y]", "LinMom[X]",
                                             "LinMom[Y]", "LinMom[Z]"};
     if (i < 0 || i >= 6)
@@ -493,6 +503,8 @@ class DesiredCentroidalMomentumChange {
   // Setters
   inline Eigen::Vector6d& mutable_weights() { return weights_; }
   inline Eigen::Vector6d& mutable_momentum_dot() { return momentum_dot_; }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   Eigen::Vector6d weights_;
@@ -695,6 +707,8 @@ class QPOutput {
   inline std::pair<std::string, double>& mutable_cost(size_t i) {
     return costs_.at(i);
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   // Names for each generalized coordinate.

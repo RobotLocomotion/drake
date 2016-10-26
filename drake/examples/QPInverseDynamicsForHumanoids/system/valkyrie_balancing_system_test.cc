@@ -34,6 +34,8 @@ namespace qp_inverse_dynamics {
 // simulation should be replaced later with real simulation.
 // The controller should drive the position and velocity close to zero in 4
 // seconds.
+//
+// You can visualize with drake_visualizer
 GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   std::string urdf = GetDrakePath() + std::string(
                                           "/examples/Valkyrie/urdf/urdf/"
