@@ -21,7 +21,7 @@ AffineSystemPlant<T>::AffineSystemPlant(
     const Eigen::Ref<const MatrixX<T>>& D,
     const Eigen::Ref<const VectorX<T>>& y0)
     : A_(A), B_(B), C_(C), D_(D), XDot0_(xdot0), Y0_(y0),
-      kNumInputs(B.cols()), kNumOutputs(y0.size()), kNumStates(xdot0.size()) {
+      kNumInputs(D.cols()), kNumOutputs(D.rows()), kNumStates(xdot0.size()) {
   DRAKE_DEMAND(kNumStates == A.rows());
   DRAKE_DEMAND(kNumStates == A.cols());
   DRAKE_DEMAND(kNumStates == B.rows());
