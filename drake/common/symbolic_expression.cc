@@ -120,6 +120,7 @@ Expression operator+(Expression lhs, const double rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : 0 + x => x
   if (lhs.EqualTo(Expression::Zero())) {
@@ -144,6 +145,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const double rhs) {
   lhs += Expression{rhs};
   return lhs;
@@ -176,6 +178,7 @@ Expression operator-(Expression lhs, const double rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : E - E => 0
   if (lhs.EqualTo(rhs)) {
@@ -200,6 +203,7 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const double rhs) {
   lhs -= Expression{rhs};
   return lhs;
@@ -241,6 +245,7 @@ Expression operator*(Expression lhs, const double rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : 1 * x => x
   if (lhs.EqualTo(Expression::One())) {
@@ -284,6 +289,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator*=(Expression& lhs, const double rhs) {
   lhs *= Expression{rhs};
   return lhs;
@@ -305,6 +311,7 @@ Expression operator/(Expression lhs, const double rhs) {
   return lhs;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : x / 1 => x
   if (rhs.EqualTo(Expression::One())) {
