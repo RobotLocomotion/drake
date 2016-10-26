@@ -1,4 +1,4 @@
-#include "drake/systems/Simulation.h"
+#include "drake/system1/Simulation.h"
 
 #include <stdexcept>
 

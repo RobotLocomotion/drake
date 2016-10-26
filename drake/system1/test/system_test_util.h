@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/feedback_system.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/cascade_system.h"
+#include "drake/system1/feedback_system.h"
 #include "drake/systems/test/system_test_util.h"
 
 namespace drake {

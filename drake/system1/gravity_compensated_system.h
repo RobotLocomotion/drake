@@ -3,10 +3,10 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 

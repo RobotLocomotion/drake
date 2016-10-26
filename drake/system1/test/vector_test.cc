@@ -1,4 +1,4 @@
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 #include "gtest/gtest.h"
 
