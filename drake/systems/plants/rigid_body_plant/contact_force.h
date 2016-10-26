@@ -24,12 +24,17 @@ namespace systems {
  */
 template <typename T>
 class DRAKE_EXPORT ContactForce {
+ public:
+  /** Default constructor.  All values initialized to zero. */
+  ContactForce() {}
+
   /**
    Fully-specified constructor.
 
    @param application_point         The point at which the wrench is applied.
    @param normal_force              The normal component of the linear force.
-   @param tangent_force             The tangential component of the linear force.
+   @param tangent_force             The tangential component of the linear
+                                    force.
    @param pure_torque               The pure torque component
    */
   ContactForce(const Vector3<T>& application_point,
@@ -48,16 +53,22 @@ class DRAKE_EXPORT ContactForce {
   ContactForce(const Vector3<T>& application_point,
                const Vector3<T>& normal_force, const Vector3<T>& tangent_force);
 
-  Vector3<T> get_application_point() const { return application_point_; }
+  // Contact force is copyable and movable
+  ContactForce(const ContactForce& other) = default;
+  ContactForce& operator=(const ContactForce& other) = default;
+  ContactForce(ContactForce&& other) = default;
+  ContactForce& operator=(ContactForce&& other) = default;
+
+  Vector3<T> get_application_point() { return application_point_; }
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  Vector3<T> get_normal_force() const { return normal_force_; }
+  Vector3<T> get_normal_force() { return normal_force_; }
   const Vector3<T> get_normal_force() const { return normal_force_; }
 
-  Vector3<T> get_tangent_force() const { return tangent_force_; }
+  Vector3<T> get_tangent_force() { return tangent_force_; }
   const Vector3<T> get_tangent_force() const { return tangent_force_; }
 
-  Vector3<T> get_pure_torque() const { return pure_torque_; }
+  Vector3<T> get_pure_torque() { return pure_torque_; }
   const Vector3<T> get_pure_torque() const { return pure_torque_; }
 
   WrenchVector<T> get_wrench() const {
@@ -68,10 +79,10 @@ class DRAKE_EXPORT ContactForce {
   }
 
  private:
-  Vector3<T> application_point_;
-  Vector3<T> normal_force_;
-  Vector3<T> tangent_force_;
-  Vector3<T> pure_torque_;
+  Vector3<T> application_point_{Vector3<T>::Zero()};
+  Vector3<T> normal_force_{Vector3<T>::Zero()};
+  Vector3<T> tangent_force_{Vector3<T>::Zero()};
+  Vector3<T> pure_torque_{Vector3<T>::Zero()};
 };
 }  // namespace systems
 }  // namespace drake
