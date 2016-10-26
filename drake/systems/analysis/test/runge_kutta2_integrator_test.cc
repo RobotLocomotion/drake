@@ -116,7 +116,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
   EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
