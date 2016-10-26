@@ -208,11 +208,13 @@ class DRAKE_EXPORT FunctionalForm {
   /** Update @p lhs to record addition of form @p rhs.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator+=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record addition of a @ref constant or @ref zero.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator+=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record subtraction of form @p rhs.  */
@@ -235,11 +237,13 @@ class DRAKE_EXPORT FunctionalForm {
   /** Update @p lhs to record subtraction of form @p rhs.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator-=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record subtraction of a @ref constant or @ref zero.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator-=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record multiplication by @p rhs.  */
@@ -262,12 +266,14 @@ class DRAKE_EXPORT FunctionalForm {
   /** Update @p lhs to record multiplication by @p rhs.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator*=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record multiplication by a @ref constant
       or @ref zero.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator*=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record division by @p rhs.  */
@@ -290,11 +296,13 @@ class DRAKE_EXPORT FunctionalForm {
   /** Update @p lhs to record division by @p rhs.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator/=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record division by a @ref constant or @ref zero.  */
   friend DRAKE_EXPORT
       FunctionalForm&
+      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
       operator/=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p x updated to record application of an
@@ -627,6 +635,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator+=(MatrixL& lhs, MatrixR const& rhs) {
   return lhs += rhs.template cast<FunctionalForm>();
 }
@@ -672,6 +681,7 @@ typename std::enable_if<
         std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
         std::is_same<typename MatrixR::Scalar, double>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator-=(MatrixL& lhs, MatrixR const& rhs) {
   return lhs -= rhs.template cast<FunctionalForm>();
 }
@@ -743,6 +753,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator*=(MatrixL& lhs, double rhs) {
   return lhs *= FunctionalForm(rhs);
 }
@@ -769,6 +780,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator/=(MatrixL& lhs, double rhs) {
   return lhs /= FunctionalForm(rhs);
 }
