@@ -3,11 +3,11 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/gravity_compensated_system.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/Simulation.h"
+#include "drake/system1/cascade_system.h"
+#include "drake/system1/gravity_compensated_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 
 using drake::AffineSystem;

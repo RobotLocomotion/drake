@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 

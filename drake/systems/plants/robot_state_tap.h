@@ -1,10 +1,10 @@
 #pragma once
 
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 
-/// Implements a Drake System (@see drake/systems/System.h) that
+/// Implements a Drake System (@see drake/system1/System.h) that
 /// saves the latest input as a local variable and provides an accessor
 /// to it. This is useful for testing the final configuration of the robot in a
 /// unit test. It otherwise merely passes through its input to output.

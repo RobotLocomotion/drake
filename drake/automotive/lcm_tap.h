@@ -6,12 +6,12 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 namespace automotive {
 
-/// Implements a Drake System (@see drake/systems/System.h) that
+/// Implements a Drake System (@see drake/system1/System.h) that
 /// publishes its input to LCM, but otherwise merely passes through
 /// its input to output, and has no state.
 template <template <typename> class Vector>

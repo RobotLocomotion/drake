@@ -1,12 +1,11 @@
-#include "drake/systems/framework/primitives/time_varying_polynomial_source.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system_input.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "gtest/gtest.h"
 
@@ -18,13 +17,13 @@ namespace drake {
 namespace systems {
 namespace {
 
-class TimeVaryingPolynomialSourceTest : public ::testing::Test {
+class TrajectorySourceTest : public ::testing::Test {
  protected:
-  TimeVaryingPolynomialSourceTest() : kppTraj(MatrixXd::Constant(2, 1, 1.5)) {
-  }
+  TrajectorySourceTest()
+      : kppTraj(PiecewisePolynomial<double>(MatrixXd::Constant(2, 1, 1.5))) {}
 
   void SetUp() override {
-    source_ = make_unique<TimeVaryingPolynomialSource<double>>(kppTraj);
+    source_ = make_unique<TrajectorySource<double>>(kppTraj);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<double>>(3 /* length */);
@@ -35,14 +34,14 @@ class TimeVaryingPolynomialSourceTest : public ::testing::Test {
     return make_unique<FreestandingInputPort>(std::move(data));
   }
 
-  const PiecewisePolynomial<double> kppTraj;
+  const PiecewisePolynomialTrajectory kppTraj;
   std::unique_ptr<System<double>> source_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-TEST_F(TimeVaryingPolynomialSourceTest, OutputTest) {
+TEST_F(TrajectorySourceTest, OutputTest) {
   ASSERT_EQ(0, context_->get_num_input_ports());
   ASSERT_EQ(1, output_->get_num_ports());
 
@@ -59,7 +58,7 @@ TEST_F(TimeVaryingPolynomialSourceTest, OutputTest) {
 }
 
 // Tests that ConstantVectorSource allocates no state variables in the context_.
-TEST_F(TimeVaryingPolynomialSourceTest, ConstantVectorSourceIsStateless) {
+TEST_F(TrajectorySourceTest, ConstantVectorSourceIsStateless) {
   EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 

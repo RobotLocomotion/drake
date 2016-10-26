@@ -44,7 +44,7 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient,
   m.terms = terms;
 
   is_univariate_ = true;
-  for (int i = (int)m.terms.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(m.terms.size()) - 1; i >= 0; i--) {
     if ((i > 0) && (m.terms[i].var != m.terms[0].var)) {
       is_univariate_ = false;
     }
@@ -559,8 +559,9 @@ string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
                                                 // doing the trig support here
 
   unsigned int m = id / 2 / kMaxNamePart;
-  unsigned int multiplier = (unsigned int)std::pow((double)(kNumNameChars + 1),
-                                                   (int)(kNameLength - 1));
+  unsigned int multiplier = static_cast<unsigned int>(
+      std::pow(static_cast<double>(kNumNameChars + 1),
+               static_cast<int>(kNameLength) - 1));
   char name[kNameLength + 1];
   int j = 0;
   for (int i = 0; i < static_cast<int>(kNameLength); i++) {

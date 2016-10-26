@@ -9,9 +9,9 @@
 #include "drake/lcmt_drake_signal.hpp"
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/System.h"
-#include "drake/systems/cascade_system.h"
+#include "drake/system1/Simulation.h"
+#include "drake/system1/System.h"
+#include "drake/system1/cascade_system.h"
 
 namespace drake {
 
@@ -53,6 +53,7 @@ bool encode(const double &t, const Vector &x, drake::lcmt_drake_signal &msg) {
 
 template <class Vector>
 bool decode(const drake::lcmt_drake_signal &msg, double &t, Vector &x) {
+  // NOLINTNEXTLINE(readability/casting) This code will be deleted soon.
   t = double(msg.timestamp) / 1000.0;
   std::unordered_map<std::string, double> m;
   for (int i = 0; i < msg.dim; i++) {

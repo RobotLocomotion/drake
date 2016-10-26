@@ -995,8 +995,8 @@ int InstantaneousQPController::setupAndSolveQP(
   if (qp_input.whole_body_data.num_constrained_dofs > 0) {
     // add joint acceleration constraints
     for (int i = 0; i < qp_input.whole_body_data.num_constrained_dofs; i++) {
-      Aeq(equality_ind, (int)condof[i] - 1) = 1;
-      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i] - 1];
+      Aeq(equality_ind, static_cast<int>(condof[i]) - 1) = 1;
+      beq[equality_ind++] = pid_out.qddot_des[static_cast<int>(condof[i]) - 1];
     }
   }
 
@@ -1044,7 +1044,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
   for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
-    if (std::isinf(double(bin(i)))) {
+    if (std::isinf(bin(i))) {
       Ain.row(i) = 0 * Ain.row(i);
       bin(i) = 0;
     }

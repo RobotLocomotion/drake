@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 namespace systems {

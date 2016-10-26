@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include <vector>
-#include "PiecewiseFunction.h"
+#include "drake/systems/trajectories/PiecewiseFunction.h"
 #include "drake/common/drake_export.h"
 
 class DRAKE_EXPORT PiecewisePolynomialBase

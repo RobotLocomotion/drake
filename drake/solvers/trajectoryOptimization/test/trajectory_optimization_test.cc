@@ -5,7 +5,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 using std::vector;
 using Eigen::MatrixXd;
@@ -26,6 +26,7 @@ class InitialCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(1) * x(1);
   }
@@ -37,6 +38,7 @@ class FinalCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     y(0) = x(2) * x(2);
   }
@@ -125,7 +127,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
     EXPECT_LE(times_out[i] - times_out[i - 1], h_ub(i - 1) + 1E-10);
   }
 
-  PiecewisePolynomial<double> input_traj =
+  PiecewisePolynomialTrajectory input_traj =
       direct_traj.ReconstructInputTrajectory();
 
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
@@ -139,7 +141,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
                               input_traj.value(times_out[kInputConstraintHi]),
                               1e-6, MatrixCompareType::absolute));
 
-  PiecewisePolynomial<double> state_traj =
+  PiecewisePolynomialTrajectory state_traj =
       direct_traj.ReconstructStateTrajectory();
   EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
                               1e-10, MatrixCompareType::absolute));
