@@ -91,7 +91,6 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
               Eigen::Isometry3d::Identity().matrix());
 }
 
-#if 0
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
   RigidBody* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
   RigidBody* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
@@ -126,6 +125,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
               T_r1and2_to_world.matrix());
 }
 
+#if 0
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1_ to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
