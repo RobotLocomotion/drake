@@ -42,6 +42,10 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
 
   // Declares output port for y.
   this->DeclareOutputPort(kVectorValued, kNumOutputs, kContinuousSampling);
+
+  // Declares the number of continuous state variables. This is needed for
+  // EvalTimeDerivaties() to work.
+  this->DeclareContinuousState(kNumStates);
 }
 
 template <typename T>
