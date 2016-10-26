@@ -21,11 +21,11 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
                               const Eigen::Ref<const VectorX<T>>& y0)
     : A_(A),
       B_(B),
+      XDot0_(xdot0),
       C_(C),
       D_(D),
-      XDot0_(xdot0),
       Y0_(y0),
-      kNumInputs(B.cols()),
+      kNumInputs(D.cols()),
       kNumOutputs(D.rows()),
       kNumStates(xdot0.size()) {
   DRAKE_DEMAND(kNumStates == A.rows());

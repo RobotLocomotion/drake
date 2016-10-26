@@ -10,7 +10,7 @@ namespace systems {
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
 /// implements the following equations:
 /// @f[
-///   \dot{x} = Ax + Bu + \dot{x}_0 \\
+///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
 ///   y = Cx + Du + y_0
 /// @f]
 ///
@@ -69,9 +69,9 @@ class AffineSystem : public LeafSystem<T> {
  private:
   const MatrixX<T> A_;
   const MatrixX<T> B_;
+  const VectorX<T> XDot0_;
   const MatrixX<T> C_;
   const MatrixX<T> D_;
-  const VectorX<T> XDot0_;
   const VectorX<T> Y0_;
   const int kNumInputs;
   const int kNumOutputs;

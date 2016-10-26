@@ -10,7 +10,7 @@ namespace systems {
 /// initial system output `y0` are both zero. Given an input signal `u` and a
 /// state `x` the output of this sytem 'y' is:
 /// @f[
-///   \dot{x} = Ax + Bu
+///   \dot{x} = Ax + Bu \newline
 ///   y = Cx + Du
 /// @f]
 ///
