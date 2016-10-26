@@ -10,8 +10,8 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/parser_urdf.h"
+//#include "drake/systems/plants/parser_sdf.h"
+//#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -72,9 +72,12 @@ using std::unordered_map;
 using std::vector;
 using std::endl;
 
-const set<int> RigidBodyTree::default_model_instance_id_set = {0};
-const char* const RigidBodyTree::kWorldName = "world";
-const int RigidBodyTree::kWorldBodyIndex = 0;
+template<typename T>
+const set<int> RigidBodyTree<T>::default_model_instance_id_set = {0};
+template<typename T>
+const char* const RigidBodyTree<T>::kWorldName = "world";
+template<typename T>
+const int RigidBodyTree<T>::kWorldBodyIndex = 0;
 
 template <typename T>
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
@@ -86,6 +89,7 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   }
 }
 
+#if 0
 std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
   os << *tree.collision_model_.get();
   return os;
@@ -99,8 +103,10 @@ RigidBodyTree::RigidBodyTree(
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       filename, floating_base_type, this);
 }
+#endif
 
-RigidBodyTree::RigidBodyTree(void)
+template<typename T>
+RigidBodyTree<T>::RigidBodyTree(void)
     : collision_model_(DrakeCollision::newModel()) {
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
@@ -116,8 +122,10 @@ RigidBodyTree::RigidBodyTree(void)
   bodies.push_back(std::move(world_body));
 }
 
-RigidBodyTree::~RigidBodyTree(void) {}
+template<typename T>
+RigidBodyTree<T>::~RigidBodyTree(void) {}
 
+#if 0
 bool RigidBodyTree::transformCollisionFrame(
     const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
@@ -1909,10 +1917,12 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
       Phi * J_geometric_dot_times_v.template topRows<kSpaceDimension>();
   return ret;
 }
+#endif
 
-RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
-                                   const std::string& model_name,
-                                   int model_instance_id) const {
+template<typename T>
+RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
+                                      const std::string& model_name,
+                                      int model_instance_id) const {
   // Obtains lower case versions of the body name and model name.
   std::string body_name_lower = body_name;
   std::string model_name_lower = model_name;
@@ -1977,6 +1987,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
+#if 0
 std::vector<const RigidBody*>
 RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
   std::vector<const RigidBody*> result;
@@ -2327,8 +2338,10 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   // yuck!!
   frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);
 }
+#endif
 
-RigidBody* RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+template<typename T>
+RigidBody* RigidBodyTree<T>::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
@@ -2343,7 +2356,7 @@ RigidBody* RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   return bodies.back().get();
 }
 
-
+#if 0
 int RigidBodyTree::get_num_positions() const {
   return num_positions_;
 }
@@ -2829,3 +2842,7 @@ template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
 template DRAKE_EXPORT int RigidBodyTree::parseBodyOrFrameID(
     const int body_or_frame_id,
     Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;
+#endif
+
+// Explicitly instantiates on the most common scalar types.
+template class DRAKE_EXPORT RigidBodyTree<double>;

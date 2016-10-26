@@ -9,9 +9,9 @@ pods_install_pkg_config_file(drake-xml-util
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
-  parser_common.cc
-  parser_sdf.cc
-  parser_urdf.cc
+#  parser_common.cc
+#  parser_sdf.cc
+#  parser_urdf.cc
   RigidBodyTree.cpp
   RigidBody.cpp
   RigidBodyTreeContact.cpp
@@ -46,7 +46,8 @@ pods_install_pkg_config_file(drake-rbm
   VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint)
+target_link_libraries(drakeRBSystem drakeRBM)
+#drakeOptimization drakeRigidBodyConstraint)
 
 drake_install_headers(RigidBodySystem.h)
 pods_install_libraries(drakeRBSystem)

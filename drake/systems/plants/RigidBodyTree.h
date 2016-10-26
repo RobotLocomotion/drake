@@ -64,6 +64,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
  */
+template <typename T>
 class DRAKE_EXPORT RigidBodyTree {
  public:
   /**
@@ -84,6 +85,8 @@ class DRAKE_EXPORT RigidBodyTree {
           floating_base_type = drake::systems::plants::joints::kRollPitchYaw);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
+
+#if 0
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
@@ -700,6 +703,7 @@ class DRAKE_EXPORT RigidBodyTree {
   virtual std::vector<size_t> collidingPoints(
       const KinematicsCache<double>& cache,
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
+#endif
 
   /**
    * Finds a body with the specified \p body_name belonging to a model
@@ -720,6 +724,7 @@ class DRAKE_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
+#if 0
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
    * to a particular model instance.
@@ -956,6 +961,7 @@ class DRAKE_EXPORT RigidBodyTree {
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                   const RigidBodyTree&);
 
+#endif
   /**
    * @brief Adds and takes ownership of a rigid body.
    *
@@ -975,6 +981,7 @@ class DRAKE_EXPORT RigidBodyTree {
    */
   RigidBody& world() { return *bodies[0]; }
 
+#if 0
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
@@ -1003,6 +1010,7 @@ class DRAKE_EXPORT RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_velocities().")
 #endif
   int number_of_velocities() const;
+#endif
 
  public:
   static const std::set<int> default_model_instance_id_set;
@@ -1039,6 +1047,7 @@ class DRAKE_EXPORT RigidBodyTree {
   // The number of model instances in this rigid body tree.
   int num_model_instances_{};
 
+#if 0
   // Helper functions for contactConstraints.
   template <typename Scalar>
   void accumulateContactJacobian(
@@ -1073,6 +1082,7 @@ class DRAKE_EXPORT RigidBodyTree {
   //
   // @see RigidBody::CanCollideWith.
   void CreateCollisionCliques();
+#endif
 
   // collision_model maintains a collection of the collision geometry in the
   // RBM for use in collision detection of different kinds. Small margins are

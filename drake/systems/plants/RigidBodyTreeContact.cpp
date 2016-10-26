@@ -11,6 +11,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXi;
 using std::vector;
 
+#if 0
 // Computes surface tangent vectors for a single normal vector
 // INPUTS:
 //   normal: (3 x 1) normal vector in world coordinates
@@ -286,3 +287,4 @@ template DRAKE_EXPORT void RigidBodyTree::computeContactJacobians<double>(
     Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
                Eigen::OuterStride<-1> > const &,
     Eigen::Matrix<double, -1, -1, 0, -1, -1> &) const;
+#endif
