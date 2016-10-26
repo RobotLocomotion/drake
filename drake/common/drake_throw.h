@@ -2,6 +2,7 @@
 
 #include <type_traits>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 
 /// @file
@@ -22,10 +23,11 @@ void Throw(const char* condition, const char* func, const char* file, int line);
 /// and line.
 #define DRAKE_THROW_UNLESS(condition)                                   \
   do {                                                                  \
-    static_assert(                                                      \
-        std::is_convertible<decltype(condition), bool>::value,          \
+    static_assert(std::is_convertible<                                  \
+        decltype(::drake::assert::EvaluateCondition(condition)),        \
+        bool>::value,                                                   \
         "Throw condition should be bool-convertible.");                 \
-    if (!(condition)) {                                                 \
+    if (!::drake::assert::EvaluateCondition(condition)) {               \
       ::drake::detail::Throw(#condition, __func__, __FILE__, __LINE__); \
     }                                                                   \
   } while (0)

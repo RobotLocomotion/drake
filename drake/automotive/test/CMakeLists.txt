@@ -4,14 +4,8 @@ target_link_libraries(curve2_test drakeAutomotive)
 drake_add_cc_test(simple_car_test)
 target_link_libraries(simple_car_test drakeAutomotive)
 
-drake_add_cc_test(simple_car_scalartype_test)
-target_link_libraries(simple_car_scalartype_test drakeAutomotive)
-
 drake_add_cc_test(idm_with_trajectory_agent_test)
 target_link_libraries(idm_with_trajectory_agent_test drakeAutomotive)
-
-drake_add_cc_test(idm_with_trajectory_agent_scalartype_test)
-target_link_libraries(idm_with_trajectory_agent_scalartype_test drakeAutomotive)
 
 drake_add_cc_test(simple_car_to_euler_floating_joint_test)
 target_link_libraries(simple_car_to_euler_floating_joint_test drakeAutomotive)
