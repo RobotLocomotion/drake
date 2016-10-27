@@ -29,7 +29,8 @@ Vector3<T> ContactResultantForceCalculator<T>::ComputeMinimumMomentPoint()
 }
 
 template <typename T>
-WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench() {
+WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench()
+    const {
   if (is_dirty_) {
     // TODO(SeanCurtis-TRI): Implement this.
   }
@@ -37,9 +38,7 @@ WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench() {
 }
 
 template <typename T>
-void ContactResultantForceCalculator<T>::ComputeCachedData() {
-
-}
+void ContactResultantForceCalculator<T>::ComputeCachedData() const {}
 
 template class ContactResultantForceCalculator<double>;
 
