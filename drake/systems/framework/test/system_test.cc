@@ -136,6 +136,14 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+
+  // Test Eigen specialized function specially.
+  system_.MapVelocityToConfigurationDerivatives(context_,
+                                                state_vec1->CopyToVector(),
+                                                &state_vec2);
+  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
+  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
+  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
 }
 
 TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
@@ -147,6 +155,15 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+
+  // Test Eigen specialized function specially.
+  system_.MapConfigurationDerivativesToVelocity(context_,
+                                                state_vec1->CopyToVector(),
+                                                &state_vec2);
+  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
+  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
+  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+
 }
 
 TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
