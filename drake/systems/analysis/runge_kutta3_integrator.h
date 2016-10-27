@@ -55,21 +55,17 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   virtual ~RungeKutta3Integrator() {}
 
   RungeKutta3Integrator(const System <T>& system,
-                               Context <T>* context = nullptr)
+                        Context <T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     derivs0_ = system.AllocateTimeDerivatives();
     derivs1_ = system.AllocateTimeDerivatives();
     derivs2_ = system.AllocateTimeDerivatives();
   }
 
-  /**
- * The integrator supports accuracy estimation.
- */
+  /// The integrator supports accuracy estimation.
   bool supports_accuracy_estimation() const override { return true; }
 
-  /**
-   * The integrator supports error control.
-   */
+  /// The integrator supports error control.
   bool supports_error_control() const override { return true; }
 
   /// This integrator provides third order error estimates.
@@ -86,6 +82,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   // These are pre-allocated temporaries for use by integration.
   std::unique_ptr <ContinuousState<T>> derivs0_, derivs1_, derivs2_;
 };
-}  // systems
-}  // drake
+  
+}  // namespace systems
+}  // namespace drake
 
