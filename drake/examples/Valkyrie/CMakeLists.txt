@@ -11,3 +11,13 @@ endif()
 drake_add_matlab_test(NAME examples/Valkyrie/runValkyrieVisualize OPTIONAL bullet gurobi snopt COMMAND runValkyrieVisualize)
 
 add_subdirectory(test)
+
+if(lcm_FOUND)
+  add_executable(ValkyrieIKTest ValkyrieIKTest.cpp Valkyrie_plant.cc)
+  target_link_libraries(ValkyrieIKTest
+          drakeCommon
+          drakeIK
+          drakeLCMSystem
+          drakeLCMTypes
+          drakeRBSystem)
+endif()

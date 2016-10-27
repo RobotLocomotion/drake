@@ -20,10 +20,32 @@ using drake::ValkyriePlant;
 using namespace std;
 using namespace Eigen;
 
+/* Finds and returns the indices within the state vector of @p tree that contain
+ * the position states of a joint named @p name. The model instance ID is
+ * ignored in this search (joints belonging to all model instances are
+ * searched).
+ */
 std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
-                                               const std::string& name);
+                                               const std::string& name) {
+    RigidBody* joint_child_body = tree->FindChildBodyOfJoint(name);
+    int num_positions = joint_child_body->getJoint().get_num_positions();
+    std::vector<int> ret(static_cast<size_t>(num_positions));
+
+    // Since the joint position states are located in a contiguous region of the
+    // the rigid body tree's state vector, fill the return vector with
+    // sequentially increasing indices starting at
+    // `joint_child_body->get_position_start_index()`.
+    iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index());
+    return ret;
+}
+
 void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
-                        std::vector<int>& position_list);
+                        std::vector<int>& position_list) {
+    auto position_indices = GetJointPositionVectorIndices(model, name);
+
+    position_list.insert(position_list.end(), position_indices.begin(),
+                         position_indices.end());
+}
 
 int main() {
     std::shared_ptr<ValkyriePlant> val_sys = std::make_shared<ValkyriePlant>();
@@ -298,29 +320,3 @@ int main() {
 
 
 
-/* Finds and returns the indices within the state vector of @p tree that contain
- * the position states of a joint named @p name. The model instance ID is
- * ignored in this search (joints belonging to all model instances are
- * searched).
- */
-std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
-                                               const std::string& name) {
-    RigidBody* joint_child_body = tree->FindChildBodyOfJoint(name);
-    int num_positions = joint_child_body->getJoint().get_num_positions();
-    std::vector<int> ret(static_cast<size_t>(num_positions));
-
-    // Since the joint position states are located in a contiguous region of the
-    // the rigid body tree's state vector, fill the return vector with
-    // sequentially increasing indices starting at
-    // `joint_child_body->get_position_start_index()`.
-    iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index());
-    return ret;
-}
-
-void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
-                        std::vector<int>& position_list) {
-    auto position_indices = GetJointPositionVectorIndices(model, name);
-
-    position_list.insert(position_list.end(), position_indices.begin(),
-                         position_indices.end());
-}
