@@ -6,13 +6,12 @@ namespace drake {
 namespace systems {
 
 /// A continuous affine system. Given an input vector `u`, an output
-/// vector 'y', a state vector `x`, its derivative @f['\dot{x}'@f] and
-/// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
+/// vector 'y', a state vector `x`, its derivative `xDot` and
+/// state space coefficient matrices `A`, `B`, `C`, and `D`, initial time
+/// derivative `xDot0` and intial output `y0`, this system
 /// implements the following equations:
-/// @f[
-///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
-///   y = Cx + Du + y_0
-/// @f]
+/// @f[\dot{x} = Ax + Bu + \dot{x}_0 @f] \newline
+/// @f[y = Cx + Du + y_0 @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -43,7 +42,7 @@ class AffineSystem : public LeafSystem<T> {
                const Eigen::Ref<const MatrixX<T>>& D,
                const Eigen::Ref<const VectorX<T>>& y0);
   /// The input to this system is direct feedthrough only if the coefficient
-  /// matrix `D` is zero.
+  /// matrix `D` is non-zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
 
   /// Returns the input port containing the externally applied input.
@@ -63,19 +62,19 @@ class AffineSystem : public LeafSystem<T> {
   const Eigen::Ref<const MatrixX<T>> GetB(void) const { return B_; }
   const Eigen::Ref<const MatrixX<T>> GetC(void) const { return C_; }
   const Eigen::Ref<const MatrixX<T>> GetD(void) const { return D_; }
-  const Eigen::Ref<const VectorX<T>> GetXDot0(void) const { return XDot0_; }
-  const Eigen::Ref<const VectorX<T>> GetY0(void) const { return Y0_; }
+  const Eigen::Ref<const VectorX<T>> GetxDot0(void) const { return xDot0_; }
+  const Eigen::Ref<const VectorX<T>> Gety0(void) const { return y0_; }
 
  private:
   const MatrixX<T> A_;
   const MatrixX<T> B_;
-  const VectorX<T> XDot0_;
+  const VectorX<T> xDot0_;
   const MatrixX<T> C_;
   const MatrixX<T> D_;
-  const VectorX<T> Y0_;
-  const int kNumInputs;
-  const int kNumOutputs;
-  const int kNumStates;
+  const VectorX<T> y0_;
+  const int num_inputs_;
+  const int num_outputs_;
+  const int num_states_;
 };
 
 }  // namespace systems
