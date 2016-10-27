@@ -42,6 +42,7 @@ namespace systems {
  The queries for resulatant force and application point can be made at any time.
  The actual values will change as more forces are added to the calculator.
  */
+// TODO(SeanCurtis-TRI): Add documentation to describe the optimal point.
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
