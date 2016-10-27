@@ -364,15 +364,15 @@ class System {
   /// velocities. Generalized velocities (v) and configuration
   /// derivatives (qdot) are related linearly by `qdot = N(q) * v` (where `N`
   /// may be the identity matrix). Although `N` is not necessarily square,
-  /// its pseudo-inverse `N+` can be used to invert that relationship without
-  /// residual error (at least in certain cases, like where `q` corresponds
-  /// to a unit quaternion and `v` corresponds to an angular velocity).
-  /// Using the configuration `q` from the given context, this method calculates
-  /// `v = N+ * qdot` for a given `qdot` (@p configuration_derivatives). This
-  /// method does not take `qdot` from the context. See the alternate signature
-  /// if you already have `qdot` in an Eigen VectorX object; this signature
-  /// will copy the VectorBase into an Eigen object before performing the
+  /// its left pseudo-inverse `N+` can be used to invert that relationship
+  /// without residual error. Using the configuration `q` from the given
+  /// context this method calculates `v = N+ * qdot` (where `N+=N+(q)`) for
+  /// a given `qdot` (@p configuration_derivatives). This method does not
+  /// take `qdot` from the context. See the alternate signature if you
+  /// already have `qdot` in an Eigen VectorX object; this signature will
+  /// copy the VectorBase into an Eigen object before performing the
   /// computation.
+  // TODO(edrumwri): Evan to verify that N is always left-invertible.
   void MapConfigurationDerivativesToVelocity(
       const Context<T>& context, const VectorBase<T>& configuration_derivatives,
       VectorBase<T>* generalized_velocity) const {
