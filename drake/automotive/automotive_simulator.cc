@@ -199,8 +199,8 @@ void AutomotiveSimulator<T>::Start() {
     // to feed RigidBodyTreeLcmPublisher.  We stack them up in joint order as
     // the position input to the publisher, and then also need to feed zeros
     // for all of the joint velocities.
-    const int num_joints = rigid_body_tree_publisher_inputs_.size();
-    const int num_ports_into_mux = 2 * num_joints;  // For position + velocity.
+    const int num_models = rigid_body_tree_publisher_inputs_.size();
+    const int num_ports_into_mux = 2 * num_models;  // For position + velocity.
     const int num_joint_states_per_model =
         EulerFloatingJointStateIndices::kNumCoordinates;
 
@@ -228,7 +228,7 @@ void AutomotiveSimulator<T>::Start() {
 
     // Connect systems that provide joint positions to the mux position inputs.
     // Connect the zero-velocity source to all of the mux velocity inputs.
-    for (int input_index = 0; input_index < num_joints; ++input_index) {
+    for (int input_index = 0; input_index < num_models; ++input_index) {
       int model_instance_id{};
       const systems::System<T>* model_pose_system{};
       std::tie(model_instance_id, model_pose_system)
@@ -251,7 +251,7 @@ void AutomotiveSimulator<T>::Start() {
       builder_->Connect(model_pose_system->get_output_port(0),
                         multiplexer->get_input_port(input_index));
       builder_->Connect(zero_velocity->get_output_port(),
-                        multiplexer->get_input_port(num_joints + input_index));
+                        multiplexer->get_input_port(num_models + input_index));
     }
   }
   rigid_body_tree_->compile();
