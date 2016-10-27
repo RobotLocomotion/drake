@@ -217,7 +217,6 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   EXPECT_TRUE(cache.hasV());
 }
 
-#if 0
 // Ensure's the model's instance ID was saved in model_instance_id_table.
 // Since only one model was added   (a 2-DOF robot), there should only be one
 // model in the table. Furthermore, it should be called "two_dof_robot" and
@@ -361,7 +360,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Obtains a list of the world's children. Verifies that this list is
   // identical to base_body_list.
   std::vector<int> children_of_world_list =
-      tree_->FindChildrenOfBody(RigidBodyTree::kWorldBodyIndex);
+      tree_->FindChildrenOfBody(RigidBodyTree<double>::kWorldBodyIndex);
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 
@@ -410,7 +409,6 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   EXPECT_EQ(list_of_children_bad_instance_id.size(), 0u);
 }
-#endif
 
 }  // namespace
 }  // namespace test

@@ -734,7 +734,6 @@ class DRAKE_EXPORT RigidBodyTree {
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
-#if 0
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
    * to a particular model instance.
@@ -766,7 +765,6 @@ class DRAKE_EXPORT RigidBodyTree {
    * calling RigidBodyTree::get_num_bodies().
    */
   std::vector<int> FindBaseBodies(int model_instance_id = -1) const;
-#endif
 
   /**
    * Obtains the index of a rigid body within this rigid body tree. The rigid
@@ -790,7 +788,6 @@ class DRAKE_EXPORT RigidBodyTree {
   int FindBodyIndex(const std::string& body_name, int model_instance_id = -1)
       const;
 
-#if 0
   /**
    * Returns a vector of indexes of bodies that are the children of the body at
    * index @p parent_body_index. The resulting list can be further filtered to
@@ -802,6 +799,7 @@ class DRAKE_EXPORT RigidBodyTree {
   std::vector<int> FindChildrenOfBody(int parent_body_index,
       int model_instance_id = -1) const;
 
+#if 0
   /**
    * This is a deprecated version of `FindBodyIndex(...)`. Please use
    * `FindBodyIndex(...)` instead.
@@ -885,6 +883,8 @@ class DRAKE_EXPORT RigidBodyTree {
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
+#endif
+
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
@@ -898,6 +898,8 @@ class DRAKE_EXPORT RigidBodyTree {
    * represents the world.
    */
   int get_num_bodies() const;
+
+#if 0
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")

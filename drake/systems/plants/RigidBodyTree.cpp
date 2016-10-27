@@ -2005,9 +2005,9 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
   }
 }
 
-#if 0
+template <typename T>
 std::vector<const RigidBody*>
-RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
@@ -2023,12 +2023,14 @@ RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
   return result;
 }
 
-RigidBody* RigidBodyTree::findLink(const std::string& link_name,
+template <typename T>
+RigidBody* RigidBodyTree<T>::findLink(const std::string& link_name,
                                    const std::string& model_name,
                                    int model_instance_id) const {
   return FindBody(link_name, model_name, model_instance_id);
 }
 
+#if 0
 shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
     const std::string& frame_name, int model_instance_id) const {
   std::string frame_name_lower = frame_name;
@@ -2081,12 +2083,13 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
         std::to_string(model_instance_id) + ".");
   }
 }
+#endif
 
-std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindBaseBodies(int model_instance_id)
     const {
   return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
 }
-#endif
 
 template <typename T>
 int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
@@ -2102,8 +2105,8 @@ int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
   return body->get_body_index();
 }
 
-#if 0
-std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
   DRAKE_DEMAND(parent_body_index >= 0 &&
@@ -2130,6 +2133,7 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
   return children_indexes;
 }
 
+#if 0
 // TODO(liang.fok) Remove this method prior to Release 1.0.
 int RigidBodyTree::findLinkId(const std::string& link_name,
                               int model_instance_id) const {
@@ -2213,17 +2217,19 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
   return link->get_body_index();
 }
 
-#if 0
-const RigidBody& RigidBodyTree::get_body(int body_index) const {
+template <typename T>
+const RigidBody& RigidBodyTree<T>::get_body(int body_index) const {
   DRAKE_DEMAND(body_index >= 0 &&
                      body_index < get_num_bodies());
   return *bodies[body_index].get();
 }
 
-int RigidBodyTree::get_num_bodies() const {
+template <typename T>
+int RigidBodyTree<T>::get_num_bodies() const {
   return static_cast<int>(bodies.size());
 }
 
+#if 0
 // TODO(liang.fok) Remove this method prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")
