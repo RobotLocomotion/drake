@@ -29,3 +29,20 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = ["//drake/common"],
 )
+
+# These require bleeding-edge Eigen.
+cc_library(
+    name = "fancy_eigen",
+    hdrs = [
+        "eigen_sparse_triplet.h",
+        "expmap.h",
+        "jacobian.h",
+    ],
+    srcs = [
+        "eigen_sparse_triplet.cc",
+        "expmap.cc",
+        "jacobian.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["math"],
+)
