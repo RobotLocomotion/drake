@@ -6,11 +6,11 @@ namespace drake {
 namespace systems {
 
 /// A continuous affine system. Given an input vector `u`, an output
-/// vector 'y', a state vector `x`, its derivative `xDot` and
+/// vector `y`, a state vector `x`, its derivative `xDot` and
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, initial time
 /// derivative `xDot0` and intial output `y0`, this system
 /// implements the following equations:
-/// @f[\dot{x} = Ax + Bu + \dot{x}_0 @f] \newline
+/// @f[\dot{x} = Ax + Bu + \dot{x}_0 @f]
 /// @f[y = Cx + Du + y_0 @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.

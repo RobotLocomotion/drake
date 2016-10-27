@@ -5,11 +5,11 @@
 namespace drake {
 namespace systems {
 
-/// A continuous linear system that is a specialization of an affine system
+/// A continuous linear system that is a specialization of an AffineSystem
 /// where the inital time derivative of the system state `xDot0`
 /// and the initial system output `y0` are both zero. Given an input
-/// signal `u` and a state `x` the output of this sytem 'y' is:
-/// @f[\dot{x} = Ax + Bu @f] \newline
+/// signal `u` and a state `x` the output of this system 'y' is:
+/// @f[\dot{x} = Ax + Bu @f]
 /// @f[y = Cx + Du @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -24,9 +24,9 @@ namespace systems {
 template <typename T>
 class LinearSystem : public AffineSystem<T> {
  public:
-  /// Constructs a Linear system with a fixed set of coefficient matrices `A`,
+  /// Constructs a %LinearSystem with a fixed set of coefficient matrices `A`,
   /// `B`,`C`, and `D`.
-  /// The coefficient matrices must obey the following dimensions :
+  /// The coefficient matrices must obey the following dimensions:
   /// | Matrix  | Num Rows    | Num Columns |
   /// |:-------:|:-----------:|:-----------:|
   /// | A       | num states  | num states  |
