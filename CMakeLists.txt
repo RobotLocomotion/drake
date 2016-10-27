@@ -239,6 +239,10 @@ drake_add_external(libbot PUBLIC CMAKE
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
 
+# robotlocomotion_lcmtypes
+drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE
+  DEPENDS bot_core_lcmtypes lcm)
+
 # xfoil
 # The Ninja generator does not support Fortran.
 drake_add_external(xfoil PUBLIC CMAKE GENERATOR "Unix Makefiles")
@@ -310,6 +314,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     mosek
     nlopt
     octomap
+    robotlocomotion_lcmtypes
     sedumi
     snopt
     spdlog
