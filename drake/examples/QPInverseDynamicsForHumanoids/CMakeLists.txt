@@ -24,6 +24,7 @@ if(lcm_FOUND)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
   target_link_libraries(drakeQPControllerLcmTranslator
     drakeLCMTypes
+    drakeLCMUtil
     lcmtypes_bot2-core-cpp)
 endif()
 
