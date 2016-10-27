@@ -109,6 +109,13 @@ class AutomotiveSimulator {
   int allocate_vehicle_number();
   void AddBoxcar(const SimpleCarToEulerFloatingJoint<T>*);
 
+  // Returns a vector containing the number of joint position and velocity
+  // states of each model instance in rigid_body_tree_. A sequence of joint
+  // position states comes first followed by a sequence of joint velocity
+  // states. The length of the returned vector is thus double the number of
+  // model instances.
+  std::vector<int> GetModelJointStateSizes();
+
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
     std::make_unique<RigidBodyTree>()};
