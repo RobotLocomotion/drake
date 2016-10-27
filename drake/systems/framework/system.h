@@ -53,7 +53,7 @@ struct DiscreteEvent {
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
   std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
-    nullptr};
+      nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -317,11 +317,11 @@ class System {
   /// the Context has second-order structure, that same structure applies to
   /// the derivatives.
   ///
+  /// By default, this function does nothing if the @p derivatives are empty
+  /// and aborts otherwise.
+  ///
   /// Implementations may assume that the given @p derivatives argument has the
   /// same constituent structure as was produced by AllocateTimeDerivatives.
-  ///
-  /// By default, this function does nothing if the @p derivatives are empty,
-  /// and aborts otherwise.
   ///
   /// @param context The context in which to evaluate the derivatives.
   ///
@@ -330,7 +330,7 @@ class System {
   virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {
     // This default implementation is only valid for Systems with no continuous
-    // state. Other Systems must override this method!
+    // state. Other Systems must override this method.
     DRAKE_DEMAND(derivatives->size() == 0);
     return;
   }
@@ -338,7 +338,7 @@ class System {
   /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
-  /// in the number of generalized velocity states.
+  /// in the dimension of the generalized velocity.
   void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
@@ -350,7 +350,7 @@ class System {
   /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
-  /// in the number of generalized velocity states.
+  /// in the dimension of the generalized velocity.
   void MapVelocityToConfigurationDerivatives(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
@@ -359,8 +359,31 @@ class System {
                                             configuration_derivatives);
   }
 
-  // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
-  // and MapAccelerationToConfigurationSecondDerivatives.
+  /// Transforms the derivative of the configuration (qdot) in the given @p
+  /// context to the velocity (v). The transformation must be linear in velocity
+  /// (v = L(q) * qdot), and it must require no more than O(N) time to compute
+  /// in the dimension of the generalized configuration.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context, const VectorBase<T>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    MapConfigurationDerivativesToVelocity(
+        context, configuration_derivatives.CopyToVector(),
+        generalized_velocity);
+  }
+
+  /// Transforms the derivative of the configuration (qdot) in the given @p
+  /// context to the velocity (v). The transformation must be linear in velocity
+  /// (v = L(q) * qdot), and it must require no more than O(N) time to compute
+  /// in the dimension of the generalized configuration.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    DoMapConfigurationDerivativesToVelocity(context, configuration_derivatives,
+                                            generalized_velocity);
+  }
+
+  // TODO(david-german-tri): MapAccelerationToConfigurationSecondDerivatives.
 
   // Sets the name of the system. It is recommended that the name not include
   // the character ':', since that the path delimiter. is "::".
@@ -546,6 +569,37 @@ class System {
   virtual void DoCalcNextUpdateTime(const Context<T>& context,
                                     UpdateActions<T>* actions) const {
     actions->time = std::numeric_limits<T>::infinity();
+  }
+
+  /// Provides the substantive implementation of
+  /// MapConfigurationDerivativesToVelocity.
+  ///
+  /// The default implementation uses the identity mapping. It throws
+  /// std::runtime_error if the @p generalized_velocity and
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
+  ///
+  /// Implementations may assume that @p generalized_velocity is of
+  /// the same size as the generalized velocity allocated in
+  /// AllocateTimeDerivatives(). Implementations that are not
+  /// second-order systems may simply do nothing.
+  virtual void DoMapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = configuration_derivatives.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
+    for (int i = 0; i < n; ++i) {
+      const T value = configuration_derivatives[i];
+      generalized_velocity->SetAtIndex(i, value);
+    }
   }
 
   /// Provides the substantive implementation of

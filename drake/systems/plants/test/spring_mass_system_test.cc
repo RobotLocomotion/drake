@@ -243,7 +243,7 @@ TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
   EXPECT_EQ(power_nc, 0.0);
 }
 
-// These are helper functions for the Integrate test below.
+// These are helper functions for the StepOnceAtFixedSize test below.
 
 /* Given a System and a Context, calculate the partial derivative matrix
 D xdot / D x. Here x has only continuous variables; in general we would have
@@ -428,7 +428,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
 
     if (t >= kTfinal) break;
 
-    // Integrate three ways.
+    // StepOnceAtFixedSize three ways.
     StepExplicitEuler(h, *derivs[kXe], *contexts[kXe]);
     StepImplicitEuler(h, *system_, *derivs[kIe], *contexts[kIe]);
     StepSemiExplicitEuler(h, *system_, *derivs[kSxe], *contexts[kSxe]);

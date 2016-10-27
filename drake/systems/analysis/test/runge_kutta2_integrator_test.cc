@@ -43,6 +43,23 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);
 }
 
+/// Verifies accuracy estimation and error control are unsupported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double DT = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  RungeKutta2Integrator<double> integrator(
+      spring_mass, DT, context.get());
+
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
+  EXPECT_EQ(integrator.supports_accuracy_estimation(), false);
+  EXPECT_EQ(integrator.supports_error_control(), false);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(DT),
+               std::logic_error);
+}
+
 // Try a purely continuous system with no sampling.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -80,20 +97,27 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C1 = kInitialPosition;
   const double C2 = kInitialVelocity / kOmega;
 
-  // Integrate for 1 second.
+  // StepOnceAtFixedSize for 1 second.
   const double T_FINAL = 1.0;
   double t;
   for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
-    integrator.Step(INF, INF);
+    integrator.StepOnceAtMost(INF, INF);
 
   EXPECT_NEAR(context->get_time(), 1., DT);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal = context->get_continuous_state_vector().GetAtIndex(0);
+  const double kXFinal = context->get_state().get_continuous_state()->
+      get_vector().GetAtIndex(0);
 
   // Check the solution.
   double true_sol = C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t);
   EXPECT_NEAR(true_sol, kXFinal, 1e-5);
+
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
 }
 
 }  // namespace

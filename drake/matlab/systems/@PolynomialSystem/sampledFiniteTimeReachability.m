@@ -93,7 +93,7 @@ gT = msspoly2sdpvar(x,xs,gTmss);
  
 
 % Compute Lebesgue moments of monomials of W over X
-% See "How to Integrate a Polynomial over a Sphere", G. B. Folland for
+% See "How to StepOnceAtFixedSize a Polynomial over a Sphere", G. B. Folland for
 % details
 alphas = monpowers(nX,options.degW);
 betas = 0.5*(alphas + 1);

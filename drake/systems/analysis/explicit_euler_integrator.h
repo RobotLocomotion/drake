@@ -46,8 +46,11 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    */
   bool supports_error_control() const override { return false; }
 
+  /// Integrator does not provide an error estimate.
+  int get_error_estimate_order() const override { return 0; }
+
  private:
-  bool DoStep(const T& dt) override;
+  void DoStepOnceFixedSize(const T& dt) override;
 
   // These are pre-allocated temporaries for use by integration
   std::unique_ptr<ContinuousState<T>> derivs_;
@@ -58,7 +61,7 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
  * by IntegratorBase::Step().
  */
 template <class T>
-bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
+void ExplicitEulerIntegrator<T>::DoStepOnceFixedSize(const T& dt) {
   // Find the continuous state xc within the Context, just once.
   auto context = IntegratorBase<T>::get_mutable_context();
   VectorBase<T>* xc = context->get_mutable_continuous_state_vector();
@@ -73,11 +76,6 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const auto& xcdot = derivs_->get_vector();
   xc->PlusEqScaled(dt, xcdot);  // xc += dt * xcdot
   context->set_time(context->get_time() + dt);
-
-  IntegratorBase<T>::UpdateStatistics(dt);
-
-  // Fixed step integrator always returns true
-  return true;
 }
 }  // systems
 }  // drake
