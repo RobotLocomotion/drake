@@ -84,19 +84,19 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
       ContactResultantForceCalculator&& other) = delete;
 
  private:
+  // Recomputes the cached minimimum moment point and resultant force.
+  void ComputeCachedData();
+
   // Aggregator for the force data that has been added.
   // TODO(SeanCurtis-TRI): Get the class right.
   std::vector<int> forces_{};
 
   // To facilitate computation, this class uses a light-weight caching system
   // to prevent redundant computations.  It works with a dirty/clean bit
-  // mapping to the query values (minimum moment point and resultant force).
+  // to indicate if the values need to be computed.
 
-  const static int kDirtyForce = 1;
-  const static int kDirtyPoint = 2;
-  const static int kDirtyAll = 3;
   // The dirty bit for the caching system.
-  int dirty_state_{kDirtyForce | kDirtyPoint};
+  bool is_dirty_{true};
   // The cached minimum moment point.
   Vector3<T> minimum_moment_point_{};
   // The cached resultant wrench.
