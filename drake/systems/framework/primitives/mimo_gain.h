@@ -5,6 +5,9 @@
 namespace drake {
 namespace systems {
 
+// TODO(liang.fok) Rename this system to be "Gain" and replace the existing
+// "Gain" system. See: #3922.
+
 /// A MIMO (Multi-Input Multi-Output) gain system that is a specialization of a
 /// LinearSystem where coefficient matrices `A`, `B`, and `C` are all zero.
 /// Given an input signal `u` and a state `x` the output of this system, `y`,
