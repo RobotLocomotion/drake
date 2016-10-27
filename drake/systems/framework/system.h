@@ -593,11 +593,11 @@ class System {
     // If a concrete subclass of System<T> has a generalized velocity and a
     // generalized configuration such that the derivatives of configuration
     // are not exactly the velocity, that subclass must override
-    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // MapConfigurationDerivativesToVelocity. In the particular case where
     // generalized velocity and generalized configuration are not even the
     // same size, we detect this error and abort.
     const int n = configuration_derivatives.size();
-    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    // You need to override System<T>::DoMapConfigurationDerivativestoVelocity!
     DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
     generalized_velocity->SetFromVector(configuration_derivatives);
   }
@@ -608,9 +608,6 @@ class System {
    * directly with an Eigen vector object for faster performance. See
    * the other DoMapVelocityToConfigurationDerivatives() signature for
    * additional information.
-   * @param context
-   * @param generalized_velocity
-   * @param configuration_derivatives
    */
   virtual void DoMapVelocityToConfigurationDerivatives(
       const Context<T>& context,
@@ -623,7 +620,7 @@ class System {
     // generalized velocity and generalized configuration are not even the
     // same size, we detect this error and abort.
     const int n = generalized_velocity.size();
-    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    // You need to override System<T>::DoMapVelocityToConfigurationDerivatives!
     DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
     configuration_derivatives->SetFromVector(generalized_velocity);
   }
