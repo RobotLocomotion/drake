@@ -15,9 +15,6 @@ ValkyriePlant::ValkyriePlant() {
   x0_ = VectorXd::Zero(sys_->getNumStates());
   SetInitialConfiguration();
 
-  // TODO(amcastro-tri): this should not be here but there is no other way
-  // to add terrain to the world right now. See #2318.
-  SetUpTerrain();
 }
 
 const VectorXd& ValkyriePlant::get_initial_state() const { return x0_; }
@@ -117,28 +114,4 @@ void ValkyriePlant::SetInitialConfiguration() {
      */
 
 }
-
-void ValkyriePlant::SetUpTerrain() {
-  sys_->penetration_stiffness = 1500.0;
-  sys_->penetration_damping = 150.0;
-  RigidBodyTree* tree = sys_->getRigidBodyTree().get();
-
-  // Adds a flat terrain.
-  double box_width = 1000;
-  double box_depth = 10;
-  DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
-  Isometry3d T_element_to_link = Isometry3d::Identity();
-  // The top of the box is at z=0.
-  T_element_to_link.translation() << 0, 0, -box_depth / 2;
-  RigidBody& world = tree->world();
-  Vector4d color;
-  color << 0.9297, 0.7930, 0.6758, 1;
-  world.AddVisualElement(
-      DrakeShapes::VisualElement(geom, T_element_to_link, color));
-  tree->addCollisionElement(
-      DrakeCollision::Element(geom, T_element_to_link, &world), world,
-      "terrain");
-  tree->updateStaticCollisionElements();
-}
-
 }  // namespace drake

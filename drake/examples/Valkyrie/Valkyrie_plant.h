@@ -59,7 +59,6 @@ class ValkyriePlant {
   // Sets the initial pose for Atlas.
   void SetInitialConfiguration();
 
-  void SetUpTerrain();
 };
 
 }  // namespace drake

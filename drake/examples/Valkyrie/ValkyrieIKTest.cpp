@@ -5,12 +5,11 @@
 
 #include "drake/examples/Valkyrie/Valkyrie_plant.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/common/drake_path.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
-// Includes for the planner.
+// Includes for IK solver
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -22,9 +21,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
-
-using namespace std;
-
 
 /* Finds and returns the indices within the state vector of @p tree that contain
  * the position states of a joint named @p name. The model instance ID is
@@ -60,23 +56,23 @@ int main() {
     // tests
     std::cout << "Number of positions: "<< tree->get_num_positions() << std::endl;
     for(int i=0;i<tree->get_num_positions();i++) {
-        cout << i << ":" << tree->get_position_name(i) << endl;
+        std::cout << i << ":" << tree->get_position_name(i) << std::endl;
     }
 
     std::cout << "Number of velocities: "<< tree->get_num_velocities() << std::endl;
     for(int i=0;i<tree->get_num_velocities();i++) {
-        cout << i << ":" << tree->get_velocity_name(i) << " " << tree->get_position_name(i) << endl;
+        std::cout << i << ":" << tree->get_velocity_name(i) << " " << tree->get_position_name(i) << std::endl;
     }
 
-    std::cout << "Number of bodies: " << tree->get_num_bodies() << endl;
+    std::cout << "Number of bodies: " << tree->get_num_bodies() << std::endl;
     for(int i=0;i<tree->get_num_bodies();i++) {
-        cout << i << ":" << tree->getBodyOrFrameName(i) << endl;
+        std::cout << i << ":" << tree->getBodyOrFrameName(i) << std::endl;
     }
 
     auto leftPalmPtr = tree->FindBody("leftPalm");
     Eigen::Matrix3Xd leftPalmContactPts = leftPalmPtr->get_contact_points();
-    cout << "LeftPalmContactPts:" << endl;
-    cout << leftPalmContactPts << endl;
+    std::cout << "LeftPalmContactPts:" << std::endl;
+    std::cout << leftPalmContactPts << std::endl;
 
     // copies testIKMoreConstraints.cpp
     double inf = std::numeric_limits<double>::infinity();
@@ -127,7 +123,7 @@ int main() {
 
     // 1 Neck Posture Constraint, posture constraints are imposed on q
     PostureConstraint kc_posture_neck(tree.get(), tspan);
-    vector<int> neck_idx;
+    std::vector<int> neck_idx;
     findJointAndInsert(tree.get(), "lowerNeckPitch", neck_idx);
     findJointAndInsert(tree.get(), "neckYaw", neck_idx);
     findJointAndInsert(tree.get(), "upperNeckPitch", neck_idx);
@@ -139,12 +135,12 @@ int main() {
     int l_foot = tree->FindBodyIndex("leftFoot");
     //Vector4d lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
     Vector4d lfoot_quat(1,0,0,0);
-    cout << "Relative quaternion between left foot and world" << endl << lfoot_quat << endl;
+    std::cout << "Relative quaternion between left foot and world" << std::endl << lfoot_quat << std::endl;
 
     const Vector3d origin(0,0,0);
-    cout << "origin is" << endl << origin << endl;
+    std::cout << "origin is" << std::endl << origin << std::endl;
     auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
-    cout << "Relative position between left foot and world" << endl << lfoot_pos0 << endl;
+    std::cout << "Relative position between left foot and world" << std::endl << lfoot_pos0 << std::endl;
     Vector3d lfoot_pos_lb =lfoot_pos0;
     lfoot_pos_lb(0) -= 0.0001;
     lfoot_pos_lb(1) -= 0.0001;
@@ -162,10 +158,10 @@ int main() {
     int r_foot = tree->FindBodyIndex("rightFoot");
     //Vector4d rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
     Vector4d rfoot_quat(1,0,0,0);
-    cout << "Relative quaternion between right foot and world" << endl << rfoot_quat << endl;
+    std::cout << "Relative quaternion between right foot and world" << std::endl << rfoot_quat << std::endl;
 
     auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
-    cout << "Relative position between right foot and world" << endl << rfoot_pos0 << endl;
+    std::cout << "Relative position between right foot and world" << std::endl << rfoot_pos0 << std::endl;
     Vector3d rfoot_pos_lb =rfoot_pos0;
     rfoot_pos_lb(0) -= 0.0001;
     rfoot_pos_lb(1) -= 0.0001;
@@ -180,25 +176,24 @@ int main() {
 
 
     // 4 torso posture constraint
-
     PostureConstraint kc_posture_torso(tree.get(), tspan);
-    vector<int> torso_idx;
+    std::vector<int> torso_idx;
     findJointAndInsert(tree.get(), "torsoYaw", torso_idx);
     findJointAndInsert(tree.get(), "torsoPitch", torso_idx);
     findJointAndInsert(tree.get(), "torsoRoll", torso_idx);
-    cout << "torso indices " << torso_idx[0] << torso_idx[1] << torso_idx[2] << endl;
+    std::cout << "torso indices " << torso_idx[0] << torso_idx[1] << torso_idx[2] << std::endl;
     Vector3d torso_nominal = Vector3d::Zero(3);
     Vector3d torso_half_range(0.2617993877991494, 0.4363323129985824, inf);
     Vector3d torso_lb = torso_nominal - torso_half_range;
     Vector3d torso_ub = torso_nominal + torso_half_range;
     torso_lb(1) = -0.08726646259971647;
     kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
-    //cout << "inf+1" << inf + 1.0 << endl;
-    //cout << "-inf+1" << -inf + 1.0 << endl;
+    //std::cout << "inf+1" << inf + 1.0 << std::endl;
+    //std::cout << "-inf+1" << -inf + 1.0 << std::endl;
 
     // 5 knee posture constraint
     PostureConstraint kc_posture_knee(tree.get(), tspan);
-    vector<int> knee_idx;
+    std::vector<int> knee_idx;
     findJointAndInsert(tree.get(), "leftKneePitch", knee_idx);
     findJointAndInsert(tree.get(), "rightKneePitch", knee_idx);
     Vector2d knee_nominal(reach_start(knee_idx[0]), reach_start(knee_idx[1]) );
@@ -209,12 +204,12 @@ int main() {
     knee_ub(0) += 1.90;
     knee_ub(1) += 1.90;
     kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
-    //cout << "knee_idx " << knee_idx[0] << knee_idx[1] << endl;
-    //cout << "knee_nominal_posture" << knee_nominal << endl;
+    //std::cout << "knee_idx " << knee_idx[0] << knee_idx[1] << std::endl;
+    //std::cout << "knee_nominal_posture" << knee_nominal << std::endl;
 
     // 6 left arm posture constraint
     PostureConstraint kc_posture_larm(tree.get(), tspan);
-    vector<int> larm_idx;
+    std::vector<int> larm_idx;
     findJointAndInsert(tree.get(), "leftShoulderPitch", larm_idx);
     findJointAndInsert(tree.get(), "leftShoulderRoll", larm_idx);
     findJointAndInsert(tree.get(), "leftShoulderYaw", larm_idx);
@@ -222,7 +217,7 @@ int main() {
     findJointAndInsert(tree.get(), "leftForearmYaw", larm_idx);
     findJointAndInsert(tree.get(), "leftWristRoll", larm_idx);
     findJointAndInsert(tree.get(), "leftWristPitch", larm_idx);
-    cout << "Number of elements in larm_idx " << larm_idx.size() << endl;
+    std::cout << "Number of elements in larm_idx " << larm_idx.size() << std::endl;
     VectorXd larm_lb = VectorXd::Zero(7);
     for(int i=0;i<7;i++)
         larm_lb(i) = reach_start(larm_idx[i]);
@@ -231,7 +226,7 @@ int main() {
 
     // 7 right arm posture constraint
     PostureConstraint kc_posture_rarm(tree.get(), tspan);
-    vector<int> rarm_idx;
+    std::vector<int> rarm_idx;
     findJointAndInsert(tree.get(), "rightShoulderPitch", rarm_idx);
     findJointAndInsert(tree.get(), "rightShoulderRoll", rarm_idx);
     findJointAndInsert(tree.get(), "rightShoulderYaw", rarm_idx);
@@ -239,7 +234,7 @@ int main() {
     findJointAndInsert(tree.get(), "rightForearmYaw", rarm_idx);
     findJointAndInsert(tree.get(), "rightWristRoll", rarm_idx);
     findJointAndInsert(tree.get(), "rightWristPitch", rarm_idx);
-    cout << "Number of elements in rarm_idx " << rarm_idx.size() << endl;
+    std::cout << "Number of elements in rarm_idx " << rarm_idx.size() << std::endl;
     VectorXd rarm_lb = VectorXd::Zero(7);
     for(int i=0;i<7;i++)
         rarm_lb(i) = reach_start(rarm_idx[i]);
@@ -261,15 +256,15 @@ int main() {
     Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
     kc_quasi.addContact(1, &r_foot, &r_foot_pts);
 
-    cout << "LeftFootContactPts:" << endl;
-    cout << leftFootContactPts << endl;
-    cout << "lfoot contact pts used for quasistatic constraint" << endl;
-    cout << l_foot_pts << endl;
+    std::cout << "LeftFootContactPts:" << std::endl;
+    std::cout << leftFootContactPts << std::endl;
+    std::cout << "lfoot contact pts used for quasistatic constraint" << std::endl;
+    std::cout << l_foot_pts << std::endl;
 
-    cout << "RightFootContactPts: " << endl;
-    cout << rightFootContactPts << endl;
-    cout << "rfoot contact pts used for quasistatic constraint" << endl;
-    cout << r_foot_pts << endl;
+    std::cout << "RightFootContactPts: " << std::endl;
+    std::cout << rightFootContactPts << std::endl;
+    std::cout << "rfoot contact pts used for quasistatic constraint" << std::endl;
+    std::cout << r_foot_pts << std::endl;
 
     //------------------solve-----------------------------------------------------
     std::vector<RigidBodyConstraint*> constraint_array;
@@ -295,22 +290,22 @@ int main() {
     printf("info = %d\n", info);
 
     /////////////////////////////////////////
-    cout << "=======================after solving============================" << endl;
+    std::cout << "=======================after solving============================" << std::endl;
     cache = tree->doKinematics(q_sol);
     Vector3d com = tree->centerOfMass(cache);
     printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
 
     for(auto & a:infeasible_constraint)
-        cout << a << endl;
-    cout << endl;
+        std::cout << a << std::endl;
+    std::cout << std::endl;
 
     lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
-    cout << "Relative quaternion between left foot and world" << endl << lfoot_quat << endl;
+    std::cout << "Relative quaternion between left foot and world" << std::endl << lfoot_quat << std::endl;
     rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
 
     std::cout << "Final States: " << std::endl;
     for(int i=0;i<tree->get_num_positions();i++) {
-        cout << i << ":" << tree->get_position_name(i) << " " << q_sol(i) << " " << reach_start(i) << endl;
+        std::cout << i << ":" << tree->get_position_name(i) << " " << q_sol(i) << " " << reach_start(i) << std::endl;
     }
 
     //show it in drake visualizer!
