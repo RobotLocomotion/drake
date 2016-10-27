@@ -29,12 +29,11 @@ Vector3<T> ContactResultantForceCalculator<T>::ComputeMinimumMomentPoint()
 }
 
 template <typename T>
-WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantForce()
-    const {
-  if (dirty_state_ & kDirtyForce) {
+WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench() {
+  if (is_dirty_) {
     // TODO(SeanCurtis-TRI): Implement this.
   }
-  return resultant_force_;
+  return resultant_wrench_;
 }
 
 template class ContactResultantForceCalculator<double>;

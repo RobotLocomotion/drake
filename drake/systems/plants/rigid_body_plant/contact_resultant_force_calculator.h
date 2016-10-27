@@ -69,9 +69,9 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   Vector3<T> ComputeMinimumMomentPoint() const;
 
   /**
-   Compute the resultant force to be applied at the minimum moment point.
+   Compute the resultant wrench to be applied at the minimum moment point.
    */
-  WrenchVector<T> ComputeResultantForce() const;
+  WrenchVector<T> ComputeResultantWrench();
 
   // Neither movable or copyable.
   ContactResultantForceCalculator(
@@ -99,8 +99,8 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   int dirty_state_{kDirtyForce | kDirtyPoint};
   // The cached minimum moment point.
   Vector3<T> minimum_moment_point_{};
-  // The cached resultant force.
-  Vector3<T> resultant_force_{};
+  // The cached resultant wrench.
+  WrenchVector<T> resultant_wrench_{};
 };
 }  // namespace systems
 }  // namespace drake
