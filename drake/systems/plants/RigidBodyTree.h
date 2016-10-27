@@ -229,6 +229,7 @@ class DRAKE_EXPORT RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
+#endif
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
@@ -257,6 +258,7 @@ class DRAKE_EXPORT RigidBodyTree {
   void doKinematics(KinematicsCache<Scalar>& cache,
                     bool compute_JdotV = false) const;
 
+#if 0
   /**
    * Returns true if @p body is part of a model instance whose ID is in
    * @p model_instance_id_set.
@@ -996,7 +998,6 @@ class DRAKE_EXPORT RigidBodyTree {
    */
   RigidBody& world() { return *bodies[0]; }
 
-#if 0
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
@@ -1025,7 +1026,6 @@ class DRAKE_EXPORT RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_velocities().")
 #endif
   int number_of_velocities() const;
-#endif
 
  public:
   static const std::set<int> default_model_instance_id_set;

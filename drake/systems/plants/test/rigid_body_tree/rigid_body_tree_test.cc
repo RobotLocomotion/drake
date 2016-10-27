@@ -203,11 +203,6 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
       "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
-  // TODO FOR TOMORROW: Move typedef "RigidBodyTree<double> RBT" to be in
-  // RigidBodyTree.h and call it RigidBodyTreed.
-  // Next step the is to template the first template method here: doKinematics.
-
-#if 0
   VectorX<double> q;
   VectorX<double> v;
   q.resize(tree_->get_num_positions());
@@ -220,7 +215,6 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 
   KinematicsCache<double> cache = tree_->doKinematics(q_block, v_block);
   EXPECT_TRUE(cache.hasV());
-#endif
 }
 
 #if 0
