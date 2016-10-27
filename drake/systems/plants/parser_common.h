@@ -9,8 +9,6 @@
 namespace drake {
 namespace parsers {
 
-typedef RigidBodyTree<double> RBT;
-
 // TODO(liang.fok): Deprecate this method. See: #3361.
 /**
  * Adds a floating joint to each body specified by @p body_indices that does
@@ -53,7 +51,7 @@ int AddFloatingJoint(
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map,
-    RBT* tree);
+    RigidBodyTreed* tree);
 
 }  // namespace parsers
 }  // namespace drake
