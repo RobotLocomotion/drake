@@ -163,7 +163,6 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
-
 }
 
 TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
