@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie_PT/Valkyrie_plant.h"
+#include "drake/examples/Valkyrie/Valkyrie_plant.h"
 
 namespace drake {
 
@@ -9,7 +9,7 @@ using Eigen::Vector4d;
 ValkyriePlant::ValkyriePlant() {
   sys_.reset(new drake::RigidBodySystem());
   sys_->AddModelInstanceFromFile(
-      GetDrakePath() + "/examples/Valkyrie_PT/val_description/urdf/valkyrie_sim_drake.urdf",
+      GetDrakePath() + "/examples/Valkyrie/val_description/urdf/valkyrie_sim_drake.urdf",
       systems::plants::joints::kRollPitchYaw);
 
   x0_ = VectorXd::Zero(sys_->getNumStates());
@@ -119,7 +119,6 @@ void ValkyriePlant::SetInitialConfiguration() {
 }
 
 void ValkyriePlant::SetUpTerrain() {
-  // TODO(amcastro-tri): move out of here when collision materials kick in.
   sys_->penetration_stiffness = 1500.0;
   sys_->penetration_damping = 150.0;
   RigidBodyTree* tree = sys_->getRigidBodyTree().get();

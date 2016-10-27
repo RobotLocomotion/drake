@@ -3,7 +3,7 @@
 //
 #include <iostream>
 
-#include "drake/examples/Valkyrie_PT/Valkyrie_plant.h"
+#include "drake/examples/Valkyrie/Valkyrie_plant.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -17,8 +17,14 @@
 
 using drake::BotVisualizer;
 using drake::ValkyriePlant;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using Eigen::Matrix3Xd;
+
 using namespace std;
-using namespace Eigen;
+
 
 /* Finds and returns the indices within the state vector of @p tree that contain
  * the position states of a joint named @p name. The model instance ID is
