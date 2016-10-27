@@ -54,6 +54,14 @@ if(lcm_FOUND)
       drakeRBM
       drakeLCMSystem)
 
+  add_executable(kuka_simulation kuka_simulation.cc)
+  target_link_libraries(kuka_simulation
+    drakeKukaIiwaArmCommon
+    drakeRigidBodyPlant
+    drakeSystemAnalysis
+    drakeSystemControllers
+    drakeLCMSystem2)
+
   add_executable(run_kuka_iiwa_gravity_compensated_torque_control
       run_kuka_iiwa_gravity_compensated_torque_control.cc)
   target_link_libraries(run_kuka_iiwa_gravity_compensated_torque_control
