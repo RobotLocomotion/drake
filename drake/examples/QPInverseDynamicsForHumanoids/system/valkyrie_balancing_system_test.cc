@@ -26,7 +26,7 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 // In this test, the Valkyrie robot is initialized to a nominal configuration
-// with zero velocities, and the qp controller is setup to track this
+// with zero velocities, and the qp controller is set up to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.
 // The test forward simulates the closed loop system for 4 seconds.
 // The simulation does not perform forward dynamics computation, instead, it
@@ -47,13 +47,13 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   // Build diagram.
   DiagramBuilder<double> builder;
   QPControllerSystem* qp_con =
-      builder.AddSystem(std::make_unique<QPControllerSystem>(&robot));
+      builder.AddSystem(std::make_unique<QPControllerSystem>(robot));
   ValkyrieSystem* val_sim =
-      builder.AddSystem(std::make_unique<ValkyrieSystem>(&robot));
+      builder.AddSystem(std::make_unique<ValkyrieSystem>(robot));
   PlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<PlanEvalSystem>(&robot));
+      builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs = builder.AddSystem(
-      std::make_unique<RobotStateMsgToHumanoidStatusSystem>(&robot));
+      std::make_unique<RobotStateMsgToHumanoidStatusSystem>(robot));
 
   RigidBodyTreeLcmPublisher* viz_publisher =
       builder.template AddSystem<RigidBodyTreeLcmPublisher>(robot, &lcm);
@@ -73,7 +73,7 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
-  // Setup simulation.
+  // Set up simulation.
   Simulator<double> simulator(*diagram);
   systems::Context<double>* val_sim_context =
       diagram->GetMutableSubsystemContext(simulator.get_mutable_context(),
@@ -82,7 +82,7 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   std::unique_ptr<examples::qp_inverse_dynamics::HumanoidStatus> rs0 =
       val_sim->SetInitialCondition(val_sim_context);
   // Set plan eval's desired to the initial state.
-  plan_eval->SetupDesired(*rs0);
+  plan_eval->SetDesired(*rs0);
   // Perturb the initial condition.
   val_sim->PerturbVelocity("torsoPitchdot", 1, val_sim_context);
 
@@ -107,13 +107,11 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
 
   EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(rs1->velocity(),
-                      Eigen::VectorXd::Zero(rs1->robot()->get_num_velocities()),
-                      1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()),
+      1e-4, MatrixCompareType::absolute));
 }
 
 }  // end namespace qp_inverse_dynamics
 }  // end namespace examples
 }  // end namespace drake
-

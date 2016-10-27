@@ -3,6 +3,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 
+#include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -38,11 +39,9 @@ class CartesianSetpoint {
    * @param Kp Position gain
    * @param Kd Velocity gain
    */
-  CartesianSetpoint(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose_d,
-                    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vel_d,
-                    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& acc_d,
-                    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kp,
-                    const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kd) {
+  CartesianSetpoint(const Isometry3<Scalar>& pose_d,
+                    const Vector6<Scalar>& vel_d, const Vector6<Scalar>& acc_d,
+                    const Vector6<Scalar>& Kp, const Vector6<Scalar>& Kd) {
     pose_d_ = pose_d;
     vel_d_ = vel_d;
     acc_d_ = acc_d;
@@ -56,26 +55,32 @@ class CartesianSetpoint {
    * @param vel Measured velocity
    * @return Computed spatial acceleration.
    */
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ComputeTargetAcceleration(
-      const Eigen::Transform<Scalar, 3, Eigen::Isometry>& pose,
-      const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vel) const {
+  Vector6<Scalar> ComputeTargetAcceleration(const Isometry3<Scalar>& pose,
+                                            const Vector6<Scalar>& vel) const {
     // feedforward acc + velocity feedback
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc = acc_d_;
+    Vector6<Scalar> acc = acc_d_;
     acc += (Kd_.array() * (vel_d_ - vel).array()).matrix();
 
     // pose feedback
     // H^w_d = desired orientation in the world frame,
     // H^w_m = measured orientation in the world frame,
     // E = a small rotation in the world frame from measured to desired.
-    // H^w_d = E * H^w_m, E = H^w_d * H^w_m.transpose()
-    Eigen::Matrix<Scalar, 3, 3> R_err =
-        pose_d_.linear() * pose.linear().transpose();
-    Eigen::AngleAxis<Scalar> angle_axis_err(R_err);
+    // H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse()
+    Quaternion<Scalar> quat_d(pose_d_.linear());
+    Quaternion<Scalar> quat(pose.linear());
+    // Make sure the relative rotation between the desired and the measured
+    // rotation goes the "shortest" way.
+    if (quat_d.dot(quat) < 0) {
+      quat.w() *= -1;
+      quat.x() *= -1;
+      quat.y() *= -1;
+      quat.z() *= -1;
+    }
+    Eigen::AngleAxis<Scalar> angle_axis_err(quat_d *
+                                            quat.inverse().normalized());
 
-    Eigen::Matrix<Scalar, 3, 1> pos_err =
-        pose_d_.translation() - pose.translation();
-    Eigen::Matrix<Scalar, 3, 1> rot_err =
-        angle_axis_err.axis() * angle_axis_err.angle();
+    Vector3<Scalar> pos_err = pose_d_.translation() - pose.translation();
+    Vector3<Scalar> rot_err = angle_axis_err.axis() * angle_axis_err.angle();
 
     // orientation
     acc.segment(0, 3) += (Kp_.segment(0, 3).array() * rot_err.array()).matrix();
@@ -99,60 +104,39 @@ class CartesianSetpoint {
   }
 
   // Getters
-  inline const Eigen::Transform<Scalar, 3, Eigen::Isometry>& desired_pose()
-      const {
-    return pose_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& desired_velocity()
-      const {
-    return vel_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& desired_acceleration()
-      const {
-    return acc_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kp() const {
-    return Kp_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kd() const {
-    return Kd_;
-  }
+  inline const Isometry3<Scalar>& desired_pose() const { return pose_d_; }
+  inline const Vector6<Scalar>& desired_velocity() const { return vel_d_; }
+  inline const Vector6<Scalar>& desired_acceleration() const { return acc_d_; }
+  inline const Vector6<Scalar>& Kp() const { return Kp_; }
+  inline const Vector6<Scalar>& Kd() const { return Kd_; }
 
   // Setters
-  inline Eigen::Transform<Scalar, 3, Eigen::Isometry>& mutable_desired_pose() {
-    return pose_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_desired_velocity() {
-    return vel_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>&
-  mutable_desired_acceleration() {
-    return acc_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_Kp() { return Kp_; }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_Kd() { return Kd_; }
+  inline Isometry3<Scalar>& mutable_desired_pose() { return pose_d_; }
+  inline Vector6<Scalar>& mutable_desired_velocity() { return vel_d_; }
+  inline Vector6<Scalar>& mutable_desired_acceleration() { return acc_d_; }
+  inline Vector6<Scalar>& mutable_Kp() { return Kp_; }
+  inline Vector6<Scalar>& mutable_Kd() { return Kd_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   // Desired pose
-  Eigen::Transform<Scalar, 3, Eigen::Isometry> pose_d_;
+  Isometry3<Scalar> pose_d_;
   // Desired velocity
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vel_d_;
+  Vector6<Scalar> vel_d_;
   // Desired acceleration
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc_d_;
+  Vector6<Scalar> acc_d_;
 
   // Position gains
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kp_;
+  Vector6<Scalar> Kp_;
   // Velocity gains
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kd_;
+  Vector6<Scalar> Kd_;
 };
 
 template <typename Scalar>
 inline std::ostream& operator<<(std::ostream& out,
                                 const CartesianSetpoint<Scalar>& setpoint) {
-  Eigen::Matrix<Scalar, 3, 1> rpy =
-      math::rotmat2rpy(setpoint.desired_pose().linear());
+  Vector3<Scalar> rpy = math::rotmat2rpy(setpoint.desired_pose().linear());
   out << "pose: (" << setpoint.desired_pose().translation().transpose()
       << "), (" << rpy.transpose() << ")" << std::endl;
   out << "velocity: " << setpoint.desired_velocity().transpose() << std::endl;
@@ -169,11 +153,11 @@ class VectorSetpoint {
   VectorSetpoint() {}
 
   explicit VectorSetpoint(int dim) {
-    pos_d_ = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(dim);
-    vel_d_ = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(dim);
-    acc_d_ = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(dim);
-    Kp_ = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(dim);
-    Kd_ = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(dim);
+    pos_d_ = VectorX<Scalar>::Zero(dim);
+    vel_d_ = VectorX<Scalar>::Zero(dim);
+    acc_d_ = VectorX<Scalar>::Zero(dim);
+    Kp_ = VectorX<Scalar>::Zero(dim);
+    Kd_ = VectorX<Scalar>::Zero(dim);
   }
 
   /**
@@ -183,11 +167,9 @@ class VectorSetpoint {
    * @param Kp Position gain
    * @param Kd Velocity gain
    */
-  VectorSetpoint(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& pos_d,
-                 const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vel_d,
-                 const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& acc_d,
-                 const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kp,
-                 const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kd) {
+  VectorSetpoint(const VectorX<Scalar>& pos_d, const VectorX<Scalar>& vel_d,
+                 const VectorX<Scalar>& acc_d, const VectorX<Scalar>& Kp,
+                 const VectorX<Scalar>& Kd) {
     if (pos_d.size() != vel_d.size() || pos_d.size() != acc_d.size() ||
         pos_d.size() != Kp.size() || pos_d.size() != Kd.size()) {
       throw std::runtime_error(
@@ -223,14 +205,13 @@ class VectorSetpoint {
    * @param vel Measured velocity
    * @return Computed acceleration
    */
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ComputeTargetAcceleration(
-      const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& pos,
-      const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vel) const {
+  VectorX<Scalar> ComputeTargetAcceleration(const VectorX<Scalar>& pos,
+                                            const VectorX<Scalar>& vel) const {
     if (pos.size() != vel.size() || pos.size() != pos_d_.size()) {
       throw std::runtime_error(
           "Setpoints and states have different dimensions.");
     }
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc(pos_d_.size());
+    VectorX<Scalar> acc(pos_d_.size());
     for (int i = 0; i < size(); ++i)
       acc[i] = ComputeTargetAcceleration(i, pos[i], vel[i]);
     return acc;
@@ -249,52 +230,32 @@ class VectorSetpoint {
   }
 
   // Getters
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& desired_position()
-      const {
-    return pos_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& desired_velocity()
-      const {
-    return vel_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& desired_acceleration()
-      const {
-    return acc_d_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kp() const {
-    return Kp_;
-  }
-  inline const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& Kd() const {
-    return Kd_;
-  }
+  inline const VectorX<Scalar>& desired_position() const { return pos_d_; }
+  inline const VectorX<Scalar>& desired_velocity() const { return vel_d_; }
+  inline const VectorX<Scalar>& desired_acceleration() const { return acc_d_; }
+  inline const VectorX<Scalar>& Kp() const { return Kp_; }
+  inline const VectorX<Scalar>& Kd() const { return Kd_; }
   inline int size() const { return pos_d_.size(); }
 
   // Setters
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_desired_position() {
-    return pos_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_desired_velocity() {
-    return vel_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>&
-  mutable_desired_acceleration() {
-    return acc_d_;
-  }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_Kp() { return Kp_; }
-  inline Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& mutable_Kd() { return Kd_; }
+  inline VectorX<Scalar>& mutable_desired_position() { return pos_d_; }
+  inline VectorX<Scalar>& mutable_desired_velocity() { return vel_d_; }
+  inline VectorX<Scalar>& mutable_desired_acceleration() { return acc_d_; }
+  inline VectorX<Scalar>& mutable_Kp() { return Kp_; }
+  inline VectorX<Scalar>& mutable_Kd() { return Kd_; }
 
  private:
   // Desired position
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> pos_d_;
+  VectorX<Scalar> pos_d_;
   // Desired velocity
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vel_d_;
+  VectorX<Scalar> vel_d_;
   // Desired acceleration
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> acc_d_;
+  VectorX<Scalar> acc_d_;
 
   // Position gains
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kp_;
+  VectorX<Scalar> Kp_;
   // Velocity gains
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Kd_;
+  VectorX<Scalar> Kd_;
 };
 
 template <typename Scalar>

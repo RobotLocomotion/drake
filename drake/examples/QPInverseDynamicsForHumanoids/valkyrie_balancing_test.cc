@@ -11,7 +11,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 // In this test, the Valkyrie robot is initialized to a nominal configuration
-// with zero velocities, and the qp controller is setup to track this
+// with zero velocities, and the qp controller is set up to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.
 // The test forward simulates the closed loop system for 4 seconds.
 // The simulation does not perform forward dynamics computation, instead, it
@@ -27,13 +27,13 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
-  HumanoidStatus robot_status(&robot);
+  HumanoidStatus robot_status(robot);
 
   QPController con;
   QPInput input(robot);
   QPOutput output(robot);
 
-  // Setup initial condition.
+  // Set up initial condition.
   Eigen::VectorXd q(robot.get_num_positions());
   Eigen::VectorXd v(robot.get_num_velocities());
 
@@ -44,7 +44,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
                       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
-  // Setup a tracking problem.
+  // Set up a tracking problem.
   Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
   Eigen::Vector3d Kd_com = Eigen::Vector3d::Constant(12);
 
@@ -103,15 +103,14 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
                                              robot_status.velocity());
     input.mutable_desired_centroidal_momentum_dot()
         .mutable_momentum_dot()
-        .segment<3>(3) =
+        .tail<3>() =
         (Kp_com.array() * (desired_com - robot_status.com()).array() -
          Kd_com.array() * robot_status.comd().array()).matrix() *
         robot.getMass();
 
     int status = con.Control(robot_status, input, &output);
 
-    if (status)
-      break;
+    if (status) break;
 
     // Dummy integration.
     // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's

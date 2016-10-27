@@ -14,9 +14,9 @@ namespace qp_inverse_dynamics {
  */
 class BodyOfInterest {
  public:
-  explicit BodyOfInterest(const std::string& name, const RigidBody* body,
+  explicit BodyOfInterest(const std::string& name, const RigidBody& body,
                           const Eigen::Vector3d& off)
-      : name_(name), body_(body), offset_(off) {}
+      : name_(name), body_(&body), offset_(off) {}
 
   /**
    * Updates pose, velocity, Jacobian, Jacobian_dot_times_v based on @p robot
@@ -37,7 +37,7 @@ class BodyOfInterest {
   }
 
   inline const std::string& name() const { return name_; }
-  inline const RigidBody* body() const { return body_; }
+  inline const RigidBody& body() const { return *body_; }
   inline const Eigen::Isometry3d& pose() const { return pose_; }
   inline const Eigen::Vector6d& velocity() const { return vel_; }
   inline const Eigen::MatrixXd& J() const { return J_; }
@@ -83,21 +83,21 @@ class HumanoidStatus {
 
   // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
   // Valkyrie, and they should be specified in some separate config file.
-  explicit HumanoidStatus(const RigidBodyTree* robot_in)
-      : robot_(robot_in),
+  explicit HumanoidStatus(const RigidBodyTree& robot_in)
+      : robot_(&robot_in),
         cache_(robot_->bodies),
         bodies_of_interest_{
-            BodyOfInterest("pelvis", robot_->FindBody("pelvis"),
+            BodyOfInterest("pelvis", *robot_->FindBody("pelvis"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("torso", robot_->FindBody("torso"),
+            BodyOfInterest("torso", *robot_->FindBody("torso"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("leftFoot", robot_->FindBody("leftFoot"),
+            BodyOfInterest("leftFoot", *robot_->FindBody("leftFoot"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("rightFoot", robot_->FindBody("rightFoot"),
+            BodyOfInterest("rightFoot", *robot_->FindBody("rightFoot"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("leftFootSensor", robot_->FindBody("leftFoot"),
+            BodyOfInterest("leftFootSensor", *robot_->FindBody("leftFoot"),
                            kFootToSensorPositionOffset),
-            BodyOfInterest("rightFootSensor", robot_->FindBody("rightFoot"),
+            BodyOfInterest("rightFootSensor", *robot_->FindBody("rightFoot"),
                            kFootToSensorPositionOffset)} {
     time_ = 0;
 
@@ -222,7 +222,7 @@ class HumanoidStatus {
   Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
 
   // Getters
-  inline const RigidBodyTree* robot() const { return robot_; }
+  inline const RigidBodyTree& robot() const { return *robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;

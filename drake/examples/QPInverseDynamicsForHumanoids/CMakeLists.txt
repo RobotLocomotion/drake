@@ -27,4 +27,9 @@ if(lcm_FOUND)
     lcmtypes_bot2-core-cpp)
 endif()
 
+drake_add_cc_test(NAME setpoint_test)
+target_link_libraries(setpoint_test
+  drakeQPController
+  GTest::GTest GTest::Main)
+
 add_subdirectory(system)
