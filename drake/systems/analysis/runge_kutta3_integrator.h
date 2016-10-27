@@ -6,8 +6,10 @@ namespace drake {
 namespace systems {
 
 /**
- * A third-order Runge Kutta integrator with a third order error estimate.
- * @tparam T A double or autodiff type.
+ * A third-order, variable-step Runge Kutta method with error control.
+ *
+ * @tparam T The state variable element type, which must be a valid
+ *           Eigen scalar.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to http://drake.mit.edu/cxx_inl.html.
@@ -32,22 +34,19 @@ namespace systems {
  * where the second to last row is the 3rd-order propagated solution and
  * the last row is the 2nd-order midpoint used for the error estimate.
  *
- * The following documentation is pulled from Simbody's implementation
- * of this integrator:
- * "This is a 3-stage, first-same-as-last (FSAL) 3rd order method which
+ * This is a 3-stage, first-same-as-last (FSAL) 3rd order method which
  * gives us an embedded 2nd order method as well, so we can extract
  * a 3rd-order error estimate for the 2nd-order result, which error
  * estimate can then be used for step size control, since it will
  * behave as h^3. We then propagate the 3rd order result (whose error
  * is unknown), which Hairer calls 'local extrapolation'.
- * We call the initial state (t0,y0) and want (t0+h,y1). We are
- * given the initial derivative f0=f(t0,y0), which most likely
- * is left over from an evaluation at the end of the last step."
  *
  * - [Butcher, 1987] J. C. Butcher. The Numerical Analysis of Ordinary
  *   Differential Equations. John Wiley & Sons, 1987. p. 325.
- * - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
- *   rev. ed. Springer, 1993. p. 166.
+ * - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I.
+ *   2nd rev. ed. Springer, 1993. p. 166.
+ *
+ * Adapted from Simbody's RungeKutta3Integrator implementation.
  */
 template <class T>
 class RungeKutta3Integrator : public IntegratorBase<T> {
