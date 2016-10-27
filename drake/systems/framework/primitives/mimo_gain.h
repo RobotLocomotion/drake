@@ -1,13 +1,16 @@
-# pragma once
+#pragma once
 
 #include "drake/systems/framework/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
 
+// TODO(liang.fok) Rename this system to be "Gain" and replace the existing
+// "Gain" system. See: #3922.
+
 /// A MIMO (Multi-Input Multi-Output) gain system that is a specialization of a
-/// LinearSystemPlant where coefficient matrices `A`, `B, and `C` are all zero.
-/// Given an input signal `u` and a state `x` the output of this system, 'y',
+/// LinearSystem where coefficient matrices `A`, `B`, and `C` are all zero.
+/// Given an input signal `u` and a state `x` the output of this system, `y`,
 /// is:
 ///
 /// <pre>
@@ -22,8 +25,12 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+///
 /// @ingroup primitive_systems
-template<typename T>
+///
+/// @see AffineSystem
+/// @see LinearSystem
+template <typename T>
 class MimoGain: public LinearSystem<T> {
  public:
   /**
@@ -35,7 +42,7 @@ class MimoGain: public LinearSystem<T> {
   /**
    * A constructor where the gain matrix `D` is @p D.
    */
-  explicit MimoGain(const Eigen::Ref<const MatrixX<T>> &D);
+  explicit MimoGain(const Eigen::Ref<const MatrixX<T>>& D);
 };
 
 }  // namespace systems

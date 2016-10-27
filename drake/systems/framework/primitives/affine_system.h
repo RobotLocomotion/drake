@@ -5,12 +5,16 @@
 namespace drake {
 namespace systems {
 
-/// A continuous affine system. Given an input vector `u`, an output
-/// vector 'y', a state vector `x`, its derivative @f['\dot{x}'@f] and
-/// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
-/// implements the following equations:
+/// A continuous affine system. Given an input vector `u`, an output vector `y`,
+/// a state vector `x`, its derivative `xDot` and state space coefficient
+/// matrices `A`, `B`, `C`, and `D`, this system implements the following
+/// equations:
+///
 /// @f[
-///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
+///   \dot{x} = Ax + Bu + \dot{x}_0
+/// @f]
+///
+/// @f[
 ///   y = Cx + Du + y_0
 /// @f]
 ///
@@ -22,7 +26,11 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+///
 /// @ingroup primitive_systems
+///
+/// @see LinearSystem
+/// @see MimoGain
 template <typename T>
 class AffineSystem : public LeafSystem<T> {
  public:
@@ -59,12 +67,12 @@ class AffineSystem : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
   // Helper getter methods.
-  const Eigen::Ref<const MatrixX<T>> GetA(void) const { return A_; }
-  const Eigen::Ref<const MatrixX<T>> GetB(void) const { return B_; }
-  const Eigen::Ref<const MatrixX<T>> GetC(void) const { return C_; }
-  const Eigen::Ref<const MatrixX<T>> GetD(void) const { return D_; }
-  const Eigen::Ref<const VectorX<T>> GetXDot0(void) const { return XDot0_; }
-  const Eigen::Ref<const VectorX<T>> GetY0(void) const { return Y0_; }
+  const MatrixX<T>& GetA(void) const { return A_; }
+  const MatrixX<T>& GetB(void) const { return B_; }
+  const MatrixX<T>& GetC(void) const { return C_; }
+  const MatrixX<T>& GetD(void) const { return D_; }
+  const VectorX<T>& GetXDot0(void) const { return XDot0_; }
+  const VectorX<T>& GetY0(void) const { return Y0_; }
 
  private:
   const MatrixX<T> A_;
