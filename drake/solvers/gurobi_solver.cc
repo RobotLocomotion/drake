@@ -451,7 +451,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
-    if (optimstatus != GRB_OPTIMAL) {
+    if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       if (optimstatus == GRB_INF_OR_UNBD) {
         result = SolutionResult::kInfeasibleConstraints;
       }
