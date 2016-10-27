@@ -54,6 +54,7 @@ int main() {
     auto const& tree = val_sys->get_rigid_body_tree();
 
     // tests
+    /*
     std::cout << "Number of positions: "<< tree->get_num_positions() << std::endl;
     for(int i=0;i<tree->get_num_positions();i++) {
         std::cout << i << ":" << tree->get_position_name(i) << std::endl;
@@ -73,8 +74,10 @@ int main() {
     Eigen::Matrix3Xd leftPalmContactPts = leftPalmPtr->get_contact_points();
     std::cout << "LeftPalmContactPts:" << std::endl;
     std::cout << leftPalmContactPts << std::endl;
+    */
 
-    // copies testIKMoreConstraints.cpp
+
+    // setting up constraints, based on testIKMoreConstraints.cpp and director-generated M-file.
     double inf = std::numeric_limits<double>::infinity();
     Vector2d tspan;
     tspan << 0, inf;
@@ -135,12 +138,12 @@ int main() {
     int l_foot = tree->FindBodyIndex("leftFoot");
     //Vector4d lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
     Vector4d lfoot_quat(1,0,0,0);
-    std::cout << "Relative quaternion between left foot and world" << std::endl << lfoot_quat << std::endl;
+    //std::cout << "Relative quaternion between left foot and world" << std::endl << lfoot_quat << std::endl;
 
     const Vector3d origin(0,0,0);
-    std::cout << "origin is" << std::endl << origin << std::endl;
+    //std::cout << "origin is" << std::endl << origin << std::endl;
     auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
-    std::cout << "Relative position between left foot and world" << std::endl << lfoot_pos0 << std::endl;
+    //std::cout << "Relative position between left foot and world" << std::endl << lfoot_pos0 << std::endl;
     Vector3d lfoot_pos_lb =lfoot_pos0;
     lfoot_pos_lb(0) -= 0.0001;
     lfoot_pos_lb(1) -= 0.0001;
@@ -158,10 +161,10 @@ int main() {
     int r_foot = tree->FindBodyIndex("rightFoot");
     //Vector4d rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
     Vector4d rfoot_quat(1,0,0,0);
-    std::cout << "Relative quaternion between right foot and world" << std::endl << rfoot_quat << std::endl;
+    //std::cout << "Relative quaternion between right foot and world" << std::endl << rfoot_quat << std::endl;
 
     auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
-    std::cout << "Relative position between right foot and world" << std::endl << rfoot_pos0 << std::endl;
+    //std::cout << "Relative position between right foot and world" << std::endl << rfoot_pos0 << std::endl;
     Vector3d rfoot_pos_lb =rfoot_pos0;
     rfoot_pos_lb(0) -= 0.0001;
     rfoot_pos_lb(1) -= 0.0001;
@@ -181,7 +184,7 @@ int main() {
     findJointAndInsert(tree.get(), "torsoYaw", torso_idx);
     findJointAndInsert(tree.get(), "torsoPitch", torso_idx);
     findJointAndInsert(tree.get(), "torsoRoll", torso_idx);
-    std::cout << "torso indices " << torso_idx[0] << torso_idx[1] << torso_idx[2] << std::endl;
+    //std::cout << "torso indices " << torso_idx[0] << torso_idx[1] << torso_idx[2] << std::endl;
     Vector3d torso_nominal = Vector3d::Zero(3);
     Vector3d torso_half_range(0.2617993877991494, 0.4363323129985824, inf);
     Vector3d torso_lb = torso_nominal - torso_half_range;
@@ -217,7 +220,7 @@ int main() {
     findJointAndInsert(tree.get(), "leftForearmYaw", larm_idx);
     findJointAndInsert(tree.get(), "leftWristRoll", larm_idx);
     findJointAndInsert(tree.get(), "leftWristPitch", larm_idx);
-    std::cout << "Number of elements in larm_idx " << larm_idx.size() << std::endl;
+    //std::cout << "Number of elements in larm_idx " << larm_idx.size() << std::endl;
     VectorXd larm_lb = VectorXd::Zero(7);
     for(int i=0;i<7;i++)
         larm_lb(i) = reach_start(larm_idx[i]);
@@ -234,7 +237,7 @@ int main() {
     findJointAndInsert(tree.get(), "rightForearmYaw", rarm_idx);
     findJointAndInsert(tree.get(), "rightWristRoll", rarm_idx);
     findJointAndInsert(tree.get(), "rightWristPitch", rarm_idx);
-    std::cout << "Number of elements in rarm_idx " << rarm_idx.size() << std::endl;
+    //std::cout << "Number of elements in rarm_idx " << rarm_idx.size() << std::endl;
     VectorXd rarm_lb = VectorXd::Zero(7);
     for(int i=0;i<7;i++)
         rarm_lb(i) = reach_start(rarm_idx[i]);
@@ -295,6 +298,8 @@ int main() {
     Vector3d com = tree->centerOfMass(cache);
     printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
 
+    //cout for debugging
+    /*
     for(auto & a:infeasible_constraint)
         std::cout << a << std::endl;
     std::cout << std::endl;
@@ -307,6 +312,7 @@ int main() {
     for(int i=0;i<tree->get_num_positions();i++) {
         std::cout << i << ":" << tree->get_position_name(i) << " " << q_sol(i) << " " << reach_start(i) << std::endl;
     }
+    */
 
     //show it in drake visualizer!
     std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
