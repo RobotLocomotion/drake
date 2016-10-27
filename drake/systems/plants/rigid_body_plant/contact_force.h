@@ -71,6 +71,8 @@ class DRAKE_EXPORT ContactForce {
   Vector3<T> get_pure_torque() { return pure_torque_; }
   const Vector3<T> get_pure_torque() const { return pure_torque_; }
 
+  Vector3<T> get_force() const { return normal_force_ + tangent_force_; }
+
   WrenchVector<T> get_wrench() const {
     WrenchVector<T> wrench;
     wrench.template head<3>() = pure_torque_;
