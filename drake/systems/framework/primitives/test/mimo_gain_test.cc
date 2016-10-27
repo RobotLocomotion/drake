@@ -53,7 +53,7 @@ TEST_F(MimoGainTest, Construction) {
 TEST_F(MimoGainTest, Derivatives) {
   // Input vector `u` can be any value since the system derivatives are not
   // dependent on it.
-  Eigen::VectorXd u = VectorX<double>::Zero(kNumStates_);
+  Eigen::VectorXd u = VectorX<double>::Zero(D_.cols());
   SetInput(u);
 
   derivatives_ = system_->AllocateTimeDerivatives();
