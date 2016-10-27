@@ -86,8 +86,6 @@ class DRAKE_EXPORT RigidBodyTree {
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-#if 0
-
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromURDFString.")
 #endif
@@ -135,7 +133,6 @@ class DRAKE_EXPORT RigidBodyTree {
                            floating_base_type =
                                drake::systems::plants::joints::kQuaternion,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
-#endif
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
@@ -145,7 +142,6 @@ class DRAKE_EXPORT RigidBodyTree {
   // This method is not thread safe!
   int add_model_instance();
 
-#if 0
   // This method is not thread safe.
   int get_next_clique_id() { return next_available_clique_++; }
 
@@ -158,17 +154,14 @@ class DRAKE_EXPORT RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
 #endif
   int get_number_of_model_instances() const;
-#endif
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
-#if 0
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
       std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
-#endif
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -186,7 +179,6 @@ class DRAKE_EXPORT RigidBodyTree {
 
   void compile(void);  // call me after the model is loaded
 
-#if 0
   Eigen::VectorXd getZeroConfiguration() const;
 
   Eigen::VectorXd getRandomConfiguration(
@@ -229,7 +221,6 @@ class DRAKE_EXPORT RigidBodyTree {
   std::string getStateName(int state_num) const;
 
   void drawKinematicTree(std::string graphviz_dotfile_filename) const;
-#endif
 
   /// Initializes a `KinematicsCache` with the given configuration @p q,
   /// computes the kinematics, and returns the cache.
@@ -258,7 +249,6 @@ class DRAKE_EXPORT RigidBodyTree {
   void doKinematics(KinematicsCache<Scalar>& cache,
                     bool compute_JdotV = false) const;
 
-#if 0
   /**
    * Returns true if @p body is part of a model instance whose ID is in
    * @p model_instance_id_set.
@@ -459,9 +449,9 @@ class DRAKE_EXPORT RigidBodyTree {
     static_assert(DerivedPoints::RowsAtCompileTime == 3 ||
                       DerivedPoints::RowsAtCompileTime == Eigen::Dynamic,
                   "points argument has wrong number of rows");
-    auto T =
+    auto Tr =
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
-    return T * points.template cast<Scalar>();
+    return Tr * points.template cast<Scalar>();
   }
 
   template <typename Scalar>
@@ -569,13 +559,11 @@ class DRAKE_EXPORT RigidBodyTree {
       Eigen::Ref<const Eigen::Matrix3Xd> const& xA,
       Eigen::Ref<const Eigen::Matrix3Xd> const& xB,
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
-#endif
 
   DrakeCollision::ElementId addCollisionElement(
       const DrakeCollision::Element& element, RigidBody& body,
       const std::string& group_name);
 
-#if 0
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
     for (const auto& body_ptr : bodies) {
@@ -713,7 +701,6 @@ class DRAKE_EXPORT RigidBodyTree {
   virtual std::vector<size_t> collidingPoints(
       const KinematicsCache<double>& cache,
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
-#endif
 
   /**
    * Finds a body with the specified \p body_name belonging to a model
@@ -799,7 +786,6 @@ class DRAKE_EXPORT RigidBodyTree {
   std::vector<int> FindChildrenOfBody(int parent_body_index,
       int model_instance_id = -1) const;
 
-#if 0
   /**
    * This is a deprecated version of `FindBodyIndex(...)`. Please use
    * `FindBodyIndex(...)` instead.
@@ -808,7 +794,6 @@ class DRAKE_EXPORT RigidBodyTree {
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
 #endif
   int findLinkId(const std::string& link_name, int model_id = -1) const;
-#endif
 
   /**
    * Obtains a pointer to the rigid body whose parent joint is named
@@ -833,13 +818,10 @@ class DRAKE_EXPORT RigidBodyTree {
   RigidBody* FindChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id = -1) const;
 
-#if 0
-
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
   RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
-#endif
 
   /**
    * Returns the index within the vector of rigid bodies of the rigid body whose
@@ -865,7 +847,6 @@ class DRAKE_EXPORT RigidBodyTree {
   int FindIndexOfChildBodyOfJoint(const std::string& joint_name,
       int model_instance_id = -1) const;
 
-#if 0
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
 #endif
@@ -883,8 +864,6 @@ class DRAKE_EXPORT RigidBodyTree {
   std::shared_ptr<RigidBodyFrame> findFrame(const std::string& frame_name,
                                             int model_id = -1) const;
 
-#endif
-
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
    * between zero and the number of bodies in this tree, which can be determined
@@ -898,8 +877,6 @@ class DRAKE_EXPORT RigidBodyTree {
    * represents the world.
    */
   int get_num_bodies() const;
-
-#if 0
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")
@@ -978,9 +955,8 @@ class DRAKE_EXPORT RigidBodyTree {
    * A toString method for this class.
    */
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
-                                                  const RigidBodyTree&);
+                                               const RigidBodyTree<double>&);
 
-#endif
   /**
    * @brief Adds and takes ownership of a rigid body.
    *
@@ -1064,7 +1040,6 @@ class DRAKE_EXPORT RigidBodyTree {
   // The number of model instances in this rigid body tree.
   int num_model_instances_{};
 
-#if 0
   // Helper functions for contactConstraints.
   template <typename Scalar>
   void accumulateContactJacobian(
@@ -1078,7 +1053,6 @@ class DRAKE_EXPORT RigidBodyTree {
 
   // Reorder body list to ensure parents are before children in the list
   // RigidBodyTree::bodies.
-#endif
   //
   // See RigidBodyTree::compile
   void SortTree();
