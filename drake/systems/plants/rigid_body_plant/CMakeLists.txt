@@ -1,6 +1,6 @@
 set(source_files kinematics_results.cc rigid_body_plant.cc
     contact_force.cc
-    compute_resultant_force_calculator.cc
+    contact_resultant_force_calculator.cc
     )
 
 # The following variables are necessary to conditionally include
