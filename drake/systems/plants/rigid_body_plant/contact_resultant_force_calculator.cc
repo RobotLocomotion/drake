@@ -104,8 +104,8 @@ void ContactResultantForceCalculator<T>::ComputeCachedData() const {
 
   // Compute the minimum moment point.
   minimum_moment_point_ = normal_resultant.cross(normal_moment) /
-                                    normal_resultant.dot(normal_resultant) +
-                                O;
+                              normal_resultant.dot(normal_resultant) +
+                          O;
 
   // Account for moments introduced by moving forces from defined point
   // locations to minimum moment location.
