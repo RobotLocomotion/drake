@@ -1,5 +1,6 @@
 #include "gurobi_solver.h"
 
+#include <cmath>
 #include <vector>
 
 #include <Eigen/Core>
