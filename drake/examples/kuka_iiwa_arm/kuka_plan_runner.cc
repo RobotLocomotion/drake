@@ -18,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
@@ -50,6 +51,7 @@ class RobotPlanRunner {
   /// tree is aliased
   explicit RobotPlanRunner(const RigidBodyTree& tree)
       : tree_(tree), plan_number_(0) {
+    VerifyIiwaTree(tree);
     lcm_.subscribe(kLcmStatusChannel,
                     &RobotPlanRunner::HandleStatus, this);
     lcm_.subscribe(kLcmPlanChannel,
