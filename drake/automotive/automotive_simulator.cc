@@ -206,11 +206,13 @@ void AutomotiveSimulator<T>::Start() {
 
     // Create and cascade a mux and publisher.
     // TODO(liang.fok) Generalize the following two lines of code to support
-    // vehicles with varying numbers of joint state variables and possibly
-    // non-vehicle models. It currently assumes:
+    // vehicles with varying numbers of joint state variables, differing numbers
+    // of position states vs. velocity states, and possibly non-vehicle models.
+    // It currently assumes:
     //
-    //   (1) There are `num_ports_into_mux` vehicles.
-    //   (2) Each vehicle has `num_joint_states_per_model` joint states.
+    //   (1) There are `num_ports_into_mux` / 2 vehicles.
+    //   (2) Each vehicle has `num_joint_states_per_model` joint position states
+    //       and `num_joint_states_per_model` joint velocity states.
     //
     // For more context, see #3919.
     auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
