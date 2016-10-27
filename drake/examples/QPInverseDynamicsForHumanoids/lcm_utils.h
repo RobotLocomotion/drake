@@ -12,13 +12,14 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+// TODO(siyuan.feng) Replace these with Twan's similar Encode / Decode methods.
+
 /**
  * Make a bot_core::robot_state_t lcm message based on given information.
  * The current implementation assumes:
  * 1. \param q and \param qd have the same dimension.
  * 2. Has a RPY floating base joint.
  * 3. All DOF are actuated except the floating base.
- * TODO(siyuan.feng@tri.global) Lift these assumptions.
  *
  * @param act_joint_names List of ACTUATED joint names (excluding floating base)
  * @param time Time
@@ -33,8 +34,8 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
                             double time, const Eigen::VectorXd& q,
                             const Eigen::VectorXd& qd,
                             const Eigen::VectorXd& joint_torque,
-                            const Eigen::Matrix<double, 6, 1>& l_foot_wrench,
-                            const Eigen::Matrix<double, 6, 1>& r_foot_wrench,
+                            const Vector6<double>& l_foot_wrench,
+                            const Vector6<double>& r_foot_wrench,
                             bot_core::robot_state_t* msg);
 
 /**
@@ -45,7 +46,6 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
  * 1. \param q and \param qd have the same dimension.
  * 2. Has a RPY floating base joint.
  * 3. All DOF are actuated except the floating base.
- * TODO(siyuan.feng@tri.global) Lift these assumptions.
  *
  * @param msg Lcm message
  * @param q_name_to_index A map from coordinate names to index, the joint_name
@@ -61,8 +61,8 @@ void DecodeRobotStateLcmMsg(
     const bot_core::robot_state_t& msg,
     const std::unordered_map<std::string, int>& q_name_to_index, double* time,
     Eigen::VectorXd* q, Eigen::VectorXd* qd, Eigen::VectorXd* joint_torque,
-    Eigen::Matrix<double, 6, 1>* l_foot_wrench,
-    Eigen::Matrix<double, 6, 1>* r_foot_wrench);
+    Vector6<double>* l_foot_wrench,
+    Vector6<double>* r_foot_wrench);
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
