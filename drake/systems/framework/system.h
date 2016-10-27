@@ -338,7 +338,7 @@ class System {
   /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
-  /// in the number of generalized velocity states.
+  /// in the dimension of the generalized velocity.
   void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
@@ -350,7 +350,7 @@ class System {
   /// Transforms the velocity (v) in the given @p context to the derivative
   /// of the configuration (qdot). The transformation must be linear in velocity
   /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
-  /// in the number of generalized velocity states.
+  /// in the dimension of the generalized velocity.
   void MapVelocityToConfigurationDerivatives(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
@@ -359,8 +359,31 @@ class System {
                                             configuration_derivatives);
   }
 
-  // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
-  // and MapAccelerationToConfigurationSecondDerivatives.
+  /// Transforms the derivative of the configuration (qdot) in the given @p
+  /// context to the velocity (v). The transformation must be linear in velocity
+  /// (v = L(q) * qdot), and it must require no more than O(N) time to compute
+  /// in the dimension of the generalized configuration.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context, const VectorBase<T>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    MapConfigurationDerivativesToVelocity(
+        context, configuration_derivatives.CopyToVector(),
+        generalized_velocity);
+  }
+
+  /// Transforms the derivative of the configuration (qdot) in the given @p
+  /// context to the velocity (v). The transformation must be linear in velocity
+  /// (v = L(q) * qdot), and it must require no more than O(N) time to compute
+  /// in the dimension of the generalized configuration.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    DoMapConfigurationDerivativesToVelocity(context, configuration_derivatives,
+                                            generalized_velocity);
+  }
+
+  // TODO(david-german-tri): MapAccelerationToConfigurationSecondDerivatives.
 
   // Sets the name of the system. It is recommended that the name not include
   // the character ':', since that the path delimiter. is "::".
@@ -549,18 +572,46 @@ class System {
   }
 
   /// Provides the substantive implementation of
-  /// MapVelocityToConfigurationDerivatives.
+  /// MapConfigurationDerivativesToVelocity(). This signature can work directly
+  /// with an Eigen vector object for faster performance. See the other
+  /// DoMapConfigurationDerivativesToVelocity() signature for additional
+  /// information.
   ///
   /// The default implementation uses the identity mapping. It throws
   /// std::runtime_error if the @p generalized_velocity and
   /// @p configuration_derivatives are not the same size. Child classes must
   /// override this function if qdot != v (even if they are the same size).
   ///
-  /// Implementations may assume that @p configuration_derivatives is of
-  /// the same size as the generalized position allocated in
-  /// AllocateTimeDerivatives(), and should populate it with elementwise
-  /// corresponding derivatives of position. Implementations that are not
+  /// Implementations may assume that @p generalized_velocity is of
+  /// the same size as the generalized velocity allocated in
+  /// AllocateTimeDerivatives(). Implementations that are not
   /// second-order systems may simply do nothing.
+  virtual void DoMapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    // If a concrete subclass of System<T> has a generalized velocity and a
+    // generalized configuration such that the derivatives of configuration
+    // are not exactly the velocity, that subclass must override
+    // MapVelocityToConfigurationDerivatives. In the particular case where
+    // generalized velocity and generalized configuration are not even the
+    // same size, we detect this error and abort.
+    const int n = configuration_derivatives.size();
+    // You need to override System<T>::MapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
+    generalized_velocity->SetFromVector(configuration_derivatives);
+  }
+
+  /**
+   * Provides the substantive implementation of
+   * MapVelocityToConfigurationDerivatives(). This signature can work
+   * directly with an Eigen vector object for faster performance. See
+   * the other DoMapVelocityToConfigurationDerivatives() signature for
+   * additional information.
+   * @param context
+   * @param generalized_velocity
+   * @param configuration_derivatives
+   */
   virtual void DoMapVelocityToConfigurationDerivatives(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
@@ -574,10 +625,7 @@ class System {
     const int n = generalized_velocity.size();
     // You need to override System<T>::MapVelocityToConfigurationDerivatives!
     DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
-    for (int i = 0; i < n; ++i) {
-      const T value = generalized_velocity[i];
-      configuration_derivatives->SetAtIndex(i, value);
-    }
+    configuration_derivatives->SetFromVector(generalized_velocity);
   }
 
   /// Causes an InputPort in the @p context to become up-to-date, delegating to
