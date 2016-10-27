@@ -325,7 +325,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
 drake_add_external(director PUBLIC CMAKE
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
-    -DUSE_DRAKE=OFF
+    -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_SYSTEM_LCM=ON
