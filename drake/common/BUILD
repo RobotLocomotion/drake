@@ -12,6 +12,7 @@
 #     visibility = ["//visibility:public"],
 # )
 
+# A library of things that everyone will want and must eat.
 cc_library(
     name = "common",
     hdrs = [
@@ -26,33 +27,54 @@ cc_library(
         "eigen_matrix_compare.h",
         "eigen_stl_types.h",
         "eigen_types.h",
-        "functional_form.h",
-        "hash_combine.h",
         "nice_type_name.h",
         "number_traits.h",
-        "polynomial.h",
         "sorted_vectors_have_intersection.h",
+        "text_logging.h",
+    ],
+    srcs = [
+        "drake_assert.cc",
+        "drake_throw.cc",
+        "nice_type_name.cc",
+        "text_logging.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@eigen//:eigen"],
+)
+
+cc_library(
+    name = "symbolic",
+    hdrs = [
+        "hash_combine.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
         "symbolic_formula.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
-        "text_logging.h",
-        "trig_poly.h",
     ],
     srcs = [
-        "drake_assert.cc",
-        "drake_throw.cc",
-        "functional_form.cc",
-        "nice_type_name.cc",
-        "polynomial.cc",
         "symbolic_environment.cc",
         "symbolic_expression.cc",
         "symbolic_formula.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
-        "text_logging.cc",
     ],
     visibility = ["//visibility:public"],
-    deps = ["@eigen//:eigen"],
+    deps = ["common"],
+)
+
+cc_library(
+    name = "functional_form",
+    hdrs = ["functional_form.h"],
+    srcs = ["functional_form.cc"],
+    visibility = ["//visibility:public"],
+    deps = ["common"],
+)
+
+cc_library(
+    name = "polynomial",
+    hdrs = ["polynomial.h", "trig_poly.h"],
+    srcs = ["polynomial.cc"],
+    visibility = ["//visibility:public"],
+    deps = ["common"],
 )

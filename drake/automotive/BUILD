@@ -31,3 +31,23 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = ["//drake/systems:systems_analysis"],
 )
+
+cc_library(
+    name = "autodiff",
+    srcs = [
+        "idm_with_trajectory_agent_autodiff.cc",
+        "simple_car_autodiff.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["automotive"],
+)
+
+cc_library(
+    name = "symbolic",
+    srcs = [
+        "idm_with_trajectory_agent_symbolic.cc",
+        "simple_car_symbolic.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["automotive", "//drake/common:symbolic"],
+)

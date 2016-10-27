@@ -10,7 +10,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_config.cc
   gen/simple_car_state.cc
   idm_with_trajectory_agent.cc
+  idm_with_trajectory_agent_autodiff.cc
+  idm_with_trajectory_agent_symbolic.cc
   simple_car.cc
+  simple_car_autodiff.cc
+  simple_car_symbolic.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
