@@ -15,7 +15,7 @@ new_http_archive(
 
 new_git_repository(
     name = "eigen",
-    remote = "https://github.com/RLovelett/eigen.git",
-    tag = "3.3-beta1",
+    remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
+    commit = "1b7acef29a4c53b5867e5d9da7e97bde436219f9",
     build_file = "tools/eigen.BUILD",
 )
