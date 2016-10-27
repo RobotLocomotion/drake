@@ -15,18 +15,20 @@ needed to simulate the Atlas robot.
  **/
 class ValkyriePlant {
  public:
-  template<typename T>
+  template <typename T>
   using InputVector = drake::RigidBodySystem::InputVector<T>;
-  template<typename T>
+  template <typename T>
   using StateVector = drake::RigidBodySystem::StateVector<T>;
-  template<typename T>
+  template <typename T>
   using OutputVector = drake::RigidBodySystem::OutputVector<T>;
 
   /** Creates a default instance of the Valkyrie robot as described by the URDF
-  file in `"/examples/Valkyrie/val_description/urdf/valkyrie_sim_drake.urdf"`. **/
+  file in `"/examples/Valkyrie/val_description/urdf/valkyrie_sim_drake.urdf"`.
+  **/
   ValkyriePlant();
 
-  /** Returns an initial state vector describing the configuration of valkyrie in a
+  /** Returns an initial state vector describing the configuration of valkyrie
+  in a
   standing position with the knees slightly bent and the arms down. **/
   const VectorXd& get_initial_state() const;
 
@@ -39,14 +41,12 @@ class ValkyriePlant {
 
   /** @returns the generalized positions followed by the sensors' outputs as
   the output of the system. **/
-  StateVector<double> output(const double& t,
-                             const StateVector<double>& x,
+  StateVector<double> output(const double& t, const StateVector<double>& x,
                              const InputVector<double>& u) const;
 
   /** Given an InputVector @p u of generalized forces, this method computes the
   dynamics of the plant at a given StateVector @p x and time @p t. **/
-  StateVector<double> dynamics(const double& t,
-                               const StateVector<double>& x,
+  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
                                const InputVector<double>& u) const;
 
  private:
@@ -58,7 +58,6 @@ class ValkyriePlant {
 
   // Sets the initial pose for valkyrie.
   void SetInitialConfiguration();
-
 };
 
 }  // namespace drake
