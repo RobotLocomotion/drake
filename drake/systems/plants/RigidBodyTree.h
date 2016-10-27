@@ -168,6 +168,7 @@ class DRAKE_EXPORT RigidBodyTree {
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
       std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
+#endif
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -182,7 +183,6 @@ class DRAKE_EXPORT RigidBodyTree {
   bool transformCollisionFrame(
       const DrakeCollision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
-#endif
 
   void compile(void);  // call me after the model is loaded
 

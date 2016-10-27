@@ -53,7 +53,7 @@ using tinyxml2::XMLDocument;
 
 using drake::systems::plants::joints::FloatingBaseType;
 
-void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTreed* model,
                       PoseMap& pose_map, const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -179,7 +179,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTreed* model,
                     const PackageMap& package_map, const string& root_dir,
                     PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
@@ -229,7 +229,7 @@ void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   }
 }
 
-void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTreed* model,
                        const PackageMap& package_map, const string& root_dir,
                        PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
@@ -272,7 +272,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
   //  Issue 2661 was created to track this problem.
   // TODO(amcastro-tri): fix the above issue tracked by 2661. Similarly for
   // parseCollision in RigidBodyTreeURDF.cpp.
-  if (body->get_name().compare(std::string(RigidBodyTree::kWorldName)) == 0)
+  if (body->get_name().compare(std::string(RigidBodyTreed::kWorldName)) == 0)
     element.set_static();
 
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
@@ -285,7 +285,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
     model->addCollisionElement(element, *body, group_name);
 }
 
-bool ParseSdfLink(RigidBodyTree* model, std::string model_name,
+bool ParseSdfLink(RigidBodyTreed* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
                   PoseMap& pose_map, const string& root_dir, int* index,
                   int model_instance_id) {
@@ -304,7 +304,7 @@ bool ParseSdfLink(RigidBodyTree* model, std::string model_name,
   }
   body->set_name(std::string(attr));
 
-  if (body->get_name() == std::string(RigidBodyTree::kWorldName)) {
+  if (body->get_name() == std::string(RigidBodyTreed::kWorldName)) {
     throw runtime_error(
         std::string(__FILE__) + ": " + __func__ +
         ": ERROR: Do not name a link 'world' because it is a reserved name.");
@@ -359,7 +359,7 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
 }
 
 template <typename JointType>
-void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
+void setSDFDynamics(RigidBodyTreed* model, XMLElement* node,
                     FixedAxisOneDoFJoint<JointType>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
@@ -372,7 +372,7 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-void ParseSdfFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
+void ParseSdfFrame(RigidBodyTreed* rigid_body_tree, XMLElement* node,
                    int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -419,7 +419,7 @@ void ParseSdfFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
   rigid_body_tree->addFrame(frame);
 }
 
-void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
+void ParseSdfJoint(RigidBodyTreed* model, std::string model_name,
                    XMLElement* node, PoseMap& pose_map, int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -687,7 +687,7 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
 // names and their instance IDs. This parameter may not be `nullptr`. A
 // `std::runtime_error` is thrown if an instance is created of a model whose
 // name is already in this table.
-void ParseModel(RigidBodyTree* tree, XMLElement* node,
+void ParseModel(RigidBodyTreed* tree, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -756,7 +756,7 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(),
-          std::string(RigidBodyTree::kWorldName),
+          std::string(RigidBodyTreed::kWorldName),
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -779,7 +779,7 @@ void ParseModel(RigidBodyTree* tree, XMLElement* node,
                    &pose_map, tree);
 }
 
-void ParseWorld(RigidBodyTree* model, XMLElement* node,
+void ParseWorld(RigidBodyTreed* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -791,7 +791,7 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
+ModelInstanceIdTable ParseSdf(RigidBodyTreed* model, XMLDocument* xml_doc,
     PackageMap& package_map, const string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -808,11 +808,11 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 
   // Loads the world if it is defined.
   XMLElement* world_node =
-      node->FirstChildElement(RigidBodyTree::kWorldName);
+      node->FirstChildElement(RigidBodyTreed::kWorldName);
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes to use.
-    if (world_node->NextSiblingElement(RigidBodyTree::kWorldName)) {
+    if (world_node->NextSiblingElement(RigidBodyTreed::kWorldName)) {
       throw runtime_error(std::string(__FILE__) + ": " + __func__ +
                           ": ERROR: Multiple worlds in one file.");
     }
@@ -837,7 +837,7 @@ ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const string& filename,
     const FloatingBaseType floating_base_type,
-    RigidBodyTree* tree) {
+    RigidBodyTreed* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
   return AddModelInstancesFromSdfFile(filename, floating_base_type,
@@ -848,7 +848,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    RigidBodyTreed* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
 
@@ -876,7 +876,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     const string& sdf_string,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree) {
+    RigidBodyTreed* tree) {
   // Ensures the output parameter pointers are valid.
   DRAKE_DEMAND(tree);
 

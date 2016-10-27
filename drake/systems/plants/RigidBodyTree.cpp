@@ -10,8 +10,8 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-//#include "drake/systems/plants/parser_sdf.h"
-//#include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/parser_sdf.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -125,14 +125,13 @@ RigidBodyTree<T>::RigidBodyTree(void)
 template <typename T>
 RigidBodyTree<T>::~RigidBodyTree(void) {}
 
-#if 0
-bool RigidBodyTree::transformCollisionFrame(
+template <typename T>
+bool RigidBodyTree<T>::transformCollisionFrame(
     const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model_->transformCollisionFrame(eid,
       transform_body_to_joint);
 }
-#endif
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
 // vector RigidBodyTree::bodies changes in size with the calls to bodies.erase
