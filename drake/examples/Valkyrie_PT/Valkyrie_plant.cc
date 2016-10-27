@@ -17,7 +17,7 @@ ValkyriePlant::ValkyriePlant() {
 
   // TODO(amcastro-tri): this should not be here but there is no other way
   // to add terrain to the world right now. See #2318.
-  //SetUpTerrain();
+  SetUpTerrain();
 }
 
 const VectorXd& ValkyriePlant::get_initial_state() const { return x0_; }
@@ -94,6 +94,7 @@ void ValkyriePlant::SetInitialConfiguration() {
   -0.71;//36
   0.0];//37
   */
+    /*
   x0_(2) = 1.025; //base_z
 
   x0_(12) = 0.30019663134302466; //rightShoulderPitch
@@ -113,6 +114,7 @@ void ValkyriePlant::SetInitialConfiguration() {
   x0_(34) = -0.49; // leftHipPitch
   x0_(35) = 1.025; // leftKneePitch
   x0_(36) = -0.71; // leftAnklePitch
+     */
 
 }
 

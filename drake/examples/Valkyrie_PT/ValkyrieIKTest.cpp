@@ -2,7 +2,7 @@
 // Created by Pang Tao on 21/10/16.
 //
 #include <iostream>
-#include <limits>
+
 #include "drake/examples/Valkyrie_PT/Valkyrie_plant.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/common/drake_path.h"
@@ -51,48 +51,49 @@ int main() {
     cout << leftPalmContactPts << endl;
 
     // copies testIKMoreConstraints.cpp
+    double inf = std::numeric_limits<double>::infinity();
     Vector2d tspan;
-    tspan << 0, 1;
+    tspan << 0, inf;
 
     VectorXd reach_start(tree->get_num_positions());
-    reach_start <<  0.0, //0
-    0.0,
-    1.025,
-    0.0,
-    0.0,
-    0.0, //5
-    0.0,
-    0.0,
-    0.0,
-    0.0, //9:lowerNeckPitch
-    0.0, //10:neckYaw
-    0.0, //11:upperNeckPitch
-    0.30019663134302466,
-    1.25,
-    0.0,
-    0.7853981633974483, //15
-    1.571,
-    0.0,
-    0.0,
-    0.30019663134302466,
-    -1.25, //20
-    0.0,
-    -0.7853981633974483,
-    1.571,
-    0.0,
-    0.0, //25
-    0.0, //26
-    0.0,
-    -0.49,
+    reach_start <<  0.0, //base_x
+    0.0,//base_y
+    1.025,//base_z
+    0.0,//base_roll
+    0.0,//base_pitch
+    0.0, //5 base_yaw
+    0.0, //6 torsoYaw
+    0.0, //7 torsoPitch
+    0.0, //8 torsoRoll
+    0.0, //9 lowerNeckPitch
+    0.0, //10 neckYaw
+    0.0, //11 upperNeckPitch
+    0.30019663134302466, //12 rightShoulderPitch
+    1.25, //13 rightShoulderRoll
+    0.0,  //14 rightShoulderYaw
+    0.7853981633974483, //15 rightElbowPitch
+    1.571, //16 rightForearmYaw
+    0.0, //17 rightWristRoll
+    0.0, //18 rightWristPItch
+    0.30019663134302466, //19 leftShoulderPitch
+    -1.25, //20 leftShoulderRoll
+    0.0, //21 leftShoulderYaw
+    -0.7853981633974483, //22 leftElbowPitch
+    1.571, // 23 leftForearmYaw
+    0.0, //24 leftWristRoll
+    0.0, //25 LeftWristPitch
+    0.0, //26 rightHipYaw
+    0.0, //27 rightHipRoll
+    -0.49,//28 rightHipPitch
     1.205, //29 rightKneePitch
-    -0.71, //30
-    0.0, //31
-    0.0,
-    0.0,
-    -0.49,
+    -0.71, //30 rightAnklePitch
+    0.0, //31 rightAnkleRoll
+    0.0, //32 leftHipYaw
+    0.0, //33 leftHipRoll
+    -0.49, // 34 leftHipPitch
     1.205,//35 leftKneePitch
-    -0.71,//36
-    0.0;//37
+    -0.71,//36 leftAnklePitch
+    0.0;//37 leftAnkleRoll
 
     KinematicsCache<double> cache = tree->doKinematics(reach_start);
 
@@ -108,21 +109,22 @@ int main() {
 
     // 2 left foot position and orientation constraint, position and orientation constraints are imposed on frames/bodies
     int l_foot = tree->FindBodyIndex("leftFoot");
-    Vector4d lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
+    //Vector4d lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
+    Vector4d lfoot_quat(1,0,0,0);
     cout << "Relative quaternion between left foot and world" << endl << lfoot_quat << endl;
 
-    Vector3d origin(0,0,0);
+    const Vector3d origin(0,0,0);
     cout << "origin is" << endl << origin << endl;
     auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
     cout << "Relative position between left foot and world" << endl << lfoot_pos0 << endl;
     Vector3d lfoot_pos_lb =lfoot_pos0;
-    lfoot_pos_lb(0) -= 0.001;
-    lfoot_pos_lb(1) -= 0.001;
-    lfoot_pos_lb(2) -= 0.001;
+    lfoot_pos_lb(0) -= 0.0001;
+    lfoot_pos_lb(1) -= 0.0001;
+    lfoot_pos_lb(2) -= 0.0001;
     Vector3d lfoot_pos_ub =lfoot_pos0;
-    lfoot_pos_ub(0) += 0.001;
-    lfoot_pos_ub(1) += 0.001;
-    lfoot_pos_ub(2) += 0.001;
+    lfoot_pos_ub(0) += 0.0001;
+    lfoot_pos_ub(1) += 0.0001;
+    lfoot_pos_ub(2) += 0.0001;
     WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
                                          lfoot_pos_ub, tspan);
     double tol = 0.0017453292519943296;
@@ -130,26 +132,27 @@ int main() {
 
     // 3 right foot position and orientation constraint
     int r_foot = tree->FindBodyIndex("rightFoot");
-    Vector4d rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
+    //Vector4d rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
+    Vector4d rfoot_quat(1,0,0,0);
     cout << "Relative quaternion between right foot and world" << endl << rfoot_quat << endl;
 
     auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
     cout << "Relative position between right foot and world" << endl << rfoot_pos0 << endl;
     Vector3d rfoot_pos_lb =rfoot_pos0;
-    rfoot_pos_lb(0) -= 0.001;
-    rfoot_pos_lb(1) -= 0.001;
-    rfoot_pos_lb(2) -= 0.001;
+    rfoot_pos_lb(0) -= 0.0001;
+    rfoot_pos_lb(1) -= 0.0001;
+    rfoot_pos_lb(2) -= 0.0001;
     Vector3d rfoot_pos_ub =rfoot_pos0;
-    rfoot_pos_ub(0) += 0.001;
-    rfoot_pos_ub(1) += 0.001;
-    rfoot_pos_ub(2) += 0.001;
+    rfoot_pos_ub(0) += 0.0001;
+    rfoot_pos_ub(1) += 0.0001;
+    rfoot_pos_ub(2) += 0.0001;
     WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
                                          rfoot_pos_ub, tspan);
     WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
 
 
     // 4 torso posture constraint
-    double inf = std::numeric_limits<double>::infinity();
+
     PostureConstraint kc_posture_torso(tree.get(), tspan);
     vector<int> torso_idx;
     findJointAndInsert(tree.get(), "torsoYaw", torso_idx);
@@ -232,9 +235,13 @@ int main() {
 
     cout << "LeftFootContactPts:" << endl;
     cout << leftFootContactPts << endl;
-    cout << "last 8 lfoot contact pts" << endl;
+    cout << "lfoot contact pts used for quasistatic constraint" << endl;
     cout << l_foot_pts << endl;
 
+    cout << "RightFootContactPts: " << endl;
+    cout << rightFootContactPts << endl;
+    cout << "rfoot contact pts used for quasistatic constraint" << endl;
+    cout << r_foot_pts << endl;
 
     //------------------solve-----------------------------------------------------
     std::vector<RigidBodyConstraint*> constraint_array;
@@ -242,7 +249,7 @@ int main() {
     constraint_array.push_back(&kc_lfoot_pos);
     constraint_array.push_back(&kc_lfoot_quat);
     constraint_array.push_back(&kc_rfoot_pos);
-    constraint_array.push_back(&kc_lfoot_quat);
+    constraint_array.push_back(&kc_rfoot_quat);
     constraint_array.push_back(&kc_posture_torso);
     constraint_array.push_back(&kc_posture_knee);
     constraint_array.push_back(&kc_posture_larm);
@@ -251,37 +258,40 @@ int main() {
 
     IKoptions ikoptions(tree.get());
     VectorXd q_sol(tree->get_num_positions());
+    VectorXd q_nom = VectorXd::Zero(tree->get_num_positions());
     int info;
     std::vector<std::string> infeasible_constraint;
-    inverseKin(tree.get(), reach_start, reach_start, constraint_array.size(),
+    inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),
                constraint_array.data(), ikoptions,
                &q_sol, &info, &infeasible_constraint);
     printf("info = %d\n", info);
 
     /////////////////////////////////////////
+    cout << "=======================after solving============================" << endl;
     cache = tree->doKinematics(q_sol);
     Vector3d com = tree->centerOfMass(cache);
     printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
 
+    for(auto & a:infeasible_constraint)
+        cout << a << endl;
+    cout << endl;
 
+    lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
+    cout << "Relative quaternion between left foot and world" << endl << lfoot_quat << endl;
+    rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
+
+    std::cout << "Final States: " << std::endl;
+    for(int i=0;i<tree->get_num_positions();i++) {
+        cout << i << ":" << tree->get_position_name(i) << " " << q_sol(i) << " " << reach_start(i) << endl;
+    }
 
     //show it in drake visualizer!
-    /*
     std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
     if (!lcm->good()) return 1;
-
+    drake::BotVisualizer<ValkyriePlant::StateVector>::StateVector<double> visualizer_state;
     auto visualizer =
     std::make_shared<BotVisualizer<ValkyriePlant::StateVector>>(lcm, tree);
-    auto sys_with_vis = cascade(val_sys, visualizer);
-
-    drake::SimulationOptions options;
-    options.initial_step_size = 5e-5;
-    options.realtime_factor = 0.0;
-
-    double final_time = std::numeric_limits<double>::infinity();
-    runLCM(sys_with_vis, lcm, 0, final_time, val_sys->get_initial_state(), options);
-    */
-
+    visualizer->output(0, visualizer_state, q_sol);
 
     return 0;
 }
