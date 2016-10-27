@@ -15,11 +15,11 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * A simple PlanEval block that generates qp input for the qp inverse
    * dynamics controller.
    * The controller assume the robot is in double support, and the desired set
-   * point is set by SetupDesired.
+   * point is set by SetDesired.
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree* robot) : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -29,8 +29,8 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
     // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
     // eventually.
-    // Setup gains.
-    int dim = robot_->get_num_positions();
+    // Set up gains.
+    int dim = robot_.get_num_positions();
     Kp_com_ = Eigen::Vector3d::Constant(40);
     Kd_com_ = Eigen::Vector3d::Constant(12);
     Kp_pelvis_ = Eigen::Vector6d::Constant(20);
@@ -64,10 +64,10 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // Update desired accelerations.
     result.mutable_desired_centroidal_momentum_dot()
         .mutable_momentum_dot()
-        .segment<3>(3) =
+        .tail<3>() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
          Kd_com_.array() * robot_status->comd().array()).matrix() *
-        robot_->getMass();
+        robot_.getMass();
 
     result.mutable_desired_joint_motions().mutable_accelerations() =
         joint_PDff_.ComputeTargetAcceleration(robot_status->position(),
@@ -85,7 +85,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<QPInput>(MakeExampleQPInput(*robot_))));
+        new Value<QPInput>(MakeExampleQPInput(robot_))));
     return std::move(output);
   }
 
@@ -93,7 +93,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Set the set point for tracking.
    * @param robot_status, desired robot state
    */
-  void SetupDesired(const HumanoidStatus& robot_status) {
+  void SetDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
     pelvis_PDff_ = CartesianSetpoint<double>(
         robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
@@ -123,7 +123,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree* robot_;
+  const RigidBodyTree& robot_;
 
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;

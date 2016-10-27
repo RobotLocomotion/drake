@@ -67,7 +67,7 @@ void HumanoidStatus::Update() {
                   foot_wrench_in_world_frame_[Side::RIGHT][5]};
   for (int i = 0; i < 2; ++i) {
     // Ignore CoP computation if normal force is small
-    if (fabs(foot_wrench_raw_[i][5]) < 1) {
+    if (std::abs(foot_wrench_raw_[i][5]) < 1) {
       cop_in_sole_frame_[i][0] = 0;
       cop_in_sole_frame_[i][1] = 0;
       cop_w[i][0] = foot(i).pose().translation()[0];

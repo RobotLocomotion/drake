@@ -20,7 +20,7 @@ using systems::Value;
  */
 class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
  public:
-  explicit RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree* robot)
+  explicit RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree& robot)
       : robot_(robot) {
     input_port_index_lcm_msg_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
@@ -71,7 +71,7 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree* robot_;
+  const RigidBodyTree& robot_;
 
   int input_port_index_lcm_msg_;
   int output_port_index_humanoid_status_;
