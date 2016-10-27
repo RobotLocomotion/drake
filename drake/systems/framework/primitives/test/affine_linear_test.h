@@ -28,8 +28,8 @@ class AffineLinearSystemTest : public ::testing::Test {
   virtual void Initialize() = 0;
 
   void SetState(const Eigen::Ref<const VectorX<double>> &x) {
-    state_vector_ = make_unique < BasicVector < double >> (x);
-    state_ = make_unique < ContinuousState < double >> (move(state_vector_));
+    state_vector_ = make_unique<BasicVector<double>>(x);
+    state_ = make_unique<ContinuousState<double>>(move(state_vector_));
     context_->set_continuous_state(std::move(state_));
   }
 
@@ -42,20 +42,19 @@ class AffineLinearSystemTest : public ::testing::Test {
   // Helper method to create free standing input ports, i.e., those that are
   // not connected to any other output port in the system.
   // Used to test standalone systems not part of a Diagram.
-  static std::unique_ptr <FreestandingInputPort> MakeInput(
-      std::unique_ptr <BasicVector<double>> data) {
+  static std::unique_ptr<FreestandingInputPort> MakeInput(
+      std::unique_ptr<BasicVector<double>> data) {
     return make_unique<FreestandingInputPort>(std::move(data));
   }
 
  protected:
-  unique_ptr <Context<double>> context_;
-  LeafSystemOutput<double> system_output_;
-  unique_ptr <ContinuousState<double>> system_derivatives_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<SystemOutput<double>> output_;
 
-  unique_ptr <ContinuousState<double>> state_;
-  unique_ptr <BasicVector<double>> state_vector_;
-  unique_ptr <BasicVector<double>> input_vector_;
-  unique_ptr <ContinuousState<double>> derivatives_;
+  unique_ptr<ContinuousState<double>> state_;
+  unique_ptr<BasicVector<double>> state_vector_;
+  unique_ptr<BasicVector<double>> input_vector_;
+  unique_ptr<ContinuousState<double>> derivatives_;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

@@ -6,11 +6,15 @@ namespace drake {
 namespace systems {
 
 /// A continuous affine system. Given an input vector `u`, an output
-/// vector 'y', a state vector `x`, its derivative @f['\dot{x}'@f] and
+/// vector `y`, a state vector `x`, its derivative @f['\dot{x}'@f] and
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, this system
 /// implements the following equations:
+///
 /// @f[
-///   \dot{x} = Ax + Bu + \dot{x}_0 \newline
+///   \dot{x} = Ax + Bu + \dot{x}_0
+/// @f]
+///
+/// @f[
 ///   y = Cx + Du + y_0
 /// @f]
 ///
@@ -22,7 +26,11 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+///
 /// @ingroup primitive_systems
+///
+/// @see LinearSystem
+/// @see MimoGain
 template <typename T>
 class AffineSystem : public LeafSystem<T> {
  public:

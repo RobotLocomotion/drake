@@ -8,9 +8,13 @@ namespace systems {
 /// A continuous linear system that is a specialization of an affine system
 /// where the inital time derivative of the system state `xDot0` and the
 /// initial system output `y0` are both zero. Given an input signal `u` and a
-/// state `x` the output of this sytem 'y' is:
+/// state `x` the output of this sytem `y` is:
+///
 /// @f[
-///   \dot{x} = Ax + Bu \newline
+///   \dot{x} = Ax + Bu
+/// @f]
+///
+/// @f[
 ///   y = Cx + Du
 /// @f]
 ///
@@ -22,7 +26,11 @@ namespace systems {
 ///
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
+///
 /// @ingroup primitive_systems
+///
+/// @see AffineSystem
+/// @see MimoGain
 template <typename T>
 class LinearSystem : public AffineSystem<T> {
  public:
