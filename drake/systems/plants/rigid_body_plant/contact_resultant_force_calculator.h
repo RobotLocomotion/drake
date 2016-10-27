@@ -1,7 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {
@@ -42,6 +45,13 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
+  /**
+   Adds a new contact force to the calcualtor.
+
+   @param force     The contact force.
+   */
+  void AddForce(const ContactForce<T>& force);
+
   /**
    Adds a new force to the calculator.
    @param normal_force          The normal component of the force.
@@ -89,7 +99,7 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
   // Aggregator for the force data that has been added.
   // TODO(SeanCurtis-TRI): Get the class right.
-  std::vector<int> forces_{};
+  std::vector<ContactForce<T>> forces_{};
 
   // To facilitate computation, this class uses a light-weight caching system
   // to prevent redundant computations.  It works with a dirty/clean bit
