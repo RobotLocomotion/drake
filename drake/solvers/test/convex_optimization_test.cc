@@ -868,7 +868,7 @@ void TestFindSpringEquilibrium(
 }
 
 void GetLinearProgramSolvers(
-    std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   auto gurobi_solver = std::make_unique<GurobiSolver>();
 
   if (gurobi_solver->available()) {
@@ -881,28 +881,26 @@ void GetLinearProgramSolvers(
 }
 
 void GetQuadraticProgramSolvers(
-    std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver(
-      new GurobiSolver());
+  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  auto gurobi_solver = std::make_unique<GurobiSolver>();
+
   if (gurobi_solver->available()) {
     solvers->push_back(std::move(gurobi_solver));
   }
-  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver(
-      new MosekSolver());
+  auto mosek_solver = std::make_unique<MosekSolver>();
   if (mosek_solver->available()) {
     solvers->push_back(std::move(mosek_solver));
   }
 }
 
 void GetSecondOrderConicProgramSolvers(
-    std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver(
-      new GurobiSolver());
+  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  auto gurobi_solver = std::make_unique<GurobiSolver>();
+
   if (gurobi_solver->available()) {
     solvers->push_back(std::move(gurobi_solver));
   }
-  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver(
-      new MosekSolver());
+  auto mosek_solver = std::make_unique<MosekSolver>();
   if (mosek_solver->available()) {
     solvers->push_back(std::move(mosek_solver));
   }
