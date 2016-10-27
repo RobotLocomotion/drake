@@ -57,11 +57,20 @@ if(lcm_FOUND)
 
   add_executable(kuka_plan_runner kuka_plan_runner.cc)
   target_link_libraries(kuka_plan_runner
+    drakeKukaIiwaArmCommon
     drakeTrajectories
     drakeRBM
     drakeLCMTypes
     robotlocomotion-lcmtypes-cpp
     lcm)
+
+  add_executable(kuka_simulation kuka_simulation.cc)
+  target_link_libraries(kuka_simulation
+    drakeKukaIiwaArmCommon
+    drakeRigidBodyPlant
+    drakeSystemAnalysis
+    drakeSystemControllers
+    drakeLCMSystem2)
 
   add_executable(run_kuka_iiwa_gravity_compensated_torque_control
       run_kuka_iiwa_gravity_compensated_torque_control.cc)
