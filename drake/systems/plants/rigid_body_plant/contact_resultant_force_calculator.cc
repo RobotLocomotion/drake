@@ -1,7 +1,7 @@
-#include "drake/systems/plant/rigid_body_plant/contact_resultant_force_calculator.h"
+#include "drake/systems/plants/rigid_body_plant/contact_resultant_force_calculator.h"
 
 namespace drake {
-namespace system {
+namespace systems {
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
@@ -39,5 +39,5 @@ WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantForce()
 
 template class ContactResultantForceCalculator<double>;
 
-}  // namespace system
+}  // namespace systems
 }  // namespace drake
