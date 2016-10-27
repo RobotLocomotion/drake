@@ -8,7 +8,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 
-/** Implements the System concept for the Atlas robot.
+/** Implements the System concept for the Valkyrie robot.
 
 This class is implemented to conveniently place all methods and functionality
 needed to simulate the Atlas robot.
@@ -22,11 +22,11 @@ class ValkyriePlant {
   template<typename T>
   using OutputVector = drake::RigidBodySystem::OutputVector<T>;
 
-  /** Creates a default instance of the Atlas robot as described by the URDF
-  file in `drake/examples/Atlas/urdf/atlas_convex_hull.urdf`. **/
+  /** Creates a default instance of the Valkyrie robot as described by the URDF
+  file in `"/examples/Valkyrie/val_description/urdf/valkyrie_sim_drake.urdf"`. **/
   ValkyriePlant();
 
-  /** Returns an initial state vector describing the configuration of Atlas in a
+  /** Returns an initial state vector describing the configuration of valkyrie in a
   standing position with the knees slightly bent and the arms down. **/
   const VectorXd& get_initial_state() const;
 
@@ -34,7 +34,7 @@ class ValkyriePlant {
 
   size_t getNumInputs() const;
 
-  /** @returns the underlying RigidBodyTree for the Atlas plant. **/
+  /** @returns the underlying RigidBodyTree for the valkyrie plant. **/
   const std::shared_ptr<RigidBodyTree>& get_rigid_body_tree() const;
 
   /** @returns the generalized positions followed by the sensors' outputs as
@@ -53,10 +53,10 @@ class ValkyriePlant {
   // The underlying rigid body system
   std::unique_ptr<drake::RigidBodySystem> sys_;
 
-  // Atlas's initial configuration.
+  // valkyrie's initial configuration.
   VectorXd x0_;
 
-  // Sets the initial pose for Atlas.
+  // Sets the initial pose for valkyrie.
   void SetInitialConfiguration();
 
 };
