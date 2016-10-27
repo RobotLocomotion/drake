@@ -117,8 +117,15 @@ class AutomotiveSimulator {
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
     std::make_unique<systems::DiagramBuilder<T>>()};
-  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
+
+  // Holds information about the vehicle models being simulated. The integer is
+  // the vehicle's model instance ID within the RigidBodyTree while the pointer
+  // points to the system that emits the vehicle's RPY pose in the world.
+  // TODO(liang.fok) Update this to support models that connect to the world
+  // via non-RPY floating joints. See #3919.
+  std::vector<std::pair<int, const systems::System<T>*>>
       rigid_body_tree_publisher_inputs_;
+
   int next_vehicle_number_{0};
   bool started_{false};
 
