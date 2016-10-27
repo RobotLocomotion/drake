@@ -1,5 +1,12 @@
 # -*- python -*-
 
+# TODO(jwnimmer-tri) These source files are not yet part of Bazel,
+# because they depend on "util":
+# normalize_vector.cc
+# normalize_vector.h
+# rotation_conversion_gradient.cc
+# rotation_conversion_gradient.h
+
 cc_library(
     name = "math",
     hdrs = [

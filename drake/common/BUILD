@@ -12,6 +12,9 @@
 #     visibility = ["//visibility:public"],
 # )
 
+# TODO(jwnimmer-tri) These source files are not yet part of Bazel:
+# text_logging_gflags.h
+
 # A library of things that everyone will want and must eat.
 cc_library(
     name = "common",
