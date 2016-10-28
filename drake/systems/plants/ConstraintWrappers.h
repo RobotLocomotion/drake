@@ -28,7 +28,7 @@ class KinematicsCacheHelper {
 
   KinematicsCache<Scalar>& UpdateKinematics(
       const Eigen::Ref<const Eigen::VectorXd>& q,
-      const RigidBodyTree* tree) {
+      const RigidBodyTree<double>* tree) {
     if ((q.size() != last_q_.size()) || (q != last_q_) ||
         (tree != last_tree_)) {
       last_q_ = q;
@@ -41,7 +41,7 @@ class KinematicsCacheHelper {
 
  private:
   Eigen::VectorXd last_q_;
-  const RigidBodyTree* last_tree_;
+  const RigidBodyTree<double>* last_tree_;
   KinematicsCache<Scalar> kinsol_;
 };
 
