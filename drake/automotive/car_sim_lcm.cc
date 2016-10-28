@@ -11,7 +11,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/framework/primitives/mimo_gain.h"
+#include "drake/systems/framework/primitives/matrix_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
@@ -30,7 +30,7 @@ using lcm::DrakeLcm;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::DiagramBuilder;
-using systems::MimoGain;
+using systems::MatrixGain;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::RigidBodyTreeLcmPublisher;
@@ -135,7 +135,7 @@ int main() {
   feedback_selector_matrix(kFeedbackIndexRightWheelVelocity,
                            kStateIndexRightWheelVelocity) = 1;
   auto feedback_selector =
-      std::make_unique<MimoGain<double>>(feedback_selector_matrix);
+      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
 
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
@@ -169,7 +169,7 @@ int main() {
   // [steering angle position, left wheel position, right wheel position,
   //  steering angle velocity, left wheel velocity, right wheel velocity]
   //
-  // The MimoGain system computes the following equation where `y` is the
+  // The MatrixGain system computes the following equation where `y` is the
   // actuator command, `D` is the gain`, and `u` is the user command:
   //
   //   y = Du
@@ -199,7 +199,7 @@ int main() {
       0, 20, -20,
       0, 20, -20;
   auto user_to_actuator_cmd_sys =
-      builder.template AddSystem<MimoGain<double>>(mimo_gain);
+      builder.template AddSystem<MatrixGain<double>>(mimo_gain);
 
   // Instantiates a constant vector source for the feedforward torque command.
   // The feedforward torque is zero.

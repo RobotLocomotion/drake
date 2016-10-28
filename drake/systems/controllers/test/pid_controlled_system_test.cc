@@ -10,6 +10,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/gain.h"
+#include "drake/systems/framework/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -50,7 +51,7 @@ GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
   auto test_plant = std::make_unique<TestSystem>();
   TestSystem* plant_ptr = test_plant.get();
   auto feedback_selector =
-      std::make_unique<MimoGain<double>>(
+      std::make_unique<MatrixGain<double>>(
           test_plant->get_output_port(0).get_size());
   const double Kp = 2.;
   const double Kd = .1;
@@ -133,7 +134,7 @@ GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
          0, 1, 0, 0, 0, 0;
 
   auto feedback_selector =
-      std::make_unique<MimoGain<double>>(feedback_selector_matrix);
+      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
   const double Kp = 2.;
   const double Kd = .1;
   auto controller = builder.AddSystem<PidControlledSystem>(

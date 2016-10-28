@@ -10,7 +10,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
-#include "drake/systems/framework/primitives/mimo_gain.h"
+#include "drake/systems/framework/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -80,7 +80,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      std::unique_ptr<MimoGain<T>> feedback_selector,
+                      std::unique_ptr<MatrixGain<T>> feedback_selector,
                       const T& Kp, const T& Ki, const T& Kd);
 
   /// A constructor where the gains are vector values and some of the system's
@@ -94,7 +94,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   /// @param[in] Ki the integral vector constant.
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
-                      std::unique_ptr<MimoGain<T>> feedback_selector,
+                      std::unique_ptr<MatrixGain<T>> feedback_selector,
                       const VectorX<T>& Kp, const VectorX<T>& Ki,
                       const VectorX<T>& Kd);
 
@@ -110,7 +110,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
  private:
   System<T>* plant_{nullptr};
   PidController<T>* controller_{nullptr};
-  MimoGain<T>* feedback_selector_{nullptr};
+  MatrixGain<T>* feedback_selector_{nullptr};
 
   // Takes as input the plant's error state vector and outputs separate position
   // and velocity state error vectors. These outputs are then inputted into the

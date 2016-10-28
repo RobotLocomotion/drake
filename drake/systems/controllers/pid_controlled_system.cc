@@ -24,13 +24,13 @@ PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd)
     : PidControlledSystem(std::move(plant),
-          std::make_unique<MimoGain<T>>(plant->get_output_port(0).get_size()),
+          std::make_unique<MatrixGain<T>>(plant->get_output_port(0).get_size()),
           Kp, Ki, Kd) { }
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MimoGain<T>> feedback_selector,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
     const T& Kp, const T& Ki, const T& Kd)
     : PidControlledSystem(std::move(plant), std::move(feedback_selector),
           VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp,
@@ -40,7 +40,7 @@ PidControlledSystem<T>::PidControlledSystem(
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
-    std::unique_ptr<MimoGain<T>> feedback_selector,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
