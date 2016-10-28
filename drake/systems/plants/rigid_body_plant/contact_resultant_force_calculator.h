@@ -46,6 +46,9 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
+  /** Default constructor. */
+  ContactResultantForceCalculator() {}
+
   /**
    Adds a new contact force to the calcualtor.
 
@@ -55,22 +58,23 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
   /**
    Adds a new force to the calculator.
+   @param application_point     The application point of the force.
    @param normal_force          The normal component of the force.
    @param tangent_force         The tangent component of the force.
-   @param application_point     The application point of the force.
    */
-  void AddForce(const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
-                const Vector3<T>& application_point);
+  void AddForce(const Vector3<T>& application_point,
+                const Vector3<T>& normal_force,
+                const Vector3<T>& tangent_force);
 
   /**
    Adds a new force with an arbitrary pure torque to the calculator.
+   @param application_point     The application point of the force.
    @param normal_force          The normal component of the force.
    @param tangent_force         The tangent component of the force.
-   @param application_point     The application point of the force.
    @param pure_torque           The pure torque for the wrench.
    */
-  void AddForce(const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
-                const Vector3<T>& application_point,
+  void AddForce(const Vector3<T>& application_point,
+                const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
                 const Vector3<T>& pure_torque);
 
   /**
