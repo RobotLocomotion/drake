@@ -108,6 +108,14 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   void SetDefaultState(Context<T>* context) const;
 
  private:
+  // A helper function for the constructors. This is necessary to avoid seg
+  // faults caused by simultaneously moving the plant and calling methods on the
+  // plant when one constructor delegates to another constructor.
+  void Initialize(
+    std::unique_ptr<System<T>> plant,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
+    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd);
+
   System<T>* plant_{nullptr};
   PidController<T>* controller_{nullptr};
   MatrixGain<T>* feedback_selector_{nullptr};
