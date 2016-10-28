@@ -10,7 +10,7 @@
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
-namespace math {
+namespace util {
 
 namespace internal {
 /// Returns a 3D rotation matrix by @p theta about the z axis.
@@ -59,7 +59,7 @@ void cylindrical2cartesian(const Vector3<Scalar>& m_cylinder_axis,
       radius * c_theta * theta_dot + radius_dot * s_theta, height_dot;
   v_pos_cartesian = R_cylinder2cartesian * v_pos_cartesian;
   Eigen::Vector3d x_rpy_cylinder = x_cylinder.block(3, 0, 3, 1);
-  Matrix3<Scalar> R_tangent = rpy2rotmat(x_rpy_cylinder);
+  Matrix3<Scalar> R_tangent = math::rpy2rotmat(x_rpy_cylinder);
   Matrix3<Scalar> R_tangent2cylinder;
   Matrix3<Scalar> dR_tangent2cylinder;
   Matrix3<Scalar> ddR_tangent2cylinder;
@@ -68,7 +68,7 @@ void cylindrical2cartesian(const Vector3<Scalar>& m_cylinder_axis,
   Matrix3<Scalar> dR_tangent2cylinder_dtheta = dR_tangent2cylinder;
   Matrix3<Scalar> R_cylinder = R_tangent2cylinder * R_tangent;
   Matrix3<Scalar> R_cartesian = R_cylinder2cartesian * R_cylinder;
-  Vector3<Scalar> x_rpy_cartesian = rotmat2rpy(R_cartesian);
+  Vector3<Scalar> x_rpy_cartesian = math::rotmat2rpy(R_cartesian);
   x_cartesian.block(0, 0, 3, 1) = x_pos_cartesian;
   x_cartesian.block(3, 0, 3, 1) = x_rpy_cartesian;
   v_cartesian.block(0, 0, 3, 1) = v_pos_cartesian;
@@ -149,9 +149,9 @@ void cartesian2cylindrical(const Vector3<Scalar>& m_cylinder_axis,
                  &ddR_tangent2cylinder);
   Matrix3<Scalar> R_cylinder2tangent = R_tangent2cylinder.transpose();
   Eigen::Vector3d x_rpy_cartesian = x_cartesian.block(3, 0, 3, 1);
-  Matrix3<Scalar> R_cartesian = rpy2rotmat(x_rpy_cartesian);
+  Matrix3<Scalar> R_cartesian = math::rpy2rotmat(x_rpy_cartesian);
   x_cylinder.block(3, 0, 3, 1) =
-      rotmat2rpy(R_cylinder2tangent * R_cartesian2cylinder * R_cartesian);
+      math::rotmat2rpy(R_cylinder2tangent * R_cartesian2cylinder * R_cartesian);
   J = Matrix6<Scalar>::Zero();
   Matrix6<Scalar> Jdot = Matrix6<Scalar>::Zero();
   J(0, 0) = x_pos_cylinder(0) / radius;
@@ -188,5 +188,5 @@ void cartesian2cylindrical(const Vector3<Scalar>& m_cylinder_axis,
   Jdotv = Jdot * v_cartesian;
 }
 
-}  // namespace math
+}  // namespace util
 }  // namespace drake

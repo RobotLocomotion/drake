@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/math/cylindrical.h"
+#include "drake/matlab/util/cylindrical.h"
 
 using namespace Eigen;
 using namespace std;
@@ -56,7 +56,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   Matrix<double, 6, 1> v_cartesian;
   Matrix<double, 6, 6> J;
   Matrix<double, 6, 1> Jdotv;
-  drake::math::cylindrical2cartesian(cylinder_axis, cylinder_x_dir,
+  drake::util::cylindrical2cartesian(cylinder_axis, cylinder_x_dir,
                                      cylinder_origin, x_cylinder, v_cylinder,
                                      x_cartesian, v_cartesian, J, Jdotv);
   plhs[0] = mxCreateDoubleMatrix(6, 1, mxREAL);
