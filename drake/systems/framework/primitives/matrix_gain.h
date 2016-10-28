@@ -5,14 +5,14 @@
 namespace drake {
 namespace systems {
 
-/// A matrix gain system that specializes LinearSystem by setting coefficient
-/// matrices `A`, `B`, and `C` to all be zero. Thus, the only non-zero
-/// coefficient matrix is `D`. Speciically, Given an input signal `u` and a
-/// state `x`, the output of this system, `y`, is:
+/// A system that specializes LinearSystem by setting coefficient matrices `A`,
+/// `B`, and `C` to all be zero. Thus, the only non-zero coefficient matrix is
+/// `D`. Speciically, given an input signal `u` and a state `x`, the output of
+/// this system, `y`, is:
 ///
-/// <pre>
+/// @f[
 ///   y = D u
-/// </pre>
+/// @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
