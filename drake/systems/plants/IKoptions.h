@@ -3,11 +3,12 @@
 #include <Eigen/Dense>
 #include "drake/common/drake_export.h"
 
+template <typename T>
 class RigidBodyTree;
 
 class DRAKE_EXPORT IKoptions {
  private:
-  RigidBodyTree *robot_;
+  RigidBodyTree<double> *robot_;
   int nq_;
   Eigen::MatrixXd Q_;
   Eigen::MatrixXd Qa_;
@@ -29,13 +30,13 @@ class DRAKE_EXPORT IKoptions {
   Eigen::VectorXd qdf_ub_;
 
  protected:
-  void setDefaultParams(RigidBodyTree *robot);
+  void setDefaultParams(RigidBodyTree<double> *robot);
 
  public:
-  explicit IKoptions(RigidBodyTree *robot);
+  explicit IKoptions(RigidBodyTree<double> *robot);
   IKoptions(const IKoptions &rhs);
   ~IKoptions(void);
-  RigidBodyTree *getRobotPtr() const;
+  RigidBodyTree<double> *getRobotPtr() const;
   void setQ(const Eigen::MatrixXd &Q);
   void setQa(const Eigen::MatrixXd &Qa);
   void setQv(const Eigen::MatrixXd &Qv);
@@ -51,7 +52,7 @@ class DRAKE_EXPORT IKoptions {
   void setqd0(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
   void setqdf(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
   void setAdditionaltSamples(const Eigen::RowVectorXd &t_samples);
-  void updateRobot(RigidBodyTree *new_robot);
+  void updateRobot(RigidBodyTree<double> *new_robot);
   void getQ(Eigen::MatrixXd &Q) const;
   void getQa(Eigen::MatrixXd &Qa) const;
   void getQv(Eigen::MatrixXd &Qv) const;
