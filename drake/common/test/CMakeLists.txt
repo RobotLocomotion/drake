@@ -109,6 +109,51 @@ drake_add_test(NAME
 set_tests_properties(
   drake_assert_test_nocompile
   PROPERTIES WILL_FAIL TRUE)
+# Same, but with assertions forced enabled.
+add_executable(
+  drake_assert_test_nocompile_enabled
+  drake_assert_test_compile.cc)
+target_compile_definitions(
+  drake_assert_test_nocompile_enabled PRIVATE DRAKE_ASSERT_TEST_COMPILE_ERROR)
+set_target_properties(
+  drake_assert_test_nocompile_enabled
+  PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+drake_add_test(NAME
+  drake_assert_test_nocompile_enabled
+  COMMAND ${CMAKE_COMMAND} --build . --target
+  drake_assert_test_nocompile_enabled --config $<CONFIGURATION>
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(
+  drake_assert_test_nocompile_enabled
+  PROPERTIES WILL_FAIL TRUE)
+target_compile_definitions(
+  drake_assert_test_nocompile_enabled PRIVATE DRAKE_ENABLE_ASSERTS)
+target_compile_options(
+  drake_assert_test_nocompile_enabled
+  PRIVATE -UDRAKE_DISABLE_ASSERTS)
+# Same, but with assertions forced disabled.
+add_executable(
+  drake_assert_test_nocompile_disabled
+  drake_assert_test_compile.cc)
+target_compile_definitions(
+  drake_assert_test_nocompile_disabled PRIVATE DRAKE_ASSERT_TEST_COMPILE_ERROR)
+set_target_properties(
+  drake_assert_test_nocompile_disabled
+  PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+drake_add_test(NAME
+  drake_assert_test_nocompile_disabled
+  COMMAND ${CMAKE_COMMAND} --build . --target
+  drake_assert_test_nocompile_disabled --config $<CONFIGURATION>
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(
+  drake_assert_test_nocompile_disabled
+  PROPERTIES WILL_FAIL TRUE)
+target_compile_definitions(
+  drake_assert_test_nocompile_disabled
+  PRIVATE DRAKE_DISABLE_ASSERTS)
+target_compile_options(
+  drake_assert_test_nocompile_disabled
+  PRIVATE -UDRAKE_ENABLE_ASSERTS)
 
 # Adds "drake_deprecated.h" unit testing.
 drake_add_cc_test(drake_deprecated_test)
