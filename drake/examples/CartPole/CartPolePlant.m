@@ -1,11 +1,13 @@
 classdef CartPolePlant < Manipulator
 
   properties
-    mc = 10;   % mass of the cart in kg
-    mp = 1;    % mass of the pole (point mass at the end) in kg
+    mc = 1;   % mass of the cart in kg
+    mp = .2;    % mass of the pole (point mass at the end) in kg
     l = 0.5;   % length of the pole in m
     g = 9.81;  % gravity m/s^2
-
+    mu = 0.1; %Coulomb friction for cart
+    friction_on = 0; %turn on Coulomb friction
+    
     xG;
     uG;
   end
@@ -22,23 +24,54 @@ classdef CartPolePlant < Manipulator
 
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
       mc=obj.mc;  mp=obj.mp;  l=obj.l;  g=obj.g;
+      mu = obj.mu;
       s = sin(q(2)); c = cos(q(2));
 
       H = [mc+mp, mp*l*c; mp*l*c, mp*l^2];
       C = [0 -mp*qd(2)*l*s; 0 0];
       G = [0; mp*g*l*s];
       B = [1; 0];
+      
+      if obj.friction_on
+          G(1) = sign(qd(1))*(mu*(mc+mp)*g);
+      end
 
       C = C*qd + G;
     end
-
+    
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
       f = dynamics@Manipulator(obj,t,x,u);
+      
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
     end
+    
+    function [f,df,d2f] = dynamics_w(obj,t,x,u,w)
+        q = x(1:2);  qd = x(3:4);
+        
+        mc=obj.mc;  mp=obj.mp;  l=obj.l;  g=obj.g;
+        s = sin(q(2)); c = cos(q(2));
+        
+        H = [mc+mp, mp*l*c; mp*l*c, mp*l^2];
+        C = [0 -mp*qd(2)*l*s; 0 0];
+        G = [0; mp*g*l*s];
+        Bu = [1; 0];
+        Bw = Bu;
+        
+        qdd = -H\(C*qd + G - Bu*u - Bw*w);
+        
+        f = [qd; qdd];
+        
+        if (nargout>1)
+            [df,d2f] = dynamicsGradients_w(obj,t,x,u,w,nargout-1);
+        end
+    end
 
+    function nW = getNumDisturbances(obj)
+        nW = 1;
+    end
+    
     function x0 = getInitialState(obj)
       x0 = randn(4,1);
     end
@@ -116,7 +149,78 @@ classdef CartPolePlant < Manipulator
         if info==1, break; end
       end
     end
+    
+    function [utraj,xtraj,z,prog]=swingUpDirtran(obj,N)
+        x0 = zeros(4,1); tf0 = 5; xf = double(obj.xG);
+        
+        obj = setInputLimits(obj,-10,10);
+        prog = RobustDirtranTrajectoryOptimization(obj,N,1,zeros(4),eye(4),1,eye(4),[tf0 tf0]);
+        prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+        prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+        prog = prog.addRunningCost(@cost);
+        %prog = prog.addFinalCost(@finalCost);
+        
+        prog = prog.setSolverOptions('snopt','majoroptimalitytolerance', 1e-4);
+        prog = prog.setSolverOptions('snopt','majorfeaasibilitytolerance', 1e-4);
+        prog = prog.setSolverOptions('snopt','minorfeaasibilitytolerance', 1e-4);
+        
+        function [g,dg] = cost(dt,x,u)
+            Q = dt*1*eye(4);
+            R = dt*.1;
+            g = .5*(x-xf)'*Q*(x-xf) + .5*u'*R*u;
+            dg = [g, (x-xf)'*Q, u'*R];
+        end
+        
+        function [h,dh] = finalCost(t,x)
+            Qf = 100*eye(4);
+            h = .5*(x-xf)'*Qf*(x-xf);
+            dh = [0, (x-xf)'*Qf];
+        end
+        
+        traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
+        tic
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+        toc
+    end
 
+    function [utraj,xtraj,z,prog]=robustSwingUp(obj,N,D,E0,Q,R,Qf)
+        x0 = zeros(4,1); tf0 = 5; xf = double(obj.xG);
+        
+        obj = setInputLimits(obj,-10,10);
+        prog = RobustDirtranTrajectoryOptimization(obj,N,D,E0,Q,R,Qf,[tf0 tf0]);
+        prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+        prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+        prog = prog.addRunningCost(@cost);
+        %prog = prog.addFinalCost(@finalCost);
+        
+        prog = prog.setSolverOptions('snopt','majoroptimalitytolerance', 1e-3);
+        prog = prog.setSolverOptions('snopt','majorfeaasibilitytolerance', 1e-4);
+        prog = prog.setSolverOptions('snopt','minorfeaasibilitytolerance', 1e-4);
+        
+        prog = prog.addRobustCost(Q,1,Qf);
+        prog = prog.addRobustInputConstraint();
+        
+        function [g,dg] = cost(dt,x,u)
+            Q = dt*1*eye(4);
+            R = dt*.1;
+            g = .5*(x-xf)'*Q*(x-xf) + .5*u'*R*u;
+            dg = [g, (x-xf)'*Q, u'*R];
+        end
+        
+        function [h,dh] = finalCost(t,x)
+            Qf = 100*eye(4);
+            h = .5*(x-xf)'*Qf*(x-xf);
+            dh = [0, (x-xf)'*Qf];
+        end
+        
+        %traj_init.u = uguess;
+        %traj_init.x = xguess;
+        traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
+        tic
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+        toc
+    end
+    
     function [tv,Vtraj]=trajectorySwingUpAndBalance(obj)
       [ti,Vf] = balanceLQR(obj);
 
