@@ -26,7 +26,7 @@ class MatrixGainTest : public AffineLinearSystemTest {
 
  protected:
   // MatrixGain systems have no state variables.
-  const int kNumStates{0};
+  static const int kNumStates{0};
 
   // The Device Under Test (DUT) is a MatrixGain<double> system.
   unique_ptr<MatrixGain<double>> dut_;

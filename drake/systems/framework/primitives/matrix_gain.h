@@ -7,7 +7,7 @@ namespace systems {
 
 /// A system that specializes LinearSystem by setting coefficient matrices `A`,
 /// `B`, and `C` to all be zero. Thus, the only non-zero coefficient matrix is
-/// `D`. Speciically, given an input signal `u` and a state `x`, the output of
+/// `D`. Specifically, given an input signal `u` and a state `x`, the output of
 /// this system, `y`, is:
 ///
 /// @f[
@@ -39,7 +39,7 @@ class MatrixGain: public LinearSystem<T> {
   /**
    * A constructor where the gain matrix `D` is @p D.
    */
-  explicit MatrixGain(const Eigen::Ref<const MatrixX<T>>& D);
+  explicit MatrixGain(const MatrixX<T>& D);
 };
 
 }  // namespace systems

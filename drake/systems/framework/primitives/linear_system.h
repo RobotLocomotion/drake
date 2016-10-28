@@ -25,7 +25,7 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 /// @see AffineSystem
-/// @see MimoGain
+/// @see MatrixGain
 template <typename T>
 class LinearSystem : public AffineSystem<T> {
  public:

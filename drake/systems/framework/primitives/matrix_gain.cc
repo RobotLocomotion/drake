@@ -15,7 +15,7 @@ MatrixGain<T>::MatrixGain(int size)
     : MatrixGain<T>(MatrixX<T>::Identity(size, size)) {}
 
 template <typename T>
-MatrixGain<T>::MatrixGain(const Eigen::Ref<const MatrixX<T>>& D)
+MatrixGain<T>::MatrixGain(const MatrixX<T>& D)
     : LinearSystem<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
                       MatrixX<T>::Zero(kNumStates, D.cols()),    // B
                       MatrixX<T>::Zero(D.rows(), kNumStates),    // C
