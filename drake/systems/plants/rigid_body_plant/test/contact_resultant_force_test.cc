@@ -9,8 +9,6 @@ namespace systems {
 namespace {
 
 // THe tests to perform
-//  1. Single contact force is returned as itself.
-//    a. variety w/ and w/o pure torques.
 //  2. Multiple planar forces (i.e., application points on plane with normal
 //      directions perpendicular to that plane) - normal components only.
 //    a. Should produce proper center of pressure (lies on plane), no torque)
@@ -22,6 +20,10 @@ namespace {
 //  6. Non-planar application, non-unified normal directions.  Paul's simple
 //      example.
 
+// Tests the ContactForce class.  The class is very simple. It's only
+// functionality is:
+//    1. Constructor logic,
+//    2. Combination of force components into output values.
 GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   // Case 1. Confirm default constructor zeros out the data.
   ContactForce<double> f0;
@@ -56,6 +58,55 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   expected_wrench.template head<3>() = torque;
   expected_wrench.template tail<3>() = norm + tan;
   ASSERT_EQ(f2.get_wrench(), expected_wrench);
+}
+
+
+// Tests the various forms for adding forces to the accumulator.  This also
+// implicitly the case where the resultant force is computed for a single
+// contact force; the contact force *is* the resultant force and its application
+// point is the minimum moment point.
+GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
+  Vector3<double> norm, tan, torque, pos;
+  norm << 1, 2, 3;
+  tan << 3, 4, 5;
+  torque << 6, 7, 8;
+  pos << 10, 11, 12;
+  WrenchVector<double> full_wrench, torque_free_wrench;
+  full_wrench.template head<3>() = torque;
+  full_wrench.template tail<3>() = norm + tan;
+  torque_free_wrench.template tail<3>() = norm + tan;
+  torque_free_wrench.template head<3>() << 0, 0, 0;
+
+  // Case 1: The ContactForce interface -- pass an instance of ContactForce.
+  {
+    ContactForce<double> force(pos, norm, tan, torque);
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(force);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ASSERT_EQ(min_point, pos);
+    ASSERT_EQ(wrench, full_wrench);
+  }
+
+  // Case 2: The interface for components without pure torque.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(pos, norm, tan);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ASSERT_EQ(min_point, pos);
+    ASSERT_EQ(wrench, torque_free_wrench);
+  }
+
+  // Case 3: The interface for components with all data.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(pos, norm, tan, torque);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ASSERT_EQ(min_point, pos);
+    ASSERT_EQ(wrench, full_wrench);
+  }
 }
 
 }  // namespace
