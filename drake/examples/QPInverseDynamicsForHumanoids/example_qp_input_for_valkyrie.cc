@@ -56,8 +56,10 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
       Eigen::Vector3d(-0.05, 0.05, -0.09));
   left_foot_contact.mutable_acceleration_constraint_type() =
       ConstraintType::Soft;
+  // Deliberately set left and right foot's stationary conditions to soft
+  // and hard for testing.
   left_foot_contact.mutable_weight() = 1e5;
-  left_foot_contact.mutable_Kd() = 10;
+  left_foot_contact.mutable_Kd() = 8;
 
   ContactInformation right_foot_contact(*robot.FindBody("rightFoot"), 4);
   right_foot_contact.mutable_contact_points() =
@@ -65,7 +67,7 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   right_foot_contact.mutable_acceleration_constraint_type() =
       ConstraintType::Hard;
   right_foot_contact.mutable_weight() = -1;
-  right_foot_contact.mutable_Kd() = 10;
+  right_foot_contact.mutable_Kd() = 8;
 
   input.mutable_contact_info().push_back(left_foot_contact);
   input.mutable_contact_info().push_back(right_foot_contact);

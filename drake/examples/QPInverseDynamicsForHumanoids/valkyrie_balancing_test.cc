@@ -132,8 +132,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     tick_ctr++;
   }
 
-  std::cout << robot_status;
-
   // Check the final state.
   // Since the feet have equality constraints set to 0 in the qp controller,
   // they should have no velocity after simulation.

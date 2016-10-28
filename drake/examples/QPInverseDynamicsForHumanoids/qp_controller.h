@@ -11,6 +11,11 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/*
+ * Enum class for constraint types.
+ * Hard: will be enforced by equality constraints.
+ * Soft: will be enforced by cost functions.
+ */
 enum class ConstraintType { Hard = -1, Skip = 0, Soft = 1 };
 
 inline std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
@@ -29,6 +34,12 @@ inline std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
   return out;
 }
 
+/*
+ * Base class for specifying various desired objectives.
+ * The objectives can be ignored, set as equality constraints or optimized as
+ * cost terms depending on the specified types.
+ * For cost terms, a positive weight needs to be specified.
+ */
 class ConstrainedValues {
  private:
   std::vector<ConstraintType> constraint_types_;
@@ -43,6 +54,11 @@ class ConstrainedValues {
         weights_(Eigen::VectorXd::Zero(dim)),
         values_(Eigen::VectorXd::Zero(dim)) {}
 
+  /**
+   * Get all the indices that has the specified constraint type.
+   * @param type Matching constraint type
+   * @return indices
+   */
   std::list<int> GetConstraintTypeIndices(ConstraintType type) const {
     std::list<int> ret;
     for (int i = 0; i < static_cast<int>(constraint_types_.size()); ++i) {
@@ -52,6 +68,11 @@ class ConstrainedValues {
     return ret;
   }
 
+  /**
+   * Set given indices' constraint types to the given type.
+   * @param indices List of indices
+   * @param type Desired type
+   */
   void SetConstraintType(const std::list<int>& indices, ConstraintType type) {
     for (int i : indices) {
       if (i < static_cast<int>(constraint_types_.size()) && i >= 0)
@@ -59,6 +80,10 @@ class ConstrainedValues {
     }
   }
 
+  /**
+   * Set all constraint types to the given type.
+   * @param type Desired type
+   */
   void SetAllConstraintType(ConstraintType type) {
     for (size_t i = 0; i < constraint_types_.size(); ++i) {
       constraint_types_[i] = type;
@@ -114,6 +139,14 @@ class ConstrainedValues {
  * Each contact body has a set of point contacts. For each contact point,
  * only point contact force can be applied, and the friction cone is
  * approximated by a set of basis vectors.
+ *
+ * The stationary contact (small foot acceleration) condition can be described
+ * as:
+ * J * vd + J_dot_times_vd = Kd * (0 - v_contact_pt).
+ * Only the linear velocities and accelerations are considered here.
+ * Kd >= 0 is a stabilizing velocity gain to damp out contact velocity
+ * This condition can be enforced either as an equality constraint or as a
+ * cost term.
  */
 class ContactInformation {
  public:
@@ -300,7 +333,9 @@ class ContactInformation {
     ret &= num_basis_per_contact_point_ >= 3;
     if (acceleration_constraint_type_ == ConstraintType::Soft)
       ret &= weight_ > 0;
+    // Can't skip contact constraints
     ret &= acceleration_constraint_type_ != ConstraintType::Skip;
+    // Can't have a minus stabilizing velocity gain.
     ret &= Kd_ >= 0;
     return ret;
   }
@@ -361,8 +396,16 @@ class ContactInformation {
   // Friction coeff
   double mu_;
 
-  double Kd_;  // For stabilizing to zero velocity
+  // Velocity gain for stabilizing contact
+  double Kd_;
+
+  // Weight for the cost function term, only useful when
+  // acceleration_constraint_type_ == ConstraintType::Soft.
   double weight_;
+
+  // Determines if all contact points' acceleration are enforced as equality
+  // constraints or summed in a cost term.
+  // This cannot be ConstraintType::Skip.
   ConstraintType acceleration_constraint_type_;
 };
 
@@ -385,11 +428,12 @@ inline std::ostream& operator<<(std::ostream& out,
  * body and their corresponding weights for the QP.
  * The acceleration is expressed in a frame that has the same orientation as
  * the world, and located at the origin of the body.
+ *
  * The first three elements for weights and accelerations are angular.
  *
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * The desired acceleration can be skipped, enforced as equality constraints
+ * or optimized as a cost term depending on the constraint type.
+ *
  * TODO: (siyuan.feng@tri.global) expand this to be expressed in other frame.
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
@@ -422,6 +466,8 @@ class DesiredBodyMotion : public ConstrainedValues {
 
  private:
   const RigidBody* body_;
+
+  // TODO(siyuan.feng) To be implemented in the qp controller.
   bool control_during_contact_;
 };
 
@@ -438,9 +484,10 @@ inline std::ostream& operator<<(std::ostream& out,
 /**
  * A wrapper class specifying desired joint motion (acceleration) and their
  * corresponding weights for the QP.
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
+ *
+ * The desired acceleration can be skipped, enforced as equality constraints
+ * or optimized as a cost term depending on the constraint type.
+ *
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
 class DesiredJointMotions : public ConstrainedValues {
@@ -479,9 +526,10 @@ inline std::ostream& operator<<(std::ostream& out,
  * The first three terms are angular.
  * Linear momentum change = com acceleration * mass.
  *
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * The desired centroidal momentum change can be skipped, enforced as
+ * equality constraints or optimized as a cost term depending on the
+ * constraint type.
+ *
  * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
  */
 class DesiredCentroidalMomentumChange : public ConstrainedValues {
@@ -542,7 +590,8 @@ class QPInput {
     valid &= desired_centroidal_momentum_dot_.is_valid();
 
     valid &= std::isfinite(w_basis_reg_);
-    valid &= w_basis_reg_ >= 0;
+    // Regularization weight needs to be positive.
+    valid &= w_basis_reg_ > 0;
 
     return valid;
   }
@@ -594,7 +643,7 @@ class QPInput {
   // Desired joint accelerations
   DesiredJointMotions desired_joint_motions_;
 
-  // Desired centroidal momentum change (change of overall linar and angular
+  // Desired centroidal momentum change (change of overall linear and angular
   // momentum)
   DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
 
