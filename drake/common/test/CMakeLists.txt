@@ -43,37 +43,25 @@ drake_add_test(NAME drake_assert_test_default COMMAND drake_assert_test_default)
 # Same, but with assertions forced enabled.
 add_executable(drake_assert_test_enabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_enabled PRIVATE DRAKE_ENABLE_ASSERTS)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  target_compile_options(drake_assert_test_enabled PRIVATE -UDRAKE_DISABLE_ASSERTS)
-endif()
+target_compile_options(drake_assert_test_enabled PRIVATE -UDRAKE_DISABLE_ASSERTS)
 target_link_libraries(drake_assert_test_enabled drakeCommon GTest::GTest GTest::Main)
 drake_add_test(NAME drake_assert_test_enabled COMMAND drake_assert_test_enabled)
 # Same, but with assertions forced disabled.
 add_executable(drake_assert_test_disabled drake_assert_test.cc)
 target_compile_definitions(drake_assert_test_disabled PRIVATE DRAKE_DISABLE_ASSERTS)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  target_compile_options(drake_assert_test_disabled PRIVATE -UDRAKE_ENABLE_ASSERTS)
-endif()
+target_compile_options(drake_assert_test_disabled PRIVATE -UDRAKE_ENABLE_ASSERTS)
 target_link_libraries(drake_assert_test_disabled drakeCommon GTest::GTest GTest::Main)
 drake_add_test(NAME drake_assert_test_disabled COMMAND drake_assert_test_disabled)
 
 # "text_logging.h" unit testing:  If spdlog is available, test that:
-add_executable(text_logging_test_default
-               ../text_logging.cc text_logging_test.cc)
-target_link_libraries(text_logging_test_default
-                      GTest::GTest GTest::Main gflags)
+add_executable(text_logging_test_default ../text_logging.cc text_logging_test.cc)
+target_link_libraries(text_logging_test_default GTest::GTest GTest::Main gflags)
 drake_add_test(NAME text_logging_test_default COMMAND text_logging_test_default)
 # Force spdlog to unavailable to test that the ifndef(HAVE_SPDLOG) case works.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
-    OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_executable(text_logging_test_no_spdlog
-                 ../text_logging.cc text_logging_test.cc)
-  target_compile_options(text_logging_test_no_spdlog
-    PRIVATE -UHAVE_SPDLOG)
-  target_link_libraries(text_logging_test_no_spdlog
-                        GTest::GTest GTest::Main gflags)
-  drake_add_test(NAME text_logging_test_no_spdlog COMMAND text_logging_test_no_spdlog)
-endif()
+add_executable(text_logging_test_no_spdlog ../text_logging.cc text_logging_test.cc)
+target_compile_options(text_logging_test_no_spdlog PRIVATE -UHAVE_SPDLOG)
+target_link_libraries(text_logging_test_no_spdlog GTest::GTest GTest::Main gflags)
+drake_add_test(NAME text_logging_test_no_spdlog COMMAND text_logging_test_no_spdlog)
 
 # The entire block of CMake build rules and CTests exists to confirm that the
 # disarmed DRAKE_ASSERT still yields compilation errors.
@@ -123,43 +111,34 @@ set_tests_properties(
   PROPERTIES WILL_FAIL TRUE)
 
 # Adds "drake_deprecated.h" unit testing.
-add_executable(drake_deprecated_test drake_deprecated_test.cc)
-target_link_libraries(drake_deprecated_test drakeCommon GTest::GTest GTest::Main)
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Remove spurious warnings from the default build output.
-  target_compile_options(
-    drake_deprecated_test
-    PRIVATE -Wno-deprecated-declarations)
-endif()
-drake_add_test(NAME drake_deprecated_test COMMAND drake_deprecated_test)
+drake_add_cc_test(drake_deprecated_test)
+target_link_libraries(drake_deprecated_test drakeCommon)
+# Remove spurious warnings from the default build output.
+target_compile_options(drake_deprecated_test PRIVATE -Wno-deprecated-declarations)
 
 # This block proves that DRAKE_DEPRECATED does cause deprecation warnings,
 # by promoting that warning to an error and looking for compile failure,
-# similar to the assert "nocompile" test above.  We cannot run this test
-# on Windows, because drake_deprecated.h forces C4996 to be a warning; as
-# the code exists now, we cannot promote to an error via the command line.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_executable(
-    drake_deprecated_test_nocompile
-    drake_deprecated_test.cc)
-  target_link_libraries(
-    drake_deprecated_test_nocompile
-    drakeCommon GTest::GTest GTest::Main)
-  set_target_properties(
-    drake_deprecated_test_nocompile
-    PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-  target_compile_options(
-    drake_deprecated_test_nocompile
-    PRIVATE -Werror=deprecated-declarations)
-  drake_add_test(NAME
-    drake_deprecated_test_nocompile
-    COMMAND ${CMAKE_COMMAND} --build . --target
-    drake_deprecated_test_nocompile --config $<CONFIGURATION>
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-  set_tests_properties(
-    drake_deprecated_test_nocompile
-    PROPERTIES WILL_FAIL TRUE)
-endif()
+# similar to the assert "nocompile" test above.
+add_executable(
+  drake_deprecated_test_nocompile
+  drake_deprecated_test.cc)
+target_link_libraries(
+  drake_deprecated_test_nocompile
+  drakeCommon GTest::GTest GTest::Main)
+set_target_properties(
+  drake_deprecated_test_nocompile
+  PROPERTIES EXCLUDE_FROM_ALL TRUE EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+target_compile_options(
+  drake_deprecated_test_nocompile
+  PRIVATE -Werror=deprecated-declarations)
+drake_add_test(NAME
+  drake_deprecated_test_nocompile
+  COMMAND ${CMAKE_COMMAND} --build . --target
+  drake_deprecated_test_nocompile --config $<CONFIGURATION>
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(
+  drake_deprecated_test_nocompile
+  PROPERTIES WILL_FAIL TRUE)
 
 # Rules for cpplint_wrapper.py.
 if(WITH_GOOGLE_STYLEGUIDE)
