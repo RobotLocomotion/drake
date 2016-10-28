@@ -3,7 +3,7 @@
 # This file contains rules for the Bazel build system.
 # See http://bazel.io/ .
 
-load("//tools:drake.bzl", "drake_component", "drake_library")
+load("//tools:drake.bzl", "drake_library")
 package(default_visibility = ["//visibility:public"])
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -59,10 +59,28 @@ drake_library(
 )
 
 # Miscellaneous utilities.
-drake_component("drake_path", srcs=[], testonly=1, deps = DEPS)
-drake_component("eigen_matrix_compare", srcs=[], testonly=1, deps = DEPS)
-drake_component("nice_type_name", deps = DEPS)
-drake_component("sorted_vectors_have_intersection", srcs=[], deps = DEPS)
+#drake_component("drake_path", srcs=[], testonly=1, deps = DEPS)
+#drake_component("eigen_matrix_compare", srcs=[], testonly=1, deps = DEPS)
+#drake_component("nice_type_name", deps = DEPS)
+#drake_component("sorted_vectors_have_intersection", srcs=[], deps = DEPS)
+drake_library(
+    name = "drake_path",
+    hdrs = ["drake_path.h"],
+    testonly = 1, deps = DEPS)
+drake_library(
+    name = "eigen_matrix_compare",
+    srcs = ["eigen_matrix_compare.h"],
+    testonly = 1, deps = DEPS)
+drake_library(
+    name = "nice_type_name",
+    srcs = ["nice_type_name.cc"],
+    hdrs = ["nice_type_name.h"],
+    deps = DEPS)
+drake_library(
+    name = "sorted_vectors_have_intersection",
+    srcs = ["sorted_vectors_have_intersection.cc"],
+    name = ["sorted_vectors_have_intersection.h"],
+    deps = DEPS)
 
 # TODO(jwnimmer-tri) Re-test and get this working.  Approxmate answer:
 # genrule(
