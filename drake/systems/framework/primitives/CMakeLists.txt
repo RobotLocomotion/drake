@@ -12,7 +12,7 @@ drake_install_headers(
   gain-inl.h
   integrator.h
   linear_system.h
-  mimo_gain.h
+  matrix_gain.h
   multiplexer.h
   pass_through.h
   pass_through-inl.h

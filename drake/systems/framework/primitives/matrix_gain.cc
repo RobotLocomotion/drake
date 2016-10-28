@@ -1,4 +1,4 @@
-#include "drake/systems/framework/primitives/mimo_gain.h"
+#include "drake/systems/framework/primitives/matrix_gain.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -11,18 +11,18 @@ const int kNumStates{0};
 }  // namespace
 
 template <typename T>
-MimoGain<T>::MimoGain(int size)
-    : MimoGain<T>(MatrixX<T>::Identity(size, size)) {}
+MatrixGain<T>::MatrixGain(int size)
+    : MatrixGain<T>(MatrixX<T>::Identity(size, size)) {}
 
 template <typename T>
-MimoGain<T>::MimoGain(const Eigen::Ref<const MatrixX<T>>& D)
+MatrixGain<T>::MatrixGain(const Eigen::Ref<const MatrixX<T>>& D)
     : LinearSystem<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
                       MatrixX<T>::Zero(kNumStates, D.cols()),    // B
                       MatrixX<T>::Zero(D.rows(), kNumStates),    // C
                       D) {}
 
-template class DRAKE_EXPORT MimoGain<double>;
-template class DRAKE_EXPORT MimoGain<AutoDiffXd>;
+template class DRAKE_EXPORT MatrixGain<double>;
+template class DRAKE_EXPORT MatrixGain<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

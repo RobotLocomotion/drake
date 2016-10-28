@@ -5,16 +5,13 @@
 namespace drake {
 namespace systems {
 
-// TODO(liang.fok) Rename this system to be "Gain" and replace the existing
-// "Gain" system. See: #3922.
-
-/// A MIMO (Multi-Input Multi-Output) gain system that is a specialization of a
-/// LinearSystem where coefficient matrices `A`, `B`, and `C` are all zero.
-/// Given an input signal `u` and a state `x` the output of this system, `y`,
-/// is:
+/// A matrix gain system that specializes LinearSystem by setting coefficient
+/// matrices `A`, `B`, and `C` to all be zero. Thus, the only non-zero
+/// coefficient matrix is `D`. Speciically, Given an input signal `u` and a
+/// state `x`, the output of this system, `y`, is:
 ///
 /// <pre>
-///   y = Du
+///   y = D u
 /// </pre>
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -31,18 +28,18 @@ namespace systems {
 /// @see AffineSystem
 /// @see LinearSystem
 template <typename T>
-class MimoGain: public LinearSystem<T> {
+class MatrixGain: public LinearSystem<T> {
  public:
   /**
    * A constructor where the gain matrix `D` is a square identity matrix of size
    * @p size.
    */
-  explicit MimoGain(int size);
+  explicit MatrixGain(int size);
 
   /**
    * A constructor where the gain matrix `D` is @p D.
    */
-  explicit MimoGain(const Eigen::Ref<const MatrixX<T>>& D);
+  explicit MatrixGain(const Eigen::Ref<const MatrixX<T>>& D);
 };
 
 }  // namespace systems
