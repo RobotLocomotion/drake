@@ -23,7 +23,7 @@ target_link_libraries(drakeRBM
         drakeCollision drakeCommon drakeJoints drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(
-  ConstraintWrappers.h
+        constraint_wrappers.h
   ForceTorqueMeasurement.h
   KinematicPath.h
   KinematicsCache.h
@@ -82,7 +82,7 @@ add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
 pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
-drake_install_headers(ConstraintWrappers.h ik_trajectory_helper.h IKoptions.h
+drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h IKoptions.h
   inverseKinBackend.h RigidBodyIK.h)
 pods_install_pkg_config_file(drake-ik
   LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions

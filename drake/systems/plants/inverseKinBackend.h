@@ -6,7 +6,7 @@
 
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
-#include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint_wrappers.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 class RigidBodyConstraint;

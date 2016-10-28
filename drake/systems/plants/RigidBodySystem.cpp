@@ -6,7 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint_wrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"

@@ -13,7 +13,7 @@
 #include <drake/solvers/constraint.h>
 #include <drake/solvers/mathematical_program.h>
 #include <drake/systems/plants/constraint/RigidBodyConstraint.h>
-#include <drake/systems/plants/ConstraintWrappers.h>
+#include <drake/systems/plants/constraint_wrappers.h>
 #include <drake/systems/plants/IKoptions.h>
 #include <drake/systems/plants/RigidBodyTree.h>
 #include <drake/system1/vector.h>
