@@ -7,8 +7,8 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void RunSolver(MathematicalProgram *prog,
-               const MathematicalProgramSolverInterface &solver) {
+void RunSolver(MathematicalProgram* prog,
+               const MathematicalProgramSolverInterface& solver) {
   if (solver.available()) {
     SolutionResult result = solver.Solve(*prog);
     std::string solver_name;
@@ -20,9 +20,10 @@ void RunSolver(MathematicalProgram *prog,
   }
 }
 
-void AddSolverToList(const std::string &solver_name,
-                     std::list <std::unique_ptr<
-                         MathematicalProgramSolverInterface>> *solver_list) {
+void AddSolverToList(
+    const std::string& solver_name,
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
+        solver_list) {
   if (solver_name == "Gurobi") {
     auto gurobi_solver = std::make_unique<GurobiSolver>();
     if (gurobi_solver->available()) {
@@ -35,6 +36,6 @@ void AddSolverToList(const std::string &solver_name,
     }
   }
 }
-} // namespace test
-} // namespace solvers
-} // namespace drake
+}  // namespace test
+}  // namespace solvers
+}  // namespace drake

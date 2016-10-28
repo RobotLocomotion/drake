@@ -15,7 +15,7 @@ void GetMixedIntegerLinearProgramSolvers(
   AddSolverToList("Gurobi", solvers);
   AddSolverToList("Mosek", solvers);
 }
-} // namespace
+}  // namespace
 
 // Take the example from Gurobi manual
 // http://www.gurobi.com/documentation/7.0/examples/mip1_c_c.html
@@ -28,25 +28,24 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetMixedIntegerLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
-
     MathematicalProgram prog;
     auto x = prog.AddBinaryVariables(3, "x");
     Eigen::RowVector3d c(-1, -1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(1, 2, 3);
-    prog.AddLinearConstraint(a1,
-                             drake::Vector1d(-std::numeric_limits<double>::infinity()),
-                             drake::Vector1d(4));
+    prog.AddLinearConstraint(
+        a1, drake::Vector1d(-std::numeric_limits<double>::infinity()),
+        drake::Vector1d(4));
     Eigen::RowVector2d a2(1, 1);
-    prog.AddLinearConstraint(a2,
-                             drake::Vector1d(1),
-                             drake::Vector1d(std::numeric_limits<double>::infinity()),
-                             {x(0), x(1)});
+    prog.AddLinearConstraint(
+        a2, drake::Vector1d(1),
+        drake::Vector1d(std::numeric_limits<double>::infinity()), {x(0), x(1)});
 
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 0, 1);
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
+                                MatrixCompareType::absolute));
   }
 }
 
@@ -60,22 +59,22 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetMixedIntegerLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
-
     MathematicalProgram prog;
     auto x = prog.AddBinaryVariables(3, "x");
     Eigen::RowVector3d c(2, 1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(0.7, 0.5, 1);
-    prog.AddLinearConstraint(a1,
-                             drake::Vector1d(1.8),
-                             drake::Vector1d(std::numeric_limits<double>::infinity()));
+    prog.AddLinearConstraint(
+        a1, drake::Vector1d(1.8),
+        drake::Vector1d(std::numeric_limits<double>::infinity()));
 
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 1, 1);
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
+                                MatrixCompareType::absolute));
   }
 }
-} // namespace test
-} // namespace solvers
-} // namespace drake
+}  // namespace test
+}  // namespace solvers
+}  // namespace drake

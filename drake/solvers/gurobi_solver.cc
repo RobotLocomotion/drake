@@ -282,7 +282,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
 // Add both LinearConstraints and LinearEqualityConstraints to gurobi
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
-                       double sparseness_threshold) {
+                             double sparseness_threshold) {
   // TODO(naveenoid) : needs test coverage.
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.constraint();
@@ -295,9 +295,9 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
         variable_indices.push_back(var.index() + i);
       }
     }
-    const int error = AddLinearConstraint(
-        model, constraint->A(), constraint->lower_bound(),
-        variable_indices, GRB_EQUAL, sparseness_threshold);
+    const int error =
+        AddLinearConstraint(model, constraint->A(), constraint->lower_bound(),
+                            variable_indices, GRB_EQUAL, sparseness_threshold);
     if (error) {
       return error;
     }
@@ -337,17 +337,17 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
         }
       }
       if (!std::isinf(lb(i))) {
-        int error = GRBaddconstr(model, variable_indices_row_i.size(),
-        variable_indices_row_i.data(), linear_coeff_row_i.data(),
-                                 GRB_GREATER_EQUAL, lb(i), nullptr);
+        int error = GRBaddconstr(
+            model, variable_indices_row_i.size(), variable_indices_row_i.data(),
+            linear_coeff_row_i.data(), GRB_GREATER_EQUAL, lb(i), nullptr);
         if (error) {
           return error;
         }
       }
       if (!std::isinf(ub(i))) {
-        int error = GRBaddconstr(model, variable_indices_row_i.size(),
-                     variable_indices_row_i.data(), linear_coeff_row_i.data(),
-                                 GRB_LESS_EQUAL, ub(i), nullptr);
+        int error = GRBaddconstr(
+            model, variable_indices_row_i.size(), variable_indices_row_i.data(),
+            linear_coeff_row_i.data(), GRB_LESS_EQUAL, ub(i), nullptr);
         if (error) {
           return error;
         }
@@ -382,15 +382,15 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   const std::vector<DecisionVariable::VarType>& var_type = prog.variable_type();
 
   std::vector<char> gurobi_var_type(num_vars);
-  for(int i = 0; i < num_vars; ++i) {
-    switch(var_type[i]) {
-      case DecisionVariable::VarType::CONTINUOUS :
+  for (int i = 0; i < num_vars; ++i) {
+    switch (var_type[i]) {
+      case DecisionVariable::VarType::CONTINUOUS:
         gurobi_var_type[i] = GRB_CONTINUOUS;
         break;
-      case DecisionVariable::VarType::BINARY :
+      case DecisionVariable::VarType::BINARY:
         gurobi_var_type[i] = GRB_BINARY;
         break;
-      case DecisionVariable::VarType::INTEGER :
+      case DecisionVariable::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
     }
   }
@@ -439,7 +439,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (!error) {
     error = GRBoptimize(model);
   }
-
 
   if (!error) {
     for (const auto it : prog.GetSolverOptionsDouble("GUROBI")) {

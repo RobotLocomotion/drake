@@ -317,19 +317,18 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
 
 MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 MSKtask_t* task,
-bool* with_integer_or_binary_variable) {
+                                bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
   const std::vector<DecisionVariable::VarType>& var_type = prog.variable_type();
-  for(int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if(var_type[i] == DecisionVariable::VarType::INTEGER ) {
+  for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
+    if (var_type[i] == DecisionVariable::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
       *with_integer_or_binary_variable = true;
-    }
-    else if(var_type[i] == DecisionVariable::VarType::BINARY) {
+    } else if (var_type[i] == DecisionVariable::VarType::BINARY) {
       *with_integer_or_binary_variable = true;
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       double xi_lb, xi_ub;
@@ -392,7 +391,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // Spcify binary variables.
   bool with_integer_or_binary_variable = false;
   if (rescode == MSK_RES_OK) {
-    rescode = SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+    rescode =
+        SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
   }
   // Add linear constraints.
   if (rescode == MSK_RES_OK) {
@@ -425,10 +425,9 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   MSKsoltypee solution_type;
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
-  }
-  else if (prog.quadratic_costs().empty() &&
-      prog.lorentz_cone_constraints().empty() &&
-      prog.rotated_lorentz_cone_constraints().empty()) {
+  } else if (prog.quadratic_costs().empty() &&
+             prog.lorentz_cone_constraints().empty() &&
+             prog.rotated_lorentz_cone_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;

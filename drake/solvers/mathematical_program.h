@@ -362,7 +362,7 @@ class DRAKE_EXPORT MathematicalProgram {
     variable_views_.push_back(DecisionVariableView(variables_.back()));
     x_initial_guess_.conservativeResize(num_vars_);
     variable_type_.reserve(num_vars_);
-    for(int i = 0; i < static_cast<int>(num_new_vars); ++i) {
+    for (int i = 0; i < static_cast<int>(num_new_vars); ++i) {
       variable_type_.push_back(DecisionVariable::VarType::CONTINUOUS);
     }
     x_initial_guess_.tail(num_new_vars) =
@@ -383,15 +383,15 @@ class DRAKE_EXPORT MathematicalProgram {
    * variables stored in MathematicalProgram).
    */
   const DecisionVariableView AddBinaryVariables(std::size_t num_new_vars,
-  std::string name = "b") {
+                                                std::string name = "b") {
     required_capabilities_ |= kBinaryVariable;
-    DecisionVariable v(DecisionVariable::VarType::BINARY, name,
-    num_new_vars, num_vars_);
+    DecisionVariable v(DecisionVariable::VarType::BINARY, name, num_new_vars,
+                       num_vars_);
     num_vars_ += num_new_vars;
     variables_.push_back(v);
     variable_views_.push_back(DecisionVariableView(variables_.back()));
     variable_type_.reserve(num_vars_);
-    for(int i = 0; i < static_cast<int>(num_new_vars); ++i) {
+    for (int i = 0; i < static_cast<int>(num_new_vars); ++i) {
       variable_type_.push_back(DecisionVariable::VarType::BINARY);
     }
     x_initial_guess_.conservativeResize(num_vars_);
@@ -1153,7 +1153,9 @@ class DRAKE_EXPORT MathematicalProgram {
 
   size_t num_vars() const { return num_vars_; }
 
-  const std::vector<DecisionVariable::VarType>& variable_type() const {return variable_type_;}
+  const std::vector<DecisionVariable::VarType>& variable_type() const {
+    return variable_type_;
+  }
 
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
@@ -1196,7 +1198,8 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
 
-  // Invariant: num_vars_ = num_continuous_vars_ + num_binary_vars_ + num_integer_vars_;
+  // Invariant: num_vars_ = num_continuous_vars_ + num_binary_vars_ +
+  // num_integer_vars_;
   size_t num_vars_;
 
   // Invariant: variable_type_.length() == num_vars_;
