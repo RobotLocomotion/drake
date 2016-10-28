@@ -9,6 +9,7 @@ namespace systems {
 /// where the inital time derivative of the system state `xDot0`
 /// and the initial system output `y0` are both zero. Given an input
 /// signal `u` and a state `x` the output of this system 'y' is:
+///
 /// @f[\dot{x} = A x + B u @f]
 /// @f[y = C x + D u @f]
 ///

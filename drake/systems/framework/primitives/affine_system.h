@@ -10,6 +10,7 @@ namespace systems {
 /// state space coefficient matrices `A`, `B`, `C`, and `D`, initial time
 /// derivative `xDot0` and intial output `y0`, this system
 /// implements the following equations:
+///
 /// @f[\dot{x} = A x + B u + \dot{x}_0 @f]
 /// @f[y = C x + D u + y_0 @f]
 ///

@@ -25,6 +25,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
  protected:
+  // The Device Under Test is an AffineSystem<double>.
   unique_ptr<AffineSystem<double>> dut_;
 };
 
