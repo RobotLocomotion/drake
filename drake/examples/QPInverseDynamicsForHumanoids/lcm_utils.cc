@@ -81,8 +81,7 @@ void DecodeRobotStateLcmMsg(
     const bot_core::robot_state_t& msg,
     const std::unordered_map<std::string, int>& q_name_to_index, double* time,
     Eigen::VectorXd* q, Eigen::VectorXd* qd, Eigen::VectorXd* joint_torque,
-    Vector6<double>* l_foot_wrench,
-    Vector6<double>* r_foot_wrench) {
+    Vector6<double>* l_foot_wrench, Vector6<double>* r_foot_wrench) {
   const int floating_base_dim_q_dim = kSpaceDimension + kRpySize;
   if (q->size() != qd->size() ||
       q->size() != joint_torque->size() + floating_base_dim_q_dim) {

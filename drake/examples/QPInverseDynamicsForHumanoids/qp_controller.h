@@ -11,11 +11,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-enum class ConstraintType {
-  Hard = -1,
-  Skip = 0,
-  Soft = 1
-};
+enum class ConstraintType { Hard = -1, Skip = 0, Soft = 1 };
 
 inline std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
   out << "constraint type: ";
@@ -40,18 +36,17 @@ class ConstrainedValues {
   Eigen::VectorXd values_;
 
  public:
-  ConstrainedValues() { }
+  ConstrainedValues() {}
 
-  explicit ConstrainedValues(int dim) :
-    constraint_types_(dim, ConstraintType::Skip),
-    weights_(Eigen::VectorXd::Zero(dim)),
-    values_(Eigen::VectorXd::Zero(dim)) {}
+  explicit ConstrainedValues(int dim)
+      : constraint_types_(dim, ConstraintType::Skip),
+        weights_(Eigen::VectorXd::Zero(dim)),
+        values_(Eigen::VectorXd::Zero(dim)) {}
 
   std::list<int> GetConstraintTypeIndices(ConstraintType type) const {
     std::list<int> ret;
     for (int i = 0; i < static_cast<int>(constraint_types_.size()); ++i) {
-      if (constraint_types_[i] == type)
-        ret.push_back(i);
+      if (constraint_types_[i] == type) ret.push_back(i);
     }
 
     return ret;
@@ -64,12 +59,18 @@ class ConstrainedValues {
     }
   }
 
+  void SetAllConstraintType(ConstraintType type) {
+    for (size_t i = 0; i < constraint_types_.size(); ++i) {
+      constraint_types_[i] = type;
+    }
+  }
+
   bool is_valid(int dim) const {
     bool ret = weights_.size() == values_.size();
     ret &= static_cast<int>(constraint_types_.size()) == weights_.size();
     ret &= weights_.size() == dim;
     if (ret) {
-      for (int i = 0; i < dim; ++i)  {
+      for (int i = 0; i < dim; ++i) {
         if (constraint_types_[i] == ConstraintType::Soft)
           ret &= weights_[i] > 0;
       }
@@ -83,20 +84,28 @@ class ConstrainedValues {
   inline int size() const { return values_.size(); }
   inline const Eigen::VectorXd& weights() const { return weights_; }
   inline const Eigen::VectorXd& values() const { return values_; }
-  inline const std::vector<ConstraintType>& constraint_types() const { return constraint_types_; }
+  inline const std::vector<ConstraintType>& constraint_types() const {
+    return constraint_types_;
+  }
 
   inline double value(int i) const { return values_[i]; }
   inline double weight(int i) const { return weights_[i]; }
-  inline ConstraintType constraint_type(int i) const { return constraint_types_.at(i); }
+  inline ConstraintType constraint_type(int i) const {
+    return constraint_types_.at(i);
+  }
 
   // Setters
   inline Eigen::VectorXd& mutable_weights() { return weights_; }
   inline Eigen::VectorXd& mutable_values() { return values_; }
-  inline std::vector<ConstraintType>& mutable_constraint_types() { return constraint_types_; }
+  inline std::vector<ConstraintType>& mutable_constraint_types() {
+    return constraint_types_;
+  }
 
   inline double& mutable_value(int i) { return values_[i]; }
   inline double& mutable_weight(int i) { return weights_[i]; }
-  inline ConstraintType& mutable_constraint_type(int i) { return constraint_types_.at(i); }
+  inline ConstraintType& mutable_constraint_type(int i) {
+    return constraint_types_.at(i);
+  }
 };
 
 /**
@@ -112,7 +121,8 @@ class ContactInformation {
    * @param num_basis_per_contact_point number of basis per contact point
    */
   ContactInformation(const RigidBody& b, int num_basis_per_contact_point)
-      : body_(&b), num_basis_per_contact_point_(num_basis_per_contact_point),
+      : body_(&b),
+        num_basis_per_contact_point_(num_basis_per_contact_point),
         acceleration_constraint_type_(ConstraintType::Hard) {
     normal_ = Eigen::Vector3d(0, 0, 1);
     mu_ = 1;
@@ -275,7 +285,9 @@ class ContactInformation {
       const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
     Eigen::VectorXd vel(3 * contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); ++i) {
-      vel.segment<3>(3 * i) = GetTaskSpaceVel(robot, cache, *body_, contact_points_[i]).bottomRows<3>();
+      vel.segment<3>(3 * i) =
+          GetTaskSpaceVel(robot, cache, *body_, contact_points_[i])
+              .bottomRows<3>();
     }
     return vel;
   }
@@ -288,6 +300,7 @@ class ContactInformation {
     ret &= num_basis_per_contact_point_ >= 3;
     if (acceleration_constraint_type_ == ConstraintType::Soft)
       ret &= weight_ > 0;
+    ret &= acceleration_constraint_type_ != ConstraintType::Skip;
     ret &= Kd_ >= 0;
     return ret;
   }
@@ -304,7 +317,9 @@ class ContactInformation {
   inline double mu() const { return mu_; }
   inline double weight() const { return weight_; }
   inline double Kd() const { return Kd_; }
-  inline ConstraintType acceleration_constraint_type() const { return acceleration_constraint_type_; }
+  inline ConstraintType acceleration_constraint_type() const {
+    return acceleration_constraint_type_;
+  }
   inline const std::vector<Eigen::Vector3d>& contact_points() const {
     return contact_points_;
   }
@@ -321,6 +336,9 @@ class ContactInformation {
   inline double& mutable_mu() { return mu_; }
   inline double& mutable_weight() { return weight_; }
   inline double& mutable_Kd() { return Kd_; }
+  inline ConstraintType& mutable_acceleration_constraint_type() {
+    return acceleration_constraint_type_;
+  }
   inline Eigen::Vector3d& mutable_normal() { return normal_; }
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
@@ -343,7 +361,7 @@ class ContactInformation {
   // Friction coeff
   double mu_;
 
-  double Kd_; // For stabilizing to zero velocity
+  double Kd_;  // For stabilizing to zero velocity
   double weight_;
   ConstraintType acceleration_constraint_type_;
 };
@@ -378,9 +396,7 @@ inline std::ostream& operator<<(std::ostream& out,
 class DesiredBodyMotion : public ConstrainedValues {
  public:
   explicit DesiredBodyMotion(const RigidBody& body)
-      : ConstrainedValues(6),
-        body_(&body),
-        control_during_contact_(false) { }
+      : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
     return ConstrainedValues::is_valid(kTwistSize);
@@ -413,9 +429,8 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredBodyMotion& input) {
   for (int i = 0; i < kTwistSize; ++i) {
     out << "desired " << input.name() << input.get_row_name(i)
-        << " acc: " << input.values()[i]
-        << " weight: " << input.weights()[i] << " "
-        << input.constraint_types()[i];
+        << " acc: " << input.values()[i] << " weight: " << input.weights()[i]
+        << " " << input.constraint_types()[i];
   }
   return out;
 }
@@ -432,7 +447,7 @@ class DesiredJointMotions : public ConstrainedValues {
  public:
   DesiredJointMotions() {}
   explicit DesiredJointMotions(const std::vector<std::string>& names)
-      : ConstrainedValues(static_cast<int>(names.size())), names_(names) { }
+      : ConstrainedValues(static_cast<int>(names.size())), names_(names) {}
 
   bool is_valid(int dim) const {
     bool ret = static_cast<int>(names_.size()) == dim;
@@ -452,8 +467,7 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredJointMotions& input) {
   for (int i = 0; i < input.size(); ++i) {
     out << "desired " << input.name(i) << " acc: " << input.value(i)
-        << " weight: " << input.weight(i) << " "
-        << input.constraint_type(i);
+        << " weight: " << input.weight(i) << " " << input.constraint_type(i);
   }
   return out;
 }
@@ -472,12 +486,9 @@ inline std::ostream& operator<<(std::ostream& out,
  */
 class DesiredCentroidalMomentumChange : public ConstrainedValues {
  public:
-  DesiredCentroidalMomentumChange()
-      : ConstrainedValues(kTwistSize) {}
+  DesiredCentroidalMomentumChange() : ConstrainedValues(kTwistSize) {}
 
-  bool is_valid() const {
-    return ConstrainedValues::is_valid(kTwistSize);
-  }
+  bool is_valid() const { return ConstrainedValues::is_valid(kTwistSize); }
 
   inline std::string get_row_name(int i) const {
     static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
@@ -492,10 +503,8 @@ class DesiredCentroidalMomentumChange : public ConstrainedValues {
 inline std::ostream& operator<<(std::ostream& out,
                                 const DesiredCentroidalMomentumChange& input) {
   for (int i = 0; i < 6; ++i) {
-    out << "desired " << input.get_row_name(i)
-        << " change: " << input.value(i)
-        << " weight: " << input.weight(i) << " "
-        << input.constraint_type(i);
+    out << "desired " << input.get_row_name(i) << " change: " << input.value(i)
+        << " weight: " << input.weight(i) << " " << input.constraint_type(i);
   }
   return out;
 }

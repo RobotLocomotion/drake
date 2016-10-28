@@ -61,8 +61,7 @@ void DecodeRobotStateLcmMsg(
     const bot_core::robot_state_t& msg,
     const std::unordered_map<std::string, int>& q_name_to_index, double* time,
     Eigen::VectorXd* q, Eigen::VectorXd* qd, Eigen::VectorXd* joint_torque,
-    Vector6<double>* l_foot_wrench,
-    Vector6<double>* r_foot_wrench);
+    Vector6<double>* l_foot_wrench, Vector6<double>* r_foot_wrench);
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

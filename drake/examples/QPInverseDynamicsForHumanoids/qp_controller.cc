@@ -8,23 +8,6 @@ namespace qp_inverse_dynamics {
 
 const double QPController::kUpperBoundForContactBasis = 1000;
 
-// Find the indices that correspond to cost and equality constraints based on
-// the sign of weights.
-// Cost terms have positive weights, and equality constraints have negative
-// weights.
-static void FindCostAndEqConstraintIndices(const Eigen::VectorXd& weights,
-                                           std::list<int>* cost_idx,
-                                           std::list<int>* eq_idx) {
-  cost_idx->clear();
-  eq_idx->clear();
-  for (int i = 0; i < weights.size(); ++i) {
-    if (weights[i] > 0)
-      cost_idx->push_back(i);
-    else if (weights[i] < 0)
-      eq_idx->push_back(i);
-  }
-}
-
 void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   const std::list<ContactInformation>& all_contacts = input.contact_info();
   const std::map<std::string, DesiredBodyMotion>& all_body_motions =
@@ -54,9 +37,10 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   int ctr = 0;
   for (auto it = all_body_motions.begin(); it != all_body_motions.end(); ++it) {
     const DesiredBodyMotion& body_motion = it->second;
-    FindCostAndEqConstraintIndices(body_motion.weights(),
-                                   &body_motion_row_idx_as_cost[ctr],
-                                   &body_motion_row_idx_as_eq[ctr]);
+    body_motion_row_idx_as_cost[ctr] =
+        body_motion.GetConstraintTypeIndices(ConstraintType::Soft);
+    body_motion_row_idx_as_eq[ctr] =
+        body_motion.GetConstraintTypeIndices(ConstraintType::Hard);
 
     if (body_motion_row_idx_as_cost[ctr].size() > 0) num_body_motion_as_cost++;
     if (body_motion_row_idx_as_eq[ctr].size() > 0) num_body_motion_as_eq++;
@@ -66,15 +50,16 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   // Figure out size of the constrained dimensions of desired joint motions.
   std::list<int> cost_row_idx;
   std::list<int> eq_row_idx;
-  FindCostAndEqConstraintIndices(all_joint_motions.weights(), &cost_row_idx,
-                                 &eq_row_idx);
+  cost_row_idx =
+      all_joint_motions.GetConstraintTypeIndices(ConstraintType::Soft);
+  eq_row_idx = all_joint_motions.GetConstraintTypeIndices(ConstraintType::Hard);
   int num_joint_motion_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
   int num_joint_motion_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
 
   // Figure out size of the constrained dimensions of centroidal momentum
   // change.
-  FindCostAndEqConstraintIndices(cen_mom_change.weights(), &cost_row_idx,
-                                 &eq_row_idx);
+  cost_row_idx = cen_mom_change.GetConstraintTypeIndices(ConstraintType::Soft);
+  eq_row_idx = cen_mom_change.GetConstraintTypeIndices(ConstraintType::Hard);
   int num_cen_mom_dot_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
   int num_cen_mom_dot_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
 
@@ -82,7 +67,7 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   int num_contact_as_eq = 0;
   for (const ContactInformation& contact : all_contacts) {
     // Cost term
-    if (contact.weight() > 0)
+    if (contact.acceleration_constraint_type() == ConstraintType::Soft)
       num_contact_as_cost++;
     else
       num_contact_as_eq++;
@@ -153,15 +138,16 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   cost_contacts_.resize(num_contact_as_cost_);
   int cost_ctr = 0, eq_ctr = 0;
   for (const ContactInformation& contact : all_contacts) {
-    if (contact.weight() > 0) {
-      cost_contacts_[cost_ctr++] = prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
+    if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
+      cost_contacts_[cost_ctr++] =
+          prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
     } else {
       eq_contacts_[eq_ctr++] =
-        prog_.AddLinearEqualityConstraint(
-                  Eigen::MatrixXd::Zero(3 * contact.contact_points().size(),
-                                        num_vd_),
-                  Eigen::VectorXd::Zero(3 * contact.contact_points().size()),
-                  {vd}).get();
+          prog_.AddLinearEqualityConstraint(
+                    Eigen::MatrixXd::Zero(3 * contact.contact_points().size(),
+                                          num_vd_),
+                    Eigen::VectorXd::Zero(3 * contact.contact_points().size()),
+                    {vd}).get();
     }
   }
 
@@ -356,15 +342,27 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   for (const ContactInformation& contact : input.contact_info()) {
     int force_dim = 3 * contact.contact_points().size();
     // As cost
-    if (contact.weight() > 0) {
+    if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr]->UpdateQuadraticAndLinearTerms(
-          contact.weight() * stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_).transpose() * stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
-          contact.weight() * stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_).transpose() * (stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) + contact.Kd() * stacked_contact_velocities_.segment(rowIdx, force_dim)));
-      cost_contacts_[cost_ctr++]->set_description(contact.name() + " contact cost");
+          contact.weight() *
+              stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_)
+                  .transpose() *
+              stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
+          contact.weight() *
+              stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_)
+                  .transpose() *
+              (stacked_contact_jacobians_dot_times_v_.segment(rowIdx,
+                                                              force_dim) +
+               contact.Kd() *
+                   stacked_contact_velocities_.segment(rowIdx, force_dim)));
+      cost_contacts_[cost_ctr++]->set_description(contact.name() +
+                                                  " contact cost");
     } else {
       eq_contacts_[eq_ctr]->UpdateConstraint(
           stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
-          -(stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) + contact.Kd() * stacked_contact_velocities_.segment(rowIdx, force_dim)));
+          -(stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) +
+            contact.Kd() *
+                stacked_contact_velocities_.segment(rowIdx, force_dim)));
       eq_contacts_[eq_ctr++]->set_description(contact.name() + " contact eq");
     }
     rowIdx += force_dim;
@@ -401,9 +399,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // w * (J * vd + Jdv - desired_comdd)^T * (J * vd + Jdv - desired_comdd)
   std::list<int> row_idx_as_cost;
   std::list<int> row_idx_as_eq;
-  FindCostAndEqConstraintIndices(
-      input.desired_centroidal_momentum_dot().weights(), &row_idx_as_cost,
-      &row_idx_as_eq);
+  row_idx_as_cost =
+      input.desired_centroidal_momentum_dot().GetConstraintTypeIndices(
+          ConstraintType::Soft);
+  row_idx_as_eq =
+      input.desired_centroidal_momentum_dot().GetConstraintTypeIndices(
+          ConstraintType::Hard);
   Eigen::Vector6d linear_term =
       rs.centroidal_momentum_matrix_dot_times_v() -
       input.desired_centroidal_momentum_dot().values();
@@ -426,8 +427,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     linear_term = body_Jdv_[body_ctr] - body_motion_d.values();
 
     // Find the rows that correspond to cost and equality constraints.
-    FindCostAndEqConstraintIndices(body_motion_d.weights(), &row_idx_as_cost,
-                                   &row_idx_as_eq);
+    row_idx_as_cost =
+        body_motion_d.GetConstraintTypeIndices(ConstraintType::Soft);
+    row_idx_as_eq =
+        body_motion_d.GetConstraintTypeIndices(ConstraintType::Hard);
     if (!row_idx_as_cost.empty()) {
       AddAsCosts(body_J_[body_ctr], linear_term, body_motion_d.weights(),
                  row_idx_as_cost, cost_body_motion_[cost_ctr]);
@@ -445,8 +448,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   }
 
   // Joint motion
-  FindCostAndEqConstraintIndices(input.desired_joint_motions().weights(),
-                                 &row_idx_as_cost, &row_idx_as_eq);
+  row_idx_as_cost = input.desired_joint_motions().GetConstraintTypeIndices(
+      ConstraintType::Soft);
+  row_idx_as_eq = input.desired_joint_motions().GetConstraintTypeIndices(
+      ConstraintType::Hard);
   // Process eq constraints.
   if (row_idx_as_eq.size() > 0) {
     int row_ctr = 0;
@@ -467,8 +472,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     for (int d : row_idx_as_cost) {
       double weight = input.desired_joint_motions().weight(d);
       tmp_vd_mat_(d, d) = weight;
-      tmp_vd_vec_[d] =
-          -weight * input.desired_joint_motions().value(d);
+      tmp_vd_vec_[d] = -weight * input.desired_joint_motions().value(d);
     }
     cost_joint_motion_->UpdateQuadraticAndLinearTerms(tmp_vd_mat_, tmp_vd_vec_);
   }
