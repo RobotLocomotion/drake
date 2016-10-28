@@ -198,7 +198,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
@@ -342,7 +342,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename,
-    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
      std::map<std::string, std::string>& ros_package_map,
      const drake::systems::plants::joints::FloatingBaseType floating_base_type,
      std::shared_ptr<RigidBodyFrame> weld_to_frame,

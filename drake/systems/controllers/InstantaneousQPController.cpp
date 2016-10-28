@@ -370,6 +370,7 @@ void applyJointPDOverride(
     w_qdd(ind) = it->weight;
   }
 }
+
 double averageContactPointHeight(
     const RigidBodyTree& robot, const KinematicsCache<double>& cache,
     std::vector<SupportStateElement,

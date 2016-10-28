@@ -62,6 +62,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
           motion_subspace_dot_times_v.size(), get_num_velocities());
     }
   }
+
   template <typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
