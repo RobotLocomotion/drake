@@ -151,7 +151,8 @@ class DRAKE_EXPORT RigidBodySystem {
   template <typename ScalarType>
   using OutputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  explicit RigidBodySystem(std::shared_ptr<RigidBodyTree> rigid_body_tree)
+  explicit RigidBodySystem(
+      std::shared_ptr<RigidBodyTree<double>> rigid_body_tree)
       : use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
@@ -165,7 +166,7 @@ class DRAKE_EXPORT RigidBodySystem {
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
         direct_feedthrough(false) {
-    tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
+    tree = std::shared_ptr<RigidBodyTree<double>>(new RigidBodyTree<double>());
   }
 
   virtual ~RigidBodySystem() {}
@@ -358,7 +359,7 @@ class DRAKE_EXPORT RigidBodySystem {
 
   void addSensor(std::shared_ptr<RigidBodySensor> s);
 
-  const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const {
+  const std::shared_ptr<RigidBodyTree<double>>& getRigidBodyTree(void) const {
     return tree;
   }
 
@@ -451,7 +452,7 @@ class DRAKE_EXPORT RigidBodySystem {
   double friction_coefficient;   // mu
 
  private:
-  std::shared_ptr<RigidBodyTree> tree;
+  std::shared_ptr<RigidBodyTree<double>> tree;
   std::vector<std::shared_ptr<RigidBodyForceElement>> force_elements;
   std::vector<std::shared_ptr<RigidBodySensor>> sensors;
   bool direct_feedthrough;
@@ -493,7 +494,8 @@ class DRAKE_EXPORT RigidBodyForceElement {
  * RigidBodyTree?
  */
 Eigen::VectorXd spatialForceInFrameToJointTorque(
-    const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
+    const RigidBodyTree<double>* tree,
+    const KinematicsCache<double>& rigid_body_state,
     const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force);
 
 // todo: insert a RigidBodyForceImpl with CRTP here once I go back and template
