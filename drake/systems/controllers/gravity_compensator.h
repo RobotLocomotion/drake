@@ -27,7 +27,7 @@ template <typename T>
 class DRAKE_EXPORT GravityCompensator : public LeafSystem<T> {
  public:
   /// Constructs a gravity compensator for a given `RigidBodyTree`.
-  explicit GravityCompensator(const RigidBodyTree& rigid_body_tree);
+  explicit GravityCompensator(const RigidBodyTree<T>& rigid_body_tree);
 
   /// Sets the output port value to the generalised gravity forces
   /// corresponding to a joint configuration as specified in the input.
@@ -35,7 +35,7 @@ class DRAKE_EXPORT GravityCompensator : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const RigidBodyTree& rigid_body_tree_;
+  const RigidBodyTree<T>& rigid_body_tree_;
 };
 
 }  // namespace systems
