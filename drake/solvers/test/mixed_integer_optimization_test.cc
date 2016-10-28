@@ -12,8 +12,8 @@ namespace test {
 namespace {
 void GetMixedIntegerLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverToList("Gurobi", solvers);
-  AddSolverToList("Mosek", solvers);
+  AddSolverToListIfAvailable("Gurobi", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 }  // namespace
 
@@ -33,13 +33,10 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     Eigen::RowVector3d c(-1, -1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(1, 2, 3);
-    prog.AddLinearConstraint(
-        a1, drake::Vector1d(-std::numeric_limits<double>::infinity()),
-        drake::Vector1d(4));
+    prog.AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 4);
     Eigen::RowVector2d a2(1, 1);
-    prog.AddLinearConstraint(
-        a2, drake::Vector1d(1),
-        drake::Vector1d(std::numeric_limits<double>::infinity()), {x(0), x(1)});
+    prog.AddLinearConstraint(a2, 1, std::numeric_limits<double>::infinity(),
+                             {x(0), x(1)});
 
     RunSolver(&prog, *solver);
 
@@ -64,9 +61,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
     Eigen::RowVector3d c(2, 1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(0.7, 0.5, 1);
-    prog.AddLinearConstraint(
-        a1, drake::Vector1d(1.8),
-        drake::Vector1d(std::numeric_limits<double>::infinity()));
+    prog.AddLinearConstraint(a1, 1.8, std::numeric_limits<double>::infinity());
 
     RunSolver(&prog, *solver);
 

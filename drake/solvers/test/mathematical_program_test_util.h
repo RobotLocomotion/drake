@@ -20,10 +20,10 @@ void RunSolver(MathematicalProgram* prog,
   }
 }
 
-void AddSolverToList(
-    const std::string& solver_name,
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
-        solver_list) {
+void AddSolverToListIfAvailable(
+    const std::string &solver_name,
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>> *
+    solver_list) {
   if (solver_name == "Gurobi") {
     auto gurobi_solver = std::make_unique<GurobiSolver>();
     if (gurobi_solver->available()) {

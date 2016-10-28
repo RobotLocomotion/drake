@@ -638,6 +638,39 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
+   * Add one row of linear constraint referencing potentially a
+   * subset of the decision variables (defined in the vars parameter).
+   * lb <= a*vars <= ub
+   * @param a A row vector.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound
+   * @param vars A list of decision variables
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub,
+      const VariableList& vars) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
+                               vars);
+  }
+
+  /**
+   * Add one row of linear constraint on all variables.
+   * lb <= a*vars <= ub
+   * @param a A row vector.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
+                               variable_views_);
+  }
+
+  /**
    * @brief Adds linear equality constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
@@ -682,6 +715,36 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
+   * Add one row of linear equality constraint referencing potentially a subset
+   * of decision variables.
+   * a*vars = beq
+   * @param a A row vector
+   * @param beq A scalar.
+   * @param vars A list of DecisionVariableView
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double beq,
+      const VariableList& vars) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
+  }
+
+  /**
+   * Add one row of linear equality constraint referencing all
+   * decision variables.
+   * a*vars = beq
+   * @param a A row vector
+   * @param beq A scalar.
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double beq) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
+                                       variable_views_);
+  }
+  /**
    * @brief Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
@@ -717,6 +780,13 @@ class DRAKE_EXPORT MathematicalProgram {
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
     return AddBoundingBoxConstraint(lb, ub, variable_views_);
+  }
+
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const DecisionVariableView& var) {
+    DRAKE_ASSERT(var.size() == 1);
+    return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
+                                    {var});
   }
 
   /**
