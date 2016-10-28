@@ -11,6 +11,94 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+enum class ConstraintType {
+  Hard = -1,
+  Skip = 0,
+  Soft = 1
+};
+
+inline std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
+  out << "constraint type: ";
+  switch (type) {
+    case ConstraintType::Hard:
+      out << "Hard\n";
+      break;
+    case ConstraintType::Skip:
+      out << "Skip\n";
+      break;
+    case ConstraintType::Soft:
+      out << "Soft\n";
+      break;
+  }
+  return out;
+}
+
+class ConstrainedValues {
+ private:
+  std::vector<ConstraintType> constraint_types_;
+  Eigen::VectorXd weights_;
+  Eigen::VectorXd values_;
+
+ public:
+  ConstrainedValues() { }
+
+  explicit ConstrainedValues(int dim) :
+    constraint_types_(dim, ConstraintType::Skip),
+    weights_(Eigen::VectorXd::Zero(dim)),
+    values_(Eigen::VectorXd::Zero(dim)) {}
+
+  std::list<int> GetConstraintTypeIndices(ConstraintType type) const {
+    std::list<int> ret;
+    for (int i = 0; i < static_cast<int>(constraint_types_.size()); ++i) {
+      if (constraint_types_[i] == type)
+        ret.push_back(i);
+    }
+
+    return ret;
+  }
+
+  void SetConstraintType(const std::list<int>& indices, ConstraintType type) {
+    for (int i : indices) {
+      if (i < static_cast<int>(constraint_types_.size()) && i >= 0)
+        constraint_types_[i] = type;
+    }
+  }
+
+  bool is_valid(int dim) const {
+    bool ret = weights_.size() == values_.size();
+    ret &= static_cast<int>(constraint_types_.size()) == weights_.size();
+    ret &= weights_.size() == dim;
+    if (ret) {
+      for (int i = 0; i < dim; ++i)  {
+        if (constraint_types_[i] == ConstraintType::Soft)
+          ret &= weights_[i] > 0;
+      }
+    }
+    ret &= weights_.allFinite();
+    ret &= values_.allFinite();
+    return ret;
+  }
+
+  // Getters
+  inline int size() const { return values_.size(); }
+  inline const Eigen::VectorXd& weights() const { return weights_; }
+  inline const Eigen::VectorXd& values() const { return values_; }
+  inline const std::vector<ConstraintType>& constraint_types() const { return constraint_types_; }
+
+  inline double value(int i) const { return values_[i]; }
+  inline double weight(int i) const { return weights_[i]; }
+  inline ConstraintType constraint_type(int i) const { return constraint_types_.at(i); }
+
+  // Setters
+  inline Eigen::VectorXd& mutable_weights() { return weights_; }
+  inline Eigen::VectorXd& mutable_values() { return values_; }
+  inline std::vector<ConstraintType>& mutable_constraint_types() { return constraint_types_; }
+
+  inline double& mutable_value(int i) { return values_[i]; }
+  inline double& mutable_weight(int i) { return weights_[i]; }
+  inline ConstraintType& mutable_constraint_type(int i) { return constraint_types_.at(i); }
+};
+
 /**
  * This class describes contact related information for each body in contact
  * with the world.
@@ -24,7 +112,8 @@ class ContactInformation {
    * @param num_basis_per_contact_point number of basis per contact point
    */
   ContactInformation(const RigidBody& b, int num_basis_per_contact_point)
-      : body_(&b), num_basis_per_contact_point_(num_basis_per_contact_point) {
+      : body_(&b), num_basis_per_contact_point_(num_basis_per_contact_point),
+        acceleration_constraint_type_(ConstraintType::Hard) {
     normal_ = Eigen::Vector3d(0, 0, 1);
     mu_ = 1;
     if (num_basis_per_contact_point_ < 3)
@@ -175,12 +264,31 @@ class ContactInformation {
     return Jdv;
   }
 
+  /**
+   * Computes the stacked velocities for all the contact points.
+   * @param robot Robot model
+   * @param cache Stores the kinematics information, needs to be initialized
+   * first.
+   * @return Stacked velocities.
+   */
+  Eigen::VectorXd ComputeLinearVelocityAtContactPoints(
+      const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
+    Eigen::VectorXd vel(3 * contact_points_.size());
+    for (size_t i = 0; i < contact_points_.size(); ++i) {
+      vel.segment<3>(3 * i) = GetTaskSpaceVel(robot, cache, *body_, contact_points_[i]).bottomRows<3>();
+    }
+    return vel;
+  }
+
   bool is_valid() const {
     bool ret =
         std::abs(normal_.norm() - 1) < Eigen::NumTraits<double>::epsilon();
     for (const Eigen::Vector3d& pt : contact_points_) ret &= pt.allFinite();
     ret &= mu_ >= 0;
     ret &= num_basis_per_contact_point_ >= 3;
+    if (acceleration_constraint_type_ == ConstraintType::Soft)
+      ret &= weight_ > 0;
+    ret &= Kd_ >= 0;
     return ret;
   }
 
@@ -194,6 +302,9 @@ class ContactInformation {
 
   // Getters
   inline double mu() const { return mu_; }
+  inline double weight() const { return weight_; }
+  inline double Kd() const { return Kd_; }
+  inline ConstraintType acceleration_constraint_type() const { return acceleration_constraint_type_; }
   inline const std::vector<Eigen::Vector3d>& contact_points() const {
     return contact_points_;
   }
@@ -208,6 +319,8 @@ class ContactInformation {
     return contact_points_;
   }
   inline double& mutable_mu() { return mu_; }
+  inline double& mutable_weight() { return weight_; }
+  inline double& mutable_Kd() { return Kd_; }
   inline Eigen::Vector3d& mutable_normal() { return normal_; }
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
@@ -229,6 +342,10 @@ class ContactInformation {
 
   // Friction coeff
   double mu_;
+
+  double Kd_; // For stabilizing to zero velocity
+  double weight_;
+  ConstraintType acceleration_constraint_type_;
 };
 
 inline std::ostream& operator<<(std::ostream& out,
@@ -239,8 +356,244 @@ inline std::ostream& operator<<(std::ostream& out,
     out << contact.contact_points()[j].transpose() << std::endl;
   out << "normal in body frame: " << contact.normal().transpose() << std::endl;
   out << "mu: " << contact.mu() << std::endl;
+  out << contact.acceleration_constraint_type();
+  out << "weight: " << contact.weight() << std::endl;
+  out << "Kd: " << contact.Kd() << std::endl;
   return out;
 }
+
+/**
+ * A wrapper class specifying desired body motion (acceleration) for a rigid
+ * body and their corresponding weights for the QP.
+ * The acceleration is expressed in a frame that has the same orientation as
+ * the world, and located at the origin of the body.
+ * The first three elements for weights and accelerations are angular.
+ *
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * TODO: (siyuan.feng@tri.global) expand this to be expressed in other frame.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
+class DesiredBodyMotion : public ConstrainedValues {
+ public:
+  explicit DesiredBodyMotion(const RigidBody& body)
+      : ConstrainedValues(6),
+        body_(&body),
+        control_during_contact_(false) { }
+
+  inline bool is_valid() const {
+    return ConstrainedValues::is_valid(kTwistSize);
+  }
+
+  inline std::string get_row_name(int i) const {
+    static const std::string row_name[kTwistSize] = {"[WX]", "[WY]", "[WZ]",
+                                                     "[X]",  "[Y]",  "[Z]"};
+    if (i < 0 || i >= kTwistSize)
+      throw std::runtime_error("index must be within [0, 5]");
+    return row_name[i];
+  }
+
+  // Getters
+  inline const RigidBody& body() const { return *body_; }
+  inline const std::string& name() const { return body_->get_name(); }
+  inline bool control_during_contact() const { return control_during_contact_; }
+
+  // Setters
+  inline bool& mutable_control_during_contact() {
+    return control_during_contact_;
+  }
+
+ private:
+  const RigidBody* body_;
+  bool control_during_contact_;
+};
+
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredBodyMotion& input) {
+  for (int i = 0; i < kTwistSize; ++i) {
+    out << "desired " << input.name() << input.get_row_name(i)
+        << " acc: " << input.values()[i]
+        << " weight: " << input.weights()[i] << " "
+        << input.constraint_types()[i];
+  }
+  return out;
+}
+
+/**
+ * A wrapper class specifying desired joint motion (acceleration) and their
+ * corresponding weights for the QP.
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
+class DesiredJointMotions : public ConstrainedValues {
+ public:
+  DesiredJointMotions() {}
+  explicit DesiredJointMotions(const std::vector<std::string>& names)
+      : ConstrainedValues(static_cast<int>(names.size())), names_(names) { }
+
+  bool is_valid(int dim) const {
+    bool ret = static_cast<int>(names_.size()) == dim;
+    ret &= ConstrainedValues::is_valid(dim);
+    return ret;
+  }
+
+  // Getters
+  inline const std::vector<std::string>& names() const { return names_; }
+  inline const std::string& name(int i) const { return names_.at(i); }
+
+ private:
+  std::vector<std::string> names_;
+};
+
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredJointMotions& input) {
+  for (int i = 0; i < input.size(); ++i) {
+    out << "desired " << input.name(i) << " acc: " << input.value(i)
+        << " weight: " << input.weight(i) << " "
+        << input.constraint_type(i);
+  }
+  return out;
+}
+
+/**
+ * A wrapper class specifying desired centroidal momentum change and their
+ * corresponding weights for the QP.
+ * The change in momentum are expressed in the world frame.
+ * The first three terms are angular.
+ * Linear momentum change = com acceleration * mass.
+ *
+ * If weight(i) < 0, acceleration(i) is treated as a constraint.
+ * If weight(i) = 0, acceleration(i) is skipped.
+ * If weight(i) > 0, acceleration(i) is treated as a cost.
+ * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ */
+class DesiredCentroidalMomentumChange : public ConstrainedValues {
+ public:
+  DesiredCentroidalMomentumChange()
+      : ConstrainedValues(kTwistSize) {}
+
+  bool is_valid() const {
+    return ConstrainedValues::is_valid(kTwistSize);
+  }
+
+  inline std::string get_row_name(int i) const {
+    static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
+                                            "AngMom[Z]", "LinMom[X]",
+                                            "LinMom[Y]", "LinMom[Z]"};
+    if (i < 0 || i >= kTwistSize)
+      throw std::runtime_error("index must be within [0, 5]");
+    return row_name[i];
+  }
+};
+
+inline std::ostream& operator<<(std::ostream& out,
+                                const DesiredCentroidalMomentumChange& input) {
+  for (int i = 0; i < 6; ++i) {
+    out << "desired " << input.get_row_name(i)
+        << " change: " << input.value(i)
+        << " weight: " << input.weight(i) << " "
+        << input.constraint_type(i);
+  }
+  return out;
+}
+
+/**
+ * Input to the QP inverse dynamics controller
+ */
+class QPInput {
+ public:
+  explicit QPInput(const RigidBodyTree& r) {
+    std::vector<std::string> names(r.get_num_velocities());
+    // strip out the "dot" part from name
+    for (int i = 0; i < r.get_num_velocities(); ++i)
+      names[i] =
+          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
+    desired_joint_motions_ = DesiredJointMotions(names);
+  }
+
+  /**
+   * Checks validity of this QPInput.
+   * @param num_vd Dimension of acceleration in the generalized coordinates.
+   * @return true if this is valid.
+   */
+  bool is_valid(int num_vd) const {
+    int valid = num_vd == desired_joint_motions_.size();
+    valid &= desired_joint_motions_.is_valid(num_vd);
+    for (auto it = desired_body_motions_.begin();
+         it != desired_body_motions_.end(); ++it) {
+      valid &= it->second.is_valid();
+    }
+
+    for (const ContactInformation& contact : contact_info_)
+      valid &= contact.is_valid();
+
+    valid &= desired_centroidal_momentum_dot_.is_valid();
+
+    valid &= std::isfinite(w_basis_reg_);
+    valid &= w_basis_reg_ >= 0;
+
+    return valid;
+  }
+
+  // Getters
+  inline double w_basis_reg() const { return w_basis_reg_; }
+  inline const std::string& coord_name(size_t idx) const {
+    return desired_joint_motions_.name(idx);
+  }
+  inline const std::list<ContactInformation>& contact_info() const {
+    return contact_info_;
+  }
+  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions()
+      const {
+    return desired_body_motions_;
+  }
+  inline const DesiredJointMotions& desired_joint_motions() const {
+    return desired_joint_motions_;
+  }
+  inline const DesiredCentroidalMomentumChange&
+  desired_centroidal_momentum_dot() const {
+    return desired_centroidal_momentum_dot_;
+  }
+
+  // Setters
+  inline double& mutable_w_basis_reg() { return w_basis_reg_; }
+  inline std::list<ContactInformation>& mutable_contact_info() {
+    return contact_info_;
+  }
+  inline std::map<std::string, DesiredBodyMotion>&
+  mutable_desired_body_motions() {
+    return desired_body_motions_;
+  }
+  inline DesiredJointMotions& mutable_desired_joint_motions() {
+    return desired_joint_motions_;
+  }
+  inline DesiredCentroidalMomentumChange&
+  mutable_desired_centroidal_momentum_dot() {
+    return desired_centroidal_momentum_dot_;
+  }
+
+ private:
+  // Contact information
+  std::list<ContactInformation> contact_info_;
+
+  // Desired task space accelerations for specific bodies
+  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
+
+  // Desired joint accelerations
+  DesiredJointMotions desired_joint_motions_;
+
+  // Desired centroidal momentum change (change of overall linar and angular
+  // momentum)
+  DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
+
+  // Weight for regularizing basis vectors
+  double w_basis_reg_;
+};
+
+std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
 /**
  * This class holds the contact force / wrench related information, and works
@@ -347,275 +700,6 @@ class BodyAcceleration {
   const RigidBody* body_;
   Eigen::Vector6d acceleration_;
 };
-
-/**
- * A wrapper class specifying desired body motion (acceleration) for a rigid
- * body and their corresponding weights for the QP.
- * The acceleration is expressed in a frame that has the same orientation as
- * the world, and located at the origin of the body.
- * The first three elements for weights and accelerations are angular.
- *
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
- * TODO: (siyuan.feng@tri.global) expand this to be expressed in other frame.
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
- */
-class DesiredBodyMotion {
- public:
-  explicit DesiredBodyMotion(const RigidBody& body)
-      : body_(&body),
-        accelerations_(Eigen::Vector6d::Zero()),
-        weights_(Eigen::Vector6d::Zero()),
-        control_during_contact_(false) {}
-
-  inline bool is_valid() const {
-    return accelerations_.allFinite() && weights_.allFinite();
-  }
-
-  inline std::string get_row_name(int i) const {
-    static const std::string row_name[kTwistSize] = {"[WX]", "[WY]", "[WZ]",
-                                                     "[X]",  "[Y]",  "[Z]"};
-    if (i < 0 || i >= kTwistSize)
-      throw std::runtime_error("index must be within [0, 5]");
-    return row_name[i];
-  }
-
-  // Getters
-  inline const RigidBody& body() const { return *body_; }
-  inline const std::string& name() const { return body_->get_name(); }
-  inline const Eigen::Vector6d& weights() const { return weights_; }
-  inline const Eigen::Vector6d& accelerations() const { return accelerations_; }
-  inline bool control_during_contact() const { return control_during_contact_; }
-
-  // Setters
-  inline Eigen::Vector6d& mutable_weights() { return weights_; }
-  inline Eigen::Vector6d& mutable_accelerations() { return accelerations_; }
-  inline bool& mutable_control_during_contact() {
-    return control_during_contact_;
-  }
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
- private:
-  const RigidBody* body_;
-  Eigen::Vector6d accelerations_;
-  Eigen::Vector6d weights_;
-  bool control_during_contact_;
-};
-
-inline std::ostream& operator<<(std::ostream& out,
-                                const DesiredBodyMotion& input) {
-  for (int i = 0; i < kTwistSize; ++i) {
-    out << "desired " << input.name() << input.get_row_name(i)
-        << " acc: " << input.accelerations()[i]
-        << " weight: " << input.weights()[i] << std::endl;
-  }
-  return out;
-}
-
-/**
- * A wrapper class specifying desired joint motion (acceleration) and their
- * corresponding weights for the QP.
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
- */
-class DesiredJointMotions {
- public:
-  DesiredJointMotions() {}
-  explicit DesiredJointMotions(const std::vector<std::string>& names)
-      : names_(names),
-        weights_(Eigen::VectorXd::Zero(names.size())),
-        accelerations_(Eigen::VectorXd::Zero(names.size())) {}
-
-  bool is_valid(int dim) const {
-    bool ret = static_cast<int>(names_.size()) == weights_.size();
-    ret &= weights_.size() == accelerations_.size();
-    ret &= weights_.allFinite();
-    ret &= accelerations_.allFinite();
-    return ret;
-  }
-
-  // Getters
-  inline int size() const { return accelerations_.size(); }
-  inline const std::vector<std::string>& names() const { return names_; }
-  inline const std::string& name(int i) const { return names_.at(i); }
-  inline const Eigen::VectorXd& weights() const { return weights_; }
-  inline const Eigen::VectorXd& accelerations() const { return accelerations_; }
-
-  // Setters
-  inline Eigen::VectorXd& mutable_weights() { return weights_; }
-  inline Eigen::VectorXd& mutable_accelerations() { return accelerations_; }
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
- private:
-  std::vector<std::string> names_;
-  Eigen::VectorXd weights_;
-  Eigen::VectorXd accelerations_;
-};
-
-inline std::ostream& operator<<(std::ostream& out,
-                                const DesiredJointMotions& input) {
-  for (int i = 0; i < input.size(); ++i) {
-    out << "desired " << input.name(i) << " acc: " << input.accelerations()[i]
-        << " weight: " << input.weights()[i] << std::endl;
-  }
-  return out;
-}
-
-/**
- * A wrapper class specifying desired centroidal momentum change and their
- * corresponding weights for the QP.
- * The change in momentum are expressed in the world frame.
- * The first three terms are angular.
- * Linear momentum change = com acceleration * mass.
- *
- * If weight(i) < 0, acceleration(i) is treated as a constraint.
- * If weight(i) = 0, acceleration(i) is skipped.
- * If weight(i) > 0, acceleration(i) is treated as a cost.
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
- */
-class DesiredCentroidalMomentumChange {
- public:
-  DesiredCentroidalMomentumChange()
-      : weights_(Eigen::Vector6d::Zero()),
-        momentum_dot_(Eigen::Vector6d::Zero()) {}
-
-  bool is_valid() const {
-    return weights_.allFinite() && momentum_dot_.allFinite();
-  }
-
-  inline std::string get_row_name(int i) const {
-    static const std::string row_name[6] = {"AngMom[X]", "AngMom[Y]",
-                                            "AngMom[Z]", "LinMom[X]",
-                                            "LinMom[Y]", "LinMom[Z]"};
-    if (i < 0 || i >= 6)
-      throw std::runtime_error("index must be within [0, 5]");
-    return row_name[i];
-  }
-
-  // Getters
-  inline const Eigen::Vector6d& weights() const { return weights_; }
-  inline const Eigen::Vector6d& momentum_dot() const { return momentum_dot_; }
-
-  // Setters
-  inline Eigen::Vector6d& mutable_weights() { return weights_; }
-  inline Eigen::Vector6d& mutable_momentum_dot() { return momentum_dot_; }
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
- private:
-  Eigen::Vector6d weights_;
-  Eigen::Vector6d momentum_dot_;
-};
-
-inline std::ostream& operator<<(std::ostream& out,
-                                const DesiredCentroidalMomentumChange& input) {
-  for (int i = 0; i < 6; ++i) {
-    out << "desired " << input.get_row_name(i)
-        << " change: " << input.momentum_dot()[i]
-        << " weight: " << input.weights()[i] << std::endl;
-  }
-  return out;
-}
-
-/**
- * Input to the QP inverse dynamics controller
- */
-class QPInput {
- public:
-  explicit QPInput(const RigidBodyTree& r) {
-    std::vector<std::string> names(r.get_num_velocities());
-    // strip out the "dot" part from name
-    for (int i = 0; i < r.get_num_velocities(); ++i)
-      names[i] =
-          r.get_velocity_name(i).substr(0, r.get_velocity_name(i).size() - 3);
-    desired_joint_motions_ = DesiredJointMotions(names);
-  }
-
-  /**
-   * Checks validity of this QPInput.
-   * @param num_vd Dimension of acceleration in the generalized coordinates.
-   * @return true if this is valid.
-   */
-  bool is_valid(int num_vd) const {
-    int valid = num_vd == desired_joint_motions_.size();
-    valid &= desired_joint_motions_.is_valid(num_vd);
-    for (auto it = desired_body_motions_.begin();
-         it != desired_body_motions_.end(); ++it) {
-      valid &= it->second.is_valid();
-    }
-
-    for (const ContactInformation& contact : contact_info_)
-      valid &= contact.is_valid();
-
-    valid &= desired_centroidal_momentum_dot_.is_valid();
-
-    valid &= std::isfinite(w_basis_reg_);
-    valid &= w_basis_reg_ >= 0;
-
-    return valid;
-  }
-
-  // Getters
-  inline double w_basis_reg() const { return w_basis_reg_; }
-  inline const std::string& coord_name(size_t idx) const {
-    return desired_joint_motions_.name(idx);
-  }
-  inline const std::list<ContactInformation>& contact_info() const {
-    return contact_info_;
-  }
-  inline const std::map<std::string, DesiredBodyMotion>& desired_body_motions()
-      const {
-    return desired_body_motions_;
-  }
-  inline const DesiredJointMotions& desired_joint_motions() const {
-    return desired_joint_motions_;
-  }
-  inline const DesiredCentroidalMomentumChange&
-  desired_centroidal_momentum_dot() const {
-    return desired_centroidal_momentum_dot_;
-  }
-
-  // Setters
-  inline double& mutable_w_basis_reg() { return w_basis_reg_; }
-  inline std::list<ContactInformation>& mutable_contact_info() {
-    return contact_info_;
-  }
-  inline std::map<std::string, DesiredBodyMotion>&
-  mutable_desired_body_motions() {
-    return desired_body_motions_;
-  }
-  inline DesiredJointMotions& mutable_desired_joint_motions() {
-    return desired_joint_motions_;
-  }
-  inline DesiredCentroidalMomentumChange&
-  mutable_desired_centroidal_momentum_dot() {
-    return desired_centroidal_momentum_dot_;
-  }
-
- private:
-  // Contact information
-  std::list<ContactInformation> contact_info_;
-
-  // Desired task space accelerations for specific bodies
-  std::map<std::string, DesiredBodyMotion> desired_body_motions_;
-
-  // Desired joint accelerations
-  DesiredJointMotions desired_joint_motions_;
-
-  // Desired centroidal momentum change (change of overall linar and angular
-  // momentum)
-  DesiredCentroidalMomentumChange desired_centroidal_momentum_dot_;
-
-  // Weight for regularizing basis vectors
-  double w_basis_reg_;
-};
-
-std::ostream& operator<<(std::ostream& out, const QPInput& input);
 
 /**
  * Output of the QP inverse dynamics controller
@@ -763,6 +847,7 @@ class QPController {
 
   Eigen::MatrixXd stacked_contact_jacobians_;
   Eigen::VectorXd stacked_contact_jacobians_dot_times_v_;
+  Eigen::VectorXd stacked_contact_velocities_;
   Eigen::MatrixXd basis_to_force_matrix_;
 
   Eigen::MatrixXd torque_linear_;
@@ -816,6 +901,8 @@ class QPController {
   int num_joint_motion_as_eq_;
   int num_cen_mom_dot_as_cost_;
   int num_cen_mom_dot_as_eq_;
+  int num_contact_as_cost_;
+  int num_contact_as_eq_;
 
   // prog_ is only allocated in ResizeQP, Control only updates the appropriate
   // matrices / vectors.
@@ -833,6 +920,7 @@ class QPController {
   drake::solvers::LinearConstraint* ineq_contact_wrench_{nullptr};
   drake::solvers::LinearConstraint* ineq_torque_limit_{nullptr};
 
+  std::vector<drake::solvers::QuadraticConstraint*> cost_contacts_;
   drake::solvers::QuadraticConstraint* cost_cen_mom_dot_{nullptr};
   std::vector<drake::solvers::QuadraticConstraint*> cost_body_motion_;
   drake::solvers::QuadraticConstraint* cost_joint_motion_{nullptr};

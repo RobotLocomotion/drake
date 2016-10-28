@@ -39,6 +39,9 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     Kd_torso_ = Eigen::Vector6d::Constant(8);
     Kp_joints_ = Eigen::VectorXd::Constant(dim, 20);
     Kd_joints_ = Eigen::VectorXd::Constant(dim, 8);
+    // Don't do feedback on pelvis pose.
+    Kp_joints_.head<6>().setZero();
+    Kd_joints_.head<6>().setZero();
   }
 
   void EvalOutput(const Context<double>& context,
@@ -63,19 +66,18 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
     // Update desired accelerations.
     result.mutable_desired_centroidal_momentum_dot()
-        .mutable_momentum_dot()
-        .tail<3>() =
+        .mutable_values().tail<3>() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
          Kd_com_.array() * robot_status->comd().array()).matrix() *
         robot_.getMass();
 
-    result.mutable_desired_joint_motions().mutable_accelerations() =
+    result.mutable_desired_joint_motions().mutable_values() =
         joint_PDff_.ComputeTargetAcceleration(robot_status->position(),
                                               robot_status->velocity());
-    result.mutable_desired_body_motions().at("pelvis").mutable_accelerations() =
+    result.mutable_desired_body_motions().at("pelvis").mutable_values() =
         pelvis_PDff_.ComputeTargetAcceleration(
             robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-    result.mutable_desired_body_motions().at("torso").mutable_accelerations() =
+    result.mutable_desired_body_motions().at("torso").mutable_values() =
         torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(),
                                               robot_status->torso().velocity());
   }

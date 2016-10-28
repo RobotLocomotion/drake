@@ -393,6 +393,8 @@ class HumanoidStatus {
   Eigen::Vector6d foot_wrench_raw_[2];
 };
 
+std::ostream& operator<<(std::ostream& out, const HumanoidStatus& robot_status);
+
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
 }  // namespace drake
