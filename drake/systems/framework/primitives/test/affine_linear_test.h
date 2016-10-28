@@ -42,7 +42,7 @@ class AffineLinearSystemTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
 
-  ContinuousState<double>* state_;
+  ContinuousState<double>* state_{};
   std::unique_ptr<BasicVector<double>> state_vector_;
   std::unique_ptr<BasicVector<double>> input_vector_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
