@@ -67,9 +67,9 @@ namespace solvers {
  *  </tr>
  * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
  *    Mosek</a></td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
  * </tr>
@@ -194,12 +194,17 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   template <typename C>
   class Binding {
-    std::shared_ptr<C> constraint_;
-    VariableList variable_list_;
-
    public:
     Binding(const std::shared_ptr<C>& c, const VariableList& v)
-        : constraint_(c), variable_list_(v) {}
+        : constraint_(c), variable_list_(v) {
+      for (const auto& var : variable_list_) {
+        for (int i = 0; i < static_cast<int>(var.size()); ++i) {
+          // The variables are contiguous in var, so the index
+          // is shifted by i from the starting index var.index().
+          variable_indices_.push_back(var.index() + i);
+        }
+      }
+    }
     template <typename U>
     Binding(
         const Binding<U>& b,
@@ -261,6 +266,39 @@ class DRAKE_EXPORT MathematicalProgram {
         solution_index += view.size();
       }
     }
+
+    /**
+     * Return the indices of ALL the variables in the bindings.
+     * The length of the returned vector is the same as
+     * Binding::GetNumberElements().
+     * For example, if we have an optimization program
+     * \code{.cc}
+     * MathematicalProgram prog;
+     * // The indices of (x(0), x(1), x(2)) are (0, 1, 2) respectively.
+     * auto x = prog.AddContinuousVariables(3, "x");
+     * // The indices of (y(0), y(1), y(2), y(3)) are (3, 4, 5, 6) respectively.
+     * auto y = prog.AddContinuousVariables(4, "y");
+     * Eigen::Matrix<double, 1, 5> a;
+     * a << 1, 2, 3, 4, 5;
+     * drake::Vector1d lb(1);
+     * drake::Vector1d ub(2);
+     * auto con = std::make_shared<LinearConstraint>(a, lb, ub);
+     * // Create a binding x(2) + 2 * y(1) + 3*y(2) + 4 * x(0) + 5 * x(1)
+     * auto binding = Binding(con, {x(2), y.segment(1, 2), x.segment(0, 2)});
+     * // variable_indices = {2, 4, 5, 0, 1}, which are the indices of
+     * // x(2), y(1), y(2), x(0), x(1) respectively.
+     * auto var_indices = binding.variable_indices();
+     * \endcode
+     */
+    const std::vector<int>& variable_indices() const {
+      return variable_indices_;
+    }
+
+   private:
+    std::shared_ptr<C> constraint_;
+    VariableList variable_list_;
+    std::vector<int> variable_indices_;  // This stores the indices of all the
+    // variables in the variable_list_;
   };
 
   template <typename F>
@@ -944,20 +982,6 @@ class DRAKE_EXPORT MathematicalProgram {
    * "GUROBI" -- Parameter name and values as specified in GUROBI Reference
    * Manual, section 10.2 "Parameter Descriptions"
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
-   *
-   * "Mosek" -- Accepts two parameters:
-   * - "maxormin"
-   *   + Maximize or minimize current problem using either "max" or "min".
-   * - "problemtype"
-   *   + Currently only accepts "linear", "quadratic", and "sdp".
-   * - "constant"
-   *   + Adds a constant value to the objective of quadratic and SDP problems.
-   * - "conesubscript"
-   *   + Denotes which variable x_i satisfies the cone relation:
-   *   + x_i >= (sqrt(sum(x_j^2))), i!=j
-   * TODO(alexdunyak): Calling MathematicalProgram::Solve will not invoke mosek
-   * at this
-   * time.
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option, double option_value) {
