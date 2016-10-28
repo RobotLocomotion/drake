@@ -54,7 +54,7 @@ namespace controlled_kuka {
 namespace {
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
-  RigidBodyTree tree(
+  RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed);
 
@@ -190,7 +190,7 @@ class KukaDemo : public systems::Diagram<T> {
     this->set_name("KukaDemo");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto rigid_body_tree = make_unique<RigidBodyTree>();
+    auto rigid_body_tree = make_unique<RigidBodyTree<T>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() +
         "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",

@@ -14,7 +14,7 @@ namespace kuka_iiwa_arm {
  * @param[in] tree The RigidBodyTree to which to add the ground plane.
  */
 DRAKE_EXPORT
-void AddGround(RigidBodyTree* tree);
+void AddGround(RigidBodyTree<double>* tree);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

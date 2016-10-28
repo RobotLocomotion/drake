@@ -4,7 +4,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-void AddGround(RigidBodyTree* tree) {
+void AddGround(RigidBodyTree<double>* tree) {
   double kBoxWidth = 3;
   double kBoxDepth = 0.2;
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
