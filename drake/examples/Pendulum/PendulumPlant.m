@@ -249,11 +249,11 @@ classdef PendulumPlant < SecondOrderSystem
         
         x0 = [0;0];
         xf = double(obj.xG);
-        tf = 2;
+        tf0 = 2;
         
-        Q = [100 0; 0 10];
-        R = 1;
-        Qf = 1000*eye(2);
+        Q = [10 0; 0 1];
+        R = .1;
+        Qf = 100*eye(2);
         
         E0 = zeros(2,2);
         
@@ -265,7 +265,7 @@ classdef PendulumPlant < SecondOrderSystem
         prog = prog.addRobustCost(Q,R,Qf);
         prog = prog.addRobustInputConstraint();
         
-        prog = prog.setSolverOptions('snopt','majoroptimalitytolerance', 1e-4);
+        prog = prog.setSolverOptions('snopt','majoroptimalitytolerance', 1e-2);
         prog = prog.setSolverOptions('snopt','majorfeaasibilitytolerance', 1e-3);
         prog = prog.setSolverOptions('snopt','minorfeaasibilitytolerance', 1e-3);
         
@@ -279,11 +279,11 @@ classdef PendulumPlant < SecondOrderSystem
         end
         prog = addTrajectoryDisplayFunction(prog,@displayTrajectory);
         
-        traj_init.x = PPTrajectory(foh([0,tf],[double(x0),double(xf)]));
+        traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
         
         disp('Running solve');
         tic
-        [xtraj,utraj,z] = prog.solveTraj(tf,traj_init);
+        [xtraj,utraj,z] = prog.solveTraj(tf0,traj_init);
         toc
         
         function [h,dh] = finalCost(tf,x)

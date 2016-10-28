@@ -5,7 +5,7 @@ v = PendulumVisualizer();
 
 N = 51;
 
-[utraj1,xtraj1,z1,prog1] = p.swingUpDirtran(N);
+%[utraj1,xtraj1,z1,prog1] = p.swingUpDirtran(N);
 
 options.integration_method = RobustDirtranTrajectoryOptimization.MIDPOINT;
 D = .2^2; % w'*D*w <=1. This corresponds to +/-.2 uncertainty in mass (20%)
