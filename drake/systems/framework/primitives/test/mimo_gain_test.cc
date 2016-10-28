@@ -21,7 +21,7 @@ class MimoGainTest : public AffineLinearSystemTest {
     mimo_gain_->set_name("test_mimo_gain_system");
     context_ = mimo_gain_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    output_ = mimo_gain_->AllocateOutput(*context_);
+    system_output_ = mimo_gain_->AllocateOutput(*context_);
   }
 
  protected:
@@ -35,10 +35,10 @@ TEST_F(MimoGainTest, Construction) {
   EXPECT_EQ(mimo_gain_->get_name(), "test_mimo_gain_system");
   EXPECT_EQ(mimo_gain_->GetA(), MatrixX<double>::Zero(kNumStates, kNumStates));
   EXPECT_EQ(mimo_gain_->GetB(), MatrixX<double>::Zero(kNumStates, D_.cols()));
-  EXPECT_EQ(mimo_gain_->GetXDot0(), Eigen::VectorXd::Zero(kNumStates));
+  EXPECT_EQ(mimo_gain_->GetxDot0(), Eigen::VectorXd::Zero(kNumStates));
   EXPECT_EQ(mimo_gain_->GetC(), MatrixX<double>::Zero(D_.rows(), kNumStates));
   EXPECT_EQ(mimo_gain_->GetD(), D_);
-  EXPECT_EQ(mimo_gain_->GetY0(), Eigen::VectorXd::Zero(2));
+  EXPECT_EQ(mimo_gain_->Gety0(), Eigen::VectorXd::Zero(2));
   EXPECT_EQ(mimo_gain_->get_num_output_ports(), 1);
   EXPECT_EQ(mimo_gain_->get_num_input_ports(), 1);
 }
@@ -67,12 +67,12 @@ TEST_F(MimoGainTest, Output) {
   Eigen::Vector2d u(2.17, 5.99);
   SetInput(u);
 
-  mimo_gain_->EvalOutput(*context_, output_.get());
+  mimo_gain_->EvalOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
   expected_output = D_ * u;
 
-  EXPECT_EQ(output_->get_vector_data(0)->get_value(), expected_output);
+  EXPECT_EQ(system_output_->get_vector_data(0)->get_value(), expected_output);
 }
 
 }  // namespace
