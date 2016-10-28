@@ -97,10 +97,14 @@ std::ostream& operator<<(std::ostream& out,
                          const HumanoidStatus& robot_status) {
   out << "Time: " << robot_status.time() << std::endl;
   for (int i = 0; i < robot_status.position().size(); ++i) {
-    out << robot_status.robot().get_position_name(i) << ": " << robot_status.position(i) << ", " << robot_status.velocity(i) << std::endl;
+    out << robot_status.robot().get_position_name(i) << ": "
+        << robot_status.position(i) << ", " << robot_status.velocity(i)
+        << std::endl;
   }
-  out << "left foot vel: " << robot_status.foot(Side::LEFT).velocity() << std::endl;
-  out << "right foot vel: " << robot_status.foot(Side::RIGHT).velocity() << std::endl;
+  out << "left foot vel: " << robot_status.foot(Side::LEFT).velocity()
+      << std::endl;
+  out << "right foot vel: " << robot_status.foot(Side::RIGHT).velocity()
+      << std::endl;
   return out;
 }
 

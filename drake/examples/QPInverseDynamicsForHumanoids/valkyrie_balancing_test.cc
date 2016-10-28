@@ -57,8 +57,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   Kp_q.head<6>().setZero();
   Kd_q.head<6>().setZero();
   VectorSetpoint<double> joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
-                                    Eigen::VectorXd::Zero(q.size()),
-                                    Kp_q, Kd_q);
+                                    Eigen::VectorXd::Zero(q.size()), Kp_q,
+                                    Kd_q);
   CartesianSetpoint<double> pelvis_PDff(
       robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
@@ -86,10 +86,14 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   for (const std::string& joint_name : robot_status.arm_joint_names()) {
     int idx = robot_status.name_to_position_index().at(joint_name);
     input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+    input.mutable_desired_joint_motions().mutable_constraint_type(idx) =
+        ConstraintType::Hard;
   }
   for (const std::string& joint_name : robot_status.neck_joint_names()) {
     int idx = robot_status.name_to_position_index().at(joint_name);
     input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+    input.mutable_desired_joint_motions().mutable_constraint_type(idx) =
+        ConstraintType::Hard;
   }
 
   int tick_ctr = 0;
@@ -104,8 +108,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     input.mutable_desired_joint_motions().mutable_values() =
         joint_PDff.ComputeTargetAcceleration(robot_status.position(),
                                              robot_status.velocity());
-    input.mutable_desired_centroidal_momentum_dot()
-        .mutable_values().tail<3>() =
+    input.mutable_desired_centroidal_momentum_dot().mutable_values().tail<3>() =
         (Kp_com.array() * (desired_com - robot_status.com()).array() -
          Kd_com.array() * robot_status.comd().array()).matrix() *
         robot.getMass();

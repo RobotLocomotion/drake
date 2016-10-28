@@ -57,16 +57,21 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // Update weights.
     for (const std::string& joint_name : robot_status->arm_joint_names()) {
       int idx = robot_status->name_to_position_index().at(joint_name);
-      result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
+      result.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+      result.mutable_desired_joint_motions().mutable_constraint_type(idx) =
+          ConstraintType::Hard;
     }
     for (const std::string& joint_name : robot_status->neck_joint_names()) {
       int idx = robot_status->name_to_position_index().at(joint_name);
-      result.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
+      result.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+      result.mutable_desired_joint_motions().mutable_constraint_type(idx) =
+          ConstraintType::Hard;
     }
 
     // Update desired accelerations.
     result.mutable_desired_centroidal_momentum_dot()
-        .mutable_values().tail<3>() =
+        .mutable_values()
+        .tail<3>() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
          Kd_com_.array() * robot_status->comd().array()).matrix() *
         robot_.getMass();
