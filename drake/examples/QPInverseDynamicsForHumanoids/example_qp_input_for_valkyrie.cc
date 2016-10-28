@@ -23,13 +23,13 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
 
   // Set up tracking for various body parts.
   DesiredBodyMotion pelvdd_d(*robot.FindBody("pelvis"));
-  pelvdd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
+  pelvdd_d.mutable_weights().head<3>() = Eigen::Vector3d(1, -1, 1);
   // Wipe out the weights for the position part.
   pelvdd_d.mutable_weights().tail<3>().setZero();
   input.mutable_desired_body_motions().emplace(pelvdd_d.name(), pelvdd_d);
 
   DesiredBodyMotion torsodd_d(*robot.FindBody("torso"));
-  torsodd_d.mutable_weights() = Eigen::Vector6d::Constant(-1e1);
+  torsodd_d.mutable_weights().head<3>() = Eigen::Vector3d(-1, 1, 1);
   // Wipe out the weights for the position part.
   torsodd_d.mutable_weights().tail<3>().setZero();
   input.mutable_desired_body_motions().emplace(torsodd_d.name(), torsodd_d);
@@ -48,10 +48,14 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
       Eigen::Vector3d(-0.05, -0.05, -0.09));
   left_foot_contact.mutable_contact_points().push_back(
       Eigen::Vector3d(-0.05, 0.05, -0.09));
+  left_foot_contact.mutable_weight() = 1e5;
+  left_foot_contact.mutable_Kd() = 10;
 
   ContactInformation right_foot_contact(*robot.FindBody("rightFoot"), 4);
   right_foot_contact.mutable_contact_points() =
       left_foot_contact.contact_points();
+  right_foot_contact.mutable_weight() = -1;
+  right_foot_contact.mutable_Kd() = 10;
 
   input.mutable_contact_info().push_back(left_foot_contact);
   input.mutable_contact_info().push_back(right_foot_contact);

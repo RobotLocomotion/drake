@@ -52,10 +52,13 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
 
   // Get an example controller that tracks a fixed point.
   input = MakeExampleQPInput(robot);
+  Eigen::VectorXd Kp_q(Eigen::VectorXd::Constant(q.size(), 20));
+  Eigen::VectorXd Kd_q(Eigen::VectorXd::Constant(q.size(), 8));
+  Kp_q.head<6>().setZero();
+  Kd_q.head<6>().setZero();
   VectorSetpoint<double> joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
                                     Eigen::VectorXd::Zero(q.size()),
-                                    Eigen::VectorXd::Constant(q.size(), 20),
-                                    Eigen::VectorXd::Constant(q.size(), 8));
+                                    Kp_q, Kd_q);
   CartesianSetpoint<double> pelvis_PDff(
       robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
       Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
@@ -66,7 +69,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       Eigen::Vector6d::Constant(8));
 
   // Perturb initial condition.
-  v[robot_status.name_to_position_index().at("torsoPitch")] += 1;
+  v[robot_status.name_to_position_index().at("torsoRoll")] += 1;
   robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
                       Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
 
@@ -79,38 +82,40 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-10);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-10);
 
+  // Update weights.
+  for (const std::string& joint_name : robot_status.arm_joint_names()) {
+    int idx = robot_status.name_to_position_index().at(joint_name);
+    input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+  }
+  for (const std::string& joint_name : robot_status.neck_joint_names()) {
+    int idx = robot_status.name_to_position_index().at(joint_name);
+    input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
+  }
+
   int tick_ctr = 0;
   while (time < 4) {
-    // Update weights.
-    for (const std::string& joint_name : robot_status.arm_joint_names()) {
-      int idx = robot_status.name_to_position_index().at(joint_name);
-      input.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
-    }
-    for (const std::string& joint_name : robot_status.neck_joint_names()) {
-      int idx = robot_status.name_to_position_index().at(joint_name);
-      input.mutable_desired_joint_motions().mutable_weights()[idx] = -1;
-    }
-
     // Update desired accelerations.
-    input.mutable_desired_body_motions().at("pelvis").mutable_accelerations() =
+    input.mutable_desired_body_motions().at("pelvis").mutable_values() =
         pelvis_PDff.ComputeTargetAcceleration(robot_status.pelvis().pose(),
                                               robot_status.pelvis().velocity());
-    input.mutable_desired_body_motions().at("torso").mutable_accelerations() =
+    input.mutable_desired_body_motions().at("torso").mutable_values() =
         torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(),
                                              robot_status.torso().velocity());
-    input.mutable_desired_joint_motions().mutable_accelerations() =
+    input.mutable_desired_joint_motions().mutable_values() =
         joint_PDff.ComputeTargetAcceleration(robot_status.position(),
                                              robot_status.velocity());
     input.mutable_desired_centroidal_momentum_dot()
-        .mutable_momentum_dot()
-        .tail<3>() =
+        .mutable_values().tail<3>() =
         (Kp_com.array() * (desired_com - robot_status.com()).array() -
          Kd_com.array() * robot_status.comd().array()).matrix() *
         robot.getMass();
 
     int status = con.Control(robot_status, input, &output);
 
-    if (status) break;
+    if (status) {
+      std::cout << input << output;
+      break;
+    }
 
     // Dummy integration.
     // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's
@@ -123,6 +128,8 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
                         Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
     tick_ctr++;
   }
+
+  std::cout << robot_status;
 
   // Check the final state.
   // Since the feet have equality constraints set to 0 in the qp controller,

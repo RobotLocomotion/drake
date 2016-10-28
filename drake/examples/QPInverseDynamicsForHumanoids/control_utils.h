@@ -83,10 +83,10 @@ class CartesianSetpoint {
     Vector3<Scalar> rot_err = angle_axis_err.axis() * angle_axis_err.angle();
 
     // orientation
-    acc.segment(0, 3) += (Kp_.segment(0, 3).array() * rot_err.array()).matrix();
+    acc.template head<3>() += (Kp_.template head<3>().array() * rot_err.array()).matrix();
 
     // position
-    acc.segment(3, 3) += (Kp_.segment(3, 3).array() * pos_err.array()).matrix();
+    acc.template tail<3>() += (Kp_.template tail<3>().array() * pos_err.array()).matrix();
 
     return acc;
   }
