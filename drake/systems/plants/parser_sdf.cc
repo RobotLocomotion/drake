@@ -53,8 +53,11 @@ using tinyxml2::XMLDocument;
 
 using drake::systems::plants::joints::FloatingBaseType;
 
-void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
-                      PoseMap& pose_map, const Isometry3d& T_link) {
+void ParseSdfInertial(
+    RigidBody* body, XMLElement* node, RigidBodyTree* model,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PoseMap& pose_map,
+    const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
@@ -87,7 +90,9 @@ void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 }
 
 bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
-                      const string& root_dir, DrakeShapes::Element& element) {
+                      const string& root_dir,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      DrakeShapes::Element& element) {
   // DEBUG
   // cout << "parseGeometry: START" << endl;
   // END_DEBUG
@@ -181,6 +186,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
 
 void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                     const PackageMap& package_map, const string& root_dir,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
@@ -231,6 +237,7 @@ void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
 void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                        const PackageMap& package_map, const string& root_dir,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                        PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
@@ -287,7 +294,9 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
 bool ParseSdfLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
-                  PoseMap& pose_map, const string& root_dir, int* index,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                  PoseMap& pose_map,
+                  const string& root_dir, int* index,
                   int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
@@ -420,7 +429,10 @@ void ParseSdfFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
 }
 
 void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
-                   XMLElement* node, PoseMap& pose_map, int model_instance_id) {
+                   XMLElement* node,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   PoseMap& pose_map,
+                   int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -791,8 +803,11 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
-    PackageMap& package_map, const string& root_dir,
+ModelInstanceIdTable ParseSdf(
+    RigidBodyTree* model, XMLDocument* xml_doc,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& package_map,
+    const string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);

@@ -10,6 +10,7 @@
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 template <typename Scalar>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 bool parseScalarValue(tinyxml2::XMLElement* node, Scalar& val) {
   const char* strval = node->FirstChild()->Value();
   if (strval) {
@@ -22,6 +23,7 @@ bool parseScalarValue(tinyxml2::XMLElement* node, Scalar& val) {
 
 template <typename Scalar>
 bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       Scalar& val) {
   tinyxml2::XMLElement* elnode = node->FirstChildElement(element_name);
   if (elnode) return parseScalarValue(elnode, val);
@@ -30,6 +32,7 @@ bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name,
 
 template <typename Scalar>
 bool parseScalarAttribute(tinyxml2::XMLElement* node,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                           const char* attribute_name, Scalar& val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
@@ -132,30 +135,45 @@ DRAKE_EXPORT
 double StringToDouble(const std::string& str);
 
 // only writes values if they exist
-DRAKE_EXPORT bool parseVectorAttribute(const tinyxml2::XMLElement* node,
-                                              const char* attribute_name,
-                                              Eigen::Vector3d& val);
-DRAKE_EXPORT bool parseVectorAttribute(const tinyxml2::XMLElement* node,
-                                              const char* attribute_name,
-                                              Eigen::Vector4d& val);
-DRAKE_EXPORT bool parseVectorValue(tinyxml2::XMLElement* node,
-                                          const char* element_name,
-                                          Eigen::Vector3d& val);
-DRAKE_EXPORT bool parseVectorValue(tinyxml2::XMLElement* node,
-                                          const char* element_name,
-                                          Eigen::Vector4d& val);
-DRAKE_EXPORT bool parseStringValue(tinyxml2::XMLElement* node,
-                                          const char* element_name,
-                                          std::string& val);
+DRAKE_EXPORT bool parseVectorAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Vector3d& val);
+DRAKE_EXPORT bool parseVectorAttribute(
+    const tinyxml2::XMLElement* node,
+    const char* attribute_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Vector4d& val);
+DRAKE_EXPORT bool parseVectorValue(
+    tinyxml2::XMLElement* node,
+    const char* element_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Vector3d& val);
+DRAKE_EXPORT bool parseVectorValue(
+    tinyxml2::XMLElement* node,
+    const char* element_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Vector4d& val);
+DRAKE_EXPORT bool parseStringValue(
+    tinyxml2::XMLElement* node,
+    const char* element_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    std::string& val);
 
-DRAKE_EXPORT void originAttributesToTransform(tinyxml2::XMLElement* node,
-                                                     Eigen::Isometry3d& T);
+DRAKE_EXPORT void originAttributesToTransform(
+    tinyxml2::XMLElement* node,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Isometry3d& T);
 
 DRAKE_EXPORT void poseValueToTransform(
-    tinyxml2::XMLElement* node, const PoseMap& pose_map, Eigen::Isometry3d& T,
+    tinyxml2::XMLElement* node, const PoseMap& pose_map,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Isometry3d& T,
     const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity());
 
 typedef std::map<std::string, std::string> PackageMap;
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 DRAKE_EXPORT void populatePackageMap(PackageMap& package_map);
 
 /// Resolves the fully-qualified name of a file. If @p filename starts with
