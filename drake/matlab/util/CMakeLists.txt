@@ -11,9 +11,11 @@ if(Matlab_FOUND)
 
   drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
   
-  drake_add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
+  drake_add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp
+    cylindrical.cc)
   target_link_libraries(cylindrical2cartesianmex drakeMath)
-  drake_add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
+  drake_add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp
+    cylindrical.cc)
   target_link_libraries(cartesian2cylindricalmex drakeMath)
 
   drake_add_mex(quat2expmapmex quat2expmapmex.cpp)

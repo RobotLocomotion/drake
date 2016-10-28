@@ -1,6 +1,6 @@
 #include <mex.h>
 
-#include "drake/math/cylindrical.h"
+#include "drake/matlab/util/cylindrical.h"
 
 using namespace Eigen;
 using namespace std;
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   Matrix<double, 6, 1> v_cylinder;
   Matrix<double, 6, 6> J;
   Matrix<double, 6, 1> Jdotv;
-  drake::math::cartesian2cylindrical(cylinder_axis, cylinder_x_dir,
+  drake::util::cartesian2cylindrical(cylinder_axis, cylinder_x_dir,
                                      cylinder_origin, x_cartesian, v_cartesian,
                                      x_cylinder, v_cylinder, J, Jdotv);
   plhs[0] = mxCreateDoubleMatrix(6, 1, mxREAL);
