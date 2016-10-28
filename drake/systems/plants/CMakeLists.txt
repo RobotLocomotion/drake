@@ -46,13 +46,14 @@ pods_install_pkg_config_file(drake-rbm
   VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint)
+target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIK)
 
 drake_install_headers(RigidBodySystem.h)
 pods_install_libraries(drakeRBSystem)
 pods_install_pkg_config_file(drake-rbsystem
   CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
   LIBS -ldrakeRBSystem -ldrakeRBM -ldrakeOptimization -ldrakeRigidBodyConstraint
+  -ldrakeIK
   VERSION 0.0.1)
 
 if(lcm_FOUND)
@@ -81,8 +82,8 @@ add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
 pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
-drake_install_headers(RigidBodyIK.h IKoptions.h ik_trajectory_helper.h
-  inverseKinBackend.h)
+drake_install_headers(ConstraintWrappers.h ik_trajectory_helper.h IKoptions.h
+  inverseKinBackend.h RigidBodyIK.h)
 pods_install_pkg_config_file(drake-ik
   LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
   REQUIRES drake-rbm

@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -19,12 +20,14 @@ namespace plants {
 
 /// Helper class to avoid recalculating a kinematics cache which is
 /// going to be used repeatedly by multiple other classes.
+/// TODO(amcastro-tri): DRAKE_EXPORT is used here in the header instead of at
+/// the place of explicit instantiation. Explore a solution for this problem as
+/// described in #3940.
 template <typename Scalar>
-class KinematicsCacheHelper {
+class DRAKE_EXPORT KinematicsCacheHelper {
  public:
-  KinematicsCacheHelper(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies)
-      : kinsol_(bodies) {}
+  explicit KinematicsCacheHelper(
+      const std::vector<std::unique_ptr<RigidBody>>& bodies);
 
   KinematicsCache<Scalar>& UpdateKinematics(
       const Eigen::Ref<const Eigen::VectorXd>& q,
@@ -36,48 +39,28 @@ class KinematicsCacheHelper {
   KinematicsCache<Scalar> kinsol_;
 };
 
-class SingleTimeKinematicConstraintWrapper :
+class DRAKE_EXPORT SingleTimeKinematicConstraintWrapper :
       public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.
   SingleTimeKinematicConstraintWrapper(
       const SingleTimeKinematicConstraint* rigid_body_constraint,
-      KinematicsCacheHelper<double>* kin_helper)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
-        rigid_body_constraint_(rigid_body_constraint),
-        kin_helper_(kin_helper) {
-    Eigen::VectorXd lower_bound;
-    Eigen::VectorXd upper_bound;
-    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
-    set_bounds(lower_bound, upper_bound);
-  }
-  ~SingleTimeKinematicConstraintWrapper() override {}
+      KinematicsCacheHelper<double>* kin_helper);
+
+  ~SingleTimeKinematicConstraintWrapper() override;
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override {
-    auto& kinsol = kin_helper_->UpdateKinematics(
-        q, rigid_body_constraint_->getRobotPointer());
-    Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
-  }
+            Eigen::VectorXd& y) const override;
+
   void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override {
-    Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
-    auto& kinsol = kin_helper_->UpdateKinematics(
-        q, rigid_body_constraint_->getRobotPointer());
-    Eigen::VectorXd y;
-    Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
-    math::initializeAutoDiffGivenGradientMatrix(
-        y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
-  }
+            TaylorVecXd& ty) const override;
 
  private:
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
-class QuasiStaticConstraintWrapper :
+class DRAKE_EXPORT QuasiStaticConstraintWrapper :
       public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.  Also,
@@ -87,16 +70,9 @@ class QuasiStaticConstraintWrapper :
   /// here.
   QuasiStaticConstraintWrapper(
       const QuasiStaticConstraint* rigid_body_constraint,
-      KinematicsCacheHelper<double>* kin_helper)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1),
-        rigid_body_constraint_(rigid_body_constraint),
-        kin_helper_(kin_helper) {
-    Eigen::VectorXd lower_bound;
-    Eigen::VectorXd upper_bound;
-    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
-    set_bounds(lower_bound, upper_bound);
-  }
-  virtual ~QuasiStaticConstraintWrapper() {}
+      KinematicsCacheHelper<double>* kin_helper);
+
+  virtual ~QuasiStaticConstraintWrapper();
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
             Eigen::VectorXd& y) const override;

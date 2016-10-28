@@ -124,7 +124,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   VectorXd C = tree->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
