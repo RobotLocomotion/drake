@@ -27,12 +27,12 @@ AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 // Gurobi solver capabilities.
 AttributesSet kGurobiCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost | kBinaryVariable);
 
 // Mosek solver capabilities.
 AttributesSet kMosekCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost | kBinaryVariable);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =

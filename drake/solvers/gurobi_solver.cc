@@ -379,6 +379,22 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
+  const std::vector<DecisionVariable::VarType>& var_type = prog.variable_type();
+
+  std::vector<char> gurobi_var_type(num_vars);
+  for(int i = 0; i < num_vars; ++i) {
+    switch(var_type[i]) {
+      case DecisionVariable::VarType::CONTINUOUS :
+        gurobi_var_type[i] = GRB_CONTINUOUS;
+        break;
+      case DecisionVariable::VarType::BINARY :
+        gurobi_var_type[i] = GRB_BINARY;
+        break;
+      case DecisionVariable::VarType::INTEGER :
+        gurobi_var_type[i] = GRB_INTEGER;
+    }
+  }
+
   for (const auto& binding : prog.bounding_box_constraints()) {
     const auto& constraint = binding.constraint();
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
@@ -397,7 +413,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   GRBmodel* model = nullptr;
   GRBnewmodel(env, &model, "gurobi_model", num_vars, nullptr, &xlow[0],
-              &xupp[0], nullptr, nullptr);
+              &xupp[0], gurobi_var_type.data(), nullptr);
 
   int error = 0;
   // TODO(naveenoid) : This needs access externally.
