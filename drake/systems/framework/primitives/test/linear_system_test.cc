@@ -16,30 +16,31 @@ class LinearSystemTest : public AffineLinearSystemTest {
 
   void Initialize() override {
     // Construct the system I/O objects.
-    system_ = make_unique<LinearSystem<double>>(A_, B_, C_, D_);
-    system_->set_name("test_linear_system");
-    context_ = system_->CreateDefaultContext();
+    dut_ = make_unique<LinearSystem<double>>(A_, B_, C_, D_);
+    dut_->set_name("test_linear_system");
+    context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = system_->AllocateOutput(*context_);
+    system_output_ = dut_->AllocateOutput(*context_);
     state_ = context_->get_mutable_continuous_state();
-    derivatives_ = system_->AllocateTimeDerivatives();
+    derivatives_ = dut_->AllocateTimeDerivatives();
   }
  protected:
-  unique_ptr<LinearSystem<double>> system_;
+  // The Device Under Test (DUT) is a LinearSystem<double>.
+  unique_ptr<LinearSystem<double>> dut_;
 };
 
 // Tests that the linear system is correctly setup.
 TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(1, context_->get_num_input_ports());
-  EXPECT_EQ("test_linear_system", system_->get_name());
-  EXPECT_EQ(system_->GetA(), A_);
-  EXPECT_EQ(system_->GetB(), B_);
-  EXPECT_EQ(system_->GetxDot0(), xDot0_);
-  EXPECT_EQ(system_->GetC(), C_);
-  EXPECT_EQ(system_->GetD(), D_);
-  EXPECT_EQ(system_->Gety0(), y0_);
-  EXPECT_EQ(1, system_->get_num_output_ports());
-  EXPECT_EQ(1, system_->get_num_input_ports());
+  EXPECT_EQ("test_linear_system", dut_->get_name());
+  EXPECT_EQ(dut_->GetA(), A_);
+  EXPECT_EQ(dut_->GetB(), B_);
+  EXPECT_EQ(dut_->GetxDot0(), xDot0_);
+  EXPECT_EQ(dut_->GetC(), C_);
+  EXPECT_EQ(dut_->GetD(), D_);
+  EXPECT_EQ(dut_->Gety0(), y0_);
+  EXPECT_EQ(1, dut_->get_num_output_ports());
+  EXPECT_EQ(1, dut_->get_num_input_ports());
 }
 
 // Tests that the derivatives are correctly computed.
@@ -51,7 +52,7 @@ TEST_F(LinearSystemTest, Derivatives) {
   state_->SetFromVector(x);
 
   EXPECT_NE(derivatives_, nullptr);
-  system_->EvalTimeDerivatives(*context_, derivatives_.get());
+  dut_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
   expected_derivatives = A_ * x + B_ * u;
@@ -65,11 +66,11 @@ TEST_F(LinearSystemTest, Output) {
   Eigen::Vector2d u(5.6, -10.1);
   SetInput(u);
 
-  // Sets the state
+  // Sets the state.
   Eigen::Vector2d x(0.8, -22.1);
   state_->SetFromVector(x);
 
-  system_->EvalOutput(*context_, system_output_.get());
+  dut_->EvalOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
 
