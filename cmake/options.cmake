@@ -195,6 +195,11 @@ macro(drake_setup_options)
     DEPENDS "HAVE_LCM"
     "libbot2 robotics suite LCM types")
 
+  drake_system_dependency(
+    ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
+    DEPENDS "HAVE_BOT_CORE_LCMTYPES"
+    "robotlocomotion LCM types")
+
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 

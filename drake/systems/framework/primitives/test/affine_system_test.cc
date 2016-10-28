@@ -8,28 +8,24 @@ namespace drake {
 namespace systems {
 namespace {
 
-
 class AffineSystemTest : public AffineLinearSystemTest {
  public:
   // Setup an arbitrary AffineSystem.
   AffineSystemTest()
-      : AffineLinearSystemTest(-4.5, 6.5, 3.5, -7.6) {
-  }
-
-  void SetUp() override { Initialize(); }
+      : AffineLinearSystemTest(-4.5, 6.5, 3.5, -7.6) {}
 
   void Initialize() override {
     // Construct the system I/O objects.
-    dut_ = make_unique<AffineSystem<double>>(A_, B_, XDot0_, C_, D_, Y0_);
+    dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
-    derivatives_ = dut_->AllocateTimeDerivatives();
-    EXPECT_NE(derivatives_, nullptr);
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    output_ = dut_->AllocateOutput(*context_);
+    system_output_ = dut_->AllocateOutput(*context_);
+    state_ = context_->get_mutable_continuous_state();
+    derivatives_ = dut_->AllocateTimeDerivatives();
   }
-
  protected:
+  // The Device Under Test is an AffineSystem<double>.
   unique_ptr<AffineSystem<double>> dut_;
 };
 
@@ -41,10 +37,10 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->GetB(), B_);
   EXPECT_EQ(dut_->GetC(), C_);
   EXPECT_EQ(dut_->GetD(), D_);
-  EXPECT_EQ(dut_->GetXDot0(), XDot0_);
-  EXPECT_EQ(dut_->GetY0(), Y0_);
-  EXPECT_EQ(1, dut_->get_num_output_ports());
-  EXPECT_EQ(1, dut_->get_num_input_ports());
+  EXPECT_EQ(dut_->GetxDot0(), xDot0_);
+  EXPECT_EQ(dut_->Gety0(), y0_);
+  EXPECT_EQ(dut_->get_num_output_ports(), 1);
+  EXPECT_EQ(dut_->get_num_input_ports(), 1);
 }
 
 // Tests that the derivatives are correctly computed.
@@ -53,12 +49,13 @@ TEST_F(AffineSystemTest, Derivatives) {
   SetInput(u);
 
   Eigen::Vector2d x(0.1, 0.25);
-  SetState(x);
+  state_->SetFromVector(x);
 
+  EXPECT_NE(derivatives_, nullptr);
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
 
   Eigen::VectorXd expected_derivatives(2);
-  expected_derivatives = A_ * x + B_ * u + XDot0_;
+  expected_derivatives = A_ * x + B_ * u + xDot0_;
 
   EXPECT_EQ(expected_derivatives, derivatives_->get_vector().CopyToVector());
 }
@@ -71,17 +68,17 @@ TEST_F(AffineSystemTest, Output) {
 
   // Sets the state.
   Eigen::Vector2d x(0.8, -22.1);
-  SetState(x);
+  state_->SetFromVector(x);
 
-  dut_->EvalOutput(*context_, output_.get());
+  dut_->EvalOutput(*context_, system_output_.get());
 
   Eigen::VectorXd expected_output(2);
 
-  expected_output = C_ * x + D_ * u + Y0_;
+  expected_output = C_ * x + D_ * u + y0_;
 
   EXPECT_EQ(
       expected_output,
-      output_->get_port(0).get_vector_data<double>()->CopyToVector());
+      system_output_->get_vector_data(0)->get_value());
 }
 
 }  // namespace

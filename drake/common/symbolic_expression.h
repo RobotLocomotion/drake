@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/number_traits.h"

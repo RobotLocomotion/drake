@@ -1,5 +1,6 @@
 #include "gurobi_solver.h"
 
+#include <cmath>
 #include <vector>
 
 #include <Eigen/Core>
@@ -335,7 +336,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
           linear_coeff_row_i.push_back(A(i, j));
         }
       }
-      if (!isinf(lb(i))) {
+      if (!std::isinf(lb(i))) {
         int error = GRBaddconstr(model, variable_indices_row_i.size(),
         variable_indices_row_i.data(), linear_coeff_row_i.data(),
                                  GRB_GREATER_EQUAL, lb(i), nullptr);
@@ -343,7 +344,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
           return error;
         }
       }
-      if (!isinf(ub(i))) {
+      if (!std::isinf(ub(i))) {
         int error = GRBaddconstr(model, variable_indices_row_i.size(),
                      variable_indices_row_i.data(), linear_coeff_row_i.data(),
                                  GRB_LESS_EQUAL, ub(i), nullptr);
@@ -451,7 +452,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
-    if (optimstatus != GRB_OPTIMAL) {
+    if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       if (optimstatus == GRB_INF_OR_UNBD) {
         result = SolutionResult::kInfeasibleConstraints;
       }
