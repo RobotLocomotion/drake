@@ -23,6 +23,30 @@ classdef QuadPlantPenn < SecondOrderSystem
           u0 = Point(getInputFrame(obj),obj.m*9.81*ones(4,1)/4);
         end
         
+        function [f,df,d2f] = dynamics(obj,t,x,u)
+            q = x(1:6);
+            qd = x(7:12);
+            qdd = obj.sodynamics(t,q,qd,u);
+            
+            f = [qd; qdd];
+            
+            if (nargout>1)
+                [df,d2f] = dynamicsGradients(obj,t,x,u,nargout-1);
+            end
+        end
+        
+        function [f,df,d2f] = dynamics_w(obj,t,x,u,w)
+            q = x(1:6);
+            qd = x(7:12);
+            qdd = obj.sodynamics(t,q,qd,u) + [w./obj.m; 0; 0; 0];
+            
+            f = [qd; qdd];
+            
+            if (nargout>1)
+                [df,d2f] = dynamicsGradients_w(obj,t,x,u,w,nargout-1);
+            end
+        end
+        
         function qdd = sodynamics(obj,t,q,qd,u)
             % States
             % x
@@ -116,13 +140,29 @@ classdef QuadPlantPenn < SecondOrderSystem
             x = zeros(12,1);
         end
         
-        
         function v = constructVisualizer(obj)
           r = Quadrotor();
           v = r.constructVisualizer();
           tf = AffineTransform(obj.getOutputFrame(),v.getInputFrame(),[eye(6),zeros(6)],zeros(6,1));
           obj.getOutputFrame().addTransform(tf);
         end
+        
+        function obj = addTree(obj, lwh, xy, yaw)
+            % Adds a single tree with specified length width height, xy
+            % location, and yaw orientation.
+            height = lwh(1,3);
+            width_param = lwh(1,1:2);
+            treeTrunk = RigidBodyBox([.2+.8*width_param height],...
+                [xy;height/2],[0;0;yaw]);
+            treeTrunk.c = [83,53,10]/255;  % brown
+            obj = addGeometryToBody(obj,'world',treeTrunk, 'treeTrunk');
+            treeLeaves = RigidBodyBox(1.5*[.2+.8*width_param height/4],...
+                [xy;height + height/8],[0;0;yaw]);
+            treeLeaves.c = [0,0.7,0];  % green
+            obj = addGeometryToBody(obj,'world',treeLeaves, 'treeLeaves');
+            obj = compile(obj);
+        end
+    
     end
     properties
       m = .5;
