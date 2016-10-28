@@ -1,29 +1,51 @@
-# -*- python -*-
+# -*- python -*
 
-cc_library(
-    name = "math",
-    hdrs = [
-        "autodiff_gradient.h",
-        "autodiff.h",
-        "axis_angle.h",
-        "cross_product.h",
-        "gradient.h",
-        "quaternion.h",
-        "random_rotation.h",
-        "roll_pitch_yaw.h",
-        "rotation_matrix.h",
-    ],
-    srcs = [
-        "autodiff.cc",
-        "autodiff_gradient.cc",
-        "axis_angle.cc",
-        "cross_product.cc",
-        "gradient.cc",
-        "quaternion.cc",
-        "random_rotation.cc",
-        "roll_pitch_yaw.cc",
-        "rotation_matrix.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = ["//drake/common"],
+load("//tools:drake.bzl", "drake_component", "drake_library")
+package(default_visibility = ["//visibility:public"])
+DEPS = ["//drake/common:common"]
+
+# TODO(jwnimmer-tri) Seems like this should live in common, with the other
+# scalartype stuff?
+drake_library(
+    name = "autodiff_overloads",
+    hdrs = ["autodiff_overloads.h"],
+    deps = DEPS + ["//drake/common:autodiff"],
 )
+
+drake_library(
+    name = "autodiff",
+    components = ["autodiff"],
+    deps = DEPS + [":autodiff_overloads"],
+)
+
+drake_library(
+    name = "geometric_transform",
+    components = [
+        "axis_angle",
+        "quaternion",
+        "random_rotation",
+        "roll_pitch_yaw",
+        "rotation_matrix",
+    ],
+    deps = DEPS,
+)
+
+drake_library(
+    name = "gradient",
+    components = [
+         "autodiff_gradient",
+         "cross_product",
+         "gradient",
+         # TODO(jwnimmer-tri) These source files are not yet part of Bazel,
+         # because they depend on "util":
+         # "normalize_vector",
+         # "rotation_conversion_gradient",
+    ],
+    deps = DEPS + [":autodiff"],
+)
+
+# These all require bleeding-edge Eigen, so please don't fold them into any
+# other important labels until we get all workspaces on newer-Eigen.
+drake_component(name = "eigen_sparse_triplet", deps = DEPS)
+drake_component(name = "expmap", deps = DEPS + [":gradient"])
+drake_component(name = "jacobian", deps = DEPS)

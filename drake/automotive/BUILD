@@ -1,33 +1,26 @@
 # -*- python -*-
 
-cc_library(
-    name = "automotive",
-    hdrs = [
-        "create_trajectory_params.h",
-        "curve2.h",
-        "gen/driving_command.h",
-        "gen/euler_floating_joint_state.h",
-        "gen/idm_with_trajectory_agent_state.h",
-        "gen/simple_car_config.h",
-        "gen/simple_car_state.h",
-        "idm_with_trajectory_agent.h",
-        "idm_with_trajectory_agent-inl.h",
-        "simple_car.h",
-        "simple_car-inl.h",
-        "trajectory_car.h",
+# This file contains rules for the Bazel build system.
+# See http://bazel.io/ .
+
+load("//tools:drake.bzl", "drake_component", "drake_library")
+package(default_visibility = ["//visibility:public"])
+
+DEPS = ["//drake/systems:framework"]
+drake_library(
+    name = "generated_vectors",
+    components = [
+        "gen/driving_command",
+        "gen/euler_floating_joint_state",
+        "gen/idm_with_trajectory_agent_state",
+        "gen/simple_car_config",
+        "gen/simple_car_state",
     ],
-    srcs = [
-        "create_trajectory_params.cc",
-        "curve2.cc",
-        "gen/driving_command.cc",
-        "gen/euler_floating_joint_state.cc",
-        "gen/idm_with_trajectory_agent_state.cc",
-        "gen/simple_car_config.cc",
-        "gen/simple_car_state.cc",
-        "idm_with_trajectory_agent.cc",
-        "simple_car.cc",
-        "trajectory_car.cc",
-        ],
-    visibility = ["//visibility:public"],
-    deps = ["//drake/systems:systems_analysis"],
+    deps = DEPS,
 )
+
+DEPS = [":generated_vectors"]
+drake_component(name = "curve2", deps = DEPS)
+drake_component(name = "idm_with_trajectory_agent", deps = DEPS),
+drake_component(name = "simple_car", deps = DEPS)
+drake_component(name = "trajectory_car", deps = DEPS + [":curve2"])
