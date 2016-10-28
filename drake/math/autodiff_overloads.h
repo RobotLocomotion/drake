@@ -35,6 +35,7 @@ double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
   return ceil(x.value());
 }
 
+#if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
 /// chain rule.
 template <typename DerTypeA, typename DerTypeB>
@@ -66,3 +67,4 @@ Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
       // ∂f/∂y is (x^y)*ln(x)
       x_to_the_y * log(x) * ygrad);
 }
+#endif  // EIGEN_VERSION...
