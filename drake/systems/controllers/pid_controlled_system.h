@@ -10,6 +10,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/gain.h"
+#include "drake/systems/framework/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -47,12 +48,56 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
  public:
+  /// A constructor where the gains are scalar values and all of the plant's
+  /// output is part of the feedback signal.
+  ///
   /// @param[in] plant The system to be controlled.
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const T& Kp, const T& Ki, const T& Kd);
+
+  /// A constructor where the gains are vector values and all of the plant's
+  /// output is part of the feedback signal.
+  ///
+  /// @param[in] plant The system to be controlled.
+  /// @param[in] Kp the proportional vector constant.
+  /// @param[in] Ki the integral vector constant.
+  /// @param[in] Kd the derivative vector constant.
+  PidControlledSystem(std::unique_ptr<System<T>> plant,
+                      const VectorX<T>& Kp, const VectorX<T>& Ki,
+                      const VectorX<T>& Kd);
+
+  /// A constructor where the gains are scalar values and some of the plant's
+  /// output is part of the feedback signal as specified by
+  /// @p feedback_selector.
+  ///
+  /// @param[in] plant The system to be controlled.
+  /// @param[in] feedback_selector The system that selects which part of the
+  /// system's output is part of the feedback to the controller.
+  /// @param[in] Kp the proportional constant.
+  /// @param[in] Ki the integral constant.
+  /// @param[in] Kd the derivative constant.
+  PidControlledSystem(std::unique_ptr<System<T>> plant,
+                      std::unique_ptr<MatrixGain<T>> feedback_selector,
+                      const T& Kp, const T& Ki, const T& Kd);
+
+  /// A constructor where the gains are vector values and some of the plant's
+  /// output is part of the feedback signal as specified by
+  /// @p feedback_selector.
+  ///
+  /// @param[in] plant The system to be controlled.
+  /// @param[in] feedback_selector The system that selects which part of the
+  /// system's output is part of the feedback to the controller.
+  /// @param[in] Kp the proportional vector constant.
+  /// @param[in] Ki the integral vector constant.
+  /// @param[in] Kd the derivative vector constant.
+  PidControlledSystem(std::unique_ptr<System<T>> plant,
+                      std::unique_ptr<MatrixGain<T>> feedback_selector,
+                      const VectorX<T>& Kp, const VectorX<T>& Ki,
+                      const VectorX<T>& Kd);
+
   ~PidControlledSystem() override;
 
   System<T>* plant() { return plant_; }
@@ -65,6 +110,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
  private:
   System<T>* plant_{nullptr};
   PidController<T>* controller_{nullptr};
+  MatrixGain<T>* feedback_selector_{nullptr};
 
   // Takes as input the plant's error state vector and outputs separate position
   // and velocity state error vectors. These outputs are then inputted into the
