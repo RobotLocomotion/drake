@@ -16,15 +16,20 @@ namespace drake {
 namespace systems {
 namespace {
 
-class TestSystem : public LeafSystem<double> {
+class TestPlant : public LeafSystem<double> {
  public:
-  TestSystem() {
-    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
-    DeclareOutputPort(kVectorValued, 2, kContinuousSampling);
-  }
+  TestPlant() {}
 
   double GetInputValue(const Context<double>& context) {
     return EvalEigenVectorInput(context, 0)(0);
+  }
+};
+
+class TestPlantWithMinOutputs : public TestPlant {
+ public:
+  TestPlantWithMinOutputs() {
+    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+    DeclareOutputPort(kVectorValued, 2, kContinuousSampling);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -37,64 +42,11 @@ class TestSystem : public LeafSystem<double> {
   bool has_any_direct_feedthrough() const override { return false; }
 };
 
-// Tests a plant where the size of output port zero is twice the size of input
-// port zero.
-GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
-  DiagramBuilder<double> builder;
-  const Vector1d input(1.);
-  const Eigen::Vector2d state(1.1, 0.2);
-  auto input_source = builder.AddSystem<ConstantVectorSource>(input);
-  auto state_source = builder.AddSystem<ConstantVectorSource>(state);
-
-  // Our test plant is just a multiplexer which takes the input and outputs it
-  // twice.
-  auto test_plant = std::make_unique<TestSystem>();
-  TestSystem* plant_ptr = test_plant.get();
-
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(
-          test_plant->get_output_port(0).get_size());
-
-  const Vector1d Kp(2);
-  const Vector1d Ki(0);
-  const Vector1d Kd(0.1);
-
-  auto controller = builder.AddSystem<PidControlledSystem>(
-      std::move(test_plant), std::move(feedback_selector), Kp, Ki, Kd);
-
-  builder.Connect(input_source->get_output_port(),
-                  controller->get_input_port(0));
-  builder.Connect(state_source->get_output_port(),
-                  controller->get_input_port(1));
-  builder.ExportOutput(controller->get_output_port(0));
-  auto diagram = builder.Build();
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
-
-  systems::Context<double>* controller_context =
-      diagram->GetMutableSubsystemContext(context.get(), controller);
-  controller->SetDefaultState(controller_context);
-  systems::Context<double>* test_context =
-      controller->GetMutableSubsystemContext(
-          controller_context, plant_ptr);
-
-  diagram->EvalOutput(*context, output.get());
-  const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input = plant_ptr->GetInputValue(*test_context);
-  EXPECT_EQ(pid_input,
-      input[0] + (state[0] - output_vec->get_value()[0]) * Kp(0) +
-          (state[1] - output_vec->get_value()[1]) * Kd(0));
-}
-
-class TestSystemWithMoreOutputs : public LeafSystem<double> {
+class TestPlantWithMoreOutputs : public TestPlant {
  public:
-  TestSystemWithMoreOutputs() {
+  TestPlantWithMoreOutputs() {
     DeclareInputPort(kVectorValued, 1, kContinuousSampling);
     DeclareOutputPort(kVectorValued, 6, kContinuousSampling);
-  }
-
-  double GetInputValue(const Context<double>& context) {
-    return EvalEigenVectorInput(context, 0)(0);
   }
 
   void EvalOutput(const Context<double>& context,
@@ -111,41 +63,20 @@ class TestSystemWithMoreOutputs : public LeafSystem<double> {
   bool has_any_direct_feedthrough() const override { return false; }
 };
 
-// Tests a plant where the size of output port zero is more than twice the size
-// of input port zero.
-GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
+void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
+    std::unique_ptr<MatrixGain<double>> feedback_selector) {
   DiagramBuilder<double> builder;
   const Vector1d input(1.);
   const Eigen::Vector2d state(1.1, 0.2);
   auto input_source = builder.AddSystem<ConstantVectorSource>(input);
   auto state_source = builder.AddSystem<ConstantVectorSource>(state);
 
-  // Our test "system" is just a multiplexer which takes the input and
-  // outputs it twice.
-  auto test_plant = std::make_unique<TestSystemWithMoreOutputs>();
-  TestSystemWithMoreOutputs* plant_ptr = test_plant.get();
-
-  const int plant_output_size = test_plant->get_output_port(0).get_size();
-  const int controller_feedback_size
-      = test_plant->get_input_port(0).get_size() * 2;
-
-  // Selects the first two signals from the plant's output port zero as the
-  // feedback for the controller.
-  MatrixX<double> feedback_selector_matrix(controller_feedback_size,
-                                           plant_output_size);
-  EXPECT_EQ(feedback_selector_matrix.rows(), 2);
-  EXPECT_EQ(feedback_selector_matrix.cols(), 6);
-  feedback_selector_matrix
-      << 1, 0, 0, 0, 0, 0,
-         0, 1, 0, 0, 0, 0;
-
-  auto feedback_selector =
-      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
   const Vector1d Kp(2);
   const Vector1d Ki(0);
   const Vector1d Kd(0.1);
+
   auto controller = builder.AddSystem<PidControlledSystem>(
-      std::move(test_plant), std::move(feedback_selector), Kp, Ki, Kd);
+      std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
 
   builder.Connect(input_source->get_output_port(),
                   controller->get_input_port(0));
@@ -159,16 +90,54 @@ GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(context.get(), controller);
   controller->SetDefaultState(controller_context);
-  systems::Context<double>* test_context =
+  systems::Context<double>* plant_context =
       controller->GetMutableSubsystemContext(
-          controller_context, plant_ptr);
+          controller_context, controller->plant());
 
   diagram->EvalOutput(*context, output.get());
   const BasicVector<double>* output_vec = output->get_vector_data(0);
-  const double pid_input = plant_ptr->GetInputValue(*test_context);
+  const double pid_input =
+      dynamic_cast<TestPlant*>(controller->plant())->GetInputValue(
+          *plant_context);
   EXPECT_EQ(pid_input,
       input[0] + (state[0] - output_vec->get_value()[0]) * Kp(0) +
           (state[1] - output_vec->get_value()[1]) * Kd(0));
+}
+
+// Tests a plant where the size of output port zero is twice the size of input
+// port zero.
+GTEST_TEST(PidControlledSystemTest, SimplePidControlledSystem) {
+  // Our test plant is just a multiplexer which takes the input and outputs it
+  // twice.
+  auto plant = std::make_unique<TestPlantWithMinOutputs>();
+  auto feedback_selector =
+      std::make_unique<MatrixGain<double>>(
+          plant->get_output_port(0).get_size());
+  DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
+}
+
+
+// Tests a plant where the size of output port zero is more than twice the size
+// of input port zero.
+GTEST_TEST(PidControlledSystemTest, PlantWithMoreOutputs) {
+  auto plant = std::make_unique<TestPlantWithMoreOutputs>();
+  const int plant_output_size = plant->get_output_port(0).get_size();
+  const int controller_feedback_size = plant->get_input_port(0).get_size() * 2;
+
+  // Selects the first two signals from the plant's output port zero as the
+  // feedback for the controller.
+  MatrixX<double> feedback_selector_matrix(controller_feedback_size,
+                                           plant_output_size);
+  EXPECT_EQ(feedback_selector_matrix.rows(), 2);
+  EXPECT_EQ(feedback_selector_matrix.cols(), 6);
+  feedback_selector_matrix
+      << 1, 0, 0, 0, 0, 0,
+         0, 1, 0, 0, 0, 0;
+
+  auto feedback_selector =
+      std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
+
+  DoPidControlledSystemTest(std::move(plant), std::move(feedback_selector));
 }
 
 }  // namespace
