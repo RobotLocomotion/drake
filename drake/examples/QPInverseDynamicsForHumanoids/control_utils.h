@@ -18,6 +18,13 @@ namespace qp_inverse_dynamics {
  * where x is pose, xd is velocity, and xdd is acceleration.
  * Variables with superscript * are the set points, and Kp and Kd are the
  * position and velocity gains.
+ *
+ * Pose "difference" is computed as below:
+ * H^w_d = desired orientation in the world frame,
+ * H^w_m = measured orientation in the world frame,
+ * E = a small rotation in the world frame from measured to desired.
+ * H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse()
+ *
  * The first terms 3 are angular accelerations, and the last 3 are linear
  * accelerations.
  */
