@@ -18,7 +18,7 @@
 class DRAKE_EXPORT InstantaneousQPController {
  public:
   InstantaneousQPController(
-      std::unique_ptr<RigidBodyTree> robot_in,
+      std::unique_ptr<RigidBodyTree<double>> robot_in,
       const drake::eigen_aligned_std_map<std::string, QPControllerParams>&
           param_sets_in,
       const RobotPropertyCache& rpc_in)
@@ -30,7 +30,7 @@ class DRAKE_EXPORT InstantaneousQPController {
     initialize();
   }
 
-  InstantaneousQPController(std::unique_ptr<RigidBodyTree> robot_in,
+  InstantaneousQPController(std::unique_ptr<RigidBodyTree<double>> robot_in,
                             const std::string& control_config_filename)
       : robot(std::move(robot_in)),
         use_fast_qp(INSTQP_USE_FASTQP),
@@ -41,7 +41,9 @@ class DRAKE_EXPORT InstantaneousQPController {
 
   InstantaneousQPController(const std::string& urdf_filename,
                             const std::string& control_config_filename)
-      : robot(std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename))),
+      : robot(
+          std::unique_ptr<RigidBodyTree<double>>(
+            new RigidBodyTree<double>(urdf_filename))),
         use_fast_qp(INSTQP_USE_FASTQP),
         cache(this->robot->bodies) {
     loadConfigurationFromYAML(control_config_filename);
@@ -57,7 +59,7 @@ class DRAKE_EXPORT InstantaneousQPController {
           foot_force_torque_measurements,
       QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
 
-  const RigidBodyTree& getRobot() const { return *robot; }
+  const RigidBodyTree<double>& getRobot() const { return *robot; }
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
 
@@ -65,7 +67,7 @@ class DRAKE_EXPORT InstantaneousQPController {
 
  private:
   GRBenv* env;
-  std::unique_ptr<RigidBodyTree> robot;
+  std::unique_ptr<RigidBodyTree<double>> robot;
   drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   Eigen::VectorXd umin, umax;
@@ -127,8 +129,8 @@ class DRAKE_EXPORT InstantaneousQPController {
 };
 
 DRAKE_EXPORT void applyURDFModifications(
-    std::unique_ptr<RigidBodyTree>& robot,
+    std::unique_ptr<RigidBodyTree<double>>& robot,
     const KinematicModifications& modifications);
 DRAKE_EXPORT void applyURDFModifications(
-    std::unique_ptr<RigidBodyTree>& robot,
+    std::unique_ptr<RigidBodyTree<double>>& robot,
     const std::string& urdf_modifications_filename);
