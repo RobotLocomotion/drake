@@ -287,8 +287,8 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
 // Creates a RigidBodyTree. The tree has 6 rigid bodies including the world. The
 // visualizations of the rigid bodies span all possible visualization types.
 // Each non-world body belongs to a different model instance.
-unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
-  auto tree = make_unique<RigidBodyTree>();
+unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
+  auto tree = make_unique<RigidBodyTree<double>>();
 
   // Adds a RigidBody that looks like a box to the tree to achieve some level
   // of unit test coverage for the box geometry.
@@ -459,7 +459,7 @@ unique_ptr<RigidBodyTree> CreateRigidBodyTree() {
 
 // Tests the basic functionality of the RigidBodyTreeLcmPublisher.
 GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
-  unique_ptr<RigidBodyTree> tree = CreateRigidBodyTree();
+  unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
   drake::lcm::DrakeMockLcm lcm;
   RigidBodyTreeLcmPublisher dut(*tree, &lcm);
 

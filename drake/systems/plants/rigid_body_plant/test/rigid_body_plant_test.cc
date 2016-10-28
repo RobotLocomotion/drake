@@ -41,7 +41,7 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 // body system.
 GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // Instantiates an Multibody Dynamics (MBD) model of the world.
-  auto tree_ptr = make_unique<RigidBodyTree>();
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
       "/systems/plants/rigid_body_plant/test/world.urdf",
@@ -57,7 +57,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   EXPECT_EQ(rigid_body_sys.get_output_size(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree& tree = rigid_body_sys.get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = rigid_body_sys.get_rigid_body_tree();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -76,7 +76,7 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
   // Instantiates a Multibody Dynamics (MBD) model of the world.
-  auto tree = make_unique<RigidBodyTree>();
+  auto tree = make_unique<RigidBodyTree<double>>();
 
   // Add a single free body with a quaternion base.
   RigidBody* body;
@@ -147,7 +147,7 @@ class KukaArmTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Instantiates an MBD model of the world.
-    auto tree = make_unique<RigidBodyTree>();
+    auto tree = make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
         drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
@@ -309,7 +309,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Instantiates a RigidBodyPlant (System 2.0) model of the Kuka arm.
   //////////////////////////////////////////////////////////////////////////////
-  auto tree = make_unique<RigidBodyTree>();
+  auto tree = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
@@ -440,7 +440,7 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
 /// acceleration of the joint described in `limited_prismatic.sdf`.
 double GetPrismaticJointLimitAccel(double position, double applied_force) {
   // Build two links connected by a limited prismatic joint.
-  auto rigid_body_tree = std::make_unique<RigidBodyTree>();
+  auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/systems/plants/rigid_body_plant/test/limited_prismatic.sdf",

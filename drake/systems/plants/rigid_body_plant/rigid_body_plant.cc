@@ -22,7 +22,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree)
+RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
 
@@ -59,7 +59,7 @@ bool RigidBodyPlant<T>::has_any_direct_feedthrough() const {
 }
 
 template <typename T>
-const RigidBodyTree& RigidBodyPlant<T>::get_rigid_body_tree() const {
+const RigidBodyTree<T>& RigidBodyPlant<T>::get_rigid_body_tree() const {
   return *tree_.get();
 }
 
@@ -220,7 +220,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // dynamicsBiasTerm.
   // TODO(amcastro-tri): external_wrenches should be made an optional parameter
   // of dynamicsBiasTerm().
-  const RigidBodyTree::BodyToWrenchMap<T> no_external_wrenches;
+  const typename RigidBodyTree<T>::BodyToWrenchMap no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
   // [H, -J^T] * [vdot; f] = -right_hand_side.
   VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol,
@@ -254,7 +254,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     // TODO(amcastro-tri): get rid of this const_cast.
     // Unfortunately collisionDetect() modifies the collision model in the RBT
     // when updating the collision element poses.
-    const_cast<RigidBodyTree*>(tree_.get())->collisionDetect(
+    const_cast<RigidBodyTree<T>*>(tree_.get())->collisionDetect(
         kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
     for (int i = 0; i < phi.rows(); i++) {
