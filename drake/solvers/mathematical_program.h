@@ -398,7 +398,7 @@ class DRAKE_EXPORT MathematicalProgram {
     return variable_views_.back();
   }
   /**
-   * @param name of the variable
+   * @param name of the variable.
    * @return The DecisionVariableView of first variable that matches
    * \param name.
    */
@@ -554,7 +554,7 @@ class DRAKE_EXPORT MathematicalProgram {
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
-   * Applied to subset of the variables
+   * Applied to subset of the variables.
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -643,8 +643,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * lb <= a*vars <= ub
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
-   * @param ub A scalar, the upper bound
-   * @param vars A list of decision variables
+   * @param ub A scalar, the upper bound.
+   * @param vars A list of decision variables.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -689,9 +689,17 @@ class DRAKE_EXPORT MathematicalProgram {
    * the decision variables.
    * Example: to add and equality constraint which only depends on two of the
    * elements of x, you could use
+   * \code{.cc}
    *   auto x = prog.AddContinuousDecisionVariable(6,"myvar");
-   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x.row(2), x.row(5)});
-   * where Aeq has exactly two columns.
+   *   Eigen::Matrix2d Aeq;
+   *   Aeq << -1, 2,
+   *           1, 1;
+   *   Eigen::Vector2d beq(1, 3);
+   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
+   * \endcode
+   * The code above imposes constraints <br>
+   * -x(2) + 2*x(5) = 1 <br>
+   *  x(2) +   x(5) = 3
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -718,9 +726,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * Add one row of linear equality constraint referencing potentially a subset
    * of decision variables.
    * a*vars = beq
-   * @param a A row vector
+   * @param a A row vector.
    * @param beq A scalar.
-   * @param vars A list of DecisionVariableView
+   * @param vars A list of DecisionVariableView.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -734,7 +742,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * Add one row of linear equality constraint referencing all
    * decision variables.
    * a*vars = beq
-   * @param a A row vector
+   * @param a A row vector.
    * @param beq A scalar.
    */
   template <typename DerivedA>
