@@ -17,7 +17,7 @@ class MatrixGainTest : public AffineLinearSystemTest {
 
   void Initialize() override {
     // Construct the system I/O objects.
-    matrix_gain_ = make_unique<MimoGain<double>>(D_);
+    matrix_gain_ = make_unique<MatrixGain<double>>(D_);
     matrix_gain_->set_name("test_matrix_gain_system");
     context_ = matrix_gain_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
