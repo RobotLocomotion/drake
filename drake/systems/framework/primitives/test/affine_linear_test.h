@@ -11,14 +11,14 @@ namespace systems {
 class AffineLinearSystemTest : public ::testing::Test {
  public:
   // Setup an arbitrary AffineSystem.
-  AffineLinearSystemTest(double xDot0_0, double xDot0_1, double Y0_0,
-                         double Y0_1)
+  AffineLinearSystemTest(double xDot0_0, double xDot0_1, double y0_0,
+                         double y0_1)
       : A_(make_2x2_matrix(1.5, 2.7, 3.5, -4.9)),
         B_(make_2x2_matrix(4.9, -5.1, 6.8, 7.2)),
         xDot0_(make_2x1_vector(xDot0_0, xDot0_1)),
         C_(make_2x2_matrix(1.1, 2.5, -3.8, 4.6)),
         D_(make_2x2_matrix(4.1, 5.6, -6.3, 7.7)),
-        y0_(make_2x1_vector(Y0_0, Y0_1)) {}
+        y0_(make_2x1_vector(y0_0, y0_1)) {}
 
   void SetUp() override { Initialize(); }
 
