@@ -12,16 +12,16 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
-    const Vector3<T>& application_point) {
+    const Vector3<T>& application_point, const Vector3<T>& normal_force,
+    const Vector3<T>& tangent_force) {
   forces_.emplace_back(application_point, normal_force, tangent_force);
   is_dirty_ = true;
 }
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
-    const Vector3<T>& application_point, const Vector3<T>& pure_torque) {
+    const Vector3<T>& application_point, const Vector3<T>& normal_force,
+    const Vector3<T>& tangent_force, const Vector3<T>& pure_torque) {
   forces_.emplace_back(application_point, normal_force, tangent_force,
                        pure_torque);
   is_dirty_ = true;
