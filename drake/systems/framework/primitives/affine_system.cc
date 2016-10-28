@@ -15,37 +15,37 @@ using std::make_unique;
 template <typename T>
 AffineSystem<T>::AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
                               const Eigen::Ref<const MatrixX<T>>& B,
-                              const Eigen::Ref<const VectorX<T>>& xdot0,
+                              const Eigen::Ref<const VectorX<T>>& xDot0,
                               const Eigen::Ref<const MatrixX<T>>& C,
                               const Eigen::Ref<const MatrixX<T>>& D,
                               const Eigen::Ref<const VectorX<T>>& y0)
     : A_(A),
       B_(B),
-      XDot0_(xdot0),
+      xDot0_(xDot0),
       C_(C),
       D_(D),
-      Y0_(y0),
-      kNumInputs(D.cols()),
-      kNumOutputs(D.rows()),
-      kNumStates(xdot0.size()) {
-  DRAKE_DEMAND(kNumStates == A.rows());
-  DRAKE_DEMAND(kNumStates == A.cols());
-  DRAKE_DEMAND(kNumStates == B.rows());
-  DRAKE_DEMAND(kNumStates == C.cols());
-  DRAKE_DEMAND(kNumInputs == B.cols());
-  DRAKE_DEMAND(kNumInputs == D.cols());
-  DRAKE_DEMAND(kNumOutputs == C.rows());
-  DRAKE_DEMAND(kNumOutputs == D.rows());
+      y0_(y0),
+      num_inputs_(D.cols()),
+      num_outputs_(D.rows()),
+      num_states_(xDot0.size()) {
+  DRAKE_DEMAND(num_states_ == A.rows());
+  DRAKE_DEMAND(num_states_ == A.cols());
+  DRAKE_DEMAND(num_states_ == B.rows());
+  DRAKE_DEMAND(num_states_ == C.cols());
+  DRAKE_DEMAND(num_inputs_ == B.cols());
+  DRAKE_DEMAND(num_inputs_ == D.cols());
+  DRAKE_DEMAND(num_outputs_ == C.rows());
+  DRAKE_DEMAND(num_outputs_ == D.rows());
 
   // Declares input port for u.
-  this->DeclareInputPort(kVectorValued, kNumInputs, kContinuousSampling);
+  this->DeclareInputPort(kVectorValued, num_inputs_, kContinuousSampling);
 
   // Declares output port for y.
-  this->DeclareOutputPort(kVectorValued, kNumOutputs, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, num_outputs_, kContinuousSampling);
 
   // Declares the number of continuous state variables. This is needed for
   // EvalTimeDerivaties() to work.
-  this->DeclareContinuousState(kNumStates);
+  this->DeclareContinuousState(num_states_);
 }
 
 template <typename T>
@@ -61,7 +61,6 @@ const SystemPortDescriptor<T>& AffineSystem<T>::get_output_port() const {
 template <typename T>
 void AffineSystem<T>::EvalOutput(const Context<T>& context,
                                  SystemOutput<T>* output) const {
-  // TODO(naveenoid): Perhaps cache the output of this function.
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
@@ -76,7 +75,7 @@ void AffineSystem<T>::EvalOutput(const Context<T>& context,
   DRAKE_DEMAND(input);
   auto u = input->get_value();
 
-  output_vector->get_mutable_value() = C_ * x + D_ * u + Y0_;
+  output_vector->get_mutable_value() = C_ * x + D_ * u + y0_;
 }
 
 template <typename T>
@@ -92,7 +91,7 @@ void AffineSystem<T>::EvalTimeDerivatives(
   DRAKE_DEMAND(input);
   auto u = input->get_value();
 
-  derivatives->SetFromVector(A_ * x + B_ * u + XDot0_);
+  derivatives->SetFromVector(A_ * x + B_ * u + xDot0_);
 }
 
 template class DRAKE_EXPORT AffineSystem<double>;
