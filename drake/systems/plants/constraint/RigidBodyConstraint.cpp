@@ -1061,7 +1061,9 @@ GazeOrientConstraint::GazeOrientConstraint(
 
 void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
                                 VectorXd& c, MatrixXd& dc) const {
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace std;
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace drake;
 
   const int num_constraint = getNumConstraint(t);
