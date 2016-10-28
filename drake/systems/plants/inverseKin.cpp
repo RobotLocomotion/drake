@@ -1,5 +1,4 @@
 #include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "inverseKinBackend.h"
 
 using Eigen::Map;
@@ -10,7 +9,7 @@ using drake::systems::plants::inverseKinBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKE_EXPORT void inverseKin(
-    RigidBodyTree *model,
+    RigidBodyTree<double> *model,
     const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom,
     const int num_constraints,
@@ -25,7 +24,7 @@ DRAKE_EXPORT void inverseKin(
 }
 
 template DRAKE_EXPORT void inverseKin(
-    RigidBodyTree *model, const MatrixBase<VectorXd>& q_seed,
+    RigidBodyTree<double> *model, const MatrixBase<VectorXd>& q_seed,
     const MatrixBase<VectorXd>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
@@ -33,7 +32,7 @@ template DRAKE_EXPORT void inverseKin(
     int* info, std::vector<std::string>* infeasible_constraint);
 
 template DRAKE_EXPORT void inverseKin(
-    RigidBodyTree *model, const MatrixBase<Map<VectorXd>>& q_seed,
+    RigidBodyTree<double> *model, const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions,
@@ -41,7 +40,7 @@ template DRAKE_EXPORT void inverseKin(
     std::vector<std::string>* infeasible_constraint);
 
 IKResults inverseKinSimple(
-    RigidBodyTree *model, const Eigen::VectorXd& q_seed,
+    RigidBodyTree<double> *model, const Eigen::VectorXd& q_seed,
     const Eigen::VectorXd& q_nom,
     const std::vector<RigidBodyConstraint *>& constraint_array,
     const IKoptions& ikoptions) {

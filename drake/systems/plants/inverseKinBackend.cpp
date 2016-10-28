@@ -154,7 +154,7 @@ namespace {
 class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
-  InverseKinObjective(const RigidBodyTree* model, const MatrixXd& Q)
+  InverseKinObjective(const RigidBodyTree<double>* model, const MatrixXd& Q)
       : Constraint(model->get_num_positions()),
         Q_(Q) {}
 
@@ -192,7 +192,7 @@ class InverseKinObjective : public Constraint {
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void inverseKinBackend(
-    RigidBodyTree* model, const int nT,
+    RigidBodyTree<double>* model, const int nT,
     const double* t, const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
@@ -291,28 +291,28 @@ void inverseKinBackend(
 }
 
 template void inverseKinBackend(
-    RigidBodyTree* model, const int nT,
+    RigidBodyTree<double>* model, const int nT,
     const double* t, const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree* model, const int nT,
+    RigidBodyTree<double>* model, const int nT,
     const double* t, const MatrixBase<MatrixXd>& q_seed,
     const MatrixBase<MatrixXd>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree* model, const int nT,
+    RigidBodyTree<double>* model, const int nT,
     const double* t, const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
 template void inverseKinBackend(
-    RigidBodyTree* model, const int nT,
+    RigidBodyTree<double>* model, const int nT,
     const double* t, const MatrixBase<VectorXd>& q_seed,
     const MatrixBase<VectorXd>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,

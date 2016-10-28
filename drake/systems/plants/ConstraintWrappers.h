@@ -28,16 +28,7 @@ class KinematicsCacheHelper {
 
   KinematicsCache<Scalar>& UpdateKinematics(
       const Eigen::Ref<const Eigen::VectorXd>& q,
-      const RigidBodyTree<double>* tree) {
-    if ((q.size() != last_q_.size()) || (q != last_q_) ||
-        (tree != last_tree_)) {
-      last_q_ = q;
-      last_tree_ = tree;
-      kinsol_.initialize(q);
-      tree->doKinematics(kinsol_);
-    }
-    return kinsol_;
-  }
+      const RigidBodyTree<double>* tree);
 
  private:
   Eigen::VectorXd last_q_;
@@ -108,31 +99,10 @@ class QuasiStaticConstraintWrapper :
   virtual ~QuasiStaticConstraintWrapper() {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-            Eigen::VectorXd& y) const override {
-    auto& kinsol = kin_helper_->UpdateKinematics(
-        q.head(
-            rigid_body_constraint_->getRobotPointer()->get_num_positions()),
-            rigid_body_constraint_->getRobotPointer());
-    auto weights = q.tail(rigid_body_constraint_->getNumWeights());
-    Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
-  }
-  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
-            TaylorVecXd& ty) const override {
-    Eigen::VectorXd q = drake::math::autoDiffToValueMatrix(tq);
-    auto& kinsol = kin_helper_->UpdateKinematics(
-        q.head(
-            rigid_body_constraint_->getRobotPointer()->get_num_positions()),
-        rigid_body_constraint_->getRobotPointer());
+            Eigen::VectorXd& y) const override;
 
-    Eigen::VectorXd y;
-    Eigen::MatrixXd dy;
-    auto weights = q.tail(rigid_body_constraint_->getNumWeights());
-    rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
-    y.conservativeResize(num_constraints());
-    drake::math::initializeAutoDiffGivenGradientMatrix(
-        y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
-  }
+  void Eval(const Eigen::Ref<const TaylorVecXd>& tq,
+            TaylorVecXd& ty) const override;
 
  private:
   const QuasiStaticConstraint* rigid_body_constraint_;
