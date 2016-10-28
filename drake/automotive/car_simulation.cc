@@ -100,7 +100,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
 
   // Adds a flat terrain if no environment is specified.
   if (argc < 3) {
-    const std::shared_ptr<RigidBodyTree>& tree =
+    const std::shared_ptr<RigidBodyTree<double>>& tree =
         rigid_body_sys->getRigidBodyTree();
     AddFlatTerrainToWorld(tree);
   }
@@ -134,7 +134,7 @@ double ParseDuration(int argc, const char* argv[]) {
 }
 
 void AddFlatTerrainToWorld(
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+    const std::shared_ptr<RigidBodyTree<double>>& rigid_body_tree,
     double box_size, double box_depth) {
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
