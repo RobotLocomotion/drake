@@ -79,18 +79,6 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
           obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
 
-      % Ensure that all h values are non-negative
-      obj = obj.addConstraint(BoundingBoxConstraint(zeros(N-1,1),inf(N-1,1)),obj.h_inds);
-
-      % create constraints for dynamics and add them
-      obj = obj.addDynamicConstraints();
-
-      % add control inputs as bounding box constraints
-      if any(~isinf(plant.umin)) || any(~isinf(plant.umax))
-        control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
-        obj = obj.addConstraint(control_limit,obj.u_inds(:));
-      end
-
     end
     
     function N = getN(obj)
@@ -275,6 +263,19 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       end
 
       obj = obj.addDecisionVariable(num_vars,x_names);
+      
+      % Ensure that all h values are non-negative
+      obj = obj.addConstraint(BoundingBoxConstraint(zeros(N-1,1),inf(N-1,1)),obj.h_inds);
+      
+      % create constraints for dynamics and add them
+      obj = obj.addDynamicConstraints();
+      
+      % add control inputs as bounding box constraints
+      if any(~isinf(obj.plant.umin)) || any(~isinf(obj.plant.umax))
+          control_limit = BoundingBoxConstraint(repmat(obj.plant.umin,N,1),repmat(obj.plant.umax,N,1));
+          obj = obj.addConstraint(control_limit,obj.u_inds(:));
+      end
+      
     end
 
     function obj = addInitialCost(obj,initial_cost)
