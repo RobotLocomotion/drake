@@ -14,36 +14,50 @@ template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     const T& Kp, const T& Ki, const T& Kd)
-    : PidControlledSystem(std::move(plant),
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp,
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki,
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd) { }
+    : PidControlledSystem(std::move(plant), nullptr /* feedback selector */,
+        Kp, Ki, Kd) {}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd)
-    : PidControlledSystem(std::move(plant),
-          std::make_unique<MatrixGain<T>>(plant->get_output_port(0).get_size()),
-          Kp, Ki, Kd) { }
+    : PidControlledSystem(std::move(plant), nullptr /* feedback selector */,
+        Kp, Ki, Kd) {}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     std::unique_ptr<MatrixGain<T>> feedback_selector,
-    const T& Kp, const T& Ki, const T& Kd)
-    : PidControlledSystem(std::move(plant), std::move(feedback_selector),
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp,
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki,
-          VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd) { }
+    const T& Kp, const T& Ki, const T& Kd) {
+  const VectorX<T> Kp_v =
+      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kp;
+  const VectorX<T> Ki_v =
+      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Ki;
+  const VectorX<T> Kd_v =
+      VectorX<T>::Ones(plant->get_input_port(0).get_size()) * Kd;
+  Initialize(std::move(plant), std::move(feedback_selector), Kp_v, Ki_v, Kd_v);
+}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant,
     std::unique_ptr<MatrixGain<T>> feedback_selector,
     const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
+  Initialize(std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
+}
+
+template <typename T>
+void PidControlledSystem<T>::Initialize(
+    std::unique_ptr<System<T>> plant,
+    std::unique_ptr<MatrixGain<T>> feedback_selector,
+    const VectorX<T>& Kp, const VectorX<T>& Ki, const VectorX<T>& Kd) {
+  DRAKE_DEMAND(plant != nullptr);
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
+  if (feedback_selector == nullptr) {
+    feedback_selector =
+        std::make_unique<MatrixGain<T>>(plant_->get_output_port(0).get_size());
+  }
   feedback_selector_ = builder.template AddSystem(std::move(feedback_selector));
 
   DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
@@ -104,7 +118,6 @@ PidControlledSystem<T>::PidControlledSystem(
   builder.ExportOutput(plant_->get_output_port(0));
   builder.BuildInto(this);
 }
-
 
 template <typename T>
 PidControlledSystem<T>::~PidControlledSystem() {}
