@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/solvers/Function.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
@@ -89,7 +89,7 @@ void AddSwingUpTrajectoryParams(
   dircol_traj->AddDynamicConstraint(
       std::make_shared<
       drake::systems::System2DirectCollocationConstraint>(
-          std::make_unique<PendulumSystem<AutoDiffXd>>()));
+          std::make_unique<PendulumPlant<AutoDiffXd>>()));
 }
 
 }  // pendulum
