@@ -236,27 +236,13 @@ void AutomotiveSimulator<T>::Start() {
     auto multiplexer =
         builder_->template AddSystem<systems::Multiplexer<T>>(
             GetModelJointStateSizes());
-    {
-      std::stringstream ss_input;
-      for (int i = 0; i < multiplexer->get_num_input_ports(); ++i) {
-        if (i > 0)
-          ss_input << ", ";
-        ss_input << multiplexer->get_input_port(i).get_size();
-      }
-      std::stringstream ss_output;
-      for (int i = 0; i < multiplexer->get_num_output_ports(); ++i) {
-        if (i > 0)
-          ss_output << ", ";
-        ss_output << multiplexer->get_output_port(i).get_size();
-      }
-    }
 
     auto rigid_body_tree_publisher =
         builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
             *rigid_body_tree_, lcm_.get());
     builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
 
-    // Connect systems that provide joint positions to the mux position inputs.
+    // Connects systems that provide joint positions to the mux position inputs.
     // Connect the zero-velocity source to all of the mux velocity inputs.
     for (int model_index = 0; model_index < num_models; ++model_index) {
       int model_instance_id{};
@@ -314,21 +300,6 @@ void AutomotiveSimulator<T>::Start() {
         auto position_mux =
             builder_->template AddSystem<systems::Multiplexer<T>>(
                 position_mux_port_sizes);
-
-        {
-          std::stringstream ss_input;
-          for (int i = 0; i < position_mux->get_num_input_ports(); ++i) {
-            if (i > 0)
-              ss_input << ", ";
-            ss_input << position_mux->get_input_port(i).get_size();
-          }
-          std::stringstream ss_output;
-          for (int i = 0; i < position_mux->get_num_output_ports(); ++i) {
-            if (i > 0)
-              ss_output << ", ";
-            ss_output << position_mux->get_output_port(i).get_size();
-          }
-        }
         builder_->Connect(model_pose_system->get_output_port(0),
           position_mux->get_input_port(0));
         builder_->Connect(zero_position_source->get_output_port(),
@@ -337,7 +308,7 @@ void AutomotiveSimulator<T>::Start() {
           multiplexer->get_input_port(model_index));
       }
 
-      // Connect a zero-vector source for the velocity state.
+      // Connects a zero-vector source for the velocity state.
       auto zero_velocity_source =
           builder_->template AddSystem<systems::ConstantVectorSource>(
               VectorX<T>::Zero(num_velocity_dofs).eval());
