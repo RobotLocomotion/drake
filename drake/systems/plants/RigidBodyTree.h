@@ -731,7 +731,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * model instance.
    */
   std::vector<const RigidBody*>
-  FindModelInstanceBodies(int model_instance_id);
+  FindModelInstanceBodies(int model_instance_id) const;
 
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
@@ -876,6 +876,12 @@ class DRAKE_EXPORT RigidBodyTree {
    * represents the world.
    */
   int get_num_bodies() const;
+
+  /**
+   * Returns the number of bodies in this tree that belong to a model with
+   * instance id @p model_instance_id.
+   */
+  int GetNumBodies(int model_instnace_id) const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")

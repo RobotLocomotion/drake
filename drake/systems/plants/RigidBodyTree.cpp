@@ -1978,7 +1978,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 }
 
 std::vector<const RigidBody*>
-RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+RigidBodyTree::FindModelInstanceBodies(int model_instance_id) const {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
@@ -2186,6 +2186,10 @@ const RigidBody& RigidBodyTree::get_body(int body_index) const {
 
 int RigidBodyTree::get_num_bodies() const {
   return static_cast<int>(bodies.size());
+}
+
+int RigidBodyTree::GetNumBodies(int model_instance_id) const {
+  return FindModelInstanceBodies(model_instance_id).size();
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
