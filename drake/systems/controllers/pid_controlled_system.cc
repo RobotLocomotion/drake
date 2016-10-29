@@ -1,7 +1,5 @@
 #include "pid_controlled_system.h"
 
-#include <memory>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
