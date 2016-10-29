@@ -361,10 +361,6 @@ class DRAKE_EXPORT MathematicalProgram {
     variables_.push_back(v);
     variable_views_.push_back(DecisionVariableView(variables_.back()));
     x_initial_guess_.conservativeResize(num_vars_);
-    variable_type_.reserve(num_vars_);
-    for (int i = 0; i < static_cast<int>(num_new_vars); ++i) {
-      variable_type_.push_back(DecisionVariable::VarType::CONTINUOUS);
-    }
     x_initial_guess_.tail(num_new_vars) =
         0.1 * Eigen::VectorXd::Random(num_new_vars);
 
@@ -390,10 +386,6 @@ class DRAKE_EXPORT MathematicalProgram {
     num_vars_ += num_new_vars;
     variables_.push_back(v);
     variable_views_.push_back(DecisionVariableView(variables_.back()));
-    variable_type_.reserve(num_vars_);
-    for (int i = 0; i < static_cast<int>(num_new_vars); ++i) {
-      variable_type_.push_back(DecisionVariable::VarType::BINARY);
-    }
     x_initial_guess_.conservativeResize(num_vars_);
     return variable_views_.back();
   }
@@ -697,9 +689,11 @@ class DRAKE_EXPORT MathematicalProgram {
    *   Eigen::Vector2d beq(1, 3);
    *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
    * \endcode
-   * The code above imposes constraints <br>
-   * -x(2) + 2*x(5) = 1 <br>
-   *  x(2) +   x(5) = 3
+   * The code above imposes constraints
+   * \f[
+   * -x(2) + 2x(5) = 1 \\
+   *  x(2) +  x(5) = 3
+   * \f]
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -725,7 +719,9 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Add one row of linear equality constraint referencing potentially a subset
    * of decision variables.
-   * a*vars = beq
+   * \f[
+   * ax = beq
+   * \f]
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars A list of DecisionVariableView.
@@ -741,7 +737,9 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Add one row of linear equality constraint referencing all
    * decision variables.
-   * a*vars = beq
+   * \f[
+   * ax = beq
+   * \f]
    * @param a A row vector.
    * @param beq A scalar.
    */
@@ -1231,8 +1229,21 @@ class DRAKE_EXPORT MathematicalProgram {
 
   size_t num_vars() const { return num_vars_; }
 
-  const std::vector<DecisionVariable::VarType>& variable_type() const {
-    return variable_type_;
+  /**
+   * Get a vector containing the type of each decision variable.
+   * @param variable_type The length of the vector is the
+   * same as MathematicalProgram::num_vars(). variable_type[i] is the type
+   * of x(i) in the MathematicalProgram, where x is the vector containing all
+   * decision variables.
+   */
+  void VariableTypes(
+      std::vector<DecisionVariable::VarType>* variable_type) const {
+    variable_type->resize(num_vars());
+    for (const auto& v : variables_) {
+      for (int i = v.index(); i < static_cast<int>(v.index() + v.size()); ++i) {
+        (*variable_type)[i] = v.type();
+      }
+    }
   }
 
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
@@ -1276,13 +1287,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::list<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
 
-  // Invariant: num_vars_ = num_continuous_vars_ + num_binary_vars_ +
-  // num_integer_vars_;
   size_t num_vars_;
-
-  // Invariant: variable_type_.length() == num_vars_;
-  std::vector<DecisionVariable::VarType> variable_type_;
-
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
   std::string solver_name_;

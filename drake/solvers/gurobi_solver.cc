@@ -379,7 +379,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xlow(num_vars, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(num_vars, std::numeric_limits<double>::infinity());
 
-  const std::vector<DecisionVariable::VarType>& var_type = prog.variable_type();
+  std::vector<DecisionVariable::VarType> var_type(prog.num_vars());
+  prog.VariableTypes(&var_type);
 
   std::vector<char> gurobi_var_type(num_vars);
   for (int i = 0; i < num_vars; ++i) {

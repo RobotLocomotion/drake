@@ -320,7 +320,8 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<DecisionVariable::VarType>& var_type = prog.variable_type();
+  std::vector<DecisionVariable::VarType> var_type;
+  prog.VariableTypes(&var_type);
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
     if (var_type[i] == DecisionVariable::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
@@ -331,7 +332,8 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
     } else if (var_type[i] == DecisionVariable::VarType::BINARY) {
       *with_integer_or_binary_variable = true;
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
-      double xi_lb, xi_ub;
+      double xi_lb = NAN;
+      double xi_ub = NAN;
       MSKboundkeye bound_key;
       if (rescode == MSK_RES_OK) {
         rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
@@ -351,7 +353,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
   }
   return rescode;
 }
-}  // end namespace
+}  // namespace empty
 
 bool MosekSolver::available() const { return true; }
 
@@ -388,7 +390,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   if (rescode == MSK_RES_OK) {
     rescode = AddBoundingBoxConstraints(prog, &task);
   }
-  // Spcify binary variables.
+  // Specify binary variables.
   bool with_integer_or_binary_variable = false;
   if (rescode == MSK_RES_OK) {
     rescode =
