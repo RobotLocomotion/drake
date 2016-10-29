@@ -141,13 +141,15 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr++] =
           prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
-    } else {
+    } else if (contact.acceleration_constraint_type() == ConstraintType::Hard) {
       eq_contacts_[eq_ctr++] =
           prog_.AddLinearEqualityConstraint(
                     Eigen::MatrixXd::Zero(3 * contact.contact_points().size(),
                                           num_vd_),
                     Eigen::VectorXd::Zero(3 * contact.contact_points().size()),
                     {vd}).get();
+    } else {
+      throw std::runtime_error("contact constraints cannot be skipped.");
     }
   }
 
@@ -170,7 +172,6 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
                 Eigen::VectorXd::Zero(num_torque_), {vd, basis}).get();
   ineq_torque_limit_->set_description("torque limit ineq");
 
-  // Allocate cost terms.
   // Set up cost / eq constraints for centroidal momentum change.
   if (num_cen_mom_dot_as_cost_) {
     cost_cen_mom_dot_ =
