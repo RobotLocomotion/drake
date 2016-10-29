@@ -103,23 +103,6 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::AddBoxcar(
-    const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
-  const std::string urdf_filename =
-      GetDrakePath() + "/automotive/models/boxcar.urdf";
-  const parsers::ModelInstanceIdTable table =
-      parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld(
-          urdf_filename, rigid_body_tree_.get());
-  DRAKE_DEMAND(table.size() == 1);
-  const int model_instance_id = table.begin()->second;
-  // TODO(liang.fok) Remove the following check once multi-body vehicle models
-  // are supported. For more context, see #3919.
-  DRAKE_DEMAND(rigid_body_tree_->GetNumBodies(model_instance_id) == 1);
-  rigid_body_tree_publisher_inputs_.push_back(
-      std::make_pair(model_instance_id, coord_transform));
-}
-
-template <typename T>
 void AutomotiveSimulator<T>::AddSdfModel(
     const std::string sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
@@ -127,7 +110,7 @@ void AutomotiveSimulator<T>::AddSdfModel(
       parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
           sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
 
-  // TODO(liang.fok): Support SDF files containing more than one model.
+  // TODO(liang.fok): Add support for SDF files containing more than one model.
   DRAKE_DEMAND(table.size() == 1);
 
   const int model_instance_id = table.begin()->second;

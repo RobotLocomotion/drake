@@ -107,7 +107,6 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
-  void AddBoxcar(const SimpleCarToEulerFloatingJoint<T>*);
   void AddSdfModel(const std::string sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>*);
 
