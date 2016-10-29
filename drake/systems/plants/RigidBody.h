@@ -284,9 +284,11 @@ class DRAKE_EXPORT RigidBody {
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   bool appendCollisionElementIdsFromThisBody(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<DrakeCollision::ElementId>& ids) const;
 
   /**

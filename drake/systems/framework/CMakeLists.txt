@@ -22,6 +22,7 @@ set(sources
   primitives/gain.cc
   primitives/integrator.cc
   primitives/linear_system.cc
+  primitives/matrix_gain.cc
   primitives/multiplexer.cc
   primitives/pass_through.cc
   primitives/trajectory_source.cc

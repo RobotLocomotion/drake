@@ -11,6 +11,7 @@
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/autodiff_overloads.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
@@ -884,7 +885,7 @@ const std::map<SupportLogicType, std::vector<bool>>
 }
 
 const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
+    const RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));

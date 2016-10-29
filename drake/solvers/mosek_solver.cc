@@ -3,6 +3,8 @@
 
 #include "drake/solvers/mosek_solver.h"
 
+#include <cmath>
+
 #include <mosek/mosek.h>
 
 #include <Eigen/Core>
@@ -42,13 +44,13 @@ MSKrescodee AddLinearConstraintsFromBindings(
           return rescode;
         }
       } else {
-        if (isinf(lb(i)) && isinf(ub(i))) {
+        if (std::isinf(lb(i)) && std::isinf(ub(i))) {
           rescode = MSK_putconbound(*task, constraint_idx + i, MSK_BK_FR,
                                     -MSK_INFINITY, MSK_INFINITY);
-        } else if (isinf(lb(i)) && !isinf(ub(i))) {
+        } else if (std::isinf(lb(i)) && !std::isinf(ub(i))) {
           rescode = MSK_putconbound(*task, constraint_idx + i, MSK_BK_UP,
                                     -MSK_INFINITY, ub(i));
-        } else if (!isinf(lb(i)) && isinf(ub(i))) {
+        } else if (!std::isinf(lb(i)) && std::isinf(ub(i))) {
           rescode = MSK_putconbound(*task, constraint_idx + i, MSK_BK_LO, lb(i),
                                     MSK_INFINITY);
         } else {
@@ -117,12 +119,12 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
 
   MSKrescodee rescode = MSK_RES_OK;
   for (int i = 0; i < num_vars; i++) {
-    if (isinf(x_lb[i]) && isinf(x_ub[i])) {
+    if (std::isinf(x_lb[i]) && std::isinf(x_ub[i])) {
       rescode =
           MSK_putvarbound(*task, i, MSK_BK_FR, -MSK_INFINITY, MSK_INFINITY);
-    } else if (isinf(x_lb[i]) && !isinf(x_ub[i])) {
+    } else if (std::isinf(x_lb[i]) && !std::isinf(x_ub[i])) {
       rescode = MSK_putvarbound(*task, i, MSK_BK_UP, -MSK_INFINITY, x_ub[i]);
-    } else if (!isinf(x_lb[i]) && isinf(x_ub[i])) {
+    } else if (!std::isinf(x_lb[i]) && std::isinf(x_ub[i])) {
       rescode = MSK_putvarbound(*task, i, MSK_BK_LO, x_lb[i], MSK_INFINITY);
     } else {
       rescode = MSK_putvarbound(*task, i, MSK_BK_RA, x_lb[i], x_ub[i]);

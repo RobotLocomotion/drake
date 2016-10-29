@@ -60,18 +60,22 @@ class DiagramContinuousState : public ContinuousState<T> {
   }
 
   // Returns the entire state vector in @p xc.
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   static VectorBase<T>* x_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_vector();
   }
   // Returns the generalized position vector in @p xc.
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   static VectorBase<T>* q_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_generalized_position();
   }
   // Returns the generalized velocity vector in @p xc.
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   static VectorBase<T>* v_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_generalized_velocity();
   }
   // Returns the misc continuous state vector in @p xc.
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   static VectorBase<T>* z_selector(ContinuousState<T>& xc) {
     return xc.get_mutable_misc_continuous_state();
   }

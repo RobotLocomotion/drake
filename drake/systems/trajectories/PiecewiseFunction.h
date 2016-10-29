@@ -37,6 +37,7 @@ class DRAKE_EXPORT PiecewiseFunction {
   void segmentNumberRangeCheck(int segment_number) const;
 
   static std::vector<double> randomSegmentTimes(
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references)
       int num_segments, std::default_random_engine& generator);
 
  protected:
