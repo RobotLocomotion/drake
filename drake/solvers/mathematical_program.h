@@ -352,6 +352,23 @@ class DRAKE_EXPORT MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    *
    * @return The DecisionVariableView of the new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddContinuousVariables(2, "x");
+   * @endcode
+   * This adds two continuous variables into the optimization program.
+   * x.name() is "b".
+   *
+   * It is OK to call AddContinuousVariables() with the same name. The following code
+   * is legitimate
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x1 = prog.AddContinuousVariables(2, "x");
+   * auto x2 = prog.AddContinuousVariables(2, "x");
+   * @endcode
+   * The name of the variable is only used for user for understand the problem.
    */
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -369,14 +386,30 @@ class DRAKE_EXPORT MathematicalProgram {
 
   /**
    * Add binary variables to MathematicalProgram.
-   * Add binary variables, appending them to an internal list of any existing
-   * vars.
+   * Appending new binary variables to an internal list of any existing vars.
    * The new variables are uninitialized: callers are expected to add costs
    * and/or constraints to have any effect during optimization.
-   * @param num_new_vars number of new binary variables.
-   * @param name The name of the binary variables, @default is "b".
+   * @param num_new_vars Number of new binary variables.
+   * @param name The name of the binary variables, default is "b".
    * @return The DecisionVariableView of the new binary variables (not all the
    * variables stored in MathematicalProgram).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto b = prog.AddBinaryVariables(2, "b");
+   * @endcode
+   * This adds two binary variables into the optimization program.
+   * b.name() is "b".
+   *
+   * It is OK to call AddBinaryVariables() with the same name. The following code
+   * is legitimate
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto b1 = prog.AddBinaryVariables(2, "b");
+   * auto b2 = prog.AddBinaryVariables(2, "b");
+   * @endcode
+   * The name of the variable is only used for user for understand the problem.
    */
   const DecisionVariableView AddBinaryVariables(std::size_t num_new_vars,
                                                 std::string name = "b") {
@@ -679,16 +712,17 @@ class DRAKE_EXPORT MathematicalProgram {
    *
    * @brief Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
-   * Example: to add and equality constraint which only depends on two of the
+   *
+   * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
-   * \code{.cc}
+   * @code{.cc}
    *   auto x = prog.AddContinuousDecisionVariable(6,"myvar");
    *   Eigen::Matrix2d Aeq;
    *   Aeq << -1, 2,
    *           1, 1;
    *   Eigen::Vector2d beq(1, 3);
    *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
-   * \endcode
+   * @endcode
    * The code above imposes constraints
    * \f[
    * -x(2) + 2x(5) = 1 \\
@@ -876,10 +910,10 @@ class DRAKE_EXPORT MathematicalProgram {
    * x_0\ge 0, x_1\ge 0
    * \f]
    * you can call
-   * \code{.cc}
+   * @code{.cc}
    *   auto x = prog.AddContinuousVariables(N,'x');
    *   auto con = prog.AddRotatedLorentzConeConstraint(x);
-   * \endcode
+   * @endcode
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const VariableList& vars) {
@@ -1230,20 +1264,21 @@ class DRAKE_EXPORT MathematicalProgram {
   size_t num_vars() const { return num_vars_; }
 
   /**
-   * Get a vector containing the type of each decision variable.
-   * @param variable_type The length of the vector is the
-   * same as MathematicalProgram::num_vars(). variable_type[i] is the type
+   * Returns a vector containing the type of each decision variable.
+   * The length of the vector is the same as
+   * MathematicalProgram::num_vars(). variable_type[i] is the type
    * of x(i) in the MathematicalProgram, where x is the vector containing all
    * decision variables.
    */
-  void VariableTypes(
-      std::vector<DecisionVariable::VarType>* variable_type) const {
-    variable_type->resize(num_vars());
+  std::vector<DecisionVariable::VarType> VariableTypes() const {
+    std::vector<DecisionVariable::VarType> variable_type;
+    variable_type.resize(num_vars());
     for (const auto& v : variables_) {
       for (int i = v.index(); i < static_cast<int>(v.index() + v.size()); ++i) {
-        (*variable_type)[i] = v.type();
+        variable_type[i] = v.type();
       }
     }
+    return variable_type;
   }
 
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
