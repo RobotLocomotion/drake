@@ -724,10 +724,8 @@ class DRAKE_EXPORT MathematicalProgram {
    *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
    * @endcode
    * The code above imposes constraints
-   * \f[
-   * -x(2) + 2x(5) = 1 \\
-   *  x(2) +  x(5) = 3
-   * \f]
+   * @f[-x(2) + 2x(5) = 1 @f]
+   * @f[ x(2) +  x(5) = 3 @f]
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -753,9 +751,9 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Add one row of linear equality constraint referencing potentially a subset
    * of decision variables.
-   * \f[
+   * @f[
    * ax = beq
-   * \f]
+   * @f]
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars A list of DecisionVariableView.
@@ -771,9 +769,9 @@ class DRAKE_EXPORT MathematicalProgram {
   /**
    * Add one row of linear equality constraint referencing all
    * decision variables.
-   * \f[
+   * @f[
    * ax = beq
-   * \f]
+   * @f]
    * @param a A row vector.
    * @param beq A scalar.
    */
@@ -835,9 +833,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
                      const VariableList& vars) {
@@ -852,9 +850,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
       const VariableList& vars) {
@@ -869,9 +867,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
     return AddLorentzConeConstraint(variable_views_);
@@ -884,10 +882,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
    * @param vars A list of DecisionVariableView.
    */
@@ -905,10 +901,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    * you can call
    * @code{.cc}
    *   auto x = prog.AddContinuousVariables(N,'x');
@@ -929,10 +923,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    */
   std::shared_ptr<RotatedLorentzConeConstraint>
   AddRotatedLorentzConeConstraint() {

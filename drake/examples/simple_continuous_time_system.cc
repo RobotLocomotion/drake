@@ -12,10 +12,8 @@
 using drake::systems::ContinuousState;
 
 /// Simple Continuous Time System
-/// \f[
-///     \dot{x} = -x + x^3 \\
-///     y = x
-/// \f]
+/// @f[ \dot{x} = -x + x^3 @f]
+/// @f[  y = x @f]
 class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
