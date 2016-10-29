@@ -1,6 +1,5 @@
 #include "pid_controlled_system.h"
 
-// #include <iostream>
 #include <memory>
 
 #include "drake/common/drake_assert.h"
