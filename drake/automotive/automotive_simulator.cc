@@ -243,7 +243,7 @@ void AutomotiveSimulator<T>::Start() {
     builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
 
     // Connects systems that provide joint positions to the mux position inputs.
-    // Connect the zero-velocity source to all of the mux velocity inputs.
+    // Connects a zero-velocity source to each of the mux velocity inputs.
     for (int model_index = 0; model_index < num_models; ++model_index) {
       int model_instance_id{};
       const systems::System<T>* model_pose_system{};
@@ -251,7 +251,7 @@ void AutomotiveSimulator<T>::Start() {
           = rigid_body_tree_publisher_inputs_[model_index];
 
       // Verifies that the current model instance is connected to the world via
-      // a RPY floating joint.
+      // an RPY floating joint.
       //
       // TODO(liang.fok) Support models that are connected to the world via
       // non RPY floating joints. See #3919.
@@ -267,7 +267,7 @@ void AutomotiveSimulator<T>::Start() {
       DRAKE_DEMAND(base_joint.get_num_positions() == kRpyJointNumPos);
       DRAKE_DEMAND(base_joint.get_num_velocities() == kRpyJointNumVel);
 
-      // Determines the number of DOFs in the model
+      // Determines the number of DOFs in the model instance.
       std::vector<const RigidBody*> bodies =
           rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
       int num_position_dofs{0};
