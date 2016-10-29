@@ -107,9 +107,11 @@ void AutomotiveSimulator<T>::AddBoxcar(
   const int model_instance_id = table.begin()->second;
   const std::vector<const RigidBody*> bodies =
       rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
+  // TODO(liang.fok) Remove the following check once multi-body vehicle models
+  // are supported. For more context, see #3919.
   DRAKE_DEMAND(bodies.size() == 1);
   rigid_body_tree_publisher_inputs_.push_back(
-      std::make_pair(bodies[0], coord_transform));
+      std::make_pair(model_instance_id, coord_transform));
 }
 
 template <typename T>
@@ -197,14 +199,25 @@ void AutomotiveSimulator<T>::Start() {
     // to feed RigidBodyTreeLcmPublisher.  We stack them up in joint order as
     // the position input to the publisher, and then also need to feed zeros
     // for all of the joint velocities.
-    const int num_joints = rigid_body_tree_publisher_inputs_.size();
-    const int num_ports_into_mux = 2 * num_joints;  // For position + velocity.
-    const int num_elements_per_joint =
+    const int num_models = rigid_body_tree_publisher_inputs_.size();
+    const int num_ports_into_mux = 2 * num_models;  // For position + velocity.
+    const int num_joint_states_per_model =
         EulerFloatingJointStateIndices::kNumCoordinates;
 
     // Create and cascade a mux and publisher.
+    // TODO(liang.fok) Generalize the following two lines of code to support
+    // vehicles with varying numbers of joint state variables, differing numbers
+    // of position states vs. velocity states, and possibly non-vehicle models.
+    // It currently assumes:
+    //
+    //   (1) There are `num_ports_into_mux` / 2 vehicles.
+    //   (2) Each vehicle has `num_joint_states_per_model` joint position states
+    //       and `num_joint_states_per_model` joint velocity states.
+    //
+    // For more context, see #3919.
     auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
-        std::vector<int>(num_ports_into_mux, num_elements_per_joint));
+        std::vector<int>(num_ports_into_mux, num_joint_states_per_model));
+
     auto rigid_body_tree_publisher =
         builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
             *rigid_body_tree_, lcm_.get());
@@ -217,20 +230,30 @@ void AutomotiveSimulator<T>::Start() {
 
     // Connect systems that provide joint positions to the mux position inputs.
     // Connect the zero-velocity source to all of the mux velocity inputs.
-    for (int input_index = 0; input_index < num_joints; ++input_index) {
-      const RigidBody* body{};
-      const systems::System<T>* system{};
-      std::tie(body, system) = rigid_body_tree_publisher_inputs_[input_index];
+    for (int input_index = 0; input_index < num_models; ++input_index) {
+      int model_instance_id{};
+      const systems::System<T>* model_pose_system{};
+      std::tie(model_instance_id, model_pose_system)
+          = rigid_body_tree_publisher_inputs_[input_index];
+
+      const std::vector<const RigidBody*> model_bodies =
+          rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
+
+      // TODO(liang.fok) Remove the following check once multi-body models are
+      // supported. See #3919.
+      DRAKE_DEMAND(model_bodies.size() == 1);
+      const RigidBody* body = model_bodies.at(0);
+
       // The 0'th index is the world, so our bodies start at number 1.
       DRAKE_DEMAND(body->get_body_index() == (1 + input_index));
       // Ensure the Publisher inputs correspond to the joints we have.
       DRAKE_DEMAND(body->get_position_start_index() == (
-          input_index * num_elements_per_joint));
+          input_index * num_joint_states_per_model));
 
-      builder_->Connect(system->get_output_port(0),
+      builder_->Connect(model_pose_system->get_output_port(0),
                         multiplexer->get_input_port(input_index));
       builder_->Connect(zero_velocity->get_output_port(),
-                        multiplexer->get_input_port(num_joints + input_index));
+                        multiplexer->get_input_port(num_models + input_index));
     }
   }
   rigid_body_tree_->compile();
