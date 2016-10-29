@@ -49,7 +49,7 @@ template <typename T>
 class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
  public:
   /// A constructor where the gains are scalar values and all of the plant's
-  /// output is part of the feedback signal.
+  /// output port zero is part of the feedback signal.
   ///
   /// @param[in] plant The system to be controlled.
   /// @param[in] Kp the proportional constant.
@@ -59,7 +59,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
                       const T& Kp, const T& Ki, const T& Kd);
 
   /// A constructor where the gains are vector values and all of the plant's
-  /// output is part of the feedback signal.
+  /// output port zero is part of the feedback signal.
   ///
   /// @param[in] plant The system to be controlled.
   /// @param[in] Kp the proportional vector constant.
@@ -75,7 +75,8 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   ///
   /// @param[in] plant The system to be controlled.
   /// @param[in] feedback_selector The system that selects which part of the
-  /// system's output is part of the feedback to the controller.
+  /// system's output is part of the feedback to the controller. This parameter
+  /// can be `nullptr`, in which case the entire output port zero is fed back.
   /// @param[in] Kp the proportional constant.
   /// @param[in] Ki the integral constant.
   /// @param[in] Kd the derivative constant.
@@ -89,7 +90,8 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   ///
   /// @param[in] plant The system to be controlled.
   /// @param[in] feedback_selector The system that selects which part of the
-  /// system's output is part of the feedback to the controller.
+  /// system's output is part of the feedback to the controller. This parameter
+  /// can be `nullptr`, in which case the entire output port zero is fed back.
   /// @param[in] Kp the proportional vector constant.
   /// @param[in] Ki the integral vector constant.
   /// @param[in] Kd the derivative vector constant.
