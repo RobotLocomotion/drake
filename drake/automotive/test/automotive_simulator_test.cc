@@ -56,9 +56,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(1, tree.get_num_model_instances());
-  ASSERT_EQ(2, tree.get_num_bodies());  // (0 is world, 1 is boxcar.)
+  ASSERT_EQ(18, tree.get_num_bodies());  // (0 is world, 17 is prius.)
   const auto& body = tree.get_body(1);
-  EXPECT_EQ("box_shape", body.get_name());
+  EXPECT_EQ("chassis_floor", body.get_name());
 
   // Set full throttle.
   DrivingCommand<double> command;
@@ -98,9 +98,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
       published_message_bytes.size()), 0);
 
-  EXPECT_EQ(published_draw_message.num_links, 2);
+  EXPECT_EQ(published_draw_message.num_links, 18);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
-  EXPECT_EQ(published_draw_message.link_name.at(1), "box_shape");
+  EXPECT_EQ(published_draw_message.link_name.at(1), "chassis_floor");
 
   // The subsystem pointers must not change.
   EXPECT_EQ(

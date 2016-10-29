@@ -108,6 +108,8 @@ class AutomotiveSimulator {
  private:
   int allocate_vehicle_number();
   void AddBoxcar(const SimpleCarToEulerFloatingJoint<T>*);
+  void AddSdfModel(const std::string sdf_filename,
+    const SimpleCarToEulerFloatingJoint<T>*);
 
   // Returns a vector containing the number of joint position and velocity
   // states of each model instance in rigid_body_tree_. A sequence of joint

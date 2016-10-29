@@ -9,7 +9,6 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-
 #include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -19,12 +18,16 @@
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 
 namespace drake {
 namespace automotive {
+
+using drake::systems::plants::joints::kRollPitchYaw;
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()
@@ -75,7 +78,9 @@ void AutomotiveSimulator<T>::AddSimpleCar() {
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  AddBoxcar(coord_transform);
+  // AddBoxcar(coord_transform);
+  AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+              coord_transform);
 }
 
 template <typename T>
@@ -92,7 +97,9 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  AddBoxcar(coord_transform);
+  // AddBoxcar(coord_transform);
+  AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
+              coord_transform);
 }
 
 template <typename T>
@@ -105,11 +112,27 @@ void AutomotiveSimulator<T>::AddBoxcar(
           urdf_filename, rigid_body_tree_.get());
   DRAKE_DEMAND(table.size() == 1);
   const int model_instance_id = table.begin()->second;
-  const std::vector<const RigidBody*> bodies =
-      rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
   // TODO(liang.fok) Remove the following check once multi-body vehicle models
   // are supported. For more context, see #3919.
-  DRAKE_DEMAND(bodies.size() == 1);
+  DRAKE_DEMAND(rigid_body_tree_->GetNumBodies(model_instance_id) == 1);
+  rigid_body_tree_publisher_inputs_.push_back(
+      std::make_pair(model_instance_id, coord_transform));
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::AddSdfModel(
+    const std::string sdf_filename,
+    const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
+  const parsers::ModelInstanceIdTable table =
+      parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
+          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
+
+  // TODO(liang.fok): Support SDF files containing more than one model.
+  DRAKE_DEMAND(table.size() == 1);
+
+  const int model_instance_id = table.begin()->second;
+  const std::vector<const RigidBody*> bodies =
+      rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
   rigid_body_tree_publisher_inputs_.push_back(
       std::make_pair(model_instance_id, coord_transform));
 }
@@ -221,6 +244,8 @@ template <typename T>
 void AutomotiveSimulator<T>::Start() {
   DRAKE_DEMAND(!started_);
 
+  std::cout << "AutomotiveSimulator::Start(): Method called!" << std::endl;
+
   if (!rigid_body_tree_publisher_inputs_.empty()) {
     // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
     // that output an Euler floating joint state.  We want to mux them together
@@ -228,33 +253,135 @@ void AutomotiveSimulator<T>::Start() {
     // the position input to the publisher, and then also need to feed zeros
     // for all of the joint velocities.
     const int num_models = rigid_body_tree_publisher_inputs_.size();
-    std::vector<int> mux_port_sizes = GetModelJointStateSizes();
+    std::cout << "AutomotiveSimulator::Start(): num_models = " << num_models << std::endl;
     auto multiplexer =
         builder_->template AddSystem<systems::Multiplexer<T>>(
             GetModelJointStateSizes());
+    {
+      std::stringstream ss_input;
+      for (int i = 0; i < multiplexer->get_num_input_ports(); ++i) {
+        if (i > 0)
+          ss_input << ", ";
+        ss_input << multiplexer->get_input_port(i).get_size();
+      }
+      std::stringstream ss_output;
+      for (int i = 0; i < multiplexer->get_num_output_ports(); ++i) {
+        if (i > 0)
+          ss_output << ", ";
+        ss_output << multiplexer->get_output_port(i).get_size();
+      }
+      std::cout << "AutomotiveSimulator::Start(): Created multiplexer:\n"
+                << "  - num input ports: " << multiplexer->get_num_input_ports() << "\n"
+                << "    - sizes: " << ss_input.str() << "\n"
+                << "  - num output ports: " << multiplexer->get_num_output_ports() << "\n"
+                << "    - sizes: " << ss_output.str()
+                << std::endl;
+    }
 
     auto rigid_body_tree_publisher =
         builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
             *rigid_body_tree_, lcm_.get());
     builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
 
-    // Create a zero-velocity source.
-    auto zero_velocity =
-        builder_->template AddSystem<systems::ConstantVectorSource>(
-            Vector6<T>::Zero().eval());
-
     // Connect systems that provide joint positions to the mux position inputs.
     // Connect the zero-velocity source to all of the mux velocity inputs.
-    for (int input_index = 0; input_index < num_models; ++input_index) {
+    for (int model_index = 0; model_index < num_models; ++model_index) {
       int model_instance_id{};
       const systems::System<T>* model_pose_system{};
       std::tie(model_instance_id, model_pose_system)
-          = rigid_body_tree_publisher_inputs_[input_index];
+          = rigid_body_tree_publisher_inputs_[model_index];
 
-      builder_->Connect(model_pose_system->get_output_port(0),
-                        multiplexer->get_input_port(input_index));
-      builder_->Connect(zero_velocity->get_output_port(),
-                        multiplexer->get_input_port(num_models + input_index));
+      // Verifies that the current model instance is connected to the world via
+      // a RPY floating joint.
+      //
+      // TODO(liang.fok) Support models that are connected to the world via
+      // non RPY floating joints. See #3919.
+      const int kRpyJointNumPos{6};
+      const int kRpyJointNumVel{6};
+
+      std::vector<int> base_body_indices =
+          rigid_body_tree_->FindBaseBodies(model_instance_id);
+      DRAKE_DEMAND(base_body_indices.size() == 1);
+      const DrakeJoint& base_joint =
+          rigid_body_tree_->bodies.at(base_body_indices.at(0))->getJoint();
+      DRAKE_DEMAND(base_joint.is_floating());
+      DRAKE_DEMAND(base_joint.get_num_positions() == kRpyJointNumPos);
+      DRAKE_DEMAND(base_joint.get_num_velocities() == kRpyJointNumVel);
+
+      // Determines the number of DOFs in the model
+      std::vector<const RigidBody*> bodies =
+          rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
+      int num_position_dofs{0};
+      int num_velocity_dofs{0};
+      for (const auto& body : bodies) {
+        num_position_dofs += body->getJoint().get_num_positions();
+        num_velocity_dofs += body->getJoint().get_num_velocities();
+      }
+
+      std::cout << "AutomotiveSimulator::Start(): Model with instance ID " << model_instance_id << " has:\n"
+                << "  - num pos dofs: " << num_position_dofs << "\n"
+                << "  - num vel dofs: " << num_velocity_dofs << std::endl;
+
+      if (num_position_dofs == kRpyJointNumPos) {
+        // The robot has no position DOFs beyond the floating joint DOFs. Thus,
+        // model_pose_system can be connected directly to the multiplexer.
+        builder_->Connect(model_pose_system->get_output_port(0),
+                  multiplexer->get_input_port(model_index));
+      } else {
+        // The robot has additional DOFs beyond the floating joint DOFs. Thus,
+        // we need to connect a system that provides additional joint position
+        // state to the multiplexer. For now, we'll connect a zero-source
+        // system.
+        //
+        // TODO(liang.fok): Enable non-floating joint DOFs to have non-zero
+        // state see: #3919.
+        const int num_reg_pos_dofs = num_position_dofs - kRpyJointNumPos;
+        auto zero_position_source =
+            builder_->template AddSystem<systems::ConstantVectorSource>(
+                VectorX<T>::Zero(num_reg_pos_dofs).eval());
+        std::vector<int> position_mux_port_sizes;
+        position_mux_port_sizes.push_back(kRpyJointNumPos);
+        position_mux_port_sizes.push_back(num_reg_pos_dofs);
+        auto position_mux =
+            builder_->template AddSystem<systems::Multiplexer<T>>(
+                position_mux_port_sizes);
+
+        {
+          std::stringstream ss_input;
+          for (int i = 0; i < position_mux->get_num_input_ports(); ++i) {
+            if (i > 0)
+              ss_input << ", ";
+            ss_input << position_mux->get_input_port(i).get_size();
+          }
+          std::stringstream ss_output;
+          for (int i = 0; i < position_mux->get_num_output_ports(); ++i) {
+            if (i > 0)
+              ss_output << ", ";
+            ss_output << position_mux->get_output_port(i).get_size();
+          }
+          std::cout << "AutomotiveSimulator::Start(): Created position mux.\n"
+                    << "  - model_instance_id = " << model_instance_id << "\n"
+                    << "  - num input ports: " << position_mux->get_num_input_ports() << "\n"
+                    << "    - sizes: " << ss_input.str() << "\n"
+                    << "  - num output ports: " << position_mux->get_num_output_ports() << "\n"
+                    << "    - sizes: " << ss_output.str()
+                    << std::endl;
+        }
+        builder_->Connect(model_pose_system->get_output_port(0),
+          position_mux->get_input_port(0));
+        builder_->Connect(zero_position_source->get_output_port(),
+          position_mux->get_input_port(1));
+        builder_->Connect(position_mux->get_output_port(0),
+          multiplexer->get_input_port(model_index));
+      }
+
+      // Connect a zero-vector source for the velocity state.
+      auto zero_velocity_source =
+          builder_->template AddSystem<systems::ConstantVectorSource>(
+              VectorX<T>::Zero(num_velocity_dofs).eval());
+
+      builder_->Connect(zero_velocity_source->get_output_port(),
+          multiplexer->get_input_port(num_models + model_index));
     }
   }
   rigid_body_tree_->compile();
@@ -266,6 +393,7 @@ void AutomotiveSimulator<T>::Start() {
   simulator_->Initialize();
 
   started_ = true;
+  std::cout << "AutomotiveSimulator::Start(): Done method call." << std::endl;
 }
 
 template <typename T>
