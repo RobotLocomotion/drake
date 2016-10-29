@@ -78,7 +78,7 @@ void AutomotiveSimulator<T>::AddSimpleCar() {
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  // AddBoxcar(coord_transform);
+  // TODO(liang.fok) Allow model to be client selectable.
   AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
               coord_transform);
 }
@@ -97,7 +97,7 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  // AddBoxcar(coord_transform);
+  // TODO(liang.fok) Allow model to be client selectable.
   AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
               coord_transform);
 }
@@ -243,9 +243,6 @@ std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() {
 template <typename T>
 void AutomotiveSimulator<T>::Start() {
   DRAKE_DEMAND(!started_);
-
-  std::cout << "AutomotiveSimulator::Start(): Method called!" << std::endl;
-
   if (!rigid_body_tree_publisher_inputs_.empty()) {
     // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
     // that output an Euler floating joint state.  We want to mux them together
@@ -253,7 +250,6 @@ void AutomotiveSimulator<T>::Start() {
     // the position input to the publisher, and then also need to feed zeros
     // for all of the joint velocities.
     const int num_models = rigid_body_tree_publisher_inputs_.size();
-    std::cout << "AutomotiveSimulator::Start(): num_models = " << num_models << std::endl;
     auto multiplexer =
         builder_->template AddSystem<systems::Multiplexer<T>>(
             GetModelJointStateSizes());
@@ -270,12 +266,6 @@ void AutomotiveSimulator<T>::Start() {
           ss_output << ", ";
         ss_output << multiplexer->get_output_port(i).get_size();
       }
-      std::cout << "AutomotiveSimulator::Start(): Created multiplexer:\n"
-                << "  - num input ports: " << multiplexer->get_num_input_ports() << "\n"
-                << "    - sizes: " << ss_input.str() << "\n"
-                << "  - num output ports: " << multiplexer->get_num_output_ports() << "\n"
-                << "    - sizes: " << ss_output.str()
-                << std::endl;
     }
 
     auto rigid_body_tree_publisher =
@@ -318,10 +308,6 @@ void AutomotiveSimulator<T>::Start() {
         num_velocity_dofs += body->getJoint().get_num_velocities();
       }
 
-      std::cout << "AutomotiveSimulator::Start(): Model with instance ID " << model_instance_id << " has:\n"
-                << "  - num pos dofs: " << num_position_dofs << "\n"
-                << "  - num vel dofs: " << num_velocity_dofs << std::endl;
-
       if (num_position_dofs == kRpyJointNumPos) {
         // The robot has no position DOFs beyond the floating joint DOFs. Thus,
         // model_pose_system can be connected directly to the multiplexer.
@@ -359,13 +345,6 @@ void AutomotiveSimulator<T>::Start() {
               ss_output << ", ";
             ss_output << position_mux->get_output_port(i).get_size();
           }
-          std::cout << "AutomotiveSimulator::Start(): Created position mux.\n"
-                    << "  - model_instance_id = " << model_instance_id << "\n"
-                    << "  - num input ports: " << position_mux->get_num_input_ports() << "\n"
-                    << "    - sizes: " << ss_input.str() << "\n"
-                    << "  - num output ports: " << position_mux->get_num_output_ports() << "\n"
-                    << "    - sizes: " << ss_output.str()
-                    << std::endl;
         }
         builder_->Connect(model_pose_system->get_output_port(0),
           position_mux->get_input_port(0));
@@ -393,7 +372,6 @@ void AutomotiveSimulator<T>::Start() {
   simulator_->Initialize();
 
   started_ = true;
-  std::cout << "AutomotiveSimulator::Start(): Done method call." << std::endl;
 }
 
 template <typename T>
