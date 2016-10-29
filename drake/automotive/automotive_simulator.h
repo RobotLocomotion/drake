@@ -44,8 +44,8 @@ class AutomotiveSimulator {
   /// tree representation.
   const RigidBodyTree& get_rigid_body_tree();
 
-  /// Adds a SimpleCar system to this simulation, including its DrivingCommand
-  /// LCM input and EulerFloatingJoint output.
+  /// Adds a box-shaped SimpleCar system to this simulation, including its
+  /// DrivingCommand LCM input and EulerFloatingJoint output.
   /// @pre Start() has NOT been called.
   void AddSimpleCar();
 
