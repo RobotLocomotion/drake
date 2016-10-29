@@ -56,7 +56,7 @@ void PidControlledSystem<T>::Initialize(
   plant_ = builder.template AddSystem(std::move(plant));
   if (feedback_selector == nullptr) {
     feedback_selector =
-        std::make_unique<MatrixGain<T>>(plant->get_output_port(0).get_size());
+        std::make_unique<MatrixGain<T>>(plant_->get_output_port(0).get_size());
   }
   feedback_selector_ = builder.template AddSystem(std::move(feedback_selector));
 
