@@ -16,8 +16,8 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
@@ -41,10 +41,10 @@ using systems::Context;
 using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
 using systems::GravityCompensator;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
-using systems::DrakeVisualizer;
 using systems::Simulator;
 using systems::TrajectorySource;
 

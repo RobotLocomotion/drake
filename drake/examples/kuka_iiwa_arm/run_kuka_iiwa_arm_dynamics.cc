@@ -12,8 +12,9 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+
 
 using std::make_unique;
 using std::move;
@@ -30,8 +31,8 @@ using systems::Context;
 using systems::ContinuousState;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::RigidBodyPlant;
 using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::VectorBase;
 using systems::plants::joints::kFixed;
