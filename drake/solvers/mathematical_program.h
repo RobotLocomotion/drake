@@ -368,7 +368,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * auto x1 = prog.AddContinuousVariables(2, "x");
    * auto x2 = prog.AddContinuousVariables(2, "x");
    * @endcode
-   * The name of the variable is only used for user for understand.
+   * The name of the variable is only used for the user for understand.
    */
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -409,7 +409,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * auto b1 = prog.AddBinaryVariables(2, "b");
    * auto b2 = prog.AddBinaryVariables(2, "b");
    * @endcode
-   * The name of the variable is only used for user to understand.
+   * The name of the variable is only used for the user to understand.
    */
   const DecisionVariableView AddBinaryVariables(std::size_t num_new_vars,
                                                 std::string name = "b") {
