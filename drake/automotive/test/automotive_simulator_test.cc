@@ -56,7 +56,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(1, tree.get_num_model_instances());
-  ASSERT_EQ(18, tree.get_num_bodies());  // (0 is world, 17 is prius.)
+  ASSERT_EQ(18, tree.get_num_bodies());  // (0 is world, 17 is part of a Prius.)
   const auto& body = tree.get_body(1);
   EXPECT_EQ("chassis_floor", body.get_name());
 
@@ -129,7 +129,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(2, tree.get_num_model_instances());
-  ASSERT_EQ(35, tree.get_num_bodies());  // (0 is world, 1 & 2 are prius cars.)
+  ASSERT_EQ(35, tree.get_num_bodies());  // (0 is world, 1 & 2 are Prius cars.)
   EXPECT_EQ("chassis_floor", tree.get_body(1).get_name());
   EXPECT_EQ("front_axle", tree.get_body(2).get_name());
 

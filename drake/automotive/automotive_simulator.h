@@ -115,7 +115,8 @@ class AutomotiveSimulator {
   // states of each model instance in rigid_body_tree_. A sequence of joint
   // position states comes first followed by a sequence of joint velocity
   // states. The length of the returned vector is thus double the number of
-  // model instances.
+  // model instances since each model instance has two entries: (1) its number
+  // of position states and (2) its number of velocity states.
   std::vector<int> GetModelJointStateSizes();
 
   // For both building and simulation.
