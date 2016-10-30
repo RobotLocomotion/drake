@@ -1,29 +1,19 @@
 #include <iostream>
 
+#include <list>
+
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
 namespace solvers {
 namespace test {
 namespace {
-
-void RunSolver(MathematicalProgram* prog,
-               const MathematicalProgramSolverInterface& solver) {
-  if (solver.available()) {
-    SolutionResult result = solver.Solve(*prog);
-    std::string solver_name;
-    int solver_status;
-    prog->GetSolverResult(&solver_name, &solver_status);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound)
-        << "Solver " << solver_name << " fails to find the solution."
-        << std::endl;
-  }
-}
 /////////////////////////
 ///// Linear Program ////
 /////////////////////////
@@ -43,9 +33,8 @@ void TestLinearProgramFeasibility(
   Eigen::Vector3d b_lb(0, -std::numeric_limits<double>::infinity(), -1);
   Eigen::Vector3d b_ub(10, 3, 0);
   prog.AddLinearConstraint(A, b_lb, b_ub);
-  prog.AddBoundingBoxConstraint(
-      drake::Vector1d(1.0),
-      drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+  prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
+                                x(1));
 
   RunSolver(&prog, solver);
 
@@ -134,7 +123,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearCost(c2, {x(2), x(3)});
 
   Eigen::RowVector3d a1(3, 1, 2);
-  prog.AddLinearEqualityConstraint(a1, drake::Vector1d(30), {x(0), x(1), x(2)});
+  prog.AddLinearEqualityConstraint(a1, 30, {x(0), x(1), x(2)});
 
   Eigen::Matrix<double, 4, 4> A;
   A << 2, 1, 3, 1, 0, 2, 0, 3, 1, 2, 0, 1, 1, 0, 2, 0;
@@ -144,8 +133,7 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
                        std::numeric_limits<double>::infinity(), 40);
   prog.AddLinearConstraint(A, b_lb, b_ub);
 
-  prog.AddBoundingBoxConstraint(drake::Vector1d(0), drake::Vector1d(10),
-                                {x(1)});
+  prog.AddBoundingBoxConstraint(0, 10, x(1));
   prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
@@ -194,12 +182,10 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   prog.AddBoundingBoxConstraint(
       Eigen::Vector2d(0, 0),
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), {x});
-  prog.AddBoundingBoxConstraint(
-      drake::Vector1d(-1),
-      drake::Vector1d(std::numeric_limits<double>::infinity()), {x(1)});
+  prog.AddBoundingBoxConstraint(-1, std::numeric_limits<double>::infinity(),
+                                x(1));
 
-  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
-                                   drake::Vector1d(1));
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1);
 
   RunSolver(&prog, solver);
 
@@ -247,8 +233,7 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
                        std::numeric_limits<double>::infinity());
   prog.AddLinearConstraint(A1, b_lb, b_ub);
   // This test also handles linear equality constraint
-  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3),
-                                   drake::Vector1d(3));
+  prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3);
 
   RunSolver(&prog, solver);
 
@@ -501,8 +486,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   prog.AddLinearEqualityConstraint(A_R2a, b_R2a, {R2a, a});
 
   // a'*(x2 - x1) = 1
-  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), drake::Vector1d(1.0),
-                                   {a});
+  prog.AddLinearEqualityConstraint((x2 - x1).transpose(), 1.0, {a});
 
   // Add cost
   auto cost = prog.AddLinearCost(Eigen::RowVector2d(1.0, 1.0), {t});
@@ -555,8 +539,7 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
 
     auto slack = prog_intersect.AddContinuousVariables(1, "slack");
-    prog_intersect.AddBoundingBoxConstraint(drake::Vector1d(1),
-                                            drake::Vector1d(1), {slack});
+    prog_intersect.AddBoundingBoxConstraint(1, 1, slack);
 
     prog_intersect.AddLorentzConeConstraint({slack, u1});
     prog_intersect.AddLorentzConeConstraint({slack, u2});
@@ -632,8 +615,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   auto z = prog_socp.AddContinuousVariables(1, "z");
   auto w = prog_socp.AddContinuousVariables(kXdim, "w");
 
-  prog_socp.AddBoundingBoxConstraint(drake::Vector1d(2.0), drake::Vector1d(2.0),
-                                     {z});
+  prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z);
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
 
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
@@ -794,7 +776,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
   auto z = prog.AddContinuousVariables(2, "z");
-  prog.AddBoundingBoxConstraint(drake::Vector1d(1), drake::Vector1d(1), {z(0)});
+  prog.AddBoundingBoxConstraint(1, 1, z(0));
   prog.AddRotatedLorentzConeConstraint({z, t});
 
   prog.AddLinearCost(drake::Vector1d(spring_stiffness / 2), {z(1)});
@@ -868,127 +850,106 @@ void TestFindSpringEquilibrium(
 }
 
 void GetLinearProgramSolvers(
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  auto gurobi_solver = std::make_unique<GurobiSolver>();
-
-  if (gurobi_solver->available()) {
-    solvers->push_back(std::move(gurobi_solver));
-  }
-  auto mosek_solver = std::make_unique<MosekSolver>();
-  if (mosek_solver->available()) {
-    solvers->push_back(std::move(mosek_solver));
-  }
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverToListIfAvailable("Gurobi", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 
 void GetQuadraticProgramSolvers(
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  auto gurobi_solver = std::make_unique<GurobiSolver>();
-
-  if (gurobi_solver->available()) {
-    solvers->push_back(std::move(gurobi_solver));
-  }
-  auto mosek_solver = std::make_unique<MosekSolver>();
-  if (mosek_solver->available()) {
-    solvers->push_back(std::move(mosek_solver));
-  }
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverToListIfAvailable("Gurobi", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 
 void GetSecondOrderConicProgramSolvers(
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  auto gurobi_solver = std::make_unique<GurobiSolver>();
-
-  if (gurobi_solver->available()) {
-    solvers->push_back(std::move(gurobi_solver));
-  }
-  auto mosek_solver = std::make_unique<MosekSolver>();
-  if (mosek_solver->available()) {
-    solvers->push_back(std::move(mosek_solver));
-  }
+    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
+  AddSolverToListIfAvailable("Gurobi", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 }  // namespace
 
-GTEST_TEST(TestConicProgramming, TestLinearProgramFeasibility) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestLinearProgramFeasibility) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestLinearProgramFeasibility(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestLinearProgram0) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestLinearProgram0) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestLinearProgram0(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestLinearProgram1) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestLinearProgram1) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestLinearProgram1(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestLinearProgram2) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestLinearProgram2) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestLinearProgram2(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgram0) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram0) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram0(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgram1) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram1) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram1(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgram2) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram2) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram2(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgram3) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram3) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram3(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgram4) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram4) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQuadraticProgram4(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQuadraticProgramUnitBall) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgramUnitBall) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQPonUnitBallExample(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation0) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestEllipsoidsSeparation0) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     Eigen::VectorXd x1 = Eigen::Vector3d::Zero();
@@ -1000,8 +961,8 @@ GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation0) {
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation1) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestEllipsoidsSeparation1) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     // Test if we can find a common point for two intersecting balls.
@@ -1014,8 +975,8 @@ GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation1) {
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation2) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestEllipsoidsSeparation2) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     // Test two ellipsoids
@@ -1029,8 +990,8 @@ GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation2) {
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation3) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestEllipsoidsSeparation3) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     // Test another two ellipsoids
@@ -1044,16 +1005,16 @@ GTEST_TEST(TestConicProgramming, TestEllipsoidsSeparation3) {
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestQPasSOCP) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestQPasSOCP) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestQPasSOCP(*solver);
   }
 }
 
-GTEST_TEST(TestConicProgramming, TestFindSpringEquilibrium) {
-  std::vector<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
+GTEST_TEST(TestConvexOptimization, TestFindSpringEquilibrium) {
+  std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetSecondOrderConicProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     TestFindSpringEquilibrium(*solver);
