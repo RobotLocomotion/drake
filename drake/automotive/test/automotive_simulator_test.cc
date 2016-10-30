@@ -63,7 +63,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(1, tree.get_num_model_instances());
-  // One body belong to the world, the rest belong to the car.
+  // One body belongs to the world, the rest belong to the car.
   ASSERT_EQ(1 + kNumVehicleBodies, tree.get_num_bodies());
 
   const auto& body = tree.get_body(1);
