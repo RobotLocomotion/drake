@@ -314,7 +314,45 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   }
   return rescode;
 }
-}  // end namespace
+
+MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
+                                MSKtask_t* task,
+                                bool* with_integer_or_binary_variable) {
+  MSKrescodee rescode = MSK_RES_OK;
+  int num_vars = prog.num_vars();
+  const std::vector<DecisionVariable::VarType>& var_type = prog.VariableTypes();
+  for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
+    if (var_type[i] == DecisionVariable::VarType::INTEGER) {
+      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      *with_integer_or_binary_variable = true;
+    } else if (var_type[i] == DecisionVariable::VarType::BINARY) {
+      *with_integer_or_binary_variable = true;
+      rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
+      double xi_lb = NAN;
+      double xi_ub = NAN;
+      MSKboundkeye bound_key;
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_getvarbound(*task, i, &bound_key, &xi_lb, &xi_ub);
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+      }
+      if (rescode == MSK_RES_OK) {
+        xi_lb = std::max(0.0, xi_lb);
+        xi_ub = std::min(1.0, xi_ub);
+        rescode = MSK_putvarbound(*task, i, MSK_BK_RA, xi_lb, xi_ub);
+        if (rescode != MSK_RES_OK) {
+          return rescode;
+        }
+      }
+    }
+  }
+  return rescode;
+}
+}  // namespace empty
 
 bool MosekSolver::available() const { return true; }
 
@@ -351,6 +389,12 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   if (rescode == MSK_RES_OK) {
     rescode = AddBoundingBoxConstraints(prog, &task);
   }
+  // Specify binary variables.
+  bool with_integer_or_binary_variable = false;
+  if (rescode == MSK_RES_OK) {
+    rescode =
+        SpecifyVariableType(prog, &task, &with_integer_or_binary_variable);
+  }
   // Add linear constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddLinearConstraints(prog, &task);
@@ -380,9 +424,11 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   // TODO(hongkai.dai@tri.global) : add the integer solution type. And test
   // the non-default optimizer.
   MSKsoltypee solution_type;
-  if (prog.quadratic_costs().empty() &&
-      prog.lorentz_cone_constraints().empty() &&
-      prog.rotated_lorentz_cone_constraints().empty()) {
+  if (with_integer_or_binary_variable) {
+    solution_type = MSK_SOL_ITG;
+  } else if (prog.quadratic_costs().empty() &&
+             prog.lorentz_cone_constraints().empty() &&
+             prog.rotated_lorentz_cone_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;
@@ -398,7 +444,9 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     if (rescode == MSK_RES_OK) {
       switch (solution_status) {
         case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_NEAR_OPTIMAL: {
+        case MSK_SOL_STA_NEAR_OPTIMAL:
+        case MSK_SOL_STA_INTEGER_OPTIMAL:
+        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
           result = SolutionResult::kSolutionFound;
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);

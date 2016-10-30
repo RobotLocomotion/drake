@@ -153,6 +153,7 @@ find_package(Threads MODULE REQUIRED)
 drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
   drake_find_package(bot2-core CONFIG)
+  drake_find_package(robotlocomotion-lcmtypes CONFIG)
 
   add_subdirectory(lcmtypes)
 

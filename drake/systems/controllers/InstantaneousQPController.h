@@ -55,7 +55,9 @@ class DRAKE_EXPORT InstantaneousQPController {
           contact_detected,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
-      QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      QPControllerOutput& qp_output,
+      QPControllerDebugData* debug = NULL);
 
   const RigidBodyTree& getRobot() const { return *robot; }
 
@@ -112,10 +114,12 @@ class DRAKE_EXPORT InstantaneousQPController {
 
   void estimateCoMBasedOnMeasuredZMP(
       const QPControllerParams& params,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
       int num_contact_points,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 
   void initialize();
@@ -127,8 +131,10 @@ class DRAKE_EXPORT InstantaneousQPController {
 };
 
 DRAKE_EXPORT void applyURDFModifications(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree>& robot,
     const KinematicModifications& modifications);
 DRAKE_EXPORT void applyURDFModifications(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree>& robot,
     const std::string& urdf_modifications_filename);

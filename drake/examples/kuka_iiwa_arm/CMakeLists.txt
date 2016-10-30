@@ -49,10 +49,19 @@ if(lcm_FOUND)
       Threads::Threads)
 
   add_executable(kuka_ik_demo kuka_ik_demo.cc)
-  target_link_libraries(kuka_ik_demo drakeIK
-      drakeTrajectories
-      drakeRBM
-      drakeLCMSystem)
+  target_link_libraries(kuka_ik_demo
+    drakeIK
+    drakeRBM
+    robotlocomotion-lcmtypes-cpp
+    lcm)
+
+  add_executable(kuka_plan_runner kuka_plan_runner.cc)
+  target_link_libraries(kuka_plan_runner
+    drakeTrajectories
+    drakeRBM
+    drakeLCMTypes
+    robotlocomotion-lcmtypes-cpp
+    lcm)
 
   add_executable(run_kuka_iiwa_gravity_compensated_torque_control
       run_kuka_iiwa_gravity_compensated_torque_control.cc)
