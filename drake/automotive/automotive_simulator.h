@@ -108,7 +108,7 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
-  void AddSdfModel(const std::string sdf_filename,
+  void AddSdfModel(const std::string& sdf_filename,
                    const SimpleCarToEulerFloatingJoint<T>*);
 
   // Connects the systems that output the pose of each vehicle to the
@@ -124,14 +124,14 @@ class AutomotiveSimulator {
   // states. The length of the returned vector is thus double the number of
   // model instances since each model instance has two entries: (1) its number
   // of position states and (2) its number of velocity states.
-  std::vector<int> GetModelJointStateSizes();
+  std::vector<int> GetModelJointStateSizes() const;
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
       std::make_unique<RigidBodyTree>()};
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
 
-  // For building.
+  // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
 
@@ -142,6 +142,7 @@ class AutomotiveSimulator {
   // via non-RPY floating joints. See #3919.
   std::vector<std::pair<int, const systems::System<T>*>>
       rigid_body_tree_publisher_inputs_;
+  // === End for building. ===
 
   int next_vehicle_number_{0};
   bool started_{false};

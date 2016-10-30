@@ -104,7 +104,7 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(const Curve2<double>& curve,
 
 template <typename T>
 void AutomotiveSimulator<T>::AddSdfModel(
-    const std::string sdf_filename,
+    const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
   const parsers::ModelInstanceIdTable table =
       parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
@@ -195,7 +195,7 @@ const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
 }
 
 template <typename T>
-std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() {
+std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() const {
   std::vector<int> position_states;
   std::vector<int> velocity_states;
 
