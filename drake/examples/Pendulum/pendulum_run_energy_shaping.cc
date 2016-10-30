@@ -10,7 +10,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -70,7 +70,7 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
   auto publisher =
-      builder.AddSystem<systems::RigidBodyTreeLcmPublisher>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();

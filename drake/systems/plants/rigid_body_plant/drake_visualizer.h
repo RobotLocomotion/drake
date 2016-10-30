@@ -18,10 +18,10 @@ namespace systems {
 // t_0.
 /**
  * This is a Drake System 2.0 block that takes a RigidBodyTree and publishes LCM
- * messages that are intended for the Drake Visualizer, but can also be used by
- * other consumers. It does this in two phases: initialization, which runs when
- * `DoPublish()` is called with `Context::get_time()` equal to zero, and
- * run-time, which runs every time `doPublish()` is called.
+ * messages that are intended for the Drake Visualizer. It does this in two
+ * phases: initialization, which runs when DoPublish() is called with
+ * Context::get_time() equal to zero, and run-time, which runs every time
+ * DoPublish() is called.
  *
  * During initialization, this system block analyzes the RigidBodyTree and tells
  * Drake Visualizer what it will be visualizing. For example, these include the
@@ -37,14 +37,14 @@ namespace systems {
  *
  * @ingroup rigid_body_systems
  */
-class DRAKE_EXPORT RigidBodyTreeLcmPublisher
+class DRAKE_EXPORT DrakeVisualizer
     : public LeafSystem<double> {
  public:
   /**
-   * A constructor that prepares for the transmission of `lcmt_viewer_load_robot`
-   * and `lcmt_viewer_draw` messages, but does not actually publish anything.
-   * LCM message publications occur each time
-   * RigidBodyTreeLcmPublisher::Publish() is called.
+   * A constructor that prepares for the transmission of `lcmt_viewer_draw` and
+   * `lcmt_viewer_load_robot` messages, but does not actually publish anything.
+   * LCM message publications occur each time DrakeVisualizer::Publish() is
+   * called.
    *
    * @param[in] tree A reference to the rigid body tree that should be
    * visualized by Drake Visualizer. This reference must remain valid for the
@@ -53,7 +53,7 @@ class DRAKE_EXPORT RigidBodyTreeLcmPublisher
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    */
-  RigidBodyTreeLcmPublisher(const RigidBodyTree& tree,
+  DrakeVisualizer(const RigidBodyTree& tree,
       drake::lcm::DrakeLcmInterface* lcm);
 
   void EvalOutput(const systems::Context<double>& context,
