@@ -107,7 +107,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
       published_message_bytes.size()), 0);
 
-  // One body blongs to the world, the rest belogn to the car model.
+  // One body belongs to the world, the rest belong to the car model.
   EXPECT_EQ(published_draw_message.num_links, 1 + kNumVehicleBodies);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
   EXPECT_EQ(published_draw_message.link_name.at(1), "chassis_floor");
