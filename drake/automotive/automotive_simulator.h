@@ -53,8 +53,8 @@ class AutomotiveSimulator {
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
   /// @pre Start() has NOT been called.
-  void AddTrajectoryCar(
-      const Curve2<double>& curve, double speed, double start_time);
+  void AddTrajectoryCar(const Curve2<double>& curve, double speed,
+                        double start_time);
 
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
@@ -109,7 +109,7 @@ class AutomotiveSimulator {
  private:
   int allocate_vehicle_number();
   void AddSdfModel(const std::string sdf_filename,
-    const SimpleCarToEulerFloatingJoint<T>*);
+                   const SimpleCarToEulerFloatingJoint<T>*);
 
   // Returns a vector containing the number of joint position and velocity
   // states of each model instance in rigid_body_tree_. A sequence of joint
@@ -121,12 +121,12 @@ class AutomotiveSimulator {
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
-    std::make_unique<RigidBodyTree>()};
+      std::make_unique<RigidBodyTree>()};
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
 
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
-    std::make_unique<systems::DiagramBuilder<T>>()};
+      std::make_unique<systems::DiagramBuilder<T>>()};
 
   // Holds information about the vehicle models being simulated. The integer is
   // the vehicle's model instance ID within the RigidBodyTree while the pointer
