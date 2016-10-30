@@ -147,7 +147,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
   EXPECT_EQ("front_axle", tree.get_body(2).get_name());
 
 
-  // Verifies that the second car got added to the tree.
+  // Verifies that the second car was added to the tree.
   EXPECT_EQ("chassis_floor", tree.get_body(kNumVehicleBodies + 1).get_name());
   EXPECT_EQ("front_axle", tree.get_body(kNumVehicleBodies + 2).get_name());
 
