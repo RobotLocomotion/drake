@@ -972,12 +972,6 @@ class DRAKE_EXPORT RigidBodyTree {
    */
   int get_num_bodies() const;
 
-  /**
-   * Returns the number of bodies in this tree that belong to a model with
-   * instance id @p model_instance_id.
-   */
-  int GetNumBodies(int model_instnace_id) const;
-
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")
 #endif

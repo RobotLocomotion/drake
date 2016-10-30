@@ -2189,10 +2189,6 @@ int RigidBodyTree::get_num_bodies() const {
   return static_cast<int>(bodies.size());
 }
 
-int RigidBodyTree::GetNumBodies(int model_instance_id) const {
-  return FindModelInstanceBodies(model_instance_id).size();
-}
-
 // TODO(liang.fok) Remove this method prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_bodies().")

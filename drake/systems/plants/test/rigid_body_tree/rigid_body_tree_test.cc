@@ -236,7 +236,6 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   EXPECT_NE(model_instance_id_table.find("two_dof_robot"),
             model_instance_id_table.end());
   EXPECT_EQ(model_instance_id_table["two_dof_robot"], kExpectedModelInstanceId);
-  EXPECT_EQ(tree_->GetNumBodies(kExpectedModelInstanceId), 3);
 }
 
 // Verifies that each rigid body in @p body_list appears exactly once in
@@ -253,8 +252,7 @@ void VerifyBodyListIsCorrect(std::vector<const RigidBody*> body_list,
   }
 }
 
-// Tests the correct functionality of RigidBodyTree::FindModelInstanceBodies()
-// and RigidBodyTree::GetNumBodies(int model_instance_id).
+// Tests the correct functionality of RigidBodyTree::FindModelInstanceBodies().
 TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   std::string filename_2dof_robot =
       drake::GetDrakePath() +
@@ -306,11 +304,6 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   EXPECT_EQ(two_dof_robot_bodies.size(), 3u);
   EXPECT_EQ(three_dof_robot_bodies.size(), 4u);
   EXPECT_EQ(four_dof_robot_bodies.size(), 5u);
-
-  // Verifies the correct functionality of GetNumBodies(int model_instance_id).
-  EXPECT_EQ(tree_->GetNumBodies(two_dof_model_instance_id), 3);
-  EXPECT_EQ(tree_->GetNumBodies(three_dof_model_instance_id), 4);
-  EXPECT_EQ(tree_->GetNumBodies(four_dof_model_instance_id), 5);
 
   // Verifies that the model instance IDs and model names are correct.
   for (const RigidBody* body : two_dof_robot_bodies) {
