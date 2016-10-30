@@ -21,7 +21,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace automotive {
@@ -192,11 +192,11 @@ void AutomotiveSimulator<T>::Start() {
   DRAKE_DEMAND(!started_);
 
   if (!rigid_body_tree_publisher_inputs_.empty()) {
-    // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
-    // that output an Euler floating joint state.  We want to mux them together
-    // to feed RigidBodyTreeLcmPublisher.  We stack them up in joint order as
-    // the position input to the publisher, and then also need to feed zeros
-    // for all of the joint velocities.
+    // Arithmetic for DrakeVisualizer input sizing.  We have systems that output
+    // an Euler floating joint state.  We want to mux them together to feed
+    // DrakeVisualizer.  We stack them up in joint order as the position input
+    // to the publisher, and then also need to feed zeros for all of the joint
+    // velocities.
     const int num_joints = rigid_body_tree_publisher_inputs_.size();
     const int num_ports_into_mux = 2 * num_joints;  // For position + velocity.
     const int num_elements_per_joint =
@@ -206,7 +206,7 @@ void AutomotiveSimulator<T>::Start() {
     auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
         std::vector<int>(num_ports_into_mux, num_elements_per_joint));
     auto rigid_body_tree_publisher =
-        builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
+        builder_->template AddSystem<systems::DrakeVisualizer>(
             *rigid_body_tree_, lcm_.get());
     builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
 

@@ -13,7 +13,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;
@@ -75,7 +75,7 @@ int do_main(int argc, char* argv[]) {
   RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
                      systems::plants::joints::kFixed);
   auto publisher =
-      builder.AddSystem<systems::RigidBodyTreeLcmPublisher>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
 
   // The choices of PidController constants here are fairly arbitrary,
   // but seem to effectively swing up the pendulum and hold it.

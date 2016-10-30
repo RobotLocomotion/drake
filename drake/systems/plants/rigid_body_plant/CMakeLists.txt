@@ -5,14 +5,14 @@ set(source_files kinematics_results.cc rigid_body_plant.cc)
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
-      rigid_body_tree_lcm_publisher.h
+      drake_visualizer.h
       viewer_draw_translator.h)
 endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
-      rigid_body_tree_lcm_publisher.cc
+      drake_visualizer.cc
       viewer_draw_translator.cc)
 endif()
 

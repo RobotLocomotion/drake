@@ -13,7 +13,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 using std::make_unique;
 using std::move;
@@ -31,7 +31,7 @@ using systems::ContinuousState;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::RigidBodyPlant;
-using systems::RigidBodyTreeLcmPublisher;
+using systems::DrakeVisualizer;
 using systems::Simulator;
 using systems::VectorBase;
 using systems::plants::joints::kFixed;
@@ -72,7 +72,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
         constant_value);
 
     // Creates and adds LCM publisher for visualization.
-    viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
     // Connects the constant source output port to the RigidBodyPlant's input
@@ -100,7 +100,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
 
  private:
   RigidBodyPlant<T>* plant_;
-  RigidBodyTreeLcmPublisher* viz_publisher_;
+  DrakeVisualizer* viz_publisher_;
   DrakeLcm lcm_;
 
   ConstantVectorSource<T>* const_source_;
