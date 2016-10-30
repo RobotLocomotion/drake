@@ -263,14 +263,8 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
       DRAKE_DEMAND(base_joint.get_num_velocities() == kRpyJointNumVel);
 
       // Determines the number of DOFs in the model instance.
-      // std::vector<const RigidBody*> bodies =
-      //     rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
       int num_position_dofs = joint_state_sizes.at(model_index);
       int num_velocity_dofs = joint_state_sizes.at(num_models + model_index);
-      // for (const auto& body : bodies) {
-      //   num_position_dofs += body->getJoint().get_num_positions();
-      //   num_velocity_dofs += body->getJoint().get_num_velocities();
-      // }
 
       if (num_position_dofs == kRpyJointNumPos) {
         // The robot has no position DOFs beyond the floating joint DOFs. Thus,
@@ -289,12 +283,6 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
         auto zero_position_source =
             builder_->template AddSystem<systems::ConstantVectorSource>(
                 VectorX<T>::Zero(num_reg_pos_dofs).eval());
-        // std::vector<int> position_mux_port_sizes;
-        // position_mux_port_sizes.push_back(kRpyJointNumPos);
-        // position_mux_port_sizes.push_back(num_reg_pos_dofs);
-        // auto position_mux =
-        //     builder_->template AddSystem<systems::Multiplexer<T>>(
-        //         position_mux_port_sizes);
         auto position_mux =
             builder_->template AddSystem<systems::Multiplexer<T>>(
                 std::vector<int>{kRpyJointNumPos, num_reg_pos_dofs});
