@@ -108,7 +108,7 @@ void AutomotiveSimulator<T>::AddBoxcar(
   const std::vector<const RigidBody*> bodies =
       rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
   DRAKE_DEMAND(bodies.size() == 1);
-  rigid_body_tree_publisher_inputs_.push_back(
+  drake_visualizer_inputs_.push_back(
       std::make_pair(bodies[0], coord_transform));
 }
 
@@ -191,13 +191,13 @@ template <typename T>
 void AutomotiveSimulator<T>::Start() {
   DRAKE_DEMAND(!started_);
 
-  if (!rigid_body_tree_publisher_inputs_.empty()) {
+  if (!drake_visualizer_inputs_.empty()) {
     // Arithmetic for DrakeVisualizer input sizing.  We have systems that output
     // an Euler floating joint state.  We want to mux them together to feed
     // DrakeVisualizer.  We stack them up in joint order as the position input
     // to the publisher, and then also need to feed zeros for all of the joint
     // velocities.
-    const int num_joints = rigid_body_tree_publisher_inputs_.size();
+    const int num_joints = drake_visualizer_inputs_.size();
     const int num_ports_into_mux = 2 * num_joints;  // For position + velocity.
     const int num_elements_per_joint =
         EulerFloatingJointStateIndices::kNumCoordinates;
@@ -220,7 +220,7 @@ void AutomotiveSimulator<T>::Start() {
     for (int input_index = 0; input_index < num_joints; ++input_index) {
       const RigidBody* body{};
       const systems::System<T>* system{};
-      std::tie(body, system) = rigid_body_tree_publisher_inputs_[input_index];
+      std::tie(body, system) = drake_visualizer_inputs_[input_index];
       // The 0'th index is the world, so our bodies start at number 1.
       DRAKE_DEMAND(body->get_body_index() == (1 + input_index));
       // Ensure the Publisher inputs correspond to the joints we have.
