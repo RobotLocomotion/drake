@@ -221,6 +221,7 @@ std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() const {
 
 template <typename T>
 void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
+  DRAKE_DEMAND(!started_);
   if (!rigid_body_tree_publisher_inputs_.empty()) {
     // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
     // that output an Euler floating joint state.  We want to mux them together

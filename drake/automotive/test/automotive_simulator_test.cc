@@ -31,10 +31,11 @@ void GetLastPublishedJointValue(const std::string& channel,
   translator.Deserialize(message.data(), message.size(), joint_value);
 }
 
-// TODO(liang.fok): Extract code from this unit test into a general method that
-// takes as input a model and evaluates a SimpleCar based on the provided model.
-// This would allow, for example, models containing varying numbers of bodies to
-// be efficiently evaluated.
+// TODO(liang.fok): When AutomotiveSimulator's API is updated to allow the model
+// of SimpleCar to be client-selectable, be sure to avoid duplicating code. This
+// can be done by generalizing the code in the following unit test and placing
+// it in a method that can be called by numerous unit tests, each evaluating
+// SimpleCar using a different model.
 //
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
