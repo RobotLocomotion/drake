@@ -12,6 +12,8 @@ namespace drake {
 namespace automotive {
 namespace {
 
+const int kNumVehicleBodies = 17;  // The number of bodies in the car model.
+
 // Simple touches on the getters.
 GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
@@ -29,6 +31,11 @@ void GetLastPublishedJointValue(const std::string& channel,
   translator.Deserialize(message.data(), message.size(), joint_value);
 }
 
+// TODO(liang.fok): Extract code from this unit test into a general method that
+// takes as input a model and evaluates a SimpleCar based on the provided model.
+// This would allow, for example, models containing varying numbers of bodies to
+// be efficiently evaluated.
+//
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
@@ -56,7 +63,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(1, tree.get_num_model_instances());
-  ASSERT_EQ(18, tree.get_num_bodies());  // (0 is world, 17 is part of a Prius.)
+  // One body belong to the world, the rest belong to the car.
+  ASSERT_EQ(1 + kNumVehicleBodies, tree.get_num_bodies());
+
   const auto& body = tree.get_body(1);
   EXPECT_EQ("chassis_floor", body.get_name());
 
@@ -98,7 +107,8 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
       published_message_bytes.size()), 0);
 
-  EXPECT_EQ(published_draw_message.num_links, 18);
+  // One body blongs to the world, the rest belogn to the car model.
+  EXPECT_EQ(published_draw_message.num_links, 1 + kNumVehicleBodies);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
   EXPECT_EQ(published_draw_message.link_name.at(1), "chassis_floor");
 
@@ -129,9 +139,17 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
   // Confirm that the RigidBodyTree has been appropriately amended.
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(2, tree.get_num_model_instances());
-  ASSERT_EQ(35, tree.get_num_bodies());  // (0 is world, 1 & 2 are Prius cars.)
+  // One body belongs to the world, the rest belong to two car models.
+  ASSERT_EQ(1 + 2 * kNumVehicleBodies, tree.get_num_bodies());
+
+  // Verifies that the first car was added to the tree.
   EXPECT_EQ("chassis_floor", tree.get_body(1).get_name());
   EXPECT_EQ("front_axle", tree.get_body(2).get_name());
+
+
+  // Verifies that the second car got added to the tree.
+  EXPECT_EQ("chassis_floor", tree.get_body(kNumVehicleBodies + 1).get_name());
+  EXPECT_EQ("front_axle", tree.get_body(kNumVehicleBodies + 2).get_name());
 
   // Run for a while.
   for (int i = 0; i < 100; ++i) {

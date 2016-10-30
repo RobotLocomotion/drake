@@ -196,8 +196,8 @@ const systems::System<T>& AutomotiveSimulator<T>::GetDiagramSystemByName(
 
 template <typename T>
 std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() {
-  std::vector<int> position_state_vec;
-  std::vector<int> velocity_state_vec;
+  std::vector<int> position_states;
+  std::vector<int> velocity_states;
 
   for (const auto& model_info : rigid_body_tree_publisher_inputs_) {
     const int model_instance_id = model_info.first;
@@ -209,31 +209,27 @@ std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() {
       num_joint_positions += body->getJoint().get_num_positions();
       num_joint_velocities += body->getJoint().get_num_velocities();
     }
-    position_state_vec.push_back(num_joint_positions);
-    velocity_state_vec.push_back(num_joint_velocities);
+    position_states.push_back(num_joint_positions);
+    velocity_states.push_back(num_joint_velocities);
   }
   std::vector<int> result;
-  for (const auto& count : position_state_vec) {
-    result.push_back(count);
-  }
-  for (const auto& count : velocity_state_vec) {
-    result.push_back(count);
-  }
+  result.reserve(position_states.size() + velocity_states.size());
+  result.insert(result.end(), position_states.begin(), position_states.end());
+  result.insert(result.end(), velocity_states.begin(), velocity_states.end());
   return result;
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::Start() {
-  DRAKE_DEMAND(!started_);
+void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
   if (!rigid_body_tree_publisher_inputs_.empty()) {
     // Arithmetic for RigidBodyTreeLcmPublisher input sizing.  We have systems
     // that output an Euler floating joint state.  We want to mux them together
     // to feed RigidBodyTreeLcmPublisher.  We stack them up in joint order as
     // the position input to the publisher, and then also need to feed zeros
     // for all of the joint velocities.
-    const int num_models = rigid_body_tree_publisher_inputs_.size();
+    std::vector<int> joint_state_sizes = GetModelJointStateSizes();
     auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
-        GetModelJointStateSizes());
+        joint_state_sizes);
 
     auto rigid_body_tree_publisher =
         builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
@@ -242,6 +238,7 @@ void AutomotiveSimulator<T>::Start() {
 
     // Connects systems that provide joint positions to the mux position inputs.
     // Connects a zero-velocity source to each of the mux velocity inputs.
+    const int num_models = rigid_body_tree_publisher_inputs_.size();
     for (int model_index = 0; model_index < num_models; ++model_index) {
       int model_instance_id{};
       const systems::System<T>* model_pose_system{};
@@ -266,14 +263,14 @@ void AutomotiveSimulator<T>::Start() {
       DRAKE_DEMAND(base_joint.get_num_velocities() == kRpyJointNumVel);
 
       // Determines the number of DOFs in the model instance.
-      std::vector<const RigidBody*> bodies =
-          rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
-      int num_position_dofs{0};
-      int num_velocity_dofs{0};
-      for (const auto& body : bodies) {
-        num_position_dofs += body->getJoint().get_num_positions();
-        num_velocity_dofs += body->getJoint().get_num_velocities();
-      }
+      // std::vector<const RigidBody*> bodies =
+      //     rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
+      int num_position_dofs = joint_state_sizes.at(model_index);
+      int num_velocity_dofs = joint_state_sizes.at(num_models + model_index);
+      // for (const auto& body : bodies) {
+      //   num_position_dofs += body->getJoint().get_num_positions();
+      //   num_velocity_dofs += body->getJoint().get_num_velocities();
+      // }
 
       if (num_position_dofs == kRpyJointNumPos) {
         // The robot has no position DOFs beyond the floating joint DOFs. Thus,
@@ -292,12 +289,15 @@ void AutomotiveSimulator<T>::Start() {
         auto zero_position_source =
             builder_->template AddSystem<systems::ConstantVectorSource>(
                 VectorX<T>::Zero(num_reg_pos_dofs).eval());
-        std::vector<int> position_mux_port_sizes;
-        position_mux_port_sizes.push_back(kRpyJointNumPos);
-        position_mux_port_sizes.push_back(num_reg_pos_dofs);
+        // std::vector<int> position_mux_port_sizes;
+        // position_mux_port_sizes.push_back(kRpyJointNumPos);
+        // position_mux_port_sizes.push_back(num_reg_pos_dofs);
+        // auto position_mux =
+        //     builder_->template AddSystem<systems::Multiplexer<T>>(
+        //         position_mux_port_sizes);
         auto position_mux =
             builder_->template AddSystem<systems::Multiplexer<T>>(
-                position_mux_port_sizes);
+                std::vector<int>{kRpyJointNumPos, num_reg_pos_dofs});
         builder_->Connect(model_pose_system->get_output_port(0),
                           position_mux->get_input_port(0));
         builder_->Connect(zero_position_source->get_output_port(),
@@ -315,7 +315,16 @@ void AutomotiveSimulator<T>::Start() {
                         multiplexer->get_input_port(num_models + model_index));
     }
   }
+}
+
+template <typename T>
+void AutomotiveSimulator<T>::Start() {
+  DRAKE_DEMAND(!started_);
+  // By this time, all model instances should have been added to the tree. Thus,
+  // it should be safe to compile the tree.
   rigid_body_tree_->compile();
+
+  ConnectJointStateSourcesToVisualizer();
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
