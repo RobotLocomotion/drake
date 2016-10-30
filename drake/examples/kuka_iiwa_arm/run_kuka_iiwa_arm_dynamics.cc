@@ -15,7 +15,6 @@
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
-
 using std::make_unique;
 using std::move;
 using std::unique_ptr;

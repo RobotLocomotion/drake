@@ -4,15 +4,15 @@ set(source_files kinematics_results.cc rigid_body_plant.cc)
 # RigidBodyTreeLcmPublisher in libdrakeRigidBodyPlant.so if LCM exists.
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
-  set(drake_visualizer.h
-      lcm_dependent_header_files
+  set(lcm_dependent_header_files
+      drake_visualizer.h
       viewer_draw_translator.h)
 endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
-  set(drake_visualizer.cc
-      lcm_dependent_source_files
+  set(lcm_dependent_source_files
+      drake_visualizer.cc
       viewer_draw_translator.cc)
 endif()
 
