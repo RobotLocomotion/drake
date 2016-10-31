@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
@@ -28,6 +30,9 @@
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+
+DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
+              "Number of seconds to simulate.");
 
 namespace drake {
 namespace examples {
@@ -278,7 +283,7 @@ int DoMain() {
   simulator.Initialize();
 
   // Simulate for a very long time.
-  simulator.StepTo(1e6);
+  simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
 }
@@ -288,6 +293,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::kuka_iiwa_arm::DoMain();
 }
