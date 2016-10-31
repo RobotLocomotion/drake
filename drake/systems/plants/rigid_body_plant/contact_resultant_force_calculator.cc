@@ -98,8 +98,8 @@ void ContactResultantForceCalculator<T>::ComputeCachedData() const {
   // origin is not the first point we arbitrarily selected.
   Vector3<T> O = O_temp;
   if (candidate_index != 0) {
-    O_temp = forces_[candidate_index].get_application_point();
-    normal_moment -= (O - O_temp).cross(normal_resultant);
+    O = forces_[candidate_index].get_application_point();
+    normal_moment -= (O_temp - O).cross(normal_resultant);
   }
 
   // Compute the minimum moment point.
