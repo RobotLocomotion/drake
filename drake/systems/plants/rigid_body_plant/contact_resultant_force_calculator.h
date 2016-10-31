@@ -99,8 +99,8 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
       ContactResultantForceCalculator&& other) = delete;
 
  private:
-  // Recomputes the cached minimimum moment point and resultant force.
-  void ComputeCachedData() const;
+  // Recomputes the cached resultant values: minimimum moment point and force.
+  void ComputeResultantValues() const;
 
   // Aggregator for the force data that has been added.
   // TODO(SeanCurtis-TRI): Get the class right.
