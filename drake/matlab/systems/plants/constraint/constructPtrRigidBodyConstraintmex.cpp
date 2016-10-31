@@ -9,7 +9,7 @@
 using namespace Eigen;
 using namespace std;
 
-void checkBodyOrFrameID(const int body, const RigidBodyTree* model,
+void checkBodyOrFrameID(const int body, const RigidBodyTreed* model,
                         const char* body_var_name = "body") {
   if (body >= static_cast<int>(model->bodies.size())) {
     mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs",
@@ -47,7 +47,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::QuasiStaticConstraintType,"
                           "robot_ptr, tspan, model_instance_ids)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       int* model_instance_ids = nullptr;
       size_t num_robot;
@@ -94,7 +94,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       } else {
         rigidBodyConstraintParseTspan(prhs[2], tspan);
       }
-      RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       PostureConstraint* cnst = new PostureConstraint(robot, tspan);
       plhs[0] =
           createDrakeConstraintMexPointer((void*)cnst, "PostureConstraint");
@@ -109,7 +109,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "SingleTimeLinearPostureConstraintType, robot.mex_"
                           "model_ptr, iAfun, jAvar, A, lb, ub, tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 7) {
         tspan << -mxGetInf(), mxGetInf();
@@ -168,7 +168,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "AllBodiesClosestDistanceConstraintType, "
             "robot.mex_model_ptr, lb, ub, active_collision_options, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs == 5) {
         tspan << -mxGetInf(), mxGetInf();
@@ -232,7 +232,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "RigidBodyConstraint::WorldEulerConstraintType, robot."
             "mex_model_ptr, body, lb, ub, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldEulerConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs == 5) {
@@ -270,7 +270,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot.mex_model_ptr, body, axis, dir, conethreshold,"
                           "tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldGazeDirConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs == 6) {
@@ -304,7 +304,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot.mex_model_ptr, body, axis, quat_des,"
                           "conethreshold, threshold, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldGazeOrientConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs == 7) {
@@ -340,7 +340,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, body, axis, target, gaze_origin,"
             "conethreshold, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldGazeTargetConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs == 7) {
@@ -382,7 +382,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, bodyA, bodyB, axis, target, gaze_"
             "origin, conethreshold, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs < 9) {
         tspan << -mxGetInf(), mxGetInf();
@@ -462,7 +462,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot.mex_model_ptr, bodyA, bodyB, axis, dir,"
                           "conethreshold, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs < 8) {
         tspan << -mxGetInf(), mxGetInf();
@@ -533,7 +533,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::WorldCoMConstraintType, robot."
                           "mex_model_ptr, lb, ub, tspan, model_instance_ids)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldCoMConstraint* cnst = nullptr;
       Vector2d tspan;
       int* model_instance_ids = nullptr;
@@ -586,7 +586,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::WorldPositionConstraintType, "
                           "robot.mex_model_ptr, body, pts, lb, ub, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldPositionConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 6) {
@@ -631,7 +631,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::WorldPositionInFrameConstraint,"
                           " robot.mex_model_ptr, body, pts, lb, ub, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldPositionInFrameConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 7) {
@@ -682,7 +682,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::WorldQuatConstraintType, robot."
                           "mex_model_ptr, body, quat_des, tol, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldQuatConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 5) {
@@ -710,7 +710,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, bodyA, bodyB, ptA, ptB, dist_lb,"
             "dist_ub, tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 8) {
         tspan << -mxGetInf(), mxGetInf();
@@ -785,7 +785,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, pt_body, pt, line_body, line_ends,"
             "lb, ub, tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 8) {
         tspan << -mxGetInf(), mxGetInf();
@@ -853,7 +853,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "WorldFixedPositionConstraintType, "
                           "robot.mex_model_ptr, body, pts, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldFixedPositionConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 4) {
@@ -883,7 +883,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "RigidBodyConstraint::WorldFixedOrientConstraintType,"
                           "robot.mex_model_ptr, body, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldFixedOrientConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 3) {
@@ -907,7 +907,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "WorldFixedBodyPoseConstraintType, "
             "robot.mex_model_ptr, body, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       WorldFixedBodyPoseConstraint* cnst = nullptr;
       Vector2d tspan;
       if (nrhs <= 3) {
@@ -932,7 +932,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, joint_ind, lb_change, ub_change,"
             "tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 5) {
         tspan << -mxGetInf(), mxGetInf();
@@ -999,7 +999,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "robot.mex_model_ptr, pts, lb, ub, bodyA_idx, bodyB_idx,"
             "bTbp, tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 8) {
         tspan << -mxGetInf(), mxGetInf();
@@ -1064,7 +1064,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot.mex_model_ptr, bodyA_idx, bodyB_idx, quat_des,"
                           "tol, tspan");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs <= 6) {
         tspan << -mxGetInf(), mxGetInf();
@@ -1115,7 +1115,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot.mex_model_ptr, min_distance, active_collision_"
                           "options, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs == 4) {
         tspan << -mxGetInf(), mxGetInf();
@@ -1180,7 +1180,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "GravityCompensationTorqueConstraintType, "
                           "robot.mex_model_ptr, joint_ind, lb, ub, tspan)");
       }
-      RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTreed* model = (RigidBodyTreed*)getDrakeMexPointer(prhs[1]);
       Vector2d tspan;
       if (nrhs == 5) {
         tspan << -mxGetInf(), mxGetInf();

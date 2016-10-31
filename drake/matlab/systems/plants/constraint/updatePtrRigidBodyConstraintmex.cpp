@@ -76,7 +76,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         delete[] new_bodies;
         delete[] new_body_pts;
       } else if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -136,7 +136,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       AllBodiesClosestDistanceConstraint* cnst =
           (AllBodiesClosestDistanceConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         AllBodiesClosestDistanceConstraint* cnst_new =
             new AllBodiesClosestDistanceConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -151,7 +151,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldEulerConstraintType: {
       WorldEulerConstraint* cnst = (WorldEulerConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldEulerConstraint* cnst_new = new WorldEulerConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -164,7 +164,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldGazeDirConstraintType: {
       WorldGazeDirConstraint* cnst = (WorldGazeDirConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldGazeDirConstraint* cnst_new = new WorldGazeDirConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -177,7 +177,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldGazeOrientConstraintType: {
       WorldGazeOrientConstraint* cnst = (WorldGazeOrientConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldGazeOrientConstraint* cnst_new =
             new WorldGazeOrientConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -192,7 +192,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldGazeTargetConstraintType: {
       WorldGazeTargetConstraint* cnst = (WorldGazeTargetConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldGazeTargetConstraint* cnst_new =
             new WorldGazeTargetConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -208,7 +208,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       RelativeGazeTargetConstraint* cnst =
           (RelativeGazeTargetConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         RelativeGazeTargetConstraint* cnst_new =
             new RelativeGazeTargetConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -223,7 +223,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::RelativeGazeDirConstraintType: {
       RelativeGazeDirConstraint* cnst = (RelativeGazeDirConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         RelativeGazeDirConstraint* cnst_new =
             new RelativeGazeDirConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -238,7 +238,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldCoMConstraintType: {
       WorldCoMConstraint* cnst = (WorldCoMConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldCoMConstraint* cnst_new = new WorldCoMConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -268,7 +268,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldPositionConstraintType: {
       WorldPositionConstraint* cnst = (WorldPositionConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldPositionConstraint* cnst_new = new WorldPositionConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -282,7 +282,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       WorldPositionInFrameConstraint* cnst =
           (WorldPositionInFrameConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldPositionInFrameConstraint* cnst_new =
             new WorldPositionInFrameConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -297,7 +297,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::WorldQuatConstraintType: {
       WorldQuatConstraint* cnst = (WorldQuatConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldQuatConstraint* cnst_new = new WorldQuatConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -311,7 +311,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       Point2PointDistanceConstraint* cnst =
           (Point2PointDistanceConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         Point2PointDistanceConstraint* cnst_new =
             new Point2PointDistanceConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -327,7 +327,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       Point2LineSegDistConstraint* cnst =
           (Point2LineSegDistConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         Point2LineSegDistConstraint* cnst_new =
             new Point2LineSegDistConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -343,7 +343,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       WorldFixedPositionConstraint* cnst =
           (WorldFixedPositionConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldFixedPositionConstraint* cnst_new =
             new WorldFixedPositionConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -359,7 +359,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       WorldFixedOrientConstraint* cnst =
           (WorldFixedOrientConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldFixedOrientConstraint* cnst_new =
             new WorldFixedOrientConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -375,7 +375,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       WorldFixedBodyPoseConstraint* cnst =
           (WorldFixedBodyPoseConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         WorldFixedBodyPoseConstraint* cnst_new =
             new WorldFixedBodyPoseConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -391,7 +391,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       RelativePositionConstraint* cnst =
           static_cast<RelativePositionConstraint*>(constraint);
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         RelativePositionConstraint* cnst_new =
             new RelativePositionConstraint(*cnst);
         cnst_new->updateRobot(robot);
@@ -407,7 +407,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       RelativeQuatConstraint* cnst =
           static_cast<RelativeQuatConstraint*>(constraint);
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         RelativeQuatConstraint* cnst_new = new RelativeQuatConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -420,7 +420,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::MinDistanceConstraintType: {
       MinDistanceConstraint* cnst = (MinDistanceConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         MinDistanceConstraint* cnst_new = new MinDistanceConstraint(*cnst);
         cnst_new->updateRobot(robot);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
@@ -434,7 +434,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       GravityCompensationTorqueConstraint* cnst =
           (GravityCompensationTorqueConstraint*)constraint;
       if (field_str == "robot") {
-        RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[2]);
+        RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(prhs[2]);
         GravityCompensationTorqueConstraint* cnst_new =
             new GravityCompensationTorqueConstraint(*cnst);
         cnst_new->updateRobot(robot);

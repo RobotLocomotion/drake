@@ -183,7 +183,7 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports) {
 }
 
 std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
-setUpContactGroups(RigidBodyTree* robot, const mxArray* mex_contact_groups) {
+setUpContactGroups(RigidBodyTreed* robot, const mxArray* mex_contact_groups) {
   DRAKE_ASSERT(mxGetNumberOfElements(mex_contact_groups) ==
                robot->bodies.size());
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap>
@@ -306,7 +306,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   const mxArray* mex_lcm_channel = prhs[2];
 
   // robot
-  RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(mex_model);
+  RigidBodyTreed* robot = (RigidBodyTreed*)getDrakeMexPointer(mex_model);
 
   // settings
   QPLocomotionPlanSettings settings;
