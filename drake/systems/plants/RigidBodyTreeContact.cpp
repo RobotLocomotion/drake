@@ -295,3 +295,7 @@ RigidBodyTree<double>::computeContactJacobians<double>(
     Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
                Eigen::OuterStride<-1> > const &,
     Eigen::Matrix<double, -1, -1, 0, -1, -1> &) const;
+
+template DRAKE_EXPORT void RigidBodyTree<double>::surfaceTangents(
+    Eigen::Map<Eigen::Matrix3Xd> const &normals,
+    std::vector<Eigen::Map<Eigen::Matrix3Xd>> &tangents) const;
