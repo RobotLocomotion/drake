@@ -33,6 +33,7 @@ class PendulumRunningCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -58,6 +59,7 @@ class PendulumFinalCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());

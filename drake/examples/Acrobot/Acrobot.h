@@ -109,10 +109,14 @@ class Acrobot {
   virtual ~Acrobot(void) {}
 
   template <typename ScalarType>
-  void manipulatorDynamics(const AcrobotState<ScalarType>& x,
-                           Eigen::Matrix<ScalarType, 2, 2>& H,
-                           Eigen::Matrix<ScalarType, 2, 1>& C,
-                           Eigen::Matrix<ScalarType, 2, 1>& B) const {
+  void manipulatorDynamics(
+      const AcrobotState<ScalarType>& x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix<ScalarType, 2, 2>& H,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix<ScalarType, 2, 1>& C,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix<ScalarType, 2, 1>& B) const {
     double I1 = Ic1 + m1 * lc1 * lc1;
     double I2 = Ic2 + m2 * lc2 * lc2;
     double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
