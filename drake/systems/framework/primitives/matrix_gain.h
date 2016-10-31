@@ -39,7 +39,7 @@ class MatrixGain: public LinearSystem<T> {
   /**
    * A constructor where the gain matrix `D` is @p D.
    */
-  explicit MatrixGain(const MatrixX<T>& D);
+  explicit MatrixGain(const Eigen::MatrixXd& D);
 };
 
 }  // namespace systems
