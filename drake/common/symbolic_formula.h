@@ -137,7 +137,7 @@ class DRAKE_EXPORT Formula {
   std::shared_ptr<FormulaCell> ptr_;
 };
 
-/** Returns a formula \p f, universally quantified by variables \p vars. */
+/** Returns a formula @p f, universally quantified by variables @p vars. */
 DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
 DRAKE_EXPORT Formula operator==(const Expression& e1, const Expression& e2);
@@ -177,7 +177,7 @@ class FormulaCell {
   FormulaCell& operator=(FormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   FormulaCell& operator=(const FormulaCell& f) = delete;
-  /** Construct FormulaCell of kind \p k with \p hash. */
+  /** Construct FormulaCell of kind @p k with @p hash. */
   FormulaCell(FormulaKind k, size_t hash);
   /** Returns kind of formula. */
   FormulaKind get_kind() const { return kind_; }
@@ -189,7 +189,7 @@ class FormulaCell {
   virtual bool EqualTo(const FormulaCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual bool Evaluate(const Environment& env) const = 0;
-  /** Output string representation of formula into output stream \p os. */
+  /** Output string representation of formula into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  private:
@@ -211,7 +211,7 @@ class RelationalFormulaCell : public FormulaCell {
   RelationalFormulaCell& operator=(RelationalFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   RelationalFormulaCell& operator=(const RelationalFormulaCell& f) = delete;
-  /** Construct RelationalFormulaCell of kind \p k with \p hash. */
+  /** Construct RelationalFormulaCell of kind @p k with @p hash. */
   RelationalFormulaCell(FormulaKind k, const Expression& e1,
                         const Expression& e2);
   Variables GetFreeVariables() const override;
@@ -241,7 +241,7 @@ class BinaryFormulaCell : public FormulaCell {
   BinaryFormulaCell& operator=(BinaryFormulaCell&& f) = delete;
   /** Copy-assign (DELETED). */
   BinaryFormulaCell& operator=(const BinaryFormulaCell& f) = delete;
-  /** Construct BinaryFormulaCell of kind \p k with \p hash. */
+  /** Construct BinaryFormulaCell of kind @p k with @p hash. */
   BinaryFormulaCell(FormulaKind k, const Formula& f1, const Formula& f2);
   Variables GetFreeVariables() const override;
   bool EqualTo(const FormulaCell& f) const override;
@@ -379,9 +379,7 @@ namespace assert {
 template <>
 struct ConditionTraits<symbolic::Formula> {
   static constexpr bool is_valid = true;
-  static bool Evaluate(const symbolic::Formula&) {
-    return true;
-  }
+  static bool Evaluate(const symbolic::Formula&) { return true; }
 };
 }  // namespace assert
 }  // namespace drake
