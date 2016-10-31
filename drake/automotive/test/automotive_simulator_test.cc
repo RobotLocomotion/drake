@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/lcm/lcm_publisher_system.h"
@@ -12,8 +13,6 @@ namespace drake {
 namespace automotive {
 namespace {
 
-const int kNumVehicleBodies = 17;  // The number of bodies in the car model.
-
 // Simple touches on the getters.
 GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
@@ -23,7 +22,8 @@ GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
 
 // Obtains the serialized version of the last message transmitted on LCM channel
 // @p channel. Uses @p translator to decode the message into @p joint_value.
-void GetLastPublishedJointValue(const std::string& channel,
+void GetLastPublishedJointValue(
+    const std::string& channel,
     const systems::lcm::LcmAndVectorBaseTranslator& translator,
     lcm::DrakeMockLcm* mock_lcm, EulerFloatingJointState<double>* joint_value) {
   const std::vector<uint8_t>& message =
@@ -31,14 +31,10 @@ void GetLastPublishedJointValue(const std::string& channel,
   translator.Deserialize(message.data(), message.size(), joint_value);
 }
 
-// TODO(liang.fok): When AutomotiveSimulator's API is updated to allow the model
-// of SimpleCar to be client-selectable, be sure to avoid duplicating code. This
-// can be done by generalizing the code in the following unit test and placing
-// it in a method that can be called by numerous unit tests, each evaluating
-// SimpleCar using a different model.
-//
-// Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
-GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
+// A helper method for unit testing SimpleCar. Parameter @p sdf_filename is the
+// name of the file containing the model of the vehicle to be used by the
+// SimpleCar.
+void TestSimpleCarWithSdf(const std::string& sdf_filename) {
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
@@ -51,7 +47,13 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   // Set up a basic simulation with just SimpleCar and its hangers-on.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
-  simulator->AddSimpleCar();
+  const int model_instance_id = simulator->AddSimpleCarFromSdf(sdf_filename);
+
+  // Obtain the number of bodies belonging to the model.
+  const int num_vehicle_bodies = simulator->get_rigid_body_tree()
+                                     .FindModelInstanceBodies(model_instance_id)
+                                     .size();
+
   // Grab the pieces we want (testing the GetSystemByName in the process).
   auto& command_sub = dynamic_cast<systems::lcm::LcmSubscriberSystem&>(
       simulator->GetBuilderSystemByName(driving_command_name));
@@ -65,7 +67,7 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(1, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to the car.
-  ASSERT_EQ(1 + kNumVehicleBodies, tree.get_num_bodies());
+  ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
 
   const auto& body = tree.get_body(1);
   EXPECT_EQ("chassis_floor", body.get_name());
@@ -106,33 +108,58 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTest) {
 
   drake::lcmt_viewer_draw published_draw_message;
   EXPECT_GT(published_draw_message.decode(&published_message_bytes[0], 0,
-      published_message_bytes.size()), 0);
+                                          published_message_bytes.size()),
+            0);
 
   // One body belongs to the world, the rest belong to the car model.
-  EXPECT_EQ(published_draw_message.num_links, 1 + kNumVehicleBodies);
+  EXPECT_EQ(published_draw_message.num_links, 1 + num_vehicle_bodies);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
   EXPECT_EQ(published_draw_message.link_name.at(1), "chassis_floor");
 
   // The subsystem pointers must not change.
-  EXPECT_EQ(
-      &simulator->GetDiagramSystemByName(driving_command_name), &command_sub);
+  EXPECT_EQ(&simulator->GetDiagramSystemByName(driving_command_name),
+            &command_sub);
   EXPECT_EQ(&simulator->GetDiagramSystemByName(joint_state_name), &state_pub);
 }
 
-// Cover AddTrajectoryCar (and thus AddPublisher).
-GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
+// Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
+GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
+  TestSimpleCarWithSdf(GetDrakePath() +
+                       "/automotive/models/prius/prius_with_lidar.sdf");
+}
+
+// A helper method for unit testing TrajectoryCar. Parameter @p sdf_filename is
+// the name of the file containing the model of the vehicle to be used by the
+// TrajectoryCar.
+void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   typedef Curve2<double> Curve2d;
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{
-    {0.0, 0.0},
-    {100.0, 0.0},
+      {0.0, 0.0},
+      {100.0, 0.0},
   };
   const Curve2d curve{waypoints};
 
   // Set up a basic simulation with just some TrajectoryCars.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
-  simulator->AddTrajectoryCar(curve, 1.0, 0.0);
-  simulator->AddTrajectoryCar(curve, 1.0, 10.0);
+  const int model_instance_id_1 =
+      simulator->AddTrajectoryCarFromSdf(sdf_file, curve, 1.0, 0.0);
+  const int model_instance_id_2 =
+      simulator->AddTrajectoryCarFromSdf(sdf_file, curve, 1.0, 10.0);
+
+  // Obtain the number of bodies in the models.
+  const std::vector<const RigidBody*> vehicle_bodies_1 =
+      simulator->get_rigid_body_tree().FindModelInstanceBodies(
+          model_instance_id_1);
+  const std::vector<const RigidBody*> vehicle_bodies_2 =
+      simulator->get_rigid_body_tree().FindModelInstanceBodies(
+          model_instance_id_2);
+  const int num_vehicle_bodies_1 = vehicle_bodies_1.size();
+  const int num_vehicle_bodies_2 = vehicle_bodies_2.size();
+
+  // The tests below will not work if the model has less than two bodies.
+  EXPECT_GE(num_vehicle_bodies_1, 2);
+  EXPECT_GE(num_vehicle_bodies_2, 2);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -141,16 +168,18 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(2, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to two car models.
-  ASSERT_EQ(1 + 2 * kNumVehicleBodies, tree.get_num_bodies());
+  ASSERT_EQ(1 + num_vehicle_bodies_1 + num_vehicle_bodies_2,
+            tree.get_num_bodies());
 
   // Verifies that the first car was added to the tree.
-  EXPECT_EQ("chassis_floor", tree.get_body(1).get_name());
-  EXPECT_EQ("front_axle", tree.get_body(2).get_name());
-
+  EXPECT_EQ(vehicle_bodies_1.at(0)->get_name(), tree.get_body(1).get_name());
+  EXPECT_EQ(vehicle_bodies_1.at(1)->get_name(), tree.get_body(2).get_name());
 
   // Verifies that the second car was added to the tree.
-  EXPECT_EQ("chassis_floor", tree.get_body(kNumVehicleBodies + 1).get_name());
-  EXPECT_EQ("front_axle", tree.get_body(kNumVehicleBodies + 2).get_name());
+  EXPECT_EQ(vehicle_bodies_2.at(0)->get_name(),
+            tree.get_body(num_vehicle_bodies_1 + 1).get_name());
+  EXPECT_EQ(vehicle_bodies_2.at(1)->get_name(),
+            tree.get_body(num_vehicle_bodies_1 + 2).get_name());
 
   // Run for a while.
   for (int i = 0; i < 100; ++i) {
@@ -164,6 +193,12 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTest) {
 
   // No aborts is good enough.
   EXPECT_TRUE(true);
+}
+
+// Cover AddTrajectoryCar (and thus AddPublisher).
+GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
+  TestTrajectoryCarWithSdf(GetDrakePath() +
+                           "/automotive/models/prius/prius_with_lidar.sdf");
 }
 
 }  // namespace

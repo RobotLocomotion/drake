@@ -3,9 +3,10 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
+#include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
 
 DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
@@ -25,16 +26,17 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  const std::string sdf_file =
+      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   for (int i = 0; i < FLAGS_num_simple_car; ++i) {
-    simulator->AddSimpleCar();
+    simulator->AddSimpleCarFromSdf(sdf_file);
   }
   for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
     const auto& params = CreateTrajectoryParams(i);
-    simulator->AddTrajectoryCar(
-        std::get<0>(params),
-        std::get<1>(params),
-        std::get<2>(params));
+    simulator->AddTrajectoryCarFromSdf(sdf_file, std::get<0>(params),
+                                       std::get<1>(params),
+                                       std::get<2>(params));
   }
 
   simulator->Start();

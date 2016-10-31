@@ -48,13 +48,33 @@ class AutomotiveSimulator {
   /// LCM input and EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
-  void AddSimpleCar();
+  ///
+  /// @param[in] sdf_file The name of the SDF file to load for the simple car.
+  ///
+  /// @return The model instance ID of the SimpleCar that was just added to
+  /// the simulation.
+  int AddSimpleCarFromSdf(const std::string& sdf_file);
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
+  ///
   /// @pre Start() has NOT been called.
-  void AddTrajectoryCar(const Curve2<double>& curve, double speed,
-                        double start_time);
+  ///
+  /// @param[in] sdf_file The name of the SDF file to load for the trajectory
+  /// car.
+  ///
+  /// @param[in] curve The curve along which the trajectory car should follow.
+  ///
+  /// @param[in] speed The speed at which the trajectory car should move.
+  ///
+  /// @param[in] start_time The time at which the trajectory car should start
+  /// moving.
+  ///
+  /// @return The model instance ID of the TrajectoryCar that was just added to
+  /// the simulation.
+  int AddTrajectoryCarFromSdf(const std::string& sdf_file,
+                              const Curve2<double>& curve, double speed,
+                              double start_time);
 
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
@@ -108,8 +128,8 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
-  void AddSdfModel(const std::string& sdf_filename,
-                   const SimpleCarToEulerFloatingJoint<T>*);
+  int AddSdfModel(const std::string& sdf_filename,
+                  const SimpleCarToEulerFloatingJoint<T>*);
 
   // Connects the systems that output the pose of each vehicle to the
   // visualizer. This is done by using multiplexers to add zero state sources
