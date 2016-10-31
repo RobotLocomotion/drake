@@ -22,7 +22,8 @@ AtlasPlant::AtlasPlant() {
 
 const VectorXd& AtlasPlant::get_initial_state() const { return x0_; }
 
-const std::shared_ptr<RigidBodyTree<double>>& AtlasPlant::get_rigid_body_tree() const {
+const std::shared_ptr<RigidBodyTree<double>>&
+AtlasPlant::get_rigid_body_tree() const {
   return sys_->getRigidBodyTree();
 }
 

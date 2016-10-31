@@ -52,7 +52,8 @@ bool isConvertibleFromMex(const mxArray *source, RigidBodyTree<double> *ptr,
   return isDrakeMexPointerOfCorrectType(source, ptr, log);
 }
 
-RigidBodyTree<double> &fromMexUnsafe(const mxArray *source, RigidBodyTree<double> *) {
+RigidBodyTree<double> &fromMexUnsafe(
+    const mxArray *source, RigidBodyTree<double> *) {
   return *static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(source));
 }
 

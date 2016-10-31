@@ -7,7 +7,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& rigid_body_tree)
+GravityCompensator<T>::GravityCompensator(
+    const RigidBodyTree<T>& rigid_body_tree)
     : rigid_body_tree_(rigid_body_tree) {
   this->DeclareInputPort(kVectorValued, rigid_body_tree.get_num_positions(),
                          kContinuousSampling);

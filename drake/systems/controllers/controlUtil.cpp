@@ -101,7 +101,8 @@ void surfaceTangents(const Vector3d& normal,
   }
 }
 
-int contactPhi(const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
+int contactPhi(const RigidBodyTree<double>& r,
+               const KinematicsCache<double>& cache,
                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                SupportStateElement& supp, VectorXd& phi) {
   int nc = static_cast<int>(supp.contact_pts.size());
