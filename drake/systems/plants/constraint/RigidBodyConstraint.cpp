@@ -1,5 +1,9 @@
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
+// TODO(#2274) NOTE This file has so many cpplint errors that we have
+// whitelisted it in its entirety.  When the file is next rewritten or updates,
+// we should re-enable cpplint accordingly.
+
 #include <map>
 #include <stdexcept>
 
@@ -1061,7 +1065,9 @@ GazeOrientConstraint::GazeOrientConstraint(
 
 void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
                                 VectorXd& c, MatrixXd& dc) const {
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace std;
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace drake;
 
   const int num_constraint = getNumConstraint(t);

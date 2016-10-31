@@ -11,12 +11,8 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-/// A model of a one-dimensional pendulum system, similar to the one
-/// described in Chapter 2 of Russ Tedrake. Underactuated Robotics:
-/// Algorithms for Walking, Running, Swimming, Flying, and
-/// Manipulation (Course Notes for MIT 6.832). Downloaded on
-/// 2016-09-30 from
-/// http://underactuated.csail.mit.edu/underactuated.html?chapter=2
+/// A model of a simple pendulum
+/// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = u @f]
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -24,10 +20,10 @@ namespace pendulum {
 /// - double
 /// - AutoDiffXd
 template <typename T>
-class PendulumSystem : public systems::LeafSystem<T> {
+class PendulumPlant : public systems::LeafSystem<T> {
  public:
-  PendulumSystem();
-  ~PendulumSystem() override;
+  PendulumPlant();
+  ~PendulumPlant() override;
 
   using MyContext = systems::Context<T>;
   using MyContinuousState = systems::ContinuousState<T>;
@@ -64,10 +60,10 @@ class PendulumSystem : public systems::LeafSystem<T> {
   /// Gravity in m/s^2
   T g() const { return g_; }
 
-  explicit PendulumSystem(const PendulumSystem& other) = delete;
-  PendulumSystem& operator=(const PendulumSystem& other) = delete;
-  explicit PendulumSystem(PendulumSystem&& other) = delete;
-  PendulumSystem& operator=(PendulumSystem&& other) = delete;
+  explicit PendulumPlant(const PendulumPlant& other) = delete;
+  PendulumPlant& operator=(const PendulumPlant& other) = delete;
+  explicit PendulumPlant(PendulumPlant&& other) = delete;
+  PendulumPlant& operator=(PendulumPlant&& other) = delete;
 
  protected:
   // LeafSystem<T> override.

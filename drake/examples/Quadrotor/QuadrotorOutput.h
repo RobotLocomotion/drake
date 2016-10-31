@@ -92,8 +92,10 @@ class QuadrotorOutput {
     ScalarType rangefinder;
 };
 
-bool encode(const double& t, const QuadrotorOutput<double> & x,
-            drake::lcmt_quadrotor_output_t& msg) {
+bool encode(
+    const double& t, const QuadrotorOutput<double>& x,
+    // NOLINTNEXTLINE(runtime/references) This code will be deleted soon.
+    drake::lcmt_quadrotor_output_t& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
   Eigen::Map<Eigen::Vector3d> lcm_position(msg.position);
   Eigen::Map<Eigen::Vector4d> lcm_orientation(msg.orientation);

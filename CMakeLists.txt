@@ -134,7 +134,7 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DUSE_SWIG=OFF)
 
 # sedumi
-drake_add_external(sedumi CMAKE
+drake_add_external(sedumi PUBLIC CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # snopt

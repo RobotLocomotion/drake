@@ -32,6 +32,7 @@ struct BinaryContactResultCallback
 
   bool isInCollision() { return in_collision; }
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual btScalar addSingleResult(btManifoldPoint& cp,
                                    const btCollisionObjectWrapper* colObj0Wrap,
                                    int partId0, int index0,

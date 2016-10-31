@@ -118,7 +118,7 @@ class AutomotiveSimulator {
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
     std::make_unique<systems::DiagramBuilder<T>>()};
   std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
-      rigid_body_tree_publisher_inputs_;
+      drake_visualizer_inputs_;
   int next_vehicle_number_{0};
   bool started_{false};
 

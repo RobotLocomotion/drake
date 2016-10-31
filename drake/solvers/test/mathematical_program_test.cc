@@ -293,8 +293,7 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
       constraint.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(40));
+      -std::numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -378,13 +377,11 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
       constraint1.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(6.5));
+      -std::numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(
       constraint2.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(20));
+      -std::numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -920,8 +917,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   VectorXd constraint1(2);
   // x1 + x2 = 1
   constraint1 << 1, 1;
-  prog.AddLinearEqualityConstraint(constraint1.transpose(),
-                                   drake::Vector1d::Constant(1.0));
+  prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
 
   prog.Solve();
 
@@ -943,8 +939,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
-  prog.AddLinearEqualityConstraint(constraint2.transpose(),
-                                   drake::Vector1d::Constant(0.0), vars);
+  prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
@@ -1022,7 +1017,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
   prog_rotated_lorentz.AddBoundingBoxConstraint(
-      drake::Vector1d(1.0), drake::Vector1d(1.0), {slack_rotated_lorentz});
+      1.0, 1.0, slack_rotated_lorentz);
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();

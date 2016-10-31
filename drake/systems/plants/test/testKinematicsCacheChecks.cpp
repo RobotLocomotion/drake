@@ -23,6 +23,7 @@ struct CheckSettings {
 };
 
 template <typename O, typename F, typename... Args>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void checkForErrors(bool expect_error, O& object, F function,
                     Args&&... arguments) {
   try {
@@ -39,6 +40,7 @@ void checkForErrors(bool expect_error, O& object, F function,
         "Expected a runtime error, but did not catch one.");
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                    const CheckSettings& settings) {
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();

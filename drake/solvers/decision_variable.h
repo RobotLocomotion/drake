@@ -48,6 +48,8 @@ class DecisionVariable {
   const Eigen::VectorXd& value() const { return data_; }
   void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
 
+  VarType type() const {return type_;}
+
  private:
   VarType type_;
   std::string name_;
