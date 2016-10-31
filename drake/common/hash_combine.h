@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <functional>
+#include <iostream>
+#include <map>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -17,7 +19,7 @@ inline size_t hash_combine(size_t seed, const T& v) {
   return seed;
 }
 
-/// Computes a hash value of a given vector \p vec. It assumes that a given
+/// Computes a hash value of a given vector @p vec. It assumes that a given
 /// vector is non-empty.
 template <class T>
 inline size_t hash_combine(const std::vector<T>& vec) {
@@ -31,4 +33,20 @@ inline size_t hash_combine(const std::vector<T>& vec) {
   }
   return seed;
 }
+
+/// Computes a hash value of a given std::map @p map. It assumes that a given
+/// map is non-empty.
+template <class T1, class T2>
+inline size_t hash_combine(const std::map<T1, T2>& map) {
+  DRAKE_ASSERT(!map.empty());
+  auto it(map.cbegin());
+  std::hash<T1> hasher1;
+  size_t seed{hash_combine(hasher1(it->first), it->second)};
+  while (it != map.cend()) {
+    seed = hash_combine(seed, hash_combine(hasher1(it->first), it->second));
+    ++it;
+  }
+  return seed;
+}
+
 }  // namespace drake
