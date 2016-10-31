@@ -79,7 +79,7 @@ class DRAKE_EXPORT Environment {
   /** Returns a const iterator to the end. */
   const_iterator cend() const { return map_.cend(); }
 
-  /** Inserts a pair (\p key, \p elem). */
+  /** Inserts a pair (@p key, @p elem). */
   void insert(const key_type& key, const mapped_type& elem);
   /** Checks whether the container is empty.  */
   bool empty() const { return map_.empty(); }
@@ -95,7 +95,7 @@ class DRAKE_EXPORT Environment {
   std::string to_string() const;
 
   /** Returns a reference to the value that is mapped to a key equivalent to
-   * \p key, performing an insertion if such key does not already exist. */
+   * @p key, performing an insertion if such key does not already exist. */
   mapped_type& operator[](const key_type& key);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
