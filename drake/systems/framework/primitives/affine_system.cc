@@ -97,5 +97,40 @@ void AffineSystem<T>::EvalTimeDerivatives(
 template class DRAKE_EXPORT AffineSystem<double>;
 template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
 
+
+template <typename T>
+AffineSystem<T> Linearize(const System<AutoDiffXd>& system,
+                          const Context<AutoDiffXd>& context,
+                          const BasicVector<AutoDiffXd>& input) {
+  DRAKE_ASSERT_VOID(system.CheckValidContext(context));
+
+  // TODO(russt): check if system is continuous time (only) and/or discrete
+  // time (only)
+  // TODO(russt): handle the discrete time case
+
+  DRAKE_DEMAND(system.get_num_input_ports() == 1);
+  DRAKE_DEMAND(system.get_num_output_ports() == 1);
+  // TODO(russt): handle the MIMO case
+
+  // initialize autodiff
+
+  auto x0 = context.get_continuous_state_vector();
+  auto u0 = input.get_value();
+
+  auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
+  typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar
+      AutoDiffType;
+  Eigen::Vector<AutoDiffType> x(std::get<0>(autodiff_args));
+  Eigen::Vector<AutoDiffType> u(std::get<1>(autodiff_args));
+  Eigen::Vector<AutoDiffType> xdot;
+
+  DiagramBuilder<double> builder;
+  auto source = builder.AddSystem<ConstantVectorSource>(u);
+  auto pendulum = builder.AddSystem();
+
+}
+
+
+
 }  // namespace systems
 }  // namespace drake

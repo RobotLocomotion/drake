@@ -83,5 +83,16 @@ class AffineSystem : public LeafSystem<T> {
   const int num_states_;
 };
 
+/// Takes the first-order Taylor expansion of a system around the
+/// operating point defined by the context and operating input.  Returns
+/// the resulting AffineSystem approximation.
+///
+/// Note that the term linearization is consistently used in the literature
+/// even though the result may be affine (not simply linear).
+template <typename T>
+AffineSystem<T> Linearize(const System<T>& system,
+                          const Context<double>& context,
+                          const BasicVector<double>& input);
+
 }  // namespace systems
 }  // namespace drake
