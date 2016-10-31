@@ -154,7 +154,8 @@ class ContactInformation {
    * @return Basis matrix
    */
   Eigen::MatrixXd ComputeBasisMatrix(
-      const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
+      const RigidBodyTree<double>& robot,
+      const KinematicsCache<double>& cache) const {
     Eigen::MatrixXd basis(
         3 * contact_points_.size(),
         num_basis_per_contact_point_ * contact_points_.size());
@@ -203,7 +204,7 @@ class ContactInformation {
    * location.
    */
   void ComputeContactPointsAndWrenchReferencePoint(
-      const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+      const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
       const Eigen::Vector3d& offset,
       std::vector<Eigen::Vector3d>* contact_points,
       Eigen::Vector3d* reference_point) const {
@@ -255,7 +256,8 @@ class ContactInformation {
    * @return The stacked Jacobian matrix
    */
   Eigen::MatrixXd ComputeJacobianAtContactPoints(
-      const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
+      const RigidBodyTree<double>& robot,
+      const KinematicsCache<double>& cache) const {
     Eigen::MatrixXd J(3 * contact_points_.size(), robot.get_num_velocities());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       J.block(3 * i, 0, 3, robot.get_num_velocities()) =
@@ -274,7 +276,8 @@ class ContactInformation {
    * @return The stacked Jacobian dot times v vector
    */
   Eigen::VectorXd ComputeJacobianDotTimesVAtContactPoints(
-      const RigidBodyTree& robot, const KinematicsCache<double>& cache) const {
+      const RigidBodyTree<double>& robot,
+      const KinematicsCache<double>& cache) const {
     Eigen::VectorXd Jdv(3 * contact_points_.size());
     for (size_t i = 0; i < contact_points_.size(); i++) {
       Jdv.segment<3>(3 * i) =
@@ -454,7 +457,7 @@ class QPInput {
   double w_basis_reg_;
 
  public:
-  explicit QPInput(const RigidBodyTree& r) {
+  explicit QPInput(const RigidBodyTree<double>& r) {
     coord_names_.resize(r.get_num_velocities());
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
@@ -569,7 +572,7 @@ class QPOutput {
   std::vector<std::pair<std::string, double>> costs_;
 
  public:
-  explicit QPOutput(const RigidBodyTree& r) {
+  explicit QPOutput(const RigidBodyTree<double>& r) {
     coord_names_.resize(r.get_num_velocities());
     for (int i = 0; i < r.get_num_velocities(); i++) {
       // strip out the "dot" part from name
@@ -718,7 +721,7 @@ class QPController {
    * @param all_body_accelerations Desired body accelerations to be tracked
    */
   void ResizeQP(
-      const RigidBodyTree& robot,
+      const RigidBodyTree<double>& robot,
       const std::vector<ContactInformation>& all_contacts,
       const std::vector<DesiredBodyAcceleration>& all_body_accelerations);
 

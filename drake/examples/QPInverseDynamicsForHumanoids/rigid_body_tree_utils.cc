@@ -4,7 +4,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
+Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree<double>& r,
                                 const KinematicsCache<double>& cache,
                                 const RigidBody& body,
                                 const Eigen::Vector3d& local_offset) {
@@ -30,7 +30,7 @@ Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
   return v;
 }
 
-Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
+Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
                                      const KinematicsCache<double>& cache,
                                      const RigidBody& body,
                                      const Eigen::Vector3d& local_offset) {
@@ -61,7 +61,7 @@ Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
 }
 
 Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
-    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const RigidBody& body, const Eigen::Vector3d& local_offset) {
   // position of point in world
   Eigen::Vector3d p =

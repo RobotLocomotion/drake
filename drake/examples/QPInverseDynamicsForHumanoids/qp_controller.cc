@@ -10,7 +10,7 @@ namespace qp_inverse_dynamics {
 const double QPController::kUpperBoundForContactBasis = 1000;
 
 void QPController::ResizeQP(
-    const RigidBodyTree& robot,
+    const RigidBodyTree<double>& robot,
     const std::vector<ContactInformation>& all_supports,
     const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
   // Figure out dimensions.

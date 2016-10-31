@@ -30,7 +30,7 @@ class ValkyrieSystem : public LeafSystem<double> {
    * Input: qp output
    * Output: humanoid status
    */
-  explicit ValkyrieSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit ValkyrieSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
     input_port_index_qp_output_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_humanoid_status_ =
@@ -210,7 +210,7 @@ class ValkyrieSystem : public LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree<double>& robot_;
 
   int input_port_index_qp_output_;
   int output_port_index_humanoid_status_;
