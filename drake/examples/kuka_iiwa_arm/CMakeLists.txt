@@ -71,6 +71,8 @@ if(lcm_FOUND)
     drakeSystemAnalysis
     drakeSystemControllers
     drakeLCMSystem2)
+  drake_add_test(
+      NAME kuka_simulation COMMAND kuka_simulation -simulation_sec 0.1)
 
   add_executable(run_kuka_iiwa_gravity_compensated_torque_control
       run_kuka_iiwa_gravity_compensated_torque_control.cc)
