@@ -1208,7 +1208,8 @@ int RigidBodyTree<T>::parseBodyOrFrameID(
     body_ind = frames[frame_ind]->get_rigid_body().get_body_index();
 
     if (Tframe) {
-      (*Tframe) = frames[frame_ind]->get_transform_to_body().cast<Scalar>();
+      (*Tframe) =
+          frames[frame_ind]->get_transform_to_body().template cast<Scalar>();
     }
   } else {
     body_ind = body_or_frame_id;
