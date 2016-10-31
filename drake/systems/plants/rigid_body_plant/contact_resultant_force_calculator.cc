@@ -31,7 +31,7 @@ template <typename T>
 Vector3<T> ContactResultantForceCalculator<T>::ComputeMinimumMomentPoint()
     const {
   if (is_dirty_) {
-    ComputeCachedData();
+    ComputeResultantValues();
   }
   return minimum_moment_point_;
 }
@@ -40,13 +40,13 @@ template <typename T>
 WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench()
     const {
   if (is_dirty_) {
-    ComputeCachedData();
+    ComputeResultantValues();
   }
   return resultant_wrench_;
 }
 
 template <typename T>
-void ContactResultantForceCalculator<T>::ComputeCachedData() const {
+void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
   // Set the cache as clean.
   is_dirty_ = false;
 
