@@ -9,7 +9,8 @@ drake_install_headers(
   simulation_options.h
   System.h
   vector.h
-  trajectory_logger.h)
+  trajectory_logger.h
+  robot_state_tap.h)
 
 if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)

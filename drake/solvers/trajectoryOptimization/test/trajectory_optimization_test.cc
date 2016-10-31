@@ -5,7 +5,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/system1/vector.h"
 
 using std::vector;
 using Eigen::MatrixXd;
