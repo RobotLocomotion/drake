@@ -75,7 +75,7 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   mutable int update_count_{0};
 };  // MySpringMassSystem
 
-}  // analysis_test
-}  // systems
-}  // drake
+}  // namespace analysis_test
+}  // namespace systems
+}  // namespace drake
 

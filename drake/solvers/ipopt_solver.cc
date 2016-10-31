@@ -527,5 +527,5 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   return nlp->result();
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

@@ -487,5 +487,5 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   return result;
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

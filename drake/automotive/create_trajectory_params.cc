@@ -51,7 +51,7 @@ Curve2<double> MakeCurve(double radius, double inset) {
 
   return Curve2<double>(looped_waypoints);
 }
-}  // namespace anonymous
+}  // anonymous namespace
 
 DRAKE_EXPORT
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index) {

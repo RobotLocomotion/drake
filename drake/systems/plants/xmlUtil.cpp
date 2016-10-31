@@ -317,7 +317,7 @@ void searchDirectory(map<string, string>& package_map, string path) {
     tinydir_close(&dir);
   }
 }
-}
+}  // anonymous namespace
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void populatePackageMap(map<string, string>& package_map) {
@@ -354,7 +354,7 @@ bool rospack(const string& package, const map<string, string>& package_map,
     return false;
   }
 }
-}
+}  // anonymous namespace
 
 string resolveFilename(const string& filename,
                        const map<string, string>& package_map,

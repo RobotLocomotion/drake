@@ -139,6 +139,6 @@ class QuasiStaticConstraintWrapper :
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
-}
-}
-}
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake

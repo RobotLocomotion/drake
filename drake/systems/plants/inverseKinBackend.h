@@ -87,6 +87,7 @@ void AddQuasiStaticConstraint(
     KinematicsCacheHelper<double>* kin_helper,
     const drake::solvers::DecisionVariableView& vars,
     drake::solvers::MathematicalProgram* prog);
-}
-}
-}
+
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake

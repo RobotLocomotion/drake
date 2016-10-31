@@ -102,5 +102,5 @@ void System2DirectCollocationConstraint::dynamics(
   *xdot = derivatives_->CopyToVector();
 }
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

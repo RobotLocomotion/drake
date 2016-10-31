@@ -18,4 +18,5 @@ typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 extern const DRAKE_EXPORT bitmask ALL_MASK;
 extern const DRAKE_EXPORT bitmask NONE_MASK;
 extern const DRAKE_EXPORT bitmask DEFAULT_GROUP;
-}
+
+}  // namespace DrakeCollision

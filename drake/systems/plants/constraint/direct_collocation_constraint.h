@@ -94,5 +94,5 @@ class DRAKE_EXPORT System2DirectCollocationConstraint
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

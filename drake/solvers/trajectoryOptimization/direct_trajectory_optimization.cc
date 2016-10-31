@@ -255,5 +255,5 @@ DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
       GetTimeVector(), GetStateVector()));
 }
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

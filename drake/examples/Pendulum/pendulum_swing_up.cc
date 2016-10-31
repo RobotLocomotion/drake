@@ -94,6 +94,6 @@ void AddSwingUpTrajectoryParams(
           std::make_unique<PendulumPlant<AutoDiffXd>>()));
 }
 
-}  // pendulum
-}  // examples
-}  // drake
+}  // namespace pendulum
+}  // namespace examples
+}  // namespace drake

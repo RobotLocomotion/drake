@@ -22,6 +22,6 @@ void DRAKE_EXPORT AddSwingUpTrajectoryParams(
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
     solvers::DircolTrajectoryOptimization*);
 
-}  // pendulum
-}  // examples
-}  // drake
+}  // namespace pendulum
+}  // namespace examples
+}  // namespace drake

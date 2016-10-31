@@ -339,7 +339,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   const RigidBodyConstraint* const* constraint_array_;
 };
 
-}
+}  // anonymous namespace
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
@@ -581,4 +581,4 @@ template void inverseKinTrajBackend(
 
 }  // namespace plants
 }  // namespace systems
-}  // namespace Drake
+}  // namespace drake

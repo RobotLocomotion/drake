@@ -99,5 +99,5 @@ void DircolTrajectoryOptimization::AddRunningCost(
                           u_vars().tail(num_inputs())});
 }
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake
