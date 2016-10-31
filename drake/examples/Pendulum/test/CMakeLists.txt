@@ -4,12 +4,12 @@ if(lcm_FOUND)
 
   drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test
-    drakePendulumSystem drakeDynamicConstraint)
+    drakePendulumPlant drakeDynamicConstraint)
 
   add_executable(pendulum_trajectory_optimization_test
     pendulum_trajectory_optimization_test.cc)
   target_link_libraries(pendulum_trajectory_optimization_test
-    drakePendulumSystem drakeTrajectoryOptimization GTest::GTest GTest::Main)
+    drakePendulumPlant drakeTrajectoryOptimization GTest::GTest GTest::Main)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
 

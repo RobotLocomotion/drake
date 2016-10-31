@@ -1,5 +1,5 @@
 #include "drake/common/drake_path.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -22,7 +22,7 @@ int do_main(int argc, char* argv[]) {
 
   systems::DiagramBuilder<double> builder;
   auto source = builder.AddSystem<systems::ConstantVectorSource>(tau);
-  auto pendulum = builder.AddSystem<PendulumSystem>();
+  auto pendulum = builder.AddSystem<PendulumPlant>();
   auto publisher =
       builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
   builder.Connect(source->get_output_port(), pendulum->get_tau_port());

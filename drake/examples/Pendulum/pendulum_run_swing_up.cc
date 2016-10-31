@@ -5,7 +5,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Pendulum/pendulum_swing_up.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 #include "drake/systems/analysis/simulator.h"
@@ -28,8 +28,8 @@ namespace {
 
 int do_main(int argc, char* argv[]) {
   systems::DiagramBuilder<double> builder;
-  auto pendulum = std::make_unique<PendulumSystem<double>>();
-  PendulumSystem<double>* pendulum_p = pendulum.get();
+  auto pendulum = std::make_unique<PendulumPlant<double>>();
+  PendulumPlant<double>* pendulum_p = pendulum.get();
 
   // This is a fairly small number of time samples for this system,
   // and it winds up making the controller do a lot of the work when

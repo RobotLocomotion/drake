@@ -3,7 +3,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -20,7 +20,7 @@ namespace {
 template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
-  explicit PendulumEnergyShapingController(const PendulumSystem<T>& pendulum)
+  explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum)
       : m_(pendulum.m()),
         l_(pendulum.l()),
         b_(pendulum.b()),
@@ -63,7 +63,7 @@ int do_main(int argc, char* argv[]) {
                      systems::plants::joints::kFixed);
 
   systems::DiagramBuilder<double> builder;
-  auto pendulum = builder.AddSystem<PendulumSystem>();
+  auto pendulum = builder.AddSystem<PendulumPlant>();
   auto controller =
       builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
