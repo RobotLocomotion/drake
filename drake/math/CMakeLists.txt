@@ -4,7 +4,6 @@ set(sources
   autodiff_gradient.cc
   axis_angle.cc
   cross_product.cc
-  cylindrical.cc
   eigen_sparse_triplet.cc
   expmap.cc
   gradient.cc
@@ -23,7 +22,6 @@ set(installed_headers
   autodiff_gradient.h
   axis_angle.h
   cross_product.h
-  cylindrical.h
   eigen_sparse_triplet.h
   expmap.h
   gradient.h

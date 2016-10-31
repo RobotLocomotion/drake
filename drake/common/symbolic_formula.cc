@@ -244,8 +244,8 @@ bool RelationalFormulaCell::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  const RelationalFormulaCell& rel_f{
-      static_cast<const RelationalFormulaCell&>(f)};
+  const RelationalFormulaCell& rel_f =
+      static_cast<const RelationalFormulaCell&>(f);
   return e1_.EqualTo(rel_f.e1_) && e2_.EqualTo(rel_f.e2_);
 }
 
@@ -266,7 +266,7 @@ bool BinaryFormulaCell::EqualTo(const FormulaCell& f) const {
   if (get_kind() != f.get_kind()) {
     return false;
   }
-  const BinaryFormulaCell& binary_f{static_cast<const BinaryFormulaCell&>(f)};
+  const BinaryFormulaCell& binary_f = static_cast<const BinaryFormulaCell&>(f);
   return f1_.EqualTo(binary_f.f1_) && f2_.EqualTo(binary_f.f2_);
 }
 

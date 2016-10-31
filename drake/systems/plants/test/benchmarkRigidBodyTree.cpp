@@ -43,6 +43,7 @@ void printMatrix(
 
 template <typename Scalar>
 void scenario1(const RigidBodyTree<double>& model,
+               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                KinematicsCache<Scalar>& cache,
                const vector<Matrix<Scalar, Dynamic, 1>>& qs,
                const map<int, Matrix3Xd>& body_fixed_points) {
@@ -67,7 +68,9 @@ void scenario1(const RigidBodyTree<double>& model,
 
 template <typename Scalar>
 void scenario2(
-    const RigidBodyTree<double>& model, KinematicsCache<Scalar>& cache,
+    const RigidBodyTree<double>& model,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<Scalar>& cache,
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
   default_random_engine generator;

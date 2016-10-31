@@ -1,34 +1,34 @@
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace systems {
 
 namespace {
-// Defines the index of the port that the RigidBodyTreeLcmPublisher uses.
+// Defines the index of the port that the DrakeVisualizer uses.
 const int kPortIndex = 0;
 }  // namespace
 
-RigidBodyTreeLcmPublisher::RigidBodyTreeLcmPublisher(
+DrakeVisualizer::DrakeVisualizer(
     const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm) :
     lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
-  set_name("rigid_body_tree_visualizer_lcm");
+  set_name("drake_visualizer");
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
 }
 
 const lcmt_viewer_load_robot&
-RigidBodyTreeLcmPublisher::get_load_message() const {
+DrakeVisualizer::get_load_message() const {
   return load_message_;
 }
 
 const std::vector<uint8_t>&
-RigidBodyTreeLcmPublisher::get_draw_message_bytes() const {
+DrakeVisualizer::get_draw_message_bytes() const {
   return draw_message_bytes_;
 }
 
-void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
+void DrakeVisualizer::DoPublish(const Context<double>& context)
     const {
   // TODO(liang.fok): Replace the following code once System 2.0's API allows
   // systems to declare that they need a certain action to be performed at
@@ -55,7 +55,7 @@ void RigidBodyTreeLcmPublisher::DoPublish(const Context<double>& context)
       draw_message_bytes_.size());
 }
 
-void RigidBodyTreeLcmPublisher::PublishLoadRobot() const {
+void DrakeVisualizer::PublishLoadRobot() const {
   const int lcm_message_length = load_message_.getEncodedSize();
   std::vector<uint8_t> lcm_message_bytes{};
   lcm_message_bytes.resize(lcm_message_length);
@@ -66,7 +66,7 @@ void RigidBodyTreeLcmPublisher::PublishLoadRobot() const {
   sent_load_robot_ = true;
 }
 
-lcmt_viewer_load_robot RigidBodyTreeLcmPublisher::CreateLoadMessage(
+lcmt_viewer_load_robot DrakeVisualizer::CreateLoadMessage(
     const RigidBodyTree<double>& tree) {
   lcmt_viewer_load_robot load_message;
   load_message.num_links = tree.bodies.size();

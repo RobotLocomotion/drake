@@ -195,6 +195,11 @@ macro(drake_setup_options)
     DEPENDS "HAVE_LCM"
     "libbot2 robotics suite LCM types")
 
+  drake_system_dependency(
+    ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
+    DEPENDS "HAVE_BOT_CORE_LCMTYPES"
+    "robotlocomotion LCM types")
+
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 
@@ -249,6 +254,10 @@ macro(drake_setup_options)
 
   # The following projects are default ON when MATLAB is present and enabled.
   # Otherwise, they are hidden and default OFF.
+  drake_optional_external(SEDUMI ON
+    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
+    "semi-definite programming solver")
+
   drake_optional_external(SPOTLESS ON
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
     "polynomial optimization front-end for MATLAB")
@@ -259,10 +268,6 @@ macro(drake_setup_options)
   drake_optional_external(IRIS OFF
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND\;WITH_MOSEK"
     "fast approximate convex segmentation")
-
-  drake_optional_external(SEDUMI OFF
-    DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"
-    "semi-definite programming solver")
 
   drake_optional_external(YALMIP OFF
     DEPENDS "NOT DISABLE_MATLAB\;Matlab_FOUND"

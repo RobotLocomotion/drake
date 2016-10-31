@@ -22,6 +22,7 @@ class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
@@ -58,6 +59,7 @@ class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
   void qdot2v(
       const Eigen::MatrixBase<DerivedQ>& q,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     0, MAX_NUM_VELOCITIES, MAX_NUM_POSITIONS>& qdot_to_v,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
           dqdot_to_v) const {
@@ -71,6 +73,7 @@ class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
   void v2qdot(
       const Eigen::MatrixBase<DerivedQ>& q,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     0, MAX_NUM_POSITIONS, MAX_NUM_VELOCITIES>& v_to_qdot,
       Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
           dv_to_qdot) const {

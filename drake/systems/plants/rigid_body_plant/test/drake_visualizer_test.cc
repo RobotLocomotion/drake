@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 #include <memory>
 #include <vector>
@@ -457,13 +457,13 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   return tree;
 }
 
-// Tests the basic functionality of the RigidBodyTreeLcmPublisher.
-GTEST_TEST(RigidBodyTreeLcmPublisherTests, BasicTest) {
+// Tests the basic functionality of the DrakeVisualizer.
+GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
   drake::lcm::DrakeMockLcm lcm;
-  RigidBodyTreeLcmPublisher dut(*tree, &lcm);
+  DrakeVisualizer dut(*tree, &lcm);
 
-  EXPECT_EQ("rigid_body_tree_visualizer_lcm", dut.get_name());
+  EXPECT_EQ("drake_visualizer", dut.get_name());
 
   auto context = dut.CreateDefaultContext();
 

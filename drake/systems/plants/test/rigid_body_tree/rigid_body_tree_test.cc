@@ -71,7 +71,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds floating joints that connect r1b1_ and r2b1_ to the rigid body tree's
   // world at zero offset.
   r1b1->add_joint(&tree_->world(), std::make_unique<QuaternionFloatingJoint>(
-                                        "Base", Isometry3d::Identity()));
+                                        "base", Isometry3d::Identity()));
 
   r2b1->add_joint(
       r1b1, std::make_unique<RevoluteJoint>("Joint1", Isometry3d::Identity(),
@@ -105,11 +105,11 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 
   r1b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", T_r1and2_to_world));
+                      "base", T_r1and2_to_world));
 
   r2b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", T_r1and2_to_world));
+                      "base", T_r1and2_to_world));
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree_->FindBody("body1", "robot1")->getJoint();
@@ -130,7 +130,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   r1b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", Isometry3d::Identity()));
+                      "base", Isometry3d::Identity()));
 
   // Adds rigid body r2b1_ to the rigid body tree and welds it to r1b1_ with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
@@ -146,7 +146,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   r2b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", T_r2_to_r1));
+                      "base", T_r2_to_r1));
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
@@ -167,11 +167,11 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   r3b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", T_r3_and_r4_to_r2));
+                      "base", T_r3_and_r4_to_r2));
 
   r4b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
-                      "Base", T_r3_and_r4_to_r2));
+                      "base", T_r3_and_r4_to_r2));
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1")
                   ->getJoint()

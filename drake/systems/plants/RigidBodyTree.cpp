@@ -80,6 +80,7 @@ template <typename T>
 const int RigidBodyTree<T>::kWorldBodyIndex = 0;
 
 template <typename T>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
   for (int i = 0; i < v.size(); ++i) {

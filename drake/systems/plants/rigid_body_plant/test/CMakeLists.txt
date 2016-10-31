@@ -8,8 +8,8 @@ if(Bullet_FOUND)
     drake_add_cc_test(viewer_draw_translator_test)
     target_link_libraries(viewer_draw_translator_test drakeRigidBodyPlant)
 
-    drake_add_cc_test(rigid_body_tree_lcm_publisher_test)
-    target_link_libraries(rigid_body_tree_lcm_publisher_test
+    drake_add_cc_test(drake_visualizer_test)
+    target_link_libraries(drake_visualizer_test
       drakeRigidBodyPlant)
   endif()
 endif()

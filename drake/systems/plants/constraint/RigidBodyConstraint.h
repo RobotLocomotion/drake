@@ -1,5 +1,9 @@
 #pragma once
 
+// TODO(#2274) NOTE This file has so many cpplint errors that we have
+// whitelisted it in its entirety.  When the file is next rewritten or updates,
+// we should re-enable cpplint accordingly.
+
 #include <set>
 #include <string>
 #include <vector>

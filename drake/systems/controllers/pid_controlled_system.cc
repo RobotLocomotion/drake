@@ -9,15 +9,15 @@ namespace systems {
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> system,
+    std::unique_ptr<System<T>> plant,
     const T& Kp, const T& Ki, const T& Kd) {
   DiagramBuilder<T> builder;
-  system_ = builder.template AddSystem(std::move(system));
+  plant_ = builder.template AddSystem(std::move(plant));
 
-  DRAKE_ASSERT(system_->get_num_input_ports() >= 1);
-  DRAKE_ASSERT(system_->get_num_output_ports() >= 1);
-  const int num_positions = system_->get_input_port(0).get_size();
-  const int num_states = num_positions * 2;
+  DRAKE_ASSERT(plant_->get_num_input_ports() >= 1);
+  DRAKE_ASSERT(plant_->get_num_output_ports() >= 1);
+  const int num_effort_commands = plant_->get_input_port(0).get_size();
+  const int num_states = num_effort_commands * 2;
 
   // TODO(sam.creasey) It would be nice to be able to handle the
   // existence of extra values in the output port which are discarded
@@ -26,31 +26,30 @@ PidControlledSystem<T>::PidControlledSystem(
   // information from the spring mass system).  Unfortunately, I can't
   // find an easy way to do this now, and the current implementation
   // is sufficient for most uses (including RigidBodyPlant).
-  DRAKE_ASSERT(system_->get_output_port(0).get_size() == num_states);
+  DRAKE_ASSERT(plant_->get_output_port(0).get_size() == num_states);
 
   state_minus_target_ = builder.template AddSystem<Adder<T>>(
       2, num_states);
   controller_ = builder.template AddSystem<PidController<T>>(
-      Kp, Ki, Kd, num_positions);
+      Kp, Ki, Kd, num_effort_commands);
 
   // Split the input into two signals one with the positions and one
   // with the velocities.
   error_demux_ = builder.template AddSystem<Demultiplexer<T>>(
-      num_states, num_positions);
+      num_states, num_effort_commands);
 
   controller_inverter_ = builder.template AddSystem<Gain<T>>(
-      -1.0, num_positions);
+      -1.0, num_effort_commands);
   error_inverter_ = builder.template AddSystem<Gain<T>>(
       -1.0, num_states);
 
   // Create an adder to sum the provided input with the output of the
   // controller.
-  system_input_ = builder.template AddSystem<Adder<T>>(
-      2, num_positions);
+  plant_input_ = builder.template AddSystem<Adder<T>>(2, num_effort_commands);
 
   builder.Connect(error_inverter_->get_output_port(),
                   state_minus_target_->get_input_port(0));
-  builder.Connect(system_->get_output_port(0),
+  builder.Connect(plant_->get_output_port(0),
                   state_minus_target_->get_input_port(1));
 
   // Splits the error signal into positions and velocities components.
@@ -66,14 +65,14 @@ PidControlledSystem<T>::PidControlledSystem(
   builder.Connect(controller_->get_output_port(0),
                   controller_inverter_->get_input_port());
   builder.Connect(controller_inverter_->get_output_port(),
-                  system_input_->get_input_port(0));
+                  plant_input_->get_input_port(0));
 
-  builder.Connect(system_input_->get_output_port(),
-                  system_->get_input_port(0));
+  builder.Connect(plant_input_->get_output_port(),
+                  plant_->get_input_port(0));
 
-  builder.ExportInput(system_input_->get_input_port(1));
+  builder.ExportInput(plant_input_->get_input_port(1));
   builder.ExportInput(error_inverter_->get_input_port());
-  builder.ExportOutput(system_->get_output_port(0));
+  builder.ExportOutput(plant_->get_output_port(0));
   builder.BuildInto(this);
 }
 
@@ -88,7 +87,7 @@ void PidControlledSystem<T>::SetDefaultState(
       Diagram<T>::GetMutableSubsystemContext(context, controller_);
   controller_->set_integral_value(
       controller_context,
-      VectorX<T>::Zero(system_->get_input_port(0).get_size()));
+      VectorX<T>::Zero(plant_->get_input_port(0).get_size()));
 }
 
 template class DRAKE_EXPORT PidControlledSystem<double>;

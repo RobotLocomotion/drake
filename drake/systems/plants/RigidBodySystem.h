@@ -470,6 +470,7 @@ class DRAKE_EXPORT RigidBodySystem {
  */
 class DRAKE_EXPORT RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in,
       int model_instance_id) :
           sys(sys_in),
@@ -506,6 +507,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
  */
 class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                      const std::string& name, int model_instance_id);
   ~RigidBodyPropellor() override {}
@@ -549,6 +551,7 @@ class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 class DRAKE_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                         const std::string& name, int model_instance_id);
   ~RigidBodySpringDamper() override {}

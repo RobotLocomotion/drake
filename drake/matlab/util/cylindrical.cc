@@ -1,11 +1,11 @@
-#include "drake/math/cylindrical.h"
+#include "drake/matlab/util/cylindrical.h"
 
 #include <Eigen/Dense>
 
 using Eigen::Matrix3d;
 
 namespace drake {
-namespace math {
+namespace util {
 
 namespace internal {
 
@@ -26,5 +26,5 @@ void rotz(double theta, Matrix3d* M, Matrix3d* dM, Matrix3d* ddM) {
 
 }  // namespace internal
 
-}  // namespace math
+}  // namespace util
 }  // namespace drake

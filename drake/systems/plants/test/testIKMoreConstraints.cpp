@@ -40,6 +40,7 @@ std::vector<int> GetJointPositionVectorIndices(
 
 void findJointAndInsert(const RigidBodyTree<double>& model,
                         const std::string& name,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         std::vector<int>& position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 

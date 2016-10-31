@@ -42,6 +42,7 @@ DRAKE_EXPORT bool isSupportElementActive(
 DRAKE_EXPORT Eigen::Matrix<bool, Eigen::Dynamic, 1>
 getActiveSupportMask(
     RigidBodyTree<double>* r, Eigen::VectorXd q, Eigen::VectorXd qd,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
         contact_force_detected,
@@ -51,42 +52,56 @@ DRAKE_EXPORT drake::eigen_aligned_std_vector<SupportStateElement>
 getActiveSupports(
     const RigidBodyTree<double>& r,
     const Eigen::VectorXd& q, const Eigen::VectorXd& qd,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
         contact_force_detected,
     double contact_threshold);
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 DRAKE_EXPORT void getRows(std::set<int>& rows,
-                                     Eigen::MatrixBase<DerivedA> const& M,
-                                     Eigen::MatrixBase<DerivedB>& Msub);
+                          Eigen::MatrixBase<DerivedA> const& M,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                          Eigen::MatrixBase<DerivedB>& Msub);
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 DRAKE_EXPORT void getCols(std::set<int>& cols,
-                                     Eigen::MatrixBase<DerivedA> const& M,
-                                     Eigen::MatrixBase<DerivedB>& Msub);
+                          Eigen::MatrixBase<DerivedA> const& M,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                          Eigen::MatrixBase<DerivedB>& Msub);
 
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
 DRAKE_EXPORT void angleDiff(
     Eigen::MatrixBase<DerivedPhi1> const& phi1,
-    Eigen::MatrixBase<DerivedPhi2> const& phi2, Eigen::MatrixBase<DerivedD>& d);
+    Eigen::MatrixBase<DerivedPhi2> const& phi2,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::MatrixBase<DerivedD>& d);
 
 DRAKE_EXPORT bool inSupport(
     const drake::eigen_aligned_std_vector<SupportStateElement>& supports,
     int body_idx);
 DRAKE_EXPORT void surfaceTangents(
     const Eigen::Vector3d& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Matrix<double, 3, m_surface_tangents>& d);
-DRAKE_EXPORT int contactPhi(const RigidBodyTree<double>& r,
-                                       const KinematicsCache<double>& cache,
-                                       SupportStateElement& supp,
-                                       Eigen::VectorXd& phi);
+DRAKE_EXPORT int contactPhi(
+    const RigidBodyTree<double>& r,
+    const KinematicsCache<double>& cache,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    SupportStateElement& supp,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::VectorXd& phi);
 DRAKE_EXPORT int contactConstraintsBV(
     const RigidBodyTree<double>& r,
     const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& supp,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixXd& B, Eigen::MatrixXd& JB, Eigen::MatrixXd& Jp,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::VectorXd& Jpdotv, Eigen::MatrixXd& normals);
 DRAKE_EXPORT Eigen::MatrixXd individualSupportCOPs(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
@@ -103,7 +118,9 @@ DRAKE_EXPORT Vector6d bodySpatialMotionPD(
 
 DRAKE_EXPORT void evaluateXYZExpmapCubicSpline(
     double t, const PiecewisePolynomial<double>& spline,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Isometry3d& body_pose_des, Vector6d& xyzdot_angular_vel,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Vector6d& xyzddot_angular_accel);
 
 struct RobotJointIndexMap {
