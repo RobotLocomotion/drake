@@ -10,9 +10,9 @@ endif()
 drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(lqrmex drakeCommon)
 
-drake_find_package(snopt_c CONFIG)
+drake_find_package(snopt CONFIG)
 
-if(snopt_c_FOUND)
+if(snopt_FOUND)
   drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   target_link_libraries(NonlinearProgramSnoptmex snopt_c)
 

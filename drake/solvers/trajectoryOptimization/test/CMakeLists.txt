@@ -4,7 +4,7 @@ target_link_libraries(trajectory_optimization_test drakeTrajectoryOptimization
 # TODO(Lucy-tri) There is currently no non-linear solver on Windows: see
 # issues #2352, #2569.
 
-if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
+if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
   drake_add_test(NAME trajectory_optimization_test COMMAND
     trajectory_optimization_test)
 endif()
