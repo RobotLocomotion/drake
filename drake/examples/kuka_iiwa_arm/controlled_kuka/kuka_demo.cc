@@ -16,8 +16,8 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
 #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
@@ -41,10 +41,10 @@ using systems::Context;
 using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
 using systems::GravityCompensator;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
-using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
 using systems::TrajectorySource;
 
@@ -237,7 +237,7 @@ class KukaDemo : public systems::Diagram<T> {
         *poly_trajectory_);
 
     // Creates and adds LCM publisher for visualization.
-    viz_publisher_ = builder.template AddSystem<RigidBodyTreeLcmPublisher>(
+    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
     // Generates an error signal for the PID controller by subtracting the
@@ -288,7 +288,7 @@ class KukaDemo : public systems::Diagram<T> {
   GravityCompensator<T>* gravity_compensator_{nullptr};
   TrajectorySource<T>* desired_plan_{nullptr};
   std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory_;
-  RigidBodyTreeLcmPublisher* viz_publisher_{nullptr};
+  DrakeVisualizer* viz_publisher_{nullptr};
   drake::lcm::DrakeLcm lcm_;
 };
 

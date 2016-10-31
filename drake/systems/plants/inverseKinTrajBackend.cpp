@@ -16,7 +16,6 @@
 #include <drake/systems/plants/ConstraintWrappers.h>
 #include <drake/systems/plants/IKoptions.h>
 #include <drake/systems/plants/RigidBodyTree.h>
-#include <drake/system1/vector.h>
 
 #include "ik_trajectory_helper.h"
 

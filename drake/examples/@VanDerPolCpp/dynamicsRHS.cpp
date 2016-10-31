@@ -15,7 +15,10 @@ using namespace std;
  */
 
 template <typename DerivedA, typename DerivedB>
-void dynamicsRHS(const MatrixBase<DerivedA> &x, MatrixBase<DerivedB> &xdot) {
+void dynamicsRHS(
+    const MatrixBase<DerivedA>& x,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    MatrixBase<DerivedB>& xdot) {
   xdot << x(1), -x(0) - x(1) * (x(0) * x(0) - 1);
 }
 

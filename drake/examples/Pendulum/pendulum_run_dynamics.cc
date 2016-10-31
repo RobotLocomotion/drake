@@ -1,12 +1,12 @@
 #include "drake/common/drake_path.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
@@ -22,9 +22,9 @@ int do_main(int argc, char* argv[]) {
 
   systems::DiagramBuilder<double> builder;
   auto source = builder.AddSystem<systems::ConstantVectorSource>(tau);
-  auto pendulum = builder.AddSystem<PendulumSystem>();
+  auto pendulum = builder.AddSystem<PendulumPlant>();
   auto publisher =
-      builder.AddSystem<systems::RigidBodyTreeLcmPublisher>(tree, &lcm);
+      builder.AddSystem<systems::DrakeVisualizer>(tree, &lcm);
   builder.Connect(source->get_output_port(), pendulum->get_tau_port());
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
   auto diagram = builder.Build();

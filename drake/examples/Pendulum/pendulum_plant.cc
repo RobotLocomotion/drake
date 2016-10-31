@@ -1,4 +1,4 @@
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/drake_throw.h"
@@ -12,7 +12,7 @@ constexpr int kStateSize = 2;  // position, velocity
 }
 
 template <typename T>
-PendulumSystem<T>::PendulumSystem() {
+PendulumPlant<T>::PendulumPlant() {
   this->DeclareInputPort(
       systems::kVectorValued, 1, systems::kContinuousSampling);
   this->DeclareOutputPort(
@@ -20,23 +20,23 @@ PendulumSystem<T>::PendulumSystem() {
 }
 
 template <typename T>
-PendulumSystem<T>::~PendulumSystem() {}
+PendulumPlant<T>::~PendulumPlant() {}
 
 template <typename T>
 const systems::SystemPortDescriptor<T>&
-PendulumSystem<T>::get_tau_port() const {
+PendulumPlant<T>::get_tau_port() const {
   return this->get_input_port(0);
 }
 
 template <typename T>
 const systems::SystemPortDescriptor<T>&
-PendulumSystem<T>::get_output_port() const {
+PendulumPlant<T>::get_output_port() const {
   return systems::System<T>::get_output_port(0);
 }
 
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>>
-PendulumSystem<T>::AllocateOutputVector(
+PendulumPlant<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   DRAKE_THROW_UNLESS(descriptor.get_size() == kStateSize);
   return std::make_unique<PendulumStateVector<T>>();
@@ -44,7 +44,7 @@ PendulumSystem<T>::AllocateOutputVector(
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
-PendulumSystem<T>::AllocateContinuousState() const {
+PendulumPlant<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(
       std::make_unique<PendulumStateVector<T>>(),
       1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
@@ -52,14 +52,14 @@ PendulumSystem<T>::AllocateContinuousState() const {
 }
 
 template <typename T>
-void PendulumSystem<T>::EvalOutput(const systems::Context<T>& context,
+void PendulumPlant<T>::EvalOutput(const systems::Context<T>& context,
                                    systems::SystemOutput<T>* output) const {
   get_mutable_output(output)->set_value(get_state(context).get_value());
 }
 
 // Compute the actual physics.
 template <typename T>
-void PendulumSystem<T>::EvalTimeDerivatives(
+void PendulumPlant<T>::EvalTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -78,8 +78,8 @@ void PendulumSystem<T>::EvalTimeDerivatives(
        b_ * state.thetadot()) / I_);
 }
 
-template class DRAKE_EXPORT PendulumSystem<double>;
-template class DRAKE_EXPORT PendulumSystem<AutoDiffXd>;
+template class DRAKE_EXPORT PendulumPlant<double>;
+template class DRAKE_EXPORT PendulumPlant<AutoDiffXd>;
 
 }  // namespace pendulum
 }  // namespace examples
