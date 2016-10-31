@@ -73,7 +73,7 @@ std::string primaryBodyOrFrameName(const std::string& full_body_name) {
   return full_body_name.substr(0, i);
 }
 
-QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
+QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree<double>& robot,
                                    const QPLocomotionPlanSettings& settings,
                                    const std::string& lcm_channel)
     : robot_(robot),
@@ -474,7 +474,9 @@ bool QPLocomotionPlan::isFinished(double t) const {
   }
 }
 
-const RigidBodyTree& QPLocomotionPlan::getRobot() const { return robot_; }
+const RigidBodyTree<double>& QPLocomotionPlan::getRobot() const {
+  return robot_;
+}
 
 drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const {
   drake::lcmt_zmp_data zmp_data_lcm;
@@ -884,7 +886,8 @@ const std::map<SupportLogicType, std::vector<bool>>
 }
 
 const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
+    RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));
@@ -893,7 +896,8 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
 }
 
 const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& joint_names) {
+    RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& joint_names) {
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     int joint_id = robot.FindIndexOfChildBodyOfJoint(joint_names.at(*it));

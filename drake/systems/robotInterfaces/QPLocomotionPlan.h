@@ -134,7 +134,7 @@ struct QPLocomotionPlanSettings {
 
   // may be useful later in setting up constrained_position_indices
   static std::vector<int> findPositionIndices(
-      RigidBodyTree& robot,
+      RigidBodyTree<double>& robot,
       const std::vector<std::string>& joint_name_substrings) {
     std::vector<int> ret;
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
@@ -159,7 +159,7 @@ struct QPLocomotionPlanSettings {
 
 class DRAKE_EXPORT QPLocomotionPlan {
  private:
-  RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
+  RigidBodyTree<double>& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;
   const std::map<Side, int> foot_body_ids_;
   const std::map<Side, int> knee_indices_;
@@ -190,7 +190,7 @@ class DRAKE_EXPORT QPLocomotionPlan {
       support_logic_maps_;
 
  public:
-  QPLocomotionPlan(RigidBodyTree& robot,
+  QPLocomotionPlan(RigidBodyTree<double>& robot,
                    const QPLocomotionPlanSettings& settings,
                    const std::string& lcm_channel);
 
@@ -221,7 +221,7 @@ class DRAKE_EXPORT QPLocomotionPlan {
 
   drake::lcmt_qp_controller_input getLastQPInput() const;
 
-  const RigidBodyTree& getRobot() const;
+  const RigidBodyTree<double>& getRobot() const;
 
  private:
   drake::lcmt_zmp_data createZMPData(double t_plan) const;
@@ -267,8 +267,10 @@ class DRAKE_EXPORT QPLocomotionPlan {
   createSupportLogicMaps();
 
   static const std::map<Side, int> createFootBodyIdMap(
-      RigidBodyTree& robot, const std::map<Side, std::string>& foot_names);
+      RigidBodyTree<double>& robot,
+      const std::map<Side, std::string>& foot_names);
 
   static const std::map<Side, int> createJointIndicesMap(
-      RigidBodyTree& robot, const std::map<Side, std::string>& foot_body_ids);
+      RigidBodyTree<double>& robot,
+      const std::map<Side, std::string>& foot_body_ids);
 };
