@@ -144,6 +144,18 @@ class ContinuousState {
     return misc_continuous_state_.get();
   }
 
+
+  void SetFrom(const ContinuousState<double>& other) {
+    DRAKE_DEMAND(size() == other.size());
+    DRAKE_DEMAND(get_generalized_position().size() ==
+                 other.get_generalized_position().size());
+    DRAKE_DEMAND(get_generalized_velocity().size() ==
+                 other.get_generalized_velocity().size());
+    DRAKE_DEMAND(get_misc_continuous_state().size() ==
+                 other.get_misc_continuous_state().size());
+    SetFromVector(other.CopyToVector().template cast<T>());
+  }
+
   /// Sets the entire continuous state vector from an Eigen expression.
   void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_ASSERT(value.size() == state_->size());

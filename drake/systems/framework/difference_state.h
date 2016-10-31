@@ -61,12 +61,11 @@ class DifferenceState {
   /// Writes the values from @p other into this DifferenceState, possibly
   /// writing through to unowned data. Aborts if the dimensions don't match.
   void CopyFrom(const DifferenceState<T>& other) {
-    DRAKE_DEMAND(size() == other.size());
-    for (int i = 0; i < size(); i++) {
-      DRAKE_DEMAND(other.get_difference_state(i) != nullptr);
-      DRAKE_DEMAND(data_[i] != nullptr);
-      data_[i]->set_value(other.get_difference_state(i)->get_value());
-    }
+    SetFromGeneric(other);
+  }
+
+  void SetFrom(const DifferenceState<double>& other) {
+    SetFromGeneric(other);
   }
 
   /// Returns a deep copy of all the data in this DifferenceState. The clone
@@ -95,6 +94,17 @@ class DifferenceState {
   // pointers is to maintain ownership. They may be populated at construction
   // time, and are never accessed thereafter.
   std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
+
+  template <typename U>
+  void SetFromGeneric(const DifferenceState<U>& other) {
+    DRAKE_DEMAND(size() == other.size());
+    for (int i = 0; i < size(); i++) {
+      DRAKE_DEMAND(other.get_difference_state(i) != nullptr);
+      DRAKE_DEMAND(data_[i] != nullptr);
+      data_[i]->set_value(
+          other.get_difference_state(i)->get_value().template cast<T>());
+    }
+  }
 };
 
 }  // namespace systems
