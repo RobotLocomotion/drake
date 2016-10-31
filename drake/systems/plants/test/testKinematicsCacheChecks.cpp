@@ -39,7 +39,7 @@ void checkForErrors(bool expect_error, O& object, F function,
         "Expected a runtime error, but did not catch one.");
 }
 
-void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
+void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
                    const CheckSettings& settings) {
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();
   typedef decltype(points) PointsType;
@@ -53,97 +53,102 @@ void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
   int npoints = 3;
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::centerOfMass<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set);
+                 &RigidBodyTree<double>::centerOfMass<double>, cache,
+                 RigidBodyTree<double>::default_model_instance_id_set);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::transformPoints<double, PointsType>, cache,
-                 points, body_or_frame_ind, base_or_frame_ind);
+                 &RigidBodyTree<double>::transformPoints<double, PointsType>,
+                 cache, points, body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::relativeQuaternion<double>, cache,
+                 &RigidBodyTree<double>::relativeQuaternion<double>, cache,
                  body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::relativeRollPitchYaw<double>, cache,
+                 &RigidBodyTree<double>::relativeRollPitchYaw<double>, cache,
                  body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::worldMomentumMatrix<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set,
+                 &RigidBodyTree<double>::worldMomentumMatrix<double>, cache,
+                 RigidBodyTree<double>::default_model_instance_id_set,
                  in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::centroidalMomentumMatrix<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set,
+                 &RigidBodyTree<double>::centroidalMomentumMatrix<double>,
+                 cache, RigidBodyTree<double>::default_model_instance_id_set,
                  in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::centerOfMassJacobian<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set,
+                 &RigidBodyTree<double>::centerOfMassJacobian<double>, cache,
+                 RigidBodyTree<double>::default_model_instance_id_set,
                  in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::geometricJacobian<double>, cache,
+                 &RigidBodyTree<double>::geometricJacobian<double>, cache,
                  base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
                  in_terms_of_qdot, &v_or_qdot_indices);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::relativeTransform<double>, cache,
+                 &RigidBodyTree<double>::relativeTransform<double>, cache,
                  base_or_frame_ind, body_or_frame_ind);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::massMatrix<double>, cache);
+                 &RigidBodyTree<double>::massMatrix<double>, cache);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::forwardKinPositionGradient<double>, cache,
-                 npoints, body_or_frame_ind, base_or_frame_ind);
+                 &RigidBodyTree<double>::forwardKinPositionGradient<double>,
+                 cache, npoints, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(
+      settings.expect_error_on_configuration_methods, model,
+      &RigidBodyTree<double>::transformPointsJacobian<double, PointsType>,
+      cache, points, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::transformPointsJacobian<double, PointsType>,
-                 cache, points, body_or_frame_ind, base_or_frame_ind,
-                 in_terms_of_qdot);
+                 &RigidBodyTree<double>::relativeQuaternionJacobian<double>,
+                 cache, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::relativeQuaternionJacobian<double>, cache,
-                 body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::relativeRollPitchYawJacobian<double>, cache,
-                 body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
+                 &RigidBodyTree<double>::relativeRollPitchYawJacobian<double>,
+                 cache, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
 
   checkForErrors(settings.expect_error_on_velocity_methods, model,
-                 &RigidBodyTree::relativeTwist<double>, cache,
+                 &RigidBodyTree<double>::relativeTwist<double>, cache,
                  base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
 
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::geometricJacobianDotTimesV<double>, cache,
-                 base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
+                 &RigidBodyTree<double>::geometricJacobianDotTimesV<double>,
+                 cache, base_or_frame_ind, body_or_frame_ind,
+                 expressed_in_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::worldMomentumMatrixDotTimesV<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>,
-                 cache, RigidBodyTree::default_model_instance_id_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::centerOfMassJacobianDotTimesV<double>, cache,
-                 RigidBodyTree::default_model_instance_id_set);
+                 &RigidBodyTree<double>::worldMomentumMatrixDotTimesV<double>,
+                 cache, RigidBodyTree<double>::default_model_instance_id_set);
   checkForErrors(
       settings.expect_error_on_jdot_times_v_methods, model,
-      &RigidBodyTree::transformPointsJacobianDotTimesV<double, PointsType>,
+      &RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<double>, cache,
+      RigidBodyTree<double>::default_model_instance_id_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<double>,
+                 cache, RigidBodyTree<double>::default_model_instance_id_set);
+  checkForErrors(
+      settings.expect_error_on_jdot_times_v_methods, model,
+      &RigidBodyTree<double>::transformPointsJacobianDotTimesV<double,
+                                                               PointsType>,
       cache, points, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(
+      settings.expect_error_on_jdot_times_v_methods, model,
+      &RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<double>,
+      cache, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(
+      settings.expect_error_on_jdot_times_v_methods, model,
+      &RigidBodyTree<double>::relativeRollPitchYawJacobianDotTimesV<double>,
+      cache, body_or_frame_ind, base_or_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::relativeQuaternionJacobianDotTimesV<double>,
-                 cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<double>,
-                 cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::transformSpatialAcceleration<double>, cache,
-                 spatial_acceleration, base_or_frame_ind, body_or_frame_ind,
-                 old_expressed_in_body_or_frame_ind,
+                 &RigidBodyTree<double>::transformSpatialAcceleration<double>,
+                 cache, spatial_acceleration, base_or_frame_ind,
+                 body_or_frame_ind, old_expressed_in_body_or_frame_ind,
                  new_expressed_in_body_or_frame_ind);
   checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
-                 &RigidBodyTree::dynamicsBiasTerm<double>, cache,
+                 &RigidBodyTree<double>::dynamicsBiasTerm<double>, cache,
                  no_external_wrenches, true);
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree::dynamicsBiasTerm<double>, cache,
+                 &RigidBodyTree<double>::dynamicsBiasTerm<double>, cache,
                  no_external_wrenches, false);
 }
 
 int main() {
-  std::unique_ptr<RigidBodyTree> model(
-      new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
+  std::unique_ptr<RigidBodyTree<double>> model(new RigidBodyTree<double>(
+      "examples/Atlas/urdf/atlas_minimal_contact.urdf"));
   if (model == nullptr) {
     cerr << "ERROR: Failed to load model" << endl;
   }

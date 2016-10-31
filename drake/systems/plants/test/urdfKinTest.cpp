@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: urdfKinTest urdf_filename" << endl;
     exit(-1);
   }
-  RigidBodyTree* model = new RigidBodyTree(argv[1]);
+  RigidBodyTree<double>* model = new RigidBodyTree<double>(argv[1]);
   cout << "=======" << endl;
 
   // run kinematics with second derivatives 100 times

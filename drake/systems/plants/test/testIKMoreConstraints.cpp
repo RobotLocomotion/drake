@@ -24,8 +24,8 @@ namespace {
  * ignored in this search (joints belonging to all model instances are
  * searched).
  */
-std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
-                                               const std::string& name) {
+std::vector<int> GetJointPositionVectorIndices(
+    const RigidBodyTree<double>& tree, const std::string& name) {
   RigidBody* joint_child_body = tree.FindChildBodyOfJoint(name);
   int num_positions = joint_child_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
@@ -38,7 +38,8 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
+void findJointAndInsert(const RigidBodyTree<double>& model,
+                        const std::string& name,
                         std::vector<int>& position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
@@ -47,7 +48,7 @@ void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
 }
 
 GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
-  RigidBodyTree model(
+  RigidBodyTree<double> model(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
