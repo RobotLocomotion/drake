@@ -53,7 +53,7 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
   int npoints = 3;
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
-  const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::centerOfMass<double>, cache,

@@ -56,7 +56,7 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
     auto G = sys_tree_->inverseDynamics(cache_, no_external_wrenches, vd,
@@ -75,7 +75,7 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 

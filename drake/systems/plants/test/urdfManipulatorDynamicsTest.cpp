@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   auto H = model->massMatrix(cache);
   cout << H << endl;
 
-  const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto C = model->dynamicsBiasTerm(cache, no_external_wrenches);
   cout << C << endl;
 

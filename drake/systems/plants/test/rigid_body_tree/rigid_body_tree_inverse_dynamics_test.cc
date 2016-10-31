@@ -115,7 +115,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 
-    const RigidBodyTree<double>::BodyToWrenchMap<Scalar> no_external_wrenches;
+    const typename RigidBodyTree<Scalar>::BodyToWrenchMap no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
         kinematics_cache_coriolis, no_external_wrenches,
         qdd.cast<Scalar>().eval(), true);
@@ -164,7 +164,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
       KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
       kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
       tree->doKinematics(kinematics_cache_2, true);
-      const RigidBodyTree<double>::BodyToWrenchMap<Scalar> no_external_wrenches;
+      const typename RigidBodyTree<Scalar>::
+      BodyToWrenchMap no_external_wrenches;
       return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
                                    vd_arg);
     };
@@ -201,7 +202,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   KinematicsCache<double> kinematics_cache(tree->bodies);
   kinematics_cache.initialize(q);
   tree->doKinematics(kinematics_cache);
-  const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto gravitational_forces =
       tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
 
@@ -275,7 +276,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto q = tree.getRandomConfiguration(generator);
   auto v = VectorXd::Random(tree.get_num_velocities()).eval();
   auto vd = VectorXd::Random(tree.get_num_velocities()).eval();
-  RigidBodyTree<double>::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
 
   KinematicsCache<double> kinematics_cache(tree.bodies);
   kinematics_cache.initialize(q, v);

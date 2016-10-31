@@ -329,7 +329,7 @@ Matrix<Scalar, Dynamic, 1> dynamicsBiasTermTemp(
     const MatrixBase<DerivedF>& f_ext_value) {
   // temporary solution.
 
-  RigidBodyTreed::BodyToWrenchMap<Scalar> external_wrenches;
+  RigidBodyTree<Scalar>::BodyToWrenchMap external_wrenches;
   if (f_ext_value.size() > 0) {
     DRAKE_ASSERT(f_ext_value.cols() == model.bodies.size());
     for (Eigen::Index i = 0; i < f_ext_value.cols(); i++) {

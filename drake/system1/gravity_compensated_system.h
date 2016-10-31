@@ -81,7 +81,7 @@ class GravityCompensatedSystem {
     int num_DoF = sys_->get_num_positions();
     KinematicsCache<double> cache = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree<double>::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 

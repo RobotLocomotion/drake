@@ -795,7 +795,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  RigidBodyTree<double>::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
