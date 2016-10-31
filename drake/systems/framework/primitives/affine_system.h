@@ -89,8 +89,8 @@ class AffineSystem : public LeafSystem<T> {
 ///
 /// Note that the term linearization is consistently used in the literature
 /// even though the result may be affine (not simply linear).
-template <typename T>
-AffineSystem<T> Linearize(const System<T>& system,
+
+std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
                           const Context<double>& context,
                           const BasicVector<double>& input);
 

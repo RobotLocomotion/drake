@@ -98,36 +98,50 @@ template class DRAKE_EXPORT AffineSystem<double>;
 template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
 
 
-template <typename T>
-AffineSystem<T> Linearize(const System<AutoDiffXd>& system,
-                          const Context<AutoDiffXd>& context,
-                          const BasicVector<AutoDiffXd>& input) {
+std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
+                                                 const Context<double>& context,
+                                                 const BasicVector<double>& input) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
   // TODO(russt): check if system is continuous time (only) and/or discrete
   // time (only)
   // TODO(russt): handle the discrete time case
 
+  // TODO(russt): handle the zero input case, the stateless case, and the outputs
+
   DRAKE_DEMAND(system.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_num_output_ports() == 1);
-  // TODO(russt): handle the MIMO case
+  DRAKE_DEMAND(system.get_input_port(0).size() == input.size());
+  // TODO(russt): handle the MIMO case?
+
+  // create an autodiff version of the system
+  auto autodiff_system = system.template ToAutoDiffXd();
 
   // initialize autodiff
+  auto autodiff_context = autodiff_plant->CreateDefaultContext();
+  autodiff_context->SetTimeStateAndParametersFrom(*context);
 
   auto x0 = context.get_continuous_state_vector();
   auto u0 = input.get_value();
-
   auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
-  typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar
-      AutoDiffType;
-  Eigen::Vector<AutoDiffType> x(std::get<0>(autodiff_args));
-  Eigen::Vector<AutoDiffType> u(std::get<1>(autodiff_args));
-  Eigen::Vector<AutoDiffType> xdot;
 
-  DiagramBuilder<double> builder;
-  auto source = builder.AddSystem<ConstantVectorSource>(u);
-  auto pendulum = builder.AddSystem();
+  auto& autodiff_x0 = autodiff_context.get_mutable_state_vector();
+  autodiff_x0 = std::get<0>(autodiff_args);
 
+  auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(input.size());
+  input_vector->get_mutable_value() = std::get<1>(autodiff_args);
+  autodiff_context->SetInputPort(
+            0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
+
+  auto autodiff_xdot = autodiff_system.AllocateTimeDerivatives();
+
+  autodiff_system.EvalTimeDerivatives(autodiff_context, autodiff_xdot);
+
+  auto AB = autoDiffToGradientMatrix(autodiff_xdot);
+  auto A = AB.leftCols(x0.size());
+  auto B = AB.rightCols(u0.size());
+  auto xDot0 = autodiff_xdot.value();
+
+  return std::move(std::make_unique<AffineSystem<double>>(A,B,autodiff_xdot.value(),Eigen::MatrixXd::Zero(0,A.rows()),Eigen::MatrixXd::Zero(0,B.cols()),Eigen::VectorXd::Zero(A.rows()));
 }
 
 
