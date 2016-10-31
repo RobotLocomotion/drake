@@ -32,12 +32,13 @@ classdef SoftPaddleControl < DrakeSystem
       % xtraj and utraj to be defined
       %             c = tvlqr(plant,xtraj,utraj,Q,R,Qf);
       obj.numerically_stable = false;
-      
+
       %%%%%%%%%%%%%%%% Part of another way to compute psid %%%%%%%%%%%%%%%%
 %       temp = NLPoincare();
-%       temp = -0.05;
+% %       temp = -0.05;
 %       assignin('base','psid',temp);
-%       assignin('base','mlast', 1);
+      assignin('base','mlast', 1);
+      assignin('base', 'kk', 1);
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
     
@@ -63,7 +64,7 @@ classdef SoftPaddleControl < DrakeSystem
       uE = -10*qp(1)*Etilde;
       
       epsilon = 0.5;
-%       xFixed = -0.031;
+%       xFixed = -0.0378;
       xFixed = -0.045;
       zTouchDes = 4;
       
@@ -83,17 +84,22 @@ classdef SoftPaddleControl < DrakeSystem
       %             psid = 0;
       
       %%%%%%%%%%%%%%%%%%%%% Another way to compute psid %%%%%%%%%%%%%%%%%%%
+      N = 5;
+%       psidList = [-0.0266; -0.0103; 0.0096; 0.0045; -0.0009];   % for a start load_x = -0.5, load_z = 4.5
+%       psidList = [-0.0369   -0.0119    0.0157    0.0039   -0.0035]';
 %       psid = evalin('base','psid');
-%       mlast = evalin('base','mlast');
-%       if m ~= mlast
-%           if m == 1
-%               psid = NLPoincare(x);
-%               assignin('base','psid',psid);
-%           end
-%       end
-%       assignin('base','mlast',m);
+      mlast = evalin('base','mlast');
+      k = evalin('base', 'kk');
+      if m ~= mlast
+          if m == 1 && k <= N
+% %               psid = NLPoincare(x);
+% %               assignin('base','psid',psid);
+%             psid = psidList(k);
+            assignin('base', 'kk', k + 1);
+          end
+      end
+      assignin('base','mlast',m);
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
       
       u = -obj.kp*(q(1)-psid) - obj.kd*qp(1) + C(1);
       if m == 2
