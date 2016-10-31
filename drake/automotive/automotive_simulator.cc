@@ -21,7 +21,7 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace automotive {
@@ -231,7 +231,7 @@ void AutomotiveSimulator<T>::ConnectJointStateSourcesToVisualizer() {
         joint_state_sizes);
 
     auto rigid_body_tree_publisher =
-        builder_->template AddSystem<systems::RigidBodyTreeLcmPublisher>(
+        builder_->template AddSystem<systems::DrakeVisualizer>(
             *rigid_body_tree_, lcm_.get());
     builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
 

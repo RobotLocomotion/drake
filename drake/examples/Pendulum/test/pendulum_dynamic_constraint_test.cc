@@ -6,11 +6,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/Pendulum/pendulum_system.h"
+#include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
-using drake::examples::pendulum::PendulumSystem;
+using drake::examples::pendulum::PendulumPlant;
 
 GTEST_TEST(PendulumDirectCollocationConstraint,
            PendulumDirectCollocationConstraintTest) {
@@ -24,7 +24,7 @@ GTEST_TEST(PendulumDirectCollocationConstraint,
   x(6) = 0.018339;     // u1
 
   drake::systems::System2DirectCollocationConstraint dut(
-      std::make_unique<PendulumSystem<drake::AutoDiffXd>>());
+      std::make_unique<PendulumPlant<drake::AutoDiffXd>>());
 
   drake::TaylorVecXd result;
   dut.Eval(drake::math::initializeAutoDiff(x), result);
