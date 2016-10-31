@@ -28,7 +28,7 @@ namespace systems {
 /// @see AffineSystem
 /// @see LinearSystem
 template <typename T>
-class MatrixGain: public LinearSystem<T> {
+class MatrixGain : public LinearSystem<T> {
  public:
   /**
    * A constructor where the gain matrix `D` is a square identity matrix of size

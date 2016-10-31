@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
