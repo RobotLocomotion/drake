@@ -34,8 +34,6 @@ bool AssertForce(const WrenchVector<DerivedA>& wrench,
 }
 
 // THe tests to perform
-//  3. Multiple planar forces - tangent components only.
-//    a. ???  What gets returned?
 //  4. Multiple planar forces - tangent and normal
 //    a. torque in wrench only due to shifting tangential forces.
 //  5. Multiple forces, different normal directions, planar application points
@@ -216,6 +214,34 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ASSERT_TRUE(AssertForce(wrench, norm * 6));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
     ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+  }
+}
+
+// Tests the case where there are
+GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
+// Do *not* change these values. The tests below will become invalid.
+  Vector3<double> pos1, pos2, expected_torque;
+  Vector3<double> norm, tan1, tan2, zero;
+  pos1 << 1, 0, 0;
+  pos2 << 2, 0, 0;
+  norm << 0, 0, 0;
+  tan1 << 1, 1, 0;
+  tan2 << -1, 2, 0;
+  zero = Vector3<double>::Zero();
+
+  // Case 1: Two identical, tangent-only forces . Min. moment point will be
+  //  the first position (pos1) and, force is <0, 3, 0> and torque is <0, 0, 2>.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(pos1, norm, tan1, zero);
+    calc.AddForce(pos2, norm, tan2, zero);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+
+    expected_torque << 0, 0, 2;
+    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
+    ASSERT_TRUE(AssertForce(wrench, tan1 + tan2));
+    ASSERT_TRUE(AreEquivalent(min_point, pos1));
   }
 }
 }  // namespace

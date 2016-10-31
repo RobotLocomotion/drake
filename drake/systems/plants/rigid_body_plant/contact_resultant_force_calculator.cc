@@ -66,46 +66,53 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     resultant_wrench_ += force.get_wrench();
   }
 
-  // pick the first force application point as a temporary origin.  This assumes
-  // contacts are all local and will keep the math near the origin, even if the
-  // points in the world frame are off in some distant region.
-  Vector3<T> O_temp = forces_[0].get_application_point();
+  T denom = normal_resultant.dot(normal_resultant);
+  if (denom > 1e-14) {
 
-  // For the sake of efficiency, this loop is doing two activities:
-  //  1) Compute the moment around the temporary origin induced by the normal
-  //     forces.
-  //  2) Compute a more "optimal" origin.  See ContactResultantForceCalculator
-  //     for the characterization of this origin point.
-  Vector3<T> normal_moment = Vector3<T>::Zero();
-  T best(0.);
-  size_t candidate_index = 0;
-  for (size_t i = 0; i < forces_.size(); ++i) {
-    const auto& force = forces_[i];
-    // Compute normal moment.
-    Vector3<T> local_r = force.get_application_point() - O_temp;
-    normal_moment += local_r.cross(force.get_normal_force());
+    // pick the first force application point as a temporary origin.  This assumes
+    // contacts are all local and will keep the math near the origin, even if the
+    // points in the world frame are off in some distant region.
+    Vector3<T> O_temp = forces_[0].get_application_point();
 
-    // Update optimal origin candidate.
-    T projection = local_r.dot(normal_resultant);
-    if (projection < best) {
-      best = projection;
-      candidate_index = i;
+    // For the sake of efficiency, this loop is doing two activities:
+    //  1) Compute the moment around the temporary origin induced by the normal
+    //     forces.
+    //  2) Compute a more "optimal" origin.  See ContactResultantForceCalculator
+    //     for the characterization of this origin point.
+    Vector3<T> normal_moment = Vector3<T>::Zero();
+    T best(0.);
+    size_t candidate_index = 0;
+    for (size_t i = 0; i < forces_.size(); ++i) {
+      const auto &force = forces_[i];
+      // Compute normal moment.
+      Vector3<T> local_r = force.get_application_point() - O_temp;
+      normal_moment += local_r.cross(force.get_normal_force());
+
+      // Update optimal origin candidate.
+      T projection = local_r.dot(normal_resultant);
+      if (projection < best) {
+        best = projection;
+        candidate_index = i;
+      }
     }
-  }
 
-  // Use the mean-shift theorem to change the resultant moment from the
-  // temporary origin to the "optimal" origin.  Only necessary if the "optimal"
-  // origin is not the first point we arbitrarily selected.
-  Vector3<T> O = O_temp;
-  if (candidate_index != 0) {
-    O = forces_[candidate_index].get_application_point();
-    normal_moment -= (O_temp - O).cross(normal_resultant);
-  }
+    // Use the mean-shift theorem to change the resultant moment from the
+    // temporary origin to the "optimal" origin.  Only necessary if the "optimal"
+    // origin is not the first point we arbitrarily selected.
+    Vector3<T> O = O_temp;
+    if (candidate_index != 0) {
+      O = forces_[candidate_index].get_application_point();
+      normal_moment -= (O_temp - O).cross(normal_resultant);
+    }
 
-  // Compute the minimum moment point.
-  minimum_moment_point_ = normal_resultant.cross(normal_moment) /
-                              normal_resultant.dot(normal_resultant) +
-                          O;
+    // Compute the minimum moment point.
+    minimum_moment_point_ = normal_resultant.cross(normal_moment) / denom + O;
+  } else {
+    // There is no normal force component which means the minimum moment point
+    // can be *anywhere*.  We pick the first point just so it is "local" to the
+    // contact data.
+    minimum_moment_point_ = forces_[0].get_application_point();
+  }
 
   // Account for moments introduced by moving forces from defined point
   // locations to minimum moment location.

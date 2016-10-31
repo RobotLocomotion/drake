@@ -43,6 +43,9 @@ namespace systems {
  The actual values will change as more forces are added to the calculator.
  */
 // TODO(SeanCurtis-TRI): Add documentation to describe the optimal point.
+// TODO(SeanCurtis-TRI): Add dcoumentation explaining what happens if the normal
+//  resultant is zero.  Then the application point is selected from the set
+//  and the resultant wrench *may* have a non-zero pure torque term.
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
