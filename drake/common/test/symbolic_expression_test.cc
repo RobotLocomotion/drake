@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,7 +19,9 @@
 
 using std::domain_error;
 using std::equal_to;
+using std::map;
 using std::runtime_error;
+using std::set;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -25,6 +29,14 @@ using std::vector;
 namespace drake {
 namespace symbolic {
 namespace {
+
+bool ExpEqual(const Expression& e1, const Expression& e2) {
+  return e1.EqualTo(e2);
+}
+
+bool ExpNotEqual(const Expression& e1, const Expression& e2) {
+  return !ExpEqual(e1, e2);
+}
 
 // Provides common variables that are used by the following tests.
 class SymbolicExpressionTest : public ::testing::Test {
@@ -58,15 +70,15 @@ TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x_.to_string(), var_x_.get_name());
   EXPECT_EQ(y_.to_string(), var_y_.get_name());
   EXPECT_EQ(z_.to_string(), var_z_.get_name());
-  EXPECT_TRUE(x_.EqualTo(x_));
-  EXPECT_FALSE(x_.EqualTo(y_));
-  EXPECT_FALSE(x_.EqualTo(z_));
-  EXPECT_FALSE(y_.EqualTo(x_));
-  EXPECT_TRUE(y_.EqualTo(y_));
-  EXPECT_FALSE(y_.EqualTo(z_));
-  EXPECT_FALSE(z_.EqualTo(x_));
-  EXPECT_FALSE(z_.EqualTo(y_));
-  EXPECT_TRUE(z_.EqualTo(z_));
+  EXPECT_PRED2(ExpEqual, x_, x_);
+  EXPECT_PRED2(ExpNotEqual, x_, y_);
+  EXPECT_PRED2(ExpNotEqual, x_, z_);
+  EXPECT_PRED2(ExpNotEqual, y_, x_);
+  EXPECT_PRED2(ExpEqual, y_, y_);
+  EXPECT_PRED2(ExpNotEqual, y_, z_);
+  EXPECT_PRED2(ExpNotEqual, z_, x_);
+  EXPECT_PRED2(ExpNotEqual, z_, y_);
+  EXPECT_PRED2(ExpEqual, z_, z_);
 }
 
 TEST_F(SymbolicExpressionTest, Constant) {
@@ -139,54 +151,54 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
 }
 
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
-  EXPECT_FALSE(c3_.EqualTo(-c3_));
+  EXPECT_PRED2(ExpNotEqual, c3_, -c3_);
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), -(-c3_).Evaluate());
-  EXPECT_TRUE(c3_.EqualTo(-(-c3_)));
+  EXPECT_PRED2(ExpEqual, c3_, -(-c3_));
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), (-(-c3_)).Evaluate());
   const Expression e{x_ + y_};
   const Environment env{{var_x_, 1.0}, {var_y_, 2.0}};
-  // (x + y) and -(-(x + y)) are structurally different
-  EXPECT_FALSE(e.EqualTo(-(-e)));
-  // but their evaluations should be the same.
+  // (x + y) and -(-(x + y)) are structurally equal (after simplification)
+  EXPECT_PRED2(ExpEqual, e, -(-e));
+  // and their evaluations should be the same.
   EXPECT_DOUBLE_EQ(e.Evaluate(env), (-(-e)).Evaluate(env));
 }
 
 TEST_F(SymbolicExpressionTest, Add1) {
-  EXPECT_TRUE((c3_ + zero_).EqualTo(c3_));
+  EXPECT_PRED2(ExpEqual, c3_ + zero_, c3_);
   EXPECT_EQ((c3_ + zero_).to_string(), c3_.to_string());
-  EXPECT_TRUE((zero_ + c3_).EqualTo(c3_));
+  EXPECT_PRED2(ExpEqual, zero_ + c3_, c3_);
   EXPECT_EQ((zero_ + c3_).to_string(), c3_.to_string());
-  EXPECT_TRUE((0.0 + c3_).EqualTo(c3_));
+  EXPECT_PRED2(ExpEqual, 0.0 + c3_, c3_);
   EXPECT_EQ((0.0 + c3_).to_string(), c3_.to_string());
-  EXPECT_TRUE((c3_ + 0.0).EqualTo(c3_));
+  EXPECT_PRED2(ExpEqual, c3_ + 0.0, c3_);
   EXPECT_EQ((c3_ + 0.0).to_string(), c3_.to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(c3_ + c4_, Expression{3.14159 + -2.718}));
+  EXPECT_PRED2(ExpEqual, c3_ + c4_, Expression{3.14159 + -2.718});
   EXPECT_EQ((c3_ + c4_).to_string(), Expression{3.14159 + -2.718}.to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(c3_ + x_, 3.14159 + x_));
+  EXPECT_PRED2(ExpEqual, c3_ + x_, 3.14159 + x_);
   EXPECT_EQ((c3_ + x_).to_string(), (3.14159 + x_).to_string());
-  EXPECT_TRUE(equal_to<Expression>{}(x_ + c3_, x_ + 3.14159));
+  EXPECT_PRED2(ExpEqual, x_ + c3_, x_ + 3.14159);
   EXPECT_EQ((x_ + c3_).to_string(), (x_ + 3.14159).to_string());
 }
 
 TEST_F(SymbolicExpressionTest, Add2) {
   Expression e1{x_ + y_};
   Expression e2{e1 + e1};
-  EXPECT_EQ(e1.to_string(), "(x + y)");
-  EXPECT_EQ(e2.to_string(), "((x + y) + (x + y))");
+  const auto str_rep_e2 = e2.to_string();
+  EXPECT_PRED2(ExpEqual, e2, 2 * x_ + 2 * y_);
   e1 += z_;
-  EXPECT_EQ(e1.to_string(), "((x + y) + z)");
-  EXPECT_EQ(e2.to_string(), "((x + y) + (x + y))");  // e2 doesn't change.
+  EXPECT_PRED2(ExpEqual, e1, x_ + y_ + z_);
+  EXPECT_EQ(e2.to_string(), str_rep_e2);  // e2 doesn't change.
 }
 
 TEST_F(SymbolicExpressionTest, Inc1) {
   // Prefix increment
   Expression x{var_x_};
   Expression x_prime{var_x_};
-  EXPECT_TRUE(x.EqualTo(x_prime));
-  EXPECT_TRUE(x++.EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime++));
-  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExpEqual, x++, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime++);
+  EXPECT_PRED2(ExpEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Inc2) {
@@ -194,11 +206,11 @@ TEST_F(SymbolicExpressionTest, Inc2) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_TRUE(x.EqualTo(x_prime));
-  EXPECT_FALSE((++x).EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime));
-  EXPECT_TRUE(x.EqualTo(++x_prime));
-  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, ++x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime);
+  EXPECT_PRED2(ExpEqual, x, ++x_prime);
+  EXPECT_PRED2(ExpEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Inc3) {
@@ -227,20 +239,17 @@ TEST_F(SymbolicExpressionTest, Sub2) {
   Expression e1{x_ - y_};
   const Expression e2{x_ - z_};
   const Expression e3{e1 - e2};
-  EXPECT_EQ(e1.to_string(), "(x - y)");
-  EXPECT_EQ(e2.to_string(), "(x - z)");
-  EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");
+  const auto str_rep_e3(e3.to_string());
   e1 -= z_;
-  EXPECT_EQ(e1.to_string(), "((x - y) - z)");
-  EXPECT_EQ(e3.to_string(), "((x - y) - (x - z))");  // e3 doesn't change.
+  EXPECT_PRED2(ExpEqual, e1, x_ - y_ - z_);
+  EXPECT_EQ(e3.to_string(), str_rep_e3);  // e3 doesn't change.
 }
 
 TEST_F(SymbolicExpressionTest, Sub3) {
   const Expression e1{x_ - y_};
   const Expression e2{x_ - y_};
   const Expression e3{e1 - e2};
-  EXPECT_EQ(e1.to_string(), "(x - y)");
-  EXPECT_EQ(e2.to_string(), "(x - y)");
+  EXPECT_PRED2(ExpEqual, e1, e2);
   EXPECT_EQ(e3.to_string(), "0");  // simplified
 }
 
@@ -249,11 +258,11 @@ TEST_F(SymbolicExpressionTest, Dec1) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_TRUE(x.EqualTo(x_prime));
-  EXPECT_TRUE(x--.EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime--));
-  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExpEqual, x--, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime--);
+  EXPECT_PRED2(ExpEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Dec2) {
@@ -261,11 +270,11 @@ TEST_F(SymbolicExpressionTest, Dec2) {
   Expression x{var_x_};
   Expression x_prime{var_x_};
 
-  EXPECT_TRUE(x.EqualTo(x_prime));
-  EXPECT_FALSE((--x).EqualTo(x_prime));
-  EXPECT_FALSE(x.EqualTo(x_prime));
-  EXPECT_TRUE(x.EqualTo(--x_prime));
-  EXPECT_TRUE(x.EqualTo(x_prime));
+  EXPECT_PRED2(ExpEqual, x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, --x, x_prime);
+  EXPECT_PRED2(ExpNotEqual, x, x_prime);
+  EXPECT_PRED2(ExpEqual, x, --x_prime);
+  EXPECT_PRED2(ExpEqual, x, x_prime);
 }
 
 TEST_F(SymbolicExpressionTest, Dec3) {
@@ -279,7 +288,7 @@ TEST_F(SymbolicExpressionTest, Dec3) {
   EXPECT_DOUBLE_EQ(c2.Evaluate(), 3.1415 - 1.0);
 }
 
-TEST_F(SymbolicExpressionTest, MUL1) {
+TEST_F(SymbolicExpressionTest, Mul1) {
   EXPECT_EQ((c3_ * zero_).to_string(), zero_.to_string());
   EXPECT_EQ((zero_ * c3_).to_string(), zero_.to_string());
   EXPECT_EQ((c3_ * 0.0).to_string(), zero_.to_string());
@@ -295,14 +304,50 @@ TEST_F(SymbolicExpressionTest, MUL1) {
   EXPECT_EQ((x_ * c3_).to_string(), (x_ * 3.14159).to_string());
 }
 
-TEST_F(SymbolicExpressionTest, MUL2) {
+TEST_F(SymbolicExpressionTest, Mul2) {
   Expression e1{x_ * y_};
   Expression e2{e1 * e1};
   EXPECT_EQ(e1.to_string(), "(x * y)");
-  EXPECT_EQ(e2.to_string(), "pow((x * y), 2)");
+  EXPECT_PRED2(ExpEqual, e2, pow(x_, 2) * pow(y_, 2));
   e1 *= z_;
-  EXPECT_EQ(e1.to_string(), "((x * y) * z)");
-  EXPECT_EQ(e2.to_string(), "pow((x * y), 2)");  // e2 doesn't change.
+  EXPECT_PRED2(ExpEqual, e1, x_ * y_ * z_);
+  EXPECT_PRED2(ExpEqual, e2, pow(x_, 2) * pow(y_, 2));  // e2 doesn't change.
+}
+
+TEST_F(SymbolicExpressionTest, Mul3) {
+  const Expression e1 = x_ * x_ * x_ * x_;
+  const Expression e2 = (x_ * x_) * (x_ * x_);
+  const Expression e3 = x_ * (x_ * x_ * x_);
+  const Expression e4 = pow(x_, 4);
+  EXPECT_PRED2(ExpEqual, e1, e4);
+  EXPECT_PRED2(ExpEqual, e2, e4);
+  EXPECT_PRED2(ExpEqual, e3, e4);
+}
+
+TEST_F(SymbolicExpressionTest, Mul4) {
+  EXPECT_PRED2(ExpEqual, x_ * y_ * y_ * x_, pow(x_, 2) * pow(y_, 2));
+  EXPECT_PRED2(ExpEqual, (x_ * y_ * y_ * x_) * (x_ * y_ * x_ * y_),
+               pow(x_, 4) * pow(y_, 4));
+
+  EXPECT_PRED2(ExpEqual, 3 * (4 * x_), (3 * 4) * x_);
+  EXPECT_PRED2(ExpEqual, (3 * x_) * 4, (3 * 4) * x_);
+  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * x_), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExpEqual, (x_ * 3) * (x_ * 4), (3 * 4) * x_ * x_);
+  EXPECT_PRED2(ExpEqual, (3 * x_) * (4 * y_), (3 * 4) * x_ * y_);
+}
+
+TEST_F(SymbolicExpressionTest, AddMul1) {
+  const Expression e1 = (x_ * y_ * y_ * x_) + (x_ * y_ * x_ * y_);
+  EXPECT_PRED2(ExpEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
+
+  const Expression e2 = x_ + y_ + (-x_);
+  EXPECT_PRED2(ExpEqual, e2, y_);
+
+  const Expression e3 = (2 * x_) + (3 * x_);
+  EXPECT_PRED2(ExpEqual, e3, 5 * x_);
+
+  const Expression e4 = (x_ * 2 * x_) + (x_ * x_ * 3);
+  EXPECT_PRED2(ExpEqual, e4, 5 * x_ * x_);
 }
 
 TEST_F(SymbolicExpressionTest, Div1) {
@@ -352,6 +397,21 @@ GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
 // std::unordered_map.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
   unordered_map<Expression, Expression> umap;
+  umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
+}
+
+// This test checks whether symbolic::Expression is compatible with
+// std::set.
+GTEST_TEST(ExpressionTest, CompatibleWithSet) {
+  set<Expression> uset;
+  uset.emplace(Expression{Variable{"a"}});
+  uset.emplace(Expression{Variable{"b"}});
+}
+
+// This test checks whether symbolic::Expression is compatible with
+// std::map.
+GTEST_TEST(ExpressionTest, CompatibleWithMap) {
+  map<Expression, Expression> umap;
   umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
@@ -408,7 +468,7 @@ TEST_F(SymbolicExpressionTest, Exp) {
 
 TEST_F(SymbolicExpressionTest, Sqrt1) {
   // sqrt(x * x) => x
-  EXPECT_TRUE(sqrt(x_plus_y_ * x_plus_y_).EqualTo(abs(x_plus_y_)));
+  EXPECT_PRED2(ExpEqual, sqrt(x_plus_y_ * x_plus_y_), abs(x_plus_y_));
 }
 
 TEST_F(SymbolicExpressionTest, Sqrt2) {
@@ -426,12 +486,13 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
 
 TEST_F(SymbolicExpressionTest, Pow1) {
   // pow(x, 0.0) => 1.0
-  EXPECT_TRUE(pow(x_plus_y_, Expression::Zero()).EqualTo(Expression::One()));
+  EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::Zero()), Expression::One());
   // pow(x, 1.0) => x
-  EXPECT_TRUE(pow(x_plus_y_, Expression::One()).EqualTo(x_plus_y_));
-
+  EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
   // sqrt(x) * sqrt(x) => pow(sqrt(x), 2) => x
-  EXPECT_TRUE((sqrt(x_plus_y_) * sqrt(x_plus_y_)).EqualTo(x_plus_y_));
+  EXPECT_PRED2(ExpEqual, (sqrt(x_plus_y_) * sqrt(x_plus_y_)), x_plus_y_);
+  // (x^2)^3 => x^(2*3)
+  EXPECT_PRED2(ExpEqual, pow(pow(x_, 2), 3), pow(x_, 2 * 3));
 }
 
 TEST_F(SymbolicExpressionTest, Pow2) {
@@ -664,7 +725,7 @@ TEST_F(SymbolicExpressionTest, Tanh) {
 
 TEST_F(SymbolicExpressionTest, Min1) {
   // min(E, E) -> E
-  EXPECT_TRUE(min(x_plus_y_, x_plus_y_).EqualTo(x_plus_y_));
+  EXPECT_PRED2(ExpEqual, min(x_plus_y_, x_plus_y_), x_plus_y_);
 }
 
 TEST_F(SymbolicExpressionTest, Min2) {
@@ -721,7 +782,7 @@ TEST_F(SymbolicExpressionTest, Min2) {
 
 TEST_F(SymbolicExpressionTest, Max1) {
   // max(E, E) -> E
-  EXPECT_TRUE(max(x_plus_y_, x_plus_y_).EqualTo(x_plus_y_));
+  EXPECT_PRED2(ExpEqual, max(x_plus_y_, x_plus_y_), x_plus_y_);
 }
 
 TEST_F(SymbolicExpressionTest, Max2) {
@@ -799,14 +860,14 @@ TEST_F(SymbolicExpressionTest, Swap) {
   const Expression e2_copy{e2};
 
   // Before Swap.
-  EXPECT_TRUE(e1.EqualTo(e1_copy));
-  EXPECT_TRUE(e2.EqualTo(e2_copy));
+  EXPECT_PRED2(ExpEqual, e1, e1_copy);
+  EXPECT_PRED2(ExpEqual, e2, e2_copy);
 
   swap(e1, e2);
 
   // After Swap.
-  EXPECT_TRUE(e1.EqualTo(e2_copy));
-  EXPECT_TRUE(e2.EqualTo(e1_copy));
+  EXPECT_PRED2(ExpEqual, e1, e2_copy);
+  EXPECT_PRED2(ExpEqual, e2, e1_copy);
 }
 
 TEST_F(SymbolicExpressionTest, ToString) {
@@ -814,7 +875,7 @@ TEST_F(SymbolicExpressionTest, ToString) {
   const Expression e2{cos(x_ * x_ + pow(y_, 2) * z_)};
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
-  EXPECT_EQ(e2.to_string(), "cos((pow(x, 2) + (pow(y, 2) * z)))");
+  EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
 }
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
@@ -855,7 +916,7 @@ class SymbolicExpressionMatrixTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
-  auto const M = A_ + A_;
+  auto const M(A_ + A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ + x_), (one_ + one_),
@@ -866,13 +927,13 @@ TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
-  auto const M = A_ - A_;
+  auto const M(A_ - A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   EXPECT_EQ(M, M_expected);  // should be all zero.
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
-  auto const M = A_ - C_;
+  auto const M(A_ - C_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ - z_), (one_ - two_),
@@ -883,7 +944,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenSub2) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
-  auto const M = A_ * B_;
+  auto const M(A_ * B_);
   Eigen::Matrix<Expression, 3, 3> M_expected;
   // clang-format off
   M_expected <<
@@ -895,7 +956,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul1) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
-  auto const M = B_ * A_;
+  auto const M(B_ * A_);
   Eigen::Matrix<Expression, 2, 2> M_expected;
   // clang-format off
   M_expected <<
@@ -906,7 +967,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
-  auto const M = 2.0 * A_;
+  auto const M(2.0 * A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (2 * x_), (2 * one_),
@@ -917,7 +978,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
-  auto const M = A_ * 2.0;
+  auto const M(A_ * 2.0);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ * 2), (one_ * 2),
@@ -928,7 +989,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
-  auto const M = A_ / 2.0;
+  auto const M(A_ / 2.0);
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ / 2), (one_ / 2),
