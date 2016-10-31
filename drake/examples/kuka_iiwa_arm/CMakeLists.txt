@@ -36,6 +36,18 @@ if(lcm_FOUND)
         drake-shapes
         eigen3)
 
+  add_executable(iiwa_multi_object_world_demo iiwa_multi_object_world_demo.cc)
+  target_link_libraries(iiwa_multi_object_world_demo
+      drakeKukaIiwaArmCommon
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers
+      drakeLCMSystem2
+      gflags)
+  drake_add_test(
+      NAME iiwa_multi_object_world_demo
+      COMMAND iiwa_multi_object_world_demo --duration 0.5)
+
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
       drakeKukaIiwaArmCommon
