@@ -42,7 +42,7 @@ namespace {
 
 DEFINE_double(duration, 5, "Total duration of the simulation in seconds.");
 
-// A demo of an uncontrolled KUKA iiwa arm.
+// A world demo of an uncontrolled KUKA iiwa arm.
 template<typename T>
 class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
  public:
