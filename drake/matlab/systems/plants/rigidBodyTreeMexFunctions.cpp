@@ -23,22 +23,23 @@ typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
                                       const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::centerOfMassJacobianDotTimesV<double>);
+      make_function(
+          &RigidBodyTreed::centerOfMassJacobianDotTimesV<double>);
   auto func_autodiff_fixed_max = make_function(
-      &RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffFixedMaxSize>);
+      &RigidBodyTreed::centerOfMassJacobianDotTimesV<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(
-      &RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffDynamicSize>);
+      &RigidBodyTreed::centerOfMassJacobianDotTimesV<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 void centerOfMassmex(int nlhs, mxArray* plhs[], int nrhs,
                      const mxArray* prhs[]) {
-  auto func_double = make_function(&RigidBodyTree::centerOfMass<double>);
+  auto func_double = make_function(&RigidBodyTreed::centerOfMass<double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTree::centerOfMass<AutoDiffFixedMaxSize>);
+      make_function(&RigidBodyTreed::centerOfMass<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTree::centerOfMass<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreed::centerOfMass<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -46,11 +47,12 @@ void centerOfMassmex(int nlhs, mxArray* plhs[], int nrhs,
 void centerOfMassJacobianmex(int nlhs, mxArray* plhs[], int nrhs,
                              const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::centerOfMassJacobian<double>);
+      make_function(&RigidBodyTreed::centerOfMassJacobian<double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTree::centerOfMassJacobian<AutoDiffFixedMaxSize>);
+      make_function(
+          &RigidBodyTreed::centerOfMassJacobian<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTree::centerOfMassJacobian<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreed::centerOfMassJacobian<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -58,11 +60,11 @@ void centerOfMassJacobianmex(int nlhs, mxArray* plhs[], int nrhs,
 void centroidalMomentumMatrixDotTimesvmex(int nlhs, mxArray* plhs[], int nrhs,
                                           const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>);
+      make_function(&RigidBodyTreed::centroidalMomentumMatrixDotTimesV<double>);
   auto func_autodiff_fixed_max = make_function(
-      &RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffFixedMaxSize>);
+      &RigidBodyTreed::centroidalMomentumMatrixDotTimesV<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(
-      &RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffDynamicSize>);
+      &RigidBodyTreed::centroidalMomentumMatrixDotTimesV<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -70,17 +72,17 @@ void centroidalMomentumMatrixDotTimesvmex(int nlhs, mxArray* plhs[], int nrhs,
 void centroidalMomentumMatrixmex(int nlhs, mxArray* plhs[], int nrhs,
                                  const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::centroidalMomentumMatrix<double>);
+      make_function(&RigidBodyTreed::centroidalMomentumMatrix<double>);
   auto func_autodiff_fixed_max = make_function(
-      &RigidBodyTree::centroidalMomentumMatrix<AutoDiffFixedMaxSize>);
+      &RigidBodyTreed::centroidalMomentumMatrix<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(
-      &RigidBodyTree::centroidalMomentumMatrix<AutoDiffDynamicSize>);
+      &RigidBodyTreed::centroidalMomentumMatrix<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 template <typename DerivedQ, typename DerivedV>
-void doKinematicsTemp(const RigidBodyTree& model,
+void doKinematicsTemp(const RigidBodyTreed& model,
                       KinematicsCache<typename DerivedQ::Scalar>& cache,
                       const MatrixBase<DerivedQ>& q,
                       const MatrixBase<DerivedV>& v, bool compute_JdotV) {
@@ -112,13 +114,13 @@ void doKinematicsmex(int nlhs, mxArray* plhs[], int nrhs,
 
 void findKinematicPathmex(int nlhs, mxArray* plhs[], int nrhs,
                           const mxArray* prhs[]) {
-  auto func = make_function(&RigidBodyTree::findKinematicPath);
+  auto func = make_function(&RigidBodyTreed::findKinematicPath);
   mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
 }
 
 template <typename Scalar, typename DerivedPoints>
 Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>
-forwardJacDotTimesVTemp(const RigidBodyTree& tree,
+forwardJacDotTimesVTemp(const RigidBodyTreed& tree,
                         const KinematicsCache<Scalar>& cache,
                         const MatrixBase<DerivedPoints>& points,
                         int current_body_or_frame_ind,
@@ -173,7 +175,7 @@ void forwardJacDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
 
 template <typename Scalar, typename DerivedPoints>
 Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinTemp(
-    const RigidBodyTree& tree, const KinematicsCache<Scalar>& cache,
+    const RigidBodyTreed& tree, const KinematicsCache<Scalar>& cache,
     const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind,
     int new_body_or_frame_ind, int rotation_type) {
   Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> ret(
@@ -213,7 +215,7 @@ void forwardKinmex(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
 template <typename Scalar, typename DerivedPoints>
 Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(
-    const RigidBodyTree& tree, const KinematicsCache<Scalar>& cache,
+    const RigidBodyTreed& tree, const KinematicsCache<Scalar>& cache,
     const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind,
     int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) {
   auto Jtrans =
@@ -266,11 +268,11 @@ void forwardKinJacobianmex(int nlhs, mxArray* plhs[], int nrhs,
 void forwardKinPositionGradientmex(int nlhs, mxArray* plhs[], int nrhs,
                                    const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::forwardKinPositionGradient<double>);
+      make_function(&RigidBodyTreed::forwardKinPositionGradient<double>);
   auto func_autodiff_fixed_max = make_function(
-      &RigidBodyTree::forwardKinPositionGradient<AutoDiffFixedMaxSize>);
+      &RigidBodyTreed::forwardKinPositionGradient<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(
-      &RigidBodyTree::forwardKinPositionGradient<AutoDiffDynamicSize>);
+      &RigidBodyTreed::forwardKinPositionGradient<AutoDiffDynamicSize>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
@@ -279,11 +281,11 @@ void forwardKinPositionGradientmex(int nlhs, mxArray* plhs[], int nrhs,
 void geometricJacobianDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
                                    const mxArray* prhs[]) {
   auto func_double =
-      make_function(&RigidBodyTree::geometricJacobianDotTimesV<double>);
+      make_function(&RigidBodyTreed::geometricJacobianDotTimesV<double>);
   auto func_autodiff_fixed_max = make_function(
-      &RigidBodyTree::geometricJacobianDotTimesV<AutoDiffFixedMaxSize>);
+      &RigidBodyTreed::geometricJacobianDotTimesV<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(
-      &RigidBodyTree::geometricJacobianDotTimesV<AutoDiffDynamicSize>);
+      &RigidBodyTreed::geometricJacobianDotTimesV<AutoDiffDynamicSize>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
@@ -291,7 +293,7 @@ void geometricJacobianDotTimesVmex(int nlhs, mxArray* plhs[], int nrhs,
 
 template <typename Scalar>
 drake::TwistMatrix<Scalar> geometricJacobianTemp(
-    const RigidBodyTree& model, const KinematicsCache<Scalar>& cache,
+    const RigidBodyTreed& model, const KinematicsCache<Scalar>& cache,
     int base_body_or_frame_ind, int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
   // temporary solution. Gross v_or_qdot_indices pointer will be gone soon.
@@ -312,22 +314,22 @@ void geometricJacobianmex(int nlhs, mxArray* plhs[], int nrhs,
 }
 
 void massMatrixmex(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
-  auto func_double = make_function(&RigidBodyTree::massMatrix<double>);
+  auto func_double = make_function(&RigidBodyTreed::massMatrix<double>);
   auto func_autodiff_fixed_max =
-      make_function(&RigidBodyTree::massMatrix<AutoDiffFixedMaxSize>);
+      make_function(&RigidBodyTreed::massMatrix<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&RigidBodyTree::massMatrix<AutoDiffDynamicSize>);
+      make_function(&RigidBodyTreed::massMatrix<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 template <typename Scalar, typename DerivedF>
 Matrix<Scalar, Dynamic, 1> dynamicsBiasTermTemp(
-    const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
+    const RigidBodyTreed& model, KinematicsCache<Scalar>& cache,
     const MatrixBase<DerivedF>& f_ext_value) {
   // temporary solution.
 
-  RigidBodyTree::BodyToWrenchMap<Scalar> external_wrenches;
+  RigidBodyTreed::BodyToWrenchMap<Scalar> external_wrenches;
   if (f_ext_value.size() > 0) {
     DRAKE_ASSERT(f_ext_value.cols() == model.bodies.size());
     for (Eigen::Index i = 0; i < f_ext_value.cols(); i++) {

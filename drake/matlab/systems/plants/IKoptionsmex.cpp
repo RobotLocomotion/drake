@@ -23,7 +23,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int COMMAND = (int)mxGetScalar(prhs[0]);
   switch (COMMAND) {
     case 1: {
-      RigidBodyTree* robot = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
+      RigidBodyTree<double>* robot =
+          (RigidBodyTree<double>*)getDrakeMexPointer(prhs[1]);
       IKoptions* ikoptions = new IKoptions(robot);
       mxArray* additional_argument = mxCreateDoubleScalar(2);
       plhs[0] = createDrakeMexPointer((void*)ikoptions, "IKoptions", -1, 1,
@@ -199,7 +200,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         }
         ikoptions_new->setAdditionaltSamples(t_samples);
       } else if (field_str == "robot") {
-        RigidBodyTree* new_robot = (RigidBodyTree*)getDrakeMexPointer(prhs[3]);
+        RigidBodyTree<double>* new_robot =
+            (RigidBodyTree<double>*)getDrakeMexPointer(prhs[3]);
         ikoptions_new->updateRobot(new_robot);
       } else {
         mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs",
