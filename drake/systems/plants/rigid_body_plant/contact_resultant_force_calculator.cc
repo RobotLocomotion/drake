@@ -115,7 +115,7 @@ void ContactResultantForceCalculator<T>::ComputeCachedData() const {
   //    2. If the minimum moment point is not the "center of pressure", there
   //       must be some residual moment that gets induced.
   for (const auto& force : forces_) {
-    auto offset = minimum_moment_point_ - force.get_application_point();
+    auto offset = force.get_application_point() - minimum_moment_point_;
     resultant_wrench_.template head<3>() += offset.cross(force.get_force());
   }
 }
