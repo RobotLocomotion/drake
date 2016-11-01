@@ -1,4 +1,4 @@
-#include "pid_controlled_system.h"
+#include "drake/systems/controllers/pid_controlled_system.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"

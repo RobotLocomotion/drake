@@ -3,7 +3,11 @@
 
 #include "drake/solvers/mosek_solver.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
+#include <list>
+#include <vector>
 
 #include <mosek/mosek.h>
 

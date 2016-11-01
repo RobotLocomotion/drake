@@ -1,7 +1,7 @@
-
-#include "inverseKinBackend.h"
+#include "drake/systems/plants/inverseKinBackend.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>
@@ -17,7 +17,7 @@
 #include <drake/systems/plants/IKoptions.h>
 #include <drake/systems/plants/RigidBodyTree.h>
 
-#include "ik_trajectory_helper.h"
+#include "drake/systems/plants/ik_trajectory_helper.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

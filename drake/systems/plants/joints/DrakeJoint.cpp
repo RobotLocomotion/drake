@@ -1,5 +1,7 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
+#include <limits>
+
 #include "drake/common/drake_assert.h"
 
 using Eigen::Isometry3d;

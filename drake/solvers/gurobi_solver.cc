@@ -1,6 +1,8 @@
-#include "gurobi_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include <Eigen/Core>

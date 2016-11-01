@@ -4,11 +4,12 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
+
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_export.h"
-
-#include "mathematical_program.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {

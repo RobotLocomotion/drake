@@ -1,5 +1,8 @@
 #pragma once
 
+#include <list>
+#include <string>
+
 #include "gtest/gtest.h"
 
 #include "drake/solvers/mathematical_program.h"

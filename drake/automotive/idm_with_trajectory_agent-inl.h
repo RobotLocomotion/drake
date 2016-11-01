@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "idm_with_trajectory_agent.h"
+#include "drake/automotive/idm_with_trajectory_agent.h"
 
 #include <algorithm>
 #include <cmath>

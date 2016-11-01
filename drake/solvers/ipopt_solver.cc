@@ -1,6 +1,8 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 

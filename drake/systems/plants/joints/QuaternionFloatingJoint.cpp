@@ -1,4 +1,4 @@
-#include "QuaternionFloatingJoint.h"
+#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 
 #include <random>
 

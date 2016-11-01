@@ -1,8 +1,11 @@
 #include "drake/systems/plants/parser_urdf.h"
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"

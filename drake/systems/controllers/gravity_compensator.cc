@@ -1,4 +1,4 @@
-#include "./gravity_compensator.h"
+#include "drake/systems/controllers/gravity_compensator.h"
 
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"

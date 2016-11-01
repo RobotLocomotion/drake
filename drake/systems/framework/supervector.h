@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "drake/systems/framework/vector_base.h"

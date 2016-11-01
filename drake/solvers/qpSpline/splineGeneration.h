@@ -1,9 +1,11 @@
 #pragma once
 
-#include "SplineInformation.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <stdexcept>
+#include <vector>
+
 #include "drake/common/drake_export.h"
+#include "drake/solvers/qpSpline/SplineInformation.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 class ConstraintMatrixSingularError : public std::runtime_error {
  public:

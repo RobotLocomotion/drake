@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_export.h"
 
+#include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <initializer_list>
 #include <iosfwd>

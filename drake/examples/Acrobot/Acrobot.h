@@ -1,7 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <string>
+
 #include <Eigen/Core>
 
 using namespace std;

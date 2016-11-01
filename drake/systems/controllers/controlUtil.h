@@ -1,7 +1,8 @@
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <Eigen/Dense>

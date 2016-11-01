@@ -1,4 +1,6 @@
-#include "SplineInformation.h"
+#include "drake/solvers/qpSpline/SplineInformation.h"
+
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 
