@@ -198,6 +198,7 @@ class KukaDemo : public systems::Diagram<T> {
         nullptr /* weld to frame */, rigid_body_tree.get());
 
     AddGround(rigid_body_tree.get());
+    VerifyIiwaTree(*rigid_body_tree);
 
     DiagramBuilder<T> builder;
 
