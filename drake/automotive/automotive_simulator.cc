@@ -114,8 +114,6 @@ void AutomotiveSimulator<T>::AddSdfModel(
   DRAKE_DEMAND(table.size() == 1);
 
   const int model_instance_id = table.begin()->second;
-  const std::vector<const RigidBody*> bodies =
-      rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
   rigid_body_tree_publisher_inputs_.push_back(
       std::make_pair(model_instance_id, coord_transform));
 }

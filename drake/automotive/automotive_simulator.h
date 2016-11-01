@@ -113,11 +113,12 @@ class AutomotiveSimulator {
   void AddSdfModel(const std::string& sdf_filename,
                    const SimpleCarToEulerFloatingJoint<T>*);
 
-  // Connects the systems that output the pose of each vehicle to the
-  // visualizer. This is done by using multiplexers to add zero state sources
-  // to specify the states that are not part of the vehicle poses, and the
-  // velocity states of all vehicles since the visualizer doesn't use velocity
-  // state.
+  // Connects the systems that output the pose of each vehicle to the visualzer.
+  // This is done by using multiplexers to connect systems that output constant
+  // vectors containing zero values, which specify the states that are not part
+  // of the vehicle poses, and the velocity states of all vehicles. (The
+  // visualizer doesn't use the velocity state so specifying a value of zero
+  // should be harmless.)
   void ConnectJointStateSourcesToVisualizer();
 
   // Returns a vector containing the number of joint position and velocity
