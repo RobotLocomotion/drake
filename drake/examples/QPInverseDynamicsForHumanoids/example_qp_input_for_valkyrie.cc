@@ -45,7 +45,7 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   input.mutable_w_basis_reg() = 1e-6;
 
   // Make contact points.
-  ContactInformation left_foot_contact(*robot.FindBody("leftFoot"), 4);
+  ContactInformation left_foot_contact(*robot.FindBody("leftFoot"));
   left_foot_contact.mutable_contact_points().push_back(
       Eigen::Vector3d(0.2, 0.05, -0.09));
   left_foot_contact.mutable_contact_points().push_back(
@@ -61,7 +61,7 @@ QPInput MakeExampleQPInput(const RigidBodyTree& robot) {
   left_foot_contact.mutable_weight() = 1e5;
   left_foot_contact.mutable_Kd() = 8;
 
-  ContactInformation right_foot_contact(*robot.FindBody("rightFoot"), 4);
+  ContactInformation right_foot_contact(*robot.FindBody("rightFoot"));
   right_foot_contact.mutable_contact_points() =
       left_foot_contact.contact_points();
   right_foot_contact.mutable_acceleration_constraint_type() =

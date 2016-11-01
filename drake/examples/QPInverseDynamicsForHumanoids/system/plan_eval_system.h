@@ -27,8 +27,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
 
     set_name("plan_eval");
 
-    // TODO(siyuan.feng@tri.gloabl): move these to some param / config file
-    // eventually.
+    // TODO(siyuan.feng): Move these to some param / config file eventually.
     // Set up gains.
     int dim = robot_.get_num_positions();
     Kp_com_ = Eigen::Vector3d::Constant(40);

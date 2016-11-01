@@ -135,7 +135,7 @@ void DecodeRobotStateLcmMsg(
   (*qd)[q_name_to_index.at("base_pitch")] = rpydot[1];
   (*qd)[q_name_to_index.at("base_yaw")] = rpydot[2];
 
-  // Set foot force torque
+  // Set foot force torque.
   l_foot_wrench->setZero();
   r_foot_wrench->setZero();
   (*l_foot_wrench)[0] = msg.force_torque.l_foot_torque_x;

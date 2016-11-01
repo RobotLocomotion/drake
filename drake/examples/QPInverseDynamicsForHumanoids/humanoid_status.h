@@ -14,8 +14,14 @@ namespace qp_inverse_dynamics {
  */
 class BodyOfInterest {
  public:
-  explicit BodyOfInterest(const std::string& name, const RigidBody& body,
-                          const Eigen::Vector3d& off)
+  /**
+   * @param name Name of this object. It does not have to match \p body's name.
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
+   * @param off Offset expressed in the body frame.
+   */
+  BodyOfInterest(const std::string& name, const RigidBody& body,
+                 const Eigen::Vector3d& off)
       : name_(name), body_(&body), offset_(off) {}
 
   /**
@@ -81,11 +87,15 @@ class HumanoidStatus {
   /// frame.
   static const Eigen::Matrix3d kFootToSensorRotationOffset;
 
-  // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
-  // Valkyrie, and they should be specified in some separate config file.
-  explicit HumanoidStatus(const RigidBodyTree& robot_in)
-      : robot_(&robot_in),
+  /**
+   * @param robot Reference to a RigidBodyTree, which must be valid through the
+   * lifespan of this obejct.
+   */
+  explicit HumanoidStatus(const RigidBodyTree& robot)
+      : robot_(&robot),
         cache_(robot_->bodies),
+        // TODO(siyuan.feng): The names of the links are hard coded for
+        // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
             BodyOfInterest("pelvis", *robot_->FindBody("pelvis"),
                            Eigen::Vector3d::Zero()),
@@ -124,9 +134,8 @@ class HumanoidStatus {
       actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
     }
 
-    // TODO(siyuan.feng@tri.global): these are hard coded for Valkyrie, and they
-    // should be included in the model file or loaded from a separate config
-    // file.
+    // TODO(siyuan.feng): these are hard coded for Valkyrie, and they should
+    // be included in the model file or loaded from a separate config file.
     nominal_position_[name_to_position_index().at("rightHipRoll")] = 0.01;
     nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.5432;
     nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.2195;
@@ -332,8 +341,7 @@ class HumanoidStatus {
   KinematicsCache<double> cache_;
 
   // Nominal position for the robot.
-  // TODO(siyuan.feng@tri.global): should read this from the model file
-  // eventually.
+  // TODO(siyuan.feng): should read this from the model file eventually.
   Eigen::VectorXd nominal_position_;
 
   // Map body name to its index.

@@ -17,7 +17,7 @@ namespace qp_inverse_dynamics {
 /**
  * Make a bot_core::robot_state_t lcm message based on given information.
  * The current implementation assumes:
- * 1. \param q and \param qd have the same dimension.
+ * 1. \p q and \p qd have the same dimension.
  * 2. Has a RPY floating base joint.
  * 3. All DOF are actuated except the floating base.
  *
@@ -40,16 +40,16 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
 
 /**
  * Decode state related information from a bot_core::robot_state_t message.
- * \param msg can contain extra joint information, but we will only decode
- * joints that are listed in \param q_name_to_index.
+ * \p msg can contain extra joint information, but we will only decode
+ * joints that are listed in \p q_name_to_index.
  * The current implementation assumes:
- * 1. \param q and \param qd have the same dimension.
+ * 1. \p q and \p qd have the same dimension.
  * 2. Has a RPY floating base joint.
  * 3. All DOF are actuated except the floating base.
  *
  * @param msg Lcm message
  * @param q_name_to_index A map from coordinate names to index, the joint_name
- * in \param msg is used for lookup.
+ * in \p msg is used for lookup.
  * @param time Pointer to decoded time
  * @param q Pointer to decoded generalized position
  * @param qd Pointer to decoded generalized velocity

@@ -11,7 +11,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-/*
+/**
  * Enum class for constraint types.
  * Hard: will be enforced by equality constraints.
  * Soft: will be enforced by cost functions.
@@ -34,7 +34,7 @@ inline std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
   return out;
 }
 
-/*
+/**
  * Base class for specifying various desired objectives.
  * The objectives can be ignored, set as equality constraints or optimized as
  * cost terms depending on the specified types.
@@ -150,12 +150,17 @@ class ConstrainedValues {
  */
 class ContactInformation {
  public:
+  static const int kDefaultNumBasisPerContactPoint = 4;
+
   /*
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
    * @param num_basis_per_contact_point number of basis per contact point
    */
-  ContactInformation(const RigidBody& b, int num_basis_per_contact_point)
-      : body_(&b),
-        num_basis_per_contact_point_(num_basis_per_contact_point),
+  ContactInformation(const RigidBody& body,
+                     int num_basis = kDefaultNumBasisPerContactPoint)
+      : body_(&body),
+        num_basis_per_contact_point_(num_basis),
         acceleration_constraint_type_(ConstraintType::Hard) {
     normal_ = Eigen::Vector3d(0, 0, 1);
     mu_ = 1;
@@ -386,8 +391,8 @@ class ContactInformation {
   // Offsets of the contact point specified in the body frame.
   std::vector<Eigen::Vector3d> contact_points_;
 
-  // TODO(siyuan.feng@tri.global): normal is currently assumed to be the same
-  // for all the contact points.
+  // TODO(siyuan.feng): Normal is currently assumed to be the same for all
+  // the contact points.
   // Contact normal specified in the body frame.
   Eigen::Vector3d normal_;
 
@@ -434,11 +439,15 @@ inline std::ostream& operator<<(std::ostream& out,
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  *
- * TODO: (siyuan.feng@tri.global) expand this to be expressed in other frame.
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ * TODO: (siyuan.feng) Expand this to be expressed in other frame.
+ * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredBodyMotion : public ConstrainedValues {
  public:
+  /**
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
+   */
   explicit DesiredBodyMotion(const RigidBody& body)
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
@@ -467,7 +476,7 @@ class DesiredBodyMotion : public ConstrainedValues {
  private:
   const RigidBody* body_;
 
-  // TODO(siyuan.feng) To be implemented in the qp controller.
+  // TODO(siyuan.feng) Actually implement this in the qp controller.
   bool control_during_contact_;
 };
 
@@ -488,7 +497,7 @@ inline std::ostream& operator<<(std::ostream& out,
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  *
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredJointMotions : public ConstrainedValues {
  public:
@@ -530,7 +539,7 @@ inline std::ostream& operator<<(std::ostream& out,
  * equality constraints or optimized as a cost term depending on the
  * constraint type.
  *
- * TODO: (siyuan.feng@tri.global) expand this to have policies (controllers).
+ * TODO: (siyuan.feng) Expand this to have policies (controllers).
  */
 class DesiredCentroidalMomentumChange : public ConstrainedValues {
  public:
@@ -659,6 +668,10 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input);
  */
 class ResolvedContact {
  public:
+  /**
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
+   */
   explicit ResolvedContact(const RigidBody& body) : body_(&body) {}
 
   bool is_valid() const {
@@ -739,6 +752,10 @@ class ResolvedContact {
  */
 class BodyAcceleration {
  public:
+  /**
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
+   */
   explicit BodyAcceleration(const RigidBody& body)
       : body_(&body), acceleration_(Eigen::Vector6d::Zero()) {}
 
@@ -789,8 +806,9 @@ class QPOutput {
       ret &= body_acceleration.is_valid();
     }
 
-    for (const ResolvedContact& contact : resolved_contacts_)
+    for (const ResolvedContact& contact : resolved_contacts_) {
       ret &= contact.is_valid();
+    }
 
     return ret;
   }
@@ -862,8 +880,8 @@ class QPOutput {
 
   // Computed accelerations for the center of mass in the world frame
   Eigen::Vector3d comdd_;
-  // Computed centroidal momentum dot in the world frame, the last 3 (linear
-  // part) = comdd_ * mass
+  // Computed centroidal momentum dot in the world frame: [angular; linear]
+  // The linear part equals comdd_ * mass.
   Eigen::Vector6d centroidal_momentum_dot_;
   // Computed generalized coordinate accelerations
   Eigen::VectorXd vd_;
@@ -969,7 +987,7 @@ class QPController {
 
   // pointers to different cost / constraint terms inside prog_
   drake::solvers::LinearEqualityConstraint* eq_dynamics_{nullptr};
-  // TODO(siyuan.feng@tri.global): switch to cost for contact_constraints
+  // TODO(siyuan.feng): Switch to cost for contact_constraints
   std::vector<drake::solvers::LinearEqualityConstraint*> eq_contacts_;
   std::vector<drake::solvers::LinearEqualityConstraint*> eq_body_motion_;
   drake::solvers::LinearEqualityConstraint* eq_joint_motion_{nullptr};

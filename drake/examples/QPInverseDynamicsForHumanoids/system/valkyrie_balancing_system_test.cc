@@ -12,7 +12,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 
@@ -20,7 +20,7 @@ using systems::DiagramBuilder;
 using systems::Diagram;
 using systems::Simulator;
 using systems::ExplicitEulerIntegrator;
-using systems::RigidBodyTreeLcmPublisher;
+using systems::DrakeVisualizer;
 
 namespace examples {
 namespace qp_inverse_dynamics {
@@ -35,7 +35,12 @@ namespace qp_inverse_dynamics {
 // The controller should drive the position and velocity close to zero in 4
 // seconds.
 //
-// You can visualize with drake_visualizer
+// You can visualize robot movements with the drake_visualizer while this
+// test is running.
+// Launch drake visualizer first in terminal 1:
+// $ drake_distro/build/install/bin/drake-visualizer
+// Start this test in terminal 2:
+// $ drake_distro/build/drake/bin/valkyrie_balancing_system_test
 GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   std::string urdf = GetDrakePath() + std::string(
                                           "/examples/Valkyrie/urdf/urdf/"
@@ -55,8 +60,8 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs = builder.AddSystem(
       std::make_unique<RobotStateMsgToHumanoidStatusSystem>(robot));
 
-  RigidBodyTreeLcmPublisher* viz_publisher =
-      builder.template AddSystem<RigidBodyTreeLcmPublisher>(robot, &lcm);
+  DrakeVisualizer* viz_publisher =
+      builder.template AddSystem<DrakeVisualizer>(robot, &lcm);
 
   builder.Connect(qp_con->get_output_port_qp_output(),
                   val_sim->get_input_port_qp_output());

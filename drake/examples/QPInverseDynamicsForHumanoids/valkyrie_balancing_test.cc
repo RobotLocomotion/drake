@@ -121,8 +121,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     }
 
     // Dummy integration.
-    // TODO(siyuan.feng@tri.gloabl): replace this with sys2 simulator when it's
-    // ready.
+    // TODO(siyuan.feng): replace this with sys2 simulator when it's ready.
     q += v * dt;
     v += output.vd() * dt;
     time += dt;

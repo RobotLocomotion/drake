@@ -79,10 +79,10 @@ class QPControllerSystem : public systems::LeafSystem<double> {
  private:
   const RigidBodyTree& robot_;
 
-  // TODO(siyuan.feng@tri.global): This is a bad temporary hack to the const
-  // constraint for EvalOutput. It is because qp controller needs to allocate
-  // mutable workspace (MathematicalProgram, temporary matrices for doing math,
-  // etc), and I want to avoid allocating these repeatedly.
+  // TODO(siyuan.feng): This is a bad temporary hack to the const constraint for
+  // EvalOutput. It is because qp controller needs to allocate mutable workspace
+  // (MathematicalProgram, temporary matrices for doing math, etc),
+  // and I want to avoid allocating these repeatedly.
   // This should be taken care of with the new system2 cache.
   mutable QPController qp_controller_;
 

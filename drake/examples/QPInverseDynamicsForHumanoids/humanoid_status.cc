@@ -6,8 +6,8 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-// TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
-// should be included in the model file or loaded from a separate config file.
+// TODO(siyuan.feng): These are hard coded for Valkyrie, and they should be
+// included in the model file or loaded from a separate config file.
 const Eigen::Vector3d HumanoidStatus::kFootToSoleOffset =
     Eigen::Vector3d(0, 0, -0.09);
 const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =

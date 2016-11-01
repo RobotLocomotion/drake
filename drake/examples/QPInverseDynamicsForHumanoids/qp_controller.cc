@@ -34,17 +34,19 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
       all_body_motions.size());
   std::vector<std::list<int>> body_motion_row_idx_as_eq(
       all_body_motions.size());
-  int ctr = 0;
-  for (auto it = all_body_motions.begin(); it != all_body_motions.end(); ++it) {
-    const DesiredBodyMotion& body_motion = it->second;
-    body_motion_row_idx_as_cost[ctr] =
+  int body_ctr = 0;
+  for (const auto& pair : all_body_motions) {
+    const DesiredBodyMotion& body_motion = pair.second;
+    body_motion_row_idx_as_cost[body_ctr] =
         body_motion.GetConstraintTypeIndices(ConstraintType::Soft);
-    body_motion_row_idx_as_eq[ctr] =
+    body_motion_row_idx_as_eq[body_ctr] =
         body_motion.GetConstraintTypeIndices(ConstraintType::Hard);
 
-    if (body_motion_row_idx_as_cost[ctr].size() > 0) num_body_motion_as_cost++;
-    if (body_motion_row_idx_as_eq[ctr].size() > 0) num_body_motion_as_eq++;
-    ctr++;
+    if (body_motion_row_idx_as_cost[body_ctr].size() > 0)
+      num_body_motion_as_cost++;
+    if (body_motion_row_idx_as_eq[body_ctr].size() > 0)
+      num_body_motion_as_eq++;
+    body_ctr++;
   }
 
   // Figure out size of the constrained dimensions of desired joint motions.
@@ -112,7 +114,7 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   solvers::DecisionVariableView basis =
       prog_.AddContinuousVariables(num_basis_, "basis");
 
-  // Allocate various matrices and vectors
+  // Allocate various matrices and vectors.
   stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
   basis_to_force_matrix_.resize(3 * num_point_force_, num_basis_);
   stacked_contact_jacobians_dot_times_v_.resize(3 * num_point_force_);
@@ -127,7 +129,7 @@ void QPController::ResizeQP(const RigidBodyTree& robot, const QPInput& input) {
   // all the following constraints / costs will be updated later in the actual
   // control code. Thus only their dimensions matter during allocation.
 
-  // Dyanmics
+  // Dynamics
   eq_dynamics_ = prog_.AddLinearEqualityConstraint(
                            Eigen::MatrixXd::Zero(6, num_variable_),
                            Eigen::Vector6d::Zero(), {vd, basis}).get();
@@ -418,9 +420,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // Body motion
   int body_ctr = 0;
   cost_ctr = eq_ctr = 0;
-  for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); ++it) {
-    const DesiredBodyMotion& body_motion_d = it->second;
+  for (const auto& pair : input.desired_body_motions()) {
+    const DesiredBodyMotion& body_motion_d = pair.second;
     body_J_[body_ctr] = GetTaskSpaceJacobian(
         rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
     body_Jdv_[body_ctr] = GetTaskSpaceJacobianDotTimesV(
@@ -577,18 +578,17 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
       rs.centroidal_momentum_matrix() * output->vd() +
       rs.centroidal_momentum_matrix_dot_times_v();
   output->mutable_body_accelerations().clear();
-  ctr = 0;
-  for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); ++it) {
-    const DesiredBodyMotion& body_motion_d = it->second;
+  int body_motion_ctr = 0;
+  for (const auto& pair : input.desired_body_motions()) {
+    const DesiredBodyMotion& body_motion_d = pair.second;
     BodyAcceleration body_acceleration(body_motion_d.body());
     // Compute accelerations.
     body_acceleration.mutable_acceleration() =
-        body_J_[ctr] * output->vd() + body_Jdv_[ctr];
+        body_J_[body_motion_ctr] * output->vd() + body_Jdv_[body_motion_ctr];
 
     // Add to output.
     output->mutable_body_accelerations().push_back(body_acceleration);
-    ctr++;
+    body_motion_ctr++;
   }
 
   // Set output joint torques.
@@ -628,9 +628,8 @@ std::ostream& operator<<(std::ostream& out, const QPInput& input) {
   out << "QPInput:\n";
   out << input.desired_centroidal_momentum_dot() << std::endl;
 
-  for (auto it = input.desired_body_motions().begin();
-       it != input.desired_body_motions().end(); ++it) {
-    out << it->second << std::endl;
+  for (const auto& pair : input.desired_body_motions()) {
+    out << pair.second << std::endl;
   }
 
   out << input.desired_joint_motions() << std::endl;
