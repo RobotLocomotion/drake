@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+// NOLINTNEXTLINE(build/include) False positive due to weird include style.
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
