@@ -64,12 +64,12 @@ class AffineSystem : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
   // Helper getter methods.
-  const Eigen::MatrixXd A(void) const { return A_; }
-  const Eigen::MatrixXd B(void) const { return B_; }
-  const Eigen::MatrixXd C(void) const { return C_; }
-  const Eigen::MatrixXd D(void) const { return D_; }
-  const Eigen::VectorXd xDot0(void) const { return xDot0_; }
-  const Eigen::VectorXd y0(void) const { return y0_; }
+  const Eigen::MatrixXd& A(void) const { return A_; }
+  const Eigen::MatrixXd& B(void) const { return B_; }
+  const Eigen::MatrixXd& C(void) const { return C_; }
+  const Eigen::MatrixXd& D(void) const { return D_; }
+  const Eigen::VectorXd& xDot0(void) const { return xDot0_; }
+  const Eigen::VectorXd& y0(void) const { return y0_; }
 
  private:
   const Eigen::MatrixXd A_;
