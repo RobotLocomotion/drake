@@ -1,4 +1,8 @@
 #include <cmath>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test/measure_execution.h"

@@ -1,10 +1,12 @@
 #pragma once
 
-#include "DrakeJointImpl.h"
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 class DRAKE_EXPORT RollPitchYawFloatingJoint

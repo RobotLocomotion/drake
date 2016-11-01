@@ -1,5 +1,9 @@
 #pragma once
 
+#include <map>
+#include <string>
+#include <utility>
+
 #include <Eigen/Dense>
 
 #include "ros/ros.h"

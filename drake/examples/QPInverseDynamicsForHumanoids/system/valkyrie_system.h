@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/framework/diagram.h"

@@ -1,5 +1,13 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include <algorithm>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -14,12 +22,6 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <string>
 
 using Eigen::AutoDiffScalar;
 using Eigen::Dynamic;

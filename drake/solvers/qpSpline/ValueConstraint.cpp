@@ -1,4 +1,4 @@
-#include "ValueConstraint.h"
+#include "drake/solvers/qpSpline/ValueConstraint.h"
 
 #include "drake/common/drake_assert.h"
 

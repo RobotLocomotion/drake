@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "simple_car.h"
+#include "drake/automotive/simple_car.h"
 
 #include <algorithm>
 #include <cmath>

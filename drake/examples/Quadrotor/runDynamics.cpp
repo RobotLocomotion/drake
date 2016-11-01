@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <limits>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/QuadrotorInput.h"

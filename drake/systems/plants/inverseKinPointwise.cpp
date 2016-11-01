@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"

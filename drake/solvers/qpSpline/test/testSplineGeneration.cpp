@@ -1,5 +1,7 @@
 #include "drake/solvers/qpSpline/splineGeneration.h"
 
+#include <vector>
+
 #include "gtest/gtest.h"
 
 namespace drake {

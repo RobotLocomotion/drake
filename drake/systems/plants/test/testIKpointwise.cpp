@@ -1,4 +1,7 @@
 #include <cstdlib>
+#include <limits>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"

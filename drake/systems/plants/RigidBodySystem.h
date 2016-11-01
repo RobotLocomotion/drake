@@ -1,12 +1,15 @@
 #pragma once
 
-#include "KinematicsCache.h"
+#include <string>
+#include <vector>
+
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/system1/System.h"
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 using drake::systems::plants::joints::FloatingBaseType;
 using drake::systems::plants::joints::kQuaternion;

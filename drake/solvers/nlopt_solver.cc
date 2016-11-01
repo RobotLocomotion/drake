@@ -1,6 +1,9 @@
 #include "drake/solvers/nlopt_solver.h"
 
+#include <algorithm>
+#include <limits>
 #include <list>
+#include <set>
 #include <stdexcept>
 #include <vector>
 

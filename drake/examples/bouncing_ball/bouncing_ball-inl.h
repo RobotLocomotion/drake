@@ -7,6 +7,8 @@
 
 #include "drake/examples/bouncing_ball/bouncing_ball.h"
 
+#include <algorithm>
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
 

@@ -16,6 +16,13 @@ namespace kuka_iiwa_arm {
 DRAKE_EXPORT
 void AddGround(RigidBodyTree<double>* tree);
 
+/**
+ * Verify that @p tree matches assumptions about joint indices.
+ * Aborts if the tree isn't as expected.
+ */
+DRAKE_EXPORT
+void VerifyIiwaTree(const RigidBodyTree& tree);
+
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

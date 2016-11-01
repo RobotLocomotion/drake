@@ -1,6 +1,7 @@
 #include "drake/common/polynomial.h"
 
 #include <cstring>
+#include <limits>
 #include <set>
 #include <stdexcept>
 

@@ -1,4 +1,4 @@
-#include "trajectory_source.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/context.h"

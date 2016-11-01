@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <vector>
 
 #include "drake/systems/plants/RigidBodyTree.h"
 

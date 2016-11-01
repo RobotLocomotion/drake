@@ -1,6 +1,9 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include <algorithm>
 #include <iostream>
+#include <set>
+#include <vector>
 
 using Eigen::Dynamic;
 using Eigen::Map;

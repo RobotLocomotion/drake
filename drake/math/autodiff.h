@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cmath>
+#include <tuple>
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>

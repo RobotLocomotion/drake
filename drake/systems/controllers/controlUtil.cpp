@@ -1,5 +1,8 @@
 #include "drake/systems/controllers/controlUtil.h"
 
+#include <limits>
+#include <utility>
+
 #include "drake/math/autodiff.h"
 #include "drake/math/expmap.h"
 #include "drake/math/quaternion.h"

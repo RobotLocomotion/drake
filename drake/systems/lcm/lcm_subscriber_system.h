@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mutex>
+#include <string>
+#include <vector>
 
 #include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"

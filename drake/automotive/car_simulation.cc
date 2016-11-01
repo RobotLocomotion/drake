@@ -1,6 +1,7 @@
 #include "drake/automotive/car_simulation.h"
 
 #include <cstdlib>
+#include <limits>
 
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"

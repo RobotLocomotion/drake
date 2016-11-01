@@ -1,8 +1,14 @@
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
-#include <lcm/lcm-cpp.hpp>
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"

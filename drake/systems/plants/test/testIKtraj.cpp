@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 

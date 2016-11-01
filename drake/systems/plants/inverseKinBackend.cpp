@@ -188,7 +188,7 @@ class InverseKinObjective : public Constraint {
   VectorXd q_nom_i_;
 };
 
-}  // namespace (anon)
+}  // anonymous namespace
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void inverseKinBackend(
@@ -318,6 +318,7 @@ template void inverseKinBackend(
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<VectorXd>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
-}
-}
-}
+
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake
