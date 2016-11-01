@@ -33,23 +33,22 @@ class DRAKE_EXPORT ContactForce {
 
    @param application_point         The point at which the wrench is applied.
    @param force                     The translational force.
-   @param normal                    The translational force normal direction.
+   @param normal                    The translational force's normal direction.
    @param pure_torque               The pure torque component
    */
-  ContactForce(const Vector3<T>& application_point,
-               const Vector3<T>& force, const Vector3<T>& normal,
-               const Vector3<T>& pure_torque);
+  ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
+               const Vector3<T>& normal, const Vector3<T>& pure_torque);
   /**
    Zero-pure-torque constructor.  This constructor sets the pure torque
    component to be zero.
 
    @param application_point         The point at which the wrench is applied.
    @param force                     The translational force.
-   @param normal                    The translational force normal direction.
+   @param normal                    The translational force's normal direction.
    @param pure_torque               The pure torque component
    */
-  ContactForce(const Vector3<T>& application_point,
-               const Vector3<T>& force, const Vector3<T>& normal);
+  ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
+               const Vector3<T>& normal);
 
   // Contact force is copyable and movable
   ContactForce(const ContactForce& other) = default;
@@ -60,12 +59,15 @@ class DRAKE_EXPORT ContactForce {
   Vector3<T> get_application_point() { return application_point_; }
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  // TODO(SeanCurtis-TRI): Update tehse
   Vector3<T> get_normal_force() { return force_.dot(normal_) * normal_; }
-  const Vector3<T> get_normal_force() const { return force_.dot(normal_) * normal_; }
+  const Vector3<T> get_normal_force() const {
+    return force_.dot(normal_) * normal_;
+  }
 
   Vector3<T> get_tangent_force() { return force_ - get_normal_force(); }
-  const Vector3<T> get_tangent_force() const { return force_ - get_normal_force(); }
+  const Vector3<T> get_tangent_force() const {
+    return force_ - get_normal_force();
+  }
 
   Vector3<T> get_pure_torque() { return pure_torque_; }
   const Vector3<T> get_pure_torque() const { return pure_torque_; }
