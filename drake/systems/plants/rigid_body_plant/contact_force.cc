@@ -1,3 +1,4 @@
+#include <drake/common/drake_assert.h>
 #include "drake/systems/plants/rigid_body_plant/contact_force.h"
 
 namespace drake {
@@ -11,7 +12,9 @@ ContactForce<T>::ContactForce(const Vector3<T>& application_point,
     : application_point_(application_point),
       force_(force),
       normal_(normal),
-      pure_torque_(pure_torque) {}
+      pure_torque_(pure_torque) {
+  DRAKE_ASSERT(abs(normal.norm() - 1.0) < 1e-14);
+}
 
 template <typename T>
 ContactForce<T>::ContactForce(const Vector3<T>& application_point,
@@ -19,7 +22,9 @@ ContactForce<T>::ContactForce(const Vector3<T>& application_point,
                               const Vector3<T>& normal)
     : application_point_(application_point),
       force_(force),
-      normal_(normal) {}
+      normal_(normal) {
+  DRAKE_ASSERT(abs(normal.norm() - 1.0) < 1e-14);
+}
 
 template class ContactForce<double>;
 

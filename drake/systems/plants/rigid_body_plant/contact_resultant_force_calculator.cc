@@ -58,8 +58,10 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
   }
 
   Vector3<T> min_point;
+  Vector3<T> norm;
   T denom = result_norm.dot(result_norm);
   if (denom > 1e-14) {
+    norm = result_norm.normalized();
     // pick the first force application point as a temporary origin.  This
     // assumes contacts are all local and will keep the math near the origin,
     // even if the points in the world frame are off in some distant region.
@@ -99,6 +101,8 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     // Compute the minimum moment point.
     min_point = result_norm.cross(normal_moment) / denom + O;
   } else {
+    // There is no translational force.  Pick an arbitrary unit normal.
+    norm << 1, 0, 0;
     // There is no normal force component which means the minimum moment point
     // can be *anywhere*.  We pick the first point just so it is "local" to the
     // contact data.
@@ -116,8 +120,6 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     auto offset = force.get_application_point() - min_point;
     result_torque += offset.cross(force.get_force());
   }
-  Vector3<T> norm = result_norm;
-  norm.normalize();
   resultant_force_ =
       ContactForce<T>(min_point, result_norm + result_tan, norm, result_torque);
 }
