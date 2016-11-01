@@ -22,13 +22,13 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
     CFLAGS -I\${prefix}/include/lcmtypes
     REQUIRES drake-control-util
     VERSION 0.0.1)
+endif()
 
-  pods_find_pkg_config(bot2-lcmgl-client)
-  if(bot2-lcmgl-client_FOUND)
-    add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
-    pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer bot2-lcmgl-client)
-    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes lcm)
-  endif()
+pods_find_pkg_config(bot2-lcmgl-client)
+if(bot2-lcmgl-client_FOUND)
+  add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
+  pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer bot2-lcmgl-client)
+  target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)

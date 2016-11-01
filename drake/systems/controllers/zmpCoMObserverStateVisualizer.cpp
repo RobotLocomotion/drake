@@ -1,6 +1,7 @@
 #include <lcm/lcm.h>
 #include <bot_lcmgl_client/lcmgl.h>
-#include "drake_lcmt_zmp_com_observer_state.h"
+
+#include "lcmtypes/drake_lcmt_zmp_com_observer_state.h"
 
 bot_lcmgl_t *lcmgl;
 
