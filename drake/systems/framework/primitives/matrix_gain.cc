@@ -12,13 +12,13 @@ const int kNumStates{0};
 
 template <typename T>
 MatrixGain<T>::MatrixGain(int size)
-    : MatrixGain<T>(MatrixX<T>::Identity(size, size)) {}
+    : MatrixGain<T>(Eigen::MatrixXd::Identity(size, size)) {}
 
 template <typename T>
-MatrixGain<T>::MatrixGain(const MatrixX<T>& D)
-    : LinearSystem<T>(MatrixX<T>::Zero(kNumStates, kNumStates),  // A
-                      MatrixX<T>::Zero(kNumStates, D.cols()),    // B
-                      MatrixX<T>::Zero(D.rows(), kNumStates),    // C
+MatrixGain<T>::MatrixGain(const Eigen::MatrixXd& D)
+    : LinearSystem<T>(Eigen::MatrixXd::Zero(kNumStates, kNumStates),  // A
+                      Eigen::MatrixXd::Zero(kNumStates, D.cols()),    // B
+                      Eigen::MatrixXd::Zero(D.rows(), kNumStates),    // C
                       D) {}
 
 template class DRAKE_EXPORT MatrixGain<double>;
