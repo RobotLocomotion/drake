@@ -149,6 +149,18 @@ GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
             builder.GetMutableSystems());
 }
 
+// Tests that ports of different sizes cannot be connected.
+GTEST_TEST(DiagramBuilderTest, ConnectPortSizeMismatch) {
+  DiagramBuilder<double> builder;
+
+  auto sys1 = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+  auto sys2 = builder.AddSystem<Integrator>(2 /* size */);
+
+  EXPECT_DEATH(
+    builder.Connect(sys1->get_output_port(), sys2->get_input_port(0)), ".*");
+}
+
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
