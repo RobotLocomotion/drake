@@ -14,17 +14,18 @@ namespace solvers {
 
 class DecisionVariableScalar {
  public:
-  enum class VarType {CONTINUOUS, INTEGER, BINARY};
+  enum class VarType { CONTINUOUS, INTEGER, BINARY };
   DecisionVariableScalar(VarType type, const std::string& name, size_t index)
       : type_(type), name_(name), value_(0), index_(index) {}
 
-  VarType type() const {return type_;}
+  VarType type() const { return type_; }
 
-  const std::string& name() const {return name_;}
-  double value() const {return value_;}
-  size_t index() const {return index_;}
+  const std::string& name() const { return name_; }
+  double value() const { return value_; }
+  size_t index() const { return index_; }
 
-  void set_value(double new_value) {value_ = new_value;}
+  void set_value(double new_value) { value_ = new_value; }
+
  private:
   VarType type_;
   std::string name_;
@@ -57,12 +58,18 @@ class MatrixDecisionVariable {
    * [S(0,0) S(1,0) S(2,0) S(1,1) S(2,1) S(2,2)];
    * @param is_symmetric Whether the matrix is symmetric or not.
    */
-  MatrixDecisionVariable(size_t rows, size_t cols, const std::vector<std::reference_wrapper<const DecisionVariableScalar>>& vars, bool is_symmetric = false) :
-      rows_(rows), cols_(cols), is_symmetric_(is_symmetric), vars_(vars.begin(), vars.end()){
-    if(is_symmetric) {
+  MatrixDecisionVariable(
+      size_t rows, size_t cols,
+      const std::vector<std::reference_wrapper<const DecisionVariableScalar>>&
+          vars,
+      bool is_symmetric = false)
+      : rows_(rows),
+        cols_(cols),
+        is_symmetric_(is_symmetric),
+        vars_(vars.begin(), vars.end()) {
+    if (is_symmetric) {
       DRAKE_ASSERT(rows == cols && rows * (rows + 1) / 2 == vars.size());
-    }
-    else {
+    } else {
       DRAKE_ASSERT(rows * cols == vars.size());
     }
   }
@@ -72,7 +79,8 @@ class MatrixDecisionVariable {
    * the original matrix.
    */
   MatrixDecisionVariable operator()(int i, int j) const {
-    return MatrixDecisionVariable(1, 1, {vars_[MatrixIndicesToVectorIndex(i, j)]});
+    return MatrixDecisionVariable(1, 1,
+                                  {vars_[MatrixIndicesToVectorIndex(i, j)]});
   }
 
   /**
@@ -104,7 +112,7 @@ class MatrixDecisionVariable {
     return vars_[MatrixIndicesToVectorIndex(i, j)].get().index();
   }
 
-  bool is_symmetric() const {return is_symmetric_;}
+  bool is_symmetric() const { return is_symmetric_; }
 
   /**
    * Return the number of decision variables stored in the matrix. If the matrix
@@ -116,8 +124,7 @@ class MatrixDecisionVariable {
   int NumberOfVariables() const {
     if (!is_symmetric_) {
       return rows_ * cols_;
-    }
-    else {
+    } else {
       return rows_ * (rows_ + 1) / 2;
     }
   }
@@ -142,24 +149,25 @@ class MatrixDecisionVariable {
    * @param rows The number of rows in the sub-block.
    * @param cols The number of columns in the sub-block.
    */
-  MatrixDecisionVariable block(size_t row_start, size_t col_start, size_t rows, size_t cols) const {
+  MatrixDecisionVariable block(size_t row_start, size_t col_start, size_t rows,
+                               size_t cols) const {
     DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
     std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars;
     if (IsBlockSymmetric(row_start, col_start, rows, cols)) {
       vars.reserve(rows * (rows + 1) / 2);
       for (int j = 0; j < static_cast<int>(cols); ++j) {
         for (int i = j; i < static_cast<int>(rows); ++i) {
-          vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
+          vars.push_back(
+              vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
         }
       }
       return MatrixDecisionVariable(rows, rows, vars, true);
-    }
-    else {
+    } else {
       vars.reserve(rows * cols);
       for (int j = 0; j < static_cast<int>(cols); ++j) {
         for (int i = 0; i < static_cast<int>(rows); ++i) {
-          vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i,
-                                                          col_start + j)]);
+          vars.push_back(
+              vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
         }
       }
       return MatrixDecisionVariable(rows, cols, vars, false);
@@ -170,17 +178,14 @@ class MatrixDecisionVariable {
    * Construct a new MatrixDecisionVariable from a row of the original matrix.
    * @param i The index of the row.
    */
-  MatrixDecisionVariable row(size_t i) const {
-    return block(i, 0, 1, cols_);
-  }
+  MatrixDecisionVariable row(size_t i) const { return block(i, 0, 1, cols_); }
 
   /**
-   * Construct a new MatrixDecisionVariable from a column of the original matrix.
+   * Construct a new MatrixDecisionVariable from a column of the original
+   * matrix.
    * @param j The index of the column.
    */
-  MatrixDecisionVariable col(size_t j) const {
-    return block(0, j, rows_, 1);
-  }
+  MatrixDecisionVariable col(size_t j) const { return block(0, j, rows_, 1); }
 
  private:
   size_t rows_;
@@ -195,8 +200,7 @@ class MatrixDecisionVariable {
     DRAKE_ASSERT(i < rows_ && j < cols_);
     if (!is_symmetric_) {
       return j * rows_ + i;
-    }
-    else {
+    } else {
       if (i < j) {
         return MatrixIndicesToVectorIndex(j, i);
       }
@@ -206,10 +210,13 @@ class MatrixDecisionVariable {
 
   /**
    * Determines if a sub-block of the matrix is symmetric or not. This sub-block
-   * contains rows from (and including) row_start, to (and including) row_start + rows - 1,
-   * and columns from (and including) col_start, to (and including) col_start + cols - 1.
+   * contains rows from (and including) row_start, to (and including) row_start
+   * + rows - 1,
+   * and columns from (and including) col_start, to (and including) col_start +
+   * cols - 1.
    */
-  bool IsBlockSymmetric(size_t row_start, size_t col_start, size_t rows, size_t cols) const {
+  bool IsBlockSymmetric(size_t row_start, size_t col_start, size_t rows,
+                        size_t cols) const {
     if (!is_symmetric_) {
       return false;
     }
@@ -256,7 +263,7 @@ class DecisionVariable {
   const Eigen::VectorXd& value() const { return data_; }
   void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
 
-  VarType type() const {return type_;}
+  VarType type() const { return type_; }
 
  private:
   VarType type_;
