@@ -157,7 +157,7 @@ GTEST_TEST(DiagramBuilderTest, ConnectPortSizeMismatch) {
   auto sys2 = builder.AddSystem<Integrator>(2 /* size */);
 
   EXPECT_DEATH(
-    builder.Connect(sys1->get_output_port(), sys2->get_input_port(0)), ".*");
+      builder.Connect(sys1->get_output_port(), sys2->get_input_port(0)), ".*");
 }
 
 
