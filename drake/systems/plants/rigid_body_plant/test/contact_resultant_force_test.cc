@@ -94,30 +94,27 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
     ContactForce<double> force(pos, norm, tan, torque);
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(force);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
-    ASSERT_EQ(min_point, pos);
-    ASSERT_EQ(wrench, full_wrench);
+    ContactForce<double> resultant = calc.ComputeResultant();
+    ASSERT_EQ(resultant.get_application_point(), pos);
+    ASSERT_EQ(resultant.get_wrench(), full_wrench);
   }
 
   // Case 2: The interface for components without pure torque.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos, norm, tan);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
-    ASSERT_EQ(min_point, pos);
-    ASSERT_EQ(wrench, torque_free_wrench);
+    ContactForce<double> resultant = calc.ComputeResultant();
+    ASSERT_EQ(resultant.get_application_point(), pos);
+    ASSERT_EQ(resultant.get_wrench(), torque_free_wrench);
   }
 
   // Case 3: The interface for components with all data.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos, norm, tan, torque);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
-    ASSERT_EQ(min_point, pos);
-    ASSERT_EQ(wrench, full_wrench);
+    ContactForce<double> resultant = calc.ComputeResultant();
+    ASSERT_EQ(resultant.get_application_point(), pos);
+    ASSERT_EQ(resultant.get_wrench(), full_wrench);
   }
 }
 
@@ -146,13 +143,12 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, zero, zero);
     calc.AddForce(pos2, norm, zero, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AssertTorque(wrench, zero));
-    ASSERT_TRUE(AssertForce(wrench, norm * 2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), norm * 2));
     expected_point = (pos1 + pos2) * 0.5;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 2: Two forces of unequal magnitudes.  Min. moment point should lie
@@ -161,13 +157,12 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, zero, zero);
     calc.AddForce(pos2, 2.0 * norm, zero, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AssertTorque(wrench, zero));
-    ASSERT_TRUE(AssertForce(wrench, norm * 3));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), norm * 3));
     expected_point = pos1 / 3. + pos2 * 2. / 3.;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 3: Three forces of unequal magnitude.
@@ -176,13 +171,12 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     calc.AddForce(pos1, norm, zero, zero);
     calc.AddForce(pos2, 2.0 * norm, zero, zero);
     calc.AddForce(pos3, 3.0 * norm, zero, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AssertTorque(wrench, zero));
-    ASSERT_TRUE(AssertForce(wrench, norm * 6));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), norm * 6));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 4: Three forces of unequal magnitude with non-zero tangent components.
@@ -198,15 +192,15 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     calc.AddForce(pos1, norm, tan1, zero);
     calc.AddForce(pos2, 2.0 * norm, tan2, zero);
     calc.AddForce(pos3, 3.0 * norm, tan3, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
+
 
     Vector3<double> expected_torque;
     expected_torque << 0, 0, -0.4;
-    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
-    ASSERT_TRUE(AssertForce(wrench, norm * 6));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), norm * 6));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
@@ -224,19 +218,18 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   tan2 << -1, 2, 0;
   zero = Vector3<double>::Zero();
 
-  // Case 1: Two identical, tangent-only forces . Min. moment point will be
+  // Case 1: Two identical, tangent-only forces. Min. moment point will be
   // the first position (pos1) and, force is <0, 3, 0> and torque is <0, 0, 2>.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, tan1, zero);
     calc.AddForce(pos2, norm, tan2, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
 
     expected_torque << 0, 0, 2;
-    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
-    ASSERT_TRUE(AssertForce(wrench, tan1 + tan2));
-    ASSERT_TRUE(AreEquivalent(min_point, pos1));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), pos1));
   }
 }
 
@@ -258,15 +251,15 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(p1, n1, zero, zero);
     calc.AddForce(p2, n2, zero, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
+
 
     Vector3<double> expected_torque;
     expected_torque << 0, 0.2, 0.4;
-    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
-    ASSERT_TRUE(AssertForce(wrench, n1 + n2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), n1 + n2));
     expected_point << 1.6, 0, 0;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 2: three forces, no tangential forces, but normals lying in different
@@ -276,17 +269,16 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
     calc.AddForce(p1, n1, zero, zero);
     calc.AddForce(p2, n2, zero, zero);
     calc.AddForce(p3, n3, zero, zero);
-    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+    ContactForce<double> resultant = calc.ComputeResultant();
 
     // these are magic numbers computed outside of this code based on the
     // constant values encoded above.
     Vector3<double> expected_torque;
     expected_torque << 0.023961661341853, -0.000000000000000, 0.599041533546326;
-    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
-    ASSERT_TRUE(AssertForce(wrench, n1 + n2 + n3));
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), n1 + n2 + n3));
     expected_point << 1.399361022364217, 0.990415335463259, -0.015974440894569;
-    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
@@ -303,17 +295,17 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalNonPlanarPointTest) {
   ContactResultantForceCalculator<double> calc;
   calc.AddForce(p1, n1, zero, zero);
   calc.AddForce(p2, n2, zero, zero);
-  Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
-  WrenchVector<double> wrench = calc.ComputeResultantWrench();
+  ContactForce<double> resultant = calc.ComputeResultant();
 
   Vector3<double> expected_torque;
   expected_torque << 0.9, 0, 0.3;
-  ASSERT_TRUE(AssertTorque(wrench, expected_torque));
-  ASSERT_TRUE(AssertForce(wrench, n1 + n2));
+  ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+  ASSERT_TRUE(AreEquivalent(resultant.get_force(), n1 + n2));
   Vector3<double> expected_point;
   expected_point << -2.7, 0.1, -0.9;
-  ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+  ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
 }
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
