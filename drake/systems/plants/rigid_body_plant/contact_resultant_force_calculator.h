@@ -142,23 +142,21 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   /**
    Adds a new force to the calculator.
    @param application_point     The application point of the force.
-   @param normal_force          The normal component of the force.
-   @param tangent_force         The tangent component of the force.
+   @param force                 The translational force.
+   @param normal                The translational force's normal direction.
    */
-  void AddForce(const Vector3<T>& application_point,
-                const Vector3<T>& normal_force,
-                const Vector3<T>& tangent_force);
+  void AddForce(const Vector3<T>& application_point, const Vector3<T>& force,
+                const Vector3<T>& normal);
 
   /**
    Adds a new force with an arbitrary pure torque to the calculator.
    @param application_point     The application point of the force.
-   @param normal_force          The normal component of the force.
-   @param tangent_force         The tangent component of the force.
+   @param force                 The translational force.
+   @param normal                The translational force's normal direction.
    @param pure_torque           The pure torque for the wrench.
    */
-  void AddForce(const Vector3<T>& application_point,
-                const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
-                const Vector3<T>& pure_torque);
+  void AddForce(const Vector3<T>& application_point, const Vector3<T>& force,
+                const Vector3<T>& normal, const Vector3<T>& pure_torque);
 
   /**
    Compute the resultant contact force -- it's translational force, pure torque,
