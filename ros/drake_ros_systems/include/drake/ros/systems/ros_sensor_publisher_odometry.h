@@ -100,7 +100,7 @@ class SensorPublisherOdometry {
             key, nh.advertise<nav_msgs::Odometry>(topic_name, 1)));
 
         std::unique_ptr<nav_msgs::Odometry> message(new nav_msgs::Odometry());
-        message->header.frame_id = RigidBodyTree::kWorldName;
+        message->header.frame_id = RigidBodyTree<double>::kWorldName;
         message->child_frame_id = rigid_body->get_name();
 
         odometry_messages_.insert(
@@ -129,7 +129,7 @@ class SensorPublisherOdometry {
 
     previous_send_time_ = current_time;
 
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+    const std::shared_ptr<RigidBodyTree<double>>& rigid_body_tree =
         rigid_body_system_->getRigidBodyTree();
 
     // The input vector u contains the entire system's state. The following
@@ -204,7 +204,7 @@ class SensorPublisherOdometry {
           cache, rigid_body_tree->FindBodyIndex(
               rigid_body->get_parent()->get_name()),
           rigid_body_tree->FindBodyIndex(rigid_body->get_name()),
-          rigid_body_tree->FindBodyIndex(RigidBodyTree::kWorldName));
+          rigid_body_tree->FindBodyIndex(RigidBodyTree<double>::kWorldName));
 
       message->twist.twist.linear.x = twist(0);
       message->twist.twist.linear.y = twist(1);

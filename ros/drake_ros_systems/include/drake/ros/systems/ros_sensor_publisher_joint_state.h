@@ -127,7 +127,8 @@ class SensorPublisherJointState {
 
         robot_struct->message.reset(new sensor_msgs::JointState());
 
-        robot_struct->message->header.frame_id = RigidBodyTree::kWorldName;
+        robot_struct->message->header.frame_id =
+            RigidBodyTree<double>::kWorldName;
 
         InitJointStateStruct(robot_name, rigid_body_system->getRigidBodyTree(),
                              robot_struct.get());
@@ -150,7 +151,7 @@ class SensorPublisherJointState {
    * @param[out] robot_struct The struct to initialize.
    */
   void InitJointStateStruct(const std::string& robot_name,
-                            const std::shared_ptr<RigidBodyTree>& tree,
+                            const std::shared_ptr<RigidBodyTree<double>>& tree,
                             RobotJointStateStruct* robot_struct) {
     if (robot_struct == nullptr) {
       throw std::runtime_error(
@@ -230,7 +231,7 @@ class SensorPublisherJointState {
 
     previous_send_time_ = current_time;
 
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree =
+    const std::shared_ptr<RigidBodyTree<double>>& rigid_body_tree =
         rigid_body_system_->getRigidBodyTree();
 
     // The input vector u contains the entire system's state. The following
