@@ -53,4 +53,5 @@ void Element::updateWorldTransform(
 void Element::setWorldTransform(const Isometry3d& T_element_to_world_in) {
   T_element_to_world = T_element_to_world_in;
 }
-}
+
+}  // namespace DrakeShapes
