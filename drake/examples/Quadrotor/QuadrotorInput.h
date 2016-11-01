@@ -1,6 +1,10 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <Eigen/Dense>
+
 #include "drake/lcmt_quadrotor_input_t.hpp"
 
 template <typename ScalarType = double>

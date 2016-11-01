@@ -1,8 +1,9 @@
 #pragma once
 
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include <string>
 
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 
 /// @cond
 

@@ -40,10 +40,6 @@ add_library_with_exports(LIB_NAME drakeLcm SOURCE_FILES
     ${lcm_dependent_source_files}
     ${lcm_independent_source_files})
 
-if (lcm_FOUND)
-  add_dependencies(drakeLcm drake_lcmtypes_hpp)
-endif()
-
 target_link_libraries(drakeLcm
     ${lcm_dependent_link_libraries}
     ${lcm_independent_link_libraries})

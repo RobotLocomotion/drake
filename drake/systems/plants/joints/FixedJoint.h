@@ -1,8 +1,9 @@
 #pragma once
 
-#include "DrakeJointImpl.h"
+#include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 
 class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:

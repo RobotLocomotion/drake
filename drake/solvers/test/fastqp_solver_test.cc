@@ -93,6 +93,7 @@ GTEST_TEST(testFastQP, unitBallExample) {
                                 MatrixCompareType::absolute));
   }
 }
-}
-}
-}  // end namespaces
+
+}  // anonymous namespace
+}  // namespace solvers
+}  // namespace drake

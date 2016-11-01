@@ -1,8 +1,12 @@
 #include "drake/systems/plants/parser_sdf.h"
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "spruce.hh"
 

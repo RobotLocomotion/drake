@@ -1,5 +1,6 @@
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 

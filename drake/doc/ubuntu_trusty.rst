@@ -62,7 +62,7 @@ Other prerequisites may be installed as follows::
       libqt4-opengl-dev libqwt-dev libterm-readkey-perl libtool libvtk-java \
       libvtk5-dev libvtk5-qt4-dev libwww-perl make ninja-build perl pkg-config \
       python-bs4 python-dev python-gtk2 python-html5lib python-numpy
-      python-pip python-sphinx python-vtk unzip valgrind
+      python-pip python-sphinx python-vtk python-yaml unzip valgrind
 
 Environment
 -----------

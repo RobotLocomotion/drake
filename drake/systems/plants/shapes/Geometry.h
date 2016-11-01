@@ -212,4 +212,5 @@ class DRAKE_EXPORT MeshPoints : public Geometry {
 
   Eigen::Matrix3Xd points;
 };
-}
+
+}  // namespace DrakeShapes

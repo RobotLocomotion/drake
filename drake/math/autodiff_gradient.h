@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"

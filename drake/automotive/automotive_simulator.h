@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/automotive/curve2.h"

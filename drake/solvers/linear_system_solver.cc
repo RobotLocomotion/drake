@@ -53,5 +53,5 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
   return SolutionResult::kSolutionFound;
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

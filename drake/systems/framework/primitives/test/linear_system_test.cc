@@ -33,12 +33,12 @@ class LinearSystemTest : public AffineLinearSystemTest {
 TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(1, context_->get_num_input_ports());
   EXPECT_EQ("test_linear_system", dut_->get_name());
-  EXPECT_EQ(dut_->GetA(), A_);
-  EXPECT_EQ(dut_->GetB(), B_);
-  EXPECT_EQ(dut_->GetxDot0(), xDot0_);
-  EXPECT_EQ(dut_->GetC(), C_);
-  EXPECT_EQ(dut_->GetD(), D_);
-  EXPECT_EQ(dut_->Gety0(), y0_);
+  EXPECT_EQ(dut_->A(), A_);
+  EXPECT_EQ(dut_->B(), B_);
+  EXPECT_EQ(dut_->xDot0(), xDot0_);
+  EXPECT_EQ(dut_->C(), C_);
+  EXPECT_EQ(dut_->D(), D_);
+  EXPECT_EQ(dut_->y0(), y0_);
   EXPECT_EQ(1, dut_->get_num_output_ports());
   EXPECT_EQ(1, dut_->get_num_input_ports());
 }

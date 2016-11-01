@@ -143,8 +143,7 @@ function(drake_add_cc_test)
     set(_exclude_from_all EXCLUDE_FROM_ALL)
   endif()
   add_executable(${_NAME} ${_NAME}.${_EXTENSION} ${_exclude_from_all})
-  target_include_directories(${_NAME} PRIVATE ${GTEST_INCLUDE_DIRS})
-  target_link_libraries(${_NAME} ${GTEST_BOTH_LIBRARIES})
+  target_link_libraries(${_NAME} GTest::GTest GTest::Main)
 
   # Add the test to the project.
   drake_add_test(
