@@ -63,6 +63,8 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * variables and not at the beginning of the full state of the RigidBodyTree.
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
+ *
+ * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT RigidBodyTree {
