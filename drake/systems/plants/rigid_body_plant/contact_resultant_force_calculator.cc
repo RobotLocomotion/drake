@@ -7,7 +7,6 @@ template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
     const ContactForce<T>& force) {
   forces_.push_back(force);
-  is_dirty_ = true;
 }
 
 template <typename T>
@@ -15,7 +14,6 @@ void ContactResultantForceCalculator<T>::AddForce(
     const Vector3<T>& application_point, const Vector3<T>& force,
     const Vector3<T>& normal) {
   forces_.emplace_back(application_point, force, normal);
-  is_dirty_ = true;
 }
 
 template <typename T>
@@ -23,26 +21,13 @@ void ContactResultantForceCalculator<T>::AddForce(
     const Vector3<T>& application_point, const Vector3<T>& force,
     const Vector3<T>& normal, const Vector3<T>& pure_torque) {
   forces_.emplace_back(application_point, force, normal, pure_torque);
-  is_dirty_ = true;
 }
 
 template <typename T>
 ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
-  if (is_dirty_) {
-    ComputeResultantValues();
-  }
-  return resultant_force_;
-}
-
-template <typename T>
-void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
-  // Set the cache as clean.
-  is_dirty_ = false;
-
   // Treat a single force specially.
   if (forces_.size() == 1) {
-    resultant_force_ = forces_[0];
-    return;
+    return forces_[0];
   }
 
   // compute resultant wrench and resultant normal force -- the component of the
@@ -119,8 +104,8 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     auto offset = force.get_application_point() - min_point;
     result_torque += offset.cross(force.get_force());
   }
-  resultant_force_ =
-      ContactForce<T>(min_point, result_norm + result_tan, norm, result_torque);
+  return ContactForce<T>(min_point, result_norm + result_tan, norm,
+                         result_torque);
 }
 
 template class ContactResultantForceCalculator<double>;
