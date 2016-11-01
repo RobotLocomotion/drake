@@ -154,6 +154,8 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
+#include <vector>
+
 #include "%(relative_cxx_dir)s/%(snake)s.h"
 #include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -299,7 +301,7 @@ def generate_code(args):
 
     namespace = args.namespace.split("::")
     opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
-    closing_namespace = "".join(["}  // namespace " + x + "\n" 
+    closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
 
     # The context provides string substitutions for the C++ code blocks in the
