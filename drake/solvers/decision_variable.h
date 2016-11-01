@@ -32,39 +32,19 @@ class DecisionVariableScalar {
   size_t index_;
 };
 
-class MatrixDecisionVariables {
- public:
-  MatrixDecisionVariables(size_t rows, size_t cols, const std::vector<DecisionVariableScalar>& vars) :
-      rows_(rows), cols_(cols), vars_(vars.begin(), vars.end()){
-    DRAKE_ASSERT(rows * cols == vars.size());
-  }
 
+template<int rows, int cols>
+using MatrixDecisionVariables = Eigen::Map<Eigen::Matrix<std::reference_wrapper<const DecisionVariableScalar>, rows, cols>>;
 
-  double value(size_t i, size_t j) const {
-    DRAKE_ASSERT(i < rows_ && j < cols_);
-    return vars_[j * rows_ + i].get().value();
-  }
+template<int rows>
+using VectorDecisionVariables = MatrixDecisionVariables<rows, 1>;
 
-  MatrixDecisionVariables operator()(size_t i, size_t j) const {
-    DRAKE_ASSERT(i < rows_ && j < cols_);
-    return MatrixDecisionVariables(1, 1, {vars_[j * rows_ + i]});
-  }
+template<int cols>
+using RowVectorDecisionVariables = MatrixDecisionVariables<1, cols>;
 
-  MatrixDecisionVariables row(size_t row_index) const {
-    DRAKE_ASSERT(row_index < rows_);
-    std::vector<DecisionVariableScalar> vars;
-    vars.reserve(cols_);
-    for (int i = 0; i < static_cast<int>(cols_); ++i) {
-      vars.push_back(vars_[i * rows_ + row_index]);
-    }
-    return MatrixDecisionVariables(1, cols_, vars);
-  }
-
- private:
-  size_t rows_;
-  size_t cols_;
-  const std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars_;
-};
+using VectorXDecisionVariables = MatrixDecisionVariables<Eigen::Dynamic, 1>;
+using RowVectorXDecisionVariables = MatrixDecisionVariables<1, Eigen::Dynamic>;
+using MatrixXDecisionVariables = MatrixDecisionVariables<Eigen::Dynamic, Eigen::Dynamic>;
 
 /**
  * DecisionVariable
