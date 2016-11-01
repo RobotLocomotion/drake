@@ -11,16 +11,19 @@ namespace systems {
 
 /**
  This is a utility class for taking a set of contact forces and defining
- the resultant force and its application point.
+ the resultant contact force (where a contact force is defined by the
+ ContactForce class). @sa ContactForce
 
- The application point for the resultant force will be a minimum moment
+ The resultant contact force defines a single translational force, with a
+ possibly non-zero pure torque component, applied at a single application point.
+ The application point for the force will be a minimum moment
  magnitude point.  That is, if the resultant force is applied at this point,
  it will induce the minimum moment. This is a general solution that is well
  defined and can be applied to arbitrary sets of contact forces. It must be
  emphsized, that this calculation considers only the *normal* components of the
- contact forces in computing the minimum moment point.  The other, tangential
- components will be included in the final resultant, but will not affect the
- calculations.
+ input contact forces in computing the minimum moment point.  The remaining
+ tangential components will be included in the final resultant, but will not
+ affect the point calculations.
 
  Center of Pressure
  ==================
@@ -37,13 +40,13 @@ namespace systems {
 
  Usage
  =====
- The class is designed to be instantiated by the contact model.  As each pair
+ The class is designed to be exercised by a contact model.  As each pair
  of collision elements are evaluated, the contact model should instantiate a
  ContactResultantForceCalculator.  As each contact point between the elements
  is processed and a contact force is computed, the details of the contact force
  are provided to the calculator (via calls to AddForce).
 
- Currently, the contact force is defined by four values:
+ Currently, the contact force is defined by four values (see ContactForce):
     - the application point,
     - the component of the contact force in the *normal* direction,
     - the component of the contact force in the *tangential* direction (e.g.,
@@ -53,8 +56,8 @@ namespace systems {
  expressed in a common frame (the resultant force and application point will
  likewise be measured and expressed in that same frame.)
 
- After all of the forces have been added to the calculator, a minimum moment
- point and resultant wrench can be requested using the appropriate method.
+ After all of the forces have been added to the calculator, a resultant contact
+ force can be requested using the appropriate method.
 
  Generally, the order in which the forces are added should have no bearing on
  the final result. The exception to this is if the normal components are coupled
@@ -62,27 +65,27 @@ namespace systems {
 
  A Single Force
  ==============
- If the set consists of a single force, the minimum moment point and resultant
- force will be the details of that force: i.e., its application point and
- response force and pure torque.
+ If the set consists of a single contact force, the minimum moment point and
+ resultant force will be the details of that force: i.e., its application point,
+ response force, and pure torque.
 
  A Non-zero Minimum Moment
  =========================
  For an arbitrary set of forces, there may not be a well-defined center of
- pressure as with the planar case outline above.  Generally, there is an
+ pressure as with the planar case outlined above.  Generally, there is an
  infinite set of minimum moment points for a set of contact forces; it is a line
  called the "central axis".  Any point on this line will lead to the same
- minimum moment.  The ContactResultantForceCalculator needs to select one of
+ minimum moment.  The ContactResultantForceCalculator selects one of
  those points.
 
  We assume that the "ideal" point would be where the line intersects the contact
  surface. Generally, this can't be solved because it depends on a geometric
  query that is outside the scope of this calculator class.  Furthermore, in many
  cases, it is unnecessary. A point on the surface is good for visualization, but
- in contexts where a mathematically meaningful point is needed, then one point
- is as good as another. That said, the calculator employs a method to cheaply
- approximate the intersection of the line with the contact surface by doing the
- following.
+ in contexts where a mathematically meaningful point is all that is needed, then
+ one point is as good as another. That said, the calculator employs a method to
+ cheaply approximate the intersection of the line with the contact surface by
+ doing the following.
 
  The central axis can be thought of as a line defined by a point and direction.
  The point can be any point on the line.  The direction is defined by the
@@ -106,6 +109,22 @@ namespace systems {
  case, the minimum moment point can be literally any point in space.  In this
  case, the ContactResultantForceCalculator selects the application point of the
  first added contact force as the minimum moment point.
+
+ Computation considerations
+ ==========================
+ Even though the resultant is reported as a ContactForce instance, it should not
+ be construed to mean that the results of the calculator can be meaningfully
+ composed.  For example, given a set of contact forces: `S = {f_0, ..., f_n-1}`,
+ the result of computing the resultant for the set `S` (i.e.,
+ `F = ComputeResultant(S)` will not necessarily provide the same answer as would
+ be produced by creating two disjoint subsets, `S_a` and `S_b` and then
+ performing:
+ ```
+    F_a = ComputeResultant(S_a);
+    F_b = ComputeResultant(S_b);
+    F_ab = ComputeResultant({F_a, F_b});
+ ```
+ Do not expect `F` to be equal to `F_ab`.
  */
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
@@ -142,15 +161,10 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
                 const Vector3<T>& pure_torque);
 
   /**
-   Compute the minimum moment point -- the point at which the resultant force
-   induces the minimum moment.
+   Compute the resultant contact force -- it's translational force, pure torque,
+   and application point.
    */
-  Vector3<T> ComputeMinimumMomentPoint() const;
-
-  /**
-   Compute the resultant wrench to be applied at the minimum moment point.
-   */
-  WrenchVector<T> ComputeResultantWrench() const;
+  ContactForce<T> ComputeResultant() const;
 
   // Neither movable or copyable.
   ContactResultantForceCalculator(
@@ -172,17 +186,15 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
   // To facilitate computation, this class uses a light-weight caching system
   // to prevent redundant computations.  It works with a dirty/clean bit
-  // to indicate if the values need to be computed.  Because this caching
+  // to indicate if the resultant need to be computed.  Because this caching
   // system is supposed to be invisible to the user, they are marked mutable
-  // so the methods which perform the computation can be declared const -- i.e.,
+  // so the method which performs the computation can be declared const -- i.e.,
   // the forces provided as input are guaranteed to remain unchanged.
 
   // The dirty bit for the caching system.
   mutable bool is_dirty_{true};
   // The cached minimum moment point.
-  mutable Vector3<T> minimum_moment_point_{};
-  // The cached resultant wrench.
-  mutable WrenchVector<T> resultant_wrench_{};
+  mutable ContactForce<T> resultant_force_{};
 };
 }  // namespace systems
 }  // namespace drake

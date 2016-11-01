@@ -28,21 +28,11 @@ void ContactResultantForceCalculator<T>::AddForce(
 }
 
 template <typename T>
-Vector3<T> ContactResultantForceCalculator<T>::ComputeMinimumMomentPoint()
-    const {
+ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
   if (is_dirty_) {
     ComputeResultantValues();
   }
-  return minimum_moment_point_;
-}
-
-template <typename T>
-WrenchVector<T> ContactResultantForceCalculator<T>::ComputeResultantWrench()
-    const {
-  if (is_dirty_) {
-    ComputeResultantValues();
-  }
-  return resultant_wrench_;
+  return resultant_force_;
 }
 
 template <typename T>
@@ -52,26 +42,27 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
 
   // Treat a single force specially.
   if (forces_.size() == 1) {
-    minimum_moment_point_ = forces_[0].get_application_point();
-    resultant_wrench_ = forces_[0].get_wrench();
+    resultant_force_ = forces_[0];
     return;
   }
 
   // compute resultant wrench and resultant normal force -- the component of the
   // resultant force due to the normal components of the contact forces.
-  resultant_wrench_ = WrenchVector<T>::Zero();
-  Vector3<T> normal_resultant = Vector3<T>::Zero();
+  Vector3<T> result_torque = Vector3<T>::Zero();
+  Vector3<T> result_tan = Vector3<T>::Zero();
+  Vector3<T> result_norm = Vector3<T>::Zero();
   for (const auto& force : forces_) {
-    normal_resultant += force.get_normal_force();
-    resultant_wrench_ += force.get_wrench();
+    result_norm += force.get_normal_force();
+    result_torque += force.get_pure_torque();
+    result_tan += force.get_tangent_force();
   }
 
-  T denom = normal_resultant.dot(normal_resultant);
+  Vector3<T> min_point;
+  T denom = result_norm.dot(result_norm);
   if (denom > 1e-14) {
-
-    // pick the first force application point as a temporary origin.  This assumes
-    // contacts are all local and will keep the math near the origin, even if the
-    // points in the world frame are off in some distant region.
+    // pick the first force application point as a temporary origin.  This
+    // assumes contacts are all local and will keep the math near the origin,
+    // even if the points in the world frame are off in some distant region.
     Vector3<T> O_temp = forces_[0].get_application_point();
 
     // For the sake of efficiency, this loop is doing two activities:
@@ -83,13 +74,13 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     T best(0.);
     size_t candidate_index = 0;
     for (size_t i = 0; i < forces_.size(); ++i) {
-      const auto &force = forces_[i];
+      const auto& force = forces_[i];
       // Compute normal moment.
       Vector3<T> local_r = force.get_application_point() - O_temp;
       normal_moment += local_r.cross(force.get_normal_force());
 
       // Update optimal origin candidate.
-      T projection = local_r.dot(normal_resultant);
+      T projection = local_r.dot(result_norm);
       if (projection < best) {
         best = projection;
         candidate_index = i;
@@ -97,21 +88,21 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     }
 
     // Use the mean-shift theorem to change the resultant moment from the
-    // temporary origin to the "optimal" origin.  Only necessary if the "optimal"
-    // origin is not the first point we arbitrarily selected.
+    // temporary origin to the "optimal" origin.  Only necessary if the
+    // "optimal" origin is not the first point we arbitrarily selected.
     Vector3<T> O = O_temp;
     if (candidate_index != 0) {
       O = forces_[candidate_index].get_application_point();
-      normal_moment -= (O_temp - O).cross(normal_resultant);
+      normal_moment -= (O_temp - O).cross(result_norm);
     }
 
     // Compute the minimum moment point.
-    minimum_moment_point_ = normal_resultant.cross(normal_moment) / denom + O;
+    min_point = result_norm.cross(normal_moment) / denom + O;
   } else {
     // There is no normal force component which means the minimum moment point
     // can be *anywhere*.  We pick the first point just so it is "local" to the
     // contact data.
-    minimum_moment_point_ = forces_[0].get_application_point();
+    min_point = forces_[0].get_application_point();
   }
 
   // Account for moments introduced by moving forces from defined point
@@ -122,9 +113,11 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
   //    2. If the minimum moment point is not the "center of pressure", there
   //       must be some residual moment that gets induced.
   for (const auto& force : forces_) {
-    auto offset = force.get_application_point() - minimum_moment_point_;
-    resultant_wrench_.template head<3>() += offset.cross(force.get_force());
+    auto offset = force.get_application_point() - min_point;
+    result_torque += offset.cross(force.get_force());
   }
+  resultant_force_ =
+      ContactForce<T>(min_point, result_norm, result_tan, result_torque);
 }
 
 template class ContactResultantForceCalculator<double>;
