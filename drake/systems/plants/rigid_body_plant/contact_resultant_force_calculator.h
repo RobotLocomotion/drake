@@ -10,42 +10,103 @@ namespace drake {
 namespace systems {
 
 /**
- This is a utility class for taking a sequence of contact forces and defining
+ This is a utility class for taking a set of contact forces and defining
  the resultant force and its application point.
 
  The application point for the resultant force will be a minimum moment
  magnitude point.  That is, if the resultant force is applied at this point,
- it will induce the minimum moment.
+ it will induce the minimum moment. This is a general solution that is well
+ defined and can be applied to arbitrary sets of contact forces. It must be
+ emphsized, that this calculation considers only the *normal* components of the
+ contact forces in computing the minimum moment point.  The other, tangential
+ components will be included in the final resultant, but will not affect the
+ calculations.
 
- For contact forces with particular properties, this point is also the center
- of pressure.  However, the set of contact forces must have the following
- properties:
-    - All of the normal components of the forces must be parallel.
-    - All of the force application points must lie on the same plane.
+ Center of Pressure
+ ==================
+ For a set of contact forces with particular properties, this minimum moment
+ point can be interpreted as the center of pressure. For this to be the case,
+ the following conditions must be met:
+    - The normal components of all forces must lie in the same direction.
+    - The force application points must all lie on a plane.
     - The plane the application points lie on must be perpendicular to the
-    common direction of the contact normal force.
+    common normal direction of the contact forces.
  If these conditions are met, the application point will also lie on the plane
- and will be the center of pressure.  And the minimum moment will be zero.
+ and will be the center of pressure.  And the minimum moment due to the normal
+ forces will be zero.
 
- If any of these conditions are not met, the application point will still lie
- on the same line of action of the resultant force, but will not necessarily be
- the center of pressure and the minimum moment may be non-zero.
+ Usage
+ =====
+ The class is designed to be instantiated by the contact model.  As each pair
+ of collision elements are evaluated, the contact model should instantiate a
+ ContactResultantForceCalculator.  As each contact point between the elements
+ is processed and a contact force is computed, the details of the contact force
+ are provided to the calculator (via calls to AddForce).
 
- The utility class serves as an aggregator.  For a given set of related contacts
- (i.e., contact forces between a common pair of collision elements oriented in
- a unified manner), each force can be added to a unique instance of the
- calculator.  Once all of the forces have been added, the calculator can be
- queried for its resultant force and the application point.  The forces being
- added must be measured and expressed in a common frame.  The resultant force
- and application point will be measured and expressed in that same frame.
+ Currently, the contact force is defined by four values:
+    - the application point,
+    - the component of the contact force in the *normal* direction,
+    - the component of the contact force in the *tangential* direction (e.g.,
+        friction force), and
+    - an optional pure torque term (e.g., torsional friction).
+ The application points and force directions are assumed to be measured and
+ expressed in a common frame (the resultant force and application point will
+ likewise be measured and expressed in that same frame.)
 
- The queries for resulatant force and application point can be made at any time.
- The actual values will change as more forces are added to the calculator.
+ After all of the forces have been added to the calculator, a minimum moment
+ point and resultant wrench can be requested using the appropriate method.
+
+ Generally, the order in which the forces are added should have no bearing on
+ the final result. The exception to this is if the normal components are coupled
+ and cancel each other out. See below for details.
+
+ A Single Force
+ ==============
+ If the set consists of a single force, the minimum moment point and resultant
+ force will be the details of that force: i.e., its application point and
+ response force and pure torque.
+
+ A Non-zero Minimum Moment
+ =========================
+ For an arbitrary set of forces, there may not be a well-defined center of
+ pressure as with the planar case outline above.  Generally, there is an
+ infinite set of minimum moment points for a set of contact forces; it is a line
+ called the "central axis".  Any point on this line will lead to the same
+ minimum moment.  The ContactResultantForceCalculator needs to select one of
+ those points.
+
+ We assume that the "ideal" point would be where the line intersects the contact
+ surface. Generally, this can't be solved because it depends on a geometric
+ query that is outside the scope of this calculator class.  Furthermore, in many
+ cases, it is unnecessary. A point on the surface is good for visualization, but
+ in contexts where a mathematically meaningful point is needed, then one point
+ is as good as another. That said, the calculator employs a method to cheaply
+ approximate the intersection of the line with the contact surface by doing the
+ following.
+
+ The central axis can be thought of as a line defined by a point and direction.
+ The point can be any point on the line.  The direction is defined by the
+ direction of the resultant normal force (i.e., the sum of the normal components
+ of all forces.) The direction vector defines "positive" and "negative"
+ directions on the line. The force originated from the negative direction and
+ accelerates the body in the positive direction.  If we had access to the
+ geometry, the point we would be interested in, would be the intersection of the
+ line and geometry that is farthest in the "negative" direction (i.e., closest
+ to the originating source of the contact).
+
+ We will approximate this by finding the contact force application point that
+ similarly lies farthest in the negative direction (simply by projecting the
+ application points on the line.)  This most-negative projection point will
+ serve as the reported minimum moment point.
+
+ A Zero-Resultant Force
+ ======================
+ It is possible for all of the contact forces to sum up to a zero resultant. But
+ there may still be a resultant moment, i.e., the forces are "coupled".  In this
+ case, the minimum moment point can be literally any point in space.  In this
+ case, the ContactResultantForceCalculator selects the application point of the
+ first added contact force as the minimum moment point.
  */
-// TODO(SeanCurtis-TRI): Add documentation to describe the optimal point.
-// TODO(SeanCurtis-TRI): Add dcoumentation explaining what happens if the normal
-//  resultant is zero.  Then the application point is selected from the set
-//  and the resultant wrench *may* have a non-zero pure torque term.
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
