@@ -81,7 +81,7 @@ namespace systems {
  those points.
 
  We assume that the "ideal" point would be where the line intersects the
- (deforemd) contact
+ (deformed) contact
  surface. Generally, this can't be solved because it depends on a geometric
  query that is outside the scope of this calculator class.  Furthermore, in many
  cases, it is unnecessary. A point on the surface is good for visualization, but
