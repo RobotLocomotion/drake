@@ -159,7 +159,8 @@ classdef SoftPaddleControl < DrakeSystem
       xtraj = xtraj.setOutputFrame(getOutputFrame(porig));
       v = porig.constructVisualizer();
       v.drawWrapper(0,x0);
-      v.playbackAVI(xtraj,'juggling_stabilized');
+      %TO record a trajectory, uncomment this next line:
+      %v.playbackAVI(xtraj,'juggling_stabilized');
       v.playback(xtraj,struct('slider',true));
       
       tt=getBreaks(xtraj);
