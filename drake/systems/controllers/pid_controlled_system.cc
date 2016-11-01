@@ -52,6 +52,9 @@ void PidControlledSystem<T>::Initialize(
   DiagramBuilder<T> builder;
   plant_ = builder.template AddSystem(std::move(plant));
   if (feedback_selector == nullptr) {
+    // No feedback selector was provided. Create a GainMatrix containing an
+    // identity matrix, which results in every element of the plant's output
+    // port zero being used as the feedback signal to the PID controller.
     feedback_selector =
         std::make_unique<MatrixGain<T>>(plant_->get_output_port(0).get_size());
   }
