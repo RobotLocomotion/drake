@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 

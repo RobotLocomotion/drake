@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"

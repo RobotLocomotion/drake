@@ -1,6 +1,10 @@
 #pragma once
 
+#include <limits>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>

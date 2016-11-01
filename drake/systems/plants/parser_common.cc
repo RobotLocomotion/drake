@@ -1,5 +1,7 @@
 #include "drake/systems/plants/parser_common.h"
 
+#include <string>
+
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 #include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"

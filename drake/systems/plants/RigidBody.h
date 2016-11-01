@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 

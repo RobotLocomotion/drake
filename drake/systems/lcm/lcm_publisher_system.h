@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"

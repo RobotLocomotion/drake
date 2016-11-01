@@ -1,4 +1,4 @@
-#include "VisualElement.h"
+#include "drake/systems/plants/shapes/VisualElement.h"
 
 namespace DrakeShapes {
 // VisualElement::VisualElement(unique_ptr<Geometry> geometry,

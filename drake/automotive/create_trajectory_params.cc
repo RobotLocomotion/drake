@@ -1,5 +1,6 @@
 #include "drake/automotive/create_trajectory_params.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace drake {

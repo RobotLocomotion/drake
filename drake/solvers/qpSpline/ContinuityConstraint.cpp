@@ -1,4 +1,4 @@
-#include "ContinuityConstraint.h"
+#include "drake/solvers/qpSpline/ContinuityConstraint.h"
 
 #include "drake/common/drake_assert.h"
 

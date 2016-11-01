@@ -1,11 +1,13 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include <iostream>
 #include <cstdlib>
-#include <random>
-#include <memory>
-#include <stdexcept>
+#include <iostream>
 #include <map>
+#include <memory>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeGeometryUtil.h"

@@ -1,3 +1,5 @@
+#include <set>
+
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/IKoptions.h"
 

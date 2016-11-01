@@ -1,12 +1,16 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <initializer_list>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <string>
+
 #include "QPCommon.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"

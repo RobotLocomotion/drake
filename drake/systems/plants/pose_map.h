@@ -1,7 +1,10 @@
 #pragma once
 
-#include <string>
+#include <functional>
 #include <map>
+#include <string>
+#include <utility>
+
 #include <Eigen/Dense>
 
 typedef std::map<

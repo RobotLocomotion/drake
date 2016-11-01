@@ -1,4 +1,4 @@
-#include "HelicalJoint.h"
+#include "drake/systems/plants/joints/HelicalJoint.h"
 
 using Eigen::Vector3d;
 

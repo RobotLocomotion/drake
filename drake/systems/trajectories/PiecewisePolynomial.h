@@ -1,12 +1,14 @@
 #pragma once
 
-#include <Eigen/Core>
-#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
-#include "drake/common/polynomial.h"
-#include <vector>
-#include <random>
 #include <limits>
+#include <random>
+#include <vector>
+
+#include <Eigen/Core>
+
 #include "drake/common/drake_export.h"
+#include "drake/common/polynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 
 /// A scalar multi-variate piecewise polynomial.
 /**
