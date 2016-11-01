@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-
+#include <initializer_list>
 #include <list>
 #include <string>
 
@@ -11,6 +11,60 @@
 
 namespace drake {
 namespace solvers {
+
+class DecisionVariableScalar {
+ public:
+  enum class VarType {CONTINUOUS, INTEGER, BINARY};
+  DecisionVariableScalar(VarType type, const std::string& name, size_t index)
+      : type_(type), name_(name), value_(0), index_(index) {}
+
+  VarType type() const {return type_;}
+
+  const std::string& name() const {return name_;}
+  double value() const {return value_;}
+  size_t index() const {return index_;}
+
+  void set_value(double new_value) {value_ = new_value;}
+ private:
+  VarType type_;
+  std::string name_;
+  double value_;
+  size_t index_;
+};
+
+class MatrixDecisionVariables {
+ public:
+  MatrixDecisionVariables(size_t rows, size_t cols, const std::vector<DecisionVariableScalar>& vars) :
+      rows_(rows), cols_(cols), vars_(vars.begin(), vars.end()){
+    DRAKE_ASSERT(rows * cols == vars.size());
+  }
+
+
+  double value(size_t i, size_t j) const {
+    DRAKE_ASSERT(i < rows_ && j < cols_);
+    return vars_[j * rows_ + i].get().value();
+  }
+
+  MatrixDecisionVariables operator()(size_t i, size_t j) const {
+    DRAKE_ASSERT(i < rows_ && j < cols_);
+    return MatrixDecisionVariables(1, 1, {vars_[j * rows_ + i]});
+  }
+
+  MatrixDecisionVariables row(size_t row_index) const {
+    DRAKE_ASSERT(row_index < rows_);
+    std::vector<DecisionVariableScalar> vars;
+    vars.reserve(cols_);
+    for (int i = 0; i < static_cast<int>(cols_); ++i) {
+      vars.push_back(vars_[i * rows_ + row_index]);
+    }
+    return MatrixDecisionVariables(1, cols_, vars);
+  }
+
+ private:
+  size_t rows_;
+  size_t cols_;
+  const std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars_;
+};
 
 /**
  * DecisionVariable
