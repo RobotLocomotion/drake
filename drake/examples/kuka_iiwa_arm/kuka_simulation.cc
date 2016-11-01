@@ -146,7 +146,7 @@ class SimulatedKuka : public systems::Diagram<T> {
     this->set_name("SimulatedKuka");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto rigid_body_tree = std::make_unique<RigidBodyTree>();
+    auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() +
         "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
@@ -239,7 +239,8 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
   auto model = builder.AddSystem<SimulatedKuka<double>>();
 
-  const RigidBodyTree& tree = model->get_kuka_plant().get_rigid_body_tree();
+  const RigidBodyTree<double>& tree =
+      model->get_kuka_plant().get_rigid_body_tree();
   VerifyIiwaTree(tree);
 
   // Creates and adds LCM publisher for visualization.

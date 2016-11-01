@@ -24,7 +24,7 @@ void AddGround(RigidBodyTree<double>* tree) {
   tree->updateStaticCollisionElements();
 }
 
-void VerifyIiwaTree(const RigidBodyTree& tree) {
+void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx =
       tree.computePositionNameToIndexMap();
 

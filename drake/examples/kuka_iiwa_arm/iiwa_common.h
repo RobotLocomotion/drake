@@ -21,7 +21,7 @@ void AddGround(RigidBodyTree<double>* tree);
  * Aborts if the tree isn't as expected.
  */
 DRAKE_EXPORT
-void VerifyIiwaTree(const RigidBodyTree& tree);
+void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
