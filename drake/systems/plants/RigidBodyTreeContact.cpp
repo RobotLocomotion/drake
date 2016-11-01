@@ -158,6 +158,7 @@ void RigidBodyTree<T>::accumulateContactJacobian(
     const KinematicsCache<Scalar> &cache, const int bodyInd,
     Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA,
     std::vector<size_t> const &cindB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &J) const {
   const auto nq = J.cols();
   const size_t numCA = cindA.size();
@@ -204,7 +205,9 @@ template <typename Scalar>
 void RigidBodyTree<T>::computeContactJacobians(
     const KinematicsCache<Scalar> &cache, Ref<const VectorXi> const &idxA,
     Ref<const VectorXi> const &idxB, Ref<const Matrix3Xd> const &xA,
-    Ref<const Matrix3Xd> const &xB, Matrix<Scalar, Dynamic, Dynamic> &J) const {
+    Ref<const Matrix3Xd> const &xB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix<Scalar, Dynamic, Dynamic> &J) const {
   std::vector<int> bodyInds;
   const size_t nq = num_positions_;
   const size_t numContactPairs = xA.cols();
@@ -242,6 +245,7 @@ void RigidBodyTree<T>::computeContactJacobians(
 template <typename T>
 void RigidBodyTree<T>::surfaceTangents(
     Map<Matrix3Xd> const &normals,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<Map<Matrix3Xd> > &tangents) const {
   const size_t numContactPairs = normals.cols();
   for (size_t curNormal = 0; curNormal < numContactPairs; curNormal++) {
@@ -298,4 +302,5 @@ RigidBodyTree<double>::computeContactJacobians<double>(
 
 template DRAKE_EXPORT void RigidBodyTree<double>::surfaceTangents(
     Eigen::Map<Eigen::Matrix3Xd> const &normals,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<Eigen::Map<Eigen::Matrix3Xd>> &tangents) const;
