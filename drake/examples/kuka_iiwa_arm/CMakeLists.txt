@@ -3,7 +3,7 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaArmCommon SOURCE_FILES
       iiwa_common.cc)
   target_link_libraries(drakeKukaIiwaArmCommon
-      drakeRBM)
+      drakeRigidBodyPlant)
   pods_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h)
@@ -29,18 +29,6 @@ if(lcm_FOUND)
       LIBS -ldrakeKukaIiwaArm
       REQUIRES
       VERSION 0.0.1)
-
-  add_executable(iiwa_multi_object_world_demo iiwa_multi_object_world_demo.cc)
-  target_link_libraries(iiwa_multi_object_world_demo
-      drakeKukaIiwaArmCommon
-      drakeRigidBodyPlant
-      drakeSystemAnalysis
-      drakeSystemControllers
-      drakeLCMSystem2
-      gflags)
-  drake_add_test(
-      NAME iiwa_multi_object_world_demo
-      COMMAND iiwa_multi_object_world_demo --duration 0.5)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics
@@ -104,4 +92,5 @@ if(lcm_FOUND)
 endif()
 
 add_subdirectory(controlled_kuka)
+add_subdirectory(iiwa_world)
 add_subdirectory(test)

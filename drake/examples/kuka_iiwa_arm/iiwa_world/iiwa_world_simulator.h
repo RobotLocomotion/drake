@@ -44,7 +44,7 @@ class IiwaWorldSimulator {
 
   /// Adds a Iiwa arm system to this simulation.
   /// @pre Start() has NOT been called.
-  void AddIiwaArm(bool with_gripper = true);
+  int AddIiwaArm(bool with_gripper = true);
 
 //  void AddObject(std::string object_name);
 //
@@ -53,14 +53,14 @@ class IiwaWorldSimulator {
 //  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
 //                    int vehicle_number);
 //
-//  /// Returns the System whose name matches @p name.  Throws an exception if no
-//  /// such system has been added, or multiple such systems have been added.
-//  ///
-//  /// This is the diagram variant of the method, which can only be used after
-//  /// Start().
-//  ///
-//  /// @pre Start() has been called.
-//  const systems::System<T>& GetDiagramSystemByName(std::string name) const;
+  /// Returns the System whose name matches @p name.  Throws an exception if no
+  /// such system has been added, or multiple such systems have been added.
+  ///
+  /// This is the diagram variant of the method, which can only be used after
+  /// Start().
+  ///
+  /// @pre Start() has been called.
+  const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
   /// Build the Diagram and initialize the Simulator.  No further changes to
   /// the diagram may occur after this has been called.
