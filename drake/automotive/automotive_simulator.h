@@ -48,14 +48,15 @@ class AutomotiveSimulator {
 
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
   /// LCM input and EulerFloatingJoint output.
+  ///
   /// @pre Start() has NOT been called.
   void AddSimpleCar();
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
   /// @pre Start() has NOT been called.
-  void AddTrajectoryCar(
-      const Curve2<double>& curve, double speed, double start_time);
+  void AddTrajectoryCar(const Curve2<double>& curve, double speed,
+                        double start_time);
 
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
@@ -109,18 +110,43 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
-  void AddBoxcar(const SimpleCarToEulerFloatingJoint<T>*);
+  void AddSdfModel(const std::string& sdf_filename,
+                   const SimpleCarToEulerFloatingJoint<T>*);
+
+  // Connects the systems that output the pose of each vehicle to the
+  // visualizer. This is done by using multiplexers to connect systems that
+  // output constant vectors containing zero values to specify the states
+  // that are not part of the vehicle poses, and the velocity states of all
+  // vehicles. (The visualizer does not use the velocity state so specifying a
+  // value of zero is harmless.)
+  void ConnectJointStateSourcesToVisualizer();
+
+  // Returns a vector containing the number of joint position and velocity
+  // states of each model instance in rigid_body_tree_. A sequence of joint
+  // position states comes first followed by a sequence of joint velocity
+  // states. The length of the returned vector is thus double the number of
+  // model instances since each model instance has two entries: (1) its number
+  // of position states and (2) its number of velocity states.
+  std::vector<int> GetModelJointStateSizes() const;
 
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
-    std::make_unique<RigidBodyTree>()};
+      std::make_unique<RigidBodyTree>()};
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
 
-  // For building.
+  // === Start for building. ===
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
-    std::make_unique<systems::DiagramBuilder<T>>()};
-  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
-      drake_visualizer_inputs_;
+      std::make_unique<systems::DiagramBuilder<T>>()};
+
+  // Holds information about the vehicle models being simulated. The integer is
+  // the vehicle's model instance ID within the RigidBodyTree while the pointer
+  // points to the system that emits the vehicle's RPY pose in the world.
+  // TODO(liang.fok) Update this to support models that connect to the world
+  // via non-RPY floating joints. See #3919.
+  std::vector<std::pair<int, const systems::System<T>*>>
+      rigid_body_tree_publisher_inputs_;
+  // === End for building. ===
+
   int next_vehicle_number_{0};
   bool started_{false};
 
