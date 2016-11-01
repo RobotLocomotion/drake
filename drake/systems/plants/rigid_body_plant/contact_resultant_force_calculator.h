@@ -189,24 +189,8 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
       ContactResultantForceCalculator&& other) = delete;
 
  private:
-  // Recomputes the cached resultant values: minimimum moment point and force.
-  void ComputeResultantValues() const;
-
   // Aggregator for the force data that has been added.
-  // TODO(SeanCurtis-TRI): Get the class right.
   std::vector<ContactForce<T>> forces_{};
-
-  // To facilitate computation, this class uses a light-weight caching system
-  // to prevent redundant computations.  It works with a dirty/clean bit
-  // to indicate if the resultant need to be computed.  Because this caching
-  // system is supposed to be invisible to the user, they are marked mutable
-  // so the method which performs the computation can be declared const -- i.e.,
-  // the forces provided as input are guaranteed to remain unchanged.
-
-  // The dirty bit for the caching system.
-  mutable bool is_dirty_{true};
-  // The cached minimum moment point.
-  mutable ContactForce<T> resultant_force_{};
 };
 }  // namespace systems
 }  // namespace drake
