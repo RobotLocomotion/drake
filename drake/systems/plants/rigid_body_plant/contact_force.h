@@ -9,15 +9,15 @@ namespace systems {
 /**
  The data for a single contact force.
 
- Ultimately, a contact force consists of an application point and a wrench.
- The wrench is composed of three components:
-  - a linear normal force: the component of the linear force that lies in the
-  direction of the contact normal.
-  - a linear tangential force: the component of the linear force that lies in
-  on the contact plane.  It arises from frictional components in the contact
-  model.
-  - a "pure torque": some contact models can introduce a pure torque (e.g.,
-  modeling torsional friction.)
+ Ultimately, a contact force consists of an application point and forces.
+ The forces are defined with three pieces of data:
+  - a translational force,
+  - the normal direction of the translational force.  Assumed to be unit length
+    and used to decompose the force into normal and tangential components. The
+    normal is typically defined by the contact normal.
+  - a "pure torque", the rotational force. This is not the same as the moment
+    induced by the translational force.  This is a pure, abstract force (e.g.,
+    modeling torsional friction.)
 
   The ContactForce class provides an interface to accessing the components as
   well as the combined components as a wrench.
@@ -32,26 +32,24 @@ class DRAKE_EXPORT ContactForce {
    Fully-specified constructor.
 
    @param application_point         The point at which the wrench is applied.
-   @param normal_force              The normal component of the linear force.
-   @param tangent_force             The tangential component of the linear
-                                    force.
+   @param force                     The translational force.
+   @param normal                    The translational force normal direction.
    @param pure_torque               The pure torque component
    */
   ContactForce(const Vector3<T>& application_point,
-               const Vector3<T>& normal_force, const Vector3<T>& tangent_force,
+               const Vector3<T>& force, const Vector3<T>& normal,
                const Vector3<T>& pure_torque);
   /**
    Zero-pure-torque constructor.  This constructor sets the pure torque
    component to be zero.
 
    @param application_point         The point at which the wrench is applied.
-   @param normal_force              The normal component of the linear force.
-   @param tangent_force             The tangential component of the linear
-                                    force.
+   @param force                     The translational force.
+   @param normal                    The translational force normal direction.
    @param pure_torque               The pure torque component
    */
   ContactForce(const Vector3<T>& application_point,
-               const Vector3<T>& normal_force, const Vector3<T>& tangent_force);
+               const Vector3<T>& force, const Vector3<T>& normal);
 
   // Contact force is copyable and movable
   ContactForce(const ContactForce& other) = default;
@@ -62,28 +60,32 @@ class DRAKE_EXPORT ContactForce {
   Vector3<T> get_application_point() { return application_point_; }
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  Vector3<T> get_normal_force() { return normal_force_; }
-  const Vector3<T> get_normal_force() const { return normal_force_; }
+  // TODO(SeanCurtis-TRI): Update tehse
+  Vector3<T> get_normal_force() { return force_.dot(normal_) * normal_; }
+  const Vector3<T> get_normal_force() const { return force_.dot(normal_) * normal_; }
 
-  Vector3<T> get_tangent_force() { return tangent_force_; }
-  const Vector3<T> get_tangent_force() const { return tangent_force_; }
+  Vector3<T> get_tangent_force() { return force_ - get_normal_force(); }
+  const Vector3<T> get_tangent_force() const { return force_ - get_normal_force(); }
 
   Vector3<T> get_pure_torque() { return pure_torque_; }
   const Vector3<T> get_pure_torque() const { return pure_torque_; }
 
-  Vector3<T> get_force() const { return normal_force_ + tangent_force_; }
+  Vector3<T> get_normal() { return normal_; }
+  const Vector3<T> get_normal() const { return normal_; }
+
+  Vector3<T> get_force() const { return force_; }
 
   WrenchVector<T> get_wrench() const {
     WrenchVector<T> wrench;
     wrench.template head<3>() = pure_torque_;
-    wrench.template tail<3>() = normal_force_ + tangent_force_;
+    wrench.template tail<3>() = force_;
     return wrench;
   }
 
  private:
   Vector3<T> application_point_{Vector3<T>::Zero()};
-  Vector3<T> normal_force_{Vector3<T>::Zero()};
-  Vector3<T> tangent_force_{Vector3<T>::Zero()};
+  Vector3<T> force_{Vector3<T>::Zero()};
+  Vector3<T> normal_{Vector3<T>::Zero()};
   Vector3<T> pure_torque_{Vector3<T>::Zero()};
 };
 }  // namespace systems
