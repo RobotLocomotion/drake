@@ -93,7 +93,7 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     Vector3<T> O = O_temp;
     if (candidate_index != 0) {
       O = forces_[candidate_index].get_application_point();
-      normal_moment -= (O_temp - O).cross(result_norm);
+      normal_moment -= (O - O_temp).cross(result_norm);
     }
 
     // Compute the minimum moment point.
@@ -116,8 +116,10 @@ void ContactResultantForceCalculator<T>::ComputeResultantValues() const {
     auto offset = force.get_application_point() - min_point;
     result_torque += offset.cross(force.get_force());
   }
+  Vector3<T> norm = result_norm;
+  norm.normalize();
   resultant_force_ =
-      ContactForce<T>(min_point, result_norm, result_tan, result_torque);
+      ContactForce<T>(min_point, result_norm + result_tan, norm, result_torque);
 }
 
 template class ContactResultantForceCalculator<double>;
