@@ -5,12 +5,13 @@
 
 package(default_visibility = ["//visibility:public"])
 
-DEPS = ["//drake/systems:framework"]
+DEPS = ["//drake/systems/framework"]
 cc_library(
     name = "generated_vectors",
     srcs = [
         "gen/driving_command.cc",
         "gen/euler_floating_joint_state.cc",
+        "gen/idm_with_trajectory_agent_parameters.cc",
         "gen/idm_with_trajectory_agent_state.cc",
         "gen/simple_car_config.cc",
         "gen/simple_car_state.cc",
@@ -18,6 +19,7 @@ cc_library(
     hdrs = [
         "gen/driving_command.h",
         "gen/euler_floating_joint_state.h",
+        "gen/idm_with_trajectory_agent_parameters.h",
         "gen/idm_with_trajectory_agent_state.h",
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
