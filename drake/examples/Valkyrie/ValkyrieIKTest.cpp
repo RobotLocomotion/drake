@@ -3,11 +3,11 @@
 //
 #include <iostream>
 
-#include "drake/examples/Valkyrie/Valkyrie_plant.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+//#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/common/drake_path.h"
 
 // Includes for IK solver
 #include "drake/systems/plants/IKoptions.h"
@@ -15,12 +15,14 @@
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 using drake::BotVisualizer;
-using drake::ValkyriePlant;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
+
+template <typename ScalarType>
+using StateVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
 /* Finds and returns the indices within the state vector of @p tree that contain
  * the position states of a joint named @p name. The model instance ID is
@@ -50,8 +52,9 @@ void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
 }
 
 int main() {
-  std::shared_ptr<ValkyriePlant> val_sys = std::make_shared<ValkyriePlant>();
-  auto const& tree = val_sys->get_rigid_body_tree();
+  std::shared_ptr<RigidBodyTree> tree = std::make_shared<RigidBodyTree>();
+  tree->add
+
 
   // tests
   /*
@@ -328,10 +331,10 @@ int main() {
   // show it in drake visualizer!
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
-  drake::BotVisualizer<ValkyriePlant::StateVector>::StateVector<double>
-      visualizer_state;
+  drake::NullVector<double> visualizer_state;
+
   auto visualizer =
-      std::make_shared<BotVisualizer<ValkyriePlant::StateVector>>(lcm, tree);
+      std::make_shared<BotVisualizer<StateVector>>(lcm, tree);
   visualizer->output(0, visualizer_state, q_sol);
 
   return 0;
