@@ -1,6 +1,10 @@
 #pragma once
 
+#include <limits>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -56,11 +60,13 @@ class Constraint {
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     Eigen::VectorXd& y) const = 0;
   // Move this to DifferentiableConstraint derived class if/when we
   // need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     TaylorVecXd& y) const = 0;
 
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }

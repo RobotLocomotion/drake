@@ -1,8 +1,9 @@
 #pragma once
 
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include <string>
 
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 
 /// @cond
 
@@ -85,6 +86,7 @@ class DrakeJointImpl : public DrakeJoint {
    *
    * @param[in] num_velocities The number of velocity states in this joint.
    */
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   DrakeJointImpl(Derived& derived, const std::string& name,
                  const Eigen::Isometry3d& transform_to_parent_body,
                  int num_positions, int num_velocities)

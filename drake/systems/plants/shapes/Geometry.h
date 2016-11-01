@@ -36,8 +36,11 @@ class DRAKE_EXPORT Geometry {
 
   Shape getShape() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const {
     points = Eigen::Matrix3Xd();
   }
@@ -50,9 +53,10 @@ class DRAKE_EXPORT Geometry {
 
  protected:
   explicit Geometry(Shape shape);
-  void getBoundingBoxPoints(double x_half_width, double y_half_width,
-                            double z_half_width,
-                            Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(
+      double x_half_width, double y_half_width, double z_half_width,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& points) const;
 
   Shape shape;
   static const int NUM_BBOX_POINTS;
@@ -63,8 +67,11 @@ class DRAKE_EXPORT Sphere : public Geometry {
   explicit Sphere(double radius);
   virtual ~Sphere() {}
   virtual Sphere* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -82,8 +89,11 @@ class DRAKE_EXPORT Box : public Geometry {
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
   virtual Box* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -99,7 +109,9 @@ class DRAKE_EXPORT Cylinder : public Geometry {
   Cylinder(double radius, double length);
   virtual ~Cylinder() {}
   virtual Cylinder* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -117,7 +129,9 @@ class DRAKE_EXPORT Capsule : public Geometry {
   Capsule(double radius, double length);
   virtual ~Capsule() {}
   virtual Capsule* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -140,7 +154,9 @@ class DRAKE_EXPORT Mesh : public Geometry {
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
   virtual Mesh* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -152,6 +168,7 @@ class DRAKE_EXPORT Mesh : public Geometry {
   Eigen::Vector3d scale_;
   std::string uri_;
   std::string resolved_filename_;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
 
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
@@ -182,7 +199,9 @@ class DRAKE_EXPORT MeshPoints : public Geometry {
   virtual ~MeshPoints() {}
   virtual MeshPoints* clone() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
@@ -193,4 +212,5 @@ class DRAKE_EXPORT MeshPoints : public Geometry {
 
   Eigen::Matrix3Xd points;
 };
-}
+
+}  // namespace DrakeShapes

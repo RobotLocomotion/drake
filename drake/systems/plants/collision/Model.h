@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -44,8 +46,10 @@ class DRAKE_EXPORT Model {
    **/
   virtual Element* FindMutableElement(ElementId id);
 
-  virtual void getTerrainContactPoints(ElementId id0,
-                                       Eigen::Matrix3Xd& terrain_points);
+  virtual void getTerrainContactPoints(
+      ElementId id0,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& terrain_points);
 
   /** \brief Perform any operations needed to bring the model up-to-date
    * after making changes to its collision elements
@@ -89,7 +93,9 @@ class DRAKE_EXPORT Model {
    @returns `true` if this method ran successfully and `false` otherwise.
    **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& closest_points) = 0;
+      const bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<PointPair>& closest_points) = 0;
 
   /** \brief Compute the points of closest approach between specified pairs
    * of collision elements
@@ -133,6 +139,7 @@ class DRAKE_EXPORT Model {
    */
   virtual void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
   /** \brief Compute the set of potential collision points for all
@@ -205,10 +212,14 @@ class DRAKE_EXPORT Model {
    * \param[out] distance to the first collision, or -1 on no collision
    * \return true if this method ran successfully
    */
-  virtual bool collisionRaycast(const Eigen::Matrix3Xd& origin,
-                                const Eigen::Matrix3Xd& ray_endpoint,
-                                bool use_margins, Eigen::VectorXd& distances,
-                                Eigen::Matrix3Xd& normals) = 0;
+  virtual bool collisionRaycast(
+      const Eigen::Matrix3Xd& origin,
+      const Eigen::Matrix3Xd& ray_endpoint,
+      bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& distances,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normals) = 0;
 
   /**
    * Modifies a collision element's local transform to be relative to a joint's

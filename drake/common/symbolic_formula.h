@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
@@ -367,8 +368,23 @@ class FormulaForall : public FormulaCell {
 };
 
 std::ostream& operator<<(std::ostream& os, const Formula& e);
-}  // namespace drake
+
 }  // namespace symbolic
+namespace assert {
+/* We allow assertion-like statements to receive a Formula.  Given the typical
+ * uses of assertions and Formulas, rather than trying to be clever and, e.g.,
+ * capture assertion data for later use or partially-solve the Formula to find
+ * counterexamples, instead we've decided to ignore assertions for the purpose
+ * of Formula.  They are syntax-checked, but always pass. */
+template <>
+struct ConditionTraits<symbolic::Formula> {
+  static constexpr bool is_valid = true;
+  static bool Evaluate(const symbolic::Formula&) {
+    return true;
+  }
+};
+}  // namespace assert
+}  // namespace drake
 
 namespace std {
 /* Provides std::hash<drake::symbolic::Formula>. */

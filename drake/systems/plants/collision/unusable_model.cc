@@ -86,4 +86,5 @@ std::vector<size_t> UnusableModel::collidingPoints(
       "Compile Drake with a collision library backend for collision support!");
   return std::vector<size_t>();
 }
-}
+
+}  // namespace DrakeCollision

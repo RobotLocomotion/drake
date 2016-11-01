@@ -27,5 +27,5 @@ void OutputPort::InvalidateAndIncrement() {
   }
 }
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

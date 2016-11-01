@@ -5,7 +5,7 @@
 #include "ros/ros.h"
 #include "rosgraph_msgs/Clock.h"
 
-#include "drake/systems/simulation_options.h"
+#include "drake/system1/simulation_options.h"
 
 namespace drake {
 namespace ros {

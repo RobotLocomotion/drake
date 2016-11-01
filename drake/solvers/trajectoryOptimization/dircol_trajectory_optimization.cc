@@ -1,4 +1,4 @@
-#include "dircol_trajectory_optimization.h"
+#include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
 
 #include <stdexcept>
 
@@ -99,5 +99,5 @@ void DircolTrajectoryOptimization::AddRunningCost(
                           u_vars().tail(num_inputs())});
 }
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

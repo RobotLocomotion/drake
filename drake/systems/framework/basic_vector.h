@@ -2,9 +2,11 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
@@ -136,6 +138,23 @@ class BasicVector : public VectorBase<T> {
   // The column vector of T values.
   VectorX<T> values_;
 };
+
+// Allows a BasicVector<T> to be streamed into a string. This is useful for
+// debugging purposes.
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const BasicVector<T>& vec) {
+  os << "[";
+
+  Eigen::VectorBlock<const VectorX<T>> v = vec.get_value();
+  for (int i = 0; i < v.size(); ++i) {
+    if (i > 0)
+       os << ", ";
+    os << v[i];
+  }
+
+  os << "]";
+  return os;
+}
 
 }  // namespace systems
 }  // namespace drake

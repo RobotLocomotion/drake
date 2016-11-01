@@ -43,8 +43,8 @@ class Gain : public LeafSystem<T> {
 
   /// Returns the gain constant. This method should only be called if the gain
   /// can be represented as a scalar value, i.e., every element in the gain
-  /// vector is the same. It will throw a `std::runtime_error` if the gain
-  /// cannot be represented as a single scalar value.
+  /// vector is the same. It will abort if the gain cannot be represented as a
+  /// single scalar value.
   const T& get_gain() const;
 
   /// Returns the gain vector constant.

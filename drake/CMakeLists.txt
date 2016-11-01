@@ -64,13 +64,6 @@ endfunction()
 # This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(NOT APPLE)
-  # The linker on OS X likes to hide the typeinfo for template classes unless
-  # they are explicitly instantiated and exported, which causes dynamic_cast to
-  # fail across library boundaries.
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
   if(APPLE)
@@ -129,7 +122,7 @@ include(../cmake/mex.cmake)
 if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
   message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
   unset(MATLAB_EXECUTABLE CACHE)
-  unset(Matlab_FOUND CACHE)
+  unset(Matlab_FOUND)
 endif()
 
 enable_testing()
@@ -153,6 +146,7 @@ find_package(Threads MODULE REQUIRED)
 drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
   drake_find_package(bot2-core CONFIG)
+  drake_find_package(robotlocomotion-lcmtypes CONFIG)
 
   add_subdirectory(lcmtypes)
 
@@ -208,12 +202,13 @@ add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
+add_subdirectory(system1)
+add_subdirectory(systems)
+add_subdirectory(automotive)
 if(Matlab_FOUND)
   add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
-add_subdirectory(systems)
-add_subdirectory(automotive)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 add_subdirectory(regtests)

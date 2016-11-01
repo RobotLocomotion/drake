@@ -1,6 +1,8 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -176,8 +178,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
   virtual ~IpoptSolver_NLP() {}
 
-  virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
-                            Index& nnz_h_lag, IndexStyleEnum& index_style) {
+  virtual bool get_nlp_info(
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& n, Index& m, Index& nnz_jac_g,
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& nnz_h_lag, IndexStyleEnum& index_style) {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
@@ -190,6 +195,14 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     nnz_jac_g = 0;
     Index num_grad = 0;
     for (const auto& c : problem_->generic_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
       nnz_jac_g += num_grad;
     }
@@ -218,20 +231,30 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
 
     for (auto const& binding : problem_->bounding_box_constraints()) {
-      auto const& c = binding.constraint();
-      const Eigen::VectorXd& lower_bound = c->lower_bound();
-      const Eigen::VectorXd& upper_bound = c->upper_bound();
+      const auto& c = binding.constraint();
+      const auto& lower_bound = c->lower_bound();
+      const auto& upper_bound = c->upper_bound();
+      int var_count = 0;
       for (const DecisionVariableView& v : binding.variable_list()) {
         for (size_t k = 0; k < v.size(); k++) {
           const int idx = v.index() + k;
-          x_l[idx] = std::max(lower_bound(k), x_l[idx]);
-          x_u[idx] = std::min(upper_bound(k), x_u[idx]);
+          x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
+          x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
+          ++var_count;
         }
       }
     }
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       constraint_idx += GetConstraintBounds(
           *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
     }
@@ -265,6 +288,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
+  // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
   virtual bool eval_f(Index n, const Number* x, bool new_x, Number& obj_value) {
     if (new_x || !cost_cache_->is_x_equal(n, x)) {
       EvaluateCosts(n, x);
@@ -312,6 +336,18 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                   // populated by each call to
                                   // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->lorentz_cone_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
         grad_idx +=
             GetGradientMatrix(*(c.constraint()), c.variable_list(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
@@ -422,6 +458,16 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
     for (const auto& c : problem_->linear_constraints()) {
       grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
                                  result, grad);
@@ -483,5 +529,5 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   return nlp->result();
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

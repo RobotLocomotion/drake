@@ -1,8 +1,11 @@
 #include "drake/systems/plants/parser_urdf.h"
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
@@ -134,6 +137,7 @@ void AddMaterialToMaterialMap(const string& material_name,
   }
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void ParseMaterial(XMLElement* node, MaterialMap& materials) {
   const char* attr;
   attr = node->Attribute("name");
@@ -188,7 +192,9 @@ void ParseMaterial(XMLElement* node, MaterialMap& materials) {
 }
 
 bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
-                   const string& root_dir, DrakeShapes::Element& element) {
+                   const string& root_dir,
+                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   DrakeShapes::Element& element) {
   // DEBUG
   // cout << "ParseGeometry: START" << endl;
   // END_DEBUG
@@ -550,9 +556,16 @@ void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
  * @param[out] child_link_name A reference to a string where the name of the
  * child link should be saved.
  */
-void ParseJointKeyParams(XMLElement* node, string& name, string& type,
-                         string& parent_link_name,
-                         string& child_link_name) {
+void ParseJointKeyParams(
+    XMLElement* node,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    string& name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    string& type,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    string& parent_link_name,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    string& child_link_name) {
   // Obtains the joint's name.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
@@ -879,7 +892,9 @@ void ParseFrame(RigidBodyTree* tree, XMLElement* node, int model_instance_id) {
  * pointer.
  */
 void ParseWorldJoint(XMLElement* node,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                      FloatingBaseType& floating_base_type,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                      std::shared_ptr<RigidBodyFrame>& weld_to_frame) {
   bool found_world_joint = false;
 
@@ -1051,11 +1066,14 @@ ModelInstanceIdTable ParseModel(RigidBodyTree* tree, XMLElement* node,
   return model_instance_id_table;
 }
 
-ModelInstanceIdTable ParseUrdf(XMLDocument* xml_doc,
-               PackageMap& ros_package_map, const string& root_dir,
-               const FloatingBaseType floating_base_type,
-               std::shared_ptr<RigidBodyFrame> weld_to_frame,
-               RigidBodyTree* tree) {
+ModelInstanceIdTable ParseUrdf(
+    XMLDocument* xml_doc,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
+    const string& root_dir,
+    const FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    RigidBodyTree* tree) {
   populatePackageMap(ros_package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -1090,7 +1108,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 
 ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
-    const string& urdf_string, PackageMap& ros_package_map,
+    const string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     RigidBodyTree* tree) {
   const string root_dir = ".";
   return AddModelInstanceFromUrdfStringSearchingInRosPackages(urdf_string,
@@ -1100,7 +1120,9 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const string& urdf_string, PackageMap& ros_package_map,
+    const string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     RigidBodyTree* tree) {
   return
       AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
@@ -1118,7 +1140,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
-    const string& urdf_string, PackageMap& ros_package_map,
+    const string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     const string& root_dir, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree) {
   XMLDocument xml_doc;
@@ -1175,7 +1199,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 }
 
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
-    const string& filename, PackageMap& ros_package_map,
+    const string& filename,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {
@@ -1204,7 +1230,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
-    const string& filename, PackageMap& ros_package_map,
+    const string& filename,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree* tree) {

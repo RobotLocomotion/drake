@@ -8,6 +8,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 namespace drake {
 namespace solvers {
@@ -107,6 +108,32 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   }
 
   /**
+   * Add bounds on a set of time intervals, such that
+   * lower_bound(i) <= h_vars_(interval_indices[i]) <= upper_bound(i)
+   * where h_vars_[j] is the time interval between j'th and j+1'th sample
+   * (starting
+   * from 0'th sample).
+   * @param lower_bound  A vector of lower bounds.
+   * @param upper_bound  A vector of upper bounds.
+   * @param interval_indices A vector of interval indices.
+   */
+  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
+                             const Eigen::VectorXd& upper_bound,
+                             const std::vector<int>& interval_indices);
+
+  /**
+   * Add bounds on all time intervals, such that
+   * lower_bound(i) <= h_vars_(i) <= upper_bound(i)
+   * where h_vars_[i] is the time interval between i'th and i+1'th sample
+   * (starting
+   * from 0'th sample).
+   * @param lower_bound  A vector of lower bounds.
+   * @param upper_bound  A vector of upper bounds.
+   */
+  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
+                             const Eigen::VectorXd& upper_bound);
+
+  /**
    * Add a cost to the initial state.
    */
   template <typename ConstraintT>
@@ -191,14 +218,14 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
                         std::vector<double>* times) const;
 
   /**
-   * Get the input trajectory as a PiecewisePolynomial
+   * Get the input trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomial<double> ReconstructInputTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const;
 
   /**
-   * Get the state trajectory as a PiecewisePolynomial
+   * Get the state trajectory as a PiecewisePolynomialTrajectory
    */
-  PiecewisePolynomial<double> ReconstructStateTrajectory() const;
+  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
 
  protected:
   /**
@@ -275,5 +302,5 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   DecisionVariableView x_vars_;
 };
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

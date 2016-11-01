@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <tuple>
 #include <utility>
 
@@ -336,7 +337,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     const T next_update_dt = next_update_time - step_start_time;
 
     // TODO(edrumwri): Get the next publish time when API available.
-    T next_publish_dt = (double)std::numeric_limits<double>::infinity();
+    T next_publish_dt = std::numeric_limits<double>::infinity();
     T next_publish_time = step_start_time + next_publish_dt;
 
     // Attempt to integrate.

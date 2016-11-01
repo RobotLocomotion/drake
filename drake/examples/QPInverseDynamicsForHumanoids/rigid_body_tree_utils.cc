@@ -1,5 +1,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 
+#include <vector>
+
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {

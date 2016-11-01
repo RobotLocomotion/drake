@@ -1,5 +1,6 @@
-#include "Geometry.h"
+#include "drake/systems/plants/shapes/Geometry.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <stdexcept>

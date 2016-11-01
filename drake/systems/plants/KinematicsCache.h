@@ -1,13 +1,16 @@
 #pragma once
 
+#include <functional>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <unordered_map>
-#include <vector>
-#include <numeric>
-#include <type_traits>
-#include <stdexcept>
-#include <utility>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"

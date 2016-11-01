@@ -9,7 +9,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -136,6 +135,42 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
   EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+
+  // Test Eigen specialized function specially.
+  system_.MapVelocityToConfigurationDerivatives(context_,
+                                                state_vec1->CopyToVector(),
+                                                &state_vec2);
+  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
+  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
+  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+}
+
+TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
+  auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
+  BasicVector<double> state_vec2(kSize);
+
+  system_.MapConfigurationDerivativesToVelocity(context_, *state_vec1,
+                                                &state_vec2);
+  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
+  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
+  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+
+  // Test Eigen specialized function specially.
+  system_.MapConfigurationDerivativesToVelocity(context_,
+                                                state_vec1->CopyToVector(),
+                                                &state_vec2);
+  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
+  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
+  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+}
+
+TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
+  auto state_vec1 = BasicVector<double>::Make({1.0, 2.0, 3.0});
+  BasicVector<double> state_vec2(kSize + 1);
+
+  EXPECT_THROW(system_.MapConfigurationDerivativesToVelocity(
+      context_, *state_vec1, &state_vec2),
+               std::runtime_error);
 }
 
 TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {

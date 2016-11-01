@@ -25,19 +25,19 @@ if verLessThan('matlab','7.6')
 end
 
 % add package directories to the matlab path
-addpath(fullfile(root,'systems'));
-addpath(fullfile(root,'systems','plants'));
-addpath(fullfile(root,'systems','plants','collision'));
-addpath(fullfile(root,'systems','plants','constraint'));
-addpath(fullfile(root,'systems','controllers'));
-addpath(fullfile(root,'systems','observers'));
-addpath(fullfile(root,'systems','trajectories'));
-addpath(fullfile(root,'systems','trajectories','TrajectoryLibraries'));
-addpath(fullfile(root,'systems','trajectories','FunnelLibraries'));
-addpath(fullfile(root,'systems','frames'));
-addpath(fullfile(root,'systems','visualizers'));
-addpath(fullfile(root,'systems','robotInterfaces'));
-addpath(fullfile(root,'systems','robotInterfaces','calibration'));
+addpath(fullfile(root,'matlab','systems'));
+addpath(fullfile(root,'matlab','systems','plants'));
+addpath(fullfile(root,'matlab','systems','plants','collision'));
+addpath(fullfile(root,'matlab','systems','plants','constraint'));
+addpath(fullfile(root,'matlab','systems','controllers'));
+addpath(fullfile(root,'matlab','systems','observers'));
+addpath(fullfile(root,'matlab','systems','trajectories'));
+addpath(fullfile(root,'matlab','systems','trajectories','TrajectoryLibraries'));
+addpath(fullfile(root,'matlab','systems','trajectories','FunnelLibraries'));
+addpath(fullfile(root,'matlab','systems','frames'));
+addpath(fullfile(root,'matlab','systems','visualizers'));
+addpath(fullfile(root,'matlab','systems','robotInterfaces'));
+addpath(fullfile(root,'matlab','systems','robotInterfaces','calibration'));
 addpath(fullfile(root,'matlab','solvers'));
 addpath(fullfile(root,'matlab','solvers','trajectoryOptimization'));
 addpath(fullfile(root,'thirdParty'));

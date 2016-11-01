@@ -1,5 +1,13 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include <algorithm>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -14,12 +22,6 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <string>
 
 using Eigen::AutoDiffScalar;
 using Eigen::Dynamic;
@@ -77,6 +79,7 @@ const char* const RigidBodyTree::kWorldName = "world";
 const int RigidBodyTree::kWorldBodyIndex = 0;
 
 template <typename T>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   finite_indexes.clear();
   for (int i = 0; i < v.size(); ++i) {

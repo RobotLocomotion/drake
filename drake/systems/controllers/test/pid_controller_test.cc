@@ -80,9 +80,9 @@ TEST_F(PidControllerTest, GetterVectors) {
   ASSERT_EQ(ki, controller.get_Ki_vector());
   ASSERT_EQ(kd, controller.get_Kd_vector());
 
-  EXPECT_THROW(controller.get_Kp(), std::runtime_error);
-  EXPECT_THROW(controller.get_Ki(), std::runtime_error);
-  EXPECT_THROW(controller.get_Kd(), std::runtime_error);
+  EXPECT_DEATH(controller.get_Kp(), ".*");
+  EXPECT_DEATH(controller.get_Ki(), ".*");
+  EXPECT_DEATH(controller.get_Kd(), ".*");
 }
 
 // Evaluates the output and asserts correctness.
