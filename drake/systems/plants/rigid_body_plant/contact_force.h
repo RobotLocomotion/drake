@@ -19,8 +19,8 @@ namespace systems {
     induced by the translational force.  This is a pure, abstract force (e.g.,
     modeling torsional friction.)
 
-  The ContactForce class provides an interface to accessing the components as
-  well as the combined components as a wrench.
+  The ContactForce class provides an interface for accessing the components
+  individually as well as combining the forces into a WrenchVector.
  */
 template <typename T>
 class DRAKE_EXPORT ContactForce {
