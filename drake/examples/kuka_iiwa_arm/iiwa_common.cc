@@ -1,6 +1,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
+#include <map>
+#include <string>
+
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
