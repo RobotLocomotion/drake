@@ -33,13 +33,6 @@ bool AssertForce(const WrenchVector<DerivedA>& wrench,
   return AreEquivalent(test_force, force);
 }
 
-// THe tests to perform
-//  4. Multiple planar forces - tangent and normal
-//    a. torque in wrench only due to shifting tangential forces.
-//  5. Multiple forces, different normal directions, planar application points
-//  6. Non-planar application, non-unified normal directions.  Paul's simple
-//      example.
-
 // Tests the ContactForce class.  The class is very simple. It's only
 // functionality is:
 //    1. Constructor logic,
@@ -163,7 +156,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   }
 
   // Case 2: Two forces of unequal magnitudes.  Min. moment point should lie
-  //  between the two points based on ratio of force magnitudes.
+  // between the two points based on ratio of force magnitudes.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, zero, zero);
@@ -217,7 +210,9 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   }
 }
 
-// Tests the case where there are
+// Tests the case where the contact forces have a zero normal resultant force.
+// Confirms that the application point is drawn from the set and any possible
+// torque is returned.
 GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
 // Do *not* change these values. The tests below will become invalid.
   Vector3<double> pos1, pos2, expected_torque;
@@ -230,7 +225,7 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   zero = Vector3<double>::Zero();
 
   // Case 1: Two identical, tangent-only forces . Min. moment point will be
-  //  the first position (pos1) and, force is <0, 3, 0> and torque is <0, 0, 2>.
+  // the first position (pos1) and, force is <0, 3, 0> and torque is <0, 0, 2>.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, tan1, zero);
@@ -243,6 +238,81 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
     ASSERT_TRUE(AssertForce(wrench, tan1 + tan2));
     ASSERT_TRUE(AreEquivalent(min_point, pos1));
   }
+}
+
+// Tests the case where the application points are arrayed on a plane, but
+// the individual contacts have individual normals.
+GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
+  Vector3<double> p1, p2, p3, n1, n2, n3, expected_point;
+  const Vector3<double> zero = Vector3<double>::Zero();
+  p1 << 1, 0, 0;
+  p2 << 2, 0, 0;
+  p3 << 1, 5, 0;
+  n1 << 0, 0, 1;
+  n2 << 0, 1, 1;
+  n3 << 0.1, -1, 0.5;
+
+  // Case 1: two forces, no tangential forces, but normals lying in different
+  // directions.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(p1, n1, zero, zero);
+    calc.AddForce(p2, n2, zero, zero);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+
+    Vector3<double> expected_torque;
+    expected_torque << 0, 0.2, 0.4;
+    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
+    ASSERT_TRUE(AssertForce(wrench, n1 + n2));
+    expected_point << 1.6, 0, 0;
+    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+  }
+
+  // Case 2: three forces, no tangential forces, but normals lying in different
+  // directions.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(p1, n1, zero, zero);
+    calc.AddForce(p2, n2, zero, zero);
+    calc.AddForce(p3, n3, zero, zero);
+    Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+    WrenchVector<double> wrench = calc.ComputeResultantWrench();
+
+    // these are magic numbers computed outside of this code based on the
+    // constant values encoded above.
+    Vector3<double> expected_torque;
+    expected_torque << 0.023961661341853, -0.000000000000000, 0.599041533546326;
+    ASSERT_TRUE(AssertTorque(wrench, expected_torque));
+    ASSERT_TRUE(AssertForce(wrench, n1 + n2 + n3));
+    expected_point << 1.399361022364217, 0.990415335463259, -0.015974440894569;
+    ASSERT_TRUE(AreEquivalent(min_point, expected_point));
+  }
+}
+
+// This tests a simple case where there are two, skew forces drawn from Paul
+//  Mitiguy's book.
+GTEST_TEST(ContactResultantForceTest, SkewNormalNonPlanarPointTest) {
+  Vector3<double> p1, p2, n1, n2;
+  const Vector3<double> zero = Vector3<double>::Zero();
+  p1 << -3, 0, 0;
+  p2 << 0, 1, -1;
+  n1 << 3, 0, 0;
+  n2 << 0, 0, 1;
+
+  ContactResultantForceCalculator<double> calc;
+  calc.AddForce(p1, n1, zero, zero);
+  calc.AddForce(p2, n2, zero, zero);
+  Vector3<double> min_point = calc.ComputeMinimumMomentPoint();
+  WrenchVector<double> wrench = calc.ComputeResultantWrench();
+
+  Vector3<double> expected_torque;
+  expected_torque << 0.9, 0, 0.3;
+  ASSERT_TRUE(AssertTorque(wrench, expected_torque));
+  ASSERT_TRUE(AssertForce(wrench, n1 + n2));
+  Vector3<double> expected_point;
+  expected_point << -2.7, 0.1, -0.9;
+  ASSERT_TRUE(AreEquivalent(min_point, expected_point));
 }
 }  // namespace
 }  // namespace systems
