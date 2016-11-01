@@ -6,7 +6,6 @@ classdef DrakeFunctionConstraint < Constraint
     function obj = DrakeFunctionConstraint(lb,ub,fcn)
       sizecheck(lb,[fcn.dim_output,1]);
       sizecheck(ub,[fcn.dim_output,1]);
-      % assumes first derivative is provided, grad_level = 1
       obj = obj@Constraint(lb,ub,fcn.dim_input,1);
       obj.fcn = fcn;
       [iCfun,jCvar] = getSparsityPattern(obj.fcn);

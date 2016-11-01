@@ -216,72 +216,8 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       m = x(1);
       if (getNumContStates(obj.modes{m}))
         nX = getNumStates(obj.modes{m});
-        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
-        
-%         %%%%%%%% Added code TODO: Move into a controller file!
-%         [T1,U1] = energy(obj,x);
-%         Eref = 90; % 123.036
-%         Etilde = T1+U1 - Eref;
-% %         if x(4) < 4
-% %             u = -1/10*x(5)*Etilde;
-% %         else
-% %             u = 0;
-% %         end
-% %         t
-%         B = [1;0;0];
-% %         J = evalin('base','J');
-%         if m == 1
-%             [~,J,dJ] = obj.no_contact.positionConstraints(x(2:4));
-%         elseif m == 2
-%             [~,J,dJ] = obj.in_contact.positionConstraints(x(2:4));
-%         end
-%         Jdotqd = dJ*reshape(x(5:7)*x(5:7)',9,1);
-%         
-% %         Jdotqd = evalin('base','Jdotqd');
-%         Hinv = diag([8,1/2,1/2]);
-%         zd = 3.5;
-%         zpref = sqrt(9.81);
-% %         lambdad = 2/J(3)*(-5*(x(4)-zd) - 4.475*x(7) + 9.81);
-% %         lambdad = 2/J(3)*(9.81 - 5*(x(7)-zpref*0));
-%         lambdad = 2/J(3)*(9.81) - sign(J(3))*(-5*(x(4)-zd) - 4.475*x(7));
-% %         lambdadx = 2/J(2)*(-5*x(3)*0-4.5*x(6));
-% %         lambdadx = 2*J(2)*(-1*x(3)-1*x(6));
-%         lambdadx = -5*x(3)-4.5*x(6);
-%         lambda2 = 1/(J(2)*x(6)+J(3)*x(7))*(-1*x(3)*x(6) + 2*9.81*x(7)-2*x(4)*x(7)-2*x(6)^2-2*x(7)^2);
-%         C = [40*x(2); 0; 2*9.81];
-%         P = inv(J*Hinv*B);
-%         
-%         if m == 2 && abs(J(3)) > 1e-5
-%             u = -1/2*10*x(5)*Etilde;
-% %             u = -1/2*10*x(5)*Etilde  + 5*x(6);
-% %             if abs(J(2)) > 1e-5 && t < 30 &&  t > 4
-% %             if t < 30 &&  t > 4
-% %                 u = P*J*Hinv*J'*(lambdad+lambdadx) - P*Jdotqd + P*(J*Hinv*C);
-%                 u = P*J*Hinv*J'*lambda2 - P*Jdotqd + P*(J*Hinv*C);
-% %             end
-%             
-% %             if abs(J(2)) > 1e-5 && t < 20
-% %                 u = u - P*J*Hinv*J'*lambdad - P*Jdotqd + P*(J*Hinv*C);
-% %                 if abs(J(3)) > 1e-5 && t >= 0
-% %                     u = u - P*J*Hinv*J'*(2/J(3)*(-5*x(4)-4*x(7)));
-% %                 end
-% %             end
-% %             if abs(J(3)) > 1e-5 && t >= 20
-% %                 u = u - P*J*Hinv*J'*(2/J(3)*(-5*(x(4)-zd)-4*x(7))) - P*Jdotqd + P*(J*Hinv*C);
-% %             end
-%         else
-%             u = 0;
-%         end
-%         xcdot = dynamics(obj.modes{m},t,xm,u);
-%         t
-%         
-%         %         figure(149), hold on
-%         %         line(t,evalin('base','phiB'),'Marker','.')
-%         %%%%%%%  End of added code  %%%%%%%%%%%%%%%
-        
+        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end        
         xcdot = dynamics(obj.modes{m},t,xm,u);        % Original line
-
-
       else
         xcdot=[];
       end
