@@ -1,3 +1,6 @@
+drake_add_cc_test(decision_variable_test)
+target_link_libraries(decision_variable_test drakeCommon)
+
 drake_add_cc_test(mathematical_program_test)
 target_link_libraries(mathematical_program_test drakeOptimization)
 
