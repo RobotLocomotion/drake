@@ -149,7 +149,8 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 2));
     expected_point = (pos1 + pos2) * 0.5;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 2: Two forces of unequal magnitudes.  Min. moment point should lie
@@ -163,7 +164,8 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 3));
     expected_point = pos1 / 3. + pos2 * 2. / 3.;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 3: Three forces of unequal magnitude.
@@ -177,7 +179,8 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 6));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 4: Three forces of unequal magnitude with non-zero tangent components.
@@ -198,9 +201,11 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     Vector3<double> expected_torque;
     expected_torque << 0, 0, -0.4;
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
-    ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 6 + tan1 + tan2 + tan3));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_force(), force * 6 + tan1 + tan2 + tan3));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
@@ -208,7 +213,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
 // Confirms that the application point is drawn from the set and any possible
 // torque is returned.
 GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
-// Do *not* change these values. The tests below will become invalid.
+  // Do *not* change these values. The tests below will become invalid.
   Vector3<double> pos1, pos2, expected_torque;
   Vector3<double> norm, tan1, tan2, zero;
   pos1 << 1, 0, 0;
@@ -256,13 +261,13 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
     calc.AddForce(p2, f2, n2, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-
     Vector3<double> expected_torque;
     expected_torque << 0, 0.2, 0.4;
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), f1 + f2));
     expected_point << 1.6, 0, 0;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 2: three forces, no tangential forces, but normals lying in different
@@ -281,7 +286,8 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), f1 + f2 + f3));
     expected_point << 1.399361022364217, 0.990415335463259, -0.015974440894569;
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
