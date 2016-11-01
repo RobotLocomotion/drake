@@ -71,6 +71,7 @@ TEST_F(LinearSystemTest, Output) {
   state_->SetFromVector(x);
 
   dut_->EvalOutput(*context_, system_output_.get());
+
   Eigen::VectorXd expected_output(2);
 
   expected_output = C_ * x + D_ * u;
