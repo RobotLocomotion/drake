@@ -18,6 +18,16 @@ class RigidBodyPlant;
 template <typename T>
 class DRAKE_EXPORT KinematicsResults {
  public:
+  /// Constructs a KinematicsResults object associated with @param tree.
+  /// An alias to @param tree is maintained so that the tree's lifetime must
+  /// exceed this object's lifetime.
+  explicit KinematicsResults(const RigidBodyTree<T>* tree);
+
+  /// Updates the KinematicsResults object given the configuration vector
+  /// @param q and velocity vector @param v.
+  void Update(const Eigen::Ref<const VectorX<T>>& q,
+              const Eigen::Ref<const VectorX<T>>& v);
+
   /// Returns the number of bodies in the kinematics results.
   int get_num_bodies() const;
 
@@ -62,12 +72,6 @@ class DRAKE_EXPORT KinematicsResults {
   // TODO(amcastro-tri): when KinematicsResults can reference entries in the
   // cache this friendship and the method UpdateFromContext() won't be needed.
   friend class RigidBodyPlant<T>;
-
-  // Only RigidBodyPlant can construct a KinematicsResults from the underlying
-  // RigidBodyTree.
-  // An alias to @tree is maintained so that the tree's lifetime must exceed
-  // this object's lifetime.
-  explicit KinematicsResults(const RigidBodyTree<T>* tree);
 
   // Updates KinematicsResults from a context provided by RigidBodyPlant.
   // Only RigidBodyPlant has access to this method since it is a friend.

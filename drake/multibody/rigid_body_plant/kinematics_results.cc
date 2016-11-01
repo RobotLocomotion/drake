@@ -11,7 +11,14 @@ KinematicsResults<T>::KinematicsResults(const RigidBodyTree<T>* tree) :
     tree_(tree), kinematics_cache_(tree_->bodies) {
 }
 
-template<typename T>
+template <typename T>
+void KinematicsResults<T>::Update(const Eigen::Ref<const VectorX<T>>& q,
+                                  const Eigen::Ref<const VectorX<T>>& v) {
+  this->kinematics_cache_.initialize(q, v);
+  this->tree_->doKinematics(this->kinematics_cache_, false);
+}
+
+template <typename T>
 int KinematicsResults<T>::get_num_bodies() const {
   return tree_->get_num_bodies();
 }
