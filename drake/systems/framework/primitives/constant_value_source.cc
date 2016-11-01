@@ -1,3 +1,4 @@
+// NOLINTNEXTLINE(build/include) False positive on inl file.
 #include "drake/systems/framework/primitives/constant_value_source-inl.h"
 
 namespace drake {
