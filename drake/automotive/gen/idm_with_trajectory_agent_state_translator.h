@@ -3,6 +3,8 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <vector>
+
 #include "drake/automotive/gen/idm_with_trajectory_agent_state.h"
 #include "drake/common/drake_export.h"
 #include "drake/lcmt_idm_with_trajectory_agent_state_t.hpp"

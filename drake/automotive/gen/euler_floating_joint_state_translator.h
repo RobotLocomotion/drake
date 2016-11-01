@@ -3,6 +3,8 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
+#include <vector>
+
 #include "drake/automotive/gen/euler_floating_joint_state.h"
 #include "drake/common/drake_export.h"
 #include "drake/lcmt_euler_floating_joint_state_t.hpp"
