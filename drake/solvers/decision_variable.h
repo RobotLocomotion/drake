@@ -32,19 +32,81 @@ class DecisionVariableScalar {
   size_t index_;
 };
 
+/**
+ * A matrix of decision variables. This class stores the decision variables.
+ * The user can access the values of the decision variables through value()
+ * function, after calling Solve() in the MathematicalProgram or
+ * MathematicalProgramSolverInterface
+ */
+class MatrixDecisionVariable {
+ public:
+  MatrixDecisionVariable(size_t rows, size_t cols, const std::vector<std::reference_wrapper<const DecisionVariableScalar>>& vars) :
+      rows_(rows), cols_(cols), is_symmetric_(false), vars_(vars.begin(), vars.end()){
+    DRAKE_ASSERT(rows * cols == vars.size());
+  }
+  MatrixDecisionVariable operator()(int i, int j) const {
+    return MatrixDecisionVariable(1, 1, {vars_[MatrixIndicesToVectorIndex(i, j)]});
+  }
 
-template<int rows, int cols>
-using MatrixDecisionVariables = Eigen::Map<Eigen::Matrix<std::reference_wrapper<const DecisionVariableScalar>, rows, cols>>;
+  double value(size_t i, size_t j) const {
+    return vars_[MatrixIndicesToVectorIndex(i, j)].get().value();
+  }
 
-template<int rows>
-using VectorDecisionVariables = MatrixDecisionVariables<rows, 1>;
+  DecisionVariableScalar::VarType type(size_t i, size_t j) const {
+    return vars_[MatrixIndicesToVectorIndex(i, j)].get().type();
+  }
 
-template<int cols>
-using RowVectorDecisionVariables = MatrixDecisionVariables<1, cols>;
+  const std::string& name(size_t i, size_t j) const {
+    return vars_[MatrixIndicesToVectorIndex(i, j)].get().name();
+  }
 
-using VectorXDecisionVariables = MatrixDecisionVariables<Eigen::Dynamic, 1>;
-using RowVectorXDecisionVariables = MatrixDecisionVariables<1, Eigen::Dynamic>;
-using MatrixXDecisionVariables = MatrixDecisionVariables<Eigen::Dynamic, Eigen::Dynamic>;
+  size_t index(size_t i, size_t j) const {
+    return vars_[MatrixIndicesToVectorIndex(i, j)].get().index();
+  }
+
+  bool is_symmetric() const {return is_symmetric_;}
+
+  /**
+   * Return the value of all the decision variables stored inside the class
+   */
+  Eigen::MatrixXd value() const {
+    Eigen::MatrixXd mat(rows_, cols_);
+    for (int i = 0; i < static_cast<int>(rows_); ++i) {
+      for (int j = 0; j < static_cast<int>(cols_); ++j) {
+        mat(i, j) = vars_[MatrixIndicesToVectorIndex(i, j)].get().value();
+      }
+    }
+    return mat;
+  }
+
+  MatrixDecisionVariable block(size_t row_start, size_t col_start, size_t rows, size_t cols) const {
+    DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
+    std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars;
+    vars.reserve(rows * cols);
+    for (int j = 0; j < static_cast<int>(cols); ++j) {
+      for (int i = 0; i < static_cast<int>(rows); ++i) {
+        vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
+      }
+    }
+    return MatrixDecisionVariable(rows, cols, vars);
+  }
+
+ private:
+  size_t rows_;
+  size_t cols_;
+  bool is_symmetric_;
+  std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars_;
+  /**
+   * Return the index in vars_ given matrix index (i, j).
+   * @param i
+   * @param j
+   * @return
+   */
+  int MatrixIndicesToVectorIndex(size_t i, size_t j) const {
+    DRAKE_ASSERT(i < rows_ && j < cols_);
+    return j * rows_ + i;
+  }
+};
 
 /**
  * DecisionVariable
