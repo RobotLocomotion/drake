@@ -33,5 +33,5 @@ class DRAKE_EXPORT DircolTrajectoryOptimization
   // reconstructStateTrajectory to provide its own interpolation.
 };
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

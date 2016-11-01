@@ -1,3 +1,6 @@
+#include <limits>
+#include <string>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/text_logging.h"

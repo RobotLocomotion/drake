@@ -1,8 +1,10 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "FixedAxisOneDoFJoint.h"
+#include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
 /**
  * A prismatic joint moves linearly along one axis.

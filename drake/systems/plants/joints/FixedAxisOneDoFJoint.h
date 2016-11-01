@@ -1,16 +1,18 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Core>
 
-#include "DrakeJointImpl.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 
 template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {

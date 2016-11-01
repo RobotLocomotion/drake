@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 #include "drake/systems/robotInterfaces/Side.h"
 

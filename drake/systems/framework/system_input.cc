@@ -36,5 +36,5 @@ FreestandingInputPort::~FreestandingInputPort() {
   output_port_.remove_dependent(this);
 }
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

@@ -3,6 +3,9 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "drake/common/polynomial.h"

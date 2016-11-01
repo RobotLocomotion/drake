@@ -3,7 +3,11 @@
 
 #include "drake/solvers/mosek_solver.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
+#include <list>
+#include <vector>
 
 #include <mosek/mosek.h>
 
@@ -352,7 +356,7 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
   }
   return rescode;
 }
-}  // namespace empty
+}  // anonymous namespace
 
 bool MosekSolver::available() const { return true; }
 
@@ -491,5 +495,6 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   MSK_deleteenv(&env);
   return result;
 }
-}
-}
+
+}  // namespace solvers
+}  // namespace drake

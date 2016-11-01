@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/automotive/curve2.h"
@@ -132,10 +134,11 @@ class AutomotiveSimulator {
                   const SimpleCarToEulerFloatingJoint<T>*);
 
   // Connects the systems that output the pose of each vehicle to the
-  // visualizer. This is done by using multiplexers to add zero state sources
-  // to specify the states that are not part of the vehicle poses, and the
-  // velocity states of all vehicles since the visualizer doesn't use velocity
-  // state.
+  // visualizer. This is done by using multiplexers to connect systems that
+  // output constant vectors containing zero values to specify the states
+  // that are not part of the vehicle poses, and the velocity states of all
+  // vehicles. (The visualizer does not use the velocity state so specifying a
+  // value of zero is harmless.)
   void ConnectJointStateSourcesToVisualizer();
 
   // Returns a vector containing the number of joint position and velocity

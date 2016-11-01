@@ -1,5 +1,6 @@
-#include "PiecewiseFunction.h"
+#include "drake/systems/trajectories/PiecewiseFunction.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 using std::uniform_real_distribution;

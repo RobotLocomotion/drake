@@ -1,5 +1,7 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
+#include <algorithm>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/test/random_polynomial_matrix.h"
 

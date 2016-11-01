@@ -1,4 +1,4 @@
-#include "RevoluteJoint.h"
+#include "drake/systems/plants/joints/RevoluteJoint.h"
 
 using Eigen::Vector3d;
 

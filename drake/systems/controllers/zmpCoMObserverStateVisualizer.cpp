@@ -1,5 +1,7 @@
 #include <lcm/lcm.h>
 #include <bot_lcmgl_client/lcmgl.h>
+
+// NOLINTNEXTLINE(build/include) Generated C code (N.B. not C++) is odd.
 #include "drake_lcmt_zmp_com_observer_state.h"
 
 bot_lcmgl_t *lcmgl;

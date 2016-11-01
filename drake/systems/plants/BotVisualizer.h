@@ -2,6 +2,9 @@
 // it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
 
