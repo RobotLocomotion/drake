@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <initializer_list>
 #include <list>
 #include <string>
 
@@ -210,10 +209,8 @@ class MatrixDecisionVariable {
 
   /**
    * Determines if a sub-block of the matrix is symmetric or not. This sub-block
-   * contains rows from (and including) row_start, to (and including) row_start
-   * + rows - 1,
-   * and columns from (and including) col_start, to (and including) col_start +
-   * cols - 1.
+   * starts from row @p row_start and column @p col_start; the dimension of the
+   * sub-block is @p rows x @p cols.
    */
   bool IsBlockSymmetric(size_t row_start, size_t col_start, size_t rows,
                         size_t cols) const {
