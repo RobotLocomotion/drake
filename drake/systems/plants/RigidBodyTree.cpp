@@ -1981,7 +1981,7 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
 }
 
 std::vector<const RigidBody*>
-RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+RigidBodyTree::FindModelInstanceBodies(int model_instance_id) const {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
