@@ -7,6 +7,7 @@ include(cmake/config.cmake)
 include(cmake/externals.cmake)
 include(cmake/examples.cmake)
 include(cmake/options.cmake)
+include(cmake/ros_packages.cmake)
 include(cmake/git/hooks.cmake)
 
 drake_setup_superbuild()
@@ -350,6 +351,9 @@ drake_add_external(signalscope PUBLIC
 # Optional examples
 drake_add_example(LittleDog OFF
   "planning and control for a small quadruped robot")
+
+drake_add_ros_package(hsrb_description OFF
+  "the ROS package containing a model of Toyota's Human Support Robot (HSR)")
 
 # END examples
 ###############################################################################
