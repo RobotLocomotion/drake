@@ -34,38 +34,93 @@ class DecisionVariableScalar {
 
 /**
  * A matrix of decision variables. This class stores the decision variables.
- * The user can access the values of the decision variables through value()
- * function, after calling Solve() in the MathematicalProgram or
- * MathematicalProgramSolverInterface
+ * If the matrix is not symmetric, namely X(i,j) does not necessarily equals to
+ * X(j, i), then the decision variables are the stacked column of the matrix.
+ * If the matrix is symmetric, then the decision variables are the stacked
+ * columns of the lower triangular part of the matrix.
  */
 class MatrixDecisionVariable {
  public:
-  MatrixDecisionVariable(size_t rows, size_t cols, const std::vector<std::reference_wrapper<const DecisionVariableScalar>>& vars) :
-      rows_(rows), cols_(cols), is_symmetric_(false), vars_(vars.begin(), vars.end()){
-    DRAKE_ASSERT(rows * cols == vars.size());
+  /**
+   * Construct a matrix of decision variables of size rows x cols.
+   * @param rows The number of rows in the matrix.
+   * @param cols The number of columns in the matrix.
+   * @param vars The decision variables stored in the matrix. If the matrix is
+   * not symmetric, then @p vars contains the stacked column of the matrix;
+   * otherwise @p vars contains the stacked columns of the lower triangular part
+   * of the matrix.
+   * For example, for a non-symmetric matrix M with 2 rows and 3 columns,
+   * the decision variables are
+   * [M(0,0) M(1,0) M(0,1) M(1,1) M(0,2) M(1,2)];
+   * for a symmetric matrix S with 3 rows and 3 columns,
+   * the decision variables are
+   * [S(0,0) S(1,0) S(2,0) S(1,1) S(2,1) S(2,2)];
+   * @param is_symmetric Whether the matrix is symmetric or not.
+   */
+  MatrixDecisionVariable(size_t rows, size_t cols, const std::vector<std::reference_wrapper<const DecisionVariableScalar>>& vars, bool is_symmetric = false) :
+      rows_(rows), cols_(cols), is_symmetric_(is_symmetric), vars_(vars.begin(), vars.end()){
+    if(is_symmetric) {
+      DRAKE_ASSERT(rows == cols && rows * (rows + 1) / 2 == vars.size());
+    }
+    else {
+      DRAKE_ASSERT(rows * cols == vars.size());
+    }
   }
+
+  /**
+   * Returns a new MatrixDecisionVariable, at i'th row and j'th column of
+   * the original matrix.
+   */
   MatrixDecisionVariable operator()(int i, int j) const {
     return MatrixDecisionVariable(1, 1, {vars_[MatrixIndicesToVectorIndex(i, j)]});
   }
 
+  /**
+   * Returns the value of the decision variable at i'th row and j'th column
+   * of the original matrix.
+   */
   double value(size_t i, size_t j) const {
     return vars_[MatrixIndicesToVectorIndex(i, j)].get().value();
   }
 
+  /**
+   * Return the type of the variable at i'th row and j'th column of the matrix.
+   */
   DecisionVariableScalar::VarType type(size_t i, size_t j) const {
     return vars_[MatrixIndicesToVectorIndex(i, j)].get().type();
   }
 
+  /**
+   * Return the name of the variable at i'th row and j'th column of the matrix.
+   */
   const std::string& name(size_t i, size_t j) const {
     return vars_[MatrixIndicesToVectorIndex(i, j)].get().name();
   }
 
+  /**
+   * Return the index of the variable at i'th row and j'th column of the matrix.
+   */
   size_t index(size_t i, size_t j) const {
     return vars_[MatrixIndicesToVectorIndex(i, j)].get().index();
   }
 
   bool is_symmetric() const {return is_symmetric_;}
 
+  /**
+   * Return the number of decision variables stored in the matrix. If the matrix
+   * is not symmetric, there are rows_ * cols_ decision variables; otherwise,
+   * the number of decision variables is the number of entries in the lower
+   * triangular part of the matrix.
+   * @return
+   */
+  int NumberOfVariables() const {
+    if (!is_symmetric_) {
+      return rows_ * cols_;
+    }
+    else {
+      return rows_ * (rows_ + 1) / 2;
+    }
+  }
   /**
    * Return the value of all the decision variables stored inside the class
    */
@@ -79,16 +134,52 @@ class MatrixDecisionVariable {
     return mat;
   }
 
+  /**
+   * Construct a new MatrixDecisionVariable by taking a sub-block from the
+   * original matrix.
+   * @param row_start The starting row of the sub-block.
+   * @param col_start The starting column of the sub-block.
+   * @param rows The number of rows in the sub-block.
+   * @param cols The number of columns in the sub-block.
+   */
   MatrixDecisionVariable block(size_t row_start, size_t col_start, size_t rows, size_t cols) const {
     DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
     std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars;
-    vars.reserve(rows * cols);
-    for (int j = 0; j < static_cast<int>(cols); ++j) {
-      for (int i = 0; i < static_cast<int>(rows); ++i) {
-        vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
+    if (IsBlockSymmetric(row_start, col_start, rows, cols)) {
+      vars.reserve(rows * (rows + 1) / 2);
+      for (int j = 0; j < static_cast<int>(cols); ++j) {
+        for (int i = j; i < static_cast<int>(rows); ++i) {
+          vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
+        }
       }
+      return MatrixDecisionVariable(rows, rows, vars, true);
     }
-    return MatrixDecisionVariable(rows, cols, vars);
+    else {
+      vars.reserve(rows * cols);
+      for (int j = 0; j < static_cast<int>(cols); ++j) {
+        for (int i = 0; i < static_cast<int>(rows); ++i) {
+          vars.push_back(vars_[MatrixIndicesToVectorIndex(row_start + i,
+                                                          col_start + j)]);
+        }
+      }
+      return MatrixDecisionVariable(rows, cols, vars, false);
+    }
+  }
+
+  /**
+   * Construct a new MatrixDecisionVariable from a row of the original matrix.
+   * @param i The index of the row.
+   */
+  MatrixDecisionVariable row(size_t i) const {
+    return block(i, 0, 1, cols_);
+  }
+
+  /**
+   * Construct a new MatrixDecisionVariable from a column of the original matrix.
+   * @param j The index of the column.
+   */
+  MatrixDecisionVariable col(size_t j) const {
+    return block(0, j, rows_, 1);
   }
 
  private:
@@ -96,15 +187,36 @@ class MatrixDecisionVariable {
   size_t cols_;
   bool is_symmetric_;
   std::vector<std::reference_wrapper<const DecisionVariableScalar>> vars_;
+
   /**
    * Return the index in vars_ given matrix index (i, j).
-   * @param i
-   * @param j
-   * @return
    */
   int MatrixIndicesToVectorIndex(size_t i, size_t j) const {
     DRAKE_ASSERT(i < rows_ && j < cols_);
-    return j * rows_ + i;
+    if (!is_symmetric_) {
+      return j * rows_ + i;
+    }
+    else {
+      if (i < j) {
+        return MatrixIndicesToVectorIndex(j, i);
+      }
+      return (2 * rows_ - j + 1) * j / 2 + i - j;
+    }
+  }
+
+  /**
+   * Determines if a sub-block of the matrix is symmetric or not. This sub-block
+   * contains rows from (and including) row_start, to (and including) row_start + rows - 1,
+   * and columns from (and including) col_start, to (and including) col_start + cols - 1.
+   */
+  bool IsBlockSymmetric(size_t row_start, size_t col_start, size_t rows, size_t cols) const {
+    if (!is_symmetric_) {
+      return false;
+    }
+    if (row_start == col_start && rows == cols) {
+      return true;
+    }
+    return false;
   }
 };
 
