@@ -1,11 +1,13 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include <iostream>
 #include <cstdlib>
-#include <random>
-#include <memory>
-#include <stdexcept>
+#include <iostream>
 #include <map>
+#include <memory>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -23,6 +25,7 @@ struct CheckSettings {
 };
 
 template <typename O, typename F, typename... Args>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void checkForErrors(bool expect_error, O& object, F function,
                     Args&&... arguments) {
   try {
@@ -39,6 +42,7 @@ void checkForErrors(bool expect_error, O& object, F function,
         "Expected a runtime error, but did not catch one.");
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                    const CheckSettings& settings) {
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();

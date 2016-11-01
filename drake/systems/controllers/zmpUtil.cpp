@@ -1,5 +1,7 @@
 #include "drake/systems/controllers/zmpUtil.h"
 
+#include <vector>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 

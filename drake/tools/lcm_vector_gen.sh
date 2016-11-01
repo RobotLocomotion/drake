@@ -52,3 +52,19 @@ gen_vector () {
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
+# Call the code generator to produce just a Drake BasicVector based on a YAML
+# spec.
+#
+# @param1 title -- used to create class/type names
+# @param2 yaml_file --- the YAML specification of vector fields
+gen_vector_yaml () {
+    title="$1"
+    yaml_file="$2"
+    snake=$(echo "$title" | tr " " _)
+    $drake/tools/lcm_vector_gen.py \
+        --cxx-dir=$mydir/gen \
+        --namespace="$namespace" \
+        --title="$title" \
+        --yaml_file="$yaml_file"
+    $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
+}

@@ -1,5 +1,7 @@
 #include <cstdlib>
-#include <numeric>  // for iota
+#include <numeric>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -39,6 +41,7 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
 }
 
 void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         std::vector<int>& position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 

@@ -69,11 +69,13 @@ bool operator==(const Variables& vars1, const Variables& vars2) {
   return vars1.vars_ == vars2.vars_;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Variables operator+=(Variables& vars1, const Variables& vars2) {
   vars1.insert(vars2);
   return vars1;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Variables operator+=(Variables& vars, const Variable& var) {
   vars.insert(var);
   return vars;
@@ -94,10 +96,12 @@ Variables operator+(const Variable& var, Variables vars) {
   return vars;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Variables operator-=(Variables& vars1, const Variables& vars2) {
   vars1.erase(vars2);
   return vars1;
 }
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Variables operator-=(Variables& vars, const Variable& var) {
   vars.erase(var);
   return vars;

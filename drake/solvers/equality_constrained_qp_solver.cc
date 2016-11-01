@@ -85,5 +85,5 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   return SolutionResult::kSolutionFound;
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

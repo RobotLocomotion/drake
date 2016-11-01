@@ -9,7 +9,7 @@ if nargin < 3, velocity_tol = 1e-1; end
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-plant = RigidBodyManipulator(fullfile(getDrakePath,'systems','plants','test','FallingBrickContactPoints.urdf'),options);
+plant = RigidBodyManipulator(fullfile(getDrakePath,'matlab','systems','plants','test','FallingBrickContactPoints.urdf'),options);
 warning(w);
 x0 = [0;0;.8;0.05*randn(3,1);zeros(6,1)];
 

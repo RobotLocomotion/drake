@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <string>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -200,6 +201,7 @@ class DRAKE_EXPORT DrakeJoint {
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 
   virtual Eigen::VectorXd randomConfiguration(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::default_random_engine& generator) const = 0;
 
   virtual const Eigen::VectorXd& getJointLimitMin() const;

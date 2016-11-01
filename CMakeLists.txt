@@ -134,7 +134,7 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DUSE_SWIG=OFF)
 
 # sedumi
-drake_add_external(sedumi CMAKE
+drake_add_external(sedumi PUBLIC CMAKE
   CMAKE_ARGS -DMatlab_ROOT_DIR=${Matlab_ROOT_DIR})
 
 # snopt
@@ -228,6 +228,7 @@ drake_add_external(lcm PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DLCM_ENABLE_EXAMPLES=OFF
     -DLCM_ENABLE_LUA=OFF
+    -DLCM_ENABLE_TESTS=OFF
     -DLCM_INSTALL_M4MACROS=OFF)
 
 # libbot
@@ -237,6 +238,10 @@ drake_add_external(libbot PUBLIC CMAKE
 # bot_core_lcmtypes
 drake_add_external(bot_core_lcmtypes PUBLIC CMAKE
   DEPENDS lcm libbot) # Conflicts with libbot; ensure this is built after
+
+# robotlocomotion_lcmtypes
+drake_add_external(robotlocomotion_lcmtypes PUBLIC CMAKE
+  DEPENDS bot_core_lcmtypes lcm)
 
 # xfoil
 # The Ninja generator does not support Fortran.
@@ -309,6 +314,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     mosek
     nlopt
     octomap
+    robotlocomotion_lcmtypes
     sedumi
     snopt
     spdlog
@@ -325,7 +331,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
 drake_add_external(director PUBLIC CMAKE
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
-    -DUSE_DRAKE=OFF
+    -DUSE_DRAKE=ON
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_SYSTEM_LCM=ON

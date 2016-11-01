@@ -257,31 +257,37 @@ FunctionalForm& operator-=(FunctionalForm& l, FunctionalForm const& r) {
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator*=(FunctionalForm& l, FunctionalForm const& r) {
   l = l * r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator/=(FunctionalForm& l, FunctionalForm const& r) {
   l = l / r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator+=(FunctionalForm& l, double r) {
   l = l + r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator-=(FunctionalForm& l, double r) {
   l = l - r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator*=(FunctionalForm& l, double r) {
   l = l * r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator/=(FunctionalForm& l, double r) {
   l = l / r;
   return l;

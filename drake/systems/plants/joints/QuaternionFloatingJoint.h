@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
@@ -30,6 +32,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
@@ -66,6 +69,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
@@ -96,6 +100,7 @@ class DRAKE_EXPORT QuaternionFloatingJoint
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {

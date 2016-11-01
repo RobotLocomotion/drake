@@ -3,11 +3,11 @@
 #include "gtest/gtest.h"
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/gravity_compensated_system.h"
-#include "drake/systems/plants/robot_state_tap.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/Simulation.h"
+#include "drake/system1/cascade_system.h"
+#include "drake/system1/gravity_compensated_system.h"
+#include "drake/system1/robot_state_tap.h"
 
 using drake::AffineSystem;
 using drake::GravityCompensatedSystem;

@@ -46,6 +46,7 @@ class DRAKE_EXPORT Element {
 
   const Geometry& getGeometry() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
  protected:
@@ -60,4 +61,5 @@ class DRAKE_EXPORT Element {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-}
+
+}  // namespace DrakeShapes

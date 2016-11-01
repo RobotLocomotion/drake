@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/autodiff_overloads.h"
 
 namespace drake {
 namespace math {
@@ -18,6 +19,7 @@ namespace internal {
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(
     const Eigen::MatrixBase<Derived>& v,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     typename Derived::Scalar& theta_squared) {
   using namespace std;  // NOLINT(build/namespaces)
   typedef typename Derived::Scalar Scalar;
@@ -39,6 +41,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(
     const Eigen::MatrixBase<Derived>& v,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     typename Derived::Scalar& theta_squared) {
   typedef typename Derived::Scalar Scalar;
   static_assert(
@@ -136,7 +139,9 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(
 template <typename DerivedQ, typename DerivedE>
 void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
                          const Eigen::MatrixBase<DerivedQ>& quat_dot,
+                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                          Eigen::MatrixBase<DerivedE>& expmap,
+                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                          Eigen::MatrixBase<DerivedE>& expmap_dot) {
   static_assert(DerivedQ::RowsAtCompileTime == 4, "Wrong size.");
   static_assert(DerivedE::RowsAtCompileTime == 3, "Wrong size.");

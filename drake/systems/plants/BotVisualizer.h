@@ -2,11 +2,14 @@
 // it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 

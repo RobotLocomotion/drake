@@ -1,4 +1,4 @@
-#include "direct_collocation_constraint.h"
+#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
 #include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
@@ -102,5 +102,5 @@ void System2DirectCollocationConstraint::dynamics(
   *xdot = derivatives_->CopyToVector();
 }
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

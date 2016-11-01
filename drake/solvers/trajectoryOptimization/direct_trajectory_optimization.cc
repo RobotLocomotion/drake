@@ -1,5 +1,6 @@
-#include "direct_trajectory_optimization.h"
+#include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 
+#include <limits>
 #include <stdexcept>
 
 using Eigen::MatrixXd;
@@ -255,5 +256,5 @@ DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
       GetTimeVector(), GetStateVector()));
 }
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

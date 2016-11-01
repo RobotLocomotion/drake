@@ -106,6 +106,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 DRAKE_EXPORT ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
 
 #ifndef SWIG
@@ -114,6 +115,7 @@ DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSe
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map, RigidBodyTree* tree);
 
 /**
@@ -183,7 +185,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  */
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
-    const std::string& urdf_string, PackageMap& ros_package_map,
+    const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
@@ -193,7 +197,9 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
 #endif
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
-    const std::string& urdf_string, PackageMap& ros_package_map,
+    const std::string& urdf_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& ros_package_map,
     const std::string& root_dir,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree* tree);
@@ -324,6 +330,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const std::string& urdf_filename,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
@@ -335,6 +342,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename,
+     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
      std::map<std::string, std::string>& ros_package_map,
      const drake::systems::plants::joints::FloatingBaseType floating_base_type,
      std::shared_ptr<RigidBodyFrame> weld_to_frame,

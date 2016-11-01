@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -7,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/number_traits.h"
@@ -153,8 +154,10 @@ class DRAKE_EXPORT Expression {
                                            const Expression& rhs);
   friend DRAKE_EXPORT Expression operator+(double lhs, const Expression& rhs);
   friend DRAKE_EXPORT Expression operator+(Expression lhs, double rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
                                              const Expression& rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator+=(Expression& lhs, double rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
@@ -166,8 +169,10 @@ class DRAKE_EXPORT Expression {
                                            const Expression& rhs);
   friend DRAKE_EXPORT Expression operator-(double lhs, const Expression& rhs);
   friend DRAKE_EXPORT Expression operator-(Expression lhs, double rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
                                              const Expression& rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator-=(Expression& lhs, double rhs);
 
   /** Provides unary minus operator. */
@@ -181,16 +186,20 @@ class DRAKE_EXPORT Expression {
                                            const Expression& rhs);
   friend DRAKE_EXPORT Expression operator*(double lhs, const Expression& rhs);
   friend DRAKE_EXPORT Expression operator*(Expression lhs, double rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
                                              const Expression& rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator*=(Expression& lhs, double rhs);
 
   friend DRAKE_EXPORT Expression operator/(Expression lhs,
                                            const Expression& rhs);
   friend DRAKE_EXPORT Expression operator/(double lhs, const Expression& rhs);
   friend DRAKE_EXPORT Expression operator/(Expression lhs, double rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
                                              const Expression& rhs);
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator/=(Expression& lhs, double rhs);
 
   friend DRAKE_EXPORT Expression log(const Expression& e);
@@ -657,6 +666,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator*=(MatrixL& lhs, double rhs) {
   return lhs *= Expression{rhs};
 }
@@ -682,6 +692,7 @@ typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
         std::is_same<typename MatrixL::Scalar, Expression>::value,
     MatrixL&>::type
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 operator/=(MatrixL& lhs, double rhs) {
   return lhs /= Expression{rhs};
 }

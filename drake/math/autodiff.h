@@ -4,33 +4,10 @@
 #pragma once
 
 #include <cmath>
+#include <tuple>
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-
-/// Overloads round to mimic std::round from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double round(const Eigen::AutoDiffScalar<DerType>& x) {
-  return round(x.value());
-}
-
-/// Overloads floor to mimic std::floor from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double floor(const Eigen::AutoDiffScalar<DerType>& x) {
-  return floor(x.value());
-}
-
-/// Overloads ceil to mimic std::ceil from <cmath>.
-/// Must appear in global namespace so that ADL can select between this
-/// implementation and the STL one.
-template <typename DerType>
-double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
-  return ceil(x.value());
-}
 
 namespace drake {
 namespace math {
@@ -75,6 +52,7 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
  */
 template <typename Derived, typename DerivedAutoDiff>
 void initializeAutoDiff(const Eigen::MatrixBase<Derived>& val,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix,
                         Eigen::DenseIndex num_derivatives = Eigen::Dynamic,
                         Eigen::DenseIndex deriv_num_start = 0) {
@@ -136,6 +114,7 @@ AutoDiffMatrixType<Derived, Nq> initializeAutoDiff(
 namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar){}
 };
 
@@ -143,6 +122,7 @@ template <typename Derived, typename DerivType>
 struct ResizeDerivativesToMatchScalarImpl<Derived,
                                           Eigen::AutoDiffScalar<DerivType> > {
   using Scalar = Eigen::AutoDiffScalar<DerivType>;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {
     for (int i = 0; i < mat.size(); i++) {
       auto& derivs = mat(i).derivatives();
@@ -168,6 +148,7 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
  * \param scalar scalar to match the derivative size vector against.
  */
 template <typename Derived>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
                                     const typename Derived::Scalar& scalar) {
   internal::ResizeDerivativesToMatchScalarImpl<
@@ -223,6 +204,7 @@ template <size_t Index>
 struct InitializeAutoDiffTupleHelper {
   template <typename... ValueTypes, typename... AutoDiffTypes>
   static void run(const std::tuple<ValueTypes...>& values,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                   std::tuple<AutoDiffTypes...>& auto_diffs,
                   Eigen::DenseIndex num_derivatives,
                   Eigen::DenseIndex deriv_num_start) {

@@ -1,17 +1,19 @@
 #pragma once
 
+#include <map>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
 
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 using drake::NullVector;
 using drake::RigidBodySensor;

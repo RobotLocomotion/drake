@@ -1,12 +1,15 @@
 #pragma once
 
-#include "KinematicsCache.h"
+#include <string>
+#include <vector>
+
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 using drake::systems::plants::joints::FloatingBaseType;
 using drake::systems::plants::joints::kQuaternion;
@@ -469,6 +472,7 @@ class DRAKE_EXPORT RigidBodySystem {
  */
 class DRAKE_EXPORT RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in,
       int model_instance_id) :
           sys(sys_in),
@@ -504,6 +508,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
  */
 class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                      const std::string& name, int model_instance_id);
   ~RigidBodyPropellor() override {}
@@ -547,6 +552,7 @@ class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 class DRAKE_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                         const std::string& name, int model_instance_id);
   ~RigidBodySpringDamper() override {}

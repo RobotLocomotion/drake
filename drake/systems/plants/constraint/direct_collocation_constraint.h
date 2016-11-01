@@ -9,7 +9,6 @@
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/System.h"
 
 namespace drake {
 namespace systems {
@@ -62,40 +61,6 @@ class DRAKE_EXPORT DirectCollocationConstraint :
   int num_inputs_;
 };
 
-/// Implements a dynamic constraint which uses the dynamics function
-/// of a system.
-template <typename System>
-class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
- public:
-  // TODO(sam.creasey) Should this be a const bare ptr?
-  explicit SystemDirectCollocationConstraint(std::shared_ptr<System> system)
-      : DirectCollocationConstraint(drake::getNumStates(*system),
-                          drake::getNumInputs(*system)),
-        system_(system) {}
-
-  explicit SystemDirectCollocationConstraint(
-      const SystemDirectCollocationConstraint& other) = delete;
-  SystemDirectCollocationConstraint& operator=(
-      const SystemDirectCollocationConstraint& other) = delete;
-  explicit SystemDirectCollocationConstraint(
-      SystemDirectCollocationConstraint&& other) = delete;
-  SystemDirectCollocationConstraint& operator=(
-      SystemDirectCollocationConstraint&& other) = delete;
-
- private:
-  void dynamics(const TaylorVecXd& state,
-                const TaylorVecXd& input,
-                TaylorVecXd* xdot) const override {
-    typename System::template StateVector<TaylorVarXd> x = state;
-    typename System::template InputVector<TaylorVarXd> u = input;
-    TaylorVarXd t(1);
-    t = 0;
-    *xdot = toEigen(system_->dynamics(t, x, u));
-  }
-
-  std::shared_ptr<System> system_;
-};
-
 /// Implements a dynamic constraint which uses the continuous dynamics
 /// of a system.
 class DRAKE_EXPORT System2DirectCollocationConstraint
@@ -129,5 +94,5 @@ class DRAKE_EXPORT System2DirectCollocationConstraint
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

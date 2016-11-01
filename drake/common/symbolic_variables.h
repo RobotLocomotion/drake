@@ -130,8 +130,10 @@ class DRAKE_EXPORT Variables {
 };
 
 /** Updates \p var1 with the result of set-union(\p var1, \p var2). */
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 DRAKE_EXPORT Variables operator+=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-union(\p vars, { \p var }). */
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 DRAKE_EXPORT Variables operator+=(Variables& vars, const Variable& var);
 /** Returns set-union of \p var1 and \p var2. */
 DRAKE_EXPORT Variables operator+(Variables vars1, const Variables& vars2);
@@ -141,8 +143,10 @@ DRAKE_EXPORT Variables operator+(Variables vars, const Variable& var);
 DRAKE_EXPORT Variables operator+(const Variable& var, Variables vars);
 
 /** Updates \p var1 with the result of set-minus(\p var1, \p var2). */
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 DRAKE_EXPORT Variables operator-=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-minus(\p vars, {\p var}). */
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 DRAKE_EXPORT Variables operator-=(Variables& vars, const Variable& var);
 /** Returns set-minus(\p var1, \p vars2). */
 DRAKE_EXPORT Variables operator-(Variables vars1, const Variables& vars2);

@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "simple_car.h"
+#include "drake/automotive/simple_car.h"
 
 #include <algorithm>
 #include <cmath>
@@ -114,24 +114,27 @@ template <typename T>
 void SimpleCar<T>::DoEvalTimeDerivatives(const SimpleCarState<T>& state,
                                          const DrivingCommand<T>& input,
                                          SimpleCarState<T>* rates) const {
+  using std::max;
+  using std::min;
+
   // Apply simplistic throttle.
   T new_velocity =
       state.velocity() + (input.throttle() * config_.max_acceleration() *
                           config_.velocity_lookahead_time());
-  new_velocity = std::min(new_velocity, config_.max_velocity());
+  new_velocity = min(new_velocity, config_.max_velocity());
 
   // Apply simplistic brake.
   new_velocity += input.brake() * -config_.max_acceleration() *
                   config_.velocity_lookahead_time();
-  new_velocity = std::max(new_velocity, static_cast<T>(0.));
+  new_velocity = max(new_velocity, static_cast<T>(0.));
 
   // Apply steering.
   T sane_steering_angle = input.steering_angle();
   DRAKE_ASSERT(static_cast<T>(-M_PI) < sane_steering_angle);
   DRAKE_ASSERT(sane_steering_angle < static_cast<T>(M_PI));
-  sane_steering_angle = std::min(
+  sane_steering_angle = min(
       sane_steering_angle, config_.max_abs_steering_angle());
-  sane_steering_angle = std::max(
+  sane_steering_angle = max(
       sane_steering_angle, static_cast<T>(-config_.max_abs_steering_angle()));
   const T curvature = tan(sane_steering_angle) / config_.wheelbase();
 

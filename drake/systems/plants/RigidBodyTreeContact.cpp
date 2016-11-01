@@ -1,6 +1,9 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
+#include <algorithm>
 #include <iostream>
+#include <set>
+#include <vector>
 
 using Eigen::Dynamic;
 using Eigen::Map;
@@ -19,6 +22,7 @@ using std::vector;
 // NOTE:
 //  k = BASIS_VECTOR_HALF_COUNT is defined as a preprocessor directive so that
 //      Eigen templates can be optimized at compile time
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void surfaceTangentsSingle(Vector3d const &normal, Matrix3kd &d) {
   Vector3d t1, t2;
   double theta;
@@ -48,8 +52,10 @@ void surfaceTangentsSingle(Vector3d const &normal, Matrix3kd &d) {
 // OUTPUTS:
 //   bodyIndsSorted a set of unique, sorted(ascending) body indexes
 //   participating in contact pairs
-void getUniqueBodiesSorted(VectorXi const &idxA, VectorXi const &idxB,
-                           std::vector<int> &bodyIndsSorted) {
+void getUniqueBodiesSorted(
+    VectorXi const &idxA, VectorXi const &idxB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    std::vector<int> &bodyIndsSorted) {
   size_t m = idxA.size();
   std::set<int> bodyInds;
 
@@ -78,6 +84,7 @@ void getUniqueBodiesSorted(VectorXi const &idxA, VectorXi const &idxB,
 // OUTPUTS:
 //   contactIdx: the list of n indexes into idxList where bodyIdx occurred
 void findContactIndexes(VectorXi const &idxList, const size_t bodyIdx,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         std::vector<size_t> &contactIdx) {
   size_t m = idxList.size();
   contactIdx.clear();
@@ -107,7 +114,9 @@ void findContactIndexes(VectorXi const &idxList, const size_t bodyIdx,
 // (x, y, z, 1)'
 void getBodyPoints(std::vector<size_t> const &cindA,
                    std::vector<size_t> const &cindB, Matrix3Xd const &xA,
-                   Matrix3Xd const &xB, Matrix3Xd &bodyPoints) {
+                   Matrix3Xd const &xB,
+                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   Matrix3Xd &bodyPoints) {
   size_t i = 0;
   size_t numPtsA = cindA.size();
   size_t numPtsB = cindB.size();
