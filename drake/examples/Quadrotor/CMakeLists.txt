@@ -2,8 +2,8 @@
 # due to a bug in Eigen; see issue #2106 and PR #2107.
 if(lcm_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
   add_executable(runQuadrotorDynamics runDynamics.cpp)
-  target_link_libraries(runQuadrotorDynamics drakeRigidBodyPlant drakeLCMSystem2 gflags )
-  drake_add_test(NAME runQuadrotorDynamics COMMAND runQuadrotorDynamics --duration=1.0 SIZE mediu)
+  target_link_libraries(runQuadrotorDynamics drakeRigidBodyPlant drakeLCMSystem2 gflags)
+  drake_add_test(NAME runQuadrotorDynamics COMMAND runQuadrotorDynamics --duration=1.0 SIZE medium)
 
   add_executable(runQuadrotorLQR runLQR.cpp)
   target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)
