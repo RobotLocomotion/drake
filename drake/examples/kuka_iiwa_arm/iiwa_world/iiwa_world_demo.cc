@@ -3,7 +3,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
+//#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_simulator.h"
 
 namespace drake {
@@ -13,8 +13,8 @@ namespace kuka_iiwa_arm {
 namespace {
 
 int main(int argc, char *argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  logging::HandleSpdlogGflags();
+//  gflags::ParseCommandLineFlags(&argc, &argv, true);
+//  logging::HandleSpdlogGflags();
 //
 //  // TODO(jwnimmer-tri) Allow for multiple simple cars.
 //  if (FLAGS_num_simple_car > 1) {
