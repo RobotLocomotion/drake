@@ -13,6 +13,13 @@ class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
 
   virtual ~FixedJoint() {}
 
+  using DrakeJointImpl<FixedJoint>::jointTransform;
+  using DrakeJointImpl<FixedJoint>::motionSubspace;
+  using DrakeJointImpl<FixedJoint>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<FixedJoint>::qdot2v;
+  using DrakeJointImpl<FixedJoint>::v2qdot;
+  using DrakeJointImpl<FixedJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

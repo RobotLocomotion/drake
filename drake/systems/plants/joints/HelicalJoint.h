@@ -5,8 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
-class DRAKE_EXPORT HelicalJoint
-    : public FixedAxisOneDoFJoint<HelicalJoint> {
+class DRAKE_EXPORT HelicalJoint : public FixedAxisOneDoFJoint<HelicalJoint> {
   // disable copy construction and assignment
   // HelicalJoint(const HelicalJoint&) = delete;
   // HelicalJoint& operator=(const HelicalJoint&) = delete;
@@ -26,6 +25,13 @@ class DRAKE_EXPORT HelicalJoint
         pitch_(pitch) {}
 
   virtual ~HelicalJoint() {}
+
+  using FixedAxisOneDoFJoint<HelicalJoint>::jointTransform;
+  using FixedAxisOneDoFJoint<HelicalJoint>::motionSubspace;
+  using FixedAxisOneDoFJoint<HelicalJoint>::motionSubspaceDotTimesV;
+  using FixedAxisOneDoFJoint<HelicalJoint>::qdot2v;
+  using FixedAxisOneDoFJoint<HelicalJoint>::v2qdot;
+  using FixedAxisOneDoFJoint<HelicalJoint>::frictionTorque;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
