@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -35,15 +37,25 @@ class ValkyrieSystem : public LeafSystem<double> {
   explicit ValkyrieSystem(const RigidBodyTree& robot) : robot_(robot) {
     input_port_index_qp_output_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_humanoid_status_ =
+    output_port_index_robot_state_msg_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
+    output_port_index_raw_state_ =
+        DeclareOutputPort(
+            systems::kVectorValued,
+            robot_.get_num_positions() + robot_.get_num_velocities(),
+            systems::kInheritedSampling).get_index();
 
     zero_torque_ = Eigen::VectorXd::Zero(robot_.actuators.size());
 
     DRAKE_ASSERT(this->get_num_input_ports() == 1);
-    DRAKE_ASSERT(this->get_num_output_ports() == 1);
+    DRAKE_ASSERT(this->get_num_output_ports() == 2);
 
     set_name("Dummy Valkyrie System");
+
+    joint_names_.resize(robot_.get_num_positions() - kTwistSize);
+    for (int i = kTwistSize; i < robot_.get_num_positions(); ++i) {
+      joint_names_[i - kTwistSize] = robot_.get_position_name(i);
+    }
   }
 
   // Only the state is used to produce the output.
@@ -62,9 +74,11 @@ class ValkyrieSystem : public LeafSystem<double> {
       const Context<double>& context) const override {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
-    HumanoidStatus rs(robot_);
-    output->add_port(
-        std::unique_ptr<AbstractValue>(new Value<HumanoidStatus>(rs)));
+    output->add_port(std::unique_ptr<AbstractValue>(
+        new Value<bot_core::robot_state_t>(bot_core::robot_state_t())));
+
+    output->get_mutable_ports()->emplace_back(new systems::OutputPort(
+        AllocateOutputVector(get_output_port_raw_state())));
     return std::move(output);
   }
 
@@ -75,12 +89,22 @@ class ValkyrieSystem : public LeafSystem<double> {
     Eigen::VectorXd q = state.get_generalized_position().CopyToVector();
     Eigen::VectorXd v = state.get_generalized_velocity().CopyToVector();
 
-    // Set output.
-    HumanoidStatus& rs =
-        output->GetMutableData(output_port_index_humanoid_status_)
-            ->GetMutableValue<HumanoidStatus>();
-    rs.Update(context.get_time(), q, v, zero_torque_, Eigen::Vector6d::Zero(),
-              Eigen::Vector6d::Zero());
+    bot_core::robot_state_t& msg =
+        output->GetMutableData(output_port_index_robot_state_msg_)
+            ->GetMutableValue<bot_core::robot_state_t>();
+    EncodeRobotStateLcmMsg(joint_names_, context.get_time(), q, v, zero_torque_,
+                           Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
+                           &msg);
+
+    // Set state output.
+    BasicVector<double>* output_x =
+        output->GetMutableVectorData(output_port_index_raw_state_);
+    for (int i = 0; i < robot_.get_num_positions(); ++i) {
+      output_x->SetAtIndex(i, q[i]);
+    }
+    for (int i = 0; i < robot_.get_num_velocities(); ++i) {
+      output_x->SetAtIndex(i + robot_.get_num_positions(), v[i]);
+    }
   }
 
   void EvalTimeDerivatives(
@@ -103,17 +127,18 @@ class ValkyrieSystem : public LeafSystem<double> {
       throw std::runtime_error("time deriv dimension mismatch.");
     }
 
-    for (int i = 0; i < new_v->size(); i++) {
+    for (int i = 0; i < new_v->size(); ++i) {
       new_v->SetAtIndex(i, state_v.GetAtIndex(i));
     }
 
-    for (int i = 0; i < new_vd->size(); i++) {
+    for (int i = 0; i < new_vd->size(); ++i) {
       new_vd->SetAtIndex(i, vd(i));
     }
   }
 
   /**
-   * Setup the initial condition: time = 0, q = Valkyrie's nominal q, and v = 0.
+   * Set up the initial condition: time = 0, q = Valkyrie's nominal q,
+   * and v = 0.
    * @return A humanoid status unique pointer with the same q and v.
    */
   std::unique_ptr<HumanoidStatus> SetInitialCondition(
@@ -131,7 +156,7 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     std::unique_ptr<HumanoidStatus> rs(new HumanoidStatus(robot_));
     q->SetFromVector(rs->GetNominalPosition());
-    for (int i = 0; i < v->size(); i++) {
+    for (int i = 0; i < v->size(); ++i) {
       v->SetAtIndex(i, 0.);
     }
 
@@ -178,7 +203,7 @@ class ValkyrieSystem : public LeafSystem<double> {
    * @param context, system context
    * @return A humanoid status pointer from \p context
    */
-  std::unique_ptr<HumanoidStatus> GetHumanoidStatusFromContext(
+  std::unique_ptr<HumanoidStatus> MakeHumanoidStatusFromContext(
       const Context<double>& context) const {
     const ContinuousState<double>& state =
         *context.get_state().get_continuous_state();
@@ -206,16 +231,23 @@ class ValkyrieSystem : public LeafSystem<double> {
   /**
    * @return the port number that corresponds to the output: humanoid status.
    */
-  inline const SystemPortDescriptor<double>& get_output_port_humanoid_status()
+  inline const SystemPortDescriptor<double>& get_output_port_robot_state_msg()
       const {
-    return get_output_port(output_port_index_humanoid_status_);
+    return get_output_port(output_port_index_robot_state_msg_);
+  }
+
+  inline const SystemPortDescriptor<double>& get_output_port_raw_state() const {
+    return get_output_port(output_port_index_raw_state_);
   }
 
  private:
   const RigidBodyTree& robot_;
+  // only used for publishing.
+  std::vector<std::string> joint_names_;
 
   int input_port_index_qp_output_;
-  int output_port_index_humanoid_status_;
+  int output_port_index_robot_state_msg_;
+  int output_port_index_raw_state_;
 
   Eigen::VectorXd zero_torque_;
 };

@@ -6,8 +6,8 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-// TODO(siyuan.feng@tri.global): These are hard coded for Valkyrie, and they
-// should be included in the model file or loaded from a separate config file.
+// TODO(siyuan.feng): These are hard coded for Valkyrie, and they should be
+// included in the model file or loaded from a separate config file.
 const Eigen::Vector3d HumanoidStatus::kFootToSoleOffset =
     Eigen::Vector3d(0, 0, -0.09);
 const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
@@ -15,48 +15,31 @@ const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
 const Eigen::Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
     Eigen::Matrix3d(Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
 
-void HumanoidStatus::Update(
-    double t, const Eigen::Ref<const Eigen::VectorXd>& q,
-    const Eigen::Ref<const Eigen::VectorXd>& v,
-    const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
-    const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
-    const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
-  if (q.size() != position_.size() || v.size() != velocity_.size() ||
-      joint_torque.size() != joint_torque_.size()) {
-    throw std::runtime_error("robot state update dimension mismatch.");
-  }
-
-  time_ = t;
-  position_ = q;
-  velocity_ = v;
-  joint_torque_ = joint_torque;
-
+void HumanoidStatus::Update() {
   cache_.initialize(position_, velocity_);
-  robot_.doKinematics(cache_, true);
+  robot_->doKinematics(cache_, true);
 
-  M_ = robot_.massMatrix(cache_);
+  M_ = robot_->massMatrix(cache_);
   drake::eigen_aligned_std_unordered_map<RigidBody const*,
                                          drake::TwistVector<double>> f_ext;
-  bias_term_ = robot_.dynamicsBiasTerm(cache_, f_ext);
+  bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
   // com
-  com_ = robot_.centerOfMass(cache_);
-  J_com_ = robot_.centerOfMassJacobian(cache_);
-  Jdot_times_v_com_ = robot_.centerOfMassJacobianDotTimesV(cache_);
+  com_ = robot_->centerOfMass(cache_);
+  J_com_ = robot_->centerOfMassJacobian(cache_);
+  Jdot_times_v_com_ = robot_->centerOfMassJacobianDotTimesV(cache_);
   comd_ = J_com_ * velocity_;
-  centroidal_momentum_matrix_ = robot_.centroidalMomentumMatrix(cache_);
+  centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_);
   centroidal_momentum_matrix_dot_times_v_ =
-      robot_.centroidalMomentumMatrixDotTimesV(cache_);
+      robot_->centroidalMomentumMatrixDotTimesV(cache_);
   centroidal_momentum_ = centroidal_momentum_matrix_ * velocity_;
 
   // body parts
   for (BodyOfInterest& body_of_interest : bodies_of_interest_)
-    body_of_interest.Update(robot_, cache_);
+    body_of_interest.Update(*robot_, cache_);
 
   // ft sensor
-  foot_wrench_raw_[Side::LEFT] = l_wrench;
-  foot_wrench_raw_[Side::RIGHT] = r_wrench;
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; ++i) {
     // Make H1 = H_sensor_to_sole.
     // Assuming the sole frame has the same orientation as the foot frame.
     Eigen::Isometry3d H1;
@@ -82,9 +65,9 @@ void HumanoidStatus::Update(
   Eigen::Vector2d cop_w[2];
   double Fz[2] = {foot_wrench_in_world_frame_[Side::LEFT][5],
                   foot_wrench_in_world_frame_[Side::RIGHT][5]};
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; ++i) {
     // Ignore CoP computation if normal force is small
-    if (fabs(foot_wrench_raw_[i][5]) < 1) {
+    if (std::abs(foot_wrench_raw_[i][5]) < 1) {
       cop_in_sole_frame_[i][0] = 0;
       cop_in_sole_frame_[i][1] = 0;
       cop_w[i][0] = foot(i).pose().translation()[0];
@@ -108,6 +91,21 @@ void HumanoidStatus::Update(
   cop_ = (cop_w[Side::LEFT] * Fz[Side::LEFT] +
           cop_w[Side::RIGHT] * Fz[Side::RIGHT]) /
          (Fz[Side::LEFT] + Fz[Side::RIGHT]);
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const HumanoidStatus& robot_status) {
+  out << "Time: " << robot_status.time() << std::endl;
+  for (int i = 0; i < robot_status.position().size(); ++i) {
+    out << robot_status.robot().get_position_name(i) << ": "
+        << robot_status.position(i) << ", " << robot_status.velocity(i)
+        << std::endl;
+  }
+  out << "left foot vel: " << robot_status.foot(Side::LEFT).velocity()
+      << std::endl;
+  out << "right foot vel: " << robot_status.foot(Side::RIGHT).velocity()
+      << std::endl;
+  return out;
 }
 
 }  // namespace qp_inverse_dynamics
