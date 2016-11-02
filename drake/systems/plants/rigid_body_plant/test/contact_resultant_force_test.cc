@@ -38,14 +38,6 @@ bool AssertForce(const WrenchVector<DerivedA>& wrench,
 //    1. Constructor logic,
 //    2. Combination of force components into output values.
 GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
-  // Case 1. Confirm default constructor zeros out the data.
-  ContactForce<double> f0;
-  ASSERT_EQ(f0.get_normal_force(), Vector3<double>::Zero());
-  ASSERT_EQ(f0.get_tangent_force(), Vector3<double>::Zero());
-  ASSERT_EQ(f0.get_pure_torque(), Vector3<double>::Zero());
-  ASSERT_EQ(f0.get_force(), Vector3<double>::Zero());
-  ASSERT_EQ(f0.get_application_point(), Vector3<double>::Zero());
-
   Vector3<double> norm, force, torque, pos, norm_force, tan_force;
   norm << 0, 0, 1;
   force << 0, 1, 1;
@@ -54,7 +46,7 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   torque << 1, 0, 0;
   pos << 3, 2, 1;
 
-  // Case 2. No pure torque constructor.
+  // Case 1. No pure torque constructor.
   ContactForce<double> f1(pos, force, norm);
   ASSERT_EQ(f1.get_normal_force(), norm_force);
   ASSERT_EQ(f1.get_tangent_force(), tan_force);
@@ -62,7 +54,7 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   ASSERT_EQ(f1.get_pure_torque(), Vector3<double>::Zero());
   ASSERT_EQ(f1.get_application_point(), pos);
 
-  // Case 3. Fully-specified constructor.
+  // Case 2. Fully-specified constructor.
   ContactForce<double> f2(pos, force, norm, torque);
   ASSERT_EQ(f2.get_normal_force(), norm_force);
   ASSERT_EQ(f2.get_tangent_force(), tan_force);
