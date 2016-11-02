@@ -37,8 +37,8 @@ Vector2d default_tspan(-std::numeric_limits<double>::infinity(),
                        std::numeric_limits<double>::infinity());
 }
 
-RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyTree<double>* robot,
-                                         const Vector2d& tspan)
+RigidBodyConstraint::RigidBodyConstraint(
+    int category, RigidBodyTree<double>* robot, const Vector2d& tspan)
     : category_(category), type_(0), robot_(robot) {
   if (category >= 0 || category <= -7) {
     throw std::runtime_error(
@@ -578,7 +578,8 @@ int MultipleTimeKinematicConstraint::numValidTime(const double* t,
   return num_valid_t;
 }
 
-void MultipleTimeKinematicConstraint::updateRobot(RigidBodyTree<double>* robot) {
+void MultipleTimeKinematicConstraint::updateRobot(
+    RigidBodyTree<double>* robot) {
   set_robot(robot);
 }
 
@@ -689,7 +690,8 @@ void PositionConstraint::name(const double* t,
   }
 }
 
-WorldPositionConstraint::WorldPositionConstraint(RigidBodyTree<double>* robot, int body,
+WorldPositionConstraint::WorldPositionConstraint(RigidBodyTree<double>* robot,
+                                                 int body,
                                                  const Matrix3Xd& pts,
                                                  MatrixXd lb, MatrixXd ub,
                                                  const Vector2d& tspan)
@@ -729,7 +731,8 @@ const std::set<int> WorldCoMConstraint::defaultRobotNumSet(
     WorldCoMDefaultRobotNum, WorldCoMDefaultRobotNum + 1);
 
 WorldCoMConstraint::WorldCoMConstraint(
-    RigidBodyTree<double>* robot, Vector3d lb, Vector3d ub, const Vector2d& tspan,
+    RigidBodyTree<double>* robot,
+    Vector3d lb, Vector3d ub, const Vector2d& tspan,
     const std::set<int>& model_instance_id_set)
     : PositionConstraint(robot, Vector3d::Zero(), lb, ub, tspan),
       m_model_instance_id_(model_instance_id_set) {
@@ -917,8 +920,9 @@ void RelativeQuatConstraint::name(const double* t,
 
 RelativeQuatConstraint::~RelativeQuatConstraint() {}
 
-EulerConstraint::EulerConstraint(RigidBodyTree<double>* robot, const Vector3d& lb,
-                                 const Vector3d& ub, const Vector2d& tspan)
+EulerConstraint::EulerConstraint(RigidBodyTree<double>* robot,
+                                 const Vector3d& lb, const Vector3d& ub,
+                                 const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan) {
   int num_constraint = 0;
   Vector3d my_lb = lb, my_ub = ub;
@@ -996,7 +1000,8 @@ void EulerConstraint::bounds(const double* t, VectorXd& lb,
   }
 }
 
-WorldEulerConstraint::WorldEulerConstraint(RigidBodyTree<double>* robot, int body,
+WorldEulerConstraint::WorldEulerConstraint(RigidBodyTree<double>* robot,
+                                           int body,
                                            const Vector3d& lb,
                                            const Vector3d& ub,
                                            const Vector2d& tspan)
@@ -1034,7 +1039,8 @@ void WorldEulerConstraint::name(const double* t,
 
 WorldEulerConstraint::~WorldEulerConstraint() {}
 
-GazeConstraint::GazeConstraint(RigidBodyTree<double>* robot, const Vector3d& axis,
+GazeConstraint::GazeConstraint(RigidBodyTree<double>* robot,
+                               const Vector3d& axis,
                                double conethreshold, const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
       conethreshold_(conethreshold) {
@@ -1049,7 +1055,8 @@ GazeConstraint::GazeConstraint(RigidBodyTree<double>* robot, const Vector3d& axi
 }
 
 GazeOrientConstraint::GazeOrientConstraint(
-    RigidBodyTree<double>* robot, const Vector3d& axis, const Vector4d& quat_des,
+    RigidBodyTree<double>* robot,
+    const Vector3d& axis, const Vector4d& quat_des,
     double conethreshold, double threshold, const Vector2d& tspan)
     : GazeConstraint(robot, axis, conethreshold, tspan), threshold_(threshold) {
   double len_quat_des = quat_des.norm();
@@ -1153,7 +1160,8 @@ void WorldGazeOrientConstraint::name(const double* t,
   }
 }
 
-GazeDirConstraint::GazeDirConstraint(RigidBodyTree<double>* robot, const Vector3d& axis,
+GazeDirConstraint::GazeDirConstraint(RigidBodyTree<double>* robot,
+                                     const Vector3d& axis,
                                      const Vector3d& dir, double conethreshold,
                                      const Vector2d& tspan)
     : GazeConstraint(robot, axis, conethreshold, tspan) {
@@ -1176,7 +1184,8 @@ void GazeDirConstraint::bounds(const double* t, VectorXd& lb,
   }
 }
 
-WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyTree<double>* robot, int body,
+WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyTree<double>* robot,
+                                               int body,
                                                const Vector3d& axis,
                                                const Vector3d& dir,
                                                double conethreshold,
@@ -1367,7 +1376,8 @@ void RelativeGazeTargetConstraint::name(
 }
 
 RelativeGazeDirConstraint::RelativeGazeDirConstraint(
-    RigidBodyTree<double>* robot, int bodyA_idx, int bodyB_idx, const Vector3d& axis,
+    RigidBodyTree<double>* robot, int bodyA_idx, int bodyB_idx,
+    const Vector3d& axis,
     const Vector3d& dir, double conethreshold, const Eigen::Vector2d& tspan)
     : GazeDirConstraint(robot, axis, dir, conethreshold, tspan),
       bodyA_idx_(bodyA_idx),
@@ -1523,7 +1533,8 @@ void Point2PointDistanceConstraint::bounds(const double* t, VectorXd& lb,
 }
 
 Point2LineSegDistConstraint::Point2LineSegDistConstraint(
-    RigidBodyTree<double>* robot, int pt_body, const Vector3d& pt, int line_body,
+    RigidBodyTree<double>* robot,
+    int pt_body, const Vector3d& pt, int line_body,
     const Matrix<double, 3, 2>& line_ends, double dist_lb, double dist_ub,
     const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
@@ -1609,7 +1620,8 @@ void Point2LineSegDistConstraint::name(
 }
 
 WorldFixedPositionConstraint::WorldFixedPositionConstraint(
-    RigidBodyTree<double>* robot, int body, const Matrix3Xd& pts, const Vector2d& tspan)
+    RigidBodyTree<double>* robot,
+    int body, const Matrix3Xd& pts, const Vector2d& tspan)
     : MultipleTimeKinematicConstraint(robot, tspan),
       body_(body),
       body_name_(robot->getBodyOrFrameName(body)),
@@ -1703,9 +1715,8 @@ void WorldFixedPositionConstraint::name(
   }
 }
 
-WorldFixedOrientConstraint::WorldFixedOrientConstraint(RigidBodyTree<double>* robot,
-                                                       int body,
-                                                       const Vector2d& tspan)
+WorldFixedOrientConstraint::WorldFixedOrientConstraint(
+    RigidBodyTree<double>* robot, int body, const Vector2d& tspan)
     : MultipleTimeKinematicConstraint(robot, tspan),
       body_(body),
       body_name_(robot->getBodyOrFrameName(body)) {
@@ -1892,7 +1903,8 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   updateRobot(robot);
 }
 
-void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyTree<double>* robot) {
+void AllBodiesClosestDistanceConstraint::updateRobot(
+    RigidBodyTree<double>* robot) {
   set_robot(robot);
   double t = 0;
   VectorXd c;
@@ -2289,7 +2301,8 @@ void PostureChangeConstraint::bounds(const double* t, int n_breaks,
 }
 
 GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
-    RigidBodyTree<double>* robot, const VectorXi& joint_indices, const VectorXd& lb,
+    RigidBodyTree<double>* robot,
+    const VectorXi& joint_indices, const VectorXd& lb,
     const VectorXd& ub, const Vector2d& tspan)
     : SingleTimeKinematicConstraint(robot, tspan),
       joint_indices_(joint_indices),
