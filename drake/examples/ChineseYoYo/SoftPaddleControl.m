@@ -151,7 +151,7 @@ classdef SoftPaddleControl < DrakeSystem
       x0 = p.getInitialState();
       
       tic
-      [ytraj,xtraj] = simulate(sys,[0 54],x0);
+      [ytraj,xtraj] = simulate(sys,[0 10],x0);
       toc
       
       utraj = ytraj(10);
