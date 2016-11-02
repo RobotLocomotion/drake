@@ -1,4 +1,3 @@
-drake_find_package(yaml-cpp CONFIG)
 if(yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeYAMLUtil SOURCE_FILES yamlUtil.cpp)
   target_link_libraries(drakeYAMLUtil drakeRBM drakeSide yaml-cpp)

@@ -62,7 +62,6 @@ add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon gflags Threads::Threads)
 
-drake_find_package(spdlog CONFIG)
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)

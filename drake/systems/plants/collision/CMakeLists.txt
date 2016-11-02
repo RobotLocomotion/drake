@@ -1,5 +1,4 @@
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp Model.cpp)
-drake_find_package(Bullet MODULE)
 
 if(Bullet_FOUND)
   set(drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} bullet_model.cc)
