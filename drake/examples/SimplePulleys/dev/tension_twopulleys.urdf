@@ -139,7 +139,7 @@
 
 
 
-  <cable min_length="14" max_length="14"> 
+  <cable min_length="14.1" max_length="14.1"> 
     <terminator link="tensioner_left" xyz="-.51 0 0" />
     <pulley link="base" xyz="-3 1 2.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
     <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="1"/>
