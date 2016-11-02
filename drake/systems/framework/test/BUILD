@@ -1,3 +1,8 @@
+# -*- python -*-
+
+# This file contains rules for the Bazel build system.
+# See http://bazel.io/ .
+
 package(default_visibility = ["//visibility:public"])
 
 cc_test(
@@ -10,6 +15,7 @@ cc_test(
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
+    size = "small",
     linkstatic=1,
     testonly=1)
 
@@ -23,6 +29,7 @@ cc_test(
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
+    size = "small",
     linkstatic=1,
     testonly=1)
 
@@ -31,10 +38,11 @@ cc_test(
     name = "cache_test",
     srcs = ["cache_test.cc"],
     deps = [
-        "//drake/common", 
+        "//drake/common",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",
     ],
+    size = "small",
     linkstatic=1,
     testonly=1)
