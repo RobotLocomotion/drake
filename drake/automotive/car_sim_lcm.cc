@@ -62,6 +62,8 @@ int main() {
   const Vector3<double> Ki(0,     0,   0);
   const Vector3<double> Kd(80,  100, 100);
 
+  // TODO(liang.fok) Automatically initialize `feedback_selector_matrix` based
+  // on the simulation model, actuators, etc.
   MatrixX<double> feedback_selector_matrix;
   feedback_selector_matrix.setZero(plant->get_input_size() * 2,
                                    plant->get_output_size());
