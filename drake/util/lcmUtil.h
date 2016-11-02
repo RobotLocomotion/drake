@@ -4,47 +4,47 @@
 #include <iostream>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
-#include "drake/drakeLCMUtil_export.h"
-#include "lcmtypes/bot_core/position_3d_t.hpp"
-#include "lcmtypes/bot_core/quaternion_t.hpp"
-#include "lcmtypes/bot_core/twist_t.hpp"
-#include "lcmtypes/bot_core/vector_3d_t.hpp"
-#include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/common/drake_export.h"
+#include "bot_core/position_3d_t.hpp"
+#include "bot_core/quaternion_t.hpp"
+#include "bot_core/twist_t.hpp"
+#include "bot_core/vector_3d_t.hpp"
+#include "drake/lcmt_piecewise_polynomial.hpp"
+#include "drake/lcmt_polynomial.hpp"
+#include "drake/lcmt_polynomial_matrix.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 
-DRAKELCMUTIL_EXPORT void EncodeVector3d(
+DRAKE_EXPORT void EncodeVector3d(
     const Eigen::Ref<const Eigen::Vector3d>& vec, bot_core::vector_3d_t& msg);
 
-DRAKELCMUTIL_EXPORT Eigen::Vector3d DecodeVector3d(
+DRAKE_EXPORT Eigen::Vector3d DecodeVector3d(
     const bot_core::vector_3d_t& msg);
 
-DRAKELCMUTIL_EXPORT void EncodeQuaternion(
+DRAKE_EXPORT void EncodeQuaternion(
     const Eigen::Ref<const Eigen::Vector4d>& vec, bot_core::quaternion_t& msg);
 
-DRAKELCMUTIL_EXPORT Eigen::Vector4d DecodeQuaternion(
+DRAKE_EXPORT Eigen::Vector4d DecodeQuaternion(
     const bot_core::quaternion_t& msg);
 
 // Note that bot_core::position_3d_t is badly named.
-DRAKELCMUTIL_EXPORT void EncodePose(const Eigen::Isometry3d& pose,
+DRAKE_EXPORT void EncodePose(const Eigen::Isometry3d& pose,
                                     bot_core::position_3d_t& msg);
 
 // Note that bot_core::position_3d_t is badly named.
-DRAKELCMUTIL_EXPORT Eigen::Isometry3d DecodePose(
+DRAKE_EXPORT Eigen::Isometry3d DecodePose(
     const bot_core::position_3d_t& msg);
 
-DRAKELCMUTIL_EXPORT void EncodeTwist(
+DRAKE_EXPORT void EncodeTwist(
     const Eigen::Ref<const drake::TwistVector<double>>& twist,
     bot_core::twist_t& msg);
 
-DRAKELCMUTIL_EXPORT drake::TwistVector<double> DecodeTwist(
+DRAKE_EXPORT drake::TwistVector<double> DecodeTwist(
     const bot_core::twist_t& msg);
 
-DRAKELCMUTIL_EXPORT void encodePolynomial(const Polynomial<double>& polynomial,
+DRAKE_EXPORT void encodePolynomial(const Polynomial<double>& polynomial,
                                           drake::lcmt_polynomial& msg);
 
-DRAKELCMUTIL_EXPORT Polynomial<double> decodePolynomial(
+DRAKE_EXPORT Polynomial<double> decodePolynomial(
     const drake::lcmt_polynomial& msg);
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
@@ -78,14 +78,14 @@ decodePolynomialMatrix(const drake::lcmt_polynomial_matrix& msg) {
   return ret;
 }
 
-DRAKELCMUTIL_EXPORT void encodePiecewisePolynomial(
+DRAKE_EXPORT void encodePiecewisePolynomial(
     const PiecewisePolynomial<double>& piecewise_polynomial,
     drake::lcmt_piecewise_polynomial& msg);
 
-DRAKELCMUTIL_EXPORT PiecewisePolynomial<double> decodePiecewisePolynomial(
+DRAKE_EXPORT PiecewisePolynomial<double> decodePiecewisePolynomial(
     const drake::lcmt_piecewise_polynomial& msg);
 
-DRAKELCMUTIL_EXPORT void verifySubtypeSizes(
+DRAKE_EXPORT void verifySubtypeSizes(
     drake::lcmt_support_data& support_data);
-DRAKELCMUTIL_EXPORT void verifySubtypeSizes(
+DRAKE_EXPORT void verifySubtypeSizes(
     drake::lcmt_qp_controller_input& qp_input);

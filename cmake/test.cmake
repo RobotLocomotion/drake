@@ -1,3 +1,7 @@
+option(CHECK_DEPENDENCY_STRICT
+  "Fail the test if a MATLAB dependency check fails" OFF)
+mark_as_advanced(CHECK_DEPENDENCY_STRICT)
+
 option(TEST_TIMEOUT_MULTIPLIER
   "Positive integer by which to multiply test timeouts" 1)
 mark_as_advanced(TEST_TIMEOUT_MULTIPLIER)
@@ -65,6 +69,10 @@ endfunction()
 function(drake_add_test)
   cmake_parse_arguments("" "" "NAME;SIZE" "" ${ARGN})
 
+  if(NOT _NAME)
+    message(FATAL_ERROR "The NAME argument to drake_add_test is required")
+  endif()
+
   if(NOT _SIZE)
     set(_SIZE small)
   endif()
@@ -89,7 +97,8 @@ endfunction()
 #
 #   drake_add_cc_test(<name>)
 #
-#   drake_add_cc_test(NAME <name> [CONFIGURATIONS <configuration>...]
+#   drake_add_cc_test(NAME <name> [EXTENSION <extension>]
+#                    [CONFIGURATIONS <configuration>...]
 #                    [SIZE <small | medium | large | enormous>]
 #                    [WORKING_DIRECTORY <directory>] [EXCLUDE_FROM_ALL])
 #
@@ -97,7 +106,9 @@ endfunction()
 #   NAME
 #     Set the name of the executable and the test. The name may not contain
 #     spaces or quotes. The C++ source code for the executable must be
-#     completely contained in a single file named <name>.cc.
+#     completely contained in a single file named <name>.<extension>.
+#   EXTENSION
+#     Set the source code extension; if not given, use "cc" by default.
 #   CONFIGURATIONS
 #     Restrict execution of the test to only the named configurations.
 #   SIZE
@@ -116,20 +127,23 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_add_cc_test)
   # Parse optional keyword arguments.
-  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
+  cmake_parse_arguments("" EXCLUDE_FROM_ALL "NAME;EXTENSION;SIZE;WORKING_DIRECTORY" CONFIGURATIONS ${ARGN})
 
   # Set name from first and only (non-keyword) argument in short signature.
   if(NOT _EXCLUDE_FROM_ALL AND NOT _NAME AND NOT _SIZE AND NOT _WORKING_DIRECTORY AND NOT _CONFIGURATIONS)
     set(_NAME ${ARGV0})
   endif()
 
-  # Add the executable and link with gtest and gtest-main.  
+  if(NOT _EXTENSION)
+    set(_EXTENSION "cc")
+  endif()
+
+  # Add the executable and link with gtest and gtest-main.
   if(_EXCLUDE_FROM_ALL)
     set(_exclude_from_all EXCLUDE_FROM_ALL)
   endif()
-  add_executable(${_NAME} ${_NAME}.cc ${_exclude_from_all})
-  target_include_directories(${_NAME} PRIVATE ${GTEST_INCLUDE_DIRS})
-  target_link_libraries(${_NAME} ${GTEST_BOTH_LIBRARIES})
+  add_executable(${_NAME} ${_NAME}.${_EXTENSION} ${_exclude_from_all})
+  target_link_libraries(${_NAME} GTest::GTest GTest::Main)
 
   # Add the test to the project.
   drake_add_test(
@@ -176,11 +190,15 @@ endfunction()
 #     the working directory set to CMAKE_CURRENT_SOURCE_DIR.
 #------------------------------------------------------------------------------
 function(drake_add_matlab_test)
-  if(NOT MATLAB_FOUND)
+  if(NOT Matlab_FOUND)
     return()
   endif()
 
   cmake_parse_arguments("" "" "COMMAND;NAME;SIZE;WORKING_DIRECTORY" "OPTIONAL;REQUIRES" ${ARGN})
+
+  if(NOT _NAME)
+    message(FATAL_ERROR "The NAME argument to drake_add_matlab_test is required")
+  endif()
 
   if(NOT _SIZE)
     set(_SIZE medium)
@@ -215,8 +233,13 @@ function(drake_add_matlab_test)
   set(_test_precommand
     "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
 
-  set(_exit_status
-    "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
+  if(CHECK_DEPENDENCY_STRICT)
+    set(_exit_status 1)
+  else()
+    set(_exit_status
+      "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
+  endif()
+
   set(_test_command
     "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
 
@@ -224,11 +247,11 @@ function(drake_add_matlab_test)
 
   matlab_add_unit_test(
     NAME ${_NAME}
-    ADDITIONAL_PATH ${_additional_paths}
-    UNITTEST_PRECOMMAND ${_test_precommand}
-    CUSTOM_TEST_COMMAND \"${_test_command}\"
+    ADDITIONAL_PATH "${_additional_paths}"
+    UNITTEST_PRECOMMAND "${_test_precommand}"
+    CUSTOM_TEST_COMMAND "${_test_command}"
     TIMEOUT -1
-    WORKING_DIRECTORY ${_WORKING_DIRECTORY}
+    WORKING_DIRECTORY "${_WORKING_DIRECTORY}"
     ${_test_args})
   set_tests_properties(${_NAME} PROPERTIES
     LABELS ${_size}

@@ -1,12 +1,15 @@
 #pragma once
 
-#include "KinematicsCache.h"
-#include "drake/drakeRBSystem_export.h"
+#include <string>
+#include <vector>
+
+#include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 using drake::systems::plants::joints::FloatingBaseType;
 using drake::systems::plants::joints::kQuaternion;
@@ -142,7 +145,7 @@ class LoopConstraint : public LinearEqualityConstraint {
  *
  * @concept{system_concept}
  */
-class DRAKERBSYSTEM_EXPORT RigidBodySystem {
+class DRAKE_EXPORT RigidBodySystem {
  public:
   template <typename ScalarType>
   using InputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
@@ -380,12 +383,22 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * An accessor to the number of position states outputted by this rigid body
    * system.
    */
+  int get_num_positions() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
   int number_of_positions() const;
 
   /**
    * An accessor to the number of velocity states outputted by this rigid body
    * system.
    */
+  int get_num_velocities() const;
+
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
   int number_of_velocities() const;
 
   /** dynamics
@@ -421,7 +434,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   bool isTimeVarying() const { return false; }
   bool isDirectFeedthrough() const { return direct_feedthrough; }
 
-  friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
+  friend DRAKE_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
 
   /**
@@ -457,8 +470,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
  * @brief interface class for elements which define a generalized force acting
  * on the rigid body system
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
+class DRAKE_EXPORT RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in,
       int model_instance_id) :
           sys(sys_in),
@@ -492,8 +506,9 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
 /** RigidBodyPropellor
  * @brief Models the forces and moments produced by a simple propellor
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
+class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                      const std::string& name, int model_instance_id);
   ~RigidBodyPropellor() override {}
@@ -534,9 +549,10 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 /** RigidBodySpringDamper
  * @brief Models the forces produced by a linear spring-damper
  */
-class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
+class DRAKE_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                         const std::string& name, int model_instance_id);
   ~RigidBodySpringDamper() override {}
@@ -545,7 +561,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
       const double& t,
       /* todo: add force state here */ const Eigen::VectorXd& u,
       const KinematicsCache<double>& rigid_body_state) const override {
-    using namespace Eigen;
+    using namespace Eigen;  // NOLINT(build/namespaces)
     const Vector3d origin = Vector3d::Zero();
     Vector3d xA_in_B = sys.getRigidBodyTree()->transformPoints(
         rigid_body_state, origin, frameA->get_frame_index(),
@@ -631,7 +647,7 @@ class AdditiveGaussianNoiseModel
  *
  * This is an abstract top-level class of all rigid body sensors in Drake.
  */
-class DRAKERBSYSTEM_EXPORT RigidBodySensor {
+class DRAKE_EXPORT RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -684,7 +700,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  * @brief Uses raycast to simulate a depth image at some evenly spaced pixel
  * rows and columns.
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
+class DRAKE_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
  public:
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
                        const std::shared_ptr<RigidBodyFrame> frame,
@@ -803,7 +819,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 /** RigidBodyAccelerometer
  * @brief Simulates a sensor that measures linear acceleration
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
+class DRAKE_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
  public:
   RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name,
                          const std::shared_ptr<RigidBodyFrame> frame);
@@ -831,7 +847,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
 /** RigidBodyGyroscope
  * @brief Simulates a sensor that measures angular rates
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
+class DRAKE_EXPORT RigidBodyGyroscope : public RigidBodySensor {
  public:
   RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name,
                      const std::shared_ptr<RigidBodyFrame> frame);
@@ -854,7 +870,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
 /** RigidBodyMagnetometer
  * @brief Simulates a sensor that measures magnetic fields
  */
-class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
+class DRAKE_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

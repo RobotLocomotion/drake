@@ -1,8 +1,15 @@
+#include <set>
+
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/IKoptions.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::MatrixXd;
+using Eigen::RowVectorXd;
+using Eigen::SelfAdjointEigenSolver;
+using Eigen::VectorXd;
+using std::cerr;
+using std::endl;
+using std::set;
 
 IKoptions::IKoptions(RigidBodyTree *robot) {
   // It is important to make sure these default values are consistent with the
@@ -36,7 +43,7 @@ IKoptions::~IKoptions() {}
 
 void IKoptions::setDefaultParams(RigidBodyTree *robot) {
   robot_ = robot;
-  nq_ = robot->number_of_positions();
+  nq_ = robot->get_num_positions();
   Q_ = MatrixXd::Identity(nq_, nq_);
   Qa_ = 0.1 * MatrixXd::Identity(nq_, nq_);
   Qv_ = MatrixXd::Zero(nq_, nq_);
@@ -259,7 +266,7 @@ void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const {
 void IKoptions::updateRobot(RigidBodyTree *new_robot) {
   robot_ = new_robot;
   int nq_cache = nq_;
-  nq_ = robot_->number_of_positions();
+  nq_ = robot_->get_num_positions();
   if (nq_cache != nq_) {
     setDefaultParams(new_robot);
   }

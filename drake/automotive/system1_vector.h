@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/systems/framework/vector_base.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 namespace drake {
 namespace automotive {

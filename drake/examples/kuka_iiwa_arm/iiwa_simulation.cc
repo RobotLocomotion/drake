@@ -1,4 +1,6 @@
-#include "iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+
+#include <vector>
 
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -40,7 +42,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 
@@ -62,7 +64,7 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
   return visualizer;
 }
 
-DRAKEKUKAIIWAARM_EXPORT
+DRAKE_EXPORT
 Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   const int kStateDimension = 14;  // Fixed for the IIWA Arm.
   const int kNumDof = 7;  // Fixed for the IIWA Arm.
@@ -89,8 +91,8 @@ void CheckLimitViolations(
     const std::shared_ptr<drake::RigidBodySystem> rigid_body_sys,
     const Eigen::VectorXd& final_robot_state) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  int num_positions = rigid_body_sys->get_num_positions();
+  int num_velocities = rigid_body_sys->get_num_velocities();
 
   // Ensures the size of the output is correct.
   if (final_robot_state.size() !=
@@ -138,21 +140,21 @@ void CheckLimitViolations(
     // constraints, we may be able to remove the need for this tolerance value.
     const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
 
-    for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
+    for (int i = 0; i < joint.get_num_positions(); ++i) {
       double position = final_robot_state[robot_state_index++];
-      if (position < min_limit[ii] - kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+      if (position < min_limit[i] - kJointLimitTolerance) {
+        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+                                 joint.get_position_name(i) +
                                  ") violated minimum position limit (" +
                                  std::to_string(position) + " < " +
-                                 std::to_string(min_limit[ii]) + ").");
+                                 std::to_string(min_limit[i]) + ").");
       }
-      if (position > max_limit[ii] + kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+      if (position > max_limit[i] + kJointLimitTolerance) {
+        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+                                 joint.get_position_name(i) +
                                  ") violated maximum position limit (" +
                                  std::to_string(position) + " > " +
-                                 std::to_string(max_limit[ii]) + ").");
+                                 std::to_string(max_limit[i]) + ").");
       }
     }
   }

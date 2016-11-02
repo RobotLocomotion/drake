@@ -1,11 +1,14 @@
 #pragma once
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/eigen_types.h"
-#include "FixedAxisOneDoFJoint.h"
+#include <string>
+
 #include <Eigen/Geometry>
 
-class DRAKEJOINTS_EXPORT RevoluteJoint
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
+
+class DRAKE_EXPORT RevoluteJoint
     : public FixedAxisOneDoFJoint<RevoluteJoint> {
   // disable copy construction and assignment
   // RevoluteJoint(const RevoluteJoint&) = delete;

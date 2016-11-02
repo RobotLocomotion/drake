@@ -357,7 +357,7 @@ vector<int> findPositionIndices(const RigidBodyTree& robot,
   position_indices.reserve(joint_names.size());
   for (const auto& joint_name : joint_names) {
     const RigidBody& body = *robot.FindChildBodyOfJoint(joint_name);
-    for (int i = 0; i < body.getJoint().getNumPositions(); i++) {
+    for (int i = 0; i < body.getJoint().get_num_positions(); ++i) {
       position_indices.push_back(body.get_position_start_index() + i);
     }
   }
@@ -413,7 +413,7 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
   ret.drake.resize(tree.actuators.size());
   transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
             [](const RigidBodyActuator& actuator) {
-              return actuator.body_->getJoint().getName();
+              return actuator.body_->getJoint().get_name();
             });
   // Node hardware_data = LoadFile(hardware_data_file_name);
   ret.robot = joint_names.as<vector<string>>();

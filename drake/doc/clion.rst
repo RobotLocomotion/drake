@@ -40,7 +40,8 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
 6. Browse to ``Build, Execution, Deployment > CMake``.
 7. Under ``CMake Options``, fill in
    ``-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install``.
-8. Under ``CMake Options`` expand the tab ``Pass system and custom
+8. [This step only for Ubuntu 14.04 - Trusty]. Under ``CMake Options`` 
+   expand the tab ``Pass system 
    environment``. Add the following environment variables.  (You can copy these
    from this documentation one at a time and click on the ``paste`` button at
    the right of the environment variables dialog.)
@@ -48,7 +49,6 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
    * ``CC=gcc-4.9``
    * ``CXX=g++-4.9``
    * ``FC=gfortran-4.9``
-   * ``F77=gfortran-4.9``      
 
 9. Click OK. CLion will take about a minute to reload the CMake Project. If
    everything is in order, there should be no errors or warnings. For fun,
@@ -78,14 +78,18 @@ Code formatter settings
 =======================
 
 1. Make sure you have installed ``clang-format`` (see :doc:`code_style_tools`)
-2. Go to File > Preferences > Tools > External Tools
+2. Go to File > Settings > Tools > External Tools
 3. Add an entry for clang-format with
 
    * Program: ``clang-format``
-   * Parameters: ``-i $FilePath$``
-   * Working directory : ``$ProjectFileDir$/..``
+   * Parameters (whole file): ``-i $FileName$``
+   * Parameters (current selection only): 
+     ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
+   * Working directory : ``$FileDir$``
 
-Now you can run this (manually) on any file using Tools > External Tools in the drop down menu.
+Choose one or the other of the parameter settings. Now you can run this
+(manually) on any file using Tools > External Tools in the drop down menu. You
+can also add a keyboard shortcut.
 
 You can also set the coding style through the following steps
 

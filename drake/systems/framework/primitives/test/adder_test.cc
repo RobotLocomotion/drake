@@ -19,11 +19,11 @@ namespace {
 class AdderTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder_.reset(new Adder<double>(2 /* inputs */, 3 /* length */));
+    adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
     output_ = adder_->AllocateOutput(*context_);
-    input0_.reset(new BasicVector<double>(3 /* length */));
-    input1_.reset(new BasicVector<double>(3 /* length */));
+    input0_.reset(new BasicVector<double>(3 /* size */));
+    input1_.reset(new BasicVector<double>(3 /* size */));
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(
@@ -78,7 +78,7 @@ TEST_F(AdderTest, AddTwoVectors) {
 
 // Tests that Adder allocates no state variables in the context_.
 TEST_F(AdderTest, AdderIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 // Asserts that adders are systems with direct feedthrough inputs.

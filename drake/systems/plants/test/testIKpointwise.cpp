@@ -1,4 +1,7 @@
 #include <cstdlib>
+#include <limits>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -24,7 +27,7 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   tspan << 0, 1;
   int nT = 3;
   double t[3] = {0.0, 0.5, 1.0};
-  MatrixXd q0(model.number_of_positions(), nT);
+  MatrixXd q0(model.get_num_positions(), nT);
   for (int i = 0; i < nT; i++) {
     q0.col(i) = model.getZeroConfiguration();
     q0(3, i) = 0.8;
@@ -46,7 +49,7 @@ GTEST_TEST(testIKpointwise, simpleIKpointwise) {
   constraint_array[0] = &com_kc;
   constraint_array[1] = &com_kc_final;
   IKoptions ikoptions(&model);
-  MatrixXd q_sol(model.number_of_positions(), nT);
+  MatrixXd q_sol(model.get_num_positions(), nT);
   int* info = new int[nT];
   std::vector<std::string> infeasible_constraint;
   inverseKinPointwise(&model, nT, t, q0, q0, num_constraints, constraint_array,

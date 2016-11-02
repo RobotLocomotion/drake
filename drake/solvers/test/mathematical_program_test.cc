@@ -77,6 +77,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void CheckSolverType(MathematicalProgram& prog,
                      std::string desired_solver_name) {
   std::string solver_name;
@@ -85,6 +86,7 @@ void CheckSolverType(MathematicalProgram& prog,
   EXPECT_EQ(solver_name, desired_solver_name);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
@@ -107,6 +109,30 @@ void RunNonlinearProgram(MathematicalProgram& prog,
                                                       << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
+}
+
+GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
+  // A simple test program to test if the bounding box constraints are added
+  // correctly.
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(4);
+
+  // Deliberately add two constraints on overlapped decision variables.
+  // For x(1), the lower bound of the second constraint are used; while
+  // the upper bound of the first variable is used.
+  prog.AddBoundingBoxConstraint(Vector2d(-1, -2), Vector2d(-0.2, -1),
+                                {x(1), x(3)});
+  prog.AddBoundingBoxConstraint(Vector3d(-1, -0.5, -3), Vector3d(2, 1, -0.1),
+                                {x(0), x(1), x(2)});
+
+  Vector4d lb(-1, -0.5, -3, -2);
+  Vector4d ub(2, -0.2, -0.1, -1);
+  RunNonlinearProgram(prog, [&]() {
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_GE(x.value().coeff(i), lb(i) - 1E-10);
+      EXPECT_LE(x.value().coeff(i), ub(i) + 1E-10);
+    }
+  });
 }
 
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
@@ -173,12 +199,37 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   auto vars = prog.AddContinuousVariables(2);
 
   // Use a non-square matrix to catch row/column mistakes in the solvers.
-  prog.AddLinearEqualityConstraint(Vector2d(0, 1).transpose(),
+  prog.AddLinearEqualityConstraint(Eigen::RowVector2d(0, 1),
                                    Vector1d::Constant(1));
   prog.SetInitialGuess(vars, Vector2d(2, 2));
   RunNonlinearProgram(prog, [&]() {
     EXPECT_DOUBLE_EQ(vars.value()(0), 2);
     EXPECT_DOUBLE_EQ(vars.value()(1), 1);
+  });
+}
+// Tests a quadratic optimization problem, with only quadratic cost
+// 0.5 *x'*Q*x + b'*x
+// The optimal solution is -inverse(Q)*b
+GTEST_TEST(testMathematicalProgram, QuadraticCost) {
+  MathematicalProgram prog;
+  auto x = prog.AddContinuousVariables(4);
+
+  Vector4d Qdiag(1.0, 2.0, 3.0, 4.0);
+  Matrix4d Q = Qdiag.asDiagonal();
+  Q(1, 2) = 0.1;
+  Q(2, 3) = -0.02;
+
+  Vector4d b(1.0, -0.5, 1.3, 2.5);
+  prog.AddQuadraticCost(Q, b);
+
+  Matrix4d Q_transpose = Q;
+  Q_transpose.transposeInPlace();
+  Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
+  Vector4d expected = -Q_symmetric.ldlt().solve(b);
+  prog.SetInitialGuess({x}, Vector4d::Zero());
+  RunNonlinearProgram(prog, [&]() {
+    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                MatrixCompareType::absolute));
   });
 }
 
@@ -190,6 +241,7 @@ class TestProblem1Cost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -241,8 +293,7 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   constraint << 20, 12, 11, 7, 4;
   prog.AddLinearConstraint(
       constraint.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(40));
+      -std::numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -266,6 +317,7 @@ class TestProblem2Cost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -325,13 +377,11 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   constraint1 << 6, 3, 3, 2, 1, 0;
   prog.AddLinearConstraint(
       constraint1.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(6.5));
+      -std::numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
   prog.AddLinearConstraint(
       constraint2.transpose(),
-      drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      drake::Vector1d::Constant(20));
+      -std::numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -361,6 +411,7 @@ class LowerBoundTestCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -392,6 +443,7 @@ class LowerBoundTestConstraint : public Constraint {
   template <typename ScalarType>
   void EvalImpl(
       const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
@@ -461,6 +513,7 @@ class SixHumpCamelCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -492,6 +545,7 @@ class GloptipolyConstrainedExampleCost {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
@@ -521,6 +575,7 @@ class GloptipolyConstrainedExampleConstraint
  private:
   template <typename ScalarType>
   void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
+                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Matrix<ScalarType, Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
@@ -675,8 +730,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   MathematicalProgram problem;
   static const double kEpsilon = 1e-7;
   const auto x_var = problem.AddContinuousVariables(1);
-  const std::vector<Polynomiald::VarType> var_mapping = {
-    x.GetSimpleVariable()};
+  const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable()};
   std::shared_ptr<Constraint> resulting_constraint =
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
@@ -685,9 +739,8 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);
   // Check that it gives the correct answer as well.
-  RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
-    });
+  RunNonlinearProgram(problem,
+                      [&]() { EXPECT_NEAR(x_var.value()[0], 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -711,7 +764,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable()};
+        x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
@@ -729,7 +782,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable()};
+        x.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
@@ -747,7 +800,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     MathematicalProgram problem;
     const auto xy_var = problem.AddContinuousVariables(2);
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable(), y.GetSimpleVariable()};
+        x.GetSimpleVariable(), y.GetSimpleVariable()};
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
@@ -771,7 +824,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const auto x_var = problem.AddContinuousVariables(1);
     problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable()};
+        x.GetSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
     polynomials_vec << poly, x;
     problem.AddPolynomialConstraint(polynomials_vec, var_mapping,
@@ -784,7 +837,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
-/**
+/*
  * Test how an unconstrained QP is dispatched and solved:
  *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
  *     at (x1=1, x2=1).
@@ -800,8 +853,10 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
+  // clang-format off
   Q << 1.0, 0.0,
        0.0, 1.0;
+  // clang-format on
   VectorXd c(2);
   c << -1.0, -1.0;
 
@@ -811,19 +866,15 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  EXPECT_TRUE(CompareMatrices(
-                expected_answer,
-                x.value(),
-                1e-10,
-                MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
+                              MatrixCompareType::absolute));
   // There are no inequality constraints, and only quadratic costs,
   // so this should hold:
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // Add one more variable and constrain a view into them.
   auto y = prog.AddContinuousVariables(1);
-  Q << 2.0, 0.0,
-       0.0, 2.0;
+  Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
   VariableList vars;
   vars.push_back(x.segment(1, 1));
@@ -835,9 +886,8 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   expected_answer << 1.0, 2.0, 1.0;
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer,
-                    1e-10, MatrixCompareType::absolute))
+  EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
+                              MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 
@@ -845,7 +895,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/**
+/*
  * Test how an equality-constrained QP is dispatched
  *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
  *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
@@ -855,11 +905,10 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
  *     (x1=0.5, x2=0.5, x3=1.0)
  */
 GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
-MathematicalProgram prog;
+  MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
   MatrixXd Q(2, 2);
-  Q << 1, 0.0,
-       0.0, 1.0;
+  Q << 1, 0.0, 0.0, 1.0;
   VectorXd c(2);
   c << -1.0, -1.0;
 
@@ -868,17 +917,14 @@ MathematicalProgram prog;
   VectorXd constraint1(2);
   // x1 + x2 = 1
   constraint1 << 1, 1;
-  prog.AddLinearEqualityConstraint(
-      constraint1.transpose(),
-      drake::Vector1d::Constant(1.0));
+  prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
 
   prog.Solve();
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, x.value(), 1e-10,
-                    MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
+                              MatrixCompareType::absolute));
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
@@ -893,19 +939,139 @@ MathematicalProgram prog;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
-  prog.AddLinearEqualityConstraint(
-      constraint2.transpose(),
-      drake::Vector1d::Constant(0.0), vars);
+  prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
-  EXPECT_TRUE(
-    CompareMatrices(expected_answer, actual_answer,
-                    1e-10, MatrixCompareType::absolute))
+  EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
+                              MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
+}
+
+/*
+ * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
+ * nonlinear optimization problem.
+ * The objective is to find the smallest distance from a hyperplane
+ * A * x = b to the origin.
+ * We can solve the following SOCP with Lorentz cone constraint
+ * min  t
+ *  s.t t >= sqrt(x'*x)
+ *      A * x = b.
+ * Alternatively, we can solve the following SOCP with rotated Lorentz cone
+ * constraint
+ * min t
+ * s.t t >= x'*x
+ *     A * x = b.
+ *
+ * The optimal solution of this equality constrained QP can be found using
+ * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
+ * satisfy
+ * A_hat * [x*; z*] = [b; 0]
+ * where A_hat = [A 0; 2*I A'].
+ */
+void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
+  DRAKE_ASSERT(A.rows() == b.rows());
+  const int xDim = A.cols();
+  MathematicalProgram prog_lorentz;
+  auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
+  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
+  prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
+  prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
+  prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
+
+  // A_hat = [A 0; 2*I A']
+  MatrixXd A_hat(A.rows() + A.cols(), A.rows() + A.cols());
+  A_hat.topLeftCorner(A.rows(), A.cols()) = A;
+  A_hat.topRightCorner(A.rows(), A.rows()) = MatrixXd::Zero(A.rows(), A.rows());
+  A_hat.bottomLeftCorner(A.cols(), A.cols()) =
+      2 * MatrixXd::Identity(A.cols(), A.cols());
+  A_hat.bottomRightCorner(A.cols(), A.rows()) = A.transpose();
+  VectorXd b_hat(A.rows() + A.cols());
+  b_hat << b, VectorXd::Zero(A.cols());
+  VectorXd xz_expected = A_hat.colPivHouseholderQr().solve(b_hat);
+  VectorXd x_expected = xz_expected.head(xDim);
+
+  double cost_expected_lorentz = x_expected.norm();
+  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
+  // IPOPT seems OK with starting point not so close to optimal solution.
+  prog_lorentz.SetInitialGuess({t_lorentz},
+                               drake::Vector1d(cost_expected_lorentz + 0.1));
+  VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
+  prog_lorentz.SetInitialGuess({x_lorentz}, x_lorentz_guess);
+  RunNonlinearProgram(prog_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
+                                MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+  });
+
+  MathematicalProgram prog_rotated_lorentz;
+  auto t_rotated_lorentz = prog_rotated_lorentz.AddContinuousVariables(1, "t");
+  auto x_rotated_lorentz =
+      prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
+  auto slack_rotated_lorentz =
+      prog_rotated_lorentz.AddContinuousVariables(1, "slack");
+  prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
+      {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
+  prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
+  prog_rotated_lorentz.AddBoundingBoxConstraint(
+      1.0, 1.0, slack_rotated_lorentz);
+  prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
+
+  double cost_expected_rotated_lorentz = x_expected.squaredNorm();
+  // NLopt needs a really good starting point to solve SOCP, while SNOPT and
+  // IPOPT seems OK with starting point not so close to optimal solution.
+  prog_rotated_lorentz.SetInitialGuess(
+      {t_rotated_lorentz},
+      drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
+  prog_rotated_lorentz.SetInitialGuess({slack_rotated_lorentz},
+                                       drake::Vector1d(1.0));
+  VectorXd x_rotated_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
+  prog_rotated_lorentz.SetInitialGuess({x_rotated_lorentz},
+                                       x_rotated_lorentz_guess);
+  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
+                                MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_rotated_lorentz,
+                t_rotated_lorentz.value().coeff(0), 1E-3);
+  });
+
+  // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
+  // The optimal solution and the costs are still the same, but now we test
+  // Lorentz cone (rotated Lorentz cone) constraints with generic nonlinear
+  // constraints.
+  std::shared_ptr<QuadraticConstraint> quadratic_constraint(
+      new QuadraticConstraint(MatrixXd::Identity(xDim, xDim),
+                              VectorXd::Zero(xDim), 0,
+                              x_expected.squaredNorm()));
+
+  prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
+  RunNonlinearProgram(prog_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
+                                MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
+  });
+
+  prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
+  RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
+                                MatrixCompareType::absolute));
+    EXPECT_NEAR(cost_expected_rotated_lorentz,
+                t_rotated_lorentz.value().coeff(0), 1E-3);
+  });
+}
+
+GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
+  MatrixXd A = Matrix<double, 1, 2>::Ones();
+  VectorXd b = drake::Vector1d(2);
+  MinDistanceFromPlaneToOrigin(A, b);
+
+  A = Matrix<double, 2, 3>::Zero();
+  A << 0, 1, 2, -1, 2, 3;
+  b = Vector2d(1.0, 3.0);
+  MinDistanceFromPlaneToOrigin(A, b);
 }
 }  // namespace
 }  // namespace solvers

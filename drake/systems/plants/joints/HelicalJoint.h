@@ -1,10 +1,11 @@
 #pragma once
 
-#include "FixedAxisOneDoFJoint.h"
+#include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
-class DRAKEJOINTS_EXPORT HelicalJoint
+class DRAKE_EXPORT HelicalJoint
     : public FixedAxisOneDoFJoint<HelicalJoint> {
   // disable copy construction and assignment
   // HelicalJoint(const HelicalJoint&) = delete;

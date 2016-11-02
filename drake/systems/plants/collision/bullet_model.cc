@@ -32,6 +32,7 @@ struct BinaryContactResultCallback
 
   bool isInCollision() { return in_collision; }
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual btScalar addSingleResult(btManifoldPoint& cp,
                                    const btCollisionObjectWrapper* colObj0Wrap,
                                    int partId0, int index0,
@@ -64,7 +65,7 @@ bool OverlapFilterCallback::needBroadphaseCollision(
           static_cast<Element*>(bt_collision_object0->getUserPointer());
       auto element1 =
           static_cast<Element*>(bt_collision_object1->getUserPointer());
-      collides = collides && element0->CollidesWith(element1);
+      collides = collides && element0->CanCollideWith(element1);
     }
   }
   return collides;
@@ -808,12 +809,12 @@ bool BulletModel::closestPointsAllToAll(
   std::vector<ElementIdPair> id_pairs;
   for (size_t i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
-    const Element* element_a = readElement(id_a);
+    const Element* element_a = FindElement(id_a);
     if (element_a != nullptr) {
       for (size_t j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
-        const Element* element_b = readElement(id_b);
-        if (element_b != nullptr && element_a->CollidesWith(element_b)) {
+        const Element* element_b = FindElement(id_b);
+        if (element_b != nullptr && element_a->CanCollideWith(element_b)) {
           id_pairs.push_back(std::make_pair(id_a, id_b));
         }
       }

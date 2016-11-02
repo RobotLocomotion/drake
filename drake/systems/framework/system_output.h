@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
@@ -18,7 +18,7 @@ namespace systems {
 /// may depend on the OutputPort. When an OutputPort is deleted, it will
 /// automatically notify the listeners that depend on it to disconnect,
 /// meaning those ports will resolve to nullptr.
-class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
+class DRAKE_EXPORT OutputPort {
  public:
   /// Constructs a vector-valued OutputPort.
   /// Takes ownership of @p vec.
@@ -27,8 +27,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT OutputPort {
   /// @tparam V The type of @p vec itself. Must implement BasicVector<T>.
   template <template <typename T> class V, typename T>
   explicit OutputPort(std::unique_ptr<V<T>> vec)
-      : data_(new VectorValue<T>(std::move(vec))) {
-  }
+      : data_(new VectorValue<T>(std::move(vec))) {}
 
   /// Constructs an abstract-valued OutputPort.
   /// Takes ownership of @p data.

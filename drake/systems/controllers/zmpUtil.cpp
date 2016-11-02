@@ -1,11 +1,19 @@
 #include "drake/systems/controllers/zmpUtil.h"
+
+#include <vector>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 
 #include "drake/common/drake_assert.h"
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Index;
+using Eigen::Matrix2d;
+using Eigen::Matrix4d;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::VectorXd;
+using std::vector;
 
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     const TVLQRData& sys, const PiecewisePolynomial<double>& zmp_trajectory,

@@ -5,6 +5,7 @@ cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
 drake_setup_platform()
@@ -30,17 +31,14 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# prepend module path so we can override FindMatlab.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3)
+  find_package(PythonInterp 3 MODULE REQUIRED)
 else()
-  find_package(PythonInterp)
+  find_package(PythonInterp MODULE REQUIRED)
 endif()
 
 # set up pods
-set(POD_NAME drake)
 include(../cmake/pods.cmake)
 
 function(drake_install_headers)
@@ -48,10 +46,8 @@ function(drake_install_headers)
   install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
 endfunction()
 
-# set up automatic export header generation
-# export headers will be installed to build/include/drake, but are created in ${PROJECT_BINARY_DIR}/exports/drake
-# This means that export headers can be included as drake/bla_export.h
-include(GenerateExportHeader)
+# A compatibility shim function that declares a library, with a built-in
+# default of SHARED.
 function(add_library_with_exports)
   set(options STATIC)
   set(oneValueArgs LIB_NAME)
@@ -60,30 +56,14 @@ function(add_library_with_exports)
 
   if(parsed_args_STATIC)
     add_library(${parsed_args_LIB_NAME} STATIC ${parsed_args_SOURCE_FILES})
-    # Add a public preprocessor macro definition for LIB_NAME_STATIC_DEFINE,
-    # which suppresses platform-specific shared library export declarations
-    # in this target and all targets that depend on it.
-    string(TOUPPER ${parsed_args_LIB_NAME} capitalized_lib_name)
-    set(static_define ${capitalized_lib_name}_STATIC_DEFINE)
-    target_compile_definitions(${parsed_args_LIB_NAME} PUBLIC ${static_define})
   else()
     add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
   endif()
-
-  set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
-  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_abs_path})
-  install(FILES ${exports_abs_path} DESTINATION include/drake/)
 endfunction()
-include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
+
+# This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(NOT APPLE)
-  # The linker on OS X likes to hide the typeinfo for template classes unless
-  # they are explicitly instantiated and exported, which causes dynamic_cast to
-  # fail across library boundaries.
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
   if(APPLE)
@@ -99,6 +79,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+  else()
+    # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
+    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
   endif()
   set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
   set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
@@ -134,57 +119,42 @@ endif()
 
 # set up matlab build
 include(../cmake/mex.cmake)
-if(MATLAB_EXECUTABLE) # Set by drake_setup_platform
-  if(DISABLE_MATLAB)
-    message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
-  else()
-    # Search for MATLAB and configure various MEX options.
-    # If MATLAB is found, MATLAB_FOUND is set.
-    mex_setup()
-
-    # Use find_package to find "all of matlab" along with what is needed to use
-    # matlab_add_unit_test
-    find_package(Matlab COMPONENTS MAIN_PROGRAM REQUIRED)
-  endif()
+if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
+  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+  unset(MATLAB_EXECUTABLE CACHE)
+  unset(Matlab_FOUND)
 endif()
 
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+drake_find_package(GTest REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
-if(WIN32)
-  # The following compiler flag is needed to support parameterized Google tests on Windows.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1")
-endif()
 
-find_package(gflags REQUIRED)
+drake_find_package(gflags CONFIG REQUIRED)
 
-set(drake_jar_javafiles util/Transform.java)
+set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
 
 include(../cmake/procman.cmake)  # helper script for writing procman files
 
-# set up pseudo-target for threads
-find_package(Threads)
-add_library(threads INTERFACE)
-target_link_libraries(threads INTERFACE ${CMAKE_THREAD_LIBS_INIT})
+find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
-find_package(lcm)
+drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
+  drake_find_package(bot2-core CONFIG)
+  drake_find_package(robotlocomotion-lcmtypes CONFIG)
+
   add_subdirectory(lcmtypes)
-  include_directories(${drake_BINARY_DIR} ${drake_BINARY_DIR}/lcmtypes)
-  include_directories(${CMAKE_INSTALL_PREFIX}/include/lcmtypes) #TODO(#3351)
 
   list(APPEND drake_jar_javafiles
-    util/MyLCMTypeDatabase.java
-    util/MessageMonitor.java
-    util/CoordinateFrameData.java
-    util/LCMCoder.java)
+    matlab/util/MyLCMTypeDatabase.java
+    matlab/util/MessageMonitor.java
+    matlab/util/CoordinateFrameData.java
+    matlab/util/LCMCoder.java)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
   # add lcmgl
@@ -209,7 +179,7 @@ if(lcm_FOUND)
       message(STATUS "Found bot2-lcmgl")
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles util/BotLCMGLClient.java)
+    list(APPEND drake_jar_javafiles matlab/util/BotLCMGLClient.java)
   endif()
 endif()
 
@@ -220,31 +190,24 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-find_package(Eigen3 REQUIRED)
+drake_find_package(Eigen3 CONFIG REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
-
-pods_find_pkg_config(spdlog)
-if(spdlog_FOUND)
-  pods_use_pkg_config_includes(spdlog)
-  add_definitions(-DHAVE_SPDLOG)
-endif()
 
 include_directories(thirdParty/bsd/spruce/include)
 
+add_subdirectory(thirdParty/bsd/spruce)
+add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
+add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(util)
 add_subdirectory(solvers)
-if(MATLAB_FOUND)
-  add_subdirectory(matlab)
-endif()
+add_subdirectory(system1)
 add_subdirectory(systems)
-add_subdirectory(thirdParty/bsd/GetFullPath)
-add_subdirectory(thirdParty/bsd/spruce)
-add_subdirectory(thirdParty/zlib/tinyxml2)
-if(NOT WIN32)
-  # This subdirectory does not support windows.
-  add_subdirectory(automotive)
+add_subdirectory(automotive)
+if(Matlab_FOUND)
+  add_subdirectory(thirdParty/bsd/GetFullPath)
+  add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
@@ -282,9 +245,9 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/get_drake_install_dir.m
   "end\n"
   "\n")
 
-find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin)
-find_program(ffmpeg ffmpeg)
+find_program(AVL_EXECUTABLE avl PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(XFOIL_EXECUTABLE xfoil PATHS "${CMAKE_INSTALL_PREFIX}/bin")
+find_program(FFMPEG_EXECUTABLE ffmpeg)
 
 if(APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
@@ -296,7 +259,7 @@ else()
   mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   drake_add_matlab_test(NAME "RigidBodyManipulatorMemoryTest" OPTIONAL bullet
     COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot SIZE large)

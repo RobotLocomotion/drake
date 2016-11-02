@@ -12,7 +12,14 @@ else()
   set(hasDisplay FALSE)
 endif()
 
-if(WITH_DIRECTOR)
+# TODO(patmarion)
+# The visualization test is currently disabled due to a recent change in
+# dependencies.  Now director depends on drake, so the drake-visualizer
+# program is compiled after drake.  The ctest scripts running continuous
+# integration will be updated to run director tests which will cover the
+# visualizer.  Afterward, drake developers will decide whether we remove
+# this test here or add new support for running tests after superbuild.
+if(FALSE AND WITH_DIRECTOR)
   # A test that starts up drake-visualizer.
   set(visualizerStartupTestCommand
       ${CMAKE_INSTALL_PREFIX}/bin/directorPython
@@ -27,8 +34,4 @@ if(WITH_DIRECTOR)
              ${visualizerStartupTestCommand}
              SIZE medium)
   endif()
-endif()
-
-if(MATLAB_FOUND)
-  drake_add_matlab_test(NAME addpath_spotless_test COMMAND "addpath_spotless;")
 endif()

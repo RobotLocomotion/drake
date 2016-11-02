@@ -11,7 +11,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -19,12 +19,12 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-PassThrough<T>::PassThrough(int length) {
-  // TODO(amcastro-tri): remove the length parameter from the constructor once
-  // #3109 supporting automatic lengths is resolved.
-  this->DeclareInputPort(kVectorValued, length, kInheritedSampling);
+PassThrough<T>::PassThrough(int size) {
+  // TODO(amcastro-tri): remove the size parameter from the constructor once
+  // #3109 supporting automatic sizes is resolved.
+  this->DeclareInputPort(kVectorValued, size, kInheritedSampling);
   // TODO(david-german-tri): Provide a way to infer the type.
-  this->DeclareOutputPort(kVectorValued, length, kInheritedSampling);
+  this->DeclareOutputPort(kVectorValued, size, kInheritedSampling);
 }
 
 template <typename T>
@@ -36,7 +36,7 @@ void PassThrough<T>::EvalOutput(const Context<T>& context,
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
   System<T>::GetMutableOutputVector(output, 0) =
-      System<T>::get_input_vector(context, 0);
+      System<T>::EvalEigenVectorInput(context, 0);
 }
 
 }  // namespace systems

@@ -18,25 +18,3 @@ if(lcm_FOUND)
     REQUIRES lcm
     VERSION 0.0.1)
 endif()
-
-if(MATLAB_FOUND)
-  add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
-
-  pods_find_pkg_config(octomap 1.6.3)
-
-  if(octomap_FOUND)
-    add_mex(octomapWrapper octomapWrapper.cpp)
-    target_link_libraries(octomapWrapper drakeUtil drakeMexUtil)  # note: drakeUtil depends on eigen
-    pods_use_pkg_config_packages(octomapWrapper octomap)
-  endif()
-
-  if(lcm_FOUND AND NOT WIN32)
-    add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
-    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil drakeZMPUtil drakeMexUtil)
-
-    add_subdirectory(@QPLocomotionPlanCPPWrapper)
-  endif()
-endif()
-
-add_subdirectory(calibration/test)
-add_subdirectory(test)

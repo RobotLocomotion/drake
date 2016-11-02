@@ -1,150 +1,194 @@
-#include <iostream>
+#include <gflags/gflags.h>
 
-#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/robot_state_tap.h"
-#include "drake/common/polynomial.h"
-#include "drake/util/drakeAppUtil.h"
+#include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
-using drake::RigidBodySystem;
-using drake::BotVisualizer;
-using drake::cascade;
-using drake::RobotStateTap;
-using Eigen::VectorXd;
+using std::make_unique;
+using std::move;
+using std::unique_ptr;
 
 namespace drake {
+
+using parsers::ModelInstanceIdTable;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
+
+using lcm::DrakeLcm;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
+using systems::Simulator;
+using systems::VectorBase;
+using systems::plants::joints::kFixed;
+
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-int DoMain(int argc, char* argv[]) {
-  // Initializes LCM.
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
+DEFINE_double(duration, 5, "Total duration of the simulation in seconds.");
 
-  std::shared_ptr<RigidBodySystem> rigid_body_sys = CreateKukaIiwaSystem();
-  // Obtains a reference to the rigid body tree within the rigid body system.
-  const auto& tree = rigid_body_sys->getRigidBodyTree();
+// A demo of an uncontrolled KUKA iiwa arm.
+template<typename T>
+class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
+ public:
+  KukaIiwaArmDynamicsSim() {
+    this->set_name("KukaIiwaArmDynamicsSim");
 
-  // Instantiates additional systems and cascades them with the rigid body
-  // system.
-  auto visualizer =
-      std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+    // Instantiates an Multibody Dynamics (MBD) model of the world.
+    auto tree = make_unique<RigidBodyTree>();
+    ModelInstanceIdTable vehicle_instance_id_table =
+        drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+            drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+            kFixed, nullptr /* weld to frame */, tree.get());
 
-  auto robot_state_tap =
-      std::make_shared<RobotStateTap<RigidBodySystem::StateVector>>();
+    AddGround(tree.get());
 
-  auto sys = cascade(cascade(rigid_body_sys, visualizer), robot_state_tap);
+    DiagramBuilder<T> builder;
 
-  // Obtains an initial state of the simulation.
-  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+    // Instantiates a RigidBodyPlant from the MBD model of the world.
+    plant_ = builder.template AddSystem<RigidBodyPlant<T>>(move(tree));
+    plant_->set_contact_parameters(3000 /* penetration stiffness */,
+        0 /* penetration damping */, 1.0 /* friction coefficient */);
 
-  // Specifies the simulation options.
-  drake::SimulationOptions options;
-  options.realtime_factor = 0;  // As fast as possible.
-  options.initial_step_size = 0.002;
+    // Feed in constant inputs of zero into the RigidBodyPlant.
+    VectorX<T> constant_value(plant_->get_input_size());
+    constant_value.setZero();
+    const_source_ = builder.template AddSystem<ConstantVectorSource<T>>(
+        constant_value);
 
-  // Prevents exception from being thrown when simulation runs slower than real
-  // time, which it most likely will given the small step size.
-  options.warn_real_time_violation = true;
+    // Creates and adds LCM publisher for visualization.
+    viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
+        plant_->get_rigid_body_tree(), &lcm_);
 
-  // Instantates a variable that specifies the duration of the simulation.
-  // The default value is 5 seconds.
-  double duration = 5.0;
+    // Connects the constant source output port to the RigidBodyPlant's input
+    // port. This effectively results in the robot being uncontrolled.
+    builder.Connect(const_source_->get_output_port(),
+                    plant_->get_input_port(0));
 
-  // Searches through the command line looking for a "--duration" flag followed
-  // by a floating point number that specifies a custom duration.
-  for (int ii = 1; ii < argc; ++ii) {
-    if (std::string(argv[ii]) == "--duration") {
-      if (++ii == argc) {
-        throw std::runtime_error(
-            "ERROR: Command line option \"--duration\" is not followed by a "
-            "value!");
-      }
-      duration = atof(argv[ii]);
-    }
+    // Connects to publisher for visualization.
+    builder.Connect(plant_->get_output_port(0),
+                    viz_publisher_->get_input_port(0));
+
+    builder.ExportOutput(plant_->get_output_port(0));
+    builder.BuildInto(this);
   }
 
-  // Starts the simulation.
-  const double kStartTime = 0;
-  drake::simulate(*sys.get(), kStartTime, duration, x0, options);
+  void SetDefaultState(Context<T>* context) const {
+    Context<T>* plant_context =
+        this->GetMutableSubsystemContext(context, plant_);
+    plant_->SetZeroConfiguration(plant_context);
+  }
 
-  auto final_robot_state = robot_state_tap->get_input_vector();
-  int num_positions = rigid_body_sys->number_of_positions();
-  int num_velocities = rigid_body_sys->number_of_velocities();
+  const RigidBodyPlant<T>& get_rigid_body_plant() {
+    return *plant_;
+  }
 
-  // Ensures the size of the output is correct.
-  if (final_robot_state.size() !=
-      static_cast<int>(rigid_body_sys->getNumOutputs())) {
+ private:
+  RigidBodyPlant<T>* plant_;
+  DrakeVisualizer* viz_publisher_;
+  DrakeLcm lcm_;
+
+  ConstantVectorSource<T>* const_source_;
+};
+
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  logging::HandleSpdlogGflags();
+
+  KukaIiwaArmDynamicsSim<double> model;
+  Simulator<double> simulator(model);
+
+  // Initializes the controller state and system state to be all zero.
+  model.SetDefaultState(simulator.get_mutable_context());
+
+  simulator.Initialize();
+
+  // Simulate for the desired duration.
+  simulator.StepTo(FLAGS_duration);
+
+  // Ensures the simulation was successful.
+  const RigidBodyPlant<double>& rigid_body_plant = model.get_rigid_body_plant();
+  const Context<double>& context = simulator.get_context();
+  const ContinuousState<double>* state = context.get_continuous_state();
+  const VectorBase<double>& position_vector = state->get_generalized_position();
+  const VectorBase<double>& velocity_vector = state->get_generalized_velocity();
+
+  const int num_q = position_vector.size();
+  const int num_v = velocity_vector.size();
+
+  // Ensures the sizes of the position and velocity vectors are correct.
+  if (num_q != rigid_body_plant.get_num_positions()) {
     throw std::runtime_error(
-        "ERROR: Size of final robot state (" +
-        std::to_string(final_robot_state.size()) +
-        ") does not match size of rigid body system's output (" +
-        std::to_string(rigid_body_sys->getNumOutputs()) + ").");
+        "ERROR: Size of position vector (" + std::to_string(num_q) + ") does "
+        "not match number of positions in RigidBodyTree (" +
+        std::to_string(rigid_body_plant.get_num_positions()) + ").");
+  }
+
+  if (num_v != rigid_body_plant.get_num_velocities()) {
+    throw std::runtime_error(
+        "ERROR: Size of velocity vector (" + std::to_string(num_v) + ") does "
+        "not match number of velocities in RigidBodyTree (" +
+        std::to_string(rigid_body_plant.get_num_velocities()) + ").");
   }
 
   // Ensures the number of position states equals the number of velocity states.
-  if (num_positions != num_velocities) {
-    throw std::runtime_error("ERROR: Number of positions (" +
-                             std::to_string(num_positions) +
-                             ") does not match the number of velocities (" +
-                             std::to_string(num_velocities) + ").");
-  }
-
-  // Ensures the number of position and velocity states match the size of the
-  // final robot state.
-  if ((num_positions + num_velocities) != final_robot_state.size()) {
+  if (num_q != num_v) {
     throw std::runtime_error(
-        "ERROR: Total number of positions and velocities (" +
-        std::to_string(num_positions + num_velocities) +
-        ") does not match size of robot state (" +
-        std::to_string(final_robot_state.size()) + ").");
+        "ERROR: Number of positions (" + std::to_string(num_q) + ") does not "
+        "match the number of velocities (" + std::to_string(num_v) + ").");
   }
 
   // Ensures the robot's joints are within their position limits.
-  std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
-  for (int robot_state_index = 0, body_index = 0;
-       body_index < static_cast<int>(bodies.size());
-       ++body_index) {
-    // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
-    // that represents the world.
-    if (!bodies[body_index]->has_parent_body()) continue;
+  const std::vector<std::unique_ptr<RigidBody>>& bodies =
+      rigid_body_plant.get_rigid_body_tree().bodies;
+  for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
+    // Skips rigid bodies without a parent. This includes the world.
+    if (!bodies[i]->has_parent_body()) continue;
 
-    const DrakeJoint& joint = bodies[body_index]->getJoint();
+    const DrakeJoint& joint = bodies[i]->getJoint();
     const Eigen::VectorXd& min_limit = joint.getJointLimitMin();
     const Eigen::VectorXd& max_limit = joint.getJointLimitMax();
 
     // Defines a joint limit tolerance. This is the amount in radians over which
     // joint position limits can be violated and still be considered to be
     // within the limits. Once we are able to model joint limits via
-    // constraints, we may be able to remove the need for this tolerance value.
+    // constraints, we may be able to remove this tolerance value.
     const double kJointLimitTolerance = 0.0261799;  // 1.5 degrees.
 
-    for (int ii = 0; ii < joint.getNumPositions(); ++ii) {
-      double position = final_robot_state[robot_state_index++];
-      if (position < min_limit[ii] - kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+    for (int j = 0; j < joint.get_num_positions(); ++j) {
+      double position = position_vector.GetAtIndex(state_index++);
+      if (position < min_limit[j] - kJointLimitTolerance) {
+        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+                                 joint.get_position_name(j) +
                                  ") violated minimum position limit (" +
                                  std::to_string(position) + " < " +
-                                 std::to_string(min_limit[ii]) + ").");
+                                 std::to_string(min_limit[j]) + ").");
       }
-      if (position > max_limit[ii] + kJointLimitTolerance) {
-        throw std::runtime_error("ERROR: Joint " + joint.getName() + " (DOF " +
-                                 joint.getPositionName(ii) +
+      if (position > max_limit[j] + kJointLimitTolerance) {
+        throw std::runtime_error("ERROR: Joint " + joint.get_name() + " (DOF " +
+                                 joint.get_position_name(j) +
                                  ") violated maximum position limit (" +
                                  std::to_string(position) + " > " +
-                                 std::to_string(max_limit[ii]) + ").");
+                                 std::to_string(max_limit[j]) + ").");
       }
     }
   }
 
-  // Unfortunately we cannot check the joint velocities since the velocity
-  // limits are not being parsed.
   return 0;
 }
 
@@ -154,5 +198,5 @@ int DoMain(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }

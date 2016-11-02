@@ -1,6 +1,6 @@
-#include "RevoluteJoint.h"
+#include "drake/systems/plants/joints/RevoluteJoint.h"
 
-using namespace Eigen;
+using Eigen::Vector3d;
 
 drake::TwistVector<double> RevoluteJoint::spatialJointAxis(
     const Vector3d& rotation_axis) {

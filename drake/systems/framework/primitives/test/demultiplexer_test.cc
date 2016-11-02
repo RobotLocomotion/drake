@@ -29,10 +29,10 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class DemultiplexerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    demux_ = make_unique<Demultiplexer<double>>(3 /* length */);
+    demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
     output_ = demux_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> demux_;
@@ -72,9 +72,51 @@ TEST_F(DemultiplexerTest, DemultiplexVector) {
   ASSERT_EQ(input_vector[2], output_->get_vector_data(2)->get_value()[0]);
 }
 
+// Tests that the input signal gets demultiplexed into its individual
+// components.
+GTEST_TEST(OutputSize, SizeDifferentFromOne) {
+  const int kInputSize = 10;
+  const int kOutputSize = 2;
+  const int kNumOutputs = kInputSize / kOutputSize;
+
+  // Creates a demultiplexer with an input port of size ten and output ports of
+  // size two. Therefore there are five output ports.
+  auto demux = make_unique<Demultiplexer<double>>(
+      kInputSize /* size */, kOutputSize /* output_ports_sizes */);
+  auto context = demux->CreateDefaultContext();
+  auto output = demux->AllocateOutput(*context);
+  auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
+
+  // Checks that the number of input ports in the system and in the context
+  // are consistent.
+  ASSERT_EQ(1, context->get_num_input_ports());
+  ASSERT_EQ(1, demux->get_num_input_ports());
+  Eigen::VectorXd input_vector = Eigen::VectorXd::Random(kInputSize);
+  input->get_mutable_value() << input_vector;
+
+  // Hook input of the expected size.
+  context->SetInputPort(0, MakeInput(std::move(input)));
+
+  demux->EvalOutput(*context, output.get());
+
+  // Checks that the number of output ports in the system and in the
+  // SystemOutput<T> output are consistent.
+  // The number of output ports must equal the size of the input port divided
+  // by the size of the output ports provided in the constructor, in this case
+  // 10 / 2 = 5.
+  ASSERT_EQ(kNumOutputs, output->get_num_ports());
+  ASSERT_EQ(kNumOutputs, demux->get_num_output_ports());
+
+  for (int output_index = 0; output_index < kNumOutputs; ++output_index) {
+    ASSERT_EQ(kOutputSize, output->get_vector_data(output_index)->size());
+    ASSERT_EQ(input_vector.segment<kOutputSize>(output_index * kOutputSize),
+              output->get_vector_data(output_index)->get_value());
+  }
+}
+
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

@@ -1,8 +1,10 @@
 #pragma once
 
-#include <iostream>
 #include <cmath>
-#include "drake/systems/LCMSystem.h"
+#include <iostream>
+#include <string>
+
+#include "drake/system1/LCMSystem.h"
 
 using namespace std;
 
@@ -127,40 +129,4 @@ class Pendulum {
  public:
   double m, l, b, lc, I,
       g;  // pendulum parameters (initialized in the constructor)
-};
-
-class PendulumEnergyShapingController {
- public:
-  template <typename ScalarType>
-  using InputVector = PendulumState<ScalarType>;
-  template <typename ScalarType>
-  using StateVector = drake::NullVector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = PendulumInput<ScalarType>;
-
-  explicit PendulumEnergyShapingController(const Pendulum& pendulum)
-      : m(pendulum.m), l(pendulum.l), b(pendulum.b), g(pendulum.g) {}
-
-  template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& t,
-                                   const StateVector<ScalarType>& x,
-                                   const PendulumState<ScalarType>& u) const {
-    return StateVector<ScalarType>();
-  }
-
-  template <typename ScalarType>
-  PendulumInput<ScalarType> output(const ScalarType& t,
-                                   const StateVector<ScalarType>& x,
-                                   const PendulumState<ScalarType>& u) const {
-    ScalarType Etilde = .5 * m * l * l * u.thetadot * u.thetadot -
-                        m * g * l * cos(u.theta) - 1.1 * m * g * l;
-    PendulumInput<ScalarType> y;
-    y.tau = b * u.thetadot - .1 * u.thetadot * Etilde;
-    return y;
-  }
-
-  bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return true; }
-
-  double m, l, b, g;  // pendulum parameters (initialized in the constructor)
 };

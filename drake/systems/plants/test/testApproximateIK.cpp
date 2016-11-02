@@ -6,8 +6,10 @@
 #include <cstdlib>
 #include <limits>
 
-using namespace std;
-using namespace Eigen;
+// TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
+using namespace std;  // NOLINT(build/namespaces)
+using namespace Eigen;  // NOLINT(build/namespaces)
+
 int main() {
   RigidBodyTree* model =
       new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf");
@@ -26,7 +28,7 @@ int main() {
       new RigidBodyConstraint* [num_constraints];
   constraint_array[0] = com_kc;
   IKoptions ikoptions(model);
-  VectorXd q_sol(model->number_of_positions());
+  VectorXd q_sol(model->get_num_positions());
   int info;
   approximateIK(model, q0, q0, num_constraints, constraint_array,
                 ikoptions, &q_sol, &info);

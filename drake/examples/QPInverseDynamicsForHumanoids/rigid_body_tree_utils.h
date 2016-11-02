@@ -1,10 +1,15 @@
 #pragma once
 
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
-using namespace Eigen;
+namespace Eigen {
+typedef Matrix<double, 6, 1> Vector6d;
+}
 
+namespace drake {
+namespace examples {
+namespace qp_inverse_dynamics {
 // TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
 
 /**
@@ -17,11 +22,10 @@ using namespace Eigen;
  * in body frame
  * @return task space velocity
  */
-typedef Matrix<double, 6, 1> Vector6d;
-Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
-                         const KinematicsCache<double>& cache,
-                         const RigidBody& body,
-                         const Vector3d& local_offset = Vector3d::Zero());
+Eigen::Vector6d GetTaskSpaceVel(
+    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBody& body,
+    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
 /**
  * This function computes the task space Jacobian of a frame attached
@@ -34,10 +38,10 @@ Vector6d GetTaskSpaceVel(const RigidBodyTree& r,
  * @return task space Jacobian, x_dot = J * v, x_dot is task space vel, v is
  * generalized velocity.
  */
-MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
-                              const KinematicsCache<double>& cache,
-                              const RigidBody& body,
-                              const Vector3d& local_offset = Vector3d::Zero());
+Eigen::MatrixXd GetTaskSpaceJacobian(
+    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBody& body,
+    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
 /**
  * This function computes the task space Jacobian times the generalized
@@ -51,6 +55,11 @@ MatrixXd GetTaskSpaceJacobian(const RigidBodyTree& r,
  * @return task space Jacobian dot * v, x_ddot = J * v_dot + Jdv, x_ddot is
  * task space acceleration, v_dot is generalized acceleration.
  */
-Vector6d GetTaskSpaceJacobianDotTimesV(
+Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
     const RigidBodyTree& r, const KinematicsCache<double>& cache,
-    const RigidBody& body, const Vector3d& local_offset = Vector3d::Zero());
+    const RigidBody& body,
+    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
+
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

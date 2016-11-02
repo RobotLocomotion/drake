@@ -1,15 +1,19 @@
 #pragma once
 
+#include <map>
+#include <string>
+#include <utility>
+
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
 #include "nav_msgs/Odometry.h"
 
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 using drake::NullVector;
 using drake::RigidBodySensor;
@@ -83,7 +87,7 @@ class SensorPublisherOdometry {
 
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      if (!rigid_body->getJoint().is_floating()) continue;
 
       // Creates an odometry message and publisher for the current robot if they
       // have not already been created. Stores them in odometry_publishers_ and
@@ -136,9 +140,9 @@ class SensorPublisherOdometry {
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
-    auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-                          rigid_body_tree->number_of_velocities());
+    auto q = uvec.head(rigid_body_tree->get_num_positions());    // position
+    auto v = uvec.segment(rigid_body_tree->get_num_positions(),  // velocity
+                          rigid_body_tree->get_num_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     // Obtains a reference to the world link in the rigid body tree.
@@ -153,7 +157,7 @@ class SensorPublisherOdometry {
 
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      if (!rigid_body->getJoint().is_floating()) continue;
 
       // Defines the key that can be used to obtain the publisher and message.
       // The key is simply the model name since there should only be one

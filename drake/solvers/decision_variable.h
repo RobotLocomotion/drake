@@ -48,6 +48,8 @@ class DecisionVariable {
   const Eigen::VectorXd& value() const { return data_; }
   void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
 
+  VarType type() const {return type_;}
+
  private:
   VarType type_;
   std::string name_;
@@ -63,14 +65,14 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   explicit DecisionVariableView(const DecisionVariable& var)
-      : var_(var), start_index_(0), size_(var_.value().rows()) {}
+      : var_(var), start_index_(0), size_(var_.size()) {}
 
   /// Create a view covering part of a DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.value().rows()));
+    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.size()));
   }
 
   /** index()
@@ -136,6 +138,13 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 };
 
 typedef std::list<DecisionVariableView> VariableList;
+inline int GetVariableListSize(const VariableList& vars) {
+  int var_dim = 0;
+  for (const auto& var : vars) {
+    var_dim += var.size();
+  }
+  return var_dim;
+}
 
 }  // end namespace solvers
 }  // end namespace drake

@@ -5,8 +5,8 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/vector.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -50,7 +50,9 @@ std::shared_ptr<AffineSystem<NullVector, System::template StateVector,
                              System::template InputVector>>
 MakeTimeInvariantLqrSystem(
     const System& sys,
+    // NOLINTNEXTLINE(runtime/references) This code will be deleted soon.
     const typename System::template StateVector<double>& x0,
+    // NOLINTNEXTLINE(runtime/references) This code will be deleted soon.
     const typename System::template InputVector<double>& u0,
     const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
   const int num_states =

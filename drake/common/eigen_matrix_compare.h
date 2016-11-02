@@ -1,7 +1,13 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <algorithm>
 #include <cmath>
+#include <limits>
+#include <string>
+
+#include <Eigen/Dense>
+
+#include "drake/common/drake_gcc48.h"
 
 namespace drake {
 

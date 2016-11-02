@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
@@ -8,11 +11,11 @@
 #include "tf/transform_broadcaster.h"
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 using drake::NullVector;
 using drake::RigidBodySensor;
@@ -118,10 +121,10 @@ class DrakeRosTfPublisher {
 
       // Initializes the transformation if the joint is fixed.
       // We can do this now since it will not change over time.
-      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
-        auto translation = joint.getTransformToParentBody().translation();
-        auto quat =
-            drake::math::rotmat2quat(joint.getTransformToParentBody().linear());
+      if (joint.get_num_positions() == 0 && joint.get_num_velocities() == 0) {
+        auto translation = joint.get_transform_to_parent_body().translation();
+        auto quat = drake::math::rotmat2quat(
+            joint.get_transform_to_parent_body().linear());
 
         message->transform.translation.x = translation(0);
         message->transform.translation.y = translation(1);
@@ -200,7 +203,7 @@ class DrakeRosTfPublisher {
     // The following code extracts the position values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree_->number_of_positions());
+    auto q = uvec.head(rigid_body_tree_->get_num_positions());
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
     // Publishes the transform for each rigid body in the rigid body tree.
@@ -228,7 +231,7 @@ class DrakeRosTfPublisher {
       const DrakeJoint& joint = rigid_body->getJoint();
 
       // Updates the transform only if the joint is not fixed.
-      if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
+      if (joint.get_num_positions() != 0 || joint.get_num_velocities() != 0) {
         auto transform = rigid_body_tree_->relativeTransform(
             cache,
             rigid_body_tree_->FindBodyIndex(

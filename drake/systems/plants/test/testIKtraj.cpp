@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -47,7 +49,7 @@ GTEST_TEST(testIKtraj, testIKtraj) {
     t[i] = dt * i;
   }
   MatrixXd q0 = qstar.replicate(1, nT);
-  VectorXd qdot0 = VectorXd::Zero(model.number_of_velocities());
+  VectorXd qdot0 = VectorXd::Zero(model.get_num_velocities());
   Vector3d com_lb = com0;
   com_lb(0) = std::numeric_limits<double>::quiet_NaN();
   com_lb(1) = std::numeric_limits<double>::quiet_NaN();
@@ -77,9 +79,9 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   constraint_array.push_back(&kc_fixed_pose);
 
   IKoptions ikoptions(&model);
-  MatrixXd q_sol(model.number_of_positions(), nT);
-  MatrixXd qdot_sol(model.number_of_velocities(), nT);
-  MatrixXd qddot_sol(model.number_of_positions(), nT);
+  MatrixXd q_sol(model.get_num_positions(), nT);
+  MatrixXd qdot_sol(model.get_num_velocities(), nT);
+  MatrixXd qddot_sol(model.get_num_positions(), nT);
   int info = 0;
   std::vector<std::string> infeasible_constraint;
 

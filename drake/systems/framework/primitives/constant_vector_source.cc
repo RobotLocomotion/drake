@@ -1,7 +1,9 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -17,6 +19,18 @@ ConstantVectorSource<T>::ConstantVectorSource(
 }
 
 template <typename T>
+ConstantVectorSource<T>::ConstantVectorSource(const T& source_value)
+    : source_value_(Vector1<T>::Constant(source_value)) {
+  this->DeclareOutputPort(kVectorValued, 1, kContinuousSampling);
+}
+
+template <typename T>
+const SystemPortDescriptor<T>&
+ConstantVectorSource<T>::get_output_port() const {
+  return System<T>::get_output_port(0);
+}
+
+template <typename T>
 void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
                                          SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidOutput(output));
@@ -25,7 +39,8 @@ void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKESYSTEMFRAMEWORK_EXPORT ConstantVectorSource<double>;
+template class DRAKE_EXPORT ConstantVectorSource<double>;
+template class DRAKE_EXPORT ConstantVectorSource<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

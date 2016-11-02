@@ -20,7 +20,7 @@ class IdmWithTrajectoryAgentTest : public ::testing::Test {
 
   IdmWithTrajectoryAgentState<double>* continuous_state() {
     auto result = dynamic_cast<IdmWithTrajectoryAgentState<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state_vector());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -76,7 +76,7 @@ TEST_F(IdmWithTrajectoryAgentTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const IdmWithTrajectoryAgentState<double>* const result =
       dynamic_cast<const IdmWithTrajectoryAgentState<double>*>(
-          derivatives_->get_mutable_state());
+          derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Starting derivatives are almost all zeros, except for ego car velocity.

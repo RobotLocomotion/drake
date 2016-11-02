@@ -3,7 +3,7 @@
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_config.h"
 #include "drake/automotive/gen/simple_car_state.h"
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -39,11 +39,13 @@ namespace automotive {
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 /// - drake::TaylorVarXd
+/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.
 ///
 /// To use other unusual ScalarType substitutions,
 /// see http://drake.mit.edu/cxx_inl.html.
+/// @ingroup automotive_systems
 template <typename T>
 class SimpleCar : public systems::LeafSystem<T> {
  public:

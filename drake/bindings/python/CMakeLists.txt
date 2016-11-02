@@ -11,6 +11,8 @@ function(drake_add_python_test module_name)
     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 endfunction()
 
+drake_find_package(snopt_c CONFIG)
+
 if(snopt_c_FOUND)
   drake_add_python_test(pydrake.test.testRBTIK)
   drake_add_python_test(pydrake.test.testPR2IK)

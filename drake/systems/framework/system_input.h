@@ -5,8 +5,9 @@
 #include <memory>
 #include <vector>
 
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/value.h"
@@ -17,7 +18,7 @@ namespace systems {
 /// The InputPort describes a single input to a System. Users should not
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
-class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
+class DRAKE_EXPORT InputPort
     : public detail::OutputPortListenerInterface {
  public:
   ~InputPort() override;
@@ -26,6 +27,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
   /// whenever the data on this port changes, according to the source of
   /// that data.
   virtual int64_t get_version() const = 0;
+
+  /// Returns true if this InputPort is not in control of its own data.
+  virtual bool requires_evaluation() const = 0;
 
   /// Returns the data on this port, or nullptr if this port is not connected.
   const AbstractValue* get_abstract_data() const {
@@ -66,7 +70,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT InputPort
 /// The DependentInputPort wraps a pointer to the OutputPort of a System for use
 /// as an input to another System. Many DependentInputPorts may wrap a single
 /// OutputPort.
-class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
+class DRAKE_EXPORT DependentInputPort : public InputPort {
  public:
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
@@ -75,11 +79,15 @@ class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
   /// Disconnects from the output port.
   ~DependentInputPort() override;
 
-  /// Sets the OutputPort to nullptr.
+  /// Sets the output port to nullptr.
   void Disconnect() override;
 
   /// Returns the value version of the connected output port.
   int64_t get_version() const override { return output_port_->get_version(); }
+
+  /// A DependentInputPort must be evaluated in a Context, because it does not
+  /// control its own data.
+  bool requires_evaluation() const override { return true; }
 
  protected:
   const OutputPort* get_output_port() const override { return output_port_; }
@@ -96,7 +104,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT DependentInputPort : public InputPort {
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
 /// to a System.
-class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
+class DRAKE_EXPORT FreestandingInputPort : public InputPort {
  public:
   /// Constructs a vector-valued FreestandingInputPort.
   /// Takes ownership of @p vec.
@@ -126,6 +134,10 @@ class DRAKESYSTEMFRAMEWORK_EXPORT FreestandingInputPort : public InputPort {
   /// Returns a positive and monotonically increasing number that is guaranteed
   /// to change whenever GetMutableVectorData is called.
   int64_t get_version() const override { return output_port_.get_version(); }
+
+  /// A FreestandingInputPort does not require evaluation, because it controls
+  /// its own data.
+  bool requires_evaluation() const override { return false; }
 
   /// Returns a pointer to the data inside this InputPort, and updates the
   /// version so that Contexts depending on this InputPort know to invalidate

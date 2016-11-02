@@ -1,22 +1,22 @@
 .. _build_from_source:
 
-*****************************************
-Source installation (mac, linux, windows)
-*****************************************
+********************************
+Source installation (mac, linux)
+********************************
 
 Optional: Setting up the MATLAB Compiler
 ========================================
 
-If you'd like to build the MATLAB interface, you will need a `C/C++ compiler that is compatible with your MATLAB version <http://www.mathworks.com/support/compilers/>`_.  Run ``mex -setup`` at the MATLAB command line to set this up.  We typically use gcc on linux, clang on mac, or Visual Studio 2015 on Windows.
-
-Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab`` at the system command line should start an instance of MATLAB).  For example, on Mac you might consider ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``, or you can actually add the MATLAB/bin directory to your system path.  On windows, you should `edit your path environment variable <http://www.java.com/en/download/help/path.xml>`_ to include e.g. ``C:\Program Files\MATLAB\R2014a\bin``.
+Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab``
+ at the system command line should start an instance of MATLAB).  For example,
+ on Mac you might consider
+ ``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
+ or you can actually add the MATLAB/bin directory to your system path.
 
 .. _getting_drake:
 
 Getting Drake
 =============
-
-Note: If you are using Windows, you will want to make sure that ``git`` is set to `handle cross-platform linefeed issues <https://git-scm.com/book/tr/v2/Customizing-Git-Git-Configuration#idp31554304>`_.  These options appear to be enabled by default in the cygwin installation of ``git``, but must be set manually on the native windows version.
 
 We recommend that you `setup SSH access to Github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_
 to avoid needing to type your password each time you access it. The following
@@ -47,7 +47,7 @@ If you want to use the private externals
 ========================================
 
 Drake includes support for some externals which we are not able to redistribute directly
-(SNOPT, SEDUMI, BERTINI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.
+(SNOPT, SEDUMI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.
 
 Follow the instructions here:
 https://help.github.com/articles/generating-ssh-keys/
@@ -83,11 +83,9 @@ setup steps:
 .. toctree::
     :maxdepth: 1
 
-    fedora
     homebrew
     ubuntu_trusty
     ubuntu_xenial
-    windows
 
 .. _build_the_collection:
 
@@ -312,4 +310,3 @@ To work on the bleeding edge, do::
 This is especially useful if you are ready to contribute your work back to the
 main repository with a
 `pull request <https://help.github.com/articles/using-pull-requests/>`_.
-

@@ -1,16 +1,18 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Core>
 
-#include "DrakeJointImpl.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 
 template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
@@ -25,6 +27,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   double coulomb_window;
 
  protected:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   FixedAxisOneDoFJoint(Derived& derived, const std::string& name,
                        const Eigen::Isometry3d& transform_to_parent_body,
                        const drake::TwistVector<double>& _joint_axis)
@@ -37,18 +40,19 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
  public:
   virtual ~FixedAxisOneDoFJoint() {}
 
-  using DrakeJoint::getNumPositions;
-  using DrakeJoint::getNumVelocities;
+  using DrakeJoint::get_num_positions;
+  using DrakeJoint::get_num_velocities;
 
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
     motion_subspace = joint_axis.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
-      dmotion_subspace->setZero(motion_subspace.size(), getNumPositions());
+      dmotion_subspace->setZero(motion_subspace.size(), get_num_positions());
     }
   }
 
@@ -79,13 +83,14 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
-    qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+    qdot_to_v.setIdentity(get_num_velocities(), get_num_positions());
     drake::math::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
-      dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
+      dqdot_to_v->setZero(qdot_to_v.size(), get_num_positions());
     }
   }
 
@@ -93,13 +98,14 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
-    v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+    v_to_qdot.setIdentity(get_num_positions(), get_num_velocities());
     drake::math::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {
-      dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
+      dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
     }
   }
 
@@ -107,7 +113,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
       const Eigen::MatrixBase<DerivedV>& v) const {
     typedef typename DerivedV::Scalar Scalar;
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(get_num_velocities(), 1);
     using std::abs;
     ret[0] = damping * v[0];
     Scalar coulomb_window_fraction = v[0] / coulomb_window;
@@ -128,10 +134,18 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     DrakeJoint::joint_limit_max[0] = joint_limit_max;
   }
 
-  Eigen::VectorXd zeroConfiguration() const { return Eigen::VectorXd::Zero(1); }
+  void SetJointLimitDynamics(double joint_limit_stiffness,
+                             double joint_limit_dissipation) {
+    DrakeJoint::joint_limit_stiffness_[0] = joint_limit_stiffness;
+    DrakeJoint::joint_limit_dissipation_[0] = joint_limit_dissipation;
+  }
+
+  Eigen::VectorXd zeroConfiguration() const override {
+    return Eigen::VectorXd::Zero(1);
+  }
 
   Eigen::VectorXd randomConfiguration(
-      std::default_random_engine& generator) const {
+      std::default_random_engine& generator) const override {
     Eigen::VectorXd q(1);
     if (std::isfinite(DrakeJoint::joint_limit_min.value()) &&
         std::isfinite(DrakeJoint::joint_limit_max.value())) {
@@ -171,9 +185,17 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     coulomb_window = coulomb_window_in;
   }
 
-  virtual std::string getPositionName(int index) const {
+  std::string get_position_name(int index) const override {
     if (index != 0) throw std::runtime_error("bad index");
     return DrakeJoint::name;
+  }
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_position_name().")
+#endif
+  std::string getPositionName(int index) const override {
+    return get_position_name(index);
   }
 
  public:

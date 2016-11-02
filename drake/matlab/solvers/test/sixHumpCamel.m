@@ -3,9 +3,6 @@ function sixHumpCamel
 % example 1 from gloptipoly documentation
 % the function has six local minima
 
-% note: we have seen the call to bertini fail on ubuntu 14.04
-% see https://github.com/RobotLocomotion/drake/issues/633
-
 checkDependency('spotless');
 
 x = msspoly('x',2);
@@ -17,7 +14,7 @@ fval = reshape(msubs(f,x,[X1(:)';X2(:)']),size(X1));
 mesh(X1,X2,fval);
 xlabel('x1'); ylabel('x2');
 
-prog = PolynomialProgram(x,f);
+prog = NonlinearProgram(x,f);
 [xstar,fval] = solve(prog,randn(2,1))
 
 hold on;
@@ -25,12 +22,6 @@ plot3(xstar(1),xstar(2),fval,'r*','MarkerSize',10,'LineWidth',3);
 hold off;
 
 solvers = {};
-if(checkDependency('gloptipoly3'))
-  solvers = [solvers,{'gloptipoly'}];
-end
-if(checkDependency('bertini'))
-  solvers = [solvers,{'bertini'}];
-end
 if(checkDependency('snopt'))
   solvers = [solvers,{'snopt'}];
 end

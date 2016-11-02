@@ -5,7 +5,7 @@
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_state.h"
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -25,6 +25,7 @@ namespace automotive {
 ///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
+/// @ingroup automotive_systems
 template <typename T>
 class TrajectoryCar : public systems::LeafSystem<T> {
  public:

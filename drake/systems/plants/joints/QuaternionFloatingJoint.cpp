@@ -1,12 +1,14 @@
-#include "QuaternionFloatingJoint.h"
+#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+
 #include <random>
 
 #include "drake/math/random_rotation.h"
 
-using namespace Eigen;
-using namespace std;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::normal_distribution;
 
-std::string QuaternionFloatingJoint::getPositionName(int index) const {
+std::string QuaternionFloatingJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
       return name + "_x";
@@ -27,7 +29,7 @@ std::string QuaternionFloatingJoint::getPositionName(int index) const {
   }
 }
 
-std::string QuaternionFloatingJoint::getVelocityName(int index) const {
+std::string QuaternionFloatingJoint::get_velocity_name(int index) const {
   switch (index) {
     case 0:
       return name + "_wx";
@@ -47,7 +49,7 @@ std::string QuaternionFloatingJoint::getVelocityName(int index) const {
 }
 
 VectorXd QuaternionFloatingJoint::zeroConfiguration() const {
-  Eigen::VectorXd ret(getNumPositions());
+  Eigen::VectorXd ret(get_num_positions());
   ret << 0, 0, 0, 1, 0, 0, 0;
   return ret;
 }
@@ -69,4 +71,14 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
   q[5] = quat(2);
   q[6] = quat(3);
   return q;
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+std::string QuaternionFloatingJoint::getPositionName(int index) const {
+  return get_position_name(index);
+}
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+std::string QuaternionFloatingJoint::getVelocityName(int index) const {
+  return get_velocity_name(index);
 }

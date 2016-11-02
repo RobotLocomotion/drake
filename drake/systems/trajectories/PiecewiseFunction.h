@@ -3,9 +3,9 @@
 #include <Eigen/Core>
 #include <vector>
 #include <random>
-#include "drake/drakeTrajectories_export.h"
+#include "drake/common/drake_export.h"
 
-class DRAKETRAJECTORIES_EXPORT PiecewiseFunction {
+class DRAKE_EXPORT PiecewiseFunction {
  protected:
   std::vector<double> segment_times;
 
@@ -37,6 +37,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewiseFunction {
   void segmentNumberRangeCheck(int segment_number) const;
 
   static std::vector<double> randomSegmentTimes(
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references)
       int num_segments, std::default_random_engine& generator);
 
  protected:

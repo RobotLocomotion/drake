@@ -2,7 +2,24 @@ include(ExternalProject)
 
 find_package(Git REQUIRED)
 
-if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+if(CMAKE_GENERATOR STREQUAL "Ninja")
+  # The Ninja generator does not support Fortran, so manually find the Fortran
+  # compiler and set any flags passed in by environment variable
+  find_program(CMAKE_Fortran_COMPILER
+    NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
+    DOC "Fortran compiler")
+  if(CMAKE_Fortran_COMPILER)
+    message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+  else()
+    message(FATAL_ERROR "Could NOT find Fortran compiler")
+  endif()
+  set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
+    "Flags for Fortran compiler")
+else()
+  enable_language(Fortran)
+endif()
+
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
   set(MAKE_COMMAND "$(MAKE)") # so we can pass through command line arguments
 else()
   find_program(MAKE_COMMAND make)
@@ -149,6 +166,8 @@ macro(drake_add_cmake_external PROJECT)
   # Set arguments for cache propagation
   set(_ext_LIST_SEPARATOR "!")
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
+    CMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY
+    CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY
     CMAKE_PREFIX_PATH
     CMAKE_INSTALL_PREFIX
     CMAKE_BUILD_TYPE
@@ -157,6 +176,8 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_C_FLAGS
     CMAKE_CXX_COMPILER
     CMAKE_CXX_FLAGS
+    CMAKE_Fortran_COMPILER
+    CMAKE_Fortran_FLAGS
     CMAKE_EXE_LINKER_FLAGS
     CMAKE_MODULE_LINKER_FLAGS
     CMAKE_SHARED_LINKER_FLAGS
@@ -177,6 +198,7 @@ macro(drake_add_cmake_external PROJECT)
     DOWNLOAD_COMMAND ${_ext_DOWNLOAD_COMMAND}
     UPDATE_COMMAND ${_ext_UPDATE_COMMAND}
     ${_ext_EXTRA_COMMANDS}
+    STEP_TARGETS configure build install
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS 1
     DEPENDS ${_ext_deps}
@@ -223,6 +245,7 @@ macro(drake_add_foreign_external PROJECT)
     CONFIGURE_COMMAND "${_ext_CONFIGURE_COMMAND}"
     BUILD_COMMAND "${_ext_BUILD_COMMAND}"
     INSTALL_COMMAND "${_ext_INSTALL_COMMAND}"
+    STEP_TARGETS configure build install
     INDEPENDENT_STEP_TARGETS update
     BUILD_ALWAYS ${_ext_BUILD_ALWAYS}
     DEPENDS ${_ext_deps})
@@ -396,6 +419,35 @@ function(drake_add_external PROJECT)
     # TODO remove when we require CMake 3.7
     drake_add_submodule_sync_dependency(${PROJECT})
   endif()
+
+  # Check if project is build-skipped
+  string(TOUPPER SKIP_${PROJECT}_BUILD _ext_project_skip_build)
+  if(${_ext_project_skip_build})
+    # Remove project from ALL, but add configure step to ALL
+    set_target_properties(${PROJECT}
+      PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    set_target_properties(${PROJECT}-configure
+      PROPERTIES EXCLUDE_FROM_ALL FALSE)
+  endif()
+
+  # Check if project should be skipped due to skipped dependencies
+  foreach(_ext_dep ${_ext_deps})
+    string(TOUPPER SKIP_${_ext_dep}_BUILD _ext_dep_skip_build)
+    if(${_ext_dep_skip_build})
+      message(STATUS
+        "Excluding ${PROJECT} from ALL because build of dependency "
+        "${_ext_dep} is skipped or excluded")
+
+      # Remove project from ALL
+      set_target_properties(${PROJECT} ${PROJECT}-configure
+        PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+      # Mark project as skipped for this build only (not cached) so downstream
+      # dependencies (if any) will also be skipped
+      set(${_ext_project_skip_build} ON PARENT_SCOPE)
+      break()
+    endif()
+  endforeach()
 
   # Add extra per-project targets
   add_custom_target(status-${PROJECT}

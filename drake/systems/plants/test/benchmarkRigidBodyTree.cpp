@@ -1,18 +1,34 @@
 #include <cmath>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Dynamic;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using drake::common::test::MeasureExecutionTime;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using std::cout;
+using std::default_random_engine;
+using std::endl;
+using std::make_pair;
+using std::map;
+using std::pair;
+using std::string;
+using std::uniform_real_distribution;
+using std::vector;
 
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
@@ -30,7 +46,9 @@ void printMatrix(
 }
 
 template <typename Scalar>
-void scenario1(const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
+void scenario1(const RigidBodyTree& model,
+               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+               KinematicsCache<Scalar>& cache,
                const vector<Matrix<Scalar, Dynamic, 1>>& qs,
                const map<int, Matrix3Xd>& body_fixed_points) {
   default_random_engine generator;
@@ -54,7 +72,9 @@ void scenario1(const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
 
 template <typename Scalar>
 void scenario2(
-    const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
+    const RigidBodyTree& model,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<Scalar>& cache,
     const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>&
         states) {
   default_random_engine generator;
@@ -90,8 +110,8 @@ void testScenario1(const RigidBodyTree& model) {
     auto q = model.getRandomConfiguration(generator);
     qs_double.push_back(q);
 
-    MatrixXd grad = MatrixXd::Identity(model.number_of_positions(),
-                                       model.number_of_positions());
+    MatrixXd grad = MatrixXd::Identity(model.get_num_positions(),
+                                       model.get_num_positions());
 
     auto q_autodiff_fixed = q.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, q_autodiff_fixed);
@@ -157,7 +177,7 @@ void testScenario2(const RigidBodyTree& model) {
 
   for (int i = 0; i < ntests; i++) {
     VectorXd q = model.getRandomConfiguration(generator);
-    VectorXd v = VectorXd::Random(model.number_of_velocities());
+    VectorXd v = VectorXd::Random(model.get_num_velocities());
     VectorXd x(q.rows() + v.rows());
     x << q, v;
     states_double.push_back(make_pair(q, v));
@@ -167,18 +187,18 @@ void testScenario2(const RigidBodyTree& model) {
     auto x_autodiff_fixed = x.cast<AutoDiffFixedMaxSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_fixed);
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> q_autodiff_fixed =
-        x_autodiff_fixed.topRows(model.number_of_positions());
+        x_autodiff_fixed.topRows(model.get_num_positions());
     Matrix<AutoDiffFixedMaxSize, Dynamic, 1> v_autodiff_fixed =
-        x_autodiff_fixed.bottomRows(model.number_of_velocities());
+        x_autodiff_fixed.bottomRows(model.get_num_velocities());
     states_autodiff_fixed.push_back(
         make_pair(q_autodiff_fixed, v_autodiff_fixed));
 
     auto x_autodiff_dynamic = x.cast<AutoDiffDynamicSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_dynamic);
     Matrix<AutoDiffDynamicSize, Dynamic, 1> q_autodiff_dynamic =
-        x_autodiff_dynamic.topRows(model.number_of_positions());
+        x_autodiff_dynamic.topRows(model.get_num_positions());
     Matrix<AutoDiffDynamicSize, Dynamic, 1> v_autodiff_dynamic =
-        x_autodiff_dynamic.bottomRows(model.number_of_velocities());
+        x_autodiff_dynamic.bottomRows(model.get_num_velocities());
     states_autodiff_dynamic.push_back(
         make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }

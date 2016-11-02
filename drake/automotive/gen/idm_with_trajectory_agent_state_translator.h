@@ -1,12 +1,14 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
+
+#include <vector>
 
 #include "drake/automotive/gen/idm_with_trajectory_agent_state.h"
-#include "drake/drakeAutomotiveLcm_export.h"
+#include "drake/common/drake_export.h"
+#include "drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_idm_with_trajectory_agent_state_t.hpp"
 
 namespace drake {
 namespace automotive {
@@ -15,7 +17,7 @@ namespace automotive {
  * Translates between LCM message objects and VectorBase objects for the
  * IdmWithTrajectoryAgentState type.
  */
-class DRAKEAUTOMOTIVELCM_EXPORT IdmWithTrajectoryAgentStateTranslator
+class DRAKE_EXPORT IdmWithTrajectoryAgentStateTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   IdmWithTrajectoryAgentStateTranslator()

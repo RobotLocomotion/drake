@@ -1,7 +1,10 @@
-#include "PiecewiseFunction.h"
+#include "drake/systems/trajectories/PiecewiseFunction.h"
+
+#include <algorithm>
 #include <stdexcept>
 
-using namespace std;
+using std::uniform_real_distribution;
+using std::vector;
 
 PiecewiseFunction::PiecewiseFunction(
     std::vector<double> const& segment_times_in)

@@ -1,19 +1,20 @@
-pods_find_pkg_config(gurobi)
+drake_find_package(gurobi PKG_CONFIG)
 
 if(gurobi_FOUND)
-  add_mex(fastQPmex fastQPmex.cpp)
+  drake_add_mex(fastQPmex fastQPmex.cpp)
   target_link_libraries(fastQPmex drakeQP)
-  add_mex(gurobiQPmex gurobiQPmex.cpp)
+  drake_add_mex(gurobiQPmex gurobiQPmex.cpp)
   target_link_libraries(gurobiQPmex drakeQP)
 endif()
 
-add_mex(lqrmex lqrmex.cpp)
-target_link_libraries(lqrmex drakeUtil)
+drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
+target_link_libraries(lqrmex drakeCommon)
 
-pods_find_pkg_config(snopt_c)
+drake_find_package(snopt_c CONFIG)
+
 if(snopt_c_FOUND)
-  add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
-  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+  drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
+  target_link_libraries(NonlinearProgramSnoptmex snopt_c)
 
   # These warnings are not worth fixing.
   target_compile_options(NonlinearProgramSnoptmex PRIVATE

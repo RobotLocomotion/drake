@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <string>
+
 #include "QPCommon.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/drakeQPCommon_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/solvers/gurobi_qp.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 #define INSTQP_USE_FASTQP 1
 #define INSTQP_GUROBI_OUTPUTFLAG 0
@@ -15,7 +17,7 @@
 #define INSTQP_GUROBI_BARHOMOGENEOUS 0
 #define INSTQP_GUROBI_BARCONVTOL (5e-4)
 
-class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
+class DRAKE_EXPORT InstantaneousQPController {
  public:
   InstantaneousQPController(
       std::unique_ptr<RigidBodyTree> robot_in,
@@ -55,7 +57,9 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
           contact_detected,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
-      QPControllerOutput& qp_output, QPControllerDebugData* debug = NULL);
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      QPControllerOutput& qp_output,
+      QPControllerDebugData* debug = NULL);
 
   const RigidBodyTree& getRobot() const { return *robot; }
 
@@ -112,10 +116,12 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
 
   void estimateCoMBasedOnMeasuredZMP(
       const QPControllerParams& params,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
       int num_contact_points,
       const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
           foot_force_torque_measurements,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 
   void initialize();
@@ -126,9 +132,11 @@ class DRAKEQPCOMMON_EXPORT InstantaneousQPController {
   const QPControllerParams& FindParams(const std::string& param_set_name);
 };
 
-DRAKEQPCOMMON_EXPORT void applyURDFModifications(
+DRAKE_EXPORT void applyURDFModifications(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree>& robot,
     const KinematicModifications& modifications);
-DRAKEQPCOMMON_EXPORT void applyURDFModifications(
+DRAKE_EXPORT void applyURDFModifications(
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree>& robot,
     const std::string& urdf_modifications_filename);

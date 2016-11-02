@@ -4,10 +4,10 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
+#include "drake/system1/Simulation.h"
+#include "drake/system1/cascade_system.h"
+#include "drake/system1/robot_state_tap.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/robot_state_tap.h"
 
 using drake::CascadeSystem;
 using drake::RigidBodySystem;

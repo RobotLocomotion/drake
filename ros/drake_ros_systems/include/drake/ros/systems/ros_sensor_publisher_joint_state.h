@@ -1,17 +1,19 @@
 #pragma once
 
+#include <map>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
 
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/vector.h"
+#include "drake/system1/vector.h"
 
 using drake::NullVector;
 using drake::RigidBodySensor;
@@ -105,7 +107,7 @@ class SensorPublisherJointState {
 
       // Skips the current rigid body if it's not connected to the world via a
       // floating joint.
-      if (!rigid_body->getJoint().isFloating()) continue;
+      if (!rigid_body->getJoint().is_floating()) continue;
 
       // Creates a joint state message and publisher for the current robot if
       // they have not already been created. Stores them in
@@ -168,11 +170,11 @@ class SensorPublisherJointState {
       if (rigid_body->get_model_name() == robot_name) {
         const DrakeJoint& joint = rigid_body->getJoint();
 
-        if (joint.getNumPositions() > 0) {
-          // robot_struct->num_positions_ += joint.getNumPositions();
-          // robot_struct->num_velocities_ += joint.getNumVelocities();
+        if (joint.get_num_positions() > 0) {
+          // robot_struct->num_positions_ += joint.get_num_positions();
+          // robot_struct->num_velocities_ += joint.get_num_velocities();
 
-          if (joint.isFloating()) {
+          if (joint.is_floating()) {
             robot_struct->message->name.push_back("floating_x");
             robot_struct->message->name.push_back("floating_y");
             robot_struct->message->name.push_back("floating_z");
@@ -182,17 +184,18 @@ class SensorPublisherJointState {
           } else {
             // Verifies that the joint has the same number of position versus
             // velocity DOFs. Throws an exception if this is not true.
-            if (joint.getNumPositions() != joint.getNumVelocities()) {
+            if (joint.get_num_positions() != joint.get_num_velocities()) {
               throw std::runtime_error(
-                  "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
+                  "ERROR: Joint \"" + joint.get_name() + "\" in robot \"" +
                   robot_name +
                   "\" has a different number of positions and velocities.");
             }
 
             // Adds the names of the DOFs that belong to the joint to the
             // message.
-            for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-              robot_struct->message->name.push_back(joint.getPositionName(ii));
+            for (int ii = 0; ii < joint.get_num_positions(); ii++) {
+              robot_struct->message->name.push_back(
+                  joint.get_position_name(ii));
             }
           }
         }
@@ -236,9 +239,9 @@ class SensorPublisherJointState {
     // The following code extracts the position and velocity values from it
     // and computes the kinematic properties of the system.
     auto uvec = drake::toEigen(u);
-    auto q = uvec.head(rigid_body_tree->number_of_positions());    // position
-    auto v = uvec.segment(rigid_body_tree->number_of_positions(),  // velocity
-                          rigid_body_tree->number_of_velocities());
+    auto q = uvec.head(rigid_body_tree->get_num_positions());    // position
+    auto v = uvec.segment(rigid_body_tree->get_num_positions(),  // velocity
+                          rigid_body_tree->get_num_velocities());
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     int q_index = 0;
@@ -265,7 +268,7 @@ class SensorPublisherJointState {
 
       // Skips the current rigid body if is connected to another rigid body
       // via a fixed joint.
-      if (joint.getNumPositions() == 0) continue;
+      if (joint.get_num_positions() == 0) continue;
 
       // Defines the key that can be used to obtain the RobotJointStateStruct
       // object for the current robot. The key is simply the model name since
@@ -284,8 +287,8 @@ class SensorPublisherJointState {
 
       RobotJointStateStruct* robot_struct = robot_struct_in_map->second.get();
 
-      if (joint.getNumPositions() > 0) {
-        if (joint.isFloating()) {
+      if (joint.get_num_positions() > 0) {
+        if (joint.is_floating()) {
           auto transform = rigid_body_tree->relativeTransform(
               cache,
               rigid_body_tree->FindBodyIndex(
@@ -304,10 +307,10 @@ class SensorPublisherJointState {
           robot_struct->message->position[index++] = rpy(1);
           robot_struct->message->position[index++] = rpy(2);
 
-          q_index += joint.getNumPositions();
+          q_index += joint.get_num_positions();
           index = robot_struct->message_index;
 
-          for (size_t ii = 0; ii < joint.getNumVelocities(); ii++) {
+          for (size_t ii = 0; ii < joint.get_num_velocities(); ii++) {
             robot_struct->message->velocity[index++] = v[v_index++];
           }
 
@@ -315,16 +318,16 @@ class SensorPublisherJointState {
         } else {
           // Verifies that the joint has the same number of position versus
           // velocity DOFs. Throws an exception if this is not true.
-          if (joint.getNumPositions() != joint.getNumVelocities()) {
+          if (joint.get_num_positions() != joint.get_num_velocities()) {
             throw std::runtime_error(
-                "ERROR: Joint \"" + joint.getName() + "\" in robot \"" +
+                "ERROR: Joint \"" + joint.get_name() + "\" in robot \"" +
                 robot_struct->robot_name +
                 "\" has a different number of positions and velocities.");
           }
 
           // Adds the names of the DOFs that belong to the joint to the
           // message.
-          for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+          for (int ii = 0; ii < joint.get_num_positions(); ii++) {
             size_t index = robot_struct->message_index++;
             robot_struct->message->position[index] = q[q_index++];
             robot_struct->message->velocity[index] = v[v_index++];

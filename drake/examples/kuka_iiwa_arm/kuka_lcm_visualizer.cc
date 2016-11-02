@@ -1,11 +1,11 @@
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
-#include "drake/systems/LCMSystem.h"
+#include "drake/system1/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "lcmtypes/drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_iiwa_status.hpp"
 
 namespace drake {
 namespace examples {
@@ -43,7 +43,7 @@ class SinkSystem {
   bool isTimeVarying() const { return false; }
 };
 
-int DoMain(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   const std::shared_ptr<RigidBodyTree> tree =
@@ -64,5 +64,5 @@ int DoMain(int argc, const char* argv[]) {
 
 
 int main(int argc, const char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::DoMain(argc, argv);
+  return drake::examples::kuka_iiwa_arm::main(argc, argv);
 }

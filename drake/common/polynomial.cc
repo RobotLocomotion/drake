@@ -1,11 +1,19 @@
 #include "drake/common/polynomial.h"
 
 #include <cstring>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
-using namespace std;
-using namespace Eigen;
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
+
+using Eigen::Dynamic;
+using Eigen::Matrix;
+using Eigen::PolynomialSolver;
+using std::runtime_error;
+using std::string;
+using std::vector;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::HasSameExponents(
@@ -37,7 +45,7 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient,
   m.terms = terms;
 
   is_univariate_ = true;
-  for (int i = (int)m.terms.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(m.terms.size()) - 1; i >= 0; i--) {
     if ((i > 0) && (m.terms[i].var != m.terms[0].var)) {
       is_univariate_ = false;
     }
@@ -524,11 +532,13 @@ template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
 Polynomial<CoefficientType>::VariableNameToId(const string name,
                                               const unsigned int m) {
+  DRAKE_THROW_UNLESS(IsValidVariableName(name));
   unsigned int multiplier = 1;
   VarType name_part = 0;
-  for (int i = (int)name.size() - 1; i >= 0; i--) {
-    VarType offset = static_cast<VarType>(
-        strchr(kNameChars, name[i]) - kNameChars);
+  for (int i = static_cast<int>(name.size()) - 1; i >= 0; i--) {
+    const char* const character_match = strchr(kNameChars, name[i]);
+    DRAKE_ASSERT(character_match);
+    VarType offset = static_cast<VarType>(character_match - kNameChars);
     name_part += (offset + 1) * multiplier;
     multiplier *= kNumNameChars + 1;
   }
@@ -550,8 +560,9 @@ string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
                                                 // doing the trig support here
 
   unsigned int m = id / 2 / kMaxNamePart;
-  unsigned int multiplier = (unsigned int)std::pow((double)(kNumNameChars + 1),
-                                                   (int)(kNameLength - 1));
+  unsigned int multiplier = static_cast<unsigned int>(
+      std::pow(static_cast<double>(kNumNameChars + 1),
+               static_cast<int>(kNameLength) - 1));
   char name[kNameLength + 1];
   int j = 0;
   for (int i = 0; i < static_cast<int>(kNameLength); i++) {
@@ -595,7 +606,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
   }
 }
 
-template class DRAKECOMMON_EXPORT Polynomial<double>;
+template class DRAKE_EXPORT Polynomial<double>;
 
-// template class DRAKECOMMON_EXPORT Polynomial<std::complex<double>>; //
+// template class DRAKE_EXPORT Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it

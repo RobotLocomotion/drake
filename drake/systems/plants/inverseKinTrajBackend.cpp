@@ -1,7 +1,7 @@
-
-#include "inverseKinBackend.h"
+#include "drake/systems/plants/inverseKinBackend.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <Eigen/Core>
@@ -16,9 +16,8 @@
 #include <drake/systems/plants/ConstraintWrappers.h>
 #include <drake/systems/plants/IKoptions.h>
 #include <drake/systems/plants/RigidBodyTree.h>
-#include <drake/systems/vector.h>
 
-#include "ik_trajectory_helper.h"
+#include "drake/systems/plants/ik_trajectory_helper.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -288,7 +287,9 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
       for (int j = 0; j < nT; j++) {
         mtkc_dc_dx.block(0, j * nq, nc, nq) =
             mtkc_dc.block(0, mtkc_dc_off * nq, nc, nq);
-        mtkc_dc_off += 1 + t_inbetween[j].size();
+        if (j != nT - 1) {
+          mtkc_dc_off += 1 + t_inbetween[j].size();
+        }
       }
 
       // Iterate over each intermediate timestamp again, integrating
@@ -338,7 +339,7 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
   const RigidBodyConstraint* const* constraint_array_;
 };
 
-}
+}  // anonymous namespace
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
@@ -369,7 +370,7 @@ void inverseKinTrajBackend(
     dt_ratio[j] = dt[j] / dt[j + 1];
   }
 
-  const int nq = model->number_of_positions();
+  const int nq = model->get_num_positions();
 
   IKTrajectoryHelper helper(nq, nT, t, nT, 2,
                             ikoptions, dt.data(), dt_ratio.data());
@@ -580,4 +581,4 @@ template void inverseKinTrajBackend(
 
 }  // namespace plants
 }  // namespace systems
-}  // namespace Drake
+}  // namespace drake

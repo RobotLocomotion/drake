@@ -4,7 +4,8 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -12,9 +13,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int length) {
-  this->DeclareInputPort(kVectorValued, length, kContinuousSampling);
-  this->DeclareOutputPort(kVectorValued, length, kContinuousSampling);
+Integrator<T>::Integrator(int size) {
+  this->DeclareInputPort(kVectorValued, size, kContinuousSampling);
+  this->DeclareOutputPort(kVectorValued, size, kContinuousSampling);
 }
 
 template <typename T>
@@ -25,12 +26,11 @@ void Integrator<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   // TODO(amcastro-tri): Provide simple accessors here to avoid lengthy
   // constructions.
-  auto state_vector =
-      context->get_mutable_state()->continuous_state->get_mutable_state();
+  VectorBase<T>* state_vector =
+      context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
   DRAKE_ASSERT(value.rows() == state_vector->size() && value.cols() == 1);
-  context->get_mutable_state()->continuous_state->
-      get_mutable_state()->SetFromVector(value);
+  state_vector->SetFromVector(value);
 }
 
 // TODO(amcastro-tri): we should be able to express that initial conditions
@@ -44,20 +44,20 @@ bool Integrator<T>::has_any_direct_feedthrough() const {
 template <typename T>
 std::unique_ptr<ContinuousState<T>> Integrator<T>::AllocateContinuousState()
     const {
-  // The integrator's state is first-order; its state vector length is the
-  // same as the input (and output) vector length.
-  const int length = System<T>::get_output_port(0).get_size();
-  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == length);
+  // The integrator's state is first-order; its state vector size is the
+  // same as the input (and output) vector size.
+  const int size = System<T>::get_output_port(0).get_size();
+  DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == size);
   return std::make_unique<ContinuousState<T>>(
-      std::make_unique<BasicVector<T>>(length));
+      std::make_unique<BasicVector<T>>(size));
 }
 
 template <typename T>
 void Integrator<T>::EvalTimeDerivatives(const Context<T>& context,
                                         ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
-  const BasicVector<T>* input = context.get_vector_input(0);
-  derivatives->get_mutable_state()->SetFromVector(input->get_value());
+  const BasicVector<T>* input = this->EvalVectorInput(context, 0);
+  derivatives->SetFromVector(input->get_value());
 }
 
 template <typename T>
@@ -74,7 +74,8 @@ void Integrator<T>::EvalOutput(const Context<T>& context,
 
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKESYSTEMFRAMEWORK_EXPORT Integrator<double>;
+template class DRAKE_EXPORT Integrator<double>;
+template class DRAKE_EXPORT Integrator<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

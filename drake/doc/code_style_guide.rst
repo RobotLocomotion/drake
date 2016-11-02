@@ -40,8 +40,21 @@ Clarifications
   acronyms.
 * Manually provide user gradients only when we know more than AutoDiffScalar
   possibly could (e.g. sparsity of the gradients).
-* Use exceptions for error handling.  Essential control loops must be exception
-  safe.
+* For the `Exceptions
+  <https://google.github.io/styleguide/cppguide.html#Exceptions>`_ style rule,
+  we clarify as follows. Throwing exceptions is permitted and encouraged for
+  error handling. Unit tests may catch exceptions using
+  `EXPECT_THROW <https://github.com/google/googletest/blob/master/googletest/docs/AdvancedGuide.md#exception-assertions>`_
+  if the exception is documented in the API. Otherwise, catching exceptions is
+  forbidden. For more context, see
+  `PR #3759 <https://github.com/robotlocomotion/drake/pull/3759>`_.
+
+  * We allow exceptions to be thrown because it enables a more detailed
+    description of the error to be provided relative to an assert statement.
+  * **Note:** This is a work-in-progress rule, but captures our
+    currently-in-effect style. We are open to discussion on additional uses for
+    exceptions if and when the need arises.
+
 * No dynamic allocation in the inner simulation/control loops.  Code should be
   still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using
@@ -50,6 +63,18 @@ Clarifications
   * Only use Doxygen comments (``///`` or ``/** */``) on published APIs (public
     or protected classes and methods).  Code with private access or declared in
     ``.cc`` files should not use the Doxygen format.
+  * If you decide to use Doxygen formatting hints, then those *must* render
+    correctly. For instructions on how to generate the Doxygen website, click
+    :ref:`here <documentation-generation-instructions>`. For additional
+    background information, see
+    `PR #3584 <https://github.com/RobotLocomotion/drake/pull/3584>`_.
+  * Prefer Doxygen comment blocks that are readable in both a rendered and
+    un-rendered state. This could mean foregoing the most beautiful LaTeX
+    formatting for some serviceable text equations readable in the code. Or, you
+    may want to augment beautiful-but-unreadable formatting with a simplified
+    presentation of the same information to accommodate future programmers, who
+    are likely to only see the header file. For more background information, see
+    `PR #3584 <https://github.com/RobotLocomotion/drake/pull/3584>`_.
 
 * Embrace templates/C++14 when it makes the code more correct (more clear or
   more readable also implies more correct).  Minimize template requirements on
@@ -88,6 +113,41 @@ Clarifications
   * ``ptrdiff_t`` is allowed when doing arithmetic on bare pointers (this is
     very rare).  Do not use it as a generic "large signed integer" type, nor
     as a generic "index into a matrix" type.
+
+* For the `Use of const
+  <https://google.github.io/styleguide/cppguide.html#Use_of_const>`_ style rule,
+  we clarify that:
+
+  * A class member variable *must* be declared ``const`` if it is not modified
+    after the class is constructed, and
+  * You *must not* use ``const`` in a function declaration where it adds no
+    meaning. That occurs in pass-by-value parameter declarations, where
+    ``const int i`` and ``int i`` mean the same thing, and in return-by-value
+    declarations, where ``int f()`` and ``const int f()`` are also synonymous.
+    You may add ``const`` to such parameter declarations in the function
+    *definition*, where it does indicate that the implementation will not
+    modify its own copy of the parameter value. The C++ standard explicitly
+    states that the signatures are identical with or without the ``const`` in
+    these cases, see `Overloadable declarations
+    <http://www.lcdf.org/c%2B%2B/clause13.html>`_. (This applies to
+    ``volatile`` also.)
+
+    If you want to declare and define a function in one place, you have
+    several options:
+
+    * Forgo marking the parameters as ``const`` (not a great loss for short
+      functions defined inline), or
+    * create some ``const`` local variables initialized to the supplied
+      parameter values (likely to be optimized away by the compiler), or
+    * split the declaration and definition (be sure to add the ``inline``
+      keyword if the function would otherwise have been implicitly inlined).
+
+* For the `Pointer and Reference Expressions Rule <https://google.github.io/styleguide/cppguide.html#Pointer_and_Reference_Expressions>`_,
+  we clarify as follows. When declaring a pointer or a reference, the "``*``"
+  and "``&``" symbols must be next to the variable *type*, not the variable
+  *name*. In other words use "``const MyClass& foo;``" instead of
+  "``const MyClass &foo;``". This is what is enforced by :ref:`clang-format <code-style-tools-clang-format>`. For additional context, see
+  `this comment thread <https://github.com/robotlocomotion/drake/pull/3830#issuecomment-254849776>`_.
 
 .. _code-style-guide-cpp-exceptions:
 
@@ -184,6 +244,13 @@ Additional Rules
   * For discussion, see Drake
     `#1935 <https://github.com/RobotLocomotion/drake/issues/1935>`_ and
     `#3355 <https://github.com/RobotLocomotion/drake/issues/3355>`_.
+
+* The ``main()`` method should be as brief as possible since it exists outside
+  of namespace ``drake``. It should simply call another method that is
+  appropriately namespaced within namespace ``drake``. The method can be called
+  "``main()``" since it is allowed by the style guide's
+  `exceptions to naming rules <https://google.github.io/styleguide/cppguide.html#Exceptions_to_Naming_Rules>`_, though other method names like
+  "``exec()``" are also acceptable.
 
 .. _code-style-guide-matlab:
 

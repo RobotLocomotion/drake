@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include "drake/drakeIKoptions_export.h"
+#include "drake/common/drake_export.h"
 
 class RigidBodyTree;
 
-class DRAKEIKOPTIONS_EXPORT IKoptions {
+class DRAKE_EXPORT IKoptions {
  private:
   RigidBodyTree *robot_;
   int nq_;
@@ -52,8 +52,11 @@ class DRAKEIKOPTIONS_EXPORT IKoptions {
   void setqdf(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
   void setAdditionaltSamples(const Eigen::RowVectorXd &t_samples);
   void updateRobot(RigidBodyTree *new_robot);
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getQ(Eigen::MatrixXd &Q) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getQa(Eigen::MatrixXd &Qa) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getQv(Eigen::MatrixXd &Qv) const;
   bool getDebug() const;
   bool getSequentialSeedFlag() const;
@@ -62,9 +65,13 @@ class DRAKEIKOPTIONS_EXPORT IKoptions {
   int getSuperbasicsLimit() const;
   int getMajorIterationsLimit() const;
   int getIterationsLimit() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getAdditionaltSamples(Eigen::RowVectorXd &additional_tSamples) const;
   bool getFixInitialState() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getq0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getqd0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getqdf(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
 };

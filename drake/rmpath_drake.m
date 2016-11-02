@@ -8,24 +8,21 @@ if ispc
   % todo: remove added paths
 end
 
-rmpath(fullfile(root,'systems'));
-rmpath(fullfile(root,'systems','plants'));
-rmpath(fullfile(root,'systems','plants','collision'));
-rmpath(fullfile(root,'systems','plants','constraint'));
-rmpath(fullfile(root,'systems','controllers'));
-rmpath(fullfile(root,'systems','observers'));
-rmpath(fullfile(root,'systems','trajectories'));
-rmpath(fullfile(root,'systems','trajectories','TrajectoryLibraries'));
-rmpath(fullfile(root,'systems','trajectories','FunnelLibraries'));
-rmpath(fullfile(root,'systems','frames'));
-rmpath(fullfile(root,'systems','visualizers'));
-rmpath(fullfile(root,'systems','robotInterfaces'));
-rmpath(fullfile(root,'systems','robotInterfaces','calibration'));
+rmpath(fullfile(root,'matlab','systems'));
+rmpath(fullfile(root,'matlab','systems','plants'));
+rmpath(fullfile(root,'matlab','systems','plants','collision'));
+rmpath(fullfile(root,'matlab','systems','plants','constraint'));
+rmpath(fullfile(root,'matlab','systems','controllers'));
+rmpath(fullfile(root,'matlab','systems','observers'));
+rmpath(fullfile(root,'matlab','systems','trajectories'));
+rmpath(fullfile(root,'matlab','systems','trajectories','TrajectoryLibraries'));
+rmpath(fullfile(root,'matlab','systems','trajectories','FunnelLibraries'));
+rmpath(fullfile(root,'matlab','systems','frames'));
+rmpath(fullfile(root,'matlab','systems','visualizers'));
+rmpath(fullfile(root,'matlab','systems','robotInterfaces'));
+rmpath(fullfile(root,'matlab','systems','robotInterfaces','calibration'));
 rmpath(fullfile(root,'matlab','solvers'));
 rmpath(fullfile(root,'matlab','solvers','trajectoryOptimization'));
-rmpath(fullfile(root,'util'));
-rmpath(fullfile(root,'util','geometry'));
-rmpath(fullfile(root,'util','visualization'));
 rmpath(fullfile(root,'thirdParty'));
 rmpath(fullfile(root,'thirdParty','bsd'));
 rmpath(fullfile(root,'thirdParty','bsd','arrow3d'));
@@ -42,6 +39,9 @@ rmpath(fullfile(root,'matlab','solvers','BMI'));
 rmpath(fullfile(root,'matlab','solvers','BMI','util'));
 rmpath(fullfile(root,'matlab','solvers','BMI','kinematics'));
 rmpath(fullfile(root,'matlab','solvers','qpSpline'));
+rmpath(fullfile(root,'matlab','util'));
+rmpath(fullfile(root,'matlab','util','geometry'));
+rmpath(fullfile(root,'matlab','util','visualization'));
 rmpath(fullfile(root,'bindings','matlab'));
 
 javarmpath(fullfile(pods_get_base_path,'share','java','drake.jar'));

@@ -3,7 +3,7 @@
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
-#define DRAKERBM_EXPORT
+#define DRAKE_EXPORT
 
 %{
 #ifdef SWIGPYTHON
@@ -15,6 +15,7 @@
 
 %include <typemaps.i>
 %include <std_vector.i>
+%include <std_map.i>
 
 #define SWIG_SHARED_PTR_NAMESPACE std
 // SWIG has built-in support for shared pointers, and can use either
@@ -31,6 +32,10 @@
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
 %template(vectorString) std::vector<std::string>;
+%template(vectorInt) std::vector<int>;
+%template(vectorFloat) std::vector<float>;
+%template(vectorDouble) std::vector<double>;
+%template(mapStringString) std::map<std::string,std::string>;
 %shared_ptr(RigidBody)
 %template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody> >;
 %shared_ptr(RigidBodyFrame)
@@ -103,6 +108,20 @@
 
   KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > doKinematics(const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& q, const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& v) {
     return $self->doKinematics(q, v);
+  }
+
+  Eigen::Matrix4d relativeTransform(
+      const KinematicsCache<double>& cache, int base_or_frame_ind, int body_or_frame_ind) const
+  {
+    return $self->relativeTransform(cache, base_or_frame_ind, body_or_frame_ind).matrix();
+  }
+
+  Eigen::Matrix3Xd getTerrainContactPoints(
+      const RigidBody& body,
+      const std::string& group_name = "") const {
+    Eigen::Matrix3Xd pts;
+    $self->getTerrainContactPoints(body, &pts, group_name);
+    return pts;
   }
 
   Eigen::Matrix<double, drake::kSpaceDimension, Eigen::Dynamic> transformPoints(

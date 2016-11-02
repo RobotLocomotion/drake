@@ -54,6 +54,7 @@ class FunctionalForm::Internal {
   static Form const kCos[kSize];
   static Form const kExp[kSize];
   static Form const kLog[kSize];
+  static Form const kMax[kSize][kSize];
   static Form const kSin[kSize];
   static Form const kSqrt[kSize];
 
@@ -200,6 +201,42 @@ FunctionalForm log(FunctionalForm const& x) {
                         FunctionalForm::Variables(x.vars_));
 }
 
+FunctionalForm max(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Form f =
+      FunctionalForm::Internal::kMax[IndexOf(l.form_)][IndexOf(r.form_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(f)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(f, std::move(vars));
+}
+
+FunctionalForm max(FunctionalForm const& l, double r) {
+  return max(l, FunctionalForm(r));
+}
+
+FunctionalForm max(double l, FunctionalForm const& r) {
+  return max(FunctionalForm(l), r);
+}
+
+FunctionalForm min(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Form f =
+      FunctionalForm::Internal::kMax[IndexOf(l.form_)][IndexOf(r.form_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(f)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(f, std::move(vars));
+}
+
+FunctionalForm min(FunctionalForm const& l, double r) {
+  return min(l, FunctionalForm(r));
+}
+
+FunctionalForm min(double l, FunctionalForm const& r) {
+  return min(FunctionalForm(l), r);
+}
+
 FunctionalForm sin(FunctionalForm const& x) {
   return FunctionalForm(FunctionalForm::Internal::kSin[IndexOf(x.form_)],
                         FunctionalForm::Variables(x.vars_));
@@ -220,31 +257,37 @@ FunctionalForm& operator-=(FunctionalForm& l, FunctionalForm const& r) {
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator*=(FunctionalForm& l, FunctionalForm const& r) {
   l = l * r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator/=(FunctionalForm& l, FunctionalForm const& r) {
   l = l / r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator+=(FunctionalForm& l, double r) {
   l = l + r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator-=(FunctionalForm& l, double r) {
   l = l - r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator*=(FunctionalForm& l, double r) {
   l = l * r;
   return l;
 }
 
+// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 FunctionalForm& operator/=(FunctionalForm& l, double r) {
   l = l / r;
   return l;
@@ -607,6 +650,21 @@ FunctionalForm::Form const FunctionalForm::Internal::kLog[kSize] = {
     /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
     /* ----  ----  ----  ----  ----  ----  ----  ---- */
        UNDF, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kMax[kSize][kSize] = {
+    /* clang-format off */
+    /*    \ r:  ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /*  l: \    ----  ----  ----  ----  ----  ----  ----  ---- */
+    /* ZERO */ {ZERO, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* CONS */ {CONS, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* LIN  */ {DIFF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* AFF  */ {DIFF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* POLY */ {DIFF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* DIFF */ {DIFF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* ARB  */ { ARB,  ARB,  ARB,  ARB,  ARB,  ARB,  ARB, UNDF},
+    /* UNDF */ {UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF},
     /* clang-format on */
 };
 

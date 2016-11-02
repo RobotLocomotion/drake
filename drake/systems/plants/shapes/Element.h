@@ -4,11 +4,11 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeShapes_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
 namespace DrakeShapes {
-class DRAKESHAPES_EXPORT Element {
+class DRAKE_EXPORT Element {
  public:
   Element(const Geometry& geometry_in,
           const Eigen::Isometry3d& T_element_to_local_in)
@@ -46,6 +46,7 @@ class DRAKESHAPES_EXPORT Element {
 
   const Geometry& getGeometry() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
  protected:
@@ -60,4 +61,5 @@ class DRAKESHAPES_EXPORT Element {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-}
+
+}  // namespace DrakeShapes

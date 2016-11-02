@@ -1,10 +1,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 
-#include "drake/drakeIK_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 
@@ -50,7 +51,7 @@ class RigidBodyTree;
  * @param ikoptions    The options to set parameters of IK problem.
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKin(
+DRAKE_EXPORT void inverseKin(
     RigidBodyTree* model,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom,
@@ -73,7 +74,7 @@ struct IKResults {
  * Simplified (non-template) version of inverseKin.  Useful for
  * generating bindings to non-C++ languages.
  */
-DRAKEIK_EXPORT IKResults inverseKinSimple(
+DRAKE_EXPORT IKResults inverseKinSimple(
     RigidBodyTree* model, const Eigen::VectorXd& q_seed,
     const Eigen::VectorXd& q_nom,
     const std::vector<RigidBodyConstraint*>& constraint_array,
@@ -96,7 +97,7 @@ DRAKEIK_EXPORT IKResults inverseKinSimple(
  * @param ikoptions  Same as in inverseKin
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void approximateIK(
+DRAKE_EXPORT void approximateIK(
     RigidBodyTree* model,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom,
@@ -133,7 +134,7 @@ DRAKEIK_EXPORT void approximateIK(
  * q_seed.col(i) would always be used as the seed at t[i]
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKinPointwise(
+DRAKE_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom, const int num_constraints,
@@ -146,7 +147,7 @@ DRAKEIK_EXPORT void inverseKinPointwise(
  * Simplified (non-template) version of inverseKinPointwise.  Useful
  * for generating bindings to non-C++ languages.
  */
-DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
+DRAKE_EXPORT IKResults inverseKinPointwiseSimple(
     RigidBodyTree* model,
     const Eigen::VectorXd& t,
     const Eigen::MatrixXd& q_seed,
@@ -185,7 +186,7 @@ DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE, typename DerivedF>
-DRAKEIK_EXPORT void inverseKinTraj(
+DRAKE_EXPORT void inverseKinTraj(
     RigidBodyTree* model, const int nT, const double* t,
     const Eigen::MatrixBase<DerivedA>& qdot0_seed,
     const Eigen::MatrixBase<DerivedB>& q_seed,
@@ -202,7 +203,7 @@ DRAKEIK_EXPORT void inverseKinTraj(
  * Simplified (non-template) version of inverseKinTraj.  Useful
  * for generating bindings to non-C++ languages.
  */
-DRAKEIK_EXPORT IKResults inverseKinTrajSimple(
+DRAKE_EXPORT IKResults inverseKinTrajSimple(
     RigidBodyTree* model,
     const Eigen::VectorXd& t,
     const Eigen::MatrixXd& q_seed,

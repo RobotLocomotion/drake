@@ -1,6 +1,7 @@
 #include "drake/automotive/car_simulation.h"
 
 #include <cstdlib>
+#include <limits>
 
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -147,7 +148,7 @@ void AddFlatTerrainToWorld(
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   rigid_body_tree->addCollisionElement(
-      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
   rigid_body_tree->updateStaticCollisionElements();
 }
@@ -161,14 +162,14 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   // Sets up PD controllers for throttle and steering.
   const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
 
-  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->number_of_positions());
+  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->get_num_positions());
   Kp.setZero();
 
-  MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->number_of_velocities());
+  MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->get_num_velocities());
   Kd.setZero();
 
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
-      tree->number_of_positions() + tree->number_of_velocities(), 3);
+      tree->get_num_positions() + tree->get_num_velocities(), 3);
   map_driving_cmd_to_x_d.setZero();
 
   for (int actuator_idx = 0;
@@ -201,12 +202,12 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
       // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
+          tree->get_num_positions() + rigid_body->get_velocity_start_index(),
           DrivingCommandIndices::kThrottle) = 20;
 
       // Saves the mapping between the driving command and the braking command.
       map_driving_cmd_to_x_d(
-          tree->number_of_positions() + rigid_body->get_velocity_start_index(),
+          tree->get_num_positions() + rigid_body->get_velocity_start_index(),
           DrivingCommandIndices::kBrake) = -20;
     }
   }
@@ -238,7 +239,7 @@ VectorXd GetInitialState(const RigidBodySystem& rigid_body_sys) {
   const auto& tree = rigid_body_sys.getRigidBodyTree();
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys.getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
   return x0;
 }
 

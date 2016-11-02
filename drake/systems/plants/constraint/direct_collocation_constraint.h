@@ -4,10 +4,11 @@
 
 #include <Eigen/Core>
 
-#include "drake/drakeDynamicConstraint_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"
-#include "drake/systems/System.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +21,7 @@ namespace systems {
 ///
 /// Each evaluation of the constraint considers a pair of state
 /// vectors + input vectors along with an accompanying timestep.
-class DRAKEDYNAMICCONSTRAINT_EXPORT DirectCollocationConstraint :
+class DRAKE_EXPORT DirectCollocationConstraint :
       public solvers::Constraint {
  public:
   /// The format of the input to the eval() function is defined by @p
@@ -41,6 +42,15 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DirectCollocationConstraint :
   void Eval(const Eigen::Ref<const TaylorVecXd>& x,
             TaylorVecXd& y) const override;
 
+  explicit DirectCollocationConstraint(
+      const DirectCollocationConstraint& other) = delete;
+  DirectCollocationConstraint& operator=(
+      const DirectCollocationConstraint& other) = delete;
+  explicit DirectCollocationConstraint(
+      DirectCollocationConstraint&& other) = delete;
+  DirectCollocationConstraint& operator=(
+      DirectCollocationConstraint&& other) = delete;
+
  protected:
   virtual void dynamics(const TaylorVecXd& state,
                         const TaylorVecXd& input,
@@ -51,30 +61,38 @@ class DRAKEDYNAMICCONSTRAINT_EXPORT DirectCollocationConstraint :
   int num_inputs_;
 };
 
-/// Implements a dynamic constraint which uses the dynamics function
+/// Implements a dynamic constraint which uses the continuous dynamics
 /// of a system.
-template <typename System>
-class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
+class DRAKE_EXPORT System2DirectCollocationConstraint
+    : public DirectCollocationConstraint {
  public:
-  // TODO(sam.creasey) Should this be a const bare ptr?
-  explicit SystemDirectCollocationConstraint(std::shared_ptr<System> system)
-      : DirectCollocationConstraint(drake::getNumStates(*system),
-                          drake::getNumInputs(*system)),
-        system_(system) {}
+  /// Create a direct colocation constraint for a system.  Systems
+  /// must have a single input port and a single output port, match
+  /// the template requirement of AutoDiffXd, and implement
+  /// EvalTimeDerivatives.
+  explicit System2DirectCollocationConstraint(
+      std::unique_ptr<System<AutoDiffXd>> system);
+  ~System2DirectCollocationConstraint() override;
+
+  explicit System2DirectCollocationConstraint(
+      const System2DirectCollocationConstraint& other) = delete;
+  System2DirectCollocationConstraint& operator=(
+      const System2DirectCollocationConstraint& other) = delete;
+  explicit System2DirectCollocationConstraint(
+      System2DirectCollocationConstraint&& other) = delete;
+  System2DirectCollocationConstraint& operator=(
+      System2DirectCollocationConstraint&& other) = delete;
 
  private:
   void dynamics(const TaylorVecXd& state,
                 const TaylorVecXd& input,
-                TaylorVecXd* xdot) const override {
-    typename System::template StateVector<TaylorVarXd> x = state;
-    typename System::template InputVector<TaylorVarXd> u = input;
-    TaylorVarXd t(1);
-    t = 0;
-    *xdot = toEigen(system_->dynamics(t, x, u));
-  }
+                TaylorVecXd* xdot) const override;
 
-  std::shared_ptr<System> system_;
+  std::unique_ptr<System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  FreestandingInputPort* input_port_{nullptr};
+  std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

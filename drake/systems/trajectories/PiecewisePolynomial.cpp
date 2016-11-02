@@ -1,9 +1,12 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
-#include "drake/common/drake_assert.h"
+#include <algorithm>
 
-using namespace std;
-using namespace Eigen;
+#include "drake/common/drake_assert.h"
+#include "drake/common/test/random_polynomial_matrix.h"
+
+using std::runtime_error;
+using std::vector;
 
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(
@@ -320,6 +323,9 @@ Eigen::Index PiecewisePolynomial<CoefficientType>::cols() const {
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
 }
 
+// TODO(jwnimmer-tri) This method should move into legacy test-only code (in
+// other words, some other class and header).  Unseeded randomness leads to
+// hard-to-debug failures.
 template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
   CoefficientType>::random(Eigen::Index rows, Eigen::Index cols,
@@ -331,12 +337,12 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
   for (Eigen::Index segment_index = 0; segment_index < num_segments;
        ++segment_index) {
     polynomials.push_back(
-        PolynomialType::RandomPolynomialMatrix(
+        drake::test::RandomPolynomialMatrix<CoefficientType>(
             num_coefficients_per_polynomial, rows, cols));
   }
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }
 
-template class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial<double>;
-// template class DRAKETRAJECTORIES_EXPORT
+template class DRAKE_EXPORT PiecewisePolynomial<double>;
+// template class DRAKE_EXPORT
 // PiecewisePolynomial<std::complex<double>>; // doesn't work yet

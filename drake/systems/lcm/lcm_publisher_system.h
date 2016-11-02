@@ -1,12 +1,14 @@
 #pragma once
 
-#include <lcm/lcm-cpp.hpp>
+#include <string>
 
-#include "drake/drakeLCMSystem2_export.h"
+#include "drake/common/drake_export.h"
+#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
+#include "drake/systems/lcm/serializer.h"
 
 namespace drake {
 namespace systems {
@@ -15,10 +17,48 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
+class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
-   * A constructor.
+   * Factory method that returns a publisher System that takes
+   * Value<LcmMessage> message objects on its sole abstract-valued input port.
+   *
+   * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
+   *
+   * @param[in] channel The LCM channel on which to publish.
+   *
+   * @param lcm A non-null pointer to the LCM subsystem to publish on.
+   * The pointer must remain valid for the lifetime of this object.
+   */
+  template <typename LcmMessage>
+  static std::unique_ptr<LcmPublisherSystem> Make(
+      const std::string& channel,
+      drake::lcm::DrakeLcmInterface* lcm) {
+    return std::make_unique<LcmPublisherSystem>(
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+  }
+
+  /**
+   * Constructor that returns a publisher System that takes message objects
+   * on its sole abstract-valued input port.  The type of the message object is
+   * determined by the @p serializer.
+   *
+   * @param[in] channel The LCM channel on which to publish.
+   *
+   * @param[in] serializer The serializer that converts between byte vectors
+   * and LCM message objects.
+   *
+   * @param lcm A non-null pointer to the LCM subsystem to publish on.
+   * The pointer must remain valid for the lifetime of this object.
+   */
+  LcmPublisherSystem(const std::string& channel,
+                     std::unique_ptr<SerializerInterface> serializer,
+                     drake::lcm::DrakeLcmInterface* lcm);
+
+  /**
+   * Constructor that returns a publisher System that takes vector data on
+   * its sole vector-valued input port.  The vector data are mapped to
+   * message contents by the @p translator.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
@@ -27,26 +67,29 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
    * is aliased by this constructor and thus must remain valid for the lifetime
    * of this object.
    *
-   * @param[in] lcm A pointer to the LCM subsystem.
+   * @param lcm A non-null pointer to the LCM subsystem to publish on.
+   * The pointer must remain valid for the lifetime of this object.
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     ::lcm::LCM* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm);
 
   /**
-   * A constructor.
+   * Constructor that returns a publisher System that takes vector data on
+   * its sole vector-valued input port.  The vector data are mapped to
+   * message contents by the translator found in the @p translator_dictionary.
    *
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] translator_dictionary A dictionary for obtaining the appropriate
    * translator for a particular LCM channel.
    *
-   * @param[in] lcm A pointer to the LCM subsystem.
+   * @param lcm A non-null pointer to the LCM subsystem to publish on.
+   * The pointer must remain valid for the lifetime of this object.
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     ::lcm::LCM* lcm);
-
+                     drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmPublisherSystem() override;
 
@@ -55,6 +98,8 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem& operator=(const LcmPublisherSystem&) = delete;
 
   std::string get_name() const override;
+
+  const std::string& get_channel_name() const;
 
   /// Returns the default name for a system that publishes @p channel.
   static std::string get_name(const std::string& channel);
@@ -72,31 +117,36 @@ class DRAKELCMSYSTEM2_EXPORT LcmPublisherSystem : public LeafSystem<double> {
                   SystemOutput<double>* output) const override {}
 
   /**
-   * Gets the most recently published message bytes; typically only used for
-   * unit testing.
+   * Returns the translator used by this publisher. This can be used to convert
+   * a serialized LCM message provided by
+   * DrakeMockLcm::get_last_published_message() into a BasicVector. It is useful
+   * in unit tests for verifying that a BasicVector was correctly published as
+   * an LCM message.
+   * @pre this system is using a vector-valued port (not abstract-valued).
    */
-  std::vector<uint8_t> GetMessage() const;
-
-  /**
-   * Gets the most recently published message bytes, and converts them to into
-   * vector form using the translator; typically only used for unit testing.
-   */
-  void GetMessage(BasicVector<double>* message_vector) const;
+  const LcmAndVectorBaseTranslator& get_translator() const;
 
  private:
+  // All constructors delegate to here.
+  LcmPublisherSystem(
+      const std::string& channel,
+      const LcmAndVectorBaseTranslator* translator,
+      std::unique_ptr<SerializerInterface> serializer,
+      drake::lcm::DrakeLcmInterface* lcm);
+
   // The channel on which to publish LCM messages.
   const std::string channel_;
 
-  // The translator that converts between LCM messages and
-  // drake::systems::VectorBase objects.
-  const LcmAndVectorBaseTranslator& translator_;
+  // Converts VectorBase objects into LCM message bytes.
+  // Will be non-null iff our input port is vector-valued.
+  const LcmAndVectorBaseTranslator* const translator_{};
+
+  // Converts Value<LcmMessage> objects into LCM message bytes.
+  // Will be non-null iff our input port is abstract-valued.
+  std::unique_ptr<SerializerInterface> serializer_;
 
   // A pointer to the LCM subsystem.
-  ::lcm::LCM* lcm_;
-
-  // The most recent message bytes; mutable is ok because it only affects the
-  // GetMessage() results, which are not part of the System contract.
-  mutable std::vector<uint8_t> message_bytes_;
+  drake::lcm::DrakeLcmInterface* const lcm_{};
 };
 
 }  // namespace lcm

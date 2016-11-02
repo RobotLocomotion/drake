@@ -16,7 +16,7 @@ using std::runtime_error;
 ViewerDrawTranslator::ViewerDrawTranslator(
     const RigidBodyTree& tree) :
     LcmAndVectorBaseTranslator(
-        tree.number_of_positions() + tree.number_of_velocities()),
+        tree.get_num_positions() + tree.get_num_velocities()),
     tree_(tree) {
   // Initializes the draw message.
   draw_message_.num_links = tree_.bodies.size();
@@ -54,7 +54,7 @@ void ViewerDrawTranslator::Serialize(double time,
 
   // Obtains the generalized positions from vector_base.
   const Eigen::VectorXd q = vector_base.CopyToVector().head(
-      tree_.number_of_positions());
+      tree_.get_num_positions());
 
   // Computes the poses of each body.
   KinematicsCache<double> cache = tree_.doKinematics(q);

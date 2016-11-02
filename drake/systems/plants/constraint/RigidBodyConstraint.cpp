@@ -1,5 +1,9 @@
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
+// TODO(#2274) NOTE This file has so many cpplint errors that we have
+// whitelisted it in its entirety.  When the file is next rewritten or updates,
+// we should re-enable cpplint accordingly.
+
 #include <map>
 #include <stdexcept>
 
@@ -10,8 +14,18 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Isometry3d;
+using Eigen::Map;
+using Eigen::Matrix3Xd;
+using Eigen::Matrix;
+using Eigen::MatrixXd;
+using Eigen::SparseMatrix;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::initializeAutoDiffTuple;
@@ -89,7 +103,7 @@ void QuasiStaticConstraint::eval(const double* t,
                                  const double* weights, VectorXd& c,
                                  MatrixXd& dc) const {
   if (isTimeValid(t)) {
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     dc.resize(2, nq + num_pts_);
     auto com = getRobotPointer()->centerOfMass(cache, m_model_instance_id_set_);
     auto dcom =
@@ -243,7 +257,7 @@ void PostureConstraint::setJointLimits(const VectorXi& joint_idx,
 void PostureConstraint::setJointLimits(int num_idx, const int* joint_idx,
                                        const VectorXd& lb, const VectorXd& ub) {
   for (int i = 0; i < num_idx; i++) {
-    if (joint_idx[i] >= getRobotPointer()->number_of_positions() ||
+    if (joint_idx[i] >= getRobotPointer()->get_num_positions() ||
         joint_idx[i] < 0) {
       throw std::runtime_error("all joint_idx should be within [0 nq-1]");
     }
@@ -381,7 +395,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
         "SingleTimeLinearPostureConstraint: min(iAfun) should be 0");
   }
   if (jAvar.minCoeff() < 0 ||
-      jAvar.maxCoeff() > getRobotPointer()->number_of_positions() - 1) {
+      jAvar.maxCoeff() > getRobotPointer()->get_num_positions() - 1) {
     throw std::runtime_error(
         "SingleTimeLinearPostureConstraint: "
         "jAvar should be within[0 robot.nq-1]");
@@ -390,7 +404,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   jAvar_ = jAvar;
   A_ = A;
   A_mat_.resize(num_constraint_,
-                getRobotPointer()->number_of_positions());
+                getRobotPointer()->get_num_positions());
   A_mat_.reserve(lenA);
 
   for (int i = 0; i < lenA; i++) {
@@ -510,7 +524,7 @@ void MultipleTimeKinematicConstraint::eval(const double* t, int n_breaks,
   int num_valid_t = numValidTime(t, n_breaks);
   if (num_valid_t >= 2) {
     std::vector<bool> valid_time_flag = isTimeValid(t, n_breaks);
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     double* valid_t = new double[num_valid_t];
     MatrixXd valid_q(nq, num_valid_t);
     int valid_idx = 0;
@@ -631,11 +645,11 @@ void PositionConstraint::eval(const double* t, KinematicsCache<double>& cache,
                               VectorXd& c, MatrixXd& dc) const {
   if (isTimeValid(t)) {
     Matrix3Xd pos(3, n_pts_);
-    MatrixXd J(3 * n_pts_, getRobotPointer()->number_of_positions());
+    MatrixXd J(3 * n_pts_, getRobotPointer()->get_num_positions());
     evalPositions(cache, pos, J);
     c.resize(getNumConstraint(t), 1);
     dc.resize(getNumConstraint(t),
-              getRobotPointer()->number_of_positions());
+              getRobotPointer()->get_num_positions());
     int valid_row_idx = 0;
     int i = 0;
     while (i < getNumConstraint(t)) {
@@ -803,10 +817,10 @@ void QuatConstraint::eval(const double* t, KinematicsCache<double>& cache,
                           VectorXd& c, MatrixXd& dc) const {
   const int num_constraint = getNumConstraint(t);
   c.resize(num_constraint);
-  dc.resize(num_constraint, getRobotPointer()->number_of_positions());
+  dc.resize(num_constraint, getRobotPointer()->get_num_positions());
   if (isTimeValid(t)) {
     double prod;
-    MatrixXd dprod(1, getRobotPointer()->number_of_positions());
+    MatrixXd dprod(1, getRobotPointer()->get_num_positions());
     evalOrientationProduct(cache, prod, dprod);
     c(0) = 2.0 * prod * prod - 1.0;
     dc = 4.0 * prod * dprod;
@@ -951,10 +965,10 @@ void EulerConstraint::eval(const double* t, KinematicsCache<double>& cache,
   const int n_constraint = getNumConstraint(t);
   if (isTimeValid(t)) {
     Vector3d rpy;
-    MatrixXd drpy(3, getRobotPointer()->number_of_positions());
+    MatrixXd drpy(3, getRobotPointer()->get_num_positions());
     evalrpy(cache, rpy, drpy);
     c.resize(n_constraint);
-    dc.resize(n_constraint, getRobotPointer()->number_of_positions());
+    dc.resize(n_constraint, getRobotPointer()->get_num_positions());
     int valid_row_idx = 0;
     int i = 0;
     while (i < n_constraint) {
@@ -1051,15 +1065,17 @@ GazeOrientConstraint::GazeOrientConstraint(
 
 void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
                                 VectorXd& c, MatrixXd& dc) const {
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace std;
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL.
   using namespace drake;
 
   const int num_constraint = getNumConstraint(t);
   c.resize(num_constraint);
-  dc.resize(num_constraint, getRobotPointer()->number_of_positions());
+  dc.resize(num_constraint, getRobotPointer()->get_num_positions());
   if (isTimeValid(t)) {
     Vector4d quat;
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     MatrixXd dquat(4, nq);
     evalOrientation(cache, quat, dquat);
 
@@ -1178,7 +1194,7 @@ void WorldGazeDirConstraint::eval(const double* t,
     Matrix3Xd body_axis_ends(3, 2);
     body_axis_ends.col(0).setZero();
     body_axis_ends.col(1) = get_axis();
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     auto axis_pos =
         getRobotPointer()->transformPoints(cache, body_axis_ends, body_, 0);
     auto daxis_pos = getRobotPointer()->transformPointsJacobian(
@@ -1239,14 +1255,14 @@ void WorldGazeTargetConstraint::eval(const double* t,
                                      KinematicsCache<double>& cache,
                                      VectorXd& c, MatrixXd& dc) const {
   const int num_constraint = getNumConstraint(t);
-  int nq = getRobotPointer()->number_of_positions();
+  int nq = getRobotPointer()->get_num_positions();
   c.resize(num_constraint);
   dc.resize(num_constraint, nq);
   if (isTimeValid(t)) {
     Matrix3Xd body_axis_ends(3, 2);
     body_axis_ends.col(0) = get_gaze_origin();
     body_axis_ends.col(1) = get_gaze_origin() + get_axis();
-    nq = getRobotPointer()->number_of_positions();
+    nq = getRobotPointer()->get_num_positions();
     auto axis_ends =
         getRobotPointer()->transformPoints(cache, body_axis_ends, body_, 0);
     auto daxis_ends = getRobotPointer()->transformPointsJacobian(
@@ -1297,7 +1313,7 @@ void RelativeGazeTargetConstraint::eval(const double* t,
                                         KinematicsCache<double>& cache,
                                         VectorXd& c, MatrixXd& dc) const {
   if (isTimeValid(t)) {
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     auto target_pos =
         getRobotPointer()->transformPoints(cache, get_target(), bodyB_idx_, 0);
     auto dtarget_pos = getRobotPointer()->transformPointsJacobian(
@@ -1371,7 +1387,7 @@ void RelativeGazeDirConstraint::eval(const double* t,
     Matrix3Xd body_dir_ends(3, 2);
     body_dir_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
     body_dir_ends.block(0, 1, 3, 1) = get_dir();
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
 
     auto axis_pos = getRobotPointer()->transformPoints(cache, body_axis_ends,
                                                        bodyA_idx_, 0);
@@ -1430,7 +1446,7 @@ void Point2PointDistanceConstraint::eval(const double* t,
     int num_cnst = getNumConstraint(t);
     MatrixXd posA(3, ptA_.cols());
     MatrixXd dposA(3 * ptA_.cols(),
-                   getRobotPointer()->number_of_positions());
+                   getRobotPointer()->get_num_positions());
     if (bodyA_ != 0) {
       posA = getRobotPointer()->transformPoints(cache, ptA_, bodyA_, 0);
       dposA = getRobotPointer()->transformPointsJacobian(cache, ptA_, bodyA_, 0,
@@ -1438,11 +1454,11 @@ void Point2PointDistanceConstraint::eval(const double* t,
     } else {
       posA = ptA_.block(0, 0, 3, ptA_.cols());
       dposA = MatrixXd::Zero(3 * ptA_.cols(),
-                             getRobotPointer()->number_of_positions());
+                             getRobotPointer()->get_num_positions());
     }
     MatrixXd posB(3, ptB_.cols());
     MatrixXd dposB(3 * ptB_.cols(),
-                   getRobotPointer()->number_of_positions());
+                   getRobotPointer()->get_num_positions());
     if (bodyB_ != 0) {
       posB = getRobotPointer()->transformPoints(cache, ptB_, bodyB_, 0);
       dposB = getRobotPointer()->transformPointsJacobian(cache, ptB_, bodyB_, 0,
@@ -1450,7 +1466,7 @@ void Point2PointDistanceConstraint::eval(const double* t,
     } else {
       posB = ptB_.block(0, 0, 3, ptB_.cols());
       dposB = MatrixXd::Zero(3 * ptB_.cols(),
-                             getRobotPointer()->number_of_positions());
+                             getRobotPointer()->get_num_positions());
     }
     MatrixXd d = posA - posB;
     MatrixXd dd = dposA - dposB;
@@ -1458,11 +1474,11 @@ void Point2PointDistanceConstraint::eval(const double* t,
     MatrixXd tmp2 = tmp1.colwise().sum();
     c.resize(num_cnst, 1);
     c = tmp2.transpose();
-    dc.resize(num_cnst, getRobotPointer()->number_of_positions());
+    dc.resize(num_cnst, getRobotPointer()->get_num_positions());
     for (int i = 0; i < num_cnst; i++) {
       dc.row(i) =
           2 * d.col(i).transpose() *
-          dd.block(3 * i, 0, 3, getRobotPointer()->number_of_positions());
+          dd.block(3 * i, 0, 3, getRobotPointer()->get_num_positions());
     }
   } else {
     c.resize(0);
@@ -1525,7 +1541,7 @@ void Point2LineSegDistConstraint::eval(const double* t_in,
                                        KinematicsCache<double>& cache,
                                        VectorXd& c, MatrixXd& dc) const {
   if (isTimeValid(t_in)) {
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
 
     auto pt_pos = getRobotPointer()->transformPoints(cache, pt_, pt_body_, 0);
     auto J_pt = getRobotPointer()->transformPointsJacobian(cache, pt_, pt_body_,
@@ -1621,7 +1637,7 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t,
                                               MatrixXd& dc_valid) const {
   // TODO(tkoolen): don't use raw pointers
   int n_pts = static_cast<int>(pts_.cols());
-  int nq = getRobotPointer()->number_of_positions();
+  int nq = getRobotPointer()->get_num_positions();
   MatrixXd* pos = new MatrixXd[num_valid_t];
   MatrixXd* dpos = new MatrixXd[num_valid_t];
 
@@ -1710,7 +1726,7 @@ void WorldFixedOrientConstraint::eval_valid(const double* valid_t,
                                             const MatrixXd& valid_q,
                                             VectorXd& c,
                                             MatrixXd& dc_valid) const {
-  int nq = getRobotPointer()->number_of_positions();
+  int nq = getRobotPointer()->get_num_positions();
   Vector4d* quat = new Vector4d[num_valid_t];
   MatrixXd* dquat = new MatrixXd[num_valid_t];
   for (int i = 0; i < num_valid_t; i++) {
@@ -1790,7 +1806,7 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t,
                                               VectorXd& c,
                                               MatrixXd& dc_valid) const {
   // TODO(tkoolen): don't use raw pointers
-  int nq = getRobotPointer()->number_of_positions();
+  int nq = getRobotPointer()->get_num_positions();
   Vector3d* pos = new Vector3d[num_valid_t];
   Vector4d* quat = new Vector4d[num_valid_t];
   MatrixXd* dpos = new MatrixXd[num_valid_t];
@@ -1917,9 +1933,9 @@ void AllBodiesClosestDistanceConstraint::eval(const double* t,
       }
     }
     int num_pts = static_cast<int>(xA.cols());
-    dc = MatrixXd::Zero(num_pts, getRobotPointer()->number_of_positions());
-    MatrixXd JA = MatrixXd::Zero(3, getRobotPointer()->number_of_positions());
-    MatrixXd JB = MatrixXd::Zero(3, getRobotPointer()->number_of_positions());
+    dc = MatrixXd::Zero(num_pts, getRobotPointer()->get_num_positions());
+    MatrixXd JA = MatrixXd::Zero(3, getRobotPointer()->get_num_positions());
+    MatrixXd JB = MatrixXd::Zero(3, getRobotPointer()->get_num_positions());
     for (int i = 0; i < num_pts; ++i) {
       JA = getRobotPointer()->transformPointsJacobian(cache, xA.col(i),
                                                       idxA.at(i), 0, true);
@@ -2004,7 +2020,7 @@ void MinDistanceConstraint::eval(const double* t,
 
     int num_pts = static_cast<int>(xA.cols());
     ddist_dq =
-        MatrixXd::Zero(num_pts, getRobotPointer()->number_of_positions());
+        MatrixXd::Zero(num_pts, getRobotPointer()->get_num_positions());
 
     // Compute Jacobian of closest distance vector
     scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
@@ -2043,13 +2059,13 @@ void MinDistanceConstraint::eval(const double* t,
       for (; l < numA; ++l) {
         ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) +=
             normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() *
-            J_k.block(3 * l, 0, 3, getRobotPointer()->number_of_positions());
+            J_k.block(3 * l, 0, 3, getRobotPointer()->get_num_positions());
       }
       for (; l < numA + numB; ++l) {
         ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)) +=
             -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA))
                  .transpose() *
-            J_k.block(3 * l, 0, 3, getRobotPointer()->number_of_positions());
+            J_k.block(3 * l, 0, 3, getRobotPointer()->get_num_positions());
       }
     }
     MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
@@ -2208,7 +2224,7 @@ void PostureChangeConstraint::geval(const double* t, int n_breaks,
   if (num_valid_t >= 2) {
     int num_joints = static_cast<int>(joint_ind_.size());
     int nc = getNumConstraint(t, n_breaks);
-    int nq = getRobotPointer()->number_of_positions();
+    int nq = getRobotPointer()->get_num_positions();
     iAfun.resize(nc * 2);
     jAvar.resize(nc * 2);
     A.resize(nc * 2);
@@ -2291,8 +2307,8 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
   typedef AutoDiffScalar<VectorXd> Scalar;
   auto q = cache.getQ().cast<Scalar>().eval();
   gradientMatrixToAutoDiff(
-      MatrixXd::Identity(getRobotPointer()->number_of_positions(),
-                         getRobotPointer()->number_of_positions()),
+      MatrixXd::Identity(getRobotPointer()->get_num_positions(),
+                         getRobotPointer()->get_num_positions()),
       q);
   KinematicsCache<Scalar> cache_with_gradients =
       getRobotPointer()->doKinematics(q);
@@ -2304,12 +2320,12 @@ void GravityCompensationTorqueConstraint::eval(const double* t,
 
   const int num_constraint = getNumConstraint(t);
   c.resize(num_constraint);
-  dc.resize(num_constraint, getRobotPointer()->number_of_positions());
+  dc.resize(num_constraint, getRobotPointer()->get_num_positions());
 
   for (int i = 0; i < num_constraint; ++i) {
     c(i) = G(joint_indices_(i));
     dc.row(i) = dG.block(joint_indices_(i), 0, 1,
-                         getRobotPointer()->number_of_positions());
+                         getRobotPointer()->get_num_positions());
   }
 }
 

@@ -7,15 +7,17 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/plants/joints/PrismaticJoint.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::move;
@@ -54,7 +56,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   EXPECT_EQ(rigid_body_sys.get_output_size(), 0);
 
   // Obtains a const pointer to the underlying multibody world in the system.
-  const RigidBodyTree& tree = rigid_body_sys.get_multibody_world();
+  const RigidBodyTree& tree = rigid_body_sys.get_rigid_body_tree();
 
   // Checks that the bodies in the multibody world can be obtained by name and
   // that they have the correct model name.
@@ -91,10 +93,10 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   tree->compile();
 
   // Verifies the correct number of DOF's.
-  EXPECT_EQ(tree->get_number_of_bodies(), 2);
-  EXPECT_EQ(tree->number_of_positions(), kNumPositions);
+  EXPECT_EQ(tree->get_num_bodies(), 2);
+  EXPECT_EQ(tree->get_num_positions(), kNumPositions);
   // There are two bodies: the "world" and "free_body".
-  EXPECT_EQ(tree->number_of_velocities(), kNumVelocities);
+  EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
   RigidBodyPlant<double> plant(move(tree));
@@ -173,11 +175,11 @@ class KukaArmTest : public ::testing::Test {
 // size in the context.
 TEST_F(KukaArmTest, StateHasTheRightSizes) {
   const VectorBase<double>& xc =
-      context_->get_state().continuous_state->get_generalized_position();
+      context_->get_continuous_state()->get_generalized_position();
   const VectorBase<double>& vc =
-      context_->get_state().continuous_state->get_generalized_velocity();
+      context_->get_continuous_state()->get_generalized_velocity();
   const VectorBase<double>& zc =
-      context_->get_state().continuous_state->get_misc_continuous_state();
+      context_->get_continuous_state()->get_misc_continuous_state();
 
   EXPECT_EQ(kNumPositions_, xc.size());
   EXPECT_EQ(kNumVelocities_, vc.size());
@@ -200,15 +202,19 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
-  VectorXd xc = context_->get_continuous_state().CopyToVector();
+  VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(kNumStates_, xc.size());
   ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
 }
 
 // Tests RigidBodyPlant<T>::EvalOutput() for a Kuka arm model.
-// For a RigidBodyPlant<T> the output of the system should equal the
-// state vector.
+// For a RigidBodyPlant<T> the first output of the system should equal the
+// state vector. The second output from this system should correspond to a
+// RigidBodyPlant<T>::VectorOfPoses containing the poses of all bodies in the
+// system.
 TEST_F(KukaArmTest, EvalOutput) {
+  auto& tree = kuka_system_->get_rigid_body_tree();
+
   // Checks that the number of input and output ports in the system and context
   // are consistent.
   ASSERT_EQ(1, kuka_system_->get_num_input_ports());
@@ -240,111 +246,149 @@ TEST_F(KukaArmTest, EvalOutput) {
   }
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
-  VectorXd xc = context_->get_continuous_state().CopyToVector();
+  VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  ASSERT_EQ(1, output_->get_num_ports());
-  const BasicVector<double>* output_port = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_port);
+  ASSERT_EQ(2, output_->get_num_ports());
+  const BasicVector<double>* output_state = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, output_state);
 
   kuka_system_->EvalOutput(*context_, output_.get());
 
   // Asserts the output equals the state.
-  EXPECT_EQ(desired_state, output_port->get_value());
+  EXPECT_EQ(desired_state, output_state->get_value());
+
+  // Evaluates the correctness of the kinematics results port.
+  auto& kinematics_results =
+      output_->get_data(1)->GetValue<KinematicsResults<double>>();
+  ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
+  ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
+
+  VectorXd q = xc.topRows(kNumPositions_);
+  VectorXd v = xc.bottomRows(kNumVelocities_);
+  auto cache = tree.doKinematics(q, v);
+
+  for (int ibody = 0; ibody < kuka_system_->get_num_bodies(); ++ibody) {
+    Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
+    Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
+    // Note that Eigen quaternion elements are not laid out in memory in the
+    // same way Drake currently aligns them. See issue #3470.
+    // When solved we will not need to instantiate a temporary Quaternion below
+    // just to perform a comparison.
+    Quaterniond quat(
+        quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+    Vector3d position = pose.translation();
+    EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
+    EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
+  }
 }
 
-// Tests RigidBodyPlant<T>::EvalTimeDerivatives() for a Kuka arm model.
-// The test is performed by comparing against the results obtained with an RBS1
-// model of the same Kuka arm.
-// "RBS1" is an abbreviation referring to version 1.0 of RigidBodySystem as
-// implemented in:
-// drake/systems/plants/RigidBodySystem.h.
-// Within this test we will refer to the implementation under test as RBS2
-// (Rigid Body System 2.0). The naming conventions for the variables in this
-// test are lower case versions of these acronyms.
-GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
-  //////////////////////////////////////////////////////////////////////////////
-  // Instantiates a RigidBodySystem (System 1.0) model of the Kuka arm.
-  //////////////////////////////////////////////////////////////////////////////
-  auto rbs1 = make_unique<RigidBodySystem>();
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
+  typedef RigidBodyPlant<double> RBP;
+  const double lower_limit = 10.;
+  const double upper_limit = 20.;
+  const double stiffness = 10.;
+  const double dissipation = 0.5;
+  const double delta = 1e-6;  // Perturbation used for continuity test.
+  const double epsilon = 1e-4;
 
-  // Adds a URDF to the rigid body system. This URDF contains only fixed joints
-  // and is attached to the world via a fixed joint. Thus, everything in the
-  // URDF becomes part of the world.
-  rbs1->AddModelInstanceFromFile(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+  // The joint limit force formula is quite complex.  This test checks each of
+  // its modes, to ensure that we didn't flip a sign somewhere.
+  PrismaticJoint joint("test_joint", Isometry3d::Identity(), Vector3d(1, 0, 0));
+  joint.setJointLimits(lower_limit, upper_limit);
+  joint.SetJointLimitDynamics(stiffness, dissipation);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Instantiates a RigidBodyPlant (System 2.0) model of the Kuka arm.
-  //////////////////////////////////////////////////////////////////////////////
-  auto tree = make_unique<RigidBodyTree>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
+  // Force should be continuously near zero at the limit.
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit + delta, 0),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit, 0),
+            0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - delta, 0),
+              0, epsilon);
+  EXPECT_GT(RBP::JointLimitForce(joint, lower_limit - delta, 0),
+            0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + delta, 0),
+              0, epsilon);
+  EXPECT_LT(RBP::JointLimitForce(joint, upper_limit + delta, 0),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit, 0),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit - delta, 0),
+            0);
+
+  // At zero velocity, expect a spring force law.
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 0),
+              stiffness, epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 0),
+              -stiffness, epsilon);
+
+  // At outward velocity, a much stiffer counterforce (ie, not "squishy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, -1),
+              stiffness * (1 + dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 1),
+              -stiffness * (1 + dissipation), epsilon);
+
+  // At inward velocity, a looser counterforce (ie, not "bouncy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 1),
+              stiffness * (1 - dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, -1),
+              -stiffness * (1 - dissipation), epsilon);
+
+  // At rapid inward velocity, no negative counterforce (ie, not "sticky").
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit - 1, 10),
+            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit + 1, -10),
+            0);
+}
+
+/// Given a starting @p position and @p applied_force, @return the resulting
+/// acceleration of the joint described in `limited_prismatic.sdf`.
+double GetPrismaticJointLimitAccel(double position, double applied_force) {
+  // Build two links connected by a limited prismatic joint.
+  auto rigid_body_tree = std::make_unique<RigidBodyTree>();
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      drake::GetDrakePath() +
+      "/systems/plants/rigid_body_plant/test/limited_prismatic.sdf",
       drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
-      tree.get());
+      rigid_body_tree.get());
+  RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
 
-  // Instantiates a RigidBodyPlant (System 2.0) from an MBD model of the world.
-  auto rbs2 = make_unique<RigidBodyPlant<double>>(move(tree));
+  auto context = rigid_body_sys.CreateDefaultContext();
+  rigid_body_sys.SetZeroConfiguration(context.get());
+  context->get_mutable_continuous_state()
+      ->get_mutable_generalized_position()
+      ->SetAtIndex(0, position);
 
-  auto context = rbs2->CreateDefaultContext();
-  auto output = rbs2->AllocateOutput(*context);
-  auto derivatives = rbs2->AllocateTimeDerivatives();
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Sets the initial condition of both systems to be the same.
-  //////////////////////////////////////////////////////////////////////////////
-  // For rbs1:
-  // Obtains an initial state of the simulation.
-  VectorXd x0 = VectorXd::Zero(rbs1->getNumStates());
-  x0.head(rbs1->number_of_positions()) =
-      rbs1->getRigidBodyTree()->getZeroConfiguration();
-
-  // Some non-zero velocities.
-  x0.tail(rbs1->number_of_velocities()) << 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0;
-
-  Eigen::VectorXd arbitrary_angles(rbs1->number_of_positions());
-  arbitrary_angles << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
-  x0.head(rbs1->number_of_positions()) += arbitrary_angles;
-
-  // For rbs2:
-  // Zeroes the state.
-  rbs2->SetZeroConfiguration(context.get());
-
-  // Sets the state to a non-zero value matching the configuration for rbs1.
-  rbs2->set_state_vector(context.get(), x0);
-  VectorXd xc = context->get_continuous_state().CopyToVector();
-  ASSERT_EQ(xc, x0);
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Sets the inputs (generalized forces) to be the same.
-  //////////////////////////////////////////////////////////////////////////////
-  // For rbs1:
-  VectorX<double> u = VectorX<double>::Zero(rbs1->getNumInputs());
-  u << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
-
-  // For rbs2:
-  // Connect to a "fake" free standing input with the same values used for RBS1.
-  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
-  // derivatives per #3218.
-  auto input_vector = std::make_unique<BasicVector<double>>(
-      rbs2->get_num_actuators());
-  input_vector->set_value(u);
+  // Apply a constant force on the input.
+  Vector1d input;
+  input << applied_force;
+  auto input_vector = std::make_unique<BasicVector<double>>(1);
+  input_vector->set_value(input);
   context->SetInputPort(0, MakeInput(move(input_vector)));
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Computes time derivatives to compare against rbs1 dynamics.
-  //////////////////////////////////////////////////////////////////////////////
-  auto rbs1_xdot = rbs1->dynamics(0.0, x0, u);
-  rbs2->EvalTimeDerivatives(*context, derivatives.get());
-  auto rbs2_xdot = derivatives->get_state().CopyToVector();
+  // Obtain the time derivatives; test that speed is zero, return acceleration.
+  auto derivatives = rigid_body_sys.AllocateTimeDerivatives();
+  rigid_body_sys.EvalTimeDerivatives(*context, derivatives.get());
+  auto xdot = derivatives->CopyToVector();
+  EXPECT_EQ(xdot(0), 0.);  // Not moving.
+  return xdot(1);
+}
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Performs the comparison.
-  //////////////////////////////////////////////////////////////////////////////
-  EXPECT_TRUE(rbs1->number_of_positions() == rbs2->get_num_positions());
-  EXPECT_TRUE(rbs1->number_of_velocities() == rbs2->get_num_velocities());
-  EXPECT_TRUE(rbs2_xdot.isApprox(rbs1_xdot));
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
+  // Test that joint limit forces are applied correctly in the rigid body
+  // tree.  This tests for a sign error at rigid_body_plant.cc@417b03e:240.
+
+  // Past the lower limit, acceleration should be upward.
+  EXPECT_GT(GetPrismaticJointLimitAccel(-1.05, 0.), 0.);
+
+  // Between the limits, acceleration should equal force (the moving mass in
+  // the SDF is 1kg).
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., -1.), -1.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 0), 0.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 1.), 1.);
+
+  // Past the upper limit, acceleration should be downward.
+  EXPECT_LT(GetPrismaticJointLimitAccel(1.05, 0.), 0.);
 }
 
 }  // namespace

@@ -2,16 +2,19 @@
 // it are gone. It is being replaced by rigid_body_tree_visualizer_lcm.h.
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/systems/System.h"
+#include "drake/system1/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 
 namespace drake {
 
@@ -158,7 +161,7 @@ class BotVisualizer {
                               const InputVector<double>& u) const {
     draw_msg_.timestamp = static_cast<int64_t>(t * 1000.0);
 
-    const Eigen::VectorXd q = toEigen(u).head(tree_->number_of_positions());
+    const Eigen::VectorXd q = toEigen(u).head(tree_->get_num_positions());
     KinematicsCache<double> cache = tree_->doKinematics(q);
 
     for (size_t i = 0; i < tree_->bodies.size(); i++) {

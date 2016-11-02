@@ -48,10 +48,10 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
       "  </transmission>"
       "</robot>";
 
-  // Instantiates a rigid body tree using the above-defined URDF string.
+  // Instantiates a RigidBodyTree using the URDF string defined above.
   std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
-  drake::parsers::urdf::AddModelInstanceFromUrdfString(urdf_string,
-    rigid_body_tree.get());
+  drake::parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld(
+      urdf_string, rigid_body_tree.get());
 
   // Obtains the child link of food_joint.
   RigidBody* foo_joint_link =
@@ -60,10 +60,10 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
 
   // Obtains a reference to foo_joint and verifies its parameters are correct.
   const DrakeJoint& foo_joint = foo_joint_link->getJoint();
-  EXPECT_EQ(foo_joint.getName(), "foo_joint");
-  EXPECT_FALSE(foo_joint.isFloating());
-  EXPECT_EQ(foo_joint.getNumPositions(), 1);
-  EXPECT_EQ(foo_joint.getNumVelocities(), 1);
+  EXPECT_EQ(foo_joint.get_name(), "foo_joint");
+  EXPECT_FALSE(foo_joint.is_floating());
+  EXPECT_EQ(foo_joint.get_num_positions(), 1);
+  EXPECT_EQ(foo_joint.get_num_velocities(), 1);
 
   // Obtains a reference to foo_transmission and verifies its parameters.
   const std::string actuator_name = "foo_motor";

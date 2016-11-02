@@ -10,7 +10,7 @@
 namespace drake {
 namespace solvers {
 
-class DRAKEOPTIMIZATION_EXPORT MosekSolver :
+class DRAKE_EXPORT MosekSolver :
     public MathematicalProgramSolverInterface {
  public:
   /** available()
@@ -21,5 +21,5 @@ class DRAKEOPTIMIZATION_EXPORT MosekSolver :
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 
-}
-}
+}  // namespace solvers
+}  // namespace drake

@@ -1,10 +1,11 @@
-
-
 #include <iostream>
 #include <cstdlib>
+
 #include "drake/systems/plants/RigidBodyTree.h"
 
-using namespace std;
+using std::cout;
+using std::cerr;
+using std::endl;
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -16,11 +17,11 @@ int main(int argc, char* argv[]) {
 
   // run kinematics with second derivatives 100 times
   Eigen::VectorXd q = model->getZeroConfiguration();
-  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->number_of_velocities());
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->get_num_velocities());
   int i;
 
-  if (argc >= 2 + model->number_of_positions()) {
-    for (i = 0; i < model->number_of_positions(); i++)
+  if (argc >= 2 + model->get_num_positions()) {
+    for (i = 0; i < model->get_num_positions(); i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 

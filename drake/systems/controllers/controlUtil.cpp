@@ -1,18 +1,32 @@
 #include "drake/systems/controllers/controlUtil.h"
 
+#include <limits>
+#include <utility>
+
 #include "drake/math/autodiff.h"
 #include "drake/math/expmap.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeUtil.h"
 
-using namespace Eigen;
-
+using Eigen::AutoDiffScalar;
+using Eigen::Dynamic;
+using Eigen::Isometry3d;
+using Eigen::Matrix3d;
+using Eigen::Matrix;
+using Eigen::MatrixBase;
+using Eigen::MatrixXd;
+using Eigen::Ref;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getRows(std::set<int>& rows, MatrixBase<DerivedA> const& M,
+             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
              MatrixBase<DerivedB>& Msub) {
   if (static_cast<int>(rows.size()) == M.rows()) {
     Msub = M;
@@ -25,7 +39,9 @@ void getRows(std::set<int>& rows, MatrixBase<DerivedA> const& M,
 }
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getCols(std::set<int>& cols, MatrixBase<DerivedA> const& M,
+             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
              MatrixBase<DerivedB>& Msub) {
   if (static_cast<int>(cols.size()) == M.cols()) {
     Msub = M;
@@ -38,7 +54,9 @@ void getCols(std::set<int>& cols, MatrixBase<DerivedA> const& M,
 
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
 void angleDiff(MatrixBase<DerivedPhi1> const& phi1,
-               MatrixBase<DerivedPhi2> const& phi2, MatrixBase<DerivedD>& d) {
+               MatrixBase<DerivedPhi2> const& phi2,
+               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+               MatrixBase<DerivedD>& d) {
   d = phi2 - phi1;
 
   for (int i = 0; i < phi1.rows(); i++) {
@@ -63,6 +81,7 @@ bool inSupport(
 }
 
 void surfaceTangents(const Vector3d& normal,
+                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                      Matrix<double, 3, m_surface_tangents>& d) {
   Vector3d t1, t2;
   double theta;
@@ -86,6 +105,7 @@ void surfaceTangents(const Vector3d& normal,
 }
 
 int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
+               // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                SupportStateElement& supp, VectorXd& phi) {
   int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
@@ -106,9 +126,11 @@ int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
 int contactConstraintsBV(
     const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& supp, MatrixXd& B,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     MatrixXd& JB, MatrixXd& Jp, VectorXd& Jpdotv, MatrixXd& normals) {
-  int j, k = 0, nq = r.number_of_positions();
+  int j, k = 0, nq = r.get_num_positions();
 
   B.resize(3, nc * 2 * m_surface_tangents);
   JB.resize(nq, nc * 2 * m_surface_tangents);
@@ -245,6 +267,7 @@ bool isSupportElementActive(SupportStateElement* se,
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(
     const RigidBodyTree& r, VectorXd q, VectorXd qd,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
@@ -295,6 +318,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(
 
 drake::eigen_aligned_std_vector<SupportStateElement> getActiveSupports(
     const RigidBodyTree& r, const VectorXd& q, const VectorXd& qd,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
     double contact_threshold) {
@@ -391,11 +415,15 @@ Vector6d bodySpatialMotionPD(
   return twist_dot;
 }
 
-void evaluateXYZExpmapCubicSpline(double t,
-                                  const PiecewisePolynomial<double>& spline,
-                                  Isometry3d& body_pose_des,
-                                  Vector6d& xyzdot_angular_vel,
-                                  Vector6d& xyzddot_angular_accel) {
+void evaluateXYZExpmapCubicSpline(
+    double t,
+    const PiecewisePolynomial<double>& spline,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Isometry3d& body_pose_des,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Vector6d& xyzdot_angular_vel,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Vector6d& xyzddot_angular_accel) {
   Vector6d xyzexp = spline.value(t);
   auto derivative = spline.derivative();
   Vector6d xyzexpdot = derivative.value(t);
@@ -488,15 +516,15 @@ void getRobotJointIndexMap(JointNames* joint_names,
   return;
 }
 
-template DRAKECONTROLUTIL_EXPORT void getRows(std::set<int>&,
+template DRAKE_EXPORT void getRows(std::set<int>&,
                                               const MatrixBase<MatrixXd>&,
                                               MatrixBase<MatrixXd>&);
-template DRAKECONTROLUTIL_EXPORT void getCols(std::set<int>&,
+template DRAKE_EXPORT void getCols(std::set<int>&,
                                               const MatrixBase<MatrixXd>&,
                                               MatrixBase<MatrixXd>&);
-template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<MatrixXd>&,
+template DRAKE_EXPORT void angleDiff(const MatrixBase<MatrixXd>&,
                                                 const MatrixBase<MatrixXd>&,
                                                 MatrixBase<MatrixXd>&);
-template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<Vector3d>&,
+template DRAKE_EXPORT void angleDiff(const MatrixBase<Vector3d>&,
                                                 const MatrixBase<Vector3d>&,
                                                 MatrixBase<Vector3d>&);

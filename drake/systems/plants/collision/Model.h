@@ -2,17 +2,19 @@
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 
-#include "drake/drakeCollision_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/collision/point_pair.h"
 
 namespace DrakeCollision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
 
-class DRAKECOLLISION_EXPORT Model {
+class DRAKE_EXPORT Model {
  public:
   Model() {}
 
@@ -33,10 +35,21 @@ class DRAKECOLLISION_EXPORT Model {
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
-  virtual const Element* readElement(ElementId id) const;
+  virtual const Element* FindElement(ElementId id) const;
 
-  virtual void getTerrainContactPoints(ElementId id0,
-                                       Eigen::Matrix3Xd& terrain_points);
+  /** Gets a pointer to a mutable collision element in this model.
+   * @param[in] id an ElementId corresponding to the desired collision
+   * element.
+   * @returns a pointer to a mutable collision element corresponding to
+   * the given id or nullptr if no such collision element is present in the
+   * model.
+   **/
+  virtual Element* FindMutableElement(ElementId id);
+
+  virtual void getTerrainContactPoints(
+      ElementId id0,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& terrain_points);
 
   /** \brief Perform any operations needed to bring the model up-to-date
    * after making changes to its collision elements
@@ -80,7 +93,9 @@ class DRAKECOLLISION_EXPORT Model {
    @returns `true` if this method ran successfully and `false` otherwise.
    **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      const bool use_margins, std::vector<PointPair>& closest_points) = 0;
+      const bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      std::vector<PointPair>& closest_points) = 0;
 
   /** \brief Compute the points of closest approach between specified pairs
    * of collision elements
@@ -124,6 +139,7 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
   /** \brief Compute the set of potential collision points for all
@@ -196,10 +212,14 @@ class DRAKECOLLISION_EXPORT Model {
    * \param[out] distance to the first collision, or -1 on no collision
    * \return true if this method ran successfully
    */
-  virtual bool collisionRaycast(const Eigen::Matrix3Xd& origin,
-                                const Eigen::Matrix3Xd& ray_endpoint,
-                                bool use_margins, Eigen::VectorXd& distances,
-                                Eigen::Matrix3Xd& normals) = 0;
+  virtual bool collisionRaycast(
+      const Eigen::Matrix3Xd& origin,
+      const Eigen::Matrix3Xd& ray_endpoint,
+      bool use_margins,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::VectorXd& distances,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& normals) = 0;
 
   /**
    * Modifies a collision element's local transform to be relative to a joint's
@@ -218,7 +238,7 @@ class DRAKECOLLISION_EXPORT Model {
   /**
    * A toString method for this class.
    */
-  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                         const Model&);
 
  protected:

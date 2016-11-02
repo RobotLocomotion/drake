@@ -11,7 +11,10 @@
 #define MAX_STATE 1000
 #define MAX_ITER 10
 
+// TODO(jwnimmer-tri) Someone with gurobi needs to fix these.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
+// NOLINTNEXTLINE(build/namespaces)
 using namespace std;
 
 // template <typename tA, typename tB, typename tC, typename tD, typename tE,
@@ -23,6 +26,7 @@ using namespace std;
 int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
                         const MatrixXd& Aeq, const VectorXd& beq,
                         const MatrixXd& Ain, const VectorXd& bin,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         set<int>& active, VectorXd& x) {
   int i, d;
   int iterCnt = 0;
@@ -229,6 +233,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
 // const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
 int fastQP(vector<MatrixXd*> QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
            const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin,
+           // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
            set<int>& active, VectorXd& x) {
   /* min 1/2 * x'QblkDiag'x + f'x s.t A x = b, Ain x <= bin
    * using active set method.  Iterative solve a linearly constrained
@@ -383,10 +388,13 @@ int myGRBaddconstrs(GRBmodel* model, MatrixBase<DerivedA> const& A,
 // f, const MatrixBase<tB>& Aeq, const MatrixBase<tC>& beq, const
 // MatrixBase<tD>& Ain, const MatrixBase<tE>& bin, VectorXd& lb, VectorXd& ub,
 // set<int>& active, VectorXd& x)
-GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
+GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
+                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   VectorXd& f,
                    const MatrixXd& Aeq, const VectorXd& beq,
-                   const MatrixXd& Ain, const VectorXd& bin, VectorXd& lb,
-                   VectorXd& ub, set<int>& active, VectorXd& x,
+                   const MatrixXd& Ain, const VectorXd& bin,
+                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x,
                    double active_set_slack_tolerance) {
   // Note: f, lb, and ub are VectorXd instead of const MatrixBase templates
   // because i want to be able to call f.data() on them
@@ -488,11 +496,19 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
 }
 
 GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
-                            VectorXd& f, const MatrixXd& Aeq,
+                            // TODO(#2274) NOLINTNEXTLINE(runtime/references).
+                            VectorXd& f,
+                            const MatrixXd& Aeq,
                             const VectorXd& beq, const MatrixXd& Ain,
-                            const VectorXd& bin, VectorXd& lb, VectorXd& ub,
-                            int*& vbasis, int vbasis_len, int*& cbasis,
-                            int cbasis_len, VectorXd& x) {
+                            const VectorXd& bin,
+                            // TODO(#2274) NOLINTNEXTLINE(runtime/references).
+                            VectorXd& lb, VectorXd& ub,
+                            // TODO(#2274) NOLINTNEXTLINE(runtime/references).
+                            int*& vbasis, int vbasis_len,
+                            // TODO(#2274) NOLINTNEXTLINE(runtime/references).
+                            int*& cbasis, int cbasis_len,
+                            // TODO(#2274) NOLINTNEXTLINE(runtime/references).
+                            VectorXd& x) {
   // NOTE:  this allocates memory for a new GRBmodel and returns it. (you should
   // delete this object when you're done with it)
   // NOTE:  by convention here, the active set indices correspond to Ain, bin

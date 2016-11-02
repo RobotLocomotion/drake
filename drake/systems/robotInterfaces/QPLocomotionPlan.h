@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <map>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -12,11 +12,11 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/zmpUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"
+#include "drake/common/drake_export.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
@@ -40,7 +40,7 @@ class QuadraticLyapunovFunction {
   const ExponentialPlusPiecewisePolynomial<double>& getS1() const {
     return s1_;
   }
-  void setS1(ExponentialPlusPiecewisePolynomial<double>& new_s1) {
+  void setS1(const ExponentialPlusPiecewisePolynomial<double>& new_s1) {
     s1_ = new_s1;
   }
 };
@@ -134,6 +134,7 @@ struct QPLocomotionPlanSettings {
 
   // may be useful later in setting up constrained_position_indices
   static std::vector<int> findPositionIndices(
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
       RigidBodyTree& robot,
       const std::vector<std::string>& joint_name_substrings) {
     std::vector<int> ret;
@@ -144,8 +145,8 @@ struct QPLocomotionPlanSettings {
         const DrakeJoint& joint = body.getJoint();
         for (auto joint_name_it = joint_name_substrings.begin();
              joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
-          if (joint.getName().find(*joint_name_it) != std::string::npos) {
-            for (int i = 0; i < joint.getNumPositions(); i++) {
+          if (joint.get_name().find(*joint_name_it) != std::string::npos) {
+            for (int i = 0; i < joint.get_num_positions(); i++) {
               ret.push_back(body.get_position_start_index() + i);
             }
             break;
@@ -157,7 +158,7 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
+class DRAKE_EXPORT QPLocomotionPlan {
  private:
   RigidBodyTree& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;
@@ -190,6 +191,7 @@ class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
       support_logic_maps_;
 
  public:
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   QPLocomotionPlan(RigidBodyTree& robot,
                    const QPLocomotionPlanSettings& settings,
                    const std::string& lcm_channel);
@@ -236,6 +238,7 @@ class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
   std::vector<Side> getSupportSides(
       const RigidBodySupportState& support_state) const;
 
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data,
                              int body_motion_segment_index,
                              const KinematicsCache<double>& cache);
@@ -244,10 +247,14 @@ class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
                        const std::vector<bool>& contact_force_detected,
                        int support_index);
 
-  void findPlannedSupportFraction(double t_plan, int support_index,
-                                  double& last_support_fraction,
-                                  double& next_support_fraction,
-                                  double& transition_fraction) const;
+  void findPlannedSupportFraction(
+      double t_plan, int support_index,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& last_support_fraction,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& next_support_fraction,
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
+      double& transition_fraction) const;
 
   void updateZMPController(const double t_plan,
                            const double last_support_fraction,
@@ -261,14 +268,17 @@ class DRAKEQPLOCOMOTIONPLAN_EXPORT QPLocomotionPlan {
 
   void updateS1Trajectory();
 
+  // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
   void applyKneePD(Side side, drake::lcmt_qp_controller_input& qp_input);
 
   static const std::map<SupportLogicType, std::vector<bool> >
   createSupportLogicMaps();
 
   static const std::map<Side, int> createFootBodyIdMap(
-      RigidBodyTree& robot, const std::map<Side, std::string>& foot_names);
+      const RigidBodyTree& robot,
+      const std::map<Side, std::string>& foot_names);
 
   static const std::map<Side, int> createJointIndicesMap(
+      // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references).
       RigidBodyTree& robot, const std::map<Side, std::string>& foot_body_ids);
 };

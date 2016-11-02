@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"
@@ -18,6 +18,7 @@ GTEST_TEST(ValueTest, Access) {
   Value<int> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<int>());
+  EXPECT_EQ(3, erased.GetValueOrThrow<int>());
 }
 
 GTEST_TEST(ValueTest, Copy) {
@@ -40,12 +41,21 @@ GTEST_TEST(ValueTest, Mutation) {
   EXPECT_EQ(6, erased.GetValue<int>());
   erased.SetValue<int>(7);
   EXPECT_EQ(7, erased.GetValue<int>());
+  erased.SetValueOrThrow<int>(8);
+  EXPECT_EQ(8, erased.GetValue<int>());
+  erased.SetFrom(Value<int>(9));
+  EXPECT_EQ(9, erased.GetValue<int>());
+  erased.SetFromOrThrow(Value<int>(10));
+  EXPECT_EQ(10, erased.GetValue<int>());
 }
 
 GTEST_TEST(ValueTest, BadCast) {
   Value<double> value(4);
-  const AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetValue<int>(), std::bad_cast);
+  AbstractValue& erased = value;
+  EXPECT_THROW(erased.GetValueOrThrow<int>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<int>(), std::bad_cast);
+  EXPECT_THROW(erased.SetValueOrThrow<int>(3), std::bad_cast);
+  EXPECT_THROW(erased.SetFromOrThrow(Value<int>(2)), std::bad_cast);
 }
 
 class PrintInterface {
@@ -62,6 +72,7 @@ class Point : public PrintInterface {
   int x() const { return x_; }
   int y() const { return y_; }
   void set_x(int x) { x_ = x; }
+  void set_y(int y) { y_ = y; }
 
   std::string print() const override {
     std::ostringstream out;
@@ -81,6 +92,9 @@ GTEST_TEST(ValueTest, ClassType) {
   erased.GetMutableValue<Point>().set_x(-1);
   EXPECT_EQ(-1, erased.GetValue<Point>().x());
   EXPECT_EQ(2, erased.GetValue<Point>().y());
+  erased.GetMutableValueOrThrow<Point>().set_y(-2);
+  EXPECT_EQ(-1, erased.GetValue<Point>().x());
+  EXPECT_EQ(-2, erased.GetValue<Point>().y());
 }
 
 class SubclassOfPoint : public Point {
@@ -94,7 +108,7 @@ GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
   SubclassOfPoint point;
   Value<SubclassOfPoint> value(point);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetMutableValue<Point>(), std::bad_cast);
+  EXPECT_THROW(erased.GetMutableValueOrThrow<Point>(), std::bad_cast);
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and

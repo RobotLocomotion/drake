@@ -1,8 +1,14 @@
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
-#include <lcm/lcm-cpp.hpp>
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -14,13 +20,15 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "drake/lcmt_zmp_com_observer_state.hpp"
 
 const double REG = 1e-8;
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
+// TODO(jwnimmer-tri) Someone with gurobi has to fix this.
+// NOLINTNEXTLINE(build/namespaces)
 using namespace Eigen;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
@@ -30,7 +38,7 @@ using namespace Eigen;
 void InstantaneousQPController::initialize() {
   body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
 
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   int nu = static_cast<int>(robot->actuators.size());
 
   umin.resize(nu);
@@ -84,9 +92,9 @@ void InstantaneousQPController::initialize() {
 
   controller_state.t_prev = 0;
   controller_state.vref_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_velocities());
+      Eigen::VectorXd::Zero(robot->get_num_velocities());
   controller_state.q_integrator_state =
-      Eigen::VectorXd::Zero(robot->number_of_positions());
+      Eigen::VectorXd::Zero(robot->get_num_positions());
   controller_state.foot_contact_prev[0] = false;
   controller_state.foot_contact_prev[1] = false;
   controller_state.num_active_contact_pts = 0;
@@ -110,6 +118,7 @@ void InstantaneousQPController::loadConfigurationFromYAML(
                                    *robot);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const KinematicModifications& modifications) {
   for (auto it = modifications.attachments.begin();
@@ -134,6 +143,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
   robot->compile();
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const std::string& urdf_modifications_filename) {
   KinematicModifications modifications =
@@ -153,11 +163,11 @@ PIDOutput InstantaneousQPController::wholeBodyPID(
   // accelerations and reference posture
   PIDOutput out;
   double dt = 0;
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
   DRAKE_ASSERT(q.size() == nq);
-  DRAKE_ASSERT(qd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qd.size() == robot->get_num_velocities());
   DRAKE_ASSERT(q_des.size() == params.integrator.gains.size());
-  if (nq != robot->number_of_velocities()) {
+  if (nq != robot->get_num_velocities()) {
     throw std::runtime_error(
         "this function will need to be rewritten when num_pos != num_vel");
   }
@@ -204,7 +214,7 @@ VectorXd InstantaneousQPController::velocityReference(
     const VRefIntegratorParams& params) {
   // Integrate expected accelerations to determine a target feed-forward
   // velocity, which we can pass in to Atlas
-  DRAKE_ASSERT(qdd.size() == robot->number_of_velocities());
+  DRAKE_ASSERT(qdd.size() == robot->get_num_velocities());
 
   double dt = 0;
   if (controller_state.t_prev != 0) {
@@ -314,6 +324,7 @@ void addJointSoftLimits(
     const VectorXd& q_des,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>& supports,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<drake::lcmt_joint_pd_override>& joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override =
       Matrix<bool, Dynamic, 1>::Zero(q_des.size());
@@ -352,7 +363,9 @@ void addJointSoftLimits(
 
 void applyJointPDOverride(
     const std::vector<drake::lcmt_joint_pd_override>& joint_pd_override,
-    const DrakeRobotState& robot_state, PIDOutput& pid_out, VectorXd& w_qdd) {
+    const DrakeRobotState& robot_state,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PIDOutput& pid_out, VectorXd& w_qdd) {
   for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it =
            joint_pd_override.begin();
        it != joint_pd_override.end(); ++it) {
@@ -367,6 +380,7 @@ void applyJointPDOverride(
 double averageContactPointHeight(
     const RigidBodyTree& robot, const KinematicsCache<double>& cache,
     std::vector<SupportStateElement,
+                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Eigen::aligned_allocator<SupportStateElement>>& active_supports,
     int nc) {
   Eigen::Matrix3Xd contact_positions_world(3, nc);
@@ -505,7 +519,9 @@ void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(
-    const RigidBodyTree& robot, KinematicsCache<double>& cache,
+    const RigidBodyTree& robot,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<double>& cache,
     const VectorXd& qdd,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>&
@@ -629,7 +645,7 @@ int InstantaneousQPController::setupAndSolveQP(
   const QPControllerParams& params = FindParams(qp_input.param_set_name);
 
   int nu = robot->B.cols();
-  int nq = robot->number_of_positions();
+  int nq = robot->get_num_positions();
 
   // zmp_data
   Map<const Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input.zmp_data.A[0][0]);
@@ -993,8 +1009,8 @@ int InstantaneousQPController::setupAndSolveQP(
   if (qp_input.whole_body_data.num_constrained_dofs > 0) {
     // add joint acceleration constraints
     for (int i = 0; i < qp_input.whole_body_data.num_constrained_dofs; i++) {
-      Aeq(equality_ind, (int)condof[i] - 1) = 1;
-      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i] - 1];
+      Aeq(equality_ind, static_cast<int>(condof[i]) - 1) = 1;
+      beq[equality_ind++] = pid_out.qddot_des[static_cast<int>(condof[i]) - 1];
     }
   }
 
@@ -1030,19 +1046,19 @@ int InstantaneousQPController::setupAndSolveQP(
       Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
       // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
     }
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = Jb;
     bin.segment(constraint_start_index, 6) =
         -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
-    Ain.block(constraint_start_index, 0, 6, robot->number_of_positions()) = -Jb;
+    Ain.block(constraint_start_index, 0, 6, robot->get_num_positions()) = -Jb;
     bin.segment(constraint_start_index, 6) =
         Jbdotv - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
 
-  for (int i = 0; i < n_ineq; i++) {
+  for (int i = 0; i < n_ineq; ++i) {
     // remove inf constraints---needed by gurobi
-    if (std::isinf(double(bin(i)))) {
+    if (std::isinf(bin(i))) {
       Ain.row(i) = 0 * Ain.row(i);
       bin(i) = 0;
     }

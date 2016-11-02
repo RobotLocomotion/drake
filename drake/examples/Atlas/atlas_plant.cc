@@ -50,7 +50,7 @@ AtlasPlant::dynamics(const double& t,
 
 void AtlasPlant::SetInitialConfiguration() {
   RigidBodyTree* tree = sys_->getRigidBodyTree().get();
-  x0_.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Magic numbers are initial conditions used in runAtlasWalking.m.
   x0_(2) = 0.844;    // base z
@@ -102,7 +102,7 @@ void AtlasPlant::SetUpTerrain() {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 }

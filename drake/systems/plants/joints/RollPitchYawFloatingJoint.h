@@ -1,13 +1,15 @@
 #pragma once
 
-#include "DrakeJointImpl.h"
+#include <string>
+
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
+class DRAKE_EXPORT RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
  public:
   // disable copy construction and assignment
@@ -38,11 +40,12 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
     typedef typename DerivedQ::Scalar Scalar;
-    motion_subspace.resize(drake::kTwistSize, getNumVelocities());
+    motion_subspace.resize(drake::kTwistSize, get_num_velocities());
     auto rpy =
         q.template middleRows<drake::kRpySize>(drake::kSpaceDimension);
     Eigen::Matrix<Scalar, drake::kSpaceDimension, drake::kRpySize> E;
@@ -54,7 +57,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
     motion_subspace.template block<3, 3>(3, 3).setZero();
 
     if (dmotion_subspace) {
-      dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
+      dmotion_subspace->resize(motion_subspace.size(), get_num_positions());
 
       Scalar roll = rpy(0);
       Scalar pitch = rpy(1);
@@ -149,7 +152,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
 
     if (dmotion_subspace_dot_times_vdq) {
       dmotion_subspace_dot_times_vdq->resize(motion_subspace_dot_times_v.rows(),
-                                             getNumPositions());
+                                             get_num_positions());
       dmotion_subspace_dot_times_vdq->transpose() << 0.0, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
           -pitchd * rolld * cr - pitchd * yawd * cr * sp -
@@ -195,7 +198,7 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
 
     if (dmotion_subspace_dot_times_vdv) {
       dmotion_subspace_dot_times_vdv->resize(motion_subspace_dot_times_v.rows(),
-                                             getNumVelocities());
+                                             get_num_velocities());
       dmotion_subspace_dot_times_vdv->transpose() << 0.0, 0.0, 0.0,
           -pitchd * cy * sp - yawd * cp * sy,
           rolld * (sr * sy + cr * cy * sp) - yawd * (cr * cy + sp * sr * sy) +
@@ -229,14 +232,15 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
-    qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+    qdot_to_v.setIdentity(get_num_velocities(), get_num_positions());
     drake::math::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
 
     if (dqdot_to_v) {
-      dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
+      dqdot_to_v->setZero(qdot_to_v.size(), get_num_positions());
     }
   }
 
@@ -244,14 +248,15 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
-    v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+    v_to_qdot.setIdentity(get_num_positions(), get_num_velocities());
     drake::math::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
 
     if (dv_to_qdot) {
-      dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
+      dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
     }
   }
 
@@ -259,15 +264,27 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(
       const Eigen::MatrixBase<DerivedV>& v) const {
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(
-        getNumVelocities(), 1);
+        get_num_velocities(), 1);
   }
 
-  bool isFloating() const override { return true; }
+  bool is_floating() const override { return true; }
+
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use is_floating().")
+#endif
+  bool isFloating() const override { return is_floating(); }
+
   Eigen::VectorXd zeroConfiguration() const override;
   Eigen::VectorXd randomConfiguration(
       std::default_random_engine& generator) const override;
-  std::string getPositionName(int index) const override;
+  std::string get_position_name(int index) const override;
 
+// TODO(liang.fok) Remove this deprecated method prior to release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_position_name().")
+#endif
+  std::string getPositionName(int index) const override;
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

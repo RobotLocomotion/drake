@@ -2,8 +2,10 @@
 
 #include <iostream>
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using std::move;
+using std::unique_ptr;
+using std::vector;
 
 namespace DrakeCollision {
 ElementId Model::addElement(const Element& element) {
@@ -17,7 +19,16 @@ bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const Element* Model::readElement(ElementId id) const {
+const Element* Model::FindElement(ElementId id) const {
+  auto element_iter = elements.find(id);
+  if (element_iter != elements.end()) {
+    return element_iter->second.get();
+  } else {
+    return nullptr;
+  }
+}
+
+Element* Model::FindMutableElement(ElementId id) {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
@@ -62,20 +73,26 @@ bool Model::transformCollisionFrame(
   }
 }
 
-bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
-                           const bool use_margins,
-                           vector<PointPair>& closest_points) {
+bool closestPointsAllToAll(
+    const vector<ElementId>& ids_to_check,
+    const bool use_margins,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<PointPair>& closest_points) {
   return false;
 }
 
-bool collisionPointsAllToAll(const bool use_margins,
-                             vector<PointPair>& points) {
+bool collisionPointsAllToAll(
+    const bool use_margins,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<PointPair>& points) {
   return false;
 }
 
-bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
-                           const bool use_margins,
-                           vector<PointPair>& closest_points) {
+bool closestPointsPairwise(
+    const vector<ElementIdPair>& id_pairs,
+    const bool use_margins,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<PointPair>& closest_points) {
   return false;
 }
 

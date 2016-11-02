@@ -1,21 +1,21 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
 
 #include <stdexcept>
 #include <string>
 
 #include <Eigen/Core>
 
-#include "drake/drakeAutomotive_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a DrivingCommand.
-struct DRAKEAUTOMOTIVE_EXPORT DrivingCommandIndices {
+struct DRAKE_EXPORT DrivingCommandIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 3;
 
@@ -39,14 +39,17 @@ class DrivingCommand : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
+  // steering_angle
   const T steering_angle() const { return this->GetAtIndex(K::kSteeringAngle); }
   void set_steering_angle(const T& steering_angle) {
     this->SetAtIndex(K::kSteeringAngle, steering_angle);
   }
+  // throttle
   const T throttle() const { return this->GetAtIndex(K::kThrottle); }
   void set_throttle(const T& throttle) {
     this->SetAtIndex(K::kThrottle, throttle);
   }
+  // brake
   const T brake() const { return this->GetAtIndex(K::kBrake); }
   void set_brake(const T& brake) { this->SetAtIndex(K::kBrake, brake); }
   //@}

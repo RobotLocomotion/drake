@@ -5,8 +5,7 @@
 #endif
 #include "drake/systems/plants/collision/unusable_model.h"
 
-using namespace std;
-using namespace Eigen;
+using std::unique_ptr;
 
 namespace DrakeCollision {
 
@@ -20,4 +19,5 @@ unique_ptr<Model> newModel() {
 #endif
   return unique_ptr<Model>(new UnusableModel());
 }
-};
+
+}  // namespace DrakeCollision

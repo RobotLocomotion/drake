@@ -155,7 +155,7 @@ class InverseKinObjective : public Constraint {
  public:
   // All references are aliased for the life of the objective.
   InverseKinObjective(const RigidBodyTree* model, const MatrixXd& Q)
-      : Constraint(model->number_of_positions()),
+      : Constraint(model->get_num_positions()),
         Q_(Q) {}
 
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -188,7 +188,7 @@ class InverseKinObjective : public Constraint {
   VectorXd q_nom_i_;
 };
 
-}  // namespace (anon)
+}  // anonymous namespace
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void inverseKinBackend(
@@ -200,8 +200,8 @@ void inverseKinBackend(
     int* info, std::vector<std::string>* infeasible_constraint) {
 
   // Validate some basic parameters of the input.
-  if (q_seed.rows() != model->number_of_positions() || q_seed.cols() != nT ||
-      q_nom.rows() != model->number_of_positions() || q_nom.cols() != nT) {
+  if (q_seed.rows() != model->get_num_positions() || q_seed.cols() != nT ||
+      q_nom.rows() != model->get_num_positions() || q_nom.cols() != nT) {
     throw std::runtime_error(
         "Drake::inverseKinBackend: q_seed and q_nom must be of size "
         "nq x nT");
@@ -219,7 +219,7 @@ void inverseKinBackend(
     SetIKSolverOptions(ikoptions, &prog);
 
     DecisionVariableView vars =
-        prog.AddContinuousVariables(model->number_of_positions());
+        prog.AddContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
     ikoptions.getQ(Q);
@@ -250,7 +250,7 @@ void inverseKinBackend(
           constraint_category ==
           RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
         AddSingleTimeLinearPostureConstraint(
-            &t[t_index], constraint, model->number_of_positions(),
+            &t[t_index], constraint, model->get_num_positions(),
             vars, &prog);
       } else if (constraint_category ==
                  RigidBodyConstraint::QuasiStaticConstraintCategory) {
@@ -285,7 +285,6 @@ void inverseKinBackend(
     }
 
     SolutionResult result = prog.Solve();
-    prog.PrintSolution();
     q_sol->col(t_index) = vars.value();
     info[t_index] = GetIKSolverInfo(prog, result);
   }
@@ -319,6 +318,7 @@ template void inverseKinBackend(
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<VectorXd>* q_sol,
     int* info, std::vector<std::string>* infeasible_constraint);
-}
-}
-}
+
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake

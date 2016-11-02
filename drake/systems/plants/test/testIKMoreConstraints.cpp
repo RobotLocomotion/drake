@@ -1,5 +1,7 @@
 #include <cstdlib>
-#include <numeric>  // for iota
+#include <numeric>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -27,7 +29,7 @@ namespace {
 std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
                                                const std::string& name) {
   RigidBody* joint_child_body = tree.FindChildBodyOfJoint(name);
-  int num_positions = joint_child_body->getJoint().getNumPositions();
+  int num_positions = joint_child_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
   // Since the joint position states are located in a contiguous region of the
@@ -39,6 +41,7 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree& tree,
 }
 
 void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                         std::vector<int>& position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
@@ -54,7 +57,7 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   tspan << 0, 1;
 
   // Default Atlas v5 posture:
-  VectorXd qstar(model.number_of_positions());
+  VectorXd qstar(model.get_num_positions());
   qstar << -0.0260, 0, 0.8440, 0, 0, 0, 0, 0, 0, 0.2700, 0, 0.0550, -0.5700,
       1.1300, -0.5500, -0.0550, -1.3300, 2.1530, 0.5000, 0.0985, 0, 0.0008,
       -0.2700, 0, -0.0550, -0.5700, 1.1300, -0.5500, 0.0550, 1.3300, 2.1530,
@@ -182,7 +185,7 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   constraint_array.push_back(&kc_posture_back);
 
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.number_of_positions());
+  VectorXd q_sol(model.get_num_positions());
   int info;
   std::vector<std::string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),

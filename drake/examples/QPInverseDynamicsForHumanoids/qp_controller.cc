@@ -1,32 +1,132 @@
-#include "drake/solvers/mathematical_program.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
+
+#include "drake/math/cross_product.h"
 #include "drake/solvers/snopt_solver.h"
 
-#include "qp_controller.h"
+namespace drake {
+namespace examples {
+namespace qp_inverse_dynamics {
 
-using namespace drake::solvers;
+const double QPController::kUpperBoundForContactBasis = 1000;
 
-// TODO(siyuan.feng@tri.global): some version of this should go to
-// mathematical_program.h
-static VectorXd VariableList2VectorXd(VariableList const& vlist) {
-  size_t dim = 0;
-  for (auto var : vlist) {
-    dim += var.size();
+void QPController::ResizeQP(
+    const RigidBodyTree& robot,
+    const std::vector<ContactInformation>& all_supports,
+    const std::vector<DesiredBodyAcceleration>& all_body_accelerations) {
+  // Figure out dimensions.
+  int num_contact_body = all_supports.size();
+  int num_vd = robot.get_num_velocities();
+  int num_basis = 0;
+  int num_point_force = 0;
+  for (const ContactInformation& support : all_supports) {
+    num_point_force += support.contact_points().size();
+    num_basis += support.num_basis();
   }
-  VectorXd X(dim);
-  dim = 0;
-  for (auto var : vlist) {
-    X.segment(dim, var.size()) = var.value();
-    dim += var.size();
+  int num_torque = robot.actuators.size();
+  int num_variable = num_vd + num_basis;
+
+  if (num_contact_body == num_contact_body_ && num_vd == num_vd_ &&
+      num_basis == num_basis_ && num_point_force == num_point_force_ &&
+      num_torque == num_torque_ && num_variable == num_variable_ &&
+      static_cast<int>(all_body_accelerations.size()) ==
+          num_body_acceleration_) {
+    return;
   }
-  return X;
+
+  num_contact_body_ = num_contact_body;
+  num_vd_ = num_vd;
+  num_basis_ = num_basis;
+  num_point_force_ = num_point_force;
+  num_torque_ = num_torque;
+  num_variable_ = num_variable;
+  num_body_acceleration_ = static_cast<int>(all_body_accelerations.size());
+
+  // The order of insertion is important, the rest of the program assumes this
+  // layout.
+  prog_ = solvers::MathematicalProgram();
+  solvers::DecisionVariableView vd =
+      prog_.AddContinuousVariables(num_vd_, "vd");
+  solvers::DecisionVariableView basis =
+      prog_.AddContinuousVariables(num_basis_, "basis");
+
+  // Allocate space for contact force jacobian and basis matrix.
+  stacked_contact_jacobians_.resize(3 * num_point_force_, num_vd_);
+  basis_to_force_matrix_.resize(3 * num_point_force_, num_basis_);
+  stacked_contact_jacobians_dot_times_v_.resize(3 * num_point_force_);
+  torque_linear_.resize(num_torque_, num_variable_);
+  dynamics_linear_.resize(6, num_variable_);
+
+  // Allocate equality constraints.
+  // Dyanmics
+  eq_dynamics_ =
+      prog_.AddLinearEqualityConstraint(Eigen::MatrixXd::Zero(6, num_variable_),
+                                        Eigen::Vector6d::Zero(), {vd, basis});
+  eq_dynamics_->set_description("dynamics eq");
+
+  // Contact constraints, 3 rows per contact point
+  // TODO(siyuan.feng@tri.global): switch this to cost eventually.
+  eq_contacts_.resize(num_contact_body_);
+  for (int i = 0; i < num_contact_body_; i++) {
+    eq_contacts_[i] = prog_.AddLinearEqualityConstraint(
+        Eigen::MatrixXd::Zero(3 * all_supports[i].contact_points().size(),
+                              num_vd_),
+        Eigen::VectorXd::Zero(3 * all_supports[i].contact_points().size()),
+        {vd});
+    eq_contacts_[i]->set_description(all_supports[i].name() + " contact eq");
+  }
+
+  // Allocate inequality constraints.
+  // Contact force scalar (Beta), which is constant and does not depend on the
+  // robot configuration.
+  ineq_contact_wrench_ = prog_.AddLinearConstraint(
+      Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+      Eigen::VectorXd::Zero(num_basis_),
+      Eigen::VectorXd::Constant(num_basis_, kUpperBoundForContactBasis),
+      {basis});
+  ineq_contact_wrench_->set_description("contact force basis ineq");
+  // Torque limit
+  ineq_torque_limit_ = prog_.AddLinearConstraint(
+      Eigen::MatrixXd::Zero(num_torque_, num_variable_),
+      Eigen::VectorXd::Zero(num_torque_), Eigen::VectorXd::Zero(num_torque_),
+      {vd, basis});
+  ineq_torque_limit_->set_description("torque limit ineq");
+
+  // Allocate cost terms.
+  Eigen::MatrixXd tmp_matrix_vd(num_vd_, num_vd_);
+  Eigen::VectorXd tmp_vector_vd(num_vd_);
+  // CoMdd
+  cost_comdd_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+  cost_comdd_->set_description("com cost");
+  cost_body_accelerations_.resize(all_body_accelerations.size());
+  body_Jdv_.resize(all_body_accelerations.size());
+  body_J_.resize(all_body_accelerations.size());
+  for (size_t i = 0; i < all_body_accelerations.size(); i++) {
+    cost_body_accelerations_[i] =
+        prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+    cost_body_accelerations_[i]->set_description(
+        all_body_accelerations[i].name() + " cost");
+  }
+  // Regularize vd.
+  cost_vd_reg_ = prog_.AddQuadraticCost(tmp_matrix_vd, tmp_vector_vd, {vd});
+  cost_vd_reg_->set_description("vd reg cost");
+  // Regularize basis.
+  cost_basis_reg_ =
+      prog_.AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+                             Eigen::VectorXd::Zero(num_basis_), {basis});
+  cost_basis_reg_->set_description("basis reg cost");
 }
 
 int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
                           QPOutput* output) {
-  if (!is_qp_input_sane(input)) {
+  if (!input.is_valid(rs.robot().get_num_velocities())) {
     std::cerr << "input is invalid\n";
     return -1;
   }
+
+  // Resize and zero temporary matrices.
+  ResizeQP(rs.robot(), input.contact_info(),
+           input.desired_body_accelerations());
+  SetTempMatricesToZero();
 
   ////////////////////////////////////////////////////////////////////
   // The equations of motion look like:
@@ -36,341 +136,276 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // zeros due to the floating base), tau is joint torque, J^T is the transpose
   // of all contact Jacobian, and lambda is the contact wrench in the world
   // frame.
+  // In this implementation, lambda is replaced by a set of point forces
+  // applied at different contact points per each contact link.
+  // The equations of motion is updated to:
+  // M(q) * vd + h(q,v) = S * tau + J^T * basis * Beta
   //
   // For inverse dynamics, we are usually given desired motions, and
   // we want to solve for tau to achieve those motions.
-  // Desired motions can be directly specified as vd_d, or as xdd_d in Cartesian
-  // space, which is linear w.r.t. vd as well: xdd_d = J * vd + Jd * v.
+  // Desired motions can be directly specified as desired_vd, or as
+  // acceleration_d in Cartesian
+  // space, which is linear w.r.t. vd as well: acceleration_d = J * vd + Jd * v.
   //
   // Note that since S.topRows(6) is zero,
-  // tau = M_l * vd + h_l - J^T_l * lamda,
-  // where _l means the lower num_torque rows of those matrices.
-  // So we just need to solve for vd and lambda, and tau can be computed as
+  // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
+  // where _l means the lower num_torque_ rows of those matrices.
+  // So we just need to solve for vd and Beta, and tau can be computed as
   // above. We can formulate inverse dynamics a QP problem.
   //
   // For the QP problem:
-  // the unknown is _X = [vd, lambda]
+  // the unknown is _X = [vd, Beta]
   // equality constraints:
-  //  M_u * vd + h_u = J^T_u * lambda (equations of motion)
+  //  M_u * vd + h_u = (J^T * basis)_u * Beta (equations of motion)
   //  J * vd + Jd * v = 0, (contact constraints)
-  // inEquality: a bunch, joint torque limit, limits on lambda, etc
+  // inEquality: joint torque limit, limits on Beta, etc.
   // cost func:
-  //  min (Jcom*vd + Jcomd*v - comdd_d)^2
-  //    + (vd - vd_d)^2
-  //    + (lambda - lambda_d)^2
-  //    + all_kinds_of_body_acceleration_cost_terms
+  //  min (Jcom*vd + Jcomd*v - desired_comdd)^2
+  //    + (vd - desired_vd)^2
+  //    + all_kinds_of_body_acceleration_cost_terms (pelvis, torso, feet, etc)
   //
   // I made the dynamics and stationary contact equality constraints.
   // Alternatively, they can be setup as high weight cost terms. This is
   // sometimes preferred as it introduce slacks for better stability.
   //
-  // We are assuming two foot contacts in this example.
-  int num_contacts = 2;
-  int num_vd = rs.robot().number_of_velocities();
-  int num_wrench = 6 * num_contacts;
-  int num_torque = num_vd - 6;
-  int num_variable = num_vd + num_wrench;
+  // For more details on the QP setup, the interested readers could refer to
+  // [1]  An efficiently solvable quadratic program for stabilizing dynamic
+  // locomotion, Scott Kuindersma, Frank Permenter, and Russ Tedrake
+  // http://groups.csail.mit.edu/robotics-center/public_papers/Kuindersma13.pdf
+  const solvers::DecisionVariableView vd = prog_.GetVariable("vd");
+  const solvers::DecisionVariableView basis = prog_.GetVariable("basis");
 
-  MathematicalProgram prog;
-  const DecisionVariableView vd = prog.AddContinuousVariables(num_vd, "vd");
-  const DecisionVariableView lambda =
-      prog.AddContinuousVariables(num_wrench, "lambda");
-
-  int lambda_start = lambda.index();
+  int basis_start = basis.index();
   int vd_start = vd.index();
 
-  // tau = M_l * vd + h_l - J^T_l * lambda,
-  // tau = torque_linear_ * _X + torque_constant_
-  torque_linear_ = MatrixXd::Zero(num_torque, num_variable);
-  torque_linear_.block(0, vd_start, num_torque, num_vd) =
-      rs.M().bottomRows(num_torque);
-  for (int i = 0; i < num_contacts; i++) {
-    torque_linear_.block(0, lambda_start + i * 6, num_torque, 6) =
-        -rs.foot(i).J.block(0, 6, 6, num_torque).transpose();
+  // Stack the contact Jacobians and basis matrices for each contact link.
+  int rowIdx = 0;
+  int colIdx = 0;
+  for (const ContactInformation& support : input.contact_info()) {
+    int force_dim = 3 * support.contact_points().size();
+    int basis_dim = support.num_basis();
+    basis_to_force_matrix_.block(rowIdx, colIdx, force_dim, basis_dim) =
+        support.ComputeBasisMatrix(rs.robot(), rs.cache());
+    stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_) =
+        support.ComputeJacobianAtContactPoints(rs.robot(), rs.cache());
+    stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim) =
+        support.ComputeJacobianDotTimesVAtContactPoints(rs.robot(), rs.cache());
+    rowIdx += force_dim;
+    colIdx += basis_dim;
   }
-  torque_constant_ = rs.bias_term().tail(num_torque);
+  JB_ = stacked_contact_jacobians_.transpose() * basis_to_force_matrix_;
+  DRAKE_ASSERT(rowIdx == num_point_force_ * 3);
+  DRAKE_ASSERT(colIdx == num_basis_);
+
+  // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
+  // tau = torque_linear_ * X + torque_constant_
+  torque_linear_.block(0, vd_start, num_torque_, num_vd_) =
+      rs.M().bottomRows(num_torque_);
+  torque_linear_.block(0, basis_start, num_torque_, num_basis_) =
+      -JB_.bottomRows(num_torque_);
+  torque_constant_ = rs.bias_term().tail(num_torque_);
 
   ////////////////////////////////////////////////////////////////////
-  // equality constraints:
-  // equations of motion part, 6 rows
-  dynamics_linear_ = MatrixXd::Zero(6, num_variable);
-  dynamics_linear_.block(0, vd_start, 6, num_vd) = rs.M().topRows(6);
-  for (int i = 0; i < num_contacts; i++) {
-    dynamics_linear_.block(0, lambda_start + i * 6, 6, 6) =
-        -rs.foot(i).J.block<6, 6>(0, 0).transpose();
-  }
-  dynamics_constant_ = -rs.bias_term().head(6);
-  prog.AddLinearEqualityConstraint(dynamics_linear_, dynamics_constant_);
+  // Equality constraints:
+  // Equations of motion part, 6 rows
+  dynamics_linear_.block(0, vd_start, 6, num_vd_) = rs.M().topRows(6);
+  dynamics_linear_.block(0, basis_start, 6, num_basis_) = -JB_.topRows(6);
+  dynamics_constant_ = -rs.bias_term().head<6>();
+  eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
 
-  // contact constraints, 6 rows per contact
-  for (int i = 0; i < num_contacts; i++) {
-    prog.AddLinearEqualityConstraint(
-        rs.foot(i).J, -(rs.foot(i).Jdot_times_v - input.footdd_d[i]), {vd});
+  // Contact constraints, 3 rows per contact point
+  rowIdx = 0;
+  for (int i = 0; i < num_contact_body_; i++) {
+    int force_dim = 3 * input.contact_info(i).contact_points().size();
+    eq_contacts_[i]->UpdateConstraint(
+        stacked_contact_jacobians_.block(rowIdx, 0, force_dim, num_vd_),
+        -stacked_contact_jacobians_dot_times_v_.segment(rowIdx, force_dim));
+    rowIdx += force_dim;
   }
+  DRAKE_ASSERT(rowIdx == num_point_force_ * 3);
 
   ////////////////////////////////////////////////////////////////////
-  // set up inequality constraints
-  // these are for contact wrench, 11 rows per contact.
-  // NOTE: these constraints are specified for the contact wrench in the body
-  // frame, but lambda are in world frame. So need to transform it by R^-1
-  // 2 for Fx, Fy, Mz within friction cone, 6
-  // 2 for CoP x within foot, 2
-  // 2 for CoP y within foot, 2
-  // 1 for Fz >= 0,
-  int row_idx = 0;
-  inequality_linear_ = MatrixXd::Zero(11 * num_contacts, num_wrench);
-  inequality_upper_bound_ = VectorXd::Constant(
-      11 * num_contacts, std::numeric_limits<double>::infinity());
-  inequality_lower_bound_ = VectorXd::Constant(
-      11 * num_contacts, -std::numeric_limits<double>::infinity());
+  // Inequality constraints:
+  // For the contact point force basis, the constraints are always > 0,
+  // so the stay constant as in ResizeQP.
 
-  // Fz >= 0;
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 5) = 1;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // This is a very crude model for approximating friction.
-  // |Fx| < muFz and |Fy| < muFz is a "box" rather than a "cone" approximation
-  // of friction.
-  // The magnitude is off by a factor or sqrt(2).
-  // Fx <= mu * Fz, Fx - mu * Fz <= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 3) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.mu;
-    inequality_upper_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // Fx >= -mu * Fz, Fx + mu * Fz >= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 3) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = param.mu;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // Fy <= mu * Fz, Fy - mu * Fz <= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 4) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.mu;
-    inequality_upper_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // Fy >= -mu * Fz, Fy + mu * Fz >= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 4) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = param.mu;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // These are poor approximations for the normal torque especially when the
-  // center of pressure is at a corner of the foot. I used this in this
-  // example for its simplicity. A better approximation is to use point contact
-  // forces at multiple contact positions.
-  // Mz <= mu * Fz, Mz - mu * Fz <= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 2) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.mu_Mz;
-    inequality_upper_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // Mz >= -mu * Fz, Mz + mu * Fz >= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 2) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = param.mu_Mz;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // cop_x <= x_max, -My / Fz <= x_max, -My - x_max * Fz <= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 1) = -1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.x_max;
-    inequality_upper_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // cop_x >= x_min, -My / Fz >= x_min, -My - x_min * Fz >= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 1) = -1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.x_min;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // cop_y <= y_max, Mx / Fz <= y_max, Mx - y_max * Fz <= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 0) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.y_max;
-    inequality_upper_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // cop_y >= y_min, Mx / Fz >= y_min, Mx - y_min * Fz >= 0
-  for (int i = 0; i < num_contacts; i++) {
-    inequality_linear_(row_idx, i * 6 + 0) = 1;
-    inequality_linear_(row_idx, i * 6 + 5) = -param.y_min;
-    inequality_lower_bound_(row_idx) = 0;
-    row_idx++;
-  }
-  // Since all of the above are constraints on wrench expressed in the body
-  // frame, we need to rotate the lambda into body frame.
-  MatrixXd world_to_foot(MatrixXd::Zero(num_wrench, num_wrench));
-  for (int i = 0; i < num_contacts; i++) {
-    world_to_foot.block<3, 3>(i * 6, i * 6) =
-        rs.foot(i).pose.linear().transpose();
-    world_to_foot.block<3, 3>(i * 6 + 3, i * 6 + 3) =
-        world_to_foot.block<3, 3>(i * 6, i * 6);
-  }
-  inequality_linear_ = inequality_linear_ * world_to_foot;
-  prog.AddLinearConstraint(inequality_linear_, inequality_lower_bound_,
-                           inequality_upper_bound_, {lambda});
-
-  // torque limits: min <= tau <= max, num_torque rows
-  // min <= M_l * vd + h_l - J^T_l * lambda <= max
-  // min - h_l <= M_l * vd - J^T_l * lambda <= max - h_l
-  // tau = rs.robot->B.bottomRows(num_torque) * u,
-  // u = rs.robot->B.bottomRows(num_torque).transpose() * tau
+  // Torque limits: min <= tau <= max, num_torque_ rows
+  // min <= M_l * vd + h_l - (J^T * basis)_l * Beta <= max
+  // min - h_l <= M_l * vd - (J^T * basis)_l * Beta <= max - h_l
+  // tau = rs.robot->B.bottomRows(num_torque_) * u,
+  // u = rs.robot->B.bottomRows(num_torque_).transpose() * tau
   // since B should be orthonormal.
-  // tau is joint space indexed, and u is actuator space indexed.
+  // Tau is joint space indexed, and u is actuator space indexed.
   // constraints are specified with u index.
   inequality_linear_ =
-      rs.robot().B.bottomRows(num_torque).transpose() * torque_linear_;
+      rs.robot().B.bottomRows(num_torque_).transpose() * torque_linear_;
   inequality_upper_bound_ = inequality_lower_bound_ =
-      -rs.robot().B.bottomRows(num_torque).transpose() * torque_constant_;
+      -rs.robot().B.bottomRows(num_torque_).transpose() * torque_constant_;
   for (size_t i = 0; i < rs.robot().actuators.size(); i++) {
     inequality_lower_bound_[i] += rs.robot().actuators[i].effort_limit_min_;
     inequality_upper_bound_[i] += rs.robot().actuators[i].effort_limit_max_;
   }
-  prog.AddLinearConstraint(inequality_linear_, inequality_lower_bound_,
-                           inequality_upper_bound_, {vd, lambda});
+  ineq_torque_limit_->UpdateConstraint(
+      inequality_linear_, inequality_lower_bound_, inequality_upper_bound_);
 
   ////////////////////////////////////////////////////////////////////
-  // cost function:
+  // Cost function:
   // CoM term (task space acceleration costs)
-  // w * (J * vd + Jdv - comdd_d)^T * (J * vd + Jdv - comdd_d)
-  prog.AddQuadraticCost(
-      input.w_com * rs.J_com().transpose() * rs.J_com(),
-      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() *
-          rs.J_com(),
-      {vd});
+  // w * (J * vd + Jdv - desired_comdd)^T * (J * vd + Jdv - desired_comdd)
+  cost_comdd_->UpdateQuadraticAndLinearTerms(
+      input.w_com() * rs.J_com().transpose() * rs.J_com(),
+      input.w_com() * rs.J_com().transpose() *
+          (rs.Jdot_times_v_com() - input.desired_comdd()));
 
-  prog.AddQuadraticCost(
-      input.w_pelv * rs.pelv().J.transpose() * rs.pelv().J,
-      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() *
-          rs.pelv().J,
-      {vd});
+  const std::vector<DesiredBodyAcceleration>& body_motions_d =
+      input.desired_body_accelerations();
+  for (size_t i = 0; i < body_motions_d.size(); i++) {
+    const DesiredBodyAcceleration& body_motion_d = body_motions_d[i];
+    body_J_[i] = GetTaskSpaceJacobian(
+        rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
+    body_Jdv_[i] = GetTaskSpaceJacobianDotTimesV(
+        rs.robot(), rs.cache(), body_motion_d.body(), Eigen::Vector3d::Zero());
 
-  prog.AddQuadraticCost(
-      input.w_torso * rs.torso().J.transpose() * rs.torso().J,
-      input.w_torso * (rs.torso().Jdot_times_v - input.torsodd_d).transpose() *
-          rs.torso().J,
-      {vd});
-
-  // regularize vd to vd_d
-  prog.AddQuadraticCost(input.w_vd * MatrixXd::Identity(num_vd, num_vd),
-                        input.w_vd * (-input.vd_d), {vd});
-
-  // regularize lambda to lambda_d
-  VectorXd lambda_d(VectorXd::Zero(num_wrench));
-  for (int i = 0; i < 2; i++) lambda_d.segment<6>(6 * i) = input.wrench_d[i];
-  prog.AddQuadraticCost(
-      input.w_wrench_reg * MatrixXd::Identity(num_wrench, num_wrench),
-      input.w_wrench_reg * (-lambda_d), {lambda});
+    cost_body_accelerations_[i]->UpdateQuadraticAndLinearTerms(
+        body_motion_d.weight() * body_J_[i].transpose() * body_J_[i],
+        body_motion_d.weight() * body_J_[i].transpose() *
+            (body_Jdv_[i] - body_motion_d.acceleration()));
+  }
+  // Regularize vd to desired_vd.
+  cost_vd_reg_->UpdateQuadraticAndLinearTerms(
+      input.w_vd() * Eigen::MatrixXd::Identity(num_vd_, num_vd_),
+      input.w_vd() * (-input.desired_vd()));
+  // Regularize basis to zero.
+  cost_basis_reg_->UpdateQuadraticAndLinearTerms(
+      input.w_basis_reg() * Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+      Eigen::VectorXd::Zero(num_basis_));
 
   ////////////////////////////////////////////////////////////////////
-  // solve
-  prog.SetInitialGuess(vd, VectorXd::Zero(num_vd));
-  VectorXd lambda0 = VectorXd::Zero(num_wrench);
-  prog.SetInitialGuess(lambda, lambda0);
-  SolutionResult result;
-  SnoptSolver snopt;
-  if (!snopt.available()) {
-    std::cerr << "Solver (SNOPT) not available.\n";
+  // Call solver.
+  if (!solver_.available()) {
+    std::cerr << "Solver not available.\n";
     return -1;
   }
-  result = snopt.Solve(prog);
-  if (result != drake::solvers::SolutionResult::kSolutionFound) {
+  solvers::SolutionResult result = solver_.Solve(prog_);
+  if (result != solvers::SolutionResult::kSolutionFound) {
     std::cerr << "solution not found\n";
     return -1;
   }
+  Eigen::VectorXd solution = prog_.GetSolutionVectorValues();
 
   ////////////////////////////////////////////////////////////////////
-  // example of inspecting each cost / eq, ineq term
-  // These will not be called in a real controller
-  auto costs = prog.generic_costs();
-  auto eqs = prog.linear_equality_constraints();
-  auto ineqs = prog.linear_constraints();
+  // Examples of inspecting each cost / eq, ineq term
+  auto costs = prog_.quadratic_costs();
+  auto eqs = prog_.linear_equality_constraints();
+  auto ineqs = prog_.linear_constraints();
 
-  for (auto cost_b : costs) {
-    VectorXd val;
-    std::shared_ptr<Constraint> cost = cost_b.constraint();
-    cost->Eval(VariableList2VectorXd(cost_b.variable_list()), val);
-    std::cout << "cost term 0.5 x^T * H * x + h0 * x: " << val.transpose()
-              << std::endl;
+  output->mutable_costs().resize(costs.size());
+  int ctr = 0;
+  for (auto& cost_b : costs) {
+    Eigen::VectorXd val;
+    std::shared_ptr<solvers::Constraint> cost = cost_b.constraint();
+    cost->Eval(cost_b.VariableListToVectorXd(), val);
+    output->mutable_cost(ctr).first = cost->get_description();
+    output->mutable_cost(ctr).second = val(0);
+    ctr++;
   }
 
-  for (auto eq_b : eqs) {
-    std::shared_ptr<LinearEqualityConstraint> eq = eq_b.constraint();
-    VectorXd X = VariableList2VectorXd(eq_b.variable_list());
-    assert((eq->A() * X - eq->lower_bound()).isZero());
+  for (auto& eq_b : eqs) {
+    std::shared_ptr<solvers::LinearEqualityConstraint> eq = eq_b.constraint();
+    Eigen::VectorXd X = eq_b.VariableListToVectorXd();
+    DRAKE_ASSERT((eq->A() * X - eq->lower_bound()).isZero(EPSILON));
   }
 
-  for (auto ineq_b : ineqs) {
-    std::shared_ptr<LinearConstraint> ineq = ineq_b.constraint();
-    VectorXd X = VariableList2VectorXd(ineq_b.variable_list());
+  for (auto& ineq_b : ineqs) {
+    std::shared_ptr<solvers::LinearConstraint> ineq = ineq_b.constraint();
+    Eigen::VectorXd X = ineq_b.VariableListToVectorXd();
     X = ineq->A() * X;
     for (int i = 0; i < X.size(); i++) {
-      assert(X[i] >= ineq->lower_bound()[i] && X[i] <= ineq->upper_bound()[i]);
+      DRAKE_ASSERT(X[i] >= ineq->lower_bound()[i] - EPSILON &&
+                   X[i] <= ineq->upper_bound()[i] + EPSILON);
     }
   }
 
   ////////////////////////////////////////////////////////////////////
-  // parse result
-  output->vd = vd.value();
-  output->comdd = rs.J_com() * output->vd + rs.Jdot_times_v_com();
-  output->pelvdd = rs.pelv().J * output->vd + rs.pelv().Jdot_times_v;
-  output->torsodd = rs.torso().J * output->vd + rs.torso().Jdot_times_v;
+  // Parse results.
+  // Compute resulting contact wrenches.
+  int basis_index = 0;
+  int point_force_index = 0;
+  point_forces_ = basis_to_force_matrix_ * basis.value();
 
-  for (int i = 0; i < num_contacts; i++) {
-    output->footdd[i] = (rs.foot(i).J * output->vd + rs.foot(i).Jdot_times_v);
-    output->foot_wrench_in_world_frame[i] = lambda.value().segment<6>(i * 6);
+  output->mutable_resolved_contacts().clear();
+  for (const ContactInformation& contact_info : input.contact_info()) {
+    ResolvedContact resolved_contact(contact_info.body());
+
+    // Copy basis.
+    resolved_contact.mutable_basis() =
+        basis.value().segment(basis_index, contact_info.num_basis());
+    basis_index += contact_info.num_basis();
+
+    // Compute contact points and reference point in the world frame.
+    contact_info.ComputeContactPointsAndWrenchReferencePoint(
+        rs.robot(), rs.cache(), Eigen::Vector3d::Zero(),
+        &resolved_contact.mutable_contact_points(),
+        &resolved_contact.mutable_reference_point());
+
+    // Convert point forces to an equivalent wrench wrt to the reference point
+    // in the world frame.
+    resolved_contact.mutable_equivalent_wrench() =
+        contact_info.ComputeWrenchMatrix(resolved_contact.contact_points(),
+                                         resolved_contact.reference_point()) *
+        point_forces_.segment(point_force_index,
+                              3 * contact_info.num_contact_points());
+
+    // Copy point forces.
+    resolved_contact.mutable_point_forces().resize(
+        contact_info.num_contact_points());
+    for (Eigen::Vector3d& point_force :
+         resolved_contact.mutable_point_forces()) {
+      point_force = point_forces_.segment<3>(point_force_index);
+      point_force_index += 3;
+    }
+
+    // Add to output.
+    output->mutable_resolved_contacts().push_back(resolved_contact);
   }
 
-  output->joint_torque = rs.M().bottomRows(num_torque) * output->vd +
-                         rs.bias_term().tail(num_torque);
-  for (int i = 0; i < num_contacts; i++) {
-    output->joint_torque -=
-        rs.foot(i).J.block(0, 6, 6, num_torque).transpose() *
-        output->foot_wrench_in_world_frame[i];
+  // Set output accelerations.
+  output->mutable_vd() = vd.value();
+  output->mutable_comdd() = rs.J_com() * output->vd() + rs.Jdot_times_v_com();
+
+  output->mutable_body_accelerations().clear();
+  for (size_t i = 0; i < input.desired_body_accelerations().size(); i++) {
+    BodyAcceleration body_acceleration(
+        input.desired_body_acceleration(i).body());
+    // Compute accelerations.
+    body_acceleration.mutable_acceleration() =
+        body_J_[i] * output->vd() + body_Jdv_[i];
+
+    // Add to output.
+    output->mutable_body_accelerations().push_back(body_acceleration);
   }
 
-  for (int i = 0; i < num_contacts; i++) {
-    Isometry3d T(Isometry3d::Identity());
-    T.translation() =
-        rs.foot(i).pose.translation() - rs.foot_sensor(i).pose.translation();
+  // Set output joint torques.
+  output->mutable_joint_torque() = torque_linear_ * solution + torque_constant_;
 
-    output->foot_wrench_in_sensor_frame[i] =
-        transformSpatialForce(T, output->foot_wrench_in_world_frame[i]);
-
-    output->foot_wrench_in_sensor_frame[i].head<3>() =
-        rs.foot_sensor(i).pose.linear().transpose() *
-        output->foot_wrench_in_sensor_frame[i].head<3>();
-    output->foot_wrench_in_sensor_frame[i].tail<3>() =
-        rs.foot_sensor(i).pose.linear().transpose() *
-        output->foot_wrench_in_sensor_frame[i].tail<3>();
+  ////////////////////////////////////////////////////////////////////
+  // Sanity check:
+  // Net external wrench = centroidal_matrix * vd + centroidal_matrix_dot * v
+  Eigen::Vector6d Ld = rs.centroidal_momentum_matrix() * output->vd() +
+                       rs.centroidal_momentum_matrix_dot_times_v();
+  Eigen::Vector6d net_wrench = rs.robot().getMass() * rs.robot().a_grav;
+  for (const ResolvedContact& resolved_contact : output->resolved_contacts()) {
+    const Eigen::Vector6d& contact_wrench =
+        resolved_contact.equivalent_wrench();
+    const Eigen::Vector3d& ref_point = resolved_contact.reference_point();
+    net_wrench += contact_wrench;
+    net_wrench.segment<3>(0) +=
+        (ref_point - rs.com()).cross(contact_wrench.segment<3>(3));
   }
+  DRAKE_ASSERT((net_wrench - Ld).isZero(EPSILON));
 
-  // Check equality constraints:
-  // Dynamics: M(q) * vd + h(q,v) = S * tau + J^T * lambda
-  // Foot not moving: J * vd + Jd * v = 0
-  VectorXd residual = rs.M() * output->vd + rs.bias_term();
-  for (int i = 0; i < num_contacts; i++)
-    residual -=
-        rs.foot(i).J.transpose() * output->foot_wrench_in_world_frame[i];
-  residual.tail(num_torque) -= output->joint_torque;
-  assert(residual.isZero());
-
-  for (int i = 0; i < num_contacts; i++) {
-    assert(output->footdd[i].isZero());
-  }
-
-  if (!is_qp_output_sane(*output)) {
+  if (!output->is_valid(rs.robot().get_num_velocities(),
+                        rs.robot().actuators.size())) {
     std::cerr << "output is invalid\n";
     return -1;
   }
@@ -378,106 +413,77 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   return 0;
 }
 
-void InitQPInput(const RigidBodyTree& r, QPInput* input) {
-  input->vd_d.resize(r.number_of_velocities());
-  input->coord_names.resize(r.number_of_velocities());
-  for (int i = 0; i < r.number_of_velocities(); i++) {
-    // strip out the "dot" part from name
-    input->coord_names[i] =
-        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
+std::ostream& operator<<(std::ostream& out, const QPInput& input) {
+  out << "===============================================\n";
+  out << "QPInput:\n";
+  out << "desired_comdd: " << input.desired_comdd().transpose() << std::endl;
+  for (const DesiredBodyAcceleration& body_motion_d :
+       input.desired_body_accelerations()) {
+    out << "desired_" << body_motion_d.name()
+        << "dd: " << body_motion_d.acceleration().transpose() << std::endl;
   }
-}
+  out << "desired_vd: " << input.desired_vd().transpose() << std::endl;
 
-void InitQPOutput(const RigidBodyTree& r, QPOutput* output) {
-  output->vd.resize(r.number_of_velocities());
-  output->coord_names.resize(r.number_of_velocities());
-  for (int i = 0; i < r.number_of_velocities(); i++) {
-    // strip out the "dot" part from name
-    output->coord_names[i] =
-        r.getVelocityName(i).substr(0, r.getVelocityName(i).size() - 3);
-  }
-}
-
-double ComputeQPCost(const HumanoidStatus& rs, const QPInput& input,
-                     const QPOutput& output) {
-  VectorXd c, tot;
-  c = 0.5 * output.vd.transpose() * input.w_com * rs.J_com().transpose() *
-          rs.J_com() * output.vd +
-      input.w_com * (rs.Jdot_times_v_com() - input.comdd_d).transpose() *
-          rs.J_com() * output.vd;
-  tot = c;
-  std::cout << "com cost: " << c << std::endl;
-
-  c = 0.5 * output.vd.transpose() * input.w_pelv * rs.pelv().J.transpose() *
-          rs.pelv().J * output.vd +
-      input.w_pelv * (rs.pelv().Jdot_times_v - input.pelvdd_d).transpose() *
-          rs.pelv().J * output.vd;
-  tot += c;
-  std::cout << "pelv cost: " << c << std::endl;
-
-  c = 0.5 * output.vd.transpose() * input.w_torso * rs.torso().J.transpose() *
-          rs.torso().J * output.vd +
-      input.w_torso * (rs.torso().Jdot_times_v - input.torsodd_d).transpose() *
-          rs.torso().J * output.vd;
-  tot += c;
-  std::cout << "torso cost: " << c << std::endl;
-
-  c = 0.5 * output.vd.transpose() * input.w_vd * output.vd +
-      input.w_vd * (-input.vd_d).transpose() * output.vd;
-  tot += c;
-  std::cout << "vd cost: " << c << std::endl;
-
-  for (int i = 0; i < 2; i++) {
-    c = 0.5 * output.foot_wrench_in_world_frame[i].transpose() *
-            input.w_wrench_reg * output.foot_wrench_in_world_frame[i] +
-        input.w_wrench_reg * (-input.wrench_d[i]).transpose() *
-            output.foot_wrench_in_world_frame[i];
-    tot += c;
-    std::cout << "wrench cost " << i << ": " << c << std::endl;
+  for (const ContactInformation& contact_info : input.contact_info()) {
+    out << "contact: " << contact_info.name() << std::endl;
+    for (size_t j = 0; j < contact_info.contact_points().size(); j++)
+      out << contact_info.contact_points()[j].transpose() << std::endl;
   }
 
-  std::cout << "total cost: " << tot << std::endl;
-  return tot[0];
+  out << "w_com: " << input.w_com() << std::endl;
+  for (const DesiredBodyAcceleration& body_motion_d :
+       input.desired_body_accelerations()) {
+    out << "w_" << body_motion_d.name() << ": " << body_motion_d.weight()
+        << std::endl;
+  }
+  out << "w_vd: " << input.w_vd() << std::endl;
+  out << "w_basis_reg: " << input.w_basis_reg() << std::endl;
+  return out;
 }
 
-void PrintQPOutput(const QPOutput& output) {
-  std::cout << "===============================================\n";
-  std::cout << "accelerations:\n";
-  for (int i = 0; i < output.vd.rows(); i++)
-    std::cout << output.coord_names[i] << ": " << output.vd[i] << std::endl;
+std::ostream& operator<<(std::ostream& out, const QPOutput& output) {
+  out << "===============================================\n";
+  out << "QPOutput:\n";
+  out << "accelerations:\n";
+  for (int i = 0; i < output.vd().size(); i++) {
+    out << output.coord_name(i) << ": " << output.vd()[i] << std::endl;
+  }
 
-  std::cout << "com acc: ";
-  std::cout << output.comdd.transpose() << std::endl;
+  out << "com acc: ";
+  out << output.comdd().transpose() << std::endl;
 
-  std::cout << "pelv acc: ";
-  std::cout << output.pelvdd.transpose() << std::endl;
+  for (const BodyAcceleration& body_motion : output.body_accelerations()) {
+    out << body_motion.name()
+        << " acc: " << body_motion.acceleration().transpose() << std::endl;
+  }
 
-  std::cout << "torso acc: ";
-  std::cout << output.torsodd.transpose() << std::endl;
+  out << "===============================================\n";
+  for (const ResolvedContact& contact_result : output.resolved_contacts()) {
+    out << contact_result.name()
+        << " wrench: " << contact_result.equivalent_wrench().transpose()
+        << std::endl;
+    out << "point forces:\n";
+    for (size_t j = 0; j < contact_result.point_forces().size(); j++) {
+      out << contact_result.point_force(j).transpose() << " at "
+          << contact_result.contact_point(j).transpose() << std::endl;
+    }
+  }
 
-  std::cout << "left foot acc: " << output.footdd[Side::LEFT].transpose()
-            << std::endl;
-  std::cout << "right foot acc: " << output.footdd[Side::RIGHT].transpose()
-            << std::endl;
+  out << "===============================================\n";
+  out << "torque:\n";
+  for (int i = 0; i < output.joint_torque().size(); i++) {
+    out << output.coord_name(i + 6) << ": " << output.joint_torque()[i]
+        << std::endl;
+  }
+  out << "===============================================\n";
+  out << "costs:\n";
+  for (const std::pair<std::string, double>& cost : output.costs()) {
+    out << cost.first << ": " << cost.second << std::endl;
+  }
 
-  std::cout << "===============================================\n";
-  std::cout << "left foot wrench_w: "
-            << output.foot_wrench_in_world_frame[Side::LEFT].transpose()
-            << std::endl;
-  std::cout << "right foot wrench_w: "
-            << output.foot_wrench_in_world_frame[Side::RIGHT].transpose()
-            << std::endl;
-  std::cout << "left foot wrench in sensor frame: "
-            << output.foot_wrench_in_sensor_frame[Side::LEFT].transpose()
-            << std::endl;
-  std::cout << "right foot wrench in sensor frame: "
-            << output.foot_wrench_in_sensor_frame[Side::RIGHT].transpose()
-            << std::endl;
-
-  std::cout << "===============================================\n";
-  std::cout << "torque:\n";
-  for (int i = 0; i < output.joint_torque.rows(); i++)
-    std::cout << output.coord_names[i + 6] << ": " << output.joint_torque[i]
-              << std::endl;
-  std::cout << "===============================================\n";
+  return out;
 }
+
+}  // namespace qp_inverse_dynamics
+}  // namespace examples
+}  // namespace drake

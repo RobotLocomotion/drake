@@ -1,10 +1,10 @@
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_driving_command_t.hpp"
 
 #include "drake/automotive/car_simulation.h"
 #include "drake/common/drake_path.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/pd_control_system.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
@@ -15,7 +15,7 @@ namespace {
 
 using Eigen::VectorXd;
 
-int do_main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   // Initializes the communication layer.
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
@@ -85,5 +85,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::automotive::do_main(argc, argv);
+  return drake::automotive::main(argc, argv);
 }

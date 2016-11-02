@@ -30,7 +30,7 @@ class SimpleCarTest : public ::testing::Test {
 
   SimpleCarState<double>* continuous_state() {
     auto result = dynamic_cast<SimpleCarState<double>*>(
-        context_->get_mutable_state()->continuous_state->get_mutable_state());
+        context_->get_mutable_continuous_state_vector());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -98,7 +98,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const SimpleCarState<double>* const result =
       dynamic_cast<const SimpleCarState<double>*>(
-          derivatives_->get_mutable_state());
+          derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Starting state is all zeros.

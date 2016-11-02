@@ -1,5 +1,6 @@
-#include "direct_trajectory_optimization.h"
+#include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 
+#include <limits>
 #include <stdexcept>
 
 using Eigen::MatrixXd;
@@ -59,8 +60,7 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
 }
 
 void DirectTrajectoryOptimization::AddInputBounds(
-    const Eigen::VectorXd& lower_bound,
-    const Eigen::VectorXd& upper_bound) {
+    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
   DRAKE_ASSERT(lower_bound.size() == num_inputs_);
   DRAKE_ASSERT(upper_bound.size() == num_inputs_);
 
@@ -73,6 +73,20 @@ void DirectTrajectoryOptimization::AddInputBounds(
   opt_problem_.AddBoundingBoxConstraint(lb_all, ub_all, {u_vars_});
 }
 
+void DirectTrajectoryOptimization::AddTimeIntervalBounds(
+    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
+  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, {h_vars_});
+}
+
+void DirectTrajectoryOptimization::AddTimeIntervalBounds(
+    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
+    const std::vector<int>& interval_indices) {
+  VariableList h_list;
+  for (const auto& idx : interval_indices) {
+    h_list.push_back(h_vars_(idx));
+  }
+  opt_problem_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_list);
+}
 
 namespace {
 /// Since the final cost evaluation needs a total time, we need a
@@ -82,8 +96,7 @@ class FinalCostWrapper : public Constraint {
  public:
   FinalCostWrapper(int num_time_samples, int num_states,
                    std::shared_ptr<Constraint> constraint)
-      : Constraint(constraint->num_constraints(),
-                   constraint->lower_bound(),
+      : Constraint(constraint->num_constraints(), constraint->lower_bound(),
                    constraint->upper_bound()),
         num_time_samples_(num_time_samples),
         num_states_(num_states),
@@ -108,8 +121,7 @@ class FinalCostWrapper : public Constraint {
                  x(0).derivatives().rows());
 
     constraint_->Eval(wrapped_x, y);
-    DRAKE_ASSERT(y(0).derivatives().rows() ==
-                 x(0).derivatives().rows());
+    DRAKE_ASSERT(y(0).derivatives().rows() == x(0).derivatives().rows());
   };
 
  private:
@@ -124,8 +136,8 @@ class FinalCostWrapper : public Constraint {
 // input and output anyway.
 void DirectTrajectoryOptimization::AddFinalCost(
     std::shared_ptr<Constraint> constraint) {
-  auto wrapper = std::make_shared<FinalCostWrapper>(
-      N_, num_states_, constraint);
+  auto wrapper =
+      std::make_shared<FinalCostWrapper>(N_, num_states_, constraint);
   opt_problem_.AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
 }
 
@@ -184,8 +196,8 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   return times;
 }
 
-std::vector<Eigen::MatrixXd>
-DirectTrajectoryOptimization::GetInputVector() const {
+std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
+    const {
   std::vector<Eigen::MatrixXd> inputs;
   inputs.reserve(N_);
 
@@ -197,8 +209,8 @@ DirectTrajectoryOptimization::GetInputVector() const {
   return inputs;
 }
 
-std::vector<Eigen::MatrixXd>
-DirectTrajectoryOptimization::GetStateVector() const {
+std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
+    const {
   std::vector<Eigen::MatrixXd> states;
   states.reserve(N_);
 
@@ -213,7 +225,6 @@ DirectTrajectoryOptimization::GetStateVector() const {
 void DirectTrajectoryOptimization::GetResultSamples(
     Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
     std::vector<double>* times_out) const {
-
   std::vector<double> times = GetTimeVector();
   times_out->swap(times);
 
@@ -231,17 +242,19 @@ void DirectTrajectoryOptimization::GetResultSamples(
   }
 }
 
-PiecewisePolynomial<double>
+PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetInputVector());
+  return PiecewisePolynomialTrajectory(
+    PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetInputVector()));
 }
 
-PiecewisePolynomial<double>
+PiecewisePolynomialTrajectory
 DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
-  return PiecewisePolynomial<double>::FirstOrderHold(
-      GetTimeVector(), GetStateVector());
+  return PiecewisePolynomialTrajectory(
+    PiecewisePolynomial<double>::FirstOrderHold(
+      GetTimeVector(), GetStateVector()));
 }
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

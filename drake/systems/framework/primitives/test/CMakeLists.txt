@@ -1,38 +1,44 @@
-add_executable(adder_test adder_test.cc)
-target_link_libraries(adder_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME adder_test COMMAND adder_test)
+drake_add_cc_test(adder_test)
+target_link_libraries(adder_test drakeSystemFramework)
 
-add_executable(pass_through_test
-        pass_through_test.cc
-        pass_through_scalartype_test.cc)
-target_link_libraries(pass_through_test drakeSystemFramework
-        ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME pass_through_test COMMAND pass_through_test)
+drake_add_cc_test(affine_system_test)
+target_link_libraries(affine_system_test drakeSystemFramework)
 
-add_executable(integrator_test integrator_test.cc)
-target_link_libraries(integrator_test
-        drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME integrator_test COMMAND integrator_test)
+drake_add_cc_test(constant_value_source_test)
+target_link_libraries(constant_value_source_test drakeSystemFramework)
 
-add_executable(constant_value_source_test constant_value_source_test.cc)
-target_link_libraries(constant_value_source_test
-        drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME constant_value_source_test COMMAND constant_value_source_test)
+drake_add_cc_test(constant_vector_source_test)
+target_link_libraries(constant_vector_source_test drakeSystemFramework)
 
-add_executable(constant_vector_source_test constant_vector_source_test.cc)
-target_link_libraries(constant_vector_source_test
-        drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME constant_vector_source_test COMMAND constant_vector_source_test)
+drake_add_cc_test(demultiplexer_test)
+target_link_libraries(demultiplexer_test drakeSystemFramework)
 
-add_executable(gain_test gain_test.cc gain_scalartype_test.cc)
-target_link_libraries(gain_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME gain_test COMMAND gain_test)
+drake_add_cc_test(gain_test)
+target_link_libraries(gain_test drakeSystemFramework)
 
-add_executable(pid_controller_test pid_controller_test.cc)
-target_link_libraries(pid_controller_test drakeSystemFramework
-        ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME pid_controller_test COMMAND pid_controller_test)
+drake_add_cc_test(gain_scalartype_test)
+target_link_libraries(gain_scalartype_test drakeSystemFramework)
 
-add_executable(demultiplexer_test demultiplexer_test.cc)
-target_link_libraries(demultiplexer_test drakeSystemFramework ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME demultiplexer_test COMMAND demultiplexer_test)
+drake_add_cc_test(integrator_test)
+target_link_libraries(integrator_test drakeSystemFramework)
+
+drake_add_cc_test(linear_system_test)
+target_link_libraries(linear_system_test drakeSystemFramework)
+
+drake_add_cc_test(matrix_gain_test)
+target_link_libraries(matrix_gain_test drakeSystemFramework)
+
+drake_add_cc_test(multiplexer_test)
+target_link_libraries(multiplexer_test drakeSystemFramework)
+
+drake_add_cc_test(pass_through_test)
+target_link_libraries(pass_through_test drakeSystemFramework)
+
+drake_add_cc_test(pass_through_scalartype_test)
+target_link_libraries(pass_through_scalartype_test drakeSystemFramework)
+
+drake_add_cc_test(trajectory_source_test)
+target_link_libraries(trajectory_source_test drakeSystemFramework)
+
+drake_add_cc_test(zero_order_hold_test)
+target_link_libraries(zero_order_hold_test drakeSystemFramework)

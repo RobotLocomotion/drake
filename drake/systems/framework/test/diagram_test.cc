@@ -30,24 +30,26 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 /// integrator2_: C              -> output 2
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int length) {
+  explicit ExampleDiagram(int size) {
     DiagramBuilder<double> builder;
 
-    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder0_->set_name("adder0");
-    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder1_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder1_->set_name("adder1");
-    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, length);
+    adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
 
-    integrator0_ = builder.AddSystem<Integrator<double>>(length);
-    integrator1_ = builder.AddSystem<Integrator<double>>(length);
+    integrator0_ = builder.AddSystem<Integrator<double>>(size);
+    integrator0_->set_name("integrator0");
+    integrator1_ = builder.AddSystem<Integrator<double>>(size);
+    integrator1_->set_name("integrator1");
 
-    builder.Connect(adder0_->get_output_port(0), adder1_->get_input_port(0));
-    builder.Connect(adder0_->get_output_port(0), adder2_->get_input_port(0));
-    builder.Connect(adder1_->get_output_port(0), adder2_->get_input_port(1));
+    builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
+    builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
+    builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
-    builder.Connect(adder0_->get_output_port(0),
+    builder.Connect(adder0_->get_output_port(),
                     integrator0_->get_input_port(0));
     builder.Connect(integrator0_->get_output_port(0),
                     integrator1_->get_input_port(0));
@@ -55,8 +57,8 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1));
     builder.ExportInput(adder1_->get_input_port(1));
-    builder.ExportOutput(adder1_->get_output_port(0));
-    builder.ExportOutput(adder2_->get_output_port(0));
+    builder.ExportOutput(adder1_->get_output_port());
+    builder.ExportOutput(adder2_->get_output_port());
     builder.ExportOutput(integrator1_->get_output_port(0));
 
     builder.BuildInto(this);
@@ -80,7 +82,7 @@ class ExampleDiagram : public Diagram<double> {
 class DiagramTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    diagram_ = std::make_unique<ExampleDiagram>(kLength);
+    diagram_ = std::make_unique<ExampleDiagram>(kSize);
     diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     context_ = diagram_->CreateDefaultContext();
@@ -93,22 +95,22 @@ class DiagramTest : public ::testing::Test {
     // Initialize the integrator states.
     auto integrator0_xc = GetMutableContinuousState(integrator0());
     ASSERT_TRUE(integrator0_xc != nullptr);
-    integrator0_xc->get_mutable_state()->SetAtIndex(0, 3);
-    integrator0_xc->get_mutable_state()->SetAtIndex(1, 9);
-    integrator0_xc->get_mutable_state()->SetAtIndex(2, 27);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(0, 3);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(1, 9);
+    integrator0_xc->get_mutable_vector()->SetAtIndex(2, 27);
 
     auto integrator1_xc = GetMutableContinuousState(integrator1());
     ASSERT_TRUE(integrator1_xc != nullptr);
-    integrator1_xc->get_mutable_state()->SetAtIndex(0, 81);
-    integrator1_xc->get_mutable_state()->SetAtIndex(1, 243);
-    integrator1_xc->get_mutable_state()->SetAtIndex(2, 729);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(0, 81);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(1, 243);
+    integrator1_xc->get_mutable_vector()->SetAtIndex(2, 729);
   }
 
   // Returns the continuous state of the given @p system.
   ContinuousState<double>* GetMutableContinuousState(
       const System<double>* system) {
     return diagram_->GetMutableSubsystemState(context_.get(), system)
-        ->continuous_state.get();
+        ->get_mutable_continuous_state();
   }
 
   // Asserts that output_ is what it should be for the default values
@@ -153,7 +155,7 @@ class DiagramTest : public ::testing::Test {
   Integrator<double>* integrator0() { return diagram_->integrator0(); }
   Integrator<double>* integrator1() { return diagram_->integrator1(); }
 
-  const int kLength = 3;
+  const int kSize = 3;
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
@@ -167,19 +169,21 @@ class DiagramTest : public ::testing::Test {
 
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
-  ASSERT_EQ(kLength, diagram_->get_num_input_ports());
+  ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (const auto& descriptor : diagram_->get_input_ports()) {
+    EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kInputPort, descriptor.get_face());
-    EXPECT_EQ(kLength, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.get_size());
     EXPECT_EQ(kInheritedSampling, descriptor.get_sampling());
   }
 
-  ASSERT_EQ(kLength, diagram_->get_num_output_ports());
+  ASSERT_EQ(kSize, diagram_->get_num_output_ports());
   for (const auto& descriptor : diagram_->get_output_ports()) {
+    EXPECT_EQ(diagram_.get(), descriptor.get_system());
     EXPECT_EQ(kVectorValued, descriptor.get_data_type());
     EXPECT_EQ(kOutputPort, descriptor.get_face());
-    EXPECT_EQ(kLength, descriptor.get_size());
+    EXPECT_EQ(kSize, descriptor.get_size());
   }
 
   // The adder output ports have inherited sampling.
@@ -192,12 +196,17 @@ TEST_F(DiagramTest, Topology) {
   EXPECT_TRUE(diagram_->has_any_direct_feedthrough());
 }
 
+TEST_F(DiagramTest, Path) {
+  const std::string path = adder0()->GetPath();
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+}
+
 // Tests that the diagram computes the correct sum.
 TEST_F(DiagramTest, EvalOutput) {
   AttachInputs();
   diagram_->EvalOutput(*context_, output_.get());
 
-  ASSERT_EQ(kLength, output_->get_num_ports());
+  ASSERT_EQ(kSize, output_->get_num_ports());
   ExpectDefaultOutputs();
 }
 
@@ -208,7 +217,7 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
 
   diagram_->EvalTimeDerivatives(*context_, derivatives.get());
 
-  ASSERT_EQ(6, derivatives->get_state().size());
+  ASSERT_EQ(6, derivatives->size());
   ASSERT_EQ(0, derivatives->get_generalized_position().size());
   ASSERT_EQ(0, derivatives->get_generalized_velocity().size());
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
@@ -217,17 +226,17 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   const ContinuousState<double>* integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
   ASSERT_TRUE(integrator0_xcdot != nullptr);
-  EXPECT_EQ(1 + 8, integrator0_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot->get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>* integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
   ASSERT_TRUE(integrator1_xcdot != nullptr);
-  EXPECT_EQ(3, integrator1_xcdot->get_state().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot->get_state().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot->get_state().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -244,7 +253,7 @@ TEST_F(DiagramTest, Clone) {
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
-  auto next_input_0 = std::make_unique<BasicVector<double>>(kLength);
+  auto next_input_0 = std::make_unique<BasicVector<double>>(kSize);
   next_input_0->get_mutable_value() << 3, 6, 9;
   clone->SetInputPort(0, MakeInput(std::move(next_input_0)));
 
@@ -274,20 +283,22 @@ TEST_F(DiagramTest, Clone) {
 }
 
 // Tests that, when asked for the state derivatives of Systems that are
-// stateless, Diagram returns nullptr.
-TEST_F(DiagramTest, DerivativesOfStatelessSystemAreNullptr) {
+// stateless, Diagram returns an empty state.
+TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
-  EXPECT_EQ(nullptr,
-            diagram_->GetSubsystemDerivatives(*derivatives, adder0()));
+  EXPECT_EQ(0,
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0())->size());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
  protected:
   void SetUp() override {
     DiagramBuilder<double> builder;
-    subdiagram0_ = builder.AddSystem<ExampleDiagram>(kLength);
-    subdiagram1_ = builder.AddSystem<ExampleDiagram>(kLength);
+    subdiagram0_ = builder.AddSystem<ExampleDiagram>(kSize);
+    subdiagram0_->set_name("subdiagram0");
+    subdiagram1_ = builder.AddSystem<ExampleDiagram>(kSize);
+    subdiagram1_->set_name("subdiagram1");
 
     // Hook up the two diagrams in portwise series.
     for (int i = 0; i < 3; i++) {
@@ -298,6 +309,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     }
 
     diagram_ = builder.Build();
+    diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -311,29 +323,33 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_->SetInputPort(2, MakeInput(std::move(input2_)));
 
     // Initialize the integrator states.
-    Context<double>* d0_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram0_);
-    Context<double>* d1_context = diagram_->GetMutableSubsystemContext(
-        context_.get(), subdiagram1_);
+    Context<double>* d0_context =
+        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram0_);
+    Context<double>* d1_context =
+        diagram_->GetMutableSubsystemContext(context_.get(), subdiagram1_);
 
     State<double>* integrator0_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator0());
-    integrator0_x->continuous_state->get_mutable_state()->SetAtIndex(0, 3);
+    integrator0_x->get_mutable_continuous_state()
+        ->get_mutable_vector()->SetAtIndex(0, 3);
 
     State<double>* integrator1_x = subdiagram0_->GetMutableSubsystemState(
         d0_context, subdiagram0_->integrator1());
-    integrator1_x->continuous_state->get_mutable_state()->SetAtIndex(0, 9);
+    integrator1_x->get_mutable_continuous_state()
+        ->get_mutable_vector()->SetAtIndex(0, 9);
 
     State<double>* integrator2_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator0());
-    integrator2_x->continuous_state->get_mutable_state()->SetAtIndex(0, 27);
+    integrator2_x->get_mutable_continuous_state()
+        ->get_mutable_vector()->SetAtIndex(0, 27);
 
     State<double>* integrator3_x = subdiagram1_->GetMutableSubsystemState(
         d1_context, subdiagram1_->integrator1());
-    integrator3_x->continuous_state->get_mutable_state()->SetAtIndex(0, 81);
+    integrator3_x->get_mutable_continuous_state()
+        ->get_mutable_vector()->SetAtIndex(0, 81);
   }
 
-  const int kLength = 1;
+  const int kSize = 1;
 
   std::unique_ptr<Diagram<double>> diagram_ = nullptr;
   ExampleDiagram* subdiagram0_ = nullptr;
@@ -371,11 +387,11 @@ class AddConstantDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     constant_ = builder.AddSystem<ConstantVectorSource>(Vector1d{constant});
-    adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* length */);
+    adder_ = builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
 
-    builder.Connect(constant_->get_output_port(0), adder_->get_input_port(1));
+    builder.Connect(constant_->get_output_port(), adder_->get_input_port(1));
     builder.ExportInput(adder_->get_input_port(0));
-    builder.ExportOutput(adder_->get_output_port(0));
+    builder.ExportOutput(adder_->get_output_port());
     builder.BuildInto(this);
   }
 
@@ -391,7 +407,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  auto vec = std::make_unique<BasicVector<double>>(1 /* length */);
+  auto vec = std::make_unique<BasicVector<double>>(1 /* size */);
   vec->get_mutable_value() << 12.0;
   context->SetInputPort(0, MakeInput(std::move(vec)));
 
@@ -418,7 +434,7 @@ class PublishingSystem : public LeafSystem<double> {
  protected:
   void DoPublish(const Context<double>& context) const override {
     CheckValidContext(context);
-    callback_(context.get_vector_input(0)->get_value()[0]);
+    callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
   }
 
  private:
@@ -431,12 +447,12 @@ class PublishNumberDiagram : public Diagram<double> {
   explicit PublishNumberDiagram(double constant) : Diagram<double>() {
     DiagramBuilder<double> builder;
 
-    constant_ = builder.AddSystem<ConstantVectorSource<double>>(
-        Vector1d{constant});
-    publisher_ = builder.AddSystem<PublishingSystem>(
-        [this](double v) { this->set(v); });
+    constant_ =
+        builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
+    publisher_ =
+        builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
 
-    builder.Connect(constant_->get_output_port(0),
+    builder.Connect(constant_->get_output_port(),
                     publisher_->get_input_port(0));
     builder.BuildInto(this);
   }
@@ -468,15 +484,15 @@ class FeedbackDiagram : public Diagram<double> {
     DiagramBuilder<double> builder;
 
     DiagramBuilder<double> integrator_builder;
-    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* length */);
+    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
     integrator_builder.ExportInput(integrator_->get_input_port(0));
     integrator_builder.ExportOutput(integrator_->get_output_port(0));
     integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
 
     DiagramBuilder<double> gain_builder;
     gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
-    gain_builder.ExportInput(gain_->get_input_port(0));
-    gain_builder.ExportOutput(gain_->get_output_port(0));
+    gain_builder.ExportInput(gain_->get_input_port());
+    gain_builder.ExportOutput(gain_->get_output_port());
     gain_diagram_ = builder.AddSystem(gain_builder.Build());
 
     builder.Connect(*integrator_diagram_, *gain_diagram_);
@@ -505,17 +521,109 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   EXPECT_NO_THROW(context.reset());
 }
 
+// A vector with a scalar configuration and scalar velocity.
+class SecondOrderStateVector : public BasicVector<double> {
+ public:
+  SecondOrderStateVector() : BasicVector<double>(2) {}
+
+  double q() const { return GetAtIndex(0); }
+  double v() const { return GetAtIndex(1); }
+
+  void set_q(double q) { SetAtIndex(0, q); }
+  void set_v(double v) { SetAtIndex(1, v); }
+};
+
+// A minimal system that has second-order state.
+class SecondOrderStateSystem : public LeafSystem<double> {
+ public:
+  SecondOrderStateSystem() {
+    DeclareInputPort(kVectorValued, 1, kContinuousSampling);
+  }
+
+  void EvalOutput(const Context<double>& context,
+                  SystemOutput<double>* output) const override {}
+
+  SecondOrderStateVector* x(Context<double>* context) const {
+    return dynamic_cast<SecondOrderStateVector*>(
+        context->get_mutable_continuous_state_vector());
+  }
+
+ protected:
+  std::unique_ptr<ContinuousState<double>> AllocateContinuousState()
+      const override {
+    return std::make_unique<ContinuousState<double>>(
+        std::make_unique<SecondOrderStateVector>(), 1 /* num_q */,
+        1 /* num_v */, 0 /* num_z */);
+  }
+
+  // qdot = 2 * v.
+  void DoMapVelocityToConfigurationDerivatives(
+      const Context<double>& context,
+      const Eigen::Ref<const VectorX<double>>& generalized_velocity,
+      VectorBase<double>* configuration_derivatives) const override {
+    configuration_derivatives->SetAtIndex(
+        0, 2 * generalized_velocity[0]);
+  }
+};
+
+// A diagram that has second-order state.
+class SecondOrderStateDiagram : public Diagram<double> {
+ public:
+  SecondOrderStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys1_ = builder.template AddSystem<SecondOrderStateSystem>();
+    sys2_ = builder.template AddSystem<SecondOrderStateSystem>();
+    builder.ExportInput(sys1_->get_input_port(0));
+    builder.ExportInput(sys2_->get_input_port(0));
+    builder.BuildInto(this);
+  }
+
+  SecondOrderStateSystem* sys1() { return sys1_; }
+  SecondOrderStateSystem* sys2() { return sys2_; }
+
+  // Returns the state of the given subsystem.
+  SecondOrderStateVector* x(Context<double>* context,
+                            const SecondOrderStateSystem* subsystem) {
+    Context<double>* subsystem_context =
+        GetMutableSubsystemContext(context, subsystem);
+    return subsystem->x(subsystem_context);
+  }
+
+ private:
+  SecondOrderStateSystem* sys1_ = nullptr;
+  SecondOrderStateSystem* sys2_ = nullptr;
+};
+
+// Tests that MapVelocityToConfigurationDerivatives recursively invokes
+// MapVelocityToConfigurationDerivatives on the constituent systems,
+// and preserves placewise correspondence.
+GTEST_TEST(SecondOrderStateTest, MapVelocityToConfigurationDerivatives) {
+  SecondOrderStateDiagram diagram;
+  std::unique_ptr<Context<double>> context = diagram.CreateDefaultContext();
+  diagram.x(context.get(), diagram.sys1())->set_v(13);
+  diagram.x(context.get(), diagram.sys2())->set_v(17);
+
+  BasicVector<double> configuration_derivatives(2);
+  const VectorBase<double>& v =
+      context->get_continuous_state()->get_generalized_velocity();
+  diagram.MapVelocityToConfigurationDerivatives(*context, v,
+                                                &configuration_derivatives);
+
+  // The order of these derivatives is arbitrary, so this test is brittle.
+  // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
+  // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
+  EXPECT_EQ(configuration_derivatives.GetAtIndex(0), 34);
+  EXPECT_EQ(configuration_derivatives.GetAtIndex(1), 26);
+}
+
 // Test for GetSystems.
-GTEST_TEST(DiagramBuilderTest, GetSystems) {
+GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
   EXPECT_EQ((std::vector<const System<double>*>{
-        diagram->adder0(),
-        diagram->adder1(),
-        diagram->adder2(),
-        diagram->integrator0(),
-        diagram->integrator1(),
-      }),
-    diagram->GetSystems());
+                diagram->adder0(), diagram->adder1(), diagram->adder2(),
+                diagram->integrator0(), diagram->integrator1(),
+            }),
+            diagram->GetSystems());
 }
 
 }  // namespace

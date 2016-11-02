@@ -22,7 +22,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
     source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource);
     context_ = source_->CreateDefaultContext();
     output_ = source_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   static std::unique_ptr<FreestandingInputPort> MakeInput(
@@ -56,15 +56,9 @@ TEST_F(ConstantVectorSourceTest, OutputTest) {
       output_vector->get_value(), Eigen::NumTraits<double>::epsilon()));
 }
 
-// Tests that inputs cannot be set for a ConstantVectorSource.
-TEST_F(ConstantVectorSourceTest, ShouldNotBePossibleToConnectInputs) {
-  EXPECT_THROW(context_->SetInputPort(0, MakeInput(std::move(input_))),
-               std::out_of_range);
-}
-
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(ConstantVectorSourceTest, ConstantVectorSourceIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

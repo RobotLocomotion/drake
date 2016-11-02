@@ -1,17 +1,22 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include <iostream>
 #include <cstdlib>
-#include <random>
-#include <memory>
-#include <stdexcept>
+#include <iostream>
 #include <map>
+#include <memory>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/util/drakeGeometryUtil.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::VectorXd;
+using std::cerr;
+using std::default_random_engine;
+using std::endl;
+using std::runtime_error;
 
 struct CheckSettings {
   bool expect_error_on_configuration_methods;
@@ -20,6 +25,7 @@ struct CheckSettings {
 };
 
 template <typename O, typename F, typename... Args>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void checkForErrors(bool expect_error, O& object, F function,
                     Args&&... arguments) {
   try {
@@ -36,6 +42,7 @@ void checkForErrors(bool expect_error, O& object, F function,
         "Expected a runtime error, but did not catch one.");
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void performChecks(RigidBodyTree& model, KinematicsCache<double>& cache,
                    const CheckSettings& settings) {
   auto points = drake::Matrix3X<double>::Random(3, 5).eval();
@@ -148,7 +155,7 @@ int main() {
 
   default_random_engine generator;
   VectorXd q = model->getRandomConfiguration(generator);
-  VectorXd v = VectorXd::Random(model->number_of_velocities());
+  VectorXd v = VectorXd::Random(model->get_num_velocities());
 
   // check before calling doKinematics
   {

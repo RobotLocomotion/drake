@@ -1,6 +1,8 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -25,8 +27,7 @@ namespace {
 
 /// @param[out] lb Array of constraint lower bounds, parallel to @p ub
 /// @param[out] ub Array of constraint upper bounds, parallel to @p lb
-size_t GetConstraintBounds(
-    const Constraint& c, Number* lb, Number* ub) {
+size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
   const Eigen::VectorXd& lower_bound = c.lower_bound();
   const Eigen::VectorXd& upper_bound = c.upper_bound();
   for (size_t i = 0; i < c.num_constraints(); i++) {
@@ -39,10 +40,8 @@ size_t GetConstraintBounds(
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(
-    const Constraint& c, const VariableList& variable_list,
-    Index* num_grad) {
-
+size_t GetNumGradients(const Constraint& c, const VariableList& variable_list,
+                       Index* num_grad) {
   size_t var_count = 0;
   for (const DecisionVariableView& v : variable_list) {
     var_count += v.size();
@@ -65,9 +64,8 @@ size_t GetNumGradients(
 /// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
 ///
 /// @return the number of row/column pairs filled in.
-size_t GetGradientMatrix(
-    const Constraint& c, const VariableList& variable_list,
-    Index constraint_idx, Index* iRow, Index* jCol) {
+size_t GetGradientMatrix(const Constraint& c, const VariableList& variable_list,
+                         Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
 
@@ -97,11 +95,9 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// GetGradientMatrix.
 ///
 /// @return number of gradient entries populated
-size_t EvaluateConstraint(
-    const Eigen::VectorXd& xvec,
-    const Constraint& c, const VariableList& variable_list,
-    Number* result, Number* grad) {
-
+size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
+                          const VariableList& variable_list, Number* result,
+                          Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
   // the constraint (we actually do this for all constraints.  One
@@ -178,13 +174,15 @@ struct ResultCache {
 class IpoptSolver_NLP : public Ipopt::TNLP {
  public:
   explicit IpoptSolver_NLP(MathematicalProgram* problem)
-      : problem_(problem),
-        result_(SolutionResult::kUnknownError) {}
+      : problem_(problem), result_(SolutionResult::kUnknownError) {}
 
   virtual ~IpoptSolver_NLP() {}
 
-  virtual bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
-                            Index& nnz_h_lag, IndexStyleEnum& index_style) {
+  virtual bool get_nlp_info(
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& n, Index& m, Index& nnz_jac_g,
+      // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
+      Index& nnz_h_lag, IndexStyleEnum& index_style) {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
@@ -197,6 +195,14 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     nnz_jac_g = 0;
     Index num_grad = 0;
     for (const auto& c : problem_->generic_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
       nnz_jac_g += num_grad;
     }
@@ -216,8 +222,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
-  virtual bool get_bounds_info(Index n, Number* x_l, Number* x_u,
-                               Index m, Number* g_l, Number* g_u) {
+  virtual bool get_bounds_info(Index n, Number* x_l, Number* x_u, Index m,
+                               Number* g_l, Number* g_u) {
     DRAKE_ASSERT(n == static_cast<Index>(problem_->num_vars()));
     for (Index i = 0; i < n; i++) {
       x_l[i] = -std::numeric_limits<double>::infinity();
@@ -225,20 +231,30 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
 
     for (auto const& binding : problem_->bounding_box_constraints()) {
-      auto const& c = binding.constraint();
-      const Eigen::VectorXd& lower_bound = c->lower_bound();
-      const Eigen::VectorXd& upper_bound = c->upper_bound();
+      const auto& c = binding.constraint();
+      const auto& lower_bound = c->lower_bound();
+      const auto& upper_bound = c->upper_bound();
+      int var_count = 0;
       for (const DecisionVariableView& v : binding.variable_list()) {
         for (size_t k = 0; k < v.size(); k++) {
           const int idx = v.index() + k;
-          x_l[idx] = std::max(lower_bound(k), x_l[idx]);
-          x_u[idx] = std::min(upper_bound(k), x_u[idx]);
+          x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
+          x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
+          ++var_count;
         }
       }
     }
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      constraint_idx += GetConstraintBounds(
+          *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
       constraint_idx += GetConstraintBounds(
           *(c.constraint()), g_l + constraint_idx, g_u + constraint_idx);
     }
@@ -253,10 +269,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
-  virtual bool get_starting_point(Index n, bool init_x, Number* x,
-                                  bool init_z, Number* z_L, Number* z_U,
-                                  Index m, bool init_lambda,
-                                  Number* lambda) {
+  virtual bool get_starting_point(Index n, bool init_x, Number* x, bool init_z,
+                                  Number* z_L, Number* z_U, Index m,
+                                  bool init_lambda, Number* lambda) {
     if (init_x) {
       const Eigen::VectorXd& initial_guess = problem_->initial_guess();
       DRAKE_ASSERT(initial_guess.size() == n);
@@ -273,6 +288,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
+  // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
   virtual bool eval_f(Index n, const Number* x, bool new_x, Number& obj_value) {
     if (new_x || !cost_cache_->is_x_equal(n, x)) {
       EvaluateCosts(n, x);
@@ -283,8 +299,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
-  virtual bool eval_grad_f(
-      Index n, const Number* x, bool new_x, Number* grad_f) {
+  virtual bool eval_grad_f(Index n, const Number* x, bool new_x,
+                           Number* grad_f) {
     if (new_x || !cost_cache_->is_x_equal(n, x)) {
       EvaluateCosts(n, x);
     }
@@ -294,8 +310,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
-  virtual bool eval_g(
-      Index n, const Number* x, bool new_x, Index m, Number* g) {
+  virtual bool eval_g(Index n, const Number* x, bool new_x, Index m,
+                      Number* g) {
     if (new_x || !constraint_cache_->is_x_equal(n, x)) {
       EvaluateConstraints(n, x);
     }
@@ -305,8 +321,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     return true;
   }
 
-  virtual bool eval_jac_g(Index n, const Number* x, bool new_x,
-                          Index m, Index nele_jac, Index* iRow, Index *jCol,
+  virtual bool eval_jac_g(Index n, const Number* x, bool new_x, Index m,
+                          Index nele_jac, Index* iRow, Index* jCol,
                           Number* values) {
     if (values == nullptr) {
       DRAKE_ASSERT(iRow != nullptr);
@@ -315,26 +331,38 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       size_t constraint_idx = 0;  // Passed into GetGradientMatrix as
                                   // the starting row number for the
                                   // constraint being described.
-      size_t grad_idx = 0;  // Offset into iRow, jCol output variables.
-                            // Incremented by the number of triplets
-                            // populated by each call to
-                            // GetGradientMatrix.
+      size_t grad_idx = 0;        // Offset into iRow, jCol output variables.
+                                  // Incremented by the number of triplets
+                                  // populated by each call to
+                                  // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
-        grad_idx += GetGradientMatrix(
-            *(c.constraint()), c.variable_list(), constraint_idx,
-            iRow + grad_idx, jCol + grad_idx);
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->lorentz_cone_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.constraint()->num_constraints();
+      }
+      for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->linear_constraints()) {
-        grad_idx += GetGradientMatrix(
-            *(c.constraint()), c.variable_list(), constraint_idx,
-            iRow + grad_idx, jCol + grad_idx);
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->linear_equality_constraints()) {
-        grad_idx += GetGradientMatrix(
-            *(c.constraint()), c.variable_list(), constraint_idx,
-            iRow + grad_idx, jCol + grad_idx);
+        grad_idx +=
+            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       DRAKE_ASSERT(static_cast<Index>(grad_idx) == nele_jac);
@@ -351,18 +379,16 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     DRAKE_ASSERT(static_cast<Index>(constraint_cache_->grad.size()) ==
                  nele_jac);
-    std::memcpy(
-        values, constraint_cache_->grad.data(), nele_jac * sizeof(Number));
+    std::memcpy(values, constraint_cache_->grad.data(),
+                nele_jac * sizeof(Number));
     return true;
   }
 
-  virtual void finalize_solution(
-      SolverReturn status,
-      Index n, const Number* x, const Number* z_L, const Number* z_U,
-      Index m, const Number* g, const Number* lambda,
-      Number obj_value,
-      const IpoptData* ip_data,
-      IpoptCalculatedQuantities* ip_cq) {
+  virtual void finalize_solution(SolverReturn status, Index n, const Number* x,
+                                 const Number* z_L, const Number* z_U, Index m,
+                                 const Number* g, const Number* lambda,
+                                 Number obj_value, const IpoptData* ip_data,
+                                 IpoptCalculatedQuantities* ip_cq) {
     problem_->SetSolverResult("IPOPT", status);
 
     switch (status) {
@@ -432,9 +458,19 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+                                 result, grad);
+      result += c.constraint()->num_constraints();
+    }
     for (const auto& c : problem_->linear_constraints()) {
       grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
-                         result, grad);
+                                 result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
@@ -452,19 +488,21 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 }  // namespace
 
+bool IpoptSolver::available() const { return true; }
 
-bool IpoptSolver::available() const {
-  return true;
-}
-
-SolutionResult IpoptSolver::Solve(MathematicalProgram &prog) const {
+SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-8;
+  const double tol = 1e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
+  // constr_viol_tol
   app->Options()->SetNumericValue("tol", tol);
+  app->Options()->SetNumericValue("constr_viol_tol", tol);
+  app->Options()->SetNumericValue("acceptable_tol", tol);
+  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
   app->Options()->SetStringValue("hessian_approximation", "limited-memory");
   app->Options()->SetIntegerValue("print_level", 2);
 
@@ -491,5 +529,5 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram &prog) const {
   return nlp->result();
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

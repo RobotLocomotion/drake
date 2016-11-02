@@ -1,5 +1,5 @@
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/cmake)
-find_package(SWIG REQUIRED)
+drake_find_package(SWIG MODULE REQUIRED)
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 
@@ -25,6 +25,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
 endif()
 
+drake_find_package(snopt_c CONFIG)
+
 if(PYTHON_EXECUTABLE)
   include(SwigPython)
   set(python_install_subdir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages ${CMAKE_CURRENT_SOURCE_DIR}/../python)
@@ -40,16 +42,14 @@ if(PYTHON_EXECUTABLE)
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
 
-  if(snopt_c_FOUND)
   add_swig_python_module(ikPython ik.i
     CPLUSPLUS
     LINK_LIBRARIES drakeIK
     SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
     DESTINATION ${python_install_subdir})
-  endif()
 endif()
 
-if(MATLAB_FOUND)
+if(Matlab_FOUND)
   if(SWIG_HAS_MATLAB_SUPPORT)
     # TODO: we can remove this check when mainline SWIG gets MATLAB support someday, or when we figure out how to build swig-matlab on Windows
     set(matlab_install_subdir ${CMAKE_BINARY_DIR}/bindings/matlab)
@@ -68,13 +68,11 @@ if(MATLAB_FOUND)
       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
       DESTINATION ${matlab_install_subdir})
 
-    if(snopt_c_FOUND)
-      add_swig_matlab_module(ikMatlab ik_matlab.i
-        CPLUSPLUS
-        LINK_LIBRARIES drakeIK
-        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-        DESTINATION ${matlab_install_subdir})
-    endif()
+    add_swig_matlab_module(ikMatlab ik_matlab.i
+      CPLUSPLUS
+      LINK_LIBRARIES drakeIK
+      SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
+      DESTINATION ${matlab_install_subdir})
   else()
     message("Could NOT find Swig with Matlab support; not generating Matlab bindings")
   endif()

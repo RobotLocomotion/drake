@@ -7,9 +7,9 @@
 #include "drake/ros/systems/ros_sensor_publisher_joint_state.h"
 #include "drake/ros/systems/ros_sensor_publisher_lidar.h"
 #include "drake/ros/systems/ros_sensor_publisher_odometry.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/pd_control_system.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
@@ -39,7 +39,7 @@ using drake::ros::systems::SensorPublisherOdometry;
 /** Driving Simulator
  * Usage:  car_sim_lcm_and_ros vehicle_model_file [world_model files ...]
  */
-int do_main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
   ::ros::init(argc, const_cast<char**>(argv), "single_car_in_stata_garage");
 
   // Initializes the communication layer.
@@ -100,7 +100,7 @@ int do_main(int argc, const char* argv[]) {
 
   // Obtains a valid zero configuration for the vehicle.
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Defines the start time of the simulation.
   const double kStartTime = 0;
@@ -117,5 +117,5 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return drake::ros::automotive::do_main(argc, argv);
+  return drake::ros::automotive::main(argc, argv);
 }

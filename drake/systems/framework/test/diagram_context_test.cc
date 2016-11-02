@@ -24,13 +24,13 @@ constexpr double kTime = 12.0;
 class DiagramContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    adder0_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
+    adder0_.reset(new Adder<double>(2 /* inputs */, 1 /* size */));
     adder0_->set_name("adder0");
-    adder1_.reset(new Adder<double>(2 /* inputs */, 1 /* length */));
+    adder1_.reset(new Adder<double>(2 /* inputs */, 1 /* size */));
     adder1_->set_name("adder1");
 
-    integrator0_.reset(new Integrator<double>(1 /* length */));
-    integrator1_.reset(new Integrator<double>(1 /* length */));
+    integrator0_.reset(new Integrator<double>(1 /* size */));
+    integrator1_.reset(new Integrator<double>(1 /* size */));
 
     context_.reset(new DiagramContext<double>(kNumSystems));
     context_->set_time(kTime);
@@ -44,9 +44,9 @@ class DiagramContextTest : public ::testing::Test {
     context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
 
     context_->MakeState();
-    ContinuousState<double>* xc = context_->get_state().continuous_state.get();
-    xc->get_mutable_state()->SetAtIndex(0, 42.0);
-    xc->get_mutable_state()->SetAtIndex(1, 43.0);
+    ContinuousState<double>* xc = context_->get_mutable_continuous_state();
+    xc->get_mutable_vector()->SetAtIndex(0, 42.0);
+    xc->get_mutable_vector()->SetAtIndex(1, 43.0);
   }
 
   void AddSystem(const System<double>& sys, int index) {
@@ -56,15 +56,24 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    auto vec0 = std::make_unique<BasicVector<double>>(1 /* length */);
+    auto vec0 = std::make_unique<BasicVector<double>>(1 /* size */);
     vec0->get_mutable_value() << 128;
-    auto vec1 = std::make_unique<BasicVector<double>>(1 /* length */);
+    auto vec1 = std::make_unique<BasicVector<double>>(1 /* size */);
     vec1->get_mutable_value() << 256;
 
     context_->SetInputPort(
         0, std::make_unique<FreestandingInputPort>(std::move(vec0)));
     context_->SetInputPort(
         1, std::make_unique<FreestandingInputPort>(std::move(vec1)));
+  }
+
+  // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
+  // connected to @p context at @p index.
+  static const BasicVector<double>* ReadVectorInputPort(
+      const Context<double>& context, int index) {
+    SystemPortDescriptor<double> descriptor(
+        nullptr, kInputPort, index, kVectorValued, 0, kInheritedSampling);
+    return context.EvalVectorInput(nullptr, descriptor);
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -100,23 +109,23 @@ TEST_F(DiagramContextTest, Time) {
 // Tests that state variables appear in the diagram context, and write
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
-  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
-  EXPECT_EQ(2, xc->get_state().size());
+  ContinuousState<double>* xc = context_->get_mutable_continuous_state();
+  EXPECT_EQ(2, xc->size());
   EXPECT_EQ(0, xc->get_generalized_position().size());
   EXPECT_EQ(0, xc->get_generalized_velocity().size());
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 
   // Changes to the diagram state write through to constituent system states.
   ContinuousState<double>* integrator0_xc =
-      context_->GetSubsystemContext(2)->get_state().continuous_state.get();
+      context_->GetMutableSubsystemContext(2)->get_mutable_continuous_state();
   ContinuousState<double>* integrator1_xc =
-      context_->GetSubsystemContext(3)->get_state().continuous_state.get();
-  EXPECT_EQ(42.0, integrator0_xc->get_state().GetAtIndex(0));
-  EXPECT_EQ(43.0, integrator1_xc->get_state().GetAtIndex(0));
+      context_->GetMutableSubsystemContext(3)->get_mutable_continuous_state();
+  EXPECT_EQ(42.0, integrator0_xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, integrator1_xc->get_vector().GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
-  integrator1_xc->get_mutable_state()->SetAtIndex(0, 1000.0);
-  EXPECT_EQ(1000.0, xc->get_state().GetAtIndex(1));
+  integrator1_xc->get_mutable_vector()->SetAtIndex(0, 1000.0);
+  EXPECT_EQ(1000.0, xc->get_vector().GetAtIndex(1));
 }
 
 // Tests that no exception is thrown when connecting a valid source
@@ -131,15 +140,8 @@ TEST_F(DiagramContextTest, ConnectValid) {
 TEST_F(DiagramContextTest, SetAndGetInputPorts) {
   ASSERT_EQ(2, context_->get_num_input_ports());
   AttachInputPorts();
-  EXPECT_EQ(128, context_->get_vector_input(0)->get_value()[0]);
-  EXPECT_EQ(256, context_->get_vector_input(1)->get_value()[0]);
-}
-
-// Tests that an exception is thrown when setting or getting input ports that
-// don't exist.
-TEST_F(DiagramContextTest, InvalidInputPorts) {
-  EXPECT_THROW(context_->SetInputPort(2, nullptr), std::out_of_range);
-  EXPECT_THROW(context_->get_vector_input(2), std::out_of_range);
+  EXPECT_EQ(128, ReadVectorInputPort(*context_, 0)->get_value()[0]);
+  EXPECT_EQ(256, ReadVectorInputPort(*context_, 1)->get_value()[0]);
 }
 
 TEST_F(DiagramContextTest, Clone) {
@@ -155,26 +157,21 @@ TEST_F(DiagramContextTest, Clone) {
   EXPECT_EQ(kTime, clone->get_time());
 
   // Verify that the state was copied.
-  ContinuousState<double>* xc = context_->get_state().continuous_state.get();
+  const ContinuousState<double>* xc = context_->get_continuous_state();
 
-  EXPECT_EQ(42.0, xc->get_state().GetAtIndex(0));
-  EXPECT_EQ(43.0, xc->get_state().GetAtIndex(1));
+  EXPECT_EQ(42.0, xc->get_vector().GetAtIndex(0));
+  EXPECT_EQ(43.0, xc->get_vector().GetAtIndex(1));
 
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
   EXPECT_EQ(2, clone->get_num_input_ports());
   for (int i = 0; i < 2; ++i) {
-    EXPECT_NE(context_->get_vector_input(i), clone->get_vector_input(i));
-    EXPECT_TRUE(CompareMatrices(context_->get_vector_input(i)->get_value(),
-                                clone->get_vector_input(i)->get_value(), 1e-8,
-                                MatrixCompareType::absolute));
+    const BasicVector<double>* orig_port = ReadVectorInputPort(*context_, i);
+    const BasicVector<double>* clone_port = ReadVectorInputPort(*clone, i);
+    EXPECT_NE(orig_port, clone_port);
+    EXPECT_TRUE(CompareMatrices(orig_port->get_value(), clone_port->get_value(),
+                                1e-8, MatrixCompareType::absolute));
   }
-
-  // Verify that the graph structure was preserved: the VectorBase in
-  // sys0 output port 0 should be pointer-equal to the VectorBase in
-  // sys1 input port 1.
-  EXPECT_EQ(clone->GetSubsystemContext(1)->get_vector_input(1),
-            clone->GetSubsystemOutput(0)->get_vector_data(0));
 }
 
 }  // namespace

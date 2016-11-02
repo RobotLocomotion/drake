@@ -12,9 +12,13 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace tinyxml2;
+using std::cerr;
+using std::endl;
+using std::istringstream;
+using std::map;
+using std::string;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val) {
   if (val == nullptr) {
@@ -129,7 +133,9 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
 
 // only writes values if they exist
 bool parseVectorAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name, Eigen::Vector3d& val) {
+                          const char* attribute_name,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                          Eigen::Vector3d& val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
     std::stringstream s(attr);
@@ -140,7 +146,9 @@ bool parseVectorAttribute(const tinyxml2::XMLElement* node,
 }
 
 bool parseVectorAttribute(const tinyxml2::XMLElement* node,
-                          const char* attribute_name, Eigen::Vector4d& val) {
+                          const char* attribute_name,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                          Eigen::Vector4d& val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
     std::stringstream s(attr);
@@ -151,6 +159,7 @@ bool parseVectorAttribute(const tinyxml2::XMLElement* node,
 }
 
 bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       Eigen::Vector3d& val) {
   XMLElement* elnode = node->FirstChildElement(element_name);
   if (elnode && elnode->FirstChild()) {
@@ -162,6 +171,7 @@ bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name,
 }
 
 bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       Eigen::Vector4d& val) {
   XMLElement* elnode = node->FirstChildElement(element_name);
   if (elnode && elnode->FirstChild()) {
@@ -173,6 +183,7 @@ bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name,
 }
 
 bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       std::string& val) {
   XMLElement* elnode = node->FirstChildElement(element_name);
   if (elnode && elnode->FirstChild()) {
@@ -182,8 +193,10 @@ bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name,
   return false;
 }
 
-void originAttributesToTransform(tinyxml2::XMLElement* node,
-                                 Eigen::Isometry3d& T) {
+void originAttributesToTransform(
+    tinyxml2::XMLElement* node,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Eigen::Isometry3d& T) {
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero(), xyz = Eigen::Vector3d::Zero();
 
   parseVectorAttribute(node, "xyz", xyz);
@@ -193,6 +206,7 @@ void originAttributesToTransform(tinyxml2::XMLElement* node,
 }
 
 void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
+                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                           Eigen::Isometry3d& T,
                           const Eigen::Isometry3d& T_default_frame) {
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero(), xyz = Eigen::Vector3d::Zero();
@@ -225,6 +239,7 @@ namespace {
 // Searches in directory @p path for a file called "package.xml".
 // Adds the package name specified in package.xml and the path to the
 // package to @p package_map.
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void searchDirectory(map<string, string>& package_map, string path) {
 #if defined(WIN32) || defined(WIN64)
   const char pathsep = ';';
@@ -302,8 +317,9 @@ void searchDirectory(map<string, string>& package_map, string path) {
     tinydir_close(&dir);
   }
 }
-}
+}  // anonymous namespace
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void populatePackageMap(map<string, string>& package_map) {
   // Since Drake's package.xml file is located at its super-build level,
   // remove the last "drake" directory from the drake path. Also omit the
@@ -323,6 +339,7 @@ void populatePackageMap(map<string, string>& package_map) {
 
 namespace {
 bool rospack(const string& package, const map<string, string>& package_map,
+             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
              string& package_path) {
   // my own quick and dirty implementation of the rospack algorithm (based on my
   // matlab version in rospack.m)
@@ -337,7 +354,7 @@ bool rospack(const string& package, const map<string, string>& package_map,
     return false;
   }
 }
-}
+}  // anonymous namespace
 
 string resolveFilename(const string& filename,
                        const map<string, string>& package_map,

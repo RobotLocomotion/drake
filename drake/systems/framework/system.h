@@ -1,20 +1,21 @@
 #pragma once
 
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
-#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
 namespace systems {
-
 
 /** @defgroup systems Modeling Dynamical Systems
  * @{
@@ -30,17 +31,41 @@ namespace systems {
  * @}
  */
 
+/// A description of a discrete-time event, which is passed from the simulator
+/// to the recipient System's HandleEvent method.
+template <typename T>
+struct DiscreteEvent {
+  enum ActionType {
+    kUnknownAction = 0,  // A default value that causes the handler to abort.
+    kPublishAction = 1,  // On a publish action, state does not change.
+    kUpdateAction = 2,   // On an update action, discrete state may change.
+  };
 
+  /// The system that receives the event.
+  const System<T>* recipient{nullptr};
+  /// The type of action the system must take in response to the event.
+  ActionType action{kUnknownAction};
 
-/// This information is returned along with the next update/sample/event time
-/// and is provided back to the System when that time is reached to ensure that
-/// the correct sampling actions are taken.
-struct SampleActions {
-  /// When the next discrete action is required.
-  double time{std::numeric_limits<double>::quiet_NaN()};
-  // TODO(sherm1) Record (subsystem,eventlist) pairs indicating what is
-  // supposed to happen at that time and providing O(1) access to the
-  // appropriate update/sampler/event handler method.
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kPublishAction. If nullptr, Publish will be used.
+  std::function<void(const Context<T>&)> do_publish{nullptr};
+
+  /// An optional callback, supplied by the recipient, to carry out a
+  /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
+  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
+    nullptr};
+};
+
+/// A token that identifies the next sample time at which a System must
+/// perform some actions, and the actions that must be performed.
+template <typename T>
+struct UpdateActions {
+  /// When the System next requires a discrete action. If the System is
+  /// not discrete, time should be set to infinity.
+  T time{std::numeric_limits<T>::quiet_NaN()};
+
+  /// The events that should occur when the sample time arrives.
+  std::vector<DiscreteEvent<T>> events;
 };
 
 /// A superclass template for systems that receive input, maintain state, and
@@ -135,33 +160,14 @@ class System {
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
-      // once abstract ports are implemented in 3164.
-      if (this->get_input_port(i).get_data_type() == kVectorValued) {
-        const VectorBase<T>* input_vector = context.get_vector_input(i);
-        DRAKE_THROW_UNLESS(input_vector != nullptr);
-        DRAKE_THROW_UNLESS(input_vector->size() ==
-                           get_input_port(i).get_size());
-      }
+      context.VerifyInputPort(this->get_input_port(i));
     }
-  }
-
-  /// Returns an Eigen expression for a vector valued input port with index
-  /// @p port_index in this system.
-  Eigen::VectorBlock<const VectorX<T>> get_input_vector(
-      const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    const BasicVector<T>* input_vector = context.get_vector_input(port_index);
-
-    DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
-
-    return input_vector->get_value();
   }
 
   // Returns a copy of the continuous state vector into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
-    return context.get_state().continuous_state->get_state().CopyToVector();
+    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
+    return context.get_continuous_state()->CopyToVector();
   }
 
   /// Returns a default context, initialized with the correct
@@ -177,19 +183,25 @@ class System {
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const = 0;
 
-  /// This method is invoked by a Simulator at designated meaningful points
-  /// along a trajectory, to allow the executing System a chance to take some
-  /// kind of output action. Typical actions may include terminal output,
-  /// visualization, logging, plotting, and sending messages. Other than
-  /// computational cost, publishing has no effect on the progress of a
-  /// simulation (but see note below).
+  /// Generates side-effect outputs such as terminal output, visualization,
+  /// logging, plotting, and network messages. Other than computational cost,
+  /// publishing has no effect on the progress of a simulation.
+  /// Dispatches to DoPublish.
   ///
-  /// By default Publish() will be called at the start of each continuous
+  /// This method is invoked by the Simulator at the start of each continuous
   /// integration step, after discrete variables have been updated to the values
-  /// they will hold throughout the step. However, a Simulator may allow control
-  /// over the publication rate. Publish() will always be called at the start of
-  /// the first step of a simulation (after initialization) and after the final
-  /// simulation step (after a final update to discrete variables).
+  /// they will hold throughout the step. It will always be called at the start
+  /// of the first step of a simulation (after initialization) and after the
+  /// final simulation step (after a final update to discrete variables).
+  void Publish(const Context<T>& context) const {
+    DiscreteEvent<T> event;
+    event.action = DiscreteEvent<T>::kPublishAction;
+    Publish(context, event);
+  }
+
+  /// Generates the particular side-effect outputs requested by @p event,
+  /// because the sample time requested by @p event has arrived. Dispatches to
+  /// DoPublish by default, or to `event.do_publish` if provided.
   ///
   /// @note When publishing is scheduled at particular times, those times likely
   /// will not coincide with integrator step times. A Simulator may interpolate
@@ -197,37 +209,44 @@ class System {
   /// so that a step begins exactly at the next publication time. In the latter
   /// case the change in step size may affect the numerical result somewhat
   /// since a smaller integrator step produces a more accurate solution.
-  // TODO(sherm1) Provide sample rate option for Publish().
-  void Publish(const Context<T>& context) const {
+  void Publish(const Context<T>& context, const DiscreteEvent<T>& event) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    DoPublish(context);
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kPublishAction);
+    if (event.do_publish == nullptr) {
+      DoPublish(context);
+    } else {
+      event.do_publish(context);
+    }
   }
 
-  /// This method is called to perform discrete updates to the Context, with
-  /// the particular actions to take supplied in `actions`.
-  // TODO(sherm1) Per great suggestion from David German in #3202, this method
-  // should be modified to take a const context and provide a non-const
-  // reference to only the part that is allowed to change. This will likely
-  // require splitting into several APIs since different sample/update/event
-  // actions permit different modifications.
-  void Update(Context<T>* context, const SampleActions& actions) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(*context));
-    DoUpdate(context, actions);
+  /// This method is called to update discrete variables in the @p context
+  /// because the given @p event has arrived.  Dispatches to
+  /// DoEvalDifferenceUpdates by default, or to `event.do_update` if provided.
+  void EvalDifferenceUpdates(const Context<T>& context,
+                             const DiscreteEvent<T>& event,
+                             DifferenceState<T>* difference_state) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(event.action == DiscreteEvent<T>::kUpdateAction);
+    if (event.do_update == nullptr) {
+      DoEvalDifferenceUpdates(context, difference_state);
+    } else {
+      event.do_update(context, difference_state);
+    }
   }
 
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
-  /// ought to be in the given SampleActions object, which must not be null.
+  /// ought to be in the given UpdateActions object, which must not be null.
   /// Upon reaching that time, the Simulator invokes either a publication
   /// action (with a const Context) or an update action (with a mutable
-  /// Context). The SampleAction object is retained and returned to the System
+  /// Context). The UpdateAction object is retained and returned to the System
   /// when it is time to take the action.
-  double CalcNextSampleTime(const Context<T>& context,
-                            SampleActions* actions) const {
-    // TODO(sherm1) Validate context (at least in Debug).
+  T CalcNextUpdateTime(const Context<T>& context,
+                       UpdateActions<T>* actions) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(actions != nullptr);
-    DoCalcNextSampleTime(context, actions);
+    DoCalcNextUpdateTime(context, actions);
     return actions->time;
   }
 
@@ -273,12 +292,22 @@ class System {
   }
 
   /// Returns a ContinuousState of the same size as the continuous_state
-  /// allocated in CreateDefaultContext. Solvers will provide this state as the
-  /// output argument to EvalTimeDerivatives.
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to EvalTimeDerivatives.
   ///
   /// By default, allocates no derivatives. Systems with continuous state
   /// variables should override.
   virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const {
+    return nullptr;
+  }
+
+  /// Returns a DifferenceState of the same dimensions as the difference_state
+  /// allocated in CreateDefaultContext. The simulator will provide this state
+  /// as the output argument to Update.
+  /// By default, allocates nothing. Systems with discrete state variables
+  /// should override.
+  virtual std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+      const {
     return nullptr;
   }
 
@@ -291,55 +320,117 @@ class System {
   /// Implementations may assume that the given @p derivatives argument has the
   /// same constituent structure as was produced by AllocateTimeDerivatives.
   ///
+  /// By default, this function does nothing if the @p derivatives are empty,
+  /// and aborts otherwise.
+  ///
   /// @param context The context in which to evaluate the derivatives.
   ///
-  /// @param derivatives The output vector. Will be the same length as the
+  /// @param derivatives The output vector. Will be the same size as the
   ///                    state vector Context.state.continuous_state.
   virtual void EvalTimeDerivatives(const Context<T>& context,
                                    ContinuousState<T>* derivatives) const {
+    // This default implementation is only valid for Systems with no continuous
+    // state. Other Systems must override this method!
+    DRAKE_DEMAND(derivatives->size() == 0);
     return;
   }
 
-  /// Transforms the velocity (v) in the given Context state to the derivative
-  /// of the configuration (qdot). The transformation must be linear in velocity
-  /// (qdot = N(q) * v), and it must require no more than O(N) time to compute
-  /// in the number of generalized velocity states.
-  ///
-  /// The default implementation uses the identity mapping. It throws
-  /// std::out_of_range if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes must
-  /// override this function if qdot != v (even if they are the same size).
-  ///
-  /// Implementations may assume that @p configuration_derivatives is of
-  /// the same size as the generalized position allocated in
-  /// CreateDefaultContext()->continuous_state.get_generalized_position(),
-  /// and should populate it with elementwise-corresponding derivatives of
-  /// position. Implementations that are not second-order systems may simply
-  /// do nothing.
-  virtual void MapVelocityToConfigurationDerivatives(
+  /// Transforms the velocity to the derivative of the configuration.
+  /// Generalized velocities (v) and configuration derivatives (qdot) are
+  /// related linearly by `qdot = N(q) * v` (where `N` may be the identity
+  /// matrix). See the alternate signature if you already have the generalized
+  /// velocity in an Eigen VectorX object; this signature will copy the
+  /// VectorBase into an Eigen object before performing the computation.
+  void MapVelocityToConfigurationDerivatives(
       const Context<T>& context, const VectorBase<T>& generalized_velocity,
       VectorBase<T>* configuration_derivatives) const {
-    if (generalized_velocity.size() != configuration_derivatives->size()) {
-      throw std::out_of_range(
-          "generalized_velocity.size() " +
-          std::to_string(generalized_velocity.size()) +
-          " != configuration_derivatives.size() " +
-          std::to_string(configuration_derivatives->size()) +
-          ". Do you need to override the default implementation of " +
-          "MapVelocityToConfigurationDerivatives()?");
-    }
-
-    for (int i = 0; i < generalized_velocity.size(); ++i) {
-      configuration_derivatives->SetAtIndex(i,
-                                            generalized_velocity.GetAtIndex(i));
-    }
+    MapVelocityToConfigurationDerivatives(context,
+                                          generalized_velocity.CopyToVector(),
+                                          configuration_derivatives);
   }
 
-  // TODO(david-german-tri): Add MapConfigurationDerivativesToVelocity
-  // and MapAccelerationToConfigurationSecondDerivatives.
+  /// Transforms the generalized velocity to the derivative of configuration.
+  /// See alternate signature of MapVelocityToConfigurationDerivatives() for
+  /// more information.
+  void MapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
+    DoMapVelocityToConfigurationDerivatives(context, generalized_velocity,
+                                            configuration_derivatives);
+  }
 
+  /// Transforms the time derivative of configuration to generalized
+  /// velocities. Generalized velocities (v) and configuration
+  /// derivatives (qdot) are related linearly by `qdot = N(q) * v` (where `N`
+  /// may be the identity matrix). Although `N` is not necessarily square,
+  /// its left pseudo-inverse `N+` can be used to invert that relationship
+  /// without residual error. Using the configuration `q` from the given
+  /// context this method calculates `v = N+ * qdot` (where `N+=N+(q)`) for
+  /// a given `qdot` (@p configuration_derivatives). This method does not
+  /// take `qdot` from the context. See the alternate signature if you
+  /// already have `qdot` in an Eigen VectorX object; this signature will
+  /// copy the VectorBase into an Eigen object before performing the
+  /// computation.
+  // TODO(edrumwri): Evan to verify that N is always left-invertible.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context, const VectorBase<T>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    MapConfigurationDerivativesToVelocity(
+        context, configuration_derivatives.CopyToVector(),
+        generalized_velocity);
+  }
+
+  /// Transforms the time derivative of configuration to generalized velocity.
+  /// This signature allows using an Eigen VectorX object for faster speed.
+  /// See the other signature of MapConfigurationDerivativesToVelocity() for
+  /// additional information.
+  void MapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    DoMapConfigurationDerivativesToVelocity(context, configuration_derivatives,
+                                            generalized_velocity);
+  }
+
+  // TODO(david-german-tri): MapAccelerationToConfigurationSecondDerivatives.
+
+  // Sets the name of the system. It is recommended that the name not include
+  // the character ':', since that the path delimiter. is "::".
   virtual void set_name(const std::string& name) { name_ = name; }
   virtual std::string get_name() const { return name_; }
+
+  /// Writes the full path of this System in the tree of Systems to @p output.
+  /// The path has the form (::ancestor_system_name)*::this_system_name.
+  virtual void GetPath(std::stringstream* output) const {
+    // If this System has a parent, that parent's path is a prefix to this
+    // System's path. Otherwise, this is the root system and there is no prefix.
+    if (parent_ != nullptr) {
+      parent_->GetPath(output);
+    }
+    *output << "::";
+    *output << (get_name().empty() ? "<unnamed System>" : get_name());
+  }
+
+  // Returns the full path of the System in the tree of Systems.
+  std::string GetPath() const {
+    std::stringstream path;
+    GetPath(&path);
+    return path.str();
+  }
+
+  /// Declares that @p parent is the immediately enclosing Diagram. The
+  /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
+  /// the parent has already been set to something else.
+  ///
+  /// This is a dangerous implementation detail. Conceptually, a System
+  /// ought to be completely ignorant of its parent Diagram. However, we
+  /// need this pointer so that we can cause our inputs to be evaluated.
+  /// See https://github.com/RobotLocomotion/drake/pull/3455.
+  void set_parent(const detail::InputPortEvaluatorInterface<T>* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
 
  protected:
   System() {}
@@ -357,8 +448,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareInputPort(PortDataType type, int size,
                                                   SamplingSpec sampling) {
     int port_number = get_num_input_ports();
-    input_ports_.emplace_back(this, kInputPort, port_number, kVectorValued,
-                              size, sampling);
+    input_ports_.emplace_back(this, kInputPort, port_number, type, size,
+                              sampling);
     return input_ports_.back();
   }
 
@@ -383,8 +474,8 @@ class System {
   const SystemPortDescriptor<T>& DeclareOutputPort(PortDataType type, int size,
                                                    SamplingSpec sampling) {
     int port_number = get_num_output_ports();
-    output_ports_.emplace_back(
-        this, kOutputPort, port_number, type, size, sampling);
+    output_ports_.emplace_back(this, kOutputPort, port_number, type, size,
+                               sampling);
     return output_ports_.back();
   }
 
@@ -394,6 +485,51 @@ class System {
   const SystemPortDescriptor<T>& DeclareAbstractOutputPort(
       SamplingSpec sampling) {
     return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
+  }
+
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value, or nullptr if the port is not connected.
+  ///
+  /// Throws std::bad_cast if the port is not vector-valued.
+  /// Aborts if the port does not exist.
+  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
+                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalVectorInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value as an Eigen expression.
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
+      const Context<T>& context, int port_index) const {
+    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    return input_vector->get_value();
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
   }
 
   /// Returns a mutable Eigen expression for a vector valued output port with
@@ -419,22 +555,91 @@ class System {
   /// been validated before it is passed to you here.
   virtual void DoPublish(const Context<T>& context) const {}
 
-  /// Implement this method if your System has any difference variables xd,
-  /// mode variables, or sampled input or output ports. The `actions` argument
-  /// specifies what to do and may include difference variable updates, port
-  /// sampling, or execution of event handlers that may make arbitrary changes
-  /// to the Context.
-  virtual void DoUpdate(Context<T>* context,
-                        const SampleActions& actions) const {}
+  /// Updates the @p difference_state on sample events.
+  /// Override it, along with DoCalcNextUpdateTime, if your System has any
+  /// difference variables.
+  ///
+  /// @p difference_state is not a pointer into @p context. It is a separate
+  /// buffer, which the Simulator is responsible for writing back to the @p
+  /// context later.
+  virtual void DoEvalDifferenceUpdates(
+      const Context<T>& context, DifferenceState<T>* difference_state) const {}
 
-  /// Implement this method if your System has any discrete actions which must
+  /// Computes the next time at which this System must perform a discrete
+  /// action.
+  ///
+  /// Override this method if your System has any discrete actions which must
   /// interrupt the continuous simulation. You may assume that the context
-  /// has already been validated and the `actions` pointer is not null.
-  /// The default implemention returns with `actions` having a next sample
-  /// time of Infinity and no actions to take.
-  virtual void DoCalcNextSampleTime(const Context<T>& context,
-                                    SampleActions* actions) const {
-    actions->time = std::numeric_limits<double>::infinity();
+  /// has already been validated and the `actions` pointer is not nullptr.
+  ///
+  /// The default implementation returns with `actions` having a next sample
+  /// time of Infinity and no actions to take.  If you declare actions, you may
+  /// specify custom do_publish and do_update handlers.  If you do not,
+  /// DoPublish and DoEvalDifferenceUpdates will be used by default.
+  virtual void DoCalcNextUpdateTime(const Context<T>& context,
+                                    UpdateActions<T>* actions) const {
+    actions->time = std::numeric_limits<T>::infinity();
+  }
+
+  /// Provides the substantive implementation of
+  /// MapConfigurationDerivativesToVelocity(). This signature can work directly
+  /// with an Eigen vector object for faster performance. See the other
+  /// DoMapConfigurationDerivativesToVelocity() signature for additional
+  /// information.
+  ///
+  /// The default implementation uses the identity mapping. It throws
+  /// std::runtime_error if the @p generalized_velocity and
+  /// @p configuration_derivatives are not the same size. Child classes must
+  /// override this function if qdot != v (even if they are the same size).
+  ///
+  /// Implementations may assume that @p generalized_velocity is of
+  /// the same size as the generalized velocity allocated in
+  /// AllocateTimeDerivatives(). Implementations that are not
+  /// second-order systems may simply do nothing.
+  virtual void DoMapConfigurationDerivativesToVelocity(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
+      VectorBase<T>* generalized_velocity) const {
+    // In the particular case where generalized velocity and generalized
+    // configuration are not even the same size, we detect this error and abort.
+    // This check will thus not identify cases where the generalized velocity
+    // and time derivative of generalized configuration are identically sized
+    // but not identical!
+    const int n = configuration_derivatives.size();
+    // You need to override System<T>::DoMapConfigurationDerivativestoVelocity!
+    DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
+    generalized_velocity->SetFromVector(configuration_derivatives);
+  }
+
+  /**
+   * Provides the substantive implementation of
+   * MapVelocityToConfigurationDerivatives(). This signature can work
+   * directly with an Eigen vector object for faster performance. See
+   * the other DoMapVelocityToConfigurationDerivatives() signature for
+   * additional information.
+   */
+  virtual void DoMapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const {
+    // In the particular case where generalized velocity and generalized
+    // configuration are not even the same size, we detect this error and abort.
+    // This check will thus not identify cases where the generalized velocity
+    // and time derivative of generalized configuration are identically sized
+    // but not identical!
+    const int n = generalized_velocity.size();
+    // You need to override System<T>::DoMapVelocityToConfigurationDerivatives!
+    DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
+    configuration_derivatives->SetFromVector(generalized_velocity);
+  }
+
+  /// Causes an InputPort in the @p context to become up-to-date, delegating to
+  /// the parent Diagram if necessary.
+  ///
+  /// This is a framework implementation detail. User code should never call it.
+  void EvalInputPort(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    context.EvalInputPort(parent_, get_input_port(port_index));
   }
 
  private:
@@ -447,6 +652,7 @@ class System {
   std::string name_;
   std::vector<SystemPortDescriptor<T>> input_ports_;
   std::vector<SystemPortDescriptor<T>> output_ports_;
+  const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 };
 
 }  // namespace systems

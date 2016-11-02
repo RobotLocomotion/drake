@@ -5,6 +5,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -23,14 +24,6 @@ class CacheTest : public ::testing::Test {
     cache_.Init(ticket2_, PackValue(2));
   }
 
-  std::unique_ptr<AbstractValue> PackValue(int value) {
-    return std::unique_ptr<AbstractValue>(new Value<int>(value));
-  }
-
-  int UnpackValue(const AbstractValue* value) {
-    return dynamic_cast<const Value<int>*>(value)->get_value();
-  }
-
   Cache cache_;
   CacheTicket ticket0_;
   CacheTicket ticket1_;
@@ -40,19 +33,19 @@ class CacheTest : public ::testing::Test {
 TEST_F(CacheTest, InitReturnsValue) {
   CacheTicket ticket = cache_.MakeCacheTicket({});
   AbstractValue* value = cache_.Init(ticket, PackValue(42));
-  EXPECT_EQ(42, UnpackValue(value));
+  EXPECT_EQ(42, UnpackIntValue(value));
 }
 
 TEST_F(CacheTest, GetReturnsValue) {
   CacheTicket ticket = cache_.MakeCacheTicket({});
   cache_.Init(ticket, PackValue(42));
   const AbstractValue* value = cache_.Get(ticket);
-  EXPECT_EQ(42, UnpackValue(value));
+  EXPECT_EQ(42, UnpackIntValue(value));
 }
 
 TEST_F(CacheTest, InvalidationIsRecursive) {
   cache_.Invalidate(ticket1_);
-  EXPECT_EQ(0, UnpackValue((cache_.Get(ticket0_))));
+  EXPECT_EQ(0, UnpackIntValue((cache_.Get(ticket0_))));
   EXPECT_EQ(nullptr, cache_.Get(ticket1_));
   EXPECT_EQ(nullptr, cache_.Get(ticket2_));
 }
@@ -61,8 +54,8 @@ TEST_F(CacheTest, InvalidationIsRecursive) {
 // invalidated.
 TEST_F(CacheTest, InitInvalidates) {
   cache_.Init(ticket1_, PackValue(76));
-  EXPECT_EQ(0, UnpackValue((cache_.Get(ticket0_))));
-  EXPECT_EQ(76, UnpackValue(cache_.Get(ticket1_)));
+  EXPECT_EQ(0, UnpackIntValue((cache_.Get(ticket0_))));
+  EXPECT_EQ(76, UnpackIntValue(cache_.Get(ticket1_)));
   EXPECT_EQ(nullptr, cache_.Get(ticket2_));
 }
 
@@ -70,8 +63,8 @@ TEST_F(CacheTest, InitInvalidates) {
 // invalidated.
 TEST_F(CacheTest, SetInvalidates) {
   cache_.Set(ticket1_, 1024);
-  EXPECT_EQ(0, UnpackValue((cache_.Get(ticket0_))));
-  EXPECT_EQ(1024, UnpackValue(cache_.Get(ticket1_)));
+  EXPECT_EQ(0, UnpackIntValue((cache_.Get(ticket0_))));
+  EXPECT_EQ(1024, UnpackIntValue(cache_.Get(ticket1_)));
   EXPECT_EQ(nullptr, cache_.Get(ticket2_));
 }
 
@@ -81,7 +74,7 @@ TEST_F(CacheTest, InvalidationIsNotDeletion) {
   const AbstractValue* value = cache_.Get(ticket1_);
   cache_.Invalidate(ticket1_);
   EXPECT_EQ(nullptr, cache_.Get(ticket1_));
-  EXPECT_EQ(1, UnpackValue(value));
+  EXPECT_EQ(1, UnpackIntValue(value));
 }
 
 TEST_F(CacheTest, InvalidationDoesNotStopOnNullptr) {
@@ -94,9 +87,9 @@ TEST_F(CacheTest, InvalidationDoesNotStopOnNullptr) {
 TEST_F(CacheTest, Copy) {
   Cache clone(cache_);
   // The clone should have the same values.
-  EXPECT_EQ(0, UnpackValue((clone.Get(ticket0_))));
-  EXPECT_EQ(1, UnpackValue((clone.Get(ticket1_))));
-  EXPECT_EQ(2, UnpackValue((clone.Get(ticket2_))));
+  EXPECT_EQ(0, UnpackIntValue((clone.Get(ticket0_))));
+  EXPECT_EQ(1, UnpackIntValue((clone.Get(ticket1_))));
+  EXPECT_EQ(2, UnpackIntValue((clone.Get(ticket2_))));
 
   // The clone should have the same invalidation topology.
   clone.Invalidate(ticket0_);
@@ -105,9 +98,9 @@ TEST_F(CacheTest, Copy) {
   EXPECT_EQ(nullptr, clone.Get(ticket2_));
 
   // Changes to the clone should not affect the original.
-  EXPECT_EQ(0, UnpackValue((cache_.Get(ticket0_))));
-  EXPECT_EQ(1, UnpackValue((cache_.Get(ticket1_))));
-  EXPECT_EQ(2, UnpackValue((cache_.Get(ticket2_))));
+  EXPECT_EQ(0, UnpackIntValue((cache_.Get(ticket0_))));
+  EXPECT_EQ(1, UnpackIntValue((cache_.Get(ticket1_))));
+  EXPECT_EQ(2, UnpackIntValue((cache_.Get(ticket2_))));
 }
 
 }  // namespace

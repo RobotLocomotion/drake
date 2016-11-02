@@ -1,12 +1,13 @@
 
 #include <iostream>
+#include <limits>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/Quadrotor/QuadrotorInput.h"
 #include "drake/examples/Quadrotor/QuadrotorOutput.h"
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/LinearSystem.h"
-#include "drake/systems/cascade_system.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/LinearSystem.h"
+#include "drake/system1/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -105,7 +106,7 @@ int main(int argc, char* argv[]) {
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      RigidBodyCollisionElement(geom, T_element_to_link, &world), world,
+      DrakeCollision::Element(geom, T_element_to_link, &world), world,
       "terrain");
   tree->updateStaticCollisionElements();
 
@@ -126,7 +127,7 @@ int main(int argc, char* argv[]) {
   auto sys_with_vis = cascade(sys_with_lcm_input, visualizer);
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
-  x0.head(tree->number_of_positions()) = tree->getZeroConfiguration();
+  x0.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   auto lcmio_with_vis = cascade(sys_with_vis, rbsys_output_to_quad_state);
 

@@ -1,5 +1,6 @@
-#include "direct_collocation_constraint.h"
+#include "drake/systems/plants/constraint/direct_collocation_constraint.h"
 
+#include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
 
 namespace drake {
@@ -69,5 +70,37 @@ void DirectCollocationConstraint::Eval(
   y = xdotcol - g;
 }
 
-}  // systems
-}  // drake
+System2DirectCollocationConstraint::System2DirectCollocationConstraint(
+    std::unique_ptr<System<AutoDiffXd>> system)
+    : DirectCollocationConstraint(system->get_output_port(0).get_size(),
+                                  system->get_input_port(0).get_size()),
+      system_(std::move(system)),
+      context_(system_->CreateDefaultContext()),
+      // Don't allocate the input port until we're past the point
+      // where we might throw.
+      derivatives_(system_->AllocateTimeDerivatives()) {
+  DRAKE_THROW_UNLESS(system_->get_num_output_ports() == 1);
+  DRAKE_THROW_UNLESS(system_->get_num_input_ports() == 1);
+
+  // Allocate the input port and keep an alias around.
+  input_port_ = new FreestandingInputPort(
+      std::make_unique<BasicVector<AutoDiffXd>>(
+          system_->get_input_port(0).get_size()));
+  std::unique_ptr<InputPort> input_port(input_port_);
+  context_->SetInputPort(0, std::move(input_port));
+}
+
+System2DirectCollocationConstraint::~System2DirectCollocationConstraint() {}
+
+void System2DirectCollocationConstraint::dynamics(
+    const TaylorVecXd& state,
+    const TaylorVecXd& input,
+    TaylorVecXd* xdot) const {
+  input_port_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
+  context_->get_mutable_continuous_state()->SetFromVector(state);
+    system_->EvalTimeDerivatives(*context_, derivatives_.get());
+  *xdot = derivatives_->CopyToVector();
+}
+
+}  // namespace systems
+}  // namespace drake

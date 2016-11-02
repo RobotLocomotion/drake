@@ -17,7 +17,7 @@ drake_add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobot
 drake_add_matlab_test(NAME examples/Atlas/test/runDRCDrillTask OPTIONAL bullet snopt COMMAND runDRCDrillTask)
 drake_add_matlab_test(NAME examples/Atlas/test/runDRCValveTask OPTIONAL bullet snopt COMMAND runDRCValveTask)
 drake_add_matlab_test(NAME examples/Atlas/test/runDoubleAtlas OPTIONAL bullet gurobi snopt COMMAND runDoubleAtlas)
-drake_add_matlab_test(NAME examples/Atlas/test/runHandContactSensorTest OPTIONAL bullet gurobi snopt COMMAND runHandContactSensorTest)
+drake_add_matlab_test(NAME examples/Atlas/test/runHandContactSensorTest REQUIRES snopt OPTIONAL bullet gurobi COMMAND runHandContactSensorTest)
 drake_add_matlab_test(NAME examples/Atlas/test/singleJointParameterEstimation OPTIONAL bullet COMMAND singleJointParameterEstimation)
 drake_add_matlab_test(NAME examples/Atlas/test/testChangeRootLink OPTIONAL bullet COMMAND testChangeRootLink)
 drake_add_matlab_test(NAME examples/Atlas/test/testCollisionVolumes REQUIRES bullet iris mosek OPTIONAL gurobi snopt COMMAND testCollisionVolumes)
@@ -26,4 +26,4 @@ drake_add_matlab_test(NAME examples/Atlas/test/testKin2 OPTIONAL bullet COMMAND 
 # drake_add_matlab_test(NAME examples/Atlas/test/testKneeSingularity REQUIRES iris lcm mosek COMMAND testKneeSingularity)  # FIXME: see #1603
 drake_add_matlab_test(NAME examples/Atlas/test/testMex OPTIONAL bullet COMMAND testMex)
 drake_add_matlab_test(NAME examples/Atlas/test/testOutputGradients OPTIONAL bullet gurobi snopt COMMAND testOutputGradients)
-drake_add_matlab_test(NAME examples/Atlas/test/testRunningPlanner REQUIRES bullet lcm libbot OPTIONAL snopt COMMAND testRunningPlanner)
+drake_add_matlab_test(NAME examples/Atlas/test/testRunningPlanner REQUIRES bullet lcm libbot snopt COMMAND testRunningPlanner)

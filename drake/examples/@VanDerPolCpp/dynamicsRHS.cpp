@@ -5,7 +5,7 @@
 #include <iostream>
 
 #include "drake/common/polynomial.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;
@@ -15,10 +15,14 @@ using namespace std;
  */
 
 template <typename DerivedA, typename DerivedB>
-void dynamicsRHS(const MatrixBase<DerivedA> &x, MatrixBase<DerivedB> &xdot) {
+void dynamicsRHS(
+    const MatrixBase<DerivedA>& x,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    MatrixBase<DerivedB>& xdot) {
   xdot << x(1), -x(0) - x(1) * (x(0) * x(0) - 1);
 }
 
+DLL_EXPORT_SYM
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (mxIsDouble(prhs[2])) {
     Map<Vector2d> x(mxGetPrSafe(prhs[2]));

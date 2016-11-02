@@ -1,33 +1,30 @@
-add_executable(optimization_problem_test mathematical_program_test.cc)
-target_link_libraries(optimization_problem_test drakeOptimization
-  ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME optimization_problem_test COMMAND optimization_problem_test)
+drake_add_cc_test(mathematical_program_test)
+target_link_libraries(mathematical_program_test drakeOptimization)
 
-if(mosek_FOUND)
-  add_executable(mosek_test mosek_test.cc)
-  target_link_libraries(mosek_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME mosek_test COMMAND mosek_test)
-endif()
+drake_add_cc_test(convex_optimization_test)
+target_link_libraries(convex_optimization_test drakeOptimization)
 
-add_executable(moby_lcp_solver_test moby_lcp_solver_test.cc)
-target_link_libraries(moby_lcp_solver_test drakeOptimization ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME moby_lcp_solver_test COMMAND moby_lcp_solver_test)
+drake_add_cc_test(moby_lcp_solver_test)
+target_link_libraries(moby_lcp_solver_test drakeOptimization)
 
-add_executable(system_identification_test system_identification_test.cc)
-target_link_libraries(system_identification_test
-  drakeOptimization drakeCommon ${GTEST_BOTH_LIBRARIES})
-drake_add_test(NAME system_identification_test COMMAND system_identification_test SIZE medium)
-add_executable(gurobi_solver_test gurobi_solver_test.cc)
-target_link_libraries(gurobi_solver_test drakeOptimization
-  ${GTEST_BOTH_LIBRARIES})
+drake_add_cc_test(mixed_integer_optimization_test)
+target_link_libraries(mixed_integer_optimization_test drakeOptimization)
 
-if(gurobi_FOUND)
-  drake_add_test(NAME gurobi_solver_test COMMAND gurobi_solver_test)
-endif()
+drake_add_cc_test(NAME system_identification_test SIZE medium)
+target_link_libraries(system_identification_test drakeOptimization)
+
+drake_add_cc_test(NAME fastqp_solver_test)
+target_link_libraries(fastqp_solver_test drakeOptimization)
+
+drake_add_cc_test(constraint_test)
+target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
 if(dreal_FOUND)
-  add_executable(dreal_solver_test dreal_solver_test.cc)
-  target_link_libraries(dreal_solver_test drakeOptimization
-    ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME dreal_solver_test COMMAND dreal_solver_test)
+  drake_add_cc_test(dreal_solver_test)
+  target_link_libraries(dreal_solver_test drakeOptimization)
+endif()
+
+if(gurobi_FOUND AND snopt_c_FOUND)
+  drake_add_cc_test(gurobi_snopt_qp_test)
+  target_link_libraries(gurobi_snopt_qp_test drakeOptimization)
 endif()

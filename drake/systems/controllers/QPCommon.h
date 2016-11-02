@@ -1,5 +1,10 @@
 #pragma once
 
+#include <algorithm>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -64,8 +69,8 @@ struct VRefIntegratorParams {
 
 struct IntegratorParams {
   explicit IntegratorParams(const RigidBodyTree& robot)
-      : gains(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        clamps(Eigen::VectorXd::Zero(robot.number_of_positions())),
+      : gains(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        clamps(Eigen::VectorXd::Zero(robot.get_num_positions())),
         eta(0.0) {}
 
   Eigen::VectorXd gains;
@@ -95,15 +100,15 @@ struct Bounds {
 struct JointSoftLimitParams {
   explicit JointSoftLimitParams(const RigidBodyTree& robot)
       : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
-            robot.number_of_positions())),
+            robot.get_num_positions())),
         disable_when_body_in_support(
-            Eigen::VectorXi::Zero(robot.number_of_positions())),
-        lb(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        ub(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        weight(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        k_logistic(Eigen::VectorXd::Zero(robot.number_of_positions())) {}
+            Eigen::VectorXi::Zero(robot.get_num_positions())),
+        lb(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        ub(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        weight(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        k_logistic(Eigen::VectorXd::Zero(robot.get_num_positions())) {}
 
   Eigen::Matrix<bool, Eigen::Dynamic, 1> enabled;
   Eigen::VectorXi disable_when_body_in_support;
@@ -128,12 +133,12 @@ struct JointSoftLimitParams {
 
 struct WholeBodyParams {
   explicit WholeBodyParams(const RigidBodyTree& robot)
-      : Kp(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        Kd(Eigen::VectorXd::Zero(robot.number_of_positions())),
-        w_qdd(Eigen::VectorXd::Zero(robot.number_of_velocities())),
+      : Kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        Kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
+        w_qdd(Eigen::VectorXd::Zero(robot.get_num_velocities())),
         integrator(robot),
-        qdd_bounds(Eigen::VectorXd::Zero(robot.number_of_velocities()),
-                   Eigen::VectorXd::Zero(robot.number_of_velocities())) {}
+        qdd_bounds(Eigen::VectorXd::Zero(robot.get_num_velocities()),
+                   Eigen::VectorXd::Zero(robot.get_num_velocities())) {}
 
   Eigen::VectorXd Kp;
   Eigen::VectorXd Kd;

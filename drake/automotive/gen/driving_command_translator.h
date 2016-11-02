@@ -1,12 +1,14 @@
 #pragma once
 
 // GENERATED FILE DO NOT EDIT
-// See drake/automotive/lcm_vector_gen.py.
+// See drake/tools/lcm_vector_gen.py.
+
+#include <vector>
 
 #include "drake/automotive/gen/driving_command.h"
-#include "drake/drakeAutomotiveLcm_export.h"
+#include "drake/common/drake_export.h"
+#include "drake/lcmt_driving_command_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 namespace drake {
 namespace automotive {
@@ -15,7 +17,7 @@ namespace automotive {
  * Translates between LCM message objects and VectorBase objects for the
  * DrivingCommand type.
  */
-class DRAKEAUTOMOTIVELCM_EXPORT DrivingCommandTranslator
+class DRAKE_EXPORT DrivingCommandTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   DrivingCommandTranslator()

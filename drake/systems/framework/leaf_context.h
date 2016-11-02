@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/vector_base.h"
@@ -29,9 +31,7 @@ class LeafContext : public Context<T> {
   virtual ~LeafContext() {}
 
   void SetInputPort(int index, std::unique_ptr<InputPort> port) override {
-    if (index < 0 || index >= get_num_input_ports()) {
-      throw std::out_of_range("Input port out of range.");
-    }
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     // TODO(david-german-tri): Set invalidation callbacks.
     inputs_[index] = std::move(port);
   }
@@ -49,22 +49,6 @@ class LeafContext : public Context<T> {
 
   int get_num_input_ports() const override {
     return static_cast<int>(inputs_.size());
-  }
-
-  const BasicVector<T>* get_vector_input(int index) const override {
-    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
-    if (inputs_[index] == nullptr) {
-      return nullptr;
-    }
-    return inputs_[index]->template get_vector_data<T>();
-  }
-
-  const AbstractValue* get_abstract_input(int index) const override {
-    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
-    if (inputs_[index] == nullptr) {
-      return nullptr;
-    }
-    return inputs_[index]->get_abstract_data();
   }
 
   const State<T>& get_state() const override { return state_; }
@@ -121,17 +105,21 @@ class LeafContext : public Context<T> {
   Context<T>* DoClone() const override {
     LeafContext<T>* context = new LeafContext<T>();
 
-    // Make a deep copy of the state using BasicVector::Clone().
-    if (this->get_state().continuous_state != nullptr) {
-      const ContinuousState<T>& xc = *this->get_state().continuous_state;
+    // Make a deep copy of the continuous state using BasicVector::Clone().
+    if (this->get_continuous_state() != nullptr) {
+      const ContinuousState<T>& xc = *this->get_continuous_state();
       const int num_q = xc.get_generalized_position().size();
       const int num_v = xc.get_generalized_velocity().size();
       const int num_z = xc.get_misc_continuous_state().size();
       const BasicVector<T>& xc_vector =
-          dynamic_cast<const BasicVector<T>&>(xc.get_state());
-      context->get_mutable_state()->continuous_state.reset(
-          new ContinuousState<T>(xc_vector.Clone(), num_q, num_v, num_z));
+          dynamic_cast<const BasicVector<T>&>(xc.get_vector());
+      context->set_continuous_state(std::make_unique<ContinuousState<T>>(
+          xc_vector.Clone(), num_q, num_v, num_z));
     }
+
+    // Make deep copies of the difference and modal states.
+    context->set_difference_state(get_state().get_difference_state()->Clone());
+    context->set_modal_state(get_state().get_modal_state()->Clone());
 
     // Make deep copies of the inputs into FreestandingInputPorts.
     // TODO(david-german-tri): Preserve version numbers as well.
@@ -148,6 +136,11 @@ class LeafContext : public Context<T> {
     *context->get_mutable_step_info() = this->get_step_info();
     context->cache_ = this->cache_;
     return context;
+  }
+
+  const InputPort* GetInputPort(int index) const override {
+    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
+    return inputs_[index].get();
   }
 
  private:

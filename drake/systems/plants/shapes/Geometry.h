@@ -5,10 +5,10 @@
 
 #include <Eigen/Dense>
 
-#include "drake/drakeShapes_export.h"
+#include "drake/common/drake_export.h"
 
 namespace DrakeShapes {
-enum DRAKESHAPES_EXPORT Shape {
+enum DRAKE_EXPORT Shape {
   UNKNOWN = 0,
   BOX = 1,
   SPHERE = 2,
@@ -25,7 +25,7 @@ std::string ShapeToString(Shape ss);
 
 const double MIN_RADIUS = 1e-7;
 
-class DRAKESHAPES_EXPORT Geometry {
+class DRAKE_EXPORT Geometry {
  public:
   Geometry();
   Geometry(const Geometry& other);
@@ -36,8 +36,11 @@ class DRAKESHAPES_EXPORT Geometry {
 
   Shape getShape() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const {
     points = Eigen::Matrix3Xd();
   }
@@ -45,85 +48,96 @@ class DRAKESHAPES_EXPORT Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Geometry&);
 
  protected:
   explicit Geometry(Shape shape);
-  void getBoundingBoxPoints(double x_half_width, double y_half_width,
-                            double z_half_width,
-                            Eigen::Matrix3Xd& points) const;
+  void getBoundingBoxPoints(
+      double x_half_width, double y_half_width, double z_half_width,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+      Eigen::Matrix3Xd& points) const;
 
   Shape shape;
   static const int NUM_BBOX_POINTS;
 };
 
-class DRAKESHAPES_EXPORT Sphere : public Geometry {
+class DRAKE_EXPORT Sphere : public Geometry {
  public:
   explicit Sphere(double radius);
   virtual ~Sphere() {}
   virtual Sphere* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Sphere&);
 
   double radius;
   static const int NUM_POINTS;
 };
 
-class DRAKESHAPES_EXPORT Box : public Geometry {
+class DRAKE_EXPORT Box : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
   virtual Box* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Box&);
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&, const Box&);
 
   Eigen::Vector3d size;
 };
 
-class DRAKESHAPES_EXPORT Cylinder : public Geometry {
+class DRAKE_EXPORT Cylinder : public Geometry {
  public:
   Cylinder(double radius, double length);
   virtual ~Cylinder() {}
   virtual Cylinder* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Cylinder&);
 
   double radius;
   double length;
 };
 
-class DRAKESHAPES_EXPORT Capsule : public Geometry {
+class DRAKE_EXPORT Capsule : public Geometry {
  public:
   Capsule(double radius, double length);
   virtual ~Capsule() {}
   virtual Capsule* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Capsule&);
 
   double radius;
@@ -132,7 +146,7 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
   static const int NUM_POINTS;
 };
 
-class DRAKESHAPES_EXPORT Mesh : public Geometry {
+class DRAKE_EXPORT Mesh : public Geometry {
  public:
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
@@ -140,18 +154,21 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   Mesh(const std::string& uri, const std::string& resolved_filename);
   virtual ~Mesh() {}
   virtual Mesh* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const Mesh&);
 
   Eigen::Vector3d scale_;
   std::string uri_;
   std::string resolved_filename_;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
 
   /** Loads triangle mesh from an obj file into the provided vectors of vertices
@@ -176,21 +193,24 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   std::string FindFileWithObjExtension() const;
 };
 
-class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
+class DRAKE_EXPORT MeshPoints : public Geometry {
  public:
   explicit MeshPoints(const Eigen::Matrix3Xd& points);
   virtual ~MeshPoints() {}
   virtual MeshPoints* clone() const;
 
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
 
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&,
+  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                      const MeshPoints&);
 
   Eigen::Matrix3Xd points;
 };
-}
+
+}  // namespace DrakeShapes

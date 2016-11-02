@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test/random_polynomial_matrix.h"
 
 using Eigen::VectorXd;
 using std::default_random_engine;
@@ -146,12 +147,12 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
-                                                               rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
-                                                               rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::RandomPolynomialMatrix(num_coefficients,
-                                                               rows_A, cols_A);
+  auto A = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_A, cols_A);
+  auto B = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_B, cols_B);
+  auto C = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_A, cols_A);
   auto product = A * B;
   auto sum = A + C;
 

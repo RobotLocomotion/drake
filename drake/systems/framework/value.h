@@ -5,7 +5,7 @@
 #include <string>
 #include <typeinfo>
 
-#include "drake/drakeSystemFramework_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -19,13 +19,28 @@ class Value;
 /// Only Value<T> should inherit directly from AbstractValue. User-defined
 /// classes that define additional type-erased features should inherit from
 /// Value<T>.
-class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
+///
+/// Most methods offer two variants, e.g., SetFrom and SetFromOrThrow.  The
+/// former variants are optimized to use static_casts in Release builds but
+/// will not throw exceptions when concrete Value types are mismatched; the
+/// latter variants are guaranteed to throw on mismatched types, but may be
+/// slower at runtime.  Prefer using the faster version only in performance-
+/// sensitive code (e.g., inner loops), and the safer version otherwise.
+class DRAKE_EXPORT AbstractValue {
  public:
   AbstractValue() {}
   virtual ~AbstractValue();
 
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
+
+  /// Copies the value in @p other to this value.
+  /// In Debug builds, if the types don't match, std::bad_cast will be
+  /// thrown.  In Release builds, this is not guaranteed.
+  virtual void SetFrom(const AbstractValue& other) = 0;
+
+  /// Like SetFrom, but throws on mismatched types even in Release builds.
+  virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
@@ -39,6 +54,12 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
     return DownCastOrMaybeThrow<T>()->get_value();
   }
 
+  /// Like GetValue, but throws on mismatched types even in Release builds.
+  template <typename T>
+  const T& GetValueOrThrow() const {
+    return DownCastOrThrow<T>()->get_value();
+  }
+
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, std::bad_cast will be
@@ -48,6 +69,13 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
   template <typename T>
   T& GetMutableValue() {
     return DownCastMutableOrMaybeThrow<T>()->get_mutable_value();
+  }
+
+  /// Like GetMutableValue, but throws on mismatched types even in Release
+  /// builds.
+  template <typename T>
+  T& GetMutableValueOrThrow() {
+    return DownCastMutableOrThrow<T>()->get_mutable_value();
   }
 
   /// Sets the value wrapped in this AbstractValue, which must be of
@@ -60,9 +88,24 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
     DownCastMutableOrMaybeThrow<T>()->set_value(value_to_set);
   }
 
+  /// Like SetValue, but throws on mismatched types even in Release builds.
+  template <typename T>
+  void SetValueOrThrow(const T& value_to_set) {
+    DownCastMutableOrThrow<T>()->set_value(value_to_set);
+  }
+
  private:
-  // Casts this class to a Value<T>*. In Debug builds, throws
-  // std::bad_cast if the cast fails.
+  // Casts this to a Value<T>*.  Throws std::bad_cast if the cast fails.
+  template <typename T>
+  Value<T>* DownCastMutableOrThrow() {
+    // We cast away const in this private non-const method so that we can reuse
+    // DownCastOrThrow. This is equivalent to duplicating the logic of
+    // DownCastOrThrow with a non-const target type.
+    return const_cast<Value<T>*>(DownCastOrThrow<T>());
+  }
+
+  // Casts this to a Value<T>*. In Debug builds, throws std::bad_cast if the
+  // cast fails.
   template <typename T>
   Value<T>* DownCastMutableOrMaybeThrow() {
     // We cast away const in this private non-const method so that we can reuse
@@ -71,11 +114,9 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
     return const_cast<Value<T>*>(DownCastOrMaybeThrow<T>());
   }
 
-  // Casts this class to a const Value<T>*. In Debug builds, throws
-  // std::bad_cast if the cast fails.
-  // TODO(david-german-tri): Use static_cast in Release builds for speed.
+  // Casts this to a const Value<T>*. Throws std::bad_cast if the cast fails.
   template <typename T>
-  const Value<T>* DownCastOrMaybeThrow() const {
+  const Value<T>* DownCastOrThrow() const {
     const Value<T>* value = dynamic_cast<const Value<T>*>(this);
     if (value == nullptr) {
       // This exception is commonly thrown when the AbstractValue does not
@@ -84,12 +125,20 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
     }
     return value;
   }
+
+  // Casts this to a const Value<T>*. In Debug builds, throws std::bad_cast if
+  // the cast fails.
+  template <typename T>
+  const Value<T>* DownCastOrMaybeThrow() const {
+    // TODO(david-german-tri): Use static_cast in Release builds for speed.
+    return DownCastOrThrow<T>();
+  }
 };
 
 /// A container class for an arbitrary type T. User-defined classes that
 /// require additional type-erased features should subclass Value<T>, taking
 /// care to define the copy constructors and override Clone().
-/// @tparam T Must be copy-constructible, and therefore not abstract.
+/// @tparam T Must be copy-constructible and assignable.
 template <typename T>
 class Value : public AbstractValue {
  public:
@@ -104,6 +153,14 @@ class Value : public AbstractValue {
 
   std::unique_ptr<AbstractValue> Clone() const override {
     return std::make_unique<Value<T>>(*this);
+  }
+
+  void SetFrom(const AbstractValue& other) override {
+    value_ = other.GetValue<T>();
+  }
+
+  void SetFromOrThrow(const AbstractValue& other) override {
+    value_ = other.GetValueOrThrow<T>();
   }
 
   /// Returns a const reference to the stored value.

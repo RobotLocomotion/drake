@@ -12,7 +12,7 @@
 #include <unsupported/Eigen/Polynomials>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/drakeCommon_export.h"
+#include "drake/common/drake_export.h"
 
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
@@ -39,7 +39,7 @@
  * under division.
  */
 template <typename _CoefficientType = double>
-class DRAKECOMMON_EXPORT Polynomial {
+class DRAKE_EXPORT Polynomial {
  public:
   typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
@@ -56,7 +56,7 @@ class DRAKECOMMON_EXPORT Polynomial {
   };
 
   /// An individual variable raised to an integer power; e.g. x**2.
-  class DRAKECOMMON_EXPORT Term {
+  class DRAKE_EXPORT Term {
    public:
     VarType var;
     PowerType power;
@@ -75,7 +75,7 @@ class DRAKECOMMON_EXPORT Polynomial {
 
   /// An additive atom of a Polynomial: The product of any number of
   /// Terms and a coefficient.
-  class DRAKECOMMON_EXPORT Monomial {
+  class DRAKE_EXPORT Monomial {
    public:
     CoefficientType coefficient;
     std::vector<Term> terms;  // a list of N variable ids
@@ -421,22 +421,6 @@ class DRAKECOMMON_EXPORT Polynomial {
         os << '+';
     }
     return os;
-  }
-
-  /// Obtains a matrix of random unvariate Polynomials of the specified size.
-  static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic>
-  RandomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,
-                         Eigen::Index rows, Eigen::Index cols) {
-    Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> mat(rows, cols);
-    for (Eigen::Index row = 0; row < mat.rows(); ++row) {
-      for (Eigen::Index col = 0; col < mat.cols(); ++col) {
-        auto coeffs =
-            (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(
-                 num_coefficients_per_polynomial)).eval();
-        mat(row, col) = Polynomial(coeffs);
-      }
-    }
-    return mat;
   }
 
   //@{

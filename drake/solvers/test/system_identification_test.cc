@@ -134,16 +134,7 @@ GTEST_TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   }
 }
 
-// The current windows CI build has no solver for generic constraints.  The
-// DISABLED_ logic below ensures that we still at least get compile-time
-// checking of the test and resulting template instantiations.
-#if !defined(WIN32) && !defined(WIN64)
-#define BASIC_ESTIMATE_TEST_NAME BasicEstimateParameters
-#else
-#define BASIC_ESTIMATE_TEST_NAME DISABLED_BasicEstimateParameters
-#endif
-
-GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, BasicEstimateParameters) {
   const Polynomiald x = Polynomiald("x");
   const auto x_var = x.GetSimpleVariable();
   const Polynomiald y = Polynomiald("y");
@@ -209,8 +200,6 @@ GTEST_TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   }
 }
 
-#undef BASIC_ESTIMATE_TEST_NAME
-
 /// Test to check parameter estimation for a basic spring-mass system.
 ///@{
 
@@ -259,22 +248,10 @@ std::vector<State> MakeTestData() {
   return result;
 }
 
-// The current windows CI build has no solver for generic constraints.  The
-// DISABLED_ logic below ensures that we still at least get compile-time
-// checking of the test and resulting template instantiations.
-#if !defined(WIN32) && !defined(WIN64)
-#define SPRING_MASS_TEST_NAME SpringMassIdentification
-#define PENDULA_TEST_NAME PendulaIdentification
-#else
-#define SPRING_MASS_TEST_NAME DISABLED_SpringMassIdentification
-#define PENDULA_TEST_NAME DISABLED_PendulaIdentification
-#endif
-
 // TODO(ggould-tri) It is likely that much of the logic below will be
 // boilerplate shared by all manipulator identification; it should eventually
 // be pulled into a function of its own inside of system_identification.
-
-GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, SpringMassIdentification) {
   Polynomiald pos = Polynomiald("pos");
   auto pos_var = pos.GetSimpleVariable();
   Polynomiald velocity = Polynomiald("vel");
@@ -346,9 +323,8 @@ GTEST_TEST(SystemIdentificationTest, SPRING_MASS_TEST_NAME) {
               measurements.size() * error);
   EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
 }
-#undef SPRING_MASS_TEST_NAME
 
-GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
+GTEST_TEST(SystemIdentificationTest, PendulaIdentification) {
   // Simulate two pendula that swing independently but are actuated with the
   // same torque.  The pendula have lengths l1 = 1, l2 = 2; their masses m1
   // and m2 are both 1.  Gravity is an earth-conventional -9.8.
@@ -489,7 +465,7 @@ GTEST_TEST(SystemIdentificationTest, PENDULA_TEST_NAME) {
                 0, max_per_term_error);
   }
 }
-#undef PENDULA_TEST_NAME
+
 ///@}
 
 }  // anonymous namespace

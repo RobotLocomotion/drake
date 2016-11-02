@@ -49,7 +49,7 @@ if(lcm_FOUND)
     )
   target_link_libraries(drakeAutomotiveLcm
     drakeAutomotive
-    drakeLCMSystem2
+    drakeRigidBodyPlant
     )
   pods_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
@@ -62,19 +62,16 @@ if(lcm_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
-  add_dependencies(drakeAutomotiveLcm drake_lcmtypes_hpp)
   add_executable(automotive_demo automotive_demo.cc)
-  target_link_libraries(automotive_demo drakeAutomotiveLcm)
+  target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
 
   add_executable(car_sim_lcm car_sim_lcm.cc)
-  add_dependencies(car_sim_lcm drake_lcmtypes_hpp)
   # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
-  target_link_libraries(car_sim_lcm drakeAutomotiveLcm drakeLCMSystem)
+  target_link_libraries(car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
   add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
-  add_dependencies(multi_car_sim_lcm drake_lcmtypes_hpp)
   # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
-  target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem)
+  target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
   drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
 endif()

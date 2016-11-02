@@ -1,12 +1,14 @@
 #pragma once
 
-#include <Eigen/Core>
-#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
-#include "drake/common/polynomial.h"
-#include <vector>
-#include <random>
 #include <limits>
-#include "drake/drakeTrajectories_export.h"
+#include <random>
+#include <vector>
+
+#include <Eigen/Core>
+
+#include "drake/common/drake_export.h"
+#include "drake/common/polynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 
 /// A scalar multi-variate piecewise polynomial.
 /**
@@ -35,7 +37,7 @@
  * under division.
  */
 template <typename CoefficientType = double>
-class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
+class DRAKE_EXPORT PiecewisePolynomial
     : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/drakeTrajectoryOptimization_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 
@@ -15,7 +15,7 @@ namespace solvers {
  * DirectTrajectoryOptimization are the addition of running costs and
  * dynamic constraints.
  */
-class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
+class DRAKE_EXPORT DircolTrajectoryOptimization
     : public DirectTrajectoryOptimization {
  public:
   DircolTrajectoryOptimization(int num_inputs, int num_states,
@@ -33,5 +33,5 @@ class DRAKETRAJECTORYOPTIMIZATION_EXPORT DircolTrajectoryOptimization
   // reconstructStateTrajectory to provide its own interpolation.
 };
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

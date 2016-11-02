@@ -1,6 +1,8 @@
 #pragma once
 
-#include "drake/drakeRBM_export.h"
+#include <vector>
+
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
@@ -45,7 +47,7 @@ namespace parsers {
  * @throws A std::runtime_error if the floating_base_type is unrecognized or
  * zero floating joints were added to the model.
  */
-DRAKERBM_EXPORT
+DRAKE_EXPORT
 int AddFloatingJoint(
     systems::plants::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,

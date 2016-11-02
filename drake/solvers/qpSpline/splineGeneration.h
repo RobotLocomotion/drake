@@ -1,9 +1,11 @@
 #pragma once
 
-#include "SplineInformation.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <stdexcept>
-#include "drake/drakeSplineGeneration_export.h"
+#include <vector>
+
+#include "drake/common/drake_export.h"
+#include "drake/solvers/qpSpline/SplineInformation.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 class ConstraintMatrixSingularError : public std::runtime_error {
  public:
@@ -11,9 +13,9 @@ class ConstraintMatrixSingularError : public std::runtime_error {
       : runtime_error("Constraint matrix is singular!"){}
 };
 
-DRAKESPLINEGENERATION_EXPORT PiecewisePolynomial<double> generateSpline(
+DRAKE_EXPORT PiecewisePolynomial<double> generateSpline(
     const SplineInformation& spline_information);
 
-DRAKESPLINEGENERATION_EXPORT PiecewisePolynomial<double> nWaypointCubicSpline(
+DRAKE_EXPORT PiecewisePolynomial<double> nWaypointCubicSpline(
     const std::vector<double>& segment_times, double x0, double xd0, double xf,
     double xdf, const Eigen::Ref<const Eigen::VectorXd>& xi);

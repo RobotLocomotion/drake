@@ -29,10 +29,10 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class PassThroughTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    pass_through_ = make_unique<PassThrough<double>>(3 /* length */);
+    pass_through_ = make_unique<PassThrough<double>>(3 /* size */);
     context_ = pass_through_->CreateDefaultContext();
     output_ = pass_through_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(3 /* length */);
+    input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
   std::unique_ptr<System<double>> pass_through_;
@@ -66,7 +66,7 @@ TEST_F(PassThroughTest, VectorThroughPassThroughSystem) {
 
 // Tests that PassThrough allocates no state variables in the context_.
 TEST_F(PassThroughTest, PassThroughIsStateless) {
-  EXPECT_EQ(nullptr, context_->get_state().continuous_state);
+  EXPECT_EQ(0, context_->get_continuous_state()->size());
 }
 
 }  // namespace

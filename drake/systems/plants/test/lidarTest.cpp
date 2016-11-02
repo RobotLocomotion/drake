@@ -1,11 +1,12 @@
 #include <cmath>
+#include <limits>
 
 #include "gtest/gtest.h"
 
-#include "lcmtypes/bot_core/planar_lidar_t.hpp"
+#include "bot_core/planar_lidar_t.hpp"
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/LCMSystem.h"
+#include "drake/system1/LCMSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/joints/floating_base_types.h"

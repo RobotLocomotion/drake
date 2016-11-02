@@ -16,6 +16,11 @@ set(sources
   functional_form.cc
   nice_type_name.cc
   polynomial.cc
+  symbolic_environment.cc
+  symbolic_expression.cc
+  symbolic_formula.cc
+  symbolic_variable.cc
+  symbolic_variables.cc
   text_logging.cc
   )
 
@@ -25,15 +30,24 @@ set(installed_headers
   constants.h
   drake_assert.h
   drake_deprecated.h
+  drake_export.h
+  drake_gcc48.h
   drake_path.h
   drake_throw.h
   eigen_autodiff_types.h
+  eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
   functional_form.h
   nice_type_name.h
+  number_traits.h
   polynomial.h
   sorted_vectors_have_intersection.h
+  symbolic_environment.h
+  symbolic_expression.h
+  symbolic_formula.h
+  symbolic_variable.h
+  symbolic_variables.h
   text_logging.h
   trig_poly.h
   )
@@ -43,13 +57,15 @@ set(installed_headers
 set(private_headers
   )
 
-# Create the library target and note its dependencies. Also generates
-# a header defining DRAKECOMMON_EXPORT for dealing with .dlls on Windows.
+# Create the library target and note its dependencies.
 add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
-target_link_libraries(drakeCommon threads)
-if(NOT WIN32)
-  target_link_libraries(drakeCommon gflags)
+target_link_libraries(drakeCommon gflags Threads::Threads)
+
+drake_find_package(spdlog CONFIG)
+if(spdlog_FOUND)
+  target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
+  target_link_libraries(drakeCommon spdlog::spdlog)
 endif()
 
 # Install all externally-visible headers.

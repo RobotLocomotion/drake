@@ -7,6 +7,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 
@@ -16,6 +17,7 @@ using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_unique;
+using std::unique_ptr;
 
 namespace drake {
 namespace systems {
@@ -46,10 +48,10 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   // does not necessarily need to be the same as the size of the derivatives
   // vectors and, for this unit test, they are not equal.
   const double kGain = 2.0;
-  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* length */);
+  auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* size */);
   auto context = gain->CreateDefaultContext();
   auto output = gain->AllocateOutput(*context);
-  auto input = make_unique<BasicVector<T>>(3 /* length */);
+  auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
   VectorX<T> input_vector(3);
@@ -88,6 +90,51 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   }
 }
 
+class SymbolicGainTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    gain_ = make_unique<Gain<symbolic::Expression>>(kGain_ /* gain */,
+                                                    3 /* length */);
+    context_ = gain_->CreateDefaultContext();
+    output_ = gain_->AllocateOutput(*context_);
+    input0_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
+    input1_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
+  }
+
+  const symbolic::Expression kGain_{2.0};
+  unique_ptr<System<symbolic::Expression>> gain_;
+  unique_ptr<Context<symbolic::Expression>> context_;
+  unique_ptr<SystemOutput<symbolic::Expression>> output_;
+  unique_ptr<BasicVector<symbolic::Expression>> input0_;
+  unique_ptr<BasicVector<symbolic::Expression>> input1_;
+};
+
+TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
+  // Checks that the number of input ports in the Gain system and the Context
+  // are consistent.
+  EXPECT_EQ(1, gain_->get_num_input_ports());
+  EXPECT_EQ(1, context_->get_num_input_ports());
+  Eigen::Matrix<symbolic::Expression, 3, 1> input_vector(
+      drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
+      drake::symbolic::Expression{2.18});
+  input0_->get_mutable_value() << input_vector;
+
+  // Hook input of the expected size.
+  context_->SetInputPort(0, MakeInput(move(input0_)));
+  gain_->EvalOutput(*context_, output_.get());
+
+  // Checks that the number of output ports in the Gain system and the
+  // SystemOutput are consistent.
+  EXPECT_EQ(1, output_->get_num_ports());
+  EXPECT_EQ(1, gain_->get_num_output_ports());
+  const auto* output_vector(output_->get_vector_data(0));
+  EXPECT_NE(nullptr, output_vector);
+  Eigen::Matrix<symbolic::Expression, 3, 1> expected{kGain_ * input_vector};
+  EXPECT_EQ(expected, output_vector->get_value());
+  EXPECT_EQ(expected(0).Evaluate(), kGain_.Evaluate() * 1.0);
+  EXPECT_EQ(expected(1).Evaluate(), kGain_.Evaluate() * 3.14);
+  EXPECT_EQ(expected(2).Evaluate(), kGain_.Evaluate() * 2.18);
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

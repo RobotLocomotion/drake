@@ -1,15 +1,17 @@
 #pragma once
 
+#include <string>
+
 #include <Eigen/Dense>
 
-#include "drake/drakeRBM_export.h"
+#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBody.h"
 
 namespace tinyxml2 {
 class XMLElement;
 }
 
-class DRAKERBM_EXPORT RigidBodyFrame {
+class DRAKE_EXPORT RigidBodyFrame {
  public:
   /**
    * A constructor where the transform-to-body is specified using an

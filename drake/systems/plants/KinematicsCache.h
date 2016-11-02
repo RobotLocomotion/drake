@@ -1,13 +1,16 @@
 #pragma once
 
+#include <functional>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <unordered_map>
-#include <vector>
-#include <numeric>
-#include <type_traits>
-#include <stdexcept>
-#include <utility>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
@@ -81,8 +84,8 @@ class KinematicsCache {
 
   RigidBodyToKCacheElementMap elements;
   std::vector<RigidBody const*> bodies;
-  const int num_positions;
-  const int num_velocities;
+  int num_positions;
+  int num_velocities;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -93,17 +96,17 @@ class KinematicsCache {
  public:
   explicit KinematicsCache(
       const std::vector<std::unique_ptr<RigidBody> >& bodies_in)
-      : num_positions(getNumPositions(bodies_in)),
-        num_velocities(getNumVelocities(bodies_in)),
+      : num_positions(get_num_positions(bodies_in)),
+        num_velocities(get_num_velocities(bodies_in)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
     for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
-          body.has_parent_body() ? body.getJoint().getNumPositions() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
-          body.has_parent_body() ? body.getJoint().getNumVelocities() : 0;
+          body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(
                                   num_positions_joint, num_velocities_joint)});
       bodies.push_back(&body);
@@ -171,7 +174,7 @@ class KinematicsCache {
   transformVelocityMappingToPositionDotMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), getNumPositions());
+                  Eigen::Dynamic> ret(mat.rows(), get_num_positions());
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -179,11 +182,11 @@ class KinematicsCache {
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() =
-            mat.middleCols(mat_col_start, joint.getNumVelocities()) *
+        ret.middleCols(ret_col_start, joint.get_num_positions()).noalias() =
+            mat.middleCols(mat_col_start, joint.get_num_velocities()) *
             element.qdot_to_v;
-        ret_col_start += joint.getNumPositions();
-        mat_col_start += joint.getNumVelocities();
+        ret_col_start += joint.get_num_positions();
+        mat_col_start += joint.get_num_velocities();
       }
     }
     return ret;
@@ -195,7 +198,7 @@ class KinematicsCache {
   transformPositionDotMappingToVelocityMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), getNumVelocities());
+                  Eigen::Dynamic> ret(mat.rows(), get_num_velocities());
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -203,11 +206,11 @@ class KinematicsCache {
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() =
-            mat.middleCols(mat_col_start, joint.getNumPositions()) *
+        ret.middleCols(ret_col_start, joint.get_num_velocities()).noalias() =
+            mat.middleCols(mat_col_start, joint.get_num_positions()) *
             element.v_to_qdot;
-        ret_col_start += joint.getNumVelocities();
-        mat_col_start += joint.getNumPositions();
+        ret_col_start += joint.get_num_velocities();
+        mat_col_start += joint.get_num_positions();
       }
     }
     return ret;
@@ -225,8 +228,8 @@ class KinematicsCache {
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
     if (hasV()) {
-      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() +
-                                                 getNumVelocities());
+      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(get_num_positions() +
+                                                 get_num_velocities());
       x << q, v;
       return x;
     } else {
@@ -244,9 +247,21 @@ class KinematicsCache {
 
   void setJdotVCached(bool jdotV_cached_in) { jdotV_cached = jdotV_cached_in; }
 
-  int getNumPositions() const { return num_positions; }
+  int get_num_positions() const { return num_positions; }
 
-  int getNumVelocities() const { return num_velocities; }
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_positions().")
+#endif
+  int getNumPositions() const { return get_num_positions(); }
+
+  int get_num_velocities() const { return num_velocities; }
+
+  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+#ifndef SWIG
+  DRAKE_DEPRECATED("Please use get_num_velocities().")
+#endif
+  int getNumVelocities() const { return get_num_velocities(); }
 
  private:
   void invalidate() {
@@ -259,25 +274,25 @@ class KinematicsCache {
   // used on initialization. The RigidBodyTree should have this value stored so
   // that KinematicsCache can request it when needed. See the KinematicsCache
   // constructor where this request is made.
-  // See TODO for getNumVelocities.
-  static int getNumPositions(
+  // See TODO for get_num_velocities.
+  static int get_num_positions(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->has_parent_body()
-                 ? result + body_ptr->getJoint().getNumPositions()
+                 ? result + body_ptr->getJoint().get_num_positions()
                  : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
-  // TODO(amcastro-tri): See TODO for getNumPositions.
-  static int getNumVelocities(
+  // TODO(amcastro-tri): See TODO for get_num_positions.
+  static int get_num_velocities(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->has_parent_body()
-                 ? result + body_ptr->getJoint().getNumVelocities()
+                 ? result + body_ptr->getJoint().get_num_velocities()
                  : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);

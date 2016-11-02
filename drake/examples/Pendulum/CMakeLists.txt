@@ -1,31 +1,33 @@
 if(lcm_FOUND)
-  add_library_with_exports(LIB_NAME drakePendulum SOURCE_FILES
-    pendulum_swing_up.cc
-    )
-  target_link_libraries(drakePendulum drakeDynamicConstraint
+  drake_install_headers(Pendulum.h)
+
+  add_library_with_exports(LIB_NAME drakePendulumPlant
+    SOURCE_FILES pendulum_swing_up.cc pendulum_plant.cc)
+  target_link_libraries(drakePendulumPlant drakeSystemFramework
+    drakeDynamicConstraint
     drakeTrajectoryOptimization)
-  pods_install_libraries(drakePendulum)
-  drake_install_headers(Pendulum.h pendulum_swing_up.h)
-  pods_install_pkg_config_file(drake-pendulum
-    LIBS -ldrakePendulum
+  pods_install_libraries(drakePendulumPlant)
+  drake_install_headers(pendulum_plant.h pendulum_swing_up.h)
+  pods_install_pkg_config_file(drake-pendulum-system
+    LIBS -ldrakePendulumPlant
     REQUIRES
     VERSION 0.0.1)
-  add_dependencies(drakePendulum drake_lcmtypes_hpp)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics
-    drakeRBM
-    drakeLCMSystem
-    threads)
+    drakePendulumPlant
+    drakeRigidBodyPlant
+    drakeSystemAnalysis)
   drake_add_test(NAME pendulum_run_dynamics
-    COMMAND pendulum_run_dynamics --non-realtime)
+    COMMAND pendulum_run_dynamics)
 
   add_executable(pendulum_run_energy_shaping pendulum_run_energy_shaping.cc)
   target_link_libraries(pendulum_run_energy_shaping
-    drakeRBM
-    drakeLCMSystem
-    threads)
-  # drake_add_test(NAME pendulum_run_energy_shaping COMMAND pendulum_run_energy_shaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
+    drakePendulumPlant
+    drakeRigidBodyPlant
+    drakeSystemAnalysis)
+  drake_add_test(NAME pendulum_run_energy_shaping
+    COMMAND pendulum_run_energy_shaping)
 
   add_executable(pendulum_run_lqr pendulum_run_lqr.cc)
   target_link_libraries(pendulum_run_lqr drakeRBM drakeLCMSystem)
@@ -34,12 +36,16 @@ if(lcm_FOUND)
 
   add_executable(pendulum_run_swing_up pendulum_run_swing_up.cc)
   target_link_libraries(pendulum_run_swing_up
-    drakePendulum
-    drakeRBM
-    drakeLCMSystem)
+    drakePendulumPlant
+    drakeRigidBodyPlant
+    drakeSystemControllers
+    drakeSystemAnalysis)
   # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
   # issues #2352, #2569.
-  if(ipopt_FOUND OR nlopt_FOUND OR snopt_c_FOUND)
+  drake_find_package(snopt_c CONFIG)
+  drake_find_package(NLopt CONFIG)
+
+  if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
     drake_add_test(NAME pendulum_run_swing_up
       COMMAND pendulum_run_swing_up --non-realtime)
   endif()

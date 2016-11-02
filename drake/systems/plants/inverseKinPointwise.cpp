@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+
 #include "drake/common/drake_assert.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -10,7 +13,7 @@ using Eigen::MatrixXd;
 using drake::systems::plants::inverseKinBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKEIK_EXPORT void inverseKinPointwise(
+DRAKE_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<DerivedA>& q_seed, const MatrixBase<DerivedB>& q_nom,
     const int num_constraints,
@@ -22,14 +25,14 @@ DRAKEIK_EXPORT void inverseKinPointwise(
                     info, infeasible_constraint);
 }
 
-template DRAKEIK_EXPORT void inverseKinPointwise(
+template DRAKE_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol, int *info,
     std::vector<std::string>* infeasible_constraint);
-template DRAKEIK_EXPORT void inverseKinPointwise(
+template DRAKE_EXPORT void inverseKinPointwise(
     RigidBodyTree* model, const int nT, const double* t,
     const MatrixBase<MatrixXd>& q_seed, const MatrixBase<MatrixXd>& q_nom,
     const int num_constraints,
@@ -37,7 +40,7 @@ template DRAKEIK_EXPORT void inverseKinPointwise(
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
 
-DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
+DRAKE_EXPORT IKResults inverseKinPointwiseSimple(
     RigidBodyTree* model,
     const Eigen::VectorXd& t,
     const Eigen::MatrixXd& q_seed,
@@ -45,7 +48,7 @@ DRAKEIK_EXPORT IKResults inverseKinPointwiseSimple(
     const std::vector<RigidBodyConstraint*>& constraint_array,
     const IKoptions& ikoptions) {
 
-  Eigen::MatrixXd q_sol_mat(model->number_of_positions(), t.size());
+  Eigen::MatrixXd q_sol_mat(model->get_num_positions(), t.size());
   q_sol_mat.fill(0);
   IKResults results;
   results.info.resize(t.size(), 0);

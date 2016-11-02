@@ -5,13 +5,16 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
+#include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
@@ -75,7 +78,7 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
   std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
     std::vector<U*> out(in.size());
     std::transform(in.begin(), in.end(), out.begin(),
-                   [](auto& p) { return p.get(); });
+                   [](const std::unique_ptr<U>& p) { return p.get(); });
     return out;
   }
 
@@ -89,7 +92,8 @@ class DiagramTimeDerivatives : public DiagramContinuousState<T> {
 /// themselves, and the edges connect the output of one constituent System
 /// to the input of another. To construct a Diagram, use a DiagramBuilder.
 template <typename T>
-class Diagram : public System<T> {
+class Diagram : public System<T>,
+                public detail::InputPortEvaluatorInterface<T> {
  public:
   typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
@@ -178,11 +182,11 @@ class Diagram : public System<T> {
     ExposeSubsystemOutputs(*diagram_context, diagram_output);
 
     // Since the diagram output now contains pointers to the subsystem outputs,
-    // all we need to do is compute all the subsystem outputs in sorted order.
-    //
-    // TODO(david-german-tri): This can be made less conservative. We don't need
-    // to compute intermediate outputs that don't affect the diagram outputs.
-    ComputeAllSubsystemOutputs(diagram_context);
+    // all we need to do is ask those subsystem outputs to evaluate themselves.
+    // They will recursively evaluate any intermediate inputs that they need.
+    for (const PortIdentifier& id : output_port_ids_) {
+      EvaluateOutputPort(*diagram_context, id);
+    }
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
@@ -196,13 +200,8 @@ class Diagram : public System<T> {
 
   void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override {
-    // Freshen all the subsystem inputs to match the provided context.
-    //
-    // TODO(david-german-tri): This can be made less conservative: we don't
-    // need to freshen inputs to subsystems with no state.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    ComputeAllSubsystemOutputs(diagram_context);
 
     auto diagram_derivatives =
         dynamic_cast<DiagramContinuousState<T>*>(derivatives);
@@ -219,12 +218,6 @@ class Diagram : public System<T> {
     }
   }
 
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const VectorBase<T>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const override {
-    // TODO(david-german-tri): Actually map velocity to derivatives.
-  }
-
   /// Retrieves the state derivatives for a particular subsystem from the
   /// derivatives for the entire diagram. Aborts if @p subsystem is not
   /// actually a subsystem of this diagram. Returns nullptr if @p subsystem
@@ -239,9 +232,22 @@ class Diagram : public System<T> {
     return diagram_derivatives->get_substate(i);
   }
 
+  /// Returns a constant reference to the subcontext that corresponds to the
+  /// system @p subsystem.
+  /// Classes inheriting from %Diagram need access to this method in order to
+  /// pass their constituent subsystems the apropriate subcontext. Aborts if
+  /// @p subsystem is not actually a subsystem of this diagram.
+  const Context<T>& GetSubsystemContext(const Context<T>& context,
+                                        const System<T>* subsystem) const {
+    DRAKE_DEMAND(subsystem != nullptr);
+    auto& diagram_context = dynamic_cast<const DiagramContext<T>&>(context);
+    const int i = GetSystemIndexOrAbort(subsystem);
+    return *diagram_context.GetSubsystemContext(i);
+  }
+
   /// Returns the subcontext that corresponds to the system @p subsystem.
   /// Classes inheriting from %Diagram need access to this method in order to
-  /// pass their constituent subsystem's the apropriate subcontext. Aborts if
+  /// pass their constituent subsystems the apropriate subcontext. Aborts if
   /// @p subsystem is not actually a subsystem of this diagram.
   Context<T>* GetMutableSubsystemContext(Context<T>* context,
                                          const System<T>* subsystem) const {
@@ -266,23 +272,110 @@ class Diagram : public System<T> {
     return subcontext->get_mutable_state();
   }
 
+  /// Returns the full path of this Diagram in the tree of Diagrams. Implemented
+  /// here to satisfy InputPortEvaluatorInterface, although we want the exact
+  /// same behavior as in System.
+  void GetPath(std::stringstream* output) const override {
+    return System<T>::GetPath(output);
+  }
+
+  /// Evaluates the value of the subsystem input port with the given @p id
+  /// in the given @p context. Satisfies InputPortEvaluatorInterface.
+  ///
+  /// This is a framework implementation detail. User code should not call
+  /// this function.
+  void EvaluateSubsystemInputPort(
+      const Context<T>* context,
+      const SystemPortDescriptor<T>& descriptor) const override {
+    // Find the output port connected to the given input port.
+    const PortIdentifier id{descriptor.get_system(), descriptor.get_index()};
+    const auto upstream_it = dependency_graph_.find(id);
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(context);
+
+    // If the upstream output port exists in this Diagram, evaluate it.
+    // TODO(david-german-tri): Add online algebraic loop detection here.
+    if (upstream_it != dependency_graph_.end()) {
+      DRAKE_DEMAND(diagram_context != nullptr);
+      const PortIdentifier& prerequisite = upstream_it->second;
+      this->EvaluateOutputPort(*diagram_context, prerequisite);
+    }
+
+    // If the upstream output port is an input of this whole Diagram, ask our
+    // parent to evaluate it.
+    const auto external_it =
+        std::find(input_port_ids_.begin(), input_port_ids_.end(), id);
+    if (external_it != input_port_ids_.end()) {
+      const int i = external_it - input_port_ids_.begin();
+      this->EvalInputPort(*diagram_context, i);
+    }
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
   Diagram() {}
 
   void DoPublish(const Context<T>& context) const override {
-    // Freshen all the subsystem inputs to match the provided context.
-    //
-    // TODO(david-german-tri): This can be made less conservative: we don't
-    // need to freshen inputs to subsystems that don't Publish.
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
-    ComputeAllSubsystemOutputs(diagram_context);
 
     for (const System<T>* const system : sorted_systems_) {
       const int i = GetSystemIndexOrAbort(system);
       system->Publish(*diagram_context->GetSubsystemContext(i));
+    }
+  }
+
+  /// The @p generalized_velocity vector must have the same size and ordering as
+  /// the generalized velocity in the ContinuousState that this Diagram reserves
+  /// in its context.
+  void DoMapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* configuration_derivatives) const override {
+    // Check that the dimensions of the continuous state in the context match
+    // the dimensions of the provided generalized velocity and configuration
+    // derivatives.
+    const ContinuousState<T>* xc = context.get_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+    const int nq = xc->get_generalized_position().size();
+    const int nv = xc->get_generalized_velocity().size();
+    DRAKE_DEMAND(nq == configuration_derivatives->size());
+    DRAKE_DEMAND(nv == generalized_velocity.size());
+
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    // Iterate over the subsystems in sorted order, asking each subsystem to
+    // map its subslice of velocity to configuration derivatives. This approach
+    // is valid because the DiagramContinuousState guarantees that the subsystem
+    // states are concatenated in sorted order.
+    int v_index = 0;  // The next index to read in generalized_velocity.
+    int q_index = 0;  // The next index to write in configuration_derivatives.
+    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+      // Find the continuous state of subsystem i.
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const ContinuousState<T>* sub_xc = subcontext->get_continuous_state();
+      // If subsystem i is stateless, skip it.
+      if (sub_xc == nullptr) continue;
+
+      // Select the chunk of generalized_velocity belonging to subsystem i.
+      const int num_v = sub_xc->get_generalized_velocity().size();
+      const Eigen::Ref<const VectorX<T>>& v_slice =
+          generalized_velocity.segment(v_index, num_v);
+
+      // Select the chunk of configuration_derivatives belonging to subsystem i.
+      const int num_q = sub_xc->get_generalized_position().size();
+      Subvector<T> dq_slice(configuration_derivatives, q_index, num_q);
+
+      // Delegate the actual mapping to subsystem i itself.
+      sorted_systems_[i]->MapVelocityToConfigurationDerivatives(
+          *subcontext, v_slice, &dq_slice);
+
+      // Advance the indices.
+      v_index += num_v;
+      q_index += num_q;
     }
   }
 
@@ -357,6 +450,10 @@ class Diagram : public System<T> {
     }
     // All of those checks having passed, take ownership of the subsystems.
     registered_systems_ = std::move(registered_systems);
+    // Inform the constituent system it's bound to this Diagram.
+    for (auto& system : registered_systems_) {
+      system->set_parent(this);
+    }
   }
 
   // Exposes the given port as an input of the Diagram.
@@ -401,6 +498,28 @@ class Diagram : public System<T> {
     this->DeclareOutputPort(descriptor);
   }
 
+  // Evaluates the value of the output port with the given @p id in the given
+  // @p context.
+  //
+  // TODO(david-german-tri): Add Diagram-level cache entries to keep track of
+  // whether a given output port has already been evaluated.  Right now, we
+  // are recomputing every intermediate output to satisfy every system that
+  // depends on it, recursively. This is O(N^2 * M), where M is the number of
+  // output ports the Diagram exposes, and N is the number of intermediate
+  // output ports the Diagram contains.
+  void EvaluateOutputPort(const DiagramContext<T>& context,
+                          const PortIdentifier& id) const {
+    const System<T>* const system = id.first;
+    const int i = GetSystemIndexOrAbort(system);
+    log()->trace("Evaluating output for subsystem {}, port {}",
+                 system->GetPath(), id.second);
+    const Context<T>* subsystem_context = context.GetSubsystemContext(i);
+    SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
+    // TODO(david-german-tri): Once #2890 is resolved, only evaluate the
+    // particular port specified in id.second.
+    system->EvalOutput(*subsystem_context, subsystem_output);
+  }
+
   // Returns the index of the given @p sys in the sorted order of this diagram,
   // or aborts if @p sys is not a member of the diagram.
   int GetSystemIndexOrAbort(const System<T>* sys) const {
@@ -440,21 +559,6 @@ class Diagram : public System<T> {
 
       // Then, put a pointer to that OutputPort in the DiagramOutput.
       (*output->get_mutable_ports())[i] = output_port;
-    }
-  }
-
-  // In sorted order, compute the outputs for all subsystems. This is also a
-  // blunt way to update the inputs for all subsystems to match the given
-  // @p context.
-  void ComputeAllSubsystemOutputs(const DiagramContext<T>* context) const {
-    DRAKE_DEMAND(context != nullptr);
-    // TODO(david-german-tri): Use the diagram-level cache to skip systems that
-    // are already fresh.
-    for (const System<T>* const system : sorted_systems_) {
-      const int i = GetSystemIndexOrAbort(system);
-      const Context<T>* subsystem_context = context->GetSubsystemContext(i);
-      SystemOutput<T>* subsystem_output = context->GetSubsystemOutput(i);
-      system->EvalOutput(*subsystem_context, subsystem_output);
     }
   }
 

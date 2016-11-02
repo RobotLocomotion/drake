@@ -1,7 +1,11 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <Eigen/Dense>
-#include "lcmtypes/drake/lcmt_quadrotor_input_t.hpp"
+
+#include "drake/lcmt_quadrotor_input_t.hpp"
 
 template <typename ScalarType = double>
 class QuadrotorInput {
@@ -38,8 +42,13 @@ class QuadrotorInput {
     Eigen::Matrix<ScalarType, 4, 1> motors;
 };
 
-bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t,
-            QuadrotorInput<double>& x) {
+bool decode(
+    const drake::lcmt_quadrotor_input_t& msg,
+    // NOLINTNEXTLINE(runtime/references) This code will be deleted soon.
+    double& t,
+    // NOLINTNEXTLINE(runtime/references) This code will be deleted soon.
+    QuadrotorInput<double>& x) {
+  // NOLINTNEXTLINE(readability/casting) This code will be deleted soon.
   t = double(msg.timestamp)/1000.0;
   x.motors = Eigen::Vector4d(msg.motors);
   return true;

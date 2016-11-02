@@ -25,5 +25,4 @@ pods_install_pkg_config_file(drake-joints
   LIBS -ldrakeJoints
   REQUIRES
   VERSION 0.0.1)
-
 add_subdirectory(test)

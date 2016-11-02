@@ -5,13 +5,14 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "idm_with_trajectory_agent.h"
+#include "drake/automotive/idm_with_trajectory_agent.h"
 
 #include <algorithm>
 #include <cmath>
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/gen/idm_with_trajectory_agent_parameters.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -42,7 +43,7 @@ void IdmWithTrajectoryAgent<T>::EvalOutput(
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
-      context.get_state().continuous_state->get_state().CopyToVector();
+      context.get_continuous_state()->CopyToVector();
 }
 
 template <typename T>
@@ -53,7 +54,7 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
-      context.get_state().continuous_state->get_state();
+      context.get_continuous_state_vector();
   const IdmWithTrajectoryAgentState<T>* const state =
       dynamic_cast<const IdmWithTrajectoryAgentState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
@@ -61,20 +62,32 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
   systems::VectorBase<T>* const derivatives_state =
-      derivatives->get_mutable_state();
+      derivatives->get_mutable_vector();
   DRAKE_ASSERT(derivatives_state != nullptr);
   IdmWithTrajectoryAgentState<T>* const new_derivatives =
       dynamic_cast<IdmWithTrajectoryAgentState<T>*>(derivatives_state);
   DRAKE_ASSERT(new_derivatives != nullptr);
 
   // Taken from https://en.wikipedia.org/wiki/Intelligent_driver_model.
-  const double a{1.0};  // max acceleration.
-  const double b{3.0};  // comfortable braking deceleration.
-  const double v_0{50.0};  // desired velocity in free traffic.
-  const double s_0{1.0};  // minimum desired net distance.
-  const double time_headway{0.1};  // desired time headway to vehicle in front.
-  const double delta{4.0};  // recommended choice of free-road exponent.
-  const double l_a{4.5};  // length of leading car.
+  IdmWithTrajectoryAgentParameters<T> params;
+  params.set_a(T(1.0));  // max acceleration.
+  params.set_b(T(3.0));  // comfortable braking deceleration.
+  params.set_v_0(T(50.0));  // desired velocity in free traffic.
+  params.set_s_0(T(1.0));  // minimum desired net distance.
+  params.set_time_headway(T(0.1));  // desired time headway to vehicle in front.
+  params.set_delta(T(4.0));  // recommended choice of free-road exponent.
+  params.set_l_a(T(4.5));  // length of leading car.
+
+  const T& a = params.a();
+  const T& b = params.b();
+  const T& v_0 = params.v_0();
+  const T& s_0 = params.s_0();
+  const T& time_headway = params.time_headway();
+  const T& delta = params.delta();
+  const T& l_a = params.l_a();
+
+  // NOLINTNEXTLINE(build/namespaces) For ADL of pow.
+  using namespace std;
 
   new_derivatives->set_x_e(state->v_e());
   new_derivatives->set_v_e(

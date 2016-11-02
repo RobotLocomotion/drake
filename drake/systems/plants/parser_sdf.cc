@@ -1,13 +1,18 @@
 #include "drake/systems/plants/parser_sdf.h"
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "spruce.hh"
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_common.h"
@@ -52,8 +57,11 @@ using tinyxml2::XMLDocument;
 
 using drake::systems::plants::joints::FloatingBaseType;
 
-void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
-                      PoseMap& pose_map, const Isometry3d& T_link) {
+void ParseSdfInertial(
+    RigidBody* body, XMLElement* node, RigidBodyTree* model,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PoseMap& pose_map,
+    const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
@@ -86,7 +94,9 @@ void ParseSdfInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 }
 
 bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
-                      const string& root_dir, DrakeShapes::Element& element) {
+                      const string& root_dir,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      DrakeShapes::Element& element) {
   // DEBUG
   // cout << "parseGeometry: START" << endl;
   // END_DEBUG
@@ -180,6 +190,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
 
 void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                     const PackageMap& package_map, const string& root_dir,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                     PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
@@ -230,6 +241,7 @@ void ParseSdfVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
 void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                        const PackageMap& package_map, const string& root_dir,
+                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                        PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
@@ -253,7 +265,7 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
                         " has a collision element without a geometry.");
   }
 
-  RigidBodyCollisionElement element(
+  DrakeCollision::Element element(
       transform_parent_to_model.inverse() * transform_to_model, body);
   // By default all collision elements added to the world from an SDF file are
   // flagged as static.
@@ -286,7 +298,9 @@ void ParseSdfCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
 
 bool ParseSdfLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
-                  PoseMap& pose_map, const string& root_dir, int* index,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                  PoseMap& pose_map,
+                  const string& root_dir, int* index,
                   int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
@@ -348,6 +362,12 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
     parseScalarValue(limit_node, "lower", lower);
     parseScalarValue(limit_node, "upper", upper);
     fjoint->setJointLimits(lower, upper);
+
+    double stiffness = fjoint->get_joint_limit_stiffness()(0);
+    double dissipation = fjoint->get_joint_limit_dissipation()(0);
+    parseScalarValue(limit_node, "stiffness", stiffness);
+    parseScalarValue(limit_node, "dissipation", dissipation);
+    fjoint->SetJointLimitDynamics(stiffness, dissipation);
   }
 }
 
@@ -413,7 +433,10 @@ void ParseSdfFrame(RigidBodyTree* rigid_body_tree, XMLElement* node,
 }
 
 void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
-                   XMLElement* node, PoseMap& pose_map, int model_instance_id) {
+                   XMLElement* node,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                   PoseMap& pose_map,
+                   int model_instance_id) {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
@@ -560,6 +583,9 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
 
+    // This log statement is required for users to work around #3673, and can
+    // be removed when that issue is resolved.
+    drake::log()->info("Made joint {} a loop joint.", name);
   } else {
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
@@ -575,6 +601,9 @@ void ParseSdfJoint(RigidBodyTree* model, std::string model_name,
            << " not found! Cannot update its local frame to be that of joint.";
         throw std::runtime_error(ss.str());
       }
+      // This log statement is required for users to work around #3673, and
+      // can be removed when that issue is resolved.
+      drake::log()->info("Adding joint {} to the plant.", name);
     }
 
     // Update pose_map with child's new frame, which is now the same as this
@@ -778,8 +807,11 @@ void ParseWorld(RigidBodyTree* model, XMLElement* node,
   }
 }
 
-ModelInstanceIdTable ParseSdf(RigidBodyTree* model, XMLDocument* xml_doc,
-    PackageMap& package_map, const string& root_dir,
+ModelInstanceIdTable ParseSdf(
+    RigidBodyTree* model, XMLDocument* xml_doc,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PackageMap& package_map,
+    const string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);

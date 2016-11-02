@@ -3,15 +3,12 @@
 #include <memory>
 #include <string>
 
-#include "drake/drakeRigidBodyPlant_export.h"
+#include <Eigen/Geometry>
+
+#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-
-namespace tinyxml2 {
-class XMLElement;
-}
+#include "drake/systems/plants/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
 namespace systems {
@@ -29,8 +26,13 @@ namespace systems {
 /// does not apply these limits. The gear box factor effectively is a
 /// multiplier on the input actuation to the RigidBodyPlant.
 ///
-/// <B>%System output</B>: A %RigidBodyPlant outputs the state of the system in
-/// a vector valued port.
+/// The %RigidBodyPlant's state consists of a vector containing the generalized
+/// positions followed by the generalized velocities of the system.
+///
+/// <B>%System output</B>:
+/// - Port 0: The state vector of the system in a vector valued port.
+/// - Port 1: A KinematicsResults class allowing access to the results from
+/// kinematics computations for each RigidBody.
 ///
 /// The multibody model consists of a set of rigid bodies connected through
 /// joints in a tree structure. Bodies may have a collision model in which case
@@ -64,18 +66,28 @@ namespace systems {
 /// where `N(q)` is a transformation matrix only dependent on the positions.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @ingroup rigid_body_systems
 template <typename T>
-class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
+class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
-  /// the world in @p tree.
+  /// the world in @p tree.  @p tree must not be `nullptr`.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree> tree);
 
   ~RigidBodyPlant() override;
 
+  // TODO(liang.fok) Remove this method once a more advanced contact modeling
+  // framework is available.
+  /// Sets the contact parameters.
+  void set_contact_parameters(double penetration_stiffness,
+      double penetration_damping, double friction_coefficient);
+
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
-  const RigidBodyTree& get_multibody_world() const;
+  const RigidBodyTree& get_rigid_body_tree() const;
+
+  /// Returns the number of bodies in the world.
+  int get_num_bodies() const;
 
   /// Returns the number of generalized coordinates of the model.
   int get_num_positions() const;
@@ -115,22 +127,29 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   /// Sets the state in @p context so that generalized positions and velocities
   /// are zero. For quaternion based joints the quaternion is set to be the
   /// identity (or equivalently a zero rotation).
-  void SetZeroConfiguration(Context<T> *context) const {
+  void SetZeroConfiguration(Context<T>* context) const {
+    // Extract a pointer to continuous state from the context.
+    DRAKE_DEMAND(context != nullptr);
+    ContinuousState<T>* xc = context->get_mutable_continuous_state();
+    DRAKE_DEMAND(xc != nullptr);
+
+    // Write the zero configuration into the continuous state.
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) = tree_->getZeroConfiguration();
-    context->get_mutable_continuous_state()->SetFromVector(x0);
+    xc->SetFromVector(x0);
   }
 
   // System<T> overrides.
+  /// Allocates two output ports, one for the RigidBodyPlant state and one for
+  /// KinematicsResults.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(
+      const Context<T>& context) const override;
+
   bool has_any_direct_feedthrough() const override;
   void EvalTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const override;
   void EvalOutput(const Context<T>& context,
                   SystemOutput<T>* output) const override;
-
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const VectorBase<T>& generalized_velocity,
-      VectorBase<T>* positions_derivative) const override;
 
   // System<T> overrides to track energy conservation.
   // TODO(amcastro-tri): provide proper implementations for these methods to
@@ -152,9 +171,24 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
     return T(NAN);
   }
 
+  /// Computes the force exerted by the stop when a joint hits its limit,
+  /// using a linear stiffness model.
+  /// Exposed for unit testing of the formula.
+  ///
+  /// Linear stiffness formula (and definition of "dissipation") from:
+  /// https://simtk.org/api_docs/simbody/latest/classSimTK_1_1Force_1_1MobilityLinearStop.html#details
+  static T JointLimitForce(const DrakeJoint& joint,
+                           const T& position, const T& velocity);
+
  protected:
-  // LeafSystem<T> override
+  // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
+
+  // System<T> override.
+  void DoMapVelocityToConfigurationDerivatives(
+      const Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      VectorBase<T>* positions_derivative) const override;
 
  private:
   // Some parameters defining the contact.
@@ -164,6 +198,8 @@ class DRAKERIGIDBODYPLANT_EXPORT RigidBodyPlant : public LeafSystem<T> {
   T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree> tree_;
+  int state_output_port_id_;
+  int kinematics_output_port_id_;
 };
 
 }  // namespace systems

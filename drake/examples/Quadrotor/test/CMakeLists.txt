@@ -1,7 +1,6 @@
 if(lcm_FOUND)
-  add_executable(quadrotorURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(quadrotorURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
-  drake_add_test(NAME quadrotorURDFDynamicsTest COMMAND quadrotorURDFDynamicsTest)
+  drake_add_cc_test(quadrotor_urdf_dynamics_test)
+  target_link_libraries(quadrotor_urdf_dynamics_test drakeRBSystem)
 endif()
 
 # drake_add_matlab_test(NAME examples/Quadrotor/test/buildOcTree COMMAND buildOcTree)  # FIXME: see #2100
