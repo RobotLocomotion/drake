@@ -2108,7 +2108,7 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
 
 template <typename T>
 std::vector<const RigidBody*>
-RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) {
+RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) const {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
