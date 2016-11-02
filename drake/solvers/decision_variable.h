@@ -33,7 +33,7 @@ class DecisionVariableScalar {
 };
 
 /**
- * A matrix of decision variables. This class stores the decision variables.
+ * This class stores the references to the decision variables as a matrix.
  * If the matrix is not symmetric, namely X(i,j) does not necessarily equals to
  * X(j, i), then the decision variables are the stacked column of the matrix.
  * If the matrix is symmetric, then the decision variables are the stacked
@@ -73,6 +73,15 @@ class MatrixDecisionVariable {
     }
   }
 
+  /**
+   * Return the number of rows in the matrix.
+   */
+  size_t rows() const {return rows_;}
+
+  /**
+   * Return the number of columns in the matrix.
+   */
+  size_t cols() const {return cols_;}
   /**
    * Returns a new MatrixDecisionVariable, at i'th row and j'th column of
    * the original matrix.
