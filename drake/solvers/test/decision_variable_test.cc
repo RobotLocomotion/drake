@@ -30,10 +30,14 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   MatrixDecisionVariable X(2, 3, v_immutable, false);
   EXPECT_FALSE(X.is_symmetric());
   EXPECT_EQ(X.NumberOfVariables(), 6);
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
   // Constructs a symmetric 3 x 3 MatrixDecisionVariable from v_immutable.
   MatrixDecisionVariable S(3, 3, v_immutable, true);
   EXPECT_TRUE(S.is_symmetric());
   EXPECT_EQ(S.NumberOfVariables(), 6);
+  EXPECT_EQ(S.rows(), 3);
+  EXPECT_EQ(S.cols(), 3);
   // Check value(i, j) function, and overloaded operator (i, j).
   Eigen::Matrix<double, 2, 3> mat_value_expected;
   mat_value_expected << 0, 4, 8, 2, 6, 10;
