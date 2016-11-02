@@ -23,6 +23,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   # Swig sometimes emits code which appears to have uninitialized
   # variables.  Err on the side of swig being correct.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+
+  # Swig emits code which appears to have misleading indentations.
+  # Err on the side of swig being correct.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
 endif()
 
 if(PYTHON_EXECUTABLE)
