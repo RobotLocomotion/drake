@@ -10,12 +10,11 @@ namespace automotive {
  * modifies the existing world rigid body within @p rigid_body_tree and thus
  * does not need to return a model name or model_instance_id value.
  *
- * The X, Y, and Z axes of the box matches the X, Y, and Z-axis of the world.
- * The length and width of the box is aligned with X and Y and are @p box_size
- * long. The depth of the box is aligned with Z and is @p box_depth long. The
- * top surface of the box is at Z = 0.
+ * Two opposite corners of the resulting axis aligned box are:
+ * `(box_size / 2, box_size / 2, 0)` and
+ * `(-box_size / 2, -box_size / 2, -box_depth)`.
  *
- * @param[in] tree The rigid body tree to which to add the terrain.
+ * @param[in] tree The RigidBodyTree to which to add the terrain.
  *
  * @param[in] box_size The length and width of the terrain aligned with the
  * world's X and Y axes.
