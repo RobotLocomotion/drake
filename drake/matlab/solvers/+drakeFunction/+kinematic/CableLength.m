@@ -255,7 +255,8 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 dsvec=dcross(v1,v2,dv1,dv2); 
 %                 ds = svec'*dsvec/max(s,eps)
                 
-
+                % find normal vector
+                
 % This calculation is correct, but why?
                 if(i==4)
                   fac = -1;
@@ -272,8 +273,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
                 end
 %                 n = cross(v1, (pt2-pt1));
 %                 n = n/norm(n);
+                n = svec/norm(svec);
                 ds = n'*dsvec;
-                %n'*dsvec
+                
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
                
                   
