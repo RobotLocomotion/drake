@@ -136,7 +136,7 @@ bool RigidBodyTree<T>::transformCollisionFrame(
 }
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
-// vector RigidBodyTree<T>::bodies changes in size with the calls to
+// vector RigidBodyTree::bodies changes in size with the calls to
 // bodies.erase and bodies.insert.
 // A possibility would be to use std::sort or our own version of a quick sort.
 template <typename T>
@@ -188,9 +188,9 @@ void RigidBodyTree<T>::compile(void) {
   // TODO(amcastro-tri): the order in which these loops should be performed
   // should be stated more clearly with an iterator.
   // An option would be to have:
-  //   RigidBodyTree<T>::upwards_body_iterator: travels the tree upwards towards
+  //   RigidBodyTree::upwards_body_iterator: travels the tree upwards towards
   //   the root.
-  //   RigidBodyTree<T>::downwards_body_iterator: travels the tree downwards
+  //   RigidBodyTree::downwards_body_iterator: travels the tree downwards
   //   from the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
     if (bodies[i]->has_parent_body() &&
@@ -225,7 +225,7 @@ void RigidBodyTree<T>::compile(void) {
 
   // Counts the number of position and velocity states in this rigid body tree.
   // Notice that the rigid bodies are accessed from the sorted vector
-  // RigidBodyTree<T>::bodies. The order that they appear in this vector
+  // RigidBodyTree::bodies. The order that they appear in this vector
   // determines the values of RigidBody::get_position_start_index() and
   // RigidBody::get_velocity_start_index(), which the following code sets.
   num_positions_ = 0;
