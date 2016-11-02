@@ -99,29 +99,25 @@ template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
 
 
 std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
-                                                 const Context<double>& context,
-                                                 const BasicVector<double>& input) {
+                                                 const Context<double>& context) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
-  // TODO(russt): check if system is continuous time (only) and/or discrete
-  // time (only)
+  // TODO(russt): check if system is continuous time (only)
   // TODO(russt): handle the discrete time case
 
-  // TODO(russt): handle the zero input case, the stateless case, and the outputs
-
-  DRAKE_DEMAND(system.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_input_port(0).size() == input.size());
-  // TODO(russt): handle the MIMO case?
+  DRAKE_DEMAND(system.get_num_input_ports() <= 1);
+  DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
   // create an autodiff version of the system
   auto autodiff_system = system.template ToAutoDiffXd();
 
   // initialize autodiff
-  auto autodiff_context = autodiff_plant->CreateDefaultContext();
-  autodiff_context->SetTimeStateAndParametersFrom(*context);
+  auto autodiff_context = autodiff_system->CreateDefaultContext();
+  autodiff_context->SetTimeStateAndParametersFrom(context);
 
   auto x0 = context.get_continuous_state_vector();
-  auto u0 = input.get_value();
+  if (system.get_num_input_ports()==1)
+    auto u0 = input.get_value();
   auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
 
   auto& autodiff_x0 = autodiff_context.get_mutable_state_vector();

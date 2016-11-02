@@ -89,10 +89,13 @@ class AffineSystem : public LeafSystem<T> {
 ///
 /// Note that the term linearization is consistently used in the literature
 /// even though the result may be affine (not simply linear).
+///
+/// Note that the context must also have its inputs initialized, e.g. using
+/// context->SetInputPort(0, std::make_unique<FreestandingInputPort>
+/// (default_input));
 
 std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
-                          const Context<double>& context,
-                          const BasicVector<double>& input);
+                          const Context<double>& context);
 
 }  // namespace systems
 }  // namespace drake
