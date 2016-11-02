@@ -12,7 +12,7 @@
         <cylinder length="4" radius="0.2"/>
       </geometry>
       <material>
-        <color rgba="1 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -28,7 +28,7 @@
         <cylinder length="1.8" radius="0.2"/>
       </geometry>
       <material>
-        <color rgba="0 1 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -44,7 +44,7 @@
         <cylinder length="3.6" radius="0.2"/>
       </geometry>
       <material>
-        <color rgba="0 0 1 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>

@@ -216,8 +216,8 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       m = x(1);
       if (getNumContStates(obj.modes{m}))
         nX = getNumStates(obj.modes{m});
-        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end        
-        xcdot = dynamics(obj.modes{m},t,xm,u);        % Original line
+        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
+        xcdot = dynamics(obj.modes{m},t,xm,u);
       else
         xcdot=[];
       end

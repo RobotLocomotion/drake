@@ -1,6 +1,6 @@
-function kinsol = doKinematics(obj, q, v, options)
+function kinsol = doKinematics(q, v)
 kinsol.q = q;
-if nargin > 2
+if nargin > 1
   kinsol.v = v;
 end
 kinsol.mex = false;
