@@ -2,16 +2,15 @@
 #include <limits>
 
 #include <gflags/gflags.h>
-#include "drake/common/text_logging.h"
-#include <drake/systems/plants/RigidBodySystem.h>
 #include "drake/common/drake_path.h"
+#include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/parser_sdf.h"
+#include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
@@ -64,7 +63,7 @@ class Quadrotor : public systems::Diagram<T> {
     DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
     Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
     T_element_to_link.translation() << 0, 0,
-        -kBoxDepth / 2.0;  // top of the box is at z = 0
+        -kBoxDepth / 2.0;  // Top of the box is at z = 0.
 
     RigidBody& world = tree->world();
     Eigen::Vector4d color;
