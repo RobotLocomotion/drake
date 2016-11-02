@@ -28,7 +28,7 @@ bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
   system.EvalTimeDerivatives(context, derivs0_.get());
 
   // Call the generic error controlled stepper.
-  IntegratorBase<T>::StepErrorControlled(dt_max, this, derivs0_.get());
+  IntegratorBase<T>::StepErrorControlled(dt_max, derivs0_.get());
 
   const T& dt = IntegratorBase<T>::get_previous_integration_step_size();
   return (dt == dt_max);
