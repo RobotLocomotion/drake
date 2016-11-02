@@ -66,8 +66,8 @@ lcm_install_headers(
 install(TARGETS drake_lcmtypes drakeLCMTypes
   EXPORT ${PROJECT_NAME}Targets
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib${LIB_SUFFIX}
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
   INCLUDES DESTINATION include/lcmtypes
 )
 
