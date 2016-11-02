@@ -1,16 +1,18 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Core>
 
-#include "DrakeJointImpl.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
+#include "drake/systems/plants/joints/DrakeJointImpl.h"
 
 template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
@@ -25,6 +27,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   double coulomb_window;
 
  protected:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   FixedAxisOneDoFJoint(Derived& derived, const std::string& name,
                        const Eigen::Isometry3d& transform_to_parent_body,
                        const drake::TwistVector<double>& _joint_axis)
@@ -43,6 +46,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
+      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       Eigen::MatrixBase<DerivedMS>& motion_subspace,
       typename drake::math::Gradient<DerivedMS, Eigen::Dynamic>::type*
           dmotion_subspace = nullptr) const {
@@ -79,6 +83,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dqdot_to_v) const {
@@ -93,6 +98,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
+                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {

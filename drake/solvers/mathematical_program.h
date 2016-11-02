@@ -1,12 +1,16 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <initializer_list>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
@@ -166,7 +170,8 @@ enum ProgramAttributes {
   kLinearEqualityConstraint = 1 << 7,
   kLinearComplementarityConstraint = 1 << 8,
   kLorentzConeConstraint = 1 << 9,
-  kRotatedLorentzConeConstraint = 1 << 10
+  kRotatedLorentzConeConstraint = 1 << 10,
+  kBinaryVariable = 1 << 11
 };
 typedef uint32_t AttributesSet;
 
@@ -351,6 +356,23 @@ class DRAKE_EXPORT MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    *
    * @return The DecisionVariableView of the new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddContinuousVariables(2, "x");
+   * @endcode
+   * This adds two continuous variables into the optimization program.
+   * x.name() is "b".
+   *
+   * It is OK to call AddContinuousVariables() with the same name. The following code
+   * is legitimate
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x1 = prog.AddContinuousVariables(2, "x");
+   * auto x2 = prog.AddContinuousVariables(2, "x");
+   * @endcode
+   * The name of the variable is only used for the user for understand.
    */
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -367,7 +389,45 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
-   * @param name of the variable
+   * Add binary variables to MathematicalProgram.
+   * Appending new binary variables to an internal list of any existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param num_new_vars Number of new binary variables.
+   * @param name The name of the binary variables, default is "b".
+   * @return The DecisionVariableView of the new binary variables (not all the
+   * variables stored in MathematicalProgram).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto b = prog.AddBinaryVariables(2, "b");
+   * @endcode
+   * This adds two binary variables into the optimization program.
+   * b.name() is "b".
+   *
+   * It is OK to call AddBinaryVariables() with the same name. The following code
+   * is legitimate
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto b1 = prog.AddBinaryVariables(2, "b");
+   * auto b2 = prog.AddBinaryVariables(2, "b");
+   * @endcode
+   * The name of the variable is only used for the user to understand.
+   */
+  const DecisionVariableView AddBinaryVariables(std::size_t num_new_vars,
+                                                std::string name = "b") {
+    required_capabilities_ |= kBinaryVariable;
+    DecisionVariable v(DecisionVariable::VarType::BINARY, name, num_new_vars,
+                       num_vars_);
+    num_vars_ += num_new_vars;
+    variables_.push_back(v);
+    variable_views_.push_back(DecisionVariableView(variables_.back()));
+    x_initial_guess_.conservativeResize(num_vars_);
+    return variable_views_.back();
+  }
+  /**
+   * @param name of the variable.
    * @return The DecisionVariableView of first variable that matches
    * \param name.
    */
@@ -523,7 +583,7 @@ class DRAKE_EXPORT MathematicalProgram {
 
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x
-   * Applied to subset of the variables
+   * Applied to subset of the variables.
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -607,6 +667,39 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   /**
+   * Add one row of linear constraint referencing potentially a
+   * subset of the decision variables (defined in the vars parameter).
+   * lb <= a*vars <= ub
+   * @param a A row vector.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound.
+   * @param vars A list of decision variables.
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub,
+      const VariableList& vars) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
+                               vars);
+  }
+
+  /**
+   * Add one row of linear constraint on all variables.
+   * lb <= a*vars <= ub
+   * @param a A row vector.
+   * @param lb A scalar, the lower bound.
+   * @param ub A scalar, the upper bound
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
+                               variable_views_);
+  }
+
+  /**
    * @brief Adds linear equality constraints referencing potentially a
    * subset of the decision variables (defined in the vars parameter).
    */
@@ -623,11 +716,20 @@ class DRAKE_EXPORT MathematicalProgram {
    *
    * @brief Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
-   * Example: to add and equality constraint which only depends on two of the
+   *
+   * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
+   * @code{.cc}
    *   auto x = prog.AddContinuousDecisionVariable(6,"myvar");
-   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x.row(2), x.row(5)});
-   * where Aeq has exactly two columns.
+   *   Eigen::Matrix2d Aeq;
+   *   Aeq << -1, 2,
+   *           1, 1;
+   *   Eigen::Vector2d beq(1, 3);
+   *   prog.AddLinearEqualityConstraint(Aeq, beq,{x(2), x(5)});
+   * @endcode
+   * The code above imposes constraints
+   * @f[-x(2) + 2x(5) = 1 @f]
+   * @f[ x(2) +  x(5) = 3 @f]
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -650,6 +752,40 @@ class DRAKE_EXPORT MathematicalProgram {
     return AddLinearEqualityConstraint(Aeq, beq, variable_views_);
   }
 
+  /**
+   * Add one row of linear equality constraint referencing potentially a subset
+   * of decision variables.
+   * @f[
+   * ax = beq
+   * @f]
+   * @param a A row vector.
+   * @param beq A scalar.
+   * @param vars A list of DecisionVariableView.
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double beq,
+      const VariableList& vars) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
+  }
+
+  /**
+   * Add one row of linear equality constraint referencing all
+   * decision variables.
+   * @f[
+   * ax = beq
+   * @f]
+   * @param a A row vector.
+   * @param beq A scalar.
+   */
+  template <typename DerivedA>
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedA>& a, double beq) {
+    DRAKE_ASSERT(a.rows() == 1);
+    return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
+                                       variable_views_);
+  }
   /**
    * @brief Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
@@ -688,15 +824,22 @@ class DRAKE_EXPORT MathematicalProgram {
     return AddBoundingBoxConstraint(lb, ub, variable_views_);
   }
 
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
+      double lb, double ub, const DecisionVariableView& var) {
+    DRAKE_ASSERT(var.size() == 1);
+    return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
+                                    {var});
+  }
+
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
                      const VariableList& vars) {
@@ -711,9 +854,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
       const VariableList& vars) {
@@ -728,9 +871,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * <!--
    * x(0) >= sqrt{x(1)^2 + ... + x(N-1)^2}
    * -->
-   * \f[
+   * @f[
    * x_0 \ge \sqrt{x_1^2 + ... + x_{N-1}^2}
-   * \f]
+   * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
     return AddLorentzConeConstraint(variable_views_);
@@ -743,10 +886,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
    * @param vars A list of DecisionVariableView.
    */
@@ -764,15 +905,13 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    * you can call
-   * \code{.cc}
+   * @code{.cc}
    *   auto x = prog.AddContinuousVariables(N,'x');
    *   auto con = prog.AddRotatedLorentzConeConstraint(x);
-   * \endcode
+   * @endcode
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const VariableList& vars) {
@@ -788,10 +927,8 @@ class DRAKE_EXPORT MathematicalProgram {
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
    * x(0) >= 0, x(1) >= 0
    * -->
-   * \f[
-   * x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2\\
-   * x_0\ge 0, x_1\ge 0
-   * \f]
+   * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
+   * @f[ x_0\ge 0, x_1\ge 0 @f]
    */
   std::shared_ptr<RotatedLorentzConeConstraint>
   AddRotatedLorentzConeConstraint() {
@@ -1121,6 +1258,25 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   size_t num_vars() const { return num_vars_; }
+
+  /**
+   * Returns a vector containing the type of each decision variable.
+   * The length of the vector is the same as
+   * MathematicalProgram::num_vars(). variable_type[i] is the type
+   * of x(i) in the MathematicalProgram, where x is the vector containing all
+   * decision variables.
+   */
+  std::vector<DecisionVariable::VarType> VariableTypes() const {
+    std::vector<DecisionVariable::VarType> variable_type;
+    variable_type.resize(num_vars());
+    for (const auto& v : variables_) {
+      for (int i = v.index(); i < static_cast<int>(v.index() + v.size()); ++i) {
+        variable_type[i] = v.type();
+      }
+    }
+    return variable_type;
+  }
+
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
   /**

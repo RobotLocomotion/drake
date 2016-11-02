@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"

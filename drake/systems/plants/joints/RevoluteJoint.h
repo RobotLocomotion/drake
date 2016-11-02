@@ -1,9 +1,12 @@
 #pragma once
 
+#include <string>
+
+#include <Eigen/Geometry>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "FixedAxisOneDoFJoint.h"
-#include <Eigen/Geometry>
+#include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
 class DRAKE_EXPORT RevoluteJoint
     : public FixedAxisOneDoFJoint<RevoluteJoint> {

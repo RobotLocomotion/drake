@@ -7,6 +7,9 @@ target_link_libraries(convex_optimization_test drakeOptimization)
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
 
+drake_add_cc_test(mixed_integer_optimization_test)
+target_link_libraries(mixed_integer_optimization_test drakeOptimization)
+
 drake_add_cc_test(NAME system_identification_test SIZE medium)
 target_link_libraries(system_identification_test drakeOptimization)
 

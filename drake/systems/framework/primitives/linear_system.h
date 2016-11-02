@@ -38,10 +38,10 @@ class LinearSystem : public AffineSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
-  LinearSystem(const Eigen::Ref<const MatrixX<T>>& A,
-               const Eigen::Ref<const MatrixX<T>>& B,
-               const Eigen::Ref<const MatrixX<T>>& C,
-               const Eigen::Ref<const MatrixX<T>>& D);
+  LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+               const Eigen::Ref<const Eigen::MatrixXd>& B,
+               const Eigen::Ref<const Eigen::MatrixXd>& C,
+               const Eigen::Ref<const Eigen::MatrixXd>& D);
 };
 
 }  // namespace systems

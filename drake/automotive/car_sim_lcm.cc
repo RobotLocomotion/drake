@@ -15,7 +15,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/plants/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_tree_lcm_publisher.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
@@ -30,10 +30,10 @@ using lcm::DrakeLcm;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
 using systems::MatrixGain;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
-using systems::RigidBodyTreeLcmPublisher;
 using systems::Simulator;
 
 namespace automotive {
@@ -144,7 +144,7 @@ int main() {
 
   // Instantiates a system for visualizing the MBD model.
   lcm::DrakeLcm lcm;
-  auto publisher = builder.AddSystem<RigidBodyTreeLcmPublisher>(
+  auto publisher = builder.AddSystem<DrakeVisualizer>(
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
           get_rigid_body_tree(), &lcm);
 

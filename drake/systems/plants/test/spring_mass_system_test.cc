@@ -281,8 +281,10 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
 }
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
-void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
-                       Context<double>& context) {
+void StepExplicitEuler(
+    double h, const ContinuousState<double>& derivs,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
   VectorBase<double>* xc =
@@ -296,9 +298,12 @@ void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
     z1 = z0 + h zdot(t0,x0)
     v1 = v0 + h vdot(t0,x0)
     q1 = q0 + h qdot(q0,v1) */
-void StepSemiExplicitEuler(double h, const System<double>& system,
-                           ContinuousState<double>& derivs,  // in/out
-                           Context<double>& context) {
+void StepSemiExplicitEuler(
+    double h, const System<double>& system,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    ContinuousState<double>& derivs,  // in/out
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Context<double>& context) {
   const double t = context.get_time();
   ContinuousState<double>* xc = context.get_mutable_continuous_state();
 
@@ -329,9 +334,12 @@ void StepSemiExplicitEuler(double h, const System<double>& system,
     do: Solve J(x1) dx = err(x1)
         x1 = x1 - dx
     while (norm(dx)/norm(x0) > tol) */
-void StepImplicitEuler(double h, const System<double>& system,
-                       ContinuousState<double>& derivs,  // in/out
-                       Context<double>& context) {
+void StepImplicitEuler(
+    double h, const System<double>& system,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    ContinuousState<double>& derivs,  // in/out
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Context<double>& context) {
   const double t = context.get_time();
   ContinuousState<double>* xc = context.get_mutable_continuous_state();
 

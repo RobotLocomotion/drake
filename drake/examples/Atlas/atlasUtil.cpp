@@ -19,4 +19,4 @@ bool ankleCloseToLimits(double akx, double aky, double tol) {
   ankle << akx, aky;
   return ((A * ankle - b).array() > -tol).any();
 }
-}
+}  // namespace Atlas

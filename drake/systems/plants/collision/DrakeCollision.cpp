@@ -19,4 +19,5 @@ unique_ptr<Model> newModel() {
 #endif
   return unique_ptr<Model>(new UnusableModel());
 }
-};
+
+}  // namespace DrakeCollision

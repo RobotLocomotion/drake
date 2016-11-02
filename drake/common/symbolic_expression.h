@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
 #include <memory>

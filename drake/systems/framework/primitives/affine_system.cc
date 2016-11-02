@@ -13,12 +13,12 @@ namespace systems {
 using std::make_unique;
 
 template <typename T>
-AffineSystem<T>::AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
-                              const Eigen::Ref<const MatrixX<T>>& B,
-                              const Eigen::Ref<const VectorX<T>>& xDot0,
-                              const Eigen::Ref<const MatrixX<T>>& C,
-                              const Eigen::Ref<const MatrixX<T>>& D,
-                              const Eigen::Ref<const VectorX<T>>& y0)
+AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::VectorXd>& xDot0,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              const Eigen::Ref<const Eigen::VectorXd>& y0)
     : A_(A),
       B_(B),
       xDot0_(xDot0),

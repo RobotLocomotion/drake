@@ -16,6 +16,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+// This is the parent class of the two test plants defined below.
 class TestPlant : public LeafSystem<double> {
  public:
   TestPlant() {}
@@ -25,6 +26,21 @@ class TestPlant : public LeafSystem<double> {
   }
 };
 
+// A plant with an input port zero of size 1 and an output port zero of size 2.
+// This is the minimum sized output port zero relative to the size of its input
+// port zero, meaning all of the elements in its output port zero are fed back
+// to the PID controller. A diagram of the resulting PidControlledSystem is
+// given below, where X is the desired state of the plant and Q is the actual
+// state of the plant.
+//
+//        2    +---------------+
+//   X ---/--->|               |  1   +-----------+   2
+//             | PidController |--/-->| TestPlant |---/---+---> Q
+//         +-->|               |      +-----------+       |
+//         |   +---------------+                          |
+//         |                                              |
+//         +----------------------------------------------+
+//
 class TestPlantWithMinOutputs : public TestPlant {
  public:
   TestPlantWithMinOutputs() {
@@ -42,6 +58,24 @@ class TestPlantWithMinOutputs : public TestPlant {
   bool has_any_direct_feedthrough() const override { return false; }
 };
 
+// A plant with an input port zero of size 1 and an output port zero of size 6.
+// The plant's output port zero has four elements that should not be fed back
+// to the PID controller. A feedback selector system is used to determine which
+// two elements of the plant's output port zero are fed back to the PID
+// controller. A diagram of the resulting PidControlledSystem is given below,
+// where X is the desired state of the plant and Q is the actual state of the
+// plant.
+//
+//        2    +---------------+
+//   X ---/--->|               |  1   +-----------+   6
+//             | PidController |--/-->| TestPlant |---/---+---> Q
+//         +-->|               |      +-----------+       |
+//         |   +---------------+                          |
+//         |                                              |
+//         |          2           +------------------+    |
+//         +----------/-----------| FeedbackSelector |----+
+//                                +------------------+
+//
 class TestPlantWithMoreOutputs : public TestPlant {
  public:
   TestPlantWithMoreOutputs() {
@@ -63,6 +97,9 @@ class TestPlantWithMoreOutputs : public TestPlant {
   bool has_any_direct_feedthrough() const override { return false; }
 };
 
+// Instantiates a PidControlledSystem based on the supplied plant and
+// feedback selector. Verifies that the output of the PID controller is correct
+// relative to the hard-coded input and gain values.
 void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
     std::unique_ptr<MatrixGain<double>> feedback_selector) {
   DiagramBuilder<double> builder;

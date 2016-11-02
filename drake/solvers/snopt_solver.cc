@@ -4,7 +4,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <list>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "drake/math/autodiff.h"
 

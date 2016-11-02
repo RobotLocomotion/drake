@@ -1,4 +1,6 @@
-#include "iiwa_simulation.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
+
+#include <vector>
 
 #include "drake/common/drake_path.h"
 #include "drake/systems/plants/joints/floating_base_types.h"

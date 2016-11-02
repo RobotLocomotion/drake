@@ -70,11 +70,16 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
                       const T& Kp, const T& Ki, const T& Kd);
 
   /// A constructor where the gains are vector values and all of the plant's
-  /// output port zero is part of the feedback signal.
+  /// output port zero is part of the feedback signal. The length of the gain
+  /// vectors must equal the size of the plant's output port zero, which is
+  /// double the size of the plant's input port zero.
   ///
   /// @param[in] plant The system to be controlled. This must not be `nullptr`.
+  ///
   /// @param[in] Kp the proportional vector constant.
+  ///
   /// @param[in] Ki the integral vector constant.
+  ///
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const VectorX<T>& Kp, const VectorX<T>& Ki,
@@ -86,7 +91,7 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
   ///
   /// @param[in] plant The system to be controlled. This must not be `nullptr`.
   /// @param[in] feedback_selector The system that selects which part of the
-  /// system's output port zero is fed back to the PID controller. For semantic
+  /// plant's output port zero is fed back to the PID controller. For semantic
   /// details of this parameter, see this class's description. This parameter
   /// can be `nullptr`, in which case the entire output port zero is fed back.
   /// @param[in] Kp the proportional constant.
@@ -98,15 +103,22 @@ class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
-  /// @p feedback_selector.
+  /// @p feedback_selector. The length of the gain vectors must equal the size
+  /// of the feedback selector's output port zero, which is also equal to double
+  /// the size of the plant's input port zero.
   ///
   /// @param[in] plant The system to be controlled. This must not be `nullptr`.
+  ///
   /// @param[in] feedback_selector The system that selects which part of the
-  /// system's output port zero is fed back to the PID controller. For semantic
-  /// details of this parameter, see this class's description. This parameter
-  /// can be `nullptr`, in which case the entire output port zero is fed back.
+  /// plant's output port zero is fed back to the PID controller. For semantic
+  /// details and required dimensions of this parameter, see this class's
+  /// description. This parameter can be `nullptr`, in which case the plant's
+  /// entire output port zero is fed back to the PID controller.
+  ///
   /// @param[in] Kp the proportional vector constant.
+  ///
   /// @param[in] Ki the integral vector constant.
+  ///
   /// @param[in] Kd the derivative vector constant.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       std::unique_ptr<MatrixGain<T>> feedback_selector,

@@ -27,12 +27,14 @@ AttributesSet kMobyLcpCapabilities = kLinearComplementarityConstraint;
 // Gurobi solver capabilities.
 AttributesSet kGurobiCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kBinaryVariable);
 
 // Mosek solver capabilities.
 AttributesSet kMosekCapabilities =
     (kLinearEqualityConstraint | kLinearConstraint | kLorentzConeConstraint |
-        kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost);
+     kRotatedLorentzConeConstraint | kLinearCost | kQuadraticCost |
+     kBinaryVariable);
 
 // Solvers for generic systems of constraints and costs.
 AttributesSet kGenericSolverCapabilities =
@@ -84,7 +86,7 @@ SolutionResult MathematicalProgram::Solve() {
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
-      mosek_solver_->available()) {
+             mosek_solver_->available()) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.

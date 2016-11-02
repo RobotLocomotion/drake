@@ -64,13 +64,6 @@ endfunction()
 # This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(NOT APPLE)
-  # The linker on OS X likes to hide the typeinfo for template classes unless
-  # they are explicitly instantiated and exported, which causes dynamic_cast to
-  # fail across library boundaries.
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-  set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
   if(APPLE)
@@ -153,6 +146,7 @@ find_package(Threads MODULE REQUIRED)
 drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
   drake_find_package(bot2-core CONFIG)
+  drake_find_package(robotlocomotion-lcmtypes CONFIG)
 
   add_subdirectory(lcmtypes)
 

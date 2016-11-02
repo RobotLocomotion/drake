@@ -11,6 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {
 namespace systems {
@@ -55,14 +56,6 @@ class LeafContextTest : public ::testing::Test {
     std::vector<AbstractValue*> xm;
     xm.push_back(modal_state_.get());
     context_.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
-  }
-
-  std::unique_ptr<AbstractValue> PackValue(int value) {
-    return std::unique_ptr<AbstractValue>(new Value<int>(value));
-  }
-
-  int UnpackValue(const AbstractValue* value) {
-    return dynamic_cast<const Value<int>*>(value)->get_value();
   }
 
   // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
@@ -149,10 +142,10 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   CacheTicket ticket = ctx.CreateCacheEntry({});
   ctx.InitCachedValue(ticket, PackValue(42));
   const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackValue(value));
+  EXPECT_EQ(42, UnpackIntValue(value));
 
   ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackValue(ctx.GetCachedValue(ticket)));
+  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
 }
 
 TEST_F(LeafContextTest, Clone) {

@@ -1,8 +1,14 @@
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
-#include <lcm/lcm-cpp.hpp>
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
@@ -112,6 +118,7 @@ void InstantaneousQPController::loadConfigurationFromYAML(
                                    *robot);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const KinematicModifications& modifications) {
   for (auto it = modifications.attachments.begin();
@@ -136,6 +143,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
   robot->compile();
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const std::string& urdf_modifications_filename) {
   KinematicModifications modifications =
@@ -316,6 +324,7 @@ void addJointSoftLimits(
     const VectorXd& q_des,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>& supports,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<drake::lcmt_joint_pd_override>& joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override =
       Matrix<bool, Dynamic, 1>::Zero(q_des.size());
@@ -354,7 +363,9 @@ void addJointSoftLimits(
 
 void applyJointPDOverride(
     const std::vector<drake::lcmt_joint_pd_override>& joint_pd_override,
-    const DrakeRobotState& robot_state, PIDOutput& pid_out, VectorXd& w_qdd) {
+    const DrakeRobotState& robot_state,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    PIDOutput& pid_out, VectorXd& w_qdd) {
   for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it =
            joint_pd_override.begin();
        it != joint_pd_override.end(); ++it) {
@@ -369,6 +380,7 @@ void applyJointPDOverride(
 double averageContactPointHeight(
     const RigidBodyTree& robot, const KinematicsCache<double>& cache,
     std::vector<SupportStateElement,
+                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Eigen::aligned_allocator<SupportStateElement>>& active_supports,
     int nc) {
   Eigen::Matrix3Xd contact_positions_world(3, nc);
@@ -507,7 +519,9 @@ void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(
-    const RigidBodyTree& robot, KinematicsCache<double>& cache,
+    const RigidBodyTree& robot,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<double>& cache,
     const VectorXd& qdd,
     const std::vector<SupportStateElement,
                       Eigen::aligned_allocator<SupportStateElement>>&

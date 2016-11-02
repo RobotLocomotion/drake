@@ -1,15 +1,16 @@
+include(GenerateExportHeader)
 include(${LCM_USE_FILE})
 
-set(python_args PYTHON_SOURCES python_install_sources)
-if(JAVA_FOUND AND TARGET lcm-java)
+if(JAVA_FOUND)
   set(java_args JAVA_SOURCES java_sources)
 endif()
 
 lcm_wrap_types(
-  C_SOURCES sources
+  C_EXPORT drake_lcmtypes
+  C_SOURCES c_sources
   C_HEADERS c_install_headers
   CPP_HEADERS cpp_install_headers
-  ${python_args}
+  PYTHON_SOURCES python_install_sources
   ${java_args}
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
@@ -46,25 +47,28 @@ lcm_wrap_types(
   lcmt_zmp_data.lcm
 )
 
-add_custom_target(drake_lcmtypes_hpp DEPENDS ${cpp_install_headers})
-
-add_library(drake_lcmtypes STATIC ${sources})
-target_link_libraries(drake_lcmtypes lcm)
+lcm_add_library(drake_lcmtypes C ${c_sources} ${c_install_headers})
+generate_export_header(drake_lcmtypes)
 target_include_directories(drake_lcmtypes INTERFACE
-  ${CMAKE_CURRENT_BINARY_DIR})
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-add_library(drakeLCMTypes INTERFACE)
-add_dependencies(drakeLCMTypes drake_lcmtypes_hpp)
-target_link_libraries(drakeLCMTypes INTERFACE lcm-coretypes)
+lcm_add_library(drakeLCMTypes CPP ${cpp_install_headers})
 target_include_directories(drakeLCMTypes INTERFACE
-  ${CMAKE_CURRENT_BINARY_DIR})
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-install(FILES ${c_install_headers} DESTINATION include/lcmtypes)
-install(FILES ${cpp_install_headers} DESTINATION include/lcmtypes/drake)
+lcm_install_headers(
+  ${CMAKE_CURRENT_BINARY_DIR}/drake_lcmtypes_export.h
+  ${c_install_headers}
+  ${cpp_install_headers}
+  DESTINATION include/lcmtypes
+)
 
-install(TARGETS drake_lcmtypes
+install(TARGETS drake_lcmtypes drakeLCMTypes
+  EXPORT ${PROJECT_NAME}Targets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib${LIB_SUFFIX}
   ARCHIVE DESTINATION lib${LIB_SUFFIX}
-  INCLUDES DESTINATION include
+  INCLUDES DESTINATION include/lcmtypes
 )
 
 lcm_install_python(${python_install_sources})

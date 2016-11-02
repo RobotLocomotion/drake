@@ -36,12 +36,12 @@ class MatrixGainTest : public AffineLinearSystemTest {
 TEST_F(MatrixGainTest, Construction) {
   EXPECT_EQ(context_->get_num_input_ports(), 1);
   EXPECT_EQ(dut_->get_name(), "test_matrix_gain_system");
-  EXPECT_EQ(dut_->GetA(), MatrixX<double>::Zero(kNumStates, kNumStates));
-  EXPECT_EQ(dut_->GetB(), MatrixX<double>::Zero(kNumStates, D_.cols()));
-  EXPECT_EQ(dut_->GetxDot0(), Eigen::VectorXd::Zero(kNumStates));
-  EXPECT_EQ(dut_->GetC(), MatrixX<double>::Zero(D_.rows(), kNumStates));
-  EXPECT_EQ(dut_->GetD(), D_);
-  EXPECT_EQ(dut_->Gety0(), Eigen::VectorXd::Zero(2));
+  EXPECT_EQ(dut_->A(), MatrixX<double>::Zero(kNumStates, kNumStates));
+  EXPECT_EQ(dut_->B(), MatrixX<double>::Zero(kNumStates, D_.cols()));
+  EXPECT_EQ(dut_->xDot0(), Eigen::VectorXd::Zero(kNumStates));
+  EXPECT_EQ(dut_->C(), MatrixX<double>::Zero(D_.rows(), kNumStates));
+  EXPECT_EQ(dut_->D(), D_);
+  EXPECT_EQ(dut_->y0(), Eigen::VectorXd::Zero(2));
   EXPECT_EQ(dut_->get_num_output_ports(), 1);
   EXPECT_EQ(dut_->get_num_input_ports(), 1);
 }

@@ -1,6 +1,8 @@
 #include "drake/solvers/ipopt_solver.h"
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -527,5 +529,5 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   return nlp->result();
 }
 
-}  // namespace drake
 }  // namespace solvers
+}  // namespace drake

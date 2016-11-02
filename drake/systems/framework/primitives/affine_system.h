@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -40,12 +41,12 @@ class AffineSystem : public LeafSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
-  AffineSystem(const Eigen::Ref<const MatrixX<T>>& A,
-               const Eigen::Ref<const MatrixX<T>>& B,
-               const Eigen::Ref<const VectorX<T>>& xDot0,
-               const Eigen::Ref<const MatrixX<T>>& C,
-               const Eigen::Ref<const MatrixX<T>>& D,
-               const Eigen::Ref<const VectorX<T>>& y0);
+  AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+               const Eigen::Ref<const Eigen::MatrixXd>& B,
+               const Eigen::Ref<const Eigen::VectorXd>& xDot0,
+               const Eigen::Ref<const Eigen::MatrixXd>& C,
+               const Eigen::Ref<const Eigen::MatrixXd>& D,
+               const Eigen::Ref<const Eigen::VectorXd>& y0);
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is non-zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }
@@ -63,20 +64,20 @@ class AffineSystem : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
   // Helper getter methods.
-  const MatrixX<T> GetA(void) const { return A_; }
-  const MatrixX<T> GetB(void) const { return B_; }
-  const MatrixX<T> GetC(void) const { return C_; }
-  const MatrixX<T> GetD(void) const { return D_; }
-  const VectorX<T> GetxDot0(void) const { return xDot0_; }
-  const VectorX<T> Gety0(void) const { return y0_; }
+  const Eigen::MatrixXd& A(void) const { return A_; }
+  const Eigen::MatrixXd& B(void) const { return B_; }
+  const Eigen::MatrixXd& C(void) const { return C_; }
+  const Eigen::MatrixXd& D(void) const { return D_; }
+  const Eigen::VectorXd& xDot0(void) const { return xDot0_; }
+  const Eigen::VectorXd& y0(void) const { return y0_; }
 
  private:
-  const MatrixX<T> A_;
-  const MatrixX<T> B_;
-  const VectorX<T> xDot0_;
-  const MatrixX<T> C_;
-  const MatrixX<T> D_;
-  const VectorX<T> y0_;
+  const Eigen::MatrixXd A_;
+  const Eigen::MatrixXd B_;
+  const Eigen::VectorXd xDot0_;
+  const Eigen::MatrixXd C_;
+  const Eigen::MatrixXd D_;
+  const Eigen::VectorXd y0_;
   const int num_inputs_;
   const int num_outputs_;
   const int num_states_;

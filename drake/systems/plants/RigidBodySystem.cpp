@@ -1,7 +1,10 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
+#include <algorithm>
+#include <limits>
 #include <list>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
@@ -715,6 +718,7 @@ double RigidBodyDepthSensor::min_range() const { return min_range_; }
 
 double RigidBodyDepthSensor::max_range() const { return max_range_; }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void ParseUrdfForceElement(RigidBodySystem& sys, XMLElement* node,
     int model_instance_id) {
   string name = node->Attribute("name");
@@ -731,6 +735,7 @@ void ParseUrdfForceElement(RigidBodySystem& sys, XMLElement* node,
   }
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
     const ModelInstanceIdTable& model_instance_id_table) {
 
@@ -762,6 +767,7 @@ void ParseUrdfModel(RigidBodySystem& sys, XMLElement* node,
 //
 // @param[out] model_instance_id_table A reference to a map storing model
 // names and their instance IDs.
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void ParseUrdf(RigidBodySystem& sys, XMLDocument* xml_doc,
     const ModelInstanceIdTable& model_instance_id_table) {
   XMLElement* node = xml_doc->FirstChildElement("robot");
@@ -770,7 +776,9 @@ void ParseUrdf(RigidBodySystem& sys, XMLDocument* xml_doc,
   ParseUrdfModel(sys, node, model_instance_id_table);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void parseSdfJoint(RigidBodySystem& sys, int model_instance_id,
+                   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                    XMLElement* node, PoseMap& pose_map) {
   // Obtains the name of the joint.
   const char* attr = node->Attribute("name");
@@ -786,7 +794,9 @@ void parseSdfJoint(RigidBodySystem& sys, int model_instance_id,
   }
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void parseSdfLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
+                  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                   PoseMap& pose_map) {
   // Obtains the name of the body.
   const char* attr = node->Attribute("name");
@@ -842,6 +852,7 @@ void parseSdfLink(RigidBodySystem& sys, int model_instance_id, XMLElement* node,
   }
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
     const ModelInstanceIdTable& model_instance_id_table) {
   // A pose map is necessary since SDF specifies almost everything in the
@@ -874,6 +885,7 @@ void parseSdfModel(RigidBodySystem& sys, XMLElement* node,
     parseSdfJoint(sys, model_instance_id, elnode, pose_map);
 }
 
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void parseSdf(RigidBodySystem& sys, XMLDocument* xml_doc,
     const ModelInstanceIdTable& model_instance_id_table) {
   XMLElement* node = xml_doc->FirstChildElement("sdf");

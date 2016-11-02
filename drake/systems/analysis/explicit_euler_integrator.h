@@ -79,6 +79,6 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // Fixed step integrator always returns true
   return true;
 }
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake
 
