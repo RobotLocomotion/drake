@@ -25,9 +25,6 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactForce {
  public:
-  /** Default constructor.  All values initialized to zero. */
-  ContactForce() {}
-
   /**
    Fully-specified constructor.
 
