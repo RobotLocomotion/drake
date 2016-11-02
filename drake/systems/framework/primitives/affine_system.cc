@@ -4,6 +4,8 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 
+#include "drake/math/autodiff.h"
+
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -108,6 +110,9 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
+  int num_inputs = (system.get_num_input_ports()>0) ?  system.get_input_port(0).get_size() : 0,
+      num_outputs = (system.get_num_output_ports()>0) ? system.get_output_port(0).get_size() : 0;
+
   // create an autodiff version of the system
   auto autodiff_system = system.template ToAutoDiffXd();
 
@@ -115,29 +120,35 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   auto autodiff_context = autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  auto x0 = context.get_continuous_state_vector();
-  if (system.get_num_input_ports()==1)
-    auto u0 = input.get_value();
+  const auto& x0 = context.get_continuous_state_vector().CopyToVector();
+  int num_states = x0.size();
+
+  Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
+  if (num_inputs>0) {
+    u0 = system.EvalVectorInput(context,0)->CopyToVector();
+  }
+
   auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
+  auto autodiff_x0 = autodiff_context->get_mutable_continuous_state_vector();
+  autodiff_x0->SetFromVector(std::get<0>(autodiff_args));
 
-  auto& autodiff_x0 = autodiff_context.get_mutable_state_vector();
-  autodiff_x0 = std::get<0>(autodiff_args);
+  if (num_inputs>0) {
+    auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(system.get_input_port(0).get_size());
+    input_vector->get_mutable_value() = std::get<1>(autodiff_args);
+    autodiff_context->SetInputPort(
+        0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
+  }
 
-  auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(input.size());
-  input_vector->get_mutable_value() = std::get<1>(autodiff_args);
-  autodiff_context->SetInputPort(
-            0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
+  auto autodiff_xdot = autodiff_system->AllocateTimeDerivatives();
+  autodiff_system->EvalTimeDerivatives(*autodiff_context, autodiff_xdot.get());
+  auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
-  auto autodiff_xdot = autodiff_system.AllocateTimeDerivatives();
+  auto AB = math::autoDiffToGradientMatrix(autodiff_xdot_vec);
+  auto A = AB.leftCols(num_states);
+  auto B = AB.rightCols(num_inputs);
+  auto xDot0 = autodiff_xdot_vec.value();
 
-  autodiff_system.EvalTimeDerivatives(autodiff_context, autodiff_xdot);
-
-  auto AB = autoDiffToGradientMatrix(autodiff_xdot);
-  auto A = AB.leftCols(x0.size());
-  auto B = AB.rightCols(u0.size());
-  auto xDot0 = autodiff_xdot.value();
-
-  return std::move(std::make_unique<AffineSystem<double>>(A,B,autodiff_xdot.value(),Eigen::MatrixXd::Zero(0,A.rows()),Eigen::MatrixXd::Zero(0,B.cols()),Eigen::VectorXd::Zero(A.rows()));
+  return std::move(std::make_unique<AffineSystem<double>>(A,B,autodiff_xdot_vec.value(),Eigen::MatrixXd::Zero(0,A.rows()),Eigen::MatrixXd::Zero(0,B.cols()),Eigen::VectorXd::Zero(A.rows()));
 }
 
 
