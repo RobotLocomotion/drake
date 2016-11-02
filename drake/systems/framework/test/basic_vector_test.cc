@@ -106,6 +106,13 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
 }
 
+// Tests the infinity norm computation
+GTEST_TEST(BasicVectorTest, InfNorm) {
+  BasicVector<int> vec(2);
+  vec.get_mutable_value() << 3, 4;
+  EXPECT_EQ(vec.NormInf(), 4);
+}
+
 // Tests all += * operations for BasicVector.
 GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   BasicVector<int> ogvec(2), vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
