@@ -12,28 +12,26 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   EXPECT_EQ(static_cast<int>(x.index()), 0);
 
   // Now create a vector of decision variables.
-  std::vector<DecisionVariableScalar> v_mutable;
-  std::vector<std::reference_wrapper<const DecisionVariableScalar>> v_immutable;
+  std::vector<std::shared_ptr<DecisionVariableScalar>> v_mutable;
+  std::vector<std::weak_ptr<const DecisionVariableScalar>> v_immutable;
   v_mutable.reserve(6);
   v_immutable.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    DecisionVariableScalar vi(DecisionVariableScalar::VarType::CONTINUOUS, "x",
-                              i);
-    v_mutable.push_back(DecisionVariableScalar(
-        DecisionVariableScalar::VarType::CONTINUOUS, "x", i));
-    v_immutable.push_back(std::cref(v_mutable[i]));
-    v_mutable[i].set_value(2 * i);
-    EXPECT_EQ(v_immutable[i].get().value(), 2 * i);
+    auto vi = std::make_shared<DecisionVariableScalar>(DecisionVariableScalar::VarType::CONTINUOUS, "x", i);
+    v_mutable.push_back(vi);
+    v_immutable.push_back(std::weak_ptr<const DecisionVariableScalar>(vi));
+    v_mutable[i]->set_value(2 * i);
+    EXPECT_EQ(v_immutable[i].lock()->value(), 2 * i);
   }
 
-  // Constructs a non-symmetric MatrixDecisionVariable from v_immutable.
-  MatrixDecisionVariable X(2, 3, v_immutable, false);
+  // Constructs a non-symmetric DecisionVariableMatrix from v_immutable.
+  DecisionVariableMatrix X(2, 3, v_immutable, false);
   EXPECT_FALSE(X.is_symmetric());
   EXPECT_EQ(X.NumberOfVariables(), 6);
   EXPECT_EQ(X.rows(), 2);
   EXPECT_EQ(X.cols(), 3);
-  // Constructs a symmetric 3 x 3 MatrixDecisionVariable from v_immutable.
-  MatrixDecisionVariable S(3, 3, v_immutable, true);
+  // Constructs a symmetric 3 x 3 DecisionVariableMatrix from v_immutable.
+  DecisionVariableMatrix S(3, 3, v_immutable, true);
   EXPECT_TRUE(S.is_symmetric());
   EXPECT_EQ(S.NumberOfVariables(), 6);
   EXPECT_EQ(S.rows(), 3);
@@ -69,7 +67,7 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
                               1E-10, MatrixCompareType::absolute));
 
   // Check block() function
-  const MatrixDecisionVariable& X_block = X.block(0, 1, 2, 2);
+  const DecisionVariableMatrix& X_block = X.block(0, 1, 2, 2);
   Eigen::MatrixXd mat_block_value = X_block.value();
   EXPECT_TRUE(CompareMatrices(mat_block_value,
                               mat_value_expected.block(0, 1, 2, 2), 1E-10,
@@ -77,8 +75,8 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
 
   // Change value of the referenced decision variable.
   double new_value = 5;
-  v_mutable[2].set_value(new_value);
-  EXPECT_EQ(v_immutable[2].get().value(), new_value);
+  v_mutable[2]->set_value(new_value);
+  EXPECT_EQ(v_immutable[2].lock()->value(), new_value);
   EXPECT_EQ(X(0, 1).value(0, 0), new_value);
   EXPECT_EQ(X.value(0, 1), new_value);
   EXPECT_EQ(S(2, 0).value(0, 0), new_value);
