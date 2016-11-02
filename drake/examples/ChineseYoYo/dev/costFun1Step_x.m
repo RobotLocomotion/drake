@@ -1,4 +1,4 @@
-function f = costFun1Step(psi,x0,plantSim,c)
+function f = costFun1Step_x(psi,x0,plantSim,c)
 
 %Adjust the set angle here:
 c.psiDes = psi;
@@ -29,5 +29,7 @@ end
 xid = [-0.045; 4; 0; -3.1321];
 
 % alpha = 0.2;
-f = xid - xnplus([3:4,7:8]);
+% f = xid - xnplus([3:4,7:8]);
 % f = xid - alpha*xnplus1([3:4,7:8]) - (1-alpha)*xnplus2([3:4,7:8]);
+f = xnplus(3);
+end

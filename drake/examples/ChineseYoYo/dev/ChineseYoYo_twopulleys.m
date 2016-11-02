@@ -1,4 +1,4 @@
-classdef ChineseYoYo < HybridDrakeSystem
+classdef ChineseYoYo_twopulleys < HybridDrakeSystem
   
   properties
     in_contact
@@ -6,32 +6,19 @@ classdef ChineseYoYo < HybridDrakeSystem
   end
   
   methods
-    function obj = ChineseYoYo
-      in_contact = PlanarRigidBodyManipulator('ChineseYoYo.urdf');
-      %in_contact = TimeSteppingRigidBodyManipulator('tension.urdf',.01,struct('twoD',true));
-      isTSRBM = isa(in_contact,'TimeSteppingRigidBodyManipulator');
+    function obj = ChineseYoYo_twopulleys
+      in_contact = PlanarRigidBodyManipulator('chineseyoyo_twopulleys.urdf');
       
-        
       % manually remove the ball from the pulley system:
-      if(isTSRBM)
-        ic_manip = in_contact.getManipulator();
-      else
-        ic_manip = in_contact;
-      end
-      pulley_constraint = ic_manip.position_constraints{1};
+      pulley_constraint = in_contact.position_constraints{1};
       cable_length_fcn = pulley_constraint.fcn;
       cable_length_fcn.pulley(2)=[];
       pulley_constraint = DrakeFunctionConstraint(pulley_constraint.lb, pulley_constraint.ub, cable_length_fcn);
-      nc_manip = ic_manip.updatePositionEqualityConstraint(1,pulley_constraint);
-      if(isTSRBM)
-        no_contact = in_contact;
-        no_contact.setManipulator(nc_manip);
-      else
-        no_contact = nc_manip;
-      end
+      no_contact = in_contact.updatePositionEqualityConstraint(1,pulley_constraint);
       
-      
-      obj = obj@HybridDrakeSystem(1,1+getNumOutputs(in_contact));
+      modeStates = 1; %number of discrete state variables, here only one mode variable
+      obj = obj@HybridDrakeSystem(getNumInputs(in_contact),...
+        getNumOutputs(in_contact) + modeStates);
       obj = setInputFrame(obj,getInputFrame(in_contact));
       
       % construct an output frame which has the mode number as the first
@@ -144,7 +131,7 @@ classdef ChineseYoYo < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      [ytraj,xtraj] = simulate(r,[0 1],x0);
+      [ytraj,xtraj] = simulate(r,[0 10],x0);
       v.playback(ytraj,struct('slider',true));
       
       if (1) 
