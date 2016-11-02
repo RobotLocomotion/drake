@@ -42,6 +42,7 @@ drake_add_matlab_test(NAME util/test/testDHomogTrans COMMAND testDHomogTrans)
 drake_add_matlab_test(NAME util/test/testDHomogTransInv COMMAND testDHomogTransInv)
 drake_add_matlab_test(NAME util/test/testDTransformSpatialForce COMMAND testDTransformSpatialForce)
 drake_add_matlab_test(NAME util/test/testDcross COMMAND testDcross)
+drake_add_matlab_test(NAME util/test/testDDcross COMMAND testDDcross)
 drake_add_matlab_test(NAME util/test/testFlipExpmap COMMAND testFlipExpmap)
 drake_add_matlab_test(NAME util/test/testGeometryConversionFunctionsComparison COMMAND testGeometryConversionFunctionsComparison)
 # DISABLED due to #3224.

@@ -4,6 +4,8 @@ function ddvcrossw = ddcross(v,w,dv,dw,ddv,ddw)
 % @param w - [3 x 1] array
 % @param dv - gradient of v
 % @param dw - gradient of w
+% @param ddv - gradient of dv
+% @param ddw - gradient of dw
 % @retval ddvcrossw - gradient of dcross(r1,r2)
 dims = size(dv,2);
 
