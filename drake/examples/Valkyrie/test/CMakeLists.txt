@@ -8,4 +8,9 @@ if(lcm_FOUND)
   target_link_libraries(robot_state_encoder_decoder_test
       drakeRobotStateEncoder
       drakeRobotStateDecoder)
+
+  drake_add_cc_test(robot_command_to_desired_effort_converter_test)
+  target_link_libraries(robot_command_to_desired_effort_converter_test
+      drakeRobotCommandToDesiredEffortConverter
+      drakeRBM)
 endif()
