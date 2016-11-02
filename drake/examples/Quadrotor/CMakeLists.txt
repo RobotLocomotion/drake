@@ -1,8 +1,8 @@
 # Currently has alignment problems on 32 bit Windows apparently
 # due to a bug in Eigen; see issue #2106 and PR #2107.
 if(lcm_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
-  add_executable(runMyQuad runDynamics.cpp)
-  target_link_libraries(runMyQuad drakeRigidBodyPlant drakeRBSystem drakeLCMSystem2 gflags )
+  add_executable(runQuadrotorDynamics runDynamics.cpp)
+  target_link_libraries(runQuadrotorDynamics drakeRigidBodyPlant drakeRBSystem drakeLCMSystem2 gflags )
 
   add_executable(runQuadrotorLQR runLQR.cpp)
   target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)
