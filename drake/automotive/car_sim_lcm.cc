@@ -1,3 +1,4 @@
+#include <iostream>
 #include <gflags/gflags.h>
 
 #include "drake/automotive/automotive_common.h"
@@ -39,28 +40,71 @@ using systems::Simulator;
 namespace automotive {
 namespace {
 
+// Verifies that the order of rigid body names and actuator names within the
+// provided three are as expected.
+void VerifyCarSimLcmTree(const RigidBodyTree& tree) {
+  std::map<std::string, int> name_to_idx =
+      tree.computePositionNameToIndexMap();
+
+  int joint_idx = 0;
+  DRAKE_DEMAND(name_to_idx.count("base_x"));
+  DRAKE_DEMAND(name_to_idx["base_x"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_y"));
+  DRAKE_DEMAND(name_to_idx["base_y"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_z"));
+  DRAKE_DEMAND(name_to_idx["base_z"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_qw"));
+  DRAKE_DEMAND(name_to_idx["base_qw"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_qx"));
+  DRAKE_DEMAND(name_to_idx["base_qx"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_qy"));
+  DRAKE_DEMAND(name_to_idx["base_qy"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("base_qz"));
+  DRAKE_DEMAND(name_to_idx["base_qz"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("steering"));
+  DRAKE_DEMAND(name_to_idx["steering"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("left_pin"));
+  DRAKE_DEMAND(name_to_idx["left_pin"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("left_wheel_joint"));
+  DRAKE_DEMAND(name_to_idx["left_wheel_joint"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("axle_tie_rod_arm"));
+  DRAKE_DEMAND(name_to_idx["axle_tie_rod_arm"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("right_wheel_joint"));
+  DRAKE_DEMAND(name_to_idx["right_wheel_joint"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("rear_left_wheel_joint"));
+  DRAKE_DEMAND(name_to_idx["rear_left_wheel_joint"] == joint_idx++);
+  DRAKE_DEMAND(name_to_idx.count("rear_right_wheel_joint"));
+  DRAKE_DEMAND(name_to_idx["rear_right_wheel_joint"] == joint_idx++);
+
+  DRAKE_DEMAND(tree.actuators.size() == 3);
+  DRAKE_DEMAND(tree.actuators.at(0).name_ == "steering");
+  DRAKE_DEMAND(tree.actuators.at(1).name_ == "left_wheel_joint");
+  DRAKE_DEMAND(tree.actuators.at(2).name_ == "right_wheel_joint");
+}
+
 int main() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   DiagramBuilder<double> builder;
 
-  // Instantiates an Multibody Dynamics (MBD) model of the world.
+  // Instantiates a model of the world.
   auto tree = make_unique<RigidBodyTree>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
       tree.get());
   AddFlatTerrainToWorld(tree.get());
+  VerifyCarSimLcmTree(*tree);
 
-  // Instantiates a RigidBodyPlant to simulate the MBD model.
+  // Instantiates a RigidBodyPlant to simulate the model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
   plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
       500 /* penetration_damping */, 10 /* friction_coefficient */);
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
-  const Vector3<double> Kp(400,   0,   0);
-  const Vector3<double> Ki(0,     0,   0);
-  const Vector3<double> Kd(80,  100, 100);
+  const Vector3<double> Kp(400,   0,   0);  // Units: Nm / radians
+  const Vector3<double> Ki(0,     0,   0);  // Units: Nm / radians
+  const Vector3<double> Kd(80,  100, 100);  // Units: Nm / (radians / sec).
 
   // TODO(liang.fok) Automatically initialize `feedback_selector_matrix` based
   // on the simulation model, actuators, etc.
@@ -70,14 +114,14 @@ int main() {
 
   // The feedback selector should output six values:
   //
-  //   Index | Description
-  //   ----- | -----------
-  //     0   |   steering angle position
-  //     1   |   left wheel position
-  //     2   |   right wheel position
-  //     3   |   steering angle velocity
-  //     4   |   left wheel velocity
-  //     5   |   right wheel velocity
+  //   Index | Description                 | Units
+  //   ----- | --------------------------- | --------
+  //     0   |   steering angle position   | radians
+  //     1   |   left wheel position       | radians
+  //     2   |   right wheel position      | radians
+  //     3   |   steering angle velocity   | radians / sec
+  //     4   |   left wheel velocity       | radians / sec
+  //     5   |   right wheel velocity      | radians / sec
   DRAKE_DEMAND(feedback_selector_matrix.rows() == 6);
   const int kFeedbackIndexSteeringAnglePosition = 0;
   const int kFeedbackIndexLeftWheelPosition     = 1;
@@ -142,7 +186,7 @@ int main() {
   auto controller = builder.AddSystem<systems::PidControlledSystem>(
       std::move(plant), std::move(feedback_selector), Kp, Ki, Kd);
 
-  // Instantiates a system for visualizing the MBD model.
+  // Instantiates a system for visualizing the model.
   lcm::DrakeLcm lcm;
   auto publisher = builder.AddSystem<DrakeVisualizer>(
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
