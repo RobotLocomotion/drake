@@ -250,34 +250,36 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                %%TODO:deal with small svec and s 
                 dc = v2'*dv1+v1'*dv2; 
                 dsvec=dcross(v1,v2,dv1,dv2); 
-%                 ds = svec'*dsvec/max(s,eps)
+%               ds = svec'*dsvec/max(s,eps)
                 
-                % find normal vector
+                % find normal vector               
+%                % HACK FOR SPEED FOR SOFT JUGGLER PROJECT
+%               % This calculation is correct, but why?
+%                 if(i==4)
+%                   fac = -1;
+%                 else
+%                   fac = 1;
+%                 end
+%                 %alignment
+%                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 % This is beautiful, nothing to fix here.
+%                 if size(obj.pulley, 2) == 3
+%                   n = fac*[0; -1; 0];
+%                 else
+%                   n = fac* [0; 1; 0];
+%                 end
                 
-% This calculation is correct, but why?
-                if(i==4)
-                  fac = -1;
+                nn = norm(svec);                
+                if(nn < eps*10) % avoid divison by zero
+                  k1 = pt2-last_pt;
+                  n = cross(k1,v1);
+                  n = n /norm(n);
                 else
-                  fac = 1;
+                  n = svec/nn;
                 end
-                %alignment
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % This is beautiful, nothing to fix here.
-                if size(obj.pulley, 2) == 3
-                  n = fac*[0; -1; 0];
-                else
-                  n = fac* [0; 1; 0];
-                end
-%                 n = cross(v1, (pt2-pt1));
-%                 n = n/norm(n);
-                n = svec/norm(svec);
                 ds = n'*dsvec;
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-               
                   
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
