@@ -4,8 +4,8 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/quaternion.h"
 #include "drake/math/normalize_vector.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -18,6 +18,13 @@ class DRAKE_EXPORT QuaternionFloatingJoint
       : DrakeJointImpl(*this, name, transform_to_parent_body, 7, 6) {}
 
   virtual ~QuaternionFloatingJoint() {}
+
+  using DrakeJointImpl<QuaternionFloatingJoint>::jointTransform;
+  using DrakeJointImpl<QuaternionFloatingJoint>::motionSubspace;
+  using DrakeJointImpl<QuaternionFloatingJoint>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<QuaternionFloatingJoint>::qdot2v;
+  using DrakeJointImpl<QuaternionFloatingJoint>::v2qdot;
+  using DrakeJointImpl<QuaternionFloatingJoint>::frictionTorque;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
@@ -66,13 +73,14 @@ class DRAKE_EXPORT QuaternionFloatingJoint
   }
 
   template <typename DerivedQ>
-  void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
-                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                            DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic>* dqdot_to_v) const {
+  void qdot2v(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    0, DrakeJoint::MAX_NUM_VELOCITIES,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                    DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
+          dqdot_to_v) const {
     if (dqdot_to_v) {
       throw std::runtime_error("no longer supported");
     }
@@ -85,8 +93,8 @@ class DRAKE_EXPORT QuaternionFloatingJoint
 
     Eigen::Matrix<Scalar, 4, 1> quattilde;
     typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
-                                   drake::kQuaternionSize,
-                                   1>::type dquattildedquat;
+                                   drake::kQuaternionSize, 1>::type
+        dquattildedquat;
     drake::math::NormalizeVector(quat, quattilde, &dquattildedquat);
     auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
     qdot_to_v.template block<3, 3>(0, 0).setZero();
@@ -97,13 +105,14 @@ class DRAKE_EXPORT QuaternionFloatingJoint
   }
 
   template <typename DerivedQ>
-  void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
-                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                            DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic>* dv_to_qdot) const {
+  void v2qdot(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    0, DrakeJoint::MAX_NUM_POSITIONS,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                    DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
+          dv_to_qdot) const {
     typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
 

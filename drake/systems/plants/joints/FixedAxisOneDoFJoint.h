@@ -43,6 +43,13 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   using DrakeJoint::get_num_positions;
   using DrakeJoint::get_num_velocities;
 
+  using DrakeJointImpl<Derived>::jointTransform;
+  using DrakeJointImpl<Derived>::motionSubspace;
+  using DrakeJointImpl<Derived>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<Derived>::qdot2v;
+  using DrakeJointImpl<Derived>::v2qdot;
+  using DrakeJointImpl<Derived>::frictionTorque;
+
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
@@ -80,13 +87,14 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   }
 
   template <typename DerivedQ>
-  void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
-                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                            DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic>* dqdot_to_v) const {
+  void qdot2v(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    0, DrakeJoint::MAX_NUM_VELOCITIES,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                    DrakeJoint::MAX_NUM_POSITIONS>& qdot_to_v,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
+          dqdot_to_v) const {
     qdot_to_v.setIdentity(get_num_velocities(), get_num_positions());
     drake::math::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
@@ -95,13 +103,14 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   }
 
   template <typename DerivedQ>
-  void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
-                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                            DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
-                            Eigen::Dynamic>* dv_to_qdot) const {
+  void v2qdot(
+      const Eigen::MatrixBase<DerivedQ>& q,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic,
+                    0, DrakeJoint::MAX_NUM_POSITIONS,
+                    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                    DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
+      Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic>*
+          dv_to_qdot) const {
     v_to_qdot.setIdentity(get_num_positions(), get_num_velocities());
     drake::math::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {

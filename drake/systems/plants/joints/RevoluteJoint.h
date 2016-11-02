@@ -8,8 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
-class DRAKE_EXPORT RevoluteJoint
-    : public FixedAxisOneDoFJoint<RevoluteJoint> {
+class DRAKE_EXPORT RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
   // disable copy construction and assignment
   // RevoluteJoint(const RevoluteJoint&) = delete;
   // RevoluteJoint& operator=(const RevoluteJoint&) = delete;
@@ -29,6 +28,13 @@ class DRAKE_EXPORT RevoluteJoint
   }
 
   virtual ~RevoluteJoint() {}
+
+  using FixedAxisOneDoFJoint<RevoluteJoint>::jointTransform;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::motionSubspace;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::motionSubspaceDotTimesV;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::qdot2v;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::v2qdot;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::frictionTorque;
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

@@ -37,6 +37,13 @@ class DRAKE_EXPORT PrismaticJoint
     DRAKE_ASSERT(std::abs(translation_axis_.norm() - 1.0) < 1e-10);
   }
 
+  using FixedAxisOneDoFJoint<PrismaticJoint>::jointTransform;
+  using FixedAxisOneDoFJoint<PrismaticJoint>::motionSubspace;
+  using FixedAxisOneDoFJoint<PrismaticJoint>::motionSubspaceDotTimesV;
+  using FixedAxisOneDoFJoint<PrismaticJoint>::qdot2v;
+  using FixedAxisOneDoFJoint<PrismaticJoint>::v2qdot;
+  using FixedAxisOneDoFJoint<PrismaticJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {
