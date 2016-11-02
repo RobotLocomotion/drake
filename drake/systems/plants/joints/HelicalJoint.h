@@ -27,6 +27,13 @@ class DRAKE_EXPORT HelicalJoint
 
   virtual ~HelicalJoint() {}
 
+  using FixedAxisOneDoFJoint<HelicalJoint>::jointTransform;
+  using FixedAxisOneDoFJoint<HelicalJoint>::motionSubspace;
+  using FixedAxisOneDoFJoint<HelicalJoint>::motionSubspaceDotTimesV;
+  using FixedAxisOneDoFJoint<HelicalJoint>::qdot2v;
+  using FixedAxisOneDoFJoint<HelicalJoint>::v2qdot;
+  using FixedAxisOneDoFJoint<HelicalJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

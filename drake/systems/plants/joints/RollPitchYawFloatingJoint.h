@@ -24,6 +24,13 @@ class DRAKE_EXPORT RollPitchYawFloatingJoint
 
   virtual ~RollPitchYawFloatingJoint() {}
 
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::jointTransform;
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::motionSubspace;
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::qdot2v;
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::v2qdot;
+  using DrakeJointImpl<RollPitchYawFloatingJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

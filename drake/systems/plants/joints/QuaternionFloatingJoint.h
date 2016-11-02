@@ -19,6 +19,13 @@ class DRAKE_EXPORT QuaternionFloatingJoint
 
   virtual ~QuaternionFloatingJoint() {}
 
+  using DrakeJointImpl<QuaternionFloatingJoint>::jointTransform;
+  using DrakeJointImpl<QuaternionFloatingJoint>::motionSubspace;
+  using DrakeJointImpl<QuaternionFloatingJoint>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<QuaternionFloatingJoint>::qdot2v;
+  using DrakeJointImpl<QuaternionFloatingJoint>::v2qdot;
+  using DrakeJointImpl<QuaternionFloatingJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

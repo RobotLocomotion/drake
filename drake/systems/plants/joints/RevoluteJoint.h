@@ -30,6 +30,13 @@ class DRAKE_EXPORT RevoluteJoint
 
   virtual ~RevoluteJoint() {}
 
+  using FixedAxisOneDoFJoint<RevoluteJoint>::jointTransform;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::motionSubspace;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::motionSubspaceDotTimesV;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::qdot2v;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::v2qdot;
+  using FixedAxisOneDoFJoint<RevoluteJoint>::frictionTorque;
+
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ>& q) const {

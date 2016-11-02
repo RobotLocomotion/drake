@@ -43,6 +43,13 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   using DrakeJoint::get_num_positions;
   using DrakeJoint::get_num_velocities;
 
+  using DrakeJointImpl<Derived>::jointTransform;
+  using DrakeJointImpl<Derived>::motionSubspace;
+  using DrakeJointImpl<Derived>::motionSubspaceDotTimesV;
+  using DrakeJointImpl<Derived>::qdot2v;
+  using DrakeJointImpl<Derived>::v2qdot;
+  using DrakeJointImpl<Derived>::frictionTorque;
+
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(
       const Eigen::MatrixBase<DerivedQ>& q,
