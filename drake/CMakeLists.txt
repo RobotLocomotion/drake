@@ -69,58 +69,28 @@ endfunction()
 # This makes all of our #include "drake/..." statemenets work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
-  if(APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
-  else()
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
-  endif()
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
-  else()
-    # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
-    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
-  endif()
-  set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
-  set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
-elseif(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-  # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-  # followed by template linking errors. After reading, e.g.:
-  #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
-  # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
-  # disable C4503: 'identifier' : decorated name length exceeded, name was truncated
-  # these occur due to AutoDiffScalar inputs to DrakeJoint methods, which results in very long type names
-  # From https://msdn.microsoft.com/en-us/library/074af4b6.aspx:
-  # It is possible to ship an application that generates C4503, but if you get link time errors on a truncated symbol,
-  # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult;
-  # the debugger will also have difficultly mapping symbol name to type name. The correctness of the program, however,
-  # is unaffected by the truncated name.
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4522")
-  # disable C4522: 'class' : multiple assignment operators specified
-  # The class has multiple assignment operators of a single type. This warning is informational;
-  # the constructors are callable in your program.
-
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyTree.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
-
-  add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
-
-  set(CXX_FLAGS_NO_ERROR_SHADOW /wd4456 /wd4457)
-  set(CXX_FLAGS_NO_SIGN_COMPARE /wd4018)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers")
+if(APPLE)
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
+  set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
+  set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
+else()
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
+  set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
+  set(CMAKE_EXECUTABLE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXECUTABLE_LINKER_FLAGS}")
 endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+else()
+  # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
+  # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
+endif()
+set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
+set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 
 # set up matlab build
 include(../cmake/mex.cmake)
