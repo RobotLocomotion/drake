@@ -473,9 +473,11 @@ class DRAKE_EXPORT RigidBodyTree {
     static_assert(DerivedPoints::RowsAtCompileTime == 3 ||
                       DerivedPoints::RowsAtCompileTime == Eigen::Dynamic,
                   "points argument has wrong number of rows");
-    auto Tr =
+    // Relative transformation from frame "from_body_or_frame_ind" to frame
+    // "to_body_or_frame_ind".
+    auto relative_transform =
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
-    return Tr * points.template cast<Scalar>();
+    return relative_transform * points.template cast<Scalar>();
   }
 
   template <typename Scalar>
