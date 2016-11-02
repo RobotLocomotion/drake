@@ -12,8 +12,6 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
@@ -22,31 +20,30 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
-DEFINE_double(duration, 3, "Total duraation of simulation.");
+DEFINE_double(duration, 3, "Total duration of simulation.");
 
-template<typename T>
+template <typename T>
 class Quadrotor : public systems::Diagram<T> {
  public:
   Quadrotor() {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree>();
+
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        systems::plants::joints::kRollPitchYaw,
-        nullptr, tree.get());
+        systems::plants::joints::kRollPitchYaw, nullptr, tree.get());
 
     drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        systems::plants::joints::kFixed,
-        nullptr, tree.get());
+        systems::plants::joints::kFixed, nullptr, tree.get());
 
     AddGround(tree.get());
 
     systems::DiagramBuilder<T> builder;
 
-    plant_ = builder.template AddSystem<systems::RigidBodyPlant<T>>(
-        std::move(tree));
+    plant_ =
+        builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
 
     Eigen::VectorXd hover_input = Eigen::VectorXd::Zero(4);
     source_ = builder.template AddSystem<systems::ConstantVectorSource<T>>(
@@ -83,14 +80,12 @@ class Quadrotor : public systems::Diagram<T> {
   void SetDefaultState(systems::Context<T>* context) const {
     systems::Context<T>* plant_context =
         this->GetMutableSubsystemContext(context, plant_);
-    Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12,1);
+    Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12, 1);
     x0(2) = 0.2;
     plant_->set_state_vector(plant_context, x0);
   }
 
-  const systems::RigidBodyPlant<T>& get_rigid_body_plant() {
-    return *plant_;
-  }
+  const systems::RigidBodyPlant<T>& get_rigid_body_plant() { return *plant_; }
 
  private:
   systems::RigidBodyPlant<T>* plant_;
@@ -112,10 +107,10 @@ int do_main(int argc, char* argv[]) {
   return 0;
 }
 
-}   // namespace
-}   // namespace quadrotor
-}   // namespace examples
-}   // namespace drake
+}  // namespace
+}  // namespace quadrotor
+}  // namespace examples
+}  // namespace drake
 
 int main(int argc, char* argv[]) {
   return drake::examples::quadrotor::do_main(argc, argv);
