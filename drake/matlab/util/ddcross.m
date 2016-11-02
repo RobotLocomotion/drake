@@ -1,4 +1,10 @@
 function ddvcrossw = ddcross(v,w,dv,dw,ddv,ddw)
+% ddvcrossw = ddcross(v,w,dv,dw) Compute Jacobian of cross-product
+% @param v - [3 x 1] array
+% @param w - [3 x 1] array
+% @param dv - gradient of v
+% @param dw - gradient of w
+% @retval ddvcrossw - gradient of dcross(r1,r2)
 dims = size(dv,2);
 
 ddvcrossw = reshape(bsxfun(@cross,v,reshape(ddw,3,[])),3*dims,[])-reshape(bsxfun(@cross,w,reshape(ddv,3,[])),3*dims,[]);
