@@ -139,6 +139,8 @@ namespace systems {
     F_ab = ComputeResultant({F_a, F_b});
  ```
  Do not expect `F` to be equal to `F_ab`.
+
+ @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
