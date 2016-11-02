@@ -20,7 +20,7 @@ if nargin < 1
 end
     
 % psiGuess = 0;
-% fun = @(psi) myfun(psi,x0,plantSim,c);
+% fun = @(psi) costFun1Step(psi,x0,plantSim,c);
 
 psiGuess = [-0.1; -0.05; 0; 0; 0]*0;
 % psiGuess = [-0.0266   -0.0103    0.0096    0.0045   -0.0009]';      % for a start load_x = -0.5, load_z = 4.5

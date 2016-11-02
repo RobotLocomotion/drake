@@ -10,7 +10,7 @@ c = SoftPaddlePositionController(p);
 
 x0 = p.getInitialState();
 
-f = @(psi) myfun(psi,x0,plantSim,c);
+f = @(psi) costFun1Step(psi,x0,plantSim,c);
 
 psi = linspace(-0.1, 0.1, N);
 fNorm = linspace(-0.1, 0.1, N);
