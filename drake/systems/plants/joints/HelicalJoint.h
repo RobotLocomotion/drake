@@ -1,8 +1,9 @@
 #pragma once
 
-#include "FixedAxisOneDoFJoint.h"
+#include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
 class DRAKE_EXPORT HelicalJoint
     : public FixedAxisOneDoFJoint<HelicalJoint> {

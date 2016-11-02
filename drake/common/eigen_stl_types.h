@@ -5,8 +5,11 @@
 /// See http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html.
 /// @see eigen_types.h
 
+#include <functional>
 #include <map>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>

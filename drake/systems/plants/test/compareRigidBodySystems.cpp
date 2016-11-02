@@ -1,6 +1,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
 #include <iostream>
+#include <string>
 
 #include <gtest/gtest.h>
 

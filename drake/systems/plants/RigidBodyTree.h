@@ -1,6 +1,10 @@
 #pragma once
 
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
@@ -826,7 +830,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * model instance.
    */
   std::vector<const RigidBody*>
-  FindModelInstanceBodies(int model_instance_id);
+  FindModelInstanceBodies(int model_instance_id) const;
 
 /**
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
@@ -1194,3 +1198,5 @@ class DRAKE_EXPORT RigidBodyTree {
 
   int next_available_clique_ = 0;
 };
+
+typedef RigidBodyTree RigidBodyTreed;

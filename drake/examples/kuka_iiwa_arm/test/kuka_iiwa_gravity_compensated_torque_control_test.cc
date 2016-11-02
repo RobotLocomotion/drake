@@ -7,7 +7,7 @@
 #include "drake/system1/Simulation.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/gravity_compensated_system.h"
-#include "drake/systems/plants/robot_state_tap.h"
+#include "drake/system1/robot_state_tap.h"
 
 using drake::AffineSystem;
 using drake::GravityCompensatedSystem;

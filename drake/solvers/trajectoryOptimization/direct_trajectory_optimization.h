@@ -302,5 +302,5 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   DecisionVariableView x_vars_;
 };
 
-}  // solvers
-}  // drake
+}  // namespace solvers
+}  // namespace drake

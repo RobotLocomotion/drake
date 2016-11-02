@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <string>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>

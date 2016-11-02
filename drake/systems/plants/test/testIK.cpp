@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -9,7 +11,6 @@
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/system1/vector.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <string>
+
 #include "drake/system1/LCMSystem.h"
 
 using namespace std;

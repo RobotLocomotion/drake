@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -139,6 +140,6 @@ class QuasiStaticConstraintWrapper :
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
-}
-}
-}
+}  // namespace plants
+}  // namespace systems
+}  // namespace drake

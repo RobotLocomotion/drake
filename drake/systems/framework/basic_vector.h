@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
