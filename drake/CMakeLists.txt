@@ -78,6 +78,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
 else()
   # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra -Wno-unused-parameter")
