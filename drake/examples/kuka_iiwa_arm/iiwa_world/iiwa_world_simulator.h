@@ -53,6 +53,9 @@ class IiwaWorldSimulator {
 //  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
 //                    int vehicle_number);
 //
+
+  int allocate_object_number();
+
   /// Returns the System whose name matches @p name.  Throws an exception if no
   /// such system has been added, or multiple such systems have been added.
   ///
@@ -84,8 +87,8 @@ class IiwaWorldSimulator {
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
   std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
-      rigid_body_tree_publisher_inputs_;
-  //int next_vehicle_number_{0};
+      drake_visualizer_inputs_;
+  int next_object_number_{0};
   bool started_{false};
 
   // For simulation.
