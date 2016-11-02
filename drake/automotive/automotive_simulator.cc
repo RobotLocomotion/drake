@@ -61,7 +61,8 @@ const RigidBodyTree& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_file) {
+int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
+    const std::string& sdf_filename) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
@@ -77,14 +78,13 @@ int AutomotiveSimulator<T>::AddSimpleCarFromSdf(const std::string& sdf_file) {
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_file, coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform);
 }
 
 template <typename T>
-int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(const std::string& sdf_file,
-                                                    const Curve2<double>& curve,
-                                                    double speed,
-                                                    double start_time) {
+int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
+    const std::string& sdf_filename, const Curve2<double>& curve, double speed,
+    double start_time) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
@@ -96,7 +96,7 @@ int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(const std::string& sdf_file,
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  return AddSdfModel(sdf_file, coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform);
 }
 
 template <typename T>
@@ -111,8 +111,6 @@ int AutomotiveSimulator<T>::AddSdfModel(
   DRAKE_DEMAND(table.size() == 1);
 
   const int model_instance_id = table.begin()->second;
-  const std::vector<const RigidBody*> bodies =
-      rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
   rigid_body_tree_publisher_inputs_.push_back(
       std::make_pair(model_instance_id, coord_transform));
   return model_instance_id;

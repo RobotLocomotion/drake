@@ -13,8 +13,6 @@ namespace drake {
 namespace automotive {
 namespace {
 
-const int kNumVehicleBodies = 17;  // The number of bodies in the car model.
-
 // Simple touches on the getters.
 GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
