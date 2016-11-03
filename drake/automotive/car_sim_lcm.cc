@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
   //
   // [steering angle position, throttle speed, brake speed]
   //
-  // The throttle and brake speeds are with respect to the vehicl's
+  // The throttle and brake speeds are with respect to the vehicle's
   // longitudinal position.
   //
   const DrivingCommandTranslator driving_command_translator;
@@ -310,9 +310,14 @@ int main(int argc, char* argv[]) {
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
 
+  // TODO(liang.fok): Modify controller to provide named accessors to these
+  // ports.
+  const int kControllerFeedforwardInputPort = 0;
+  const int kControllerFeedbackInputPort = 1;
+
   // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),
-                  controller->get_input_port(0));
+                  controller->get_input_port(kControllerFeedforwardInputPort));
 
   // Connects the system that converts from user commands to actuator commands.
   builder.Connect(command_subscriber->get_output_port(0),
@@ -320,7 +325,7 @@ int main(int argc, char* argv[]) {
 
   // Connects the controller, which includes the plant being controlled.
   builder.Connect(user_to_actuator_cmd_sys->get_output_port(),
-                  controller->get_input_port(1));
+                  controller->get_input_port(kControllerFeedbackInputPort));
 
   // Connects the LCM publisher, which is used for visualization.
   builder.Connect(controller->get_output_port(0),
