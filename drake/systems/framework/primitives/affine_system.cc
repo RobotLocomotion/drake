@@ -5,6 +5,7 @@
 #include "drake/common/eigen_types.h"
 
 #include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -48,6 +49,12 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   // Declares the number of continuous state variables. This is needed for
   // EvalTimeDerivaties() to work.
   this->DeclareContinuousState(num_states_);
+}
+
+// setup equivalent system with a different scalar type
+template <typename T>
+AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
+  return new AffineSystem<AutoDiffXd>(A_,B_,xDot0_,C_,D_,y0_);
 }
 
 template <typename T>
@@ -125,7 +132,7 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (num_inputs>0) {
-    u0 = system.EvalVectorInput(context,0)->CopyToVector();
+    u0 = system.EvalEigenVectorInput(context,0);
   }
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
@@ -146,9 +153,24 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   auto AB = math::autoDiffToGradientMatrix(autodiff_xdot_vec);
   auto A = AB.leftCols(num_states);
   auto B = AB.rightCols(num_inputs);
-  auto xDot0 = autodiff_xdot_vec.value();
+  auto xDot0 = math::autoDiffToValueMatrix(autodiff_xdot_vec);
 
-  return std::move(std::make_unique<AffineSystem<double>>(A,B,autodiff_xdot_vec.value(),Eigen::MatrixXd::Zero(0,A.rows()),Eigen::MatrixXd::Zero(0,B.cols()),Eigen::VectorXd::Zero(A.rows()));
+  Eigen::MatrixXd C = Eigen::MatrixXd::Zero(num_outputs, num_states);
+  Eigen::MatrixXd D = Eigen::MatrixXd::Zero(num_outputs, num_inputs);
+  Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
+
+  if (num_outputs>0) {
+    auto autodiff_y0 = autodiff_system->AllocateOutput(*autodiff_context);
+    autodiff_system->EvalOutput(*autodiff_context, autodiff_y0.get());
+    auto autodiff_y0_vec = autodiff_y0->get_vector_data(0)->CopyToVector();
+
+    auto CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);
+    C = CD.leftCols(num_states);
+    D = CD.rightCols(num_inputs);
+    y0 = math::autoDiffToValueMatrix(autodiff_y0_vec);
+  }
+
+  return std::make_unique<AffineSystem<double>>(A,B,xDot0,C,D,y0);
 }
 
 
