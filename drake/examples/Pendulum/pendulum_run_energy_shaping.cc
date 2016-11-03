@@ -59,8 +59,9 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
 
 int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
-  RigidBodyTree tree(GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-                     systems::plants::joints::kFixed);
+  RigidBodyTree<double> tree(
+      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      systems::plants::joints::kFixed);
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();

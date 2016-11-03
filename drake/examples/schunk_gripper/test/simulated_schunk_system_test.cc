@@ -27,7 +27,7 @@ GTEST_TEST(SimulatedSchunkSystemTest, OpenGripper) {
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           CreateSimulatedSchunkSystem<double>());
   ASSERT_NE(schunk, nullptr);
-  const RigidBodyTree& tree = schunk->get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
   // The simulated Schunk plant has seven links (the gripper body, two
   // fingers, a nonphysical rotor, two nonphysical pushers, and the world

@@ -15,7 +15,9 @@ int main(int argc, char* argv[]) {
     cerr << "Usage: urdfManipulatorDynamicsTest urdf_filename" << endl;
     exit(-1);
   }
-  auto model = std::unique_ptr<RigidBodyTree>(new RigidBodyTree(argv[1]));
+  auto model =
+      std::unique_ptr<RigidBodyTree<double>>(
+          new RigidBodyTree<double>(argv[1]));
   if (!model) {
     cerr << "ERROR: Failed to load model from " << argv[1] << endl;
     return -1;
@@ -49,7 +51,7 @@ int main(int argc, char* argv[]) {
   auto H = model->massMatrix(cache);
   cout << H << endl;
 
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto C = model->dynamicsBiasTerm(cache, no_external_wrenches);
   cout << C << endl;
 

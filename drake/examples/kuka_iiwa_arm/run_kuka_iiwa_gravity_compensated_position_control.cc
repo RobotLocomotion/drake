@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
 
   // Smaller gains intentionally used for demo. Gravity compensation enables
   // the usage of small feedback gains and this example demonstrates that.
-  const double Kp_common = 10.0;  // Units : Nm/rad
-  const double Kd_common = 0.30;  // Units : Nm/rad/sec
+  const double Kp_common = 10.0;  // Units : Nm / rad
+  const double Kd_common = 0.30;  // Units : Nm / (rad / sec)
   VectorXd Kpdiag = VectorXd::Constant(kNumDof, Kp_common);
   VectorXd Kddiag = VectorXd::Constant(kNumDof, Kd_common);
 

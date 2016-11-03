@@ -21,7 +21,7 @@ int AddFloatingJoint(
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map,
-    RigidBodyTree* tree) {
+    RigidBodyTree<double>* tree) {
   std::string floating_joint_name;
   RigidBody* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
@@ -38,7 +38,7 @@ int AddFloatingJoint(
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
     if (weld_to_frame->get_name()
-          == std::string(RigidBodyTree::kWorldName)) {
+          == std::string(RigidBodyTree<double>::kWorldName)) {
       if (!weld_to_frame->has_as_rigid_body(nullptr)) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "

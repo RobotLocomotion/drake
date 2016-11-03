@@ -14,7 +14,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Usage: [phi, J] = jointLimitConstraintsmex(mex_model_ptr, q) ");
   }
 
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
 
   if (mxGetNumberOfElements(prhs[1]) != model->get_num_positions()) {
     mexErrMsgIdAndTxt(

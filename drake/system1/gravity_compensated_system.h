@@ -34,7 +34,7 @@ class GravityCompensatedSystem {
 
   // Some convenient typedefs.
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
-  typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
+  typedef std::shared_ptr<RigidBodyTree<double>> RigidBodyTreePtr;
 
   explicit GravityCompensatedSystem(const RigidBodySystemPtr& sys)
       : sys_(sys) {
@@ -81,7 +81,7 @@ class GravityCompensatedSystem {
     int num_DoF = sys_->get_num_positions();
     KinematicsCache<double> cache = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 

@@ -11,7 +11,7 @@ namespace schunk_gripper {
 template<typename T>
 std::unique_ptr<drake::systems::RigidBodyPlant<T>>
 CreateSimulatedSchunkSystem() {
-  auto rigid_body_tree = std::make_unique<RigidBodyTree>();
+  auto rigid_body_tree = std::make_unique<RigidBodyTree<T>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/examples/schunk_gripper/models/schunk_gripper.sdf",

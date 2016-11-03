@@ -26,7 +26,7 @@ using std::unique_ptr;
 class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    tree_ = make_unique<RigidBodyTree>();
+    tree_ = make_unique<RigidBodyTree<double>>();
 
     drake::SquareTwistMatrix<double> I =
         drake::SquareTwistMatrix<double>::Zero();
@@ -58,7 +58,7 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<RigidBodyTree> tree_;
+  std::unique_ptr<RigidBodyTree<double>> tree_;
 
   // Bodies are owned by the tree. These raw pointers allow post-hoc
   // manipulation.

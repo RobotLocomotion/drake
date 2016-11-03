@@ -49,7 +49,8 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
       "</robot>";
 
   // Instantiates a RigidBodyTree using the URDF string defined above.
-  std::unique_ptr<RigidBodyTree> rigid_body_tree(new RigidBodyTree());
+  std::unique_ptr<RigidBodyTree<double>>
+      rigid_body_tree(new RigidBodyTree<double>());
   drake::parsers::urdf::AddModelInstanceFromUrdfStringWithRpyJointToWorld(
       urdf_string, rigid_body_tree.get());
 

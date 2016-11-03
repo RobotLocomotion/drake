@@ -22,7 +22,8 @@ AtlasPlant::AtlasPlant() {
 
 const VectorXd& AtlasPlant::get_initial_state() const { return x0_; }
 
-const std::shared_ptr<RigidBodyTree>& AtlasPlant::get_rigid_body_tree() const {
+const std::shared_ptr<RigidBodyTree<double>>&
+AtlasPlant::get_rigid_body_tree() const {
   return sys_->getRigidBodyTree();
 }
 
@@ -49,7 +50,7 @@ AtlasPlant::dynamics(const double& t,
 }
 
 void AtlasPlant::SetInitialConfiguration() {
-  RigidBodyTree* tree = sys_->getRigidBodyTree().get();
+  RigidBodyTree<double>* tree = sys_->getRigidBodyTree().get();
   x0_.head(tree->get_num_positions()) = tree->getZeroConfiguration();
 
   // Magic numbers are initial conditions used in runAtlasWalking.m.
@@ -87,7 +88,7 @@ void AtlasPlant::SetUpTerrain() {
   // TODO(amcastro-tri): move out of here when collision materials kick in.
   sys_->penetration_stiffness = 1500.0;
   sys_->penetration_damping = 150.0;
-  RigidBodyTree* tree = sys_->getRigidBodyTree().get();
+  RigidBodyTree<double>* tree = sys_->getRigidBodyTree().get();
 
   // Adds a flat terrain.
   double box_width = 1000;

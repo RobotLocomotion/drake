@@ -35,7 +35,7 @@ GTEST_TEST(Sys2QPInverseDynamicsController, Standing) {
       GetDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
-  RigidBodyTree robot(urdf);
+  RigidBodyTree<double> robot(urdf);
 
   // Build diagram.
   DiagramBuilder<double> builder;

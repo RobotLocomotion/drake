@@ -70,7 +70,7 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
 }
 
 void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
-                          const RigidBodyTree& robot) {
+                          const RigidBodyTree<double>& robot) {
   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
        ++body_it) {
     try {
@@ -90,7 +90,7 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
 void loadSingleJointParams(QPControllerParams& params,
                            Eigen::DenseIndex position_index,
                            const YAML::Node& config,
-                           const RigidBodyTree& robot) {
+                           const RigidBodyTree<double>& robot) {
   params.whole_body.Kp(position_index) = get(config, "Kp").as<double>();
   params.whole_body.Kd(position_index) =
       dampingGain(get(config, "Kp").as<double>(),
@@ -143,7 +143,7 @@ void loadSingleJointParams(QPControllerParams& params,
 }
 
 void loadJointParams(QPControllerParams& params, const YAML::Node& config,
-                     const RigidBodyTree& robot) {
+                     const RigidBodyTree<double>& robot) {
   std::map<std::string, int> position_name_to_index =
       robot.computePositionNameToIndexMap();
   for (auto position_it = position_name_to_index.begin();
@@ -178,7 +178,7 @@ void loadJointParams(QPControllerParams& params, const YAML::Node& config,
 
 void loadSingleInputParams(QPControllerParams& params,
                            Eigen::DenseIndex position_index, YAML::Node config,
-                           const RigidBodyTree& robot) {
+                           const RigidBodyTree<double>& robot) {
   YAML::Node hardware_config = get(config, "hardware");
 
   params.hardware.joint_is_force_controlled(position_index) =
@@ -210,7 +210,7 @@ void loadSingleInputParams(QPControllerParams& params,
 }
 
 void loadInputParams(QPControllerParams& params, const YAML::Node& config,
-                     const RigidBodyTree& robot) {
+                     const RigidBodyTree<double>& robot) {
   for (auto actuator_it = robot.actuators.begin();
        actuator_it != robot.actuators.end(); ++actuator_it) {
     try {
@@ -290,7 +290,7 @@ struct convert<BodyMotionParams> {
 }
 
 QPControllerParams loadSingleParamSet(const YAML::Node& config,
-                                      const RigidBodyTree& robot) {
+                                      const RigidBodyTree<double>& robot) {
   QPControllerParams params(robot);
 
   loadJointParams(params, get(config, "position_specific"), robot);
@@ -325,7 +325,7 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config,
 
 drake::eigen_aligned_std_map<std::string, QPControllerParams>
 loadAllParamSetsFromExpandedConfig(YAML::Node config,
-                                   const RigidBodyTree& robot) {
+                                   const RigidBodyTree<double>& robot) {
   drake::eigen_aligned_std_map<std::string, QPControllerParams> param_sets;
   for (auto config_it = config.begin(); config_it != config.end();
        ++config_it) {
@@ -338,20 +338,20 @@ loadAllParamSetsFromExpandedConfig(YAML::Node config,
 }
 
 drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
-    YAML::Node config, const RigidBodyTree& robot) {
+    YAML::Node config, const RigidBodyTree<double>& robot) {
   config = expandDefaults(config);
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
 
 drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
-    YAML::Node config, const RigidBodyTree& robot,
+    YAML::Node config, const RigidBodyTree<double>& robot,
     std::ofstream& debug_output_file) {
   config = expandDefaults(config);
   debug_output_file << config;
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
 
-vector<int> findPositionIndices(const RigidBodyTree& robot,
+vector<int> findPositionIndices(const RigidBodyTree<double>& robot,
                                 const vector<string>& joint_names) {
   vector<int> position_indices;
   position_indices.reserve(joint_names.size());
@@ -364,8 +364,9 @@ vector<int> findPositionIndices(const RigidBodyTree& robot,
   return position_indices;
 }
 
-RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
-                                              const RigidBodyTree& robot) {
+RobotPropertyCache parseKinematicTreeMetadata(
+    const YAML::Node& metadata,
+    const RigidBodyTree<double>& robot) {
   RobotPropertyCache ret;
   std::map<Side, string> side_identifiers = {{Side::RIGHT, "r"},
                                              {Side::LEFT, "l"}};
@@ -406,7 +407,7 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
 }
 
 JointNames parseRobotJointNames(const YAML::Node& joint_names,
-                                const RigidBodyTree& tree) {
+                                const RigidBodyTree<double>& tree) {
   std::cout << "parsing joint names: " << joint_names << std::endl;
   // const string& hardware_data_file_name, const RigidBodyTree& tree) {
   JointNames ret;

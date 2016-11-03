@@ -10,6 +10,8 @@
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
 class DRAKE_EXPORT QuaternionFloatingJoint
     : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
@@ -174,3 +176,4 @@ class DRAKE_EXPORT QuaternionFloatingJoint
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+#pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

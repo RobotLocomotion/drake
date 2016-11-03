@@ -14,6 +14,8 @@
 #include "drake/math/gradient.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
 template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   // disable copy construction and assignment
@@ -201,3 +203,4 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+#pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual
