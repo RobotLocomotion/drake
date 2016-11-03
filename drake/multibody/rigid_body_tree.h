@@ -1136,8 +1136,7 @@ class RigidBodyTree {
   const RigidBody<T>& world() const { return *bodies[0]; }
 
   /**
-   * An accessor to the number of position states outputted by this rigid body
-   * system.
+   * Returns the number of position states outputted by this %RigidBodyTree.
    */
   int get_num_positions() const;
 
@@ -1147,8 +1146,7 @@ class RigidBodyTree {
   int number_of_positions() const;
 
   /**
-   * An accessor to the number of velocity states outputted by this rigid body
-   * system.
+   * Returns the number of velocity states outputted by this %RigidBodyTree.
    */
   int get_num_velocities() const;
 
@@ -1156,6 +1154,11 @@ class RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_velocities().")
 #endif
   int number_of_velocities() const;
+
+  /**
+   * Returns the number of actuators in this %RigidBodyTree.
+   */
+  int get_num_actuators() const;
 
  public:
   static const std::set<int> default_model_instance_id_set;

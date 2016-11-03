@@ -83,4 +83,14 @@
     <origin xyz="0 0 0.6" rpy="0 0 0"/>
     <limit effort="30" velocity="1.0" lower="-1.5708" upper="1.5708" />
   </joint>
+
+  <transmission name="joint1_transmission" type="SimpleTransmission">
+    <joint name="joint1"/>
+    <actuator name="joint1"/>
+  </transmission>
+
+  <transmission name="joint2_transmission" type="SimpleTransmission">
+    <joint name="joint2"/>
+    <actuator name="joint2"/>
+  </transmission>
 </robot>
