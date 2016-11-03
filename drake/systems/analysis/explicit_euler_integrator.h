@@ -37,9 +37,9 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
 
 
   /**
-   * Explicit Euler integrator does not support accuracy estimation.
+   * Explicit Euler integrator does not support error estimation.
    */
-  bool supports_accuracy_estimation() const override { return false; }
+  bool supports_error_estimation() const override { return false; }
 
   /**
    * Explicit Euler ntegrator does not support error control.

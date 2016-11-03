@@ -81,10 +81,10 @@ class IntegratorBase {
   }
 
   /**
-   * Indicates whether an integrator supports accuracy estimation.
-   * Without accuracy estimation, target accuracy will be unused.
+   * Indicates whether an integrator supports error estimation.
+   * Without error estimation, target accuracy will be unused.
    */
-  virtual bool supports_accuracy_estimation() const = 0;
+  virtual bool supports_error_estimation() const = 0;
 
   /**
    * Indicates whether an integrator supports stepping with error control.
@@ -120,7 +120,7 @@ class IntegratorBase {
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(const T& accuracy) {
-    if (!supports_accuracy_estimation())
+    if (!supports_error_estimation())
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
           "and user has requested error control");
@@ -181,7 +181,7 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // Allocate space for the error estimate.
-    if (supports_accuracy_estimation())
+    if (supports_error_estimation())
       err_est_ = system_.AllocateTimeDerivatives();
 
     // TODO(edrumwri): Compute v_scal_, z_scal_ automatically.
@@ -678,12 +678,14 @@ class IntegratorBase {
 template <class T>
 void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
                                             ContinuousState<T>* derivs0) {
+  using std::isnan;
+
   // Constants for integration growth and shrinkage.
   const double kDTShrink = 0.95;
   const double kDTGrow = 1.001;
 
   // Verify that the integrator supports error estimates.
-  if (!supports_accuracy_estimation())
+  if (!supports_error_estimation())
     throw std::logic_error(
         "StepErrorControlled() requires accuracy "
         "estimation.");
@@ -697,10 +699,9 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
   xc0_save_ = xc->CopyToVector();
   xcdot0_save_ = derivs0->CopyToVector();
 
-  // Set the "current" step size. Contortion in the conditional is necessary
-  // to work around initial NaN value for double types.
+  // Set the "current" step size.
   T current_step_size = get_ideal_next_step_size();
-  if (!(current_step_size > 0)) {
+  if (isnan(current_step_size)) {
     // Integrator has not taken a step. Set the current step size to the
     // initial step size.
     current_step_size = get_initial_step_size_target();
@@ -734,7 +735,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       report_error_test_failure();
 
       // Record the adaptive step size taken.
-      if (std::isnan(get_smallest_adapted_step_size_taken()) ||
+      if (isnan(get_smallest_adapted_step_size_taken()) ||
           get_smallest_adapted_step_size_taken() < new_step_size)
         set_smallest_adapted_step_size_taken(new_step_size);
 
@@ -744,7 +745,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       derivs0->SetFromVector(get_interval_start_state_deriv());
     } else {  // Step succeeded.
       ideal_next_step_size_ = new_step_size;
-      if (std::isnan(get_actual_initial_step_size_taken()))
+      if (isnan(get_actual_initial_step_size_taken()))
         set_actual_initial_step_size_taken(new_step_size);
     }
   } while (!step_succeeded);
@@ -757,7 +758,7 @@ T IntegratorBase<T>::CalcErrorNorm() {
   const auto& system = get_system();
 
   // Verify that the integrator supports accuracy estimation.
-  if (!supports_accuracy_estimation())
+  if (!supports_error_estimation())
     throw std::logic_error("Integrator does not support accuracy estimation.");
 
   // Get the error estimate and necessary vectors.

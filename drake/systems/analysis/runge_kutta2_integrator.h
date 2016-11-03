@@ -33,9 +33,9 @@ class RungeKutta2Integrator : public IntegratorBase<T> {
   }
 
   /**
-   * The RK2 integrator does not support accuracy estimation.
+   * The RK2 integrator does not support error estimation.
    */
-  bool supports_accuracy_estimation() const override { return false; }
+  bool supports_error_estimation() const override { return false; }
 
   /// Integrator does not provide an error estimate.
   int get_error_estimate_order() const override { return 0; }

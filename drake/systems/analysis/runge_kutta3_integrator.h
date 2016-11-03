@@ -63,9 +63,9 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   }
 
   /**
- * The integrator supports accuracy estimation.
+ * The integrator supports error estimation.
  */
-  bool supports_accuracy_estimation() const override { return true; }
+  bool supports_error_estimation() const override { return true; }
 
   /**
    * The integrator supports error control.
