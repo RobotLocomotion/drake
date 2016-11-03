@@ -94,11 +94,11 @@ class DRAKE_EXPORT ContactForce {
 
    @returns the resultant spatial force.
    */
-  WrenchVector<T> get_spatial_force() const {
-    WrenchVector<T> wrench;
-    wrench.template head<3>() = pure_torque_;
-    wrench.template tail<3>() = force_;
-    return wrench;
+  SpatialForce <T> get_spatial_force() const {
+    SpatialForce<T> spatial_force;
+    spatial_force.template head<3>() = pure_torque_;
+    spatial_force.template tail<3>() = force_;
+    return spatial_force;
   }
 
  private:

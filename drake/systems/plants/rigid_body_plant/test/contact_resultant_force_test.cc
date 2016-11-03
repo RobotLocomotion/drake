@@ -19,7 +19,7 @@ bool AreEquivalent(const Eigen::MatrixBase<DerivedA>& m1,
 
 // Utility method for asserting the state of the torque component of the wrench.
 template <typename DerivedA, typename DerivedB>
-bool AssertTorque(const WrenchVector<DerivedA>& wrench,
+bool AssertTorque(const SpatialForce<DerivedA>& wrench,
                   const Eigen::MatrixBase<DerivedB>& torque) {
   Vector3<DerivedA> test_torque = wrench.template head<3>();
   return AreEquivalent(test_torque, torque);
@@ -27,7 +27,7 @@ bool AssertTorque(const WrenchVector<DerivedA>& wrench,
 
 // Utility method for asserting the state of the force component of the wrench.
 template <typename DerivedA, typename DerivedB>
-bool AssertForce(const WrenchVector<DerivedA>& wrench,
+bool AssertForce(const SpatialForce<DerivedA>& wrench,
                  const Eigen::MatrixBase<DerivedB>& force) {
   Vector3<DerivedA> test_force = wrench.template tail<3>();
   return AreEquivalent(test_force, force);
@@ -75,7 +75,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
   norm.normalize();
   torque << 6, 7, 8;
   pos << 10, 11, 12;
-  WrenchVector<double> full_wrench, torque_free_wrench;
+  SpatialForce<double> full_wrench, torque_free_wrench;
   full_wrench.template head<3>() = torque;
   full_wrench.template tail<3>() = force;
   torque_free_wrench.template head<3>() << 0, 0, 0;
