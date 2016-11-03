@@ -388,6 +388,8 @@
         </geometry>
       </visual>
       <collision name='wheel'>
+                <laser_retro>0</laser_retro>
+        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -416,7 +418,6 @@
         <pose>-2.27 -0.91139 -0.21858 0 0 0</pose>
         <geometry>
           <mesh>
-            <!-- <uri>prius.dae</uri> -->
             <uri>prius.dae</uri>
           </mesh>
         </geometry>
