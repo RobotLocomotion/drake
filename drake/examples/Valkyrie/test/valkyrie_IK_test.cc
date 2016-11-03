@@ -35,7 +35,7 @@ namespace {
  * ignored in this search (joints belonging to all model instances are
  * searched).
  */
-std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
+std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
                                                const std::string& name) {
   RigidBody* joint_child_body = tree->FindChildBodyOfJoint(name);
   int num_positions = joint_child_body->getJoint().get_num_positions();
@@ -53,7 +53,7 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
  * position states of a joint named @p name, and appends the vector of
  * indices found to the end of @p position_list.
  */
-void FindJointAndInsert(const RigidBodyTree* model, const std::string& name,
+void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
                         std::vector<int>* const position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
@@ -62,7 +62,7 @@ void FindJointAndInsert(const RigidBodyTree* model, const std::string& name,
 }
 
 GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
-  std::shared_ptr<RigidBodyTree> tree = std::make_shared<RigidBodyTree>(
+  std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
