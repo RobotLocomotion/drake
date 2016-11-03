@@ -34,13 +34,14 @@ void GetLastPublishedJointValue(
 // A helper method for unit testing SimpleCar. Parameter @p sdf_filename is the
 // name of the file containing the model of the vehicle to be used by the
 // SimpleCar.
-void TestSimpleCarWithSdf(const std::string& sdf_filename) {
+void TestSimpleCarWithSdf(const std::string& sdf_filename,
+    int num_vehicle_bodies) {
+  // TODO(jwnimmer-tri) Do something better than "0_" here.
   const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
   const std::string driving_command_name =
       systems::lcm::LcmSubscriberSystem::get_name(kCommandChannelName);
-  // TODO(jwnimmer-tri) Do something better than "0_" here.
   const std::string joint_state_name =
       systems::lcm::LcmPublisherSystem::get_name(kJointStateChannelName);
 
@@ -50,9 +51,10 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
   const int model_instance_id = simulator->AddSimpleCarFromSdf(sdf_filename);
 
   // Obtain the number of bodies belonging to the model.
-  const int num_vehicle_bodies = simulator->get_rigid_body_tree()
-                                     .FindModelInstanceBodies(model_instance_id)
-                                     .size();
+  const int num_vehicle_bodies_in_tree =
+      simulator->get_rigid_body_tree()
+          .FindModelInstanceBodies(model_instance_id).size();
+  EXPECT_EQ(num_vehicle_bodies_in_tree, num_vehicle_bodies);
 
   // Grab the systems we want while testing GetBuilderSystemByName() in the
   // process.
@@ -132,12 +134,17 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
 // Cover AddSimpleCar (and thus AddPublisher), Start, StepBy, GetSystemByName.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
   TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/prius/prius_with_lidar.sdf");
+                       "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
   TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/boxcar.sdf");
+                       "/automotive/models/boxcar.sdf", 1);
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
+  TestSimpleCarWithSdf(GetDrakePath() +
+                       "/automotive/models/two_dof_robot.sdf", 3);
 }
 
 // A helper method for unit testing TrajectoryCar. Parameter @p sdf_filename is
@@ -166,12 +173,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   const std::vector<const RigidBody*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
-  const int num_vehicle_bodies_1 = vehicle_bodies_1.size();
-  const int num_vehicle_bodies_2 = vehicle_bodies_2.size();
-
-  // The tests below will not work if the model has less than two bodies.
-  EXPECT_GE(num_vehicle_bodies_1, 2);
-  EXPECT_GE(num_vehicle_bodies_2, 2);
+  EXPECT_EQ(vehicle_bodies_1.size(), vehicle_bodies_2.size());
+  const int num_vehicle_bodies = vehicle_bodies_1.size();
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -180,18 +183,14 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(2, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to two car models.
-  ASSERT_EQ(1 + num_vehicle_bodies_1 + num_vehicle_bodies_2,
-            tree.get_num_bodies());
+  ASSERT_EQ(1 + 2 * num_vehicle_bodies, tree.get_num_bodies());
 
   // Verifies that the first car was added to the tree.
   EXPECT_EQ(vehicle_bodies_1.at(0)->get_name(), tree.get_body(1).get_name());
-  EXPECT_EQ(vehicle_bodies_1.at(1)->get_name(), tree.get_body(2).get_name());
 
   // Verifies that the second car was added to the tree.
   EXPECT_EQ(vehicle_bodies_2.at(0)->get_name(),
-            tree.get_body(num_vehicle_bodies_1 + 1).get_name());
-  EXPECT_EQ(vehicle_bodies_2.at(1)->get_name(),
-            tree.get_body(num_vehicle_bodies_1 + 2).get_name());
+            tree.get_body(num_vehicle_bodies + 1).get_name());
 
   // Run for a while.
   for (int i = 0; i < 100; ++i) {
@@ -211,6 +210,11 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
                            "/automotive/models/prius/prius_with_lidar.sdf");
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestBoxcar) {
+  TestTrajectoryCarWithSdf(GetDrakePath() +
+                           "/automotive/models/boxcar.sdf");
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
