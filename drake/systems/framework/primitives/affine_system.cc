@@ -139,8 +139,8 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(std::get<0>(autodiff_args));
 
   if (num_inputs>0) {
-    auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(system.get_input_port(0).get_size());
-    input_vector->get_mutable_value() = std::get<1>(autodiff_args);
+    auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
+    input_vector->SetFromVector(std::get<1>(autodiff_args));
     autodiff_context->SetInputPort(
         0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
   }
