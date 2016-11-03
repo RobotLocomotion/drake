@@ -63,10 +63,12 @@ else()
   message(STATUS "DOXYGEN_EXECUTABLE (doxygen) not found. C++ and MATLAB Doxygen will be excluded from the documentation build.")
 endif()
 
-set(OXYGEN_DIR "$ENV{OXYGEN_DIR}" CACHE PATH
-  "Path to the directory containing the oXygen XML Editor")
+if(DEFINED ENV{OXYGEN_DIR})
+  set(OXYGEN_DIR "$ENV{OXYGEN_DIR}" CACHE PATH
+    "Path to the directory containing the oXygen XML Editor")
+endif()
 
-if(OXYGEN_DIR AND EXISTS "${OXYGEN_DIR}")
+if(DEFINED OXYGEN_DIR AND EXISTS "${OXYGEN_DIR}")
   if(APPLE)
     set(OXYGEN_SCHEMA_DOCUMENTATION_EXECUTABLE
       "${OXYGEN_DIR}/schemaDocumentationMac.sh")
