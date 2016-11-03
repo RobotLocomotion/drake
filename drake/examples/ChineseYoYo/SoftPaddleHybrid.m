@@ -555,10 +555,10 @@ classdef SoftPaddleHybrid < HybridDrakeSystem
       v.drawWrapper(0,x0);
       [ytraj,xtraj] = simulate(r,[0 1],x0);
       v.playback(ytraj,struct('slider',true));
-%       v.playbackAVI(ytraj,'soft_juggler_passive')
-      save('sphtraj.mat','r','v','x0','ytraj','xtraj');
+      %v.playbackAVI(ytraj,'soft_juggler_passive')
+      %save('sphtraj.mat','r','v','x0','ytraj','xtraj');
       
-      if (1) 
+      if (0) 
         % energy / cable length plotting 
         % note, set alpha=0 in Manipulator/computeConstraintForce to reveal
         % some artifacts, especially at the release guard when

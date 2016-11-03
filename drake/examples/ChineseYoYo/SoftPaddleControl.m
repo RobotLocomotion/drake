@@ -165,9 +165,10 @@ classdef SoftPaddleControl < DrakeSystem
       
       tt=getBreaks(xtraj);
       
-      save('trajectorytoStabilizeShort.mat','utraj','xtraj','tt');
+      %save('trajectorytoStabilizeShort.mat','utraj','xtraj','tt');
       
-      if (1)
+      %To print out some statistics
+      if (0)
         % energy / cable length plotting
         % note, set alpha=0 in Manipulator/computeConstraintForce to reveal
         % some artifacts, especially at the release guard when
