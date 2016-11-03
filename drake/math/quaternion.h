@@ -152,7 +152,7 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
  * Computes angle-axis orientation from a given quaternion.
  * @tparam Scalar The element type which must be a valid Eigen scalar.
  * @param quaternion 4 x 1 non-zero vector that does not have to be normalized.
- * @return Angle-axis representation of quaternion with 0 <= angle <= 2*PI
+ * @return Angle-axis representation of quaternion with 0 <= angle <= PI.
  * and axis as a unit vector. Return is independent of quaternion normalization.
  */
 template <typename Scalar>
@@ -161,12 +161,24 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
   // Use Eigen's built-in algorithm which seems robust (checked by Mitiguy/Dai).
   Eigen::AngleAxis<Scalar> angle_axis(quaternion);
 
+  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
+  // After  October 2016, Eigen calculates  0 <= angle <= PI.
+  // Ensure consistency between pre/post October 2016 Eigen versions.
+  Scalar& angle = angle_axis.angle();
+  Vector3<Scalar>& axis = angle_axis.axis();
+  if (angle >= M_PI) {
+    angle = 2 * M_PI - angle;
+    axis = -axis;
+  }
+
 #ifdef DRAKE_ASSERT_IS_ARMED
-  // Ensure unit vector is returned and angle is between 0 and 2*PI.
-  const Scalar angle = angle_axis.angle();
-  const Vector3<Scalar> axis = angle_axis.axis();
+  // Ensure angle returned is between 0 and PI.
+  // const Scalar angle = angle_axis.angle();
+  DRAKE_ASSERT(0.0 <= angle && angle <= M_PI);
+
+  // Ensure a unit vector is returned, i.e., magnitude 1.
+  // const Vector3<Scalar> axis = angle_axis.axis();
   const Scalar norm = axis.norm();
-  DRAKE_ASSERT(angle >= 0.0 && angle <= 2 * M_PI);
   // Normalization of Vector3 has 3 multiplies, 2 additions and one sqrt.
   // Each multiply has form (1+eps)*(1+eps) = 1 + 2*eps + eps^2.
   // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
@@ -184,7 +196,7 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param quaternion 4 x 1 vector that may or may not be normalized.
  * @return axis-angle [x; y; z; angle] of quaternion with axis as a unit vector
- * and  0 <= angle <= 2*PI,  Return is independent of quaternion normalization.
+ * and  0 <= angle <= PI,  Return is independent of quaternion normalization.
  * (Deprecated) Use `QuaternionToAngleAxis()` instead.
  * @see QuaternionToAngleAxis()
  */
@@ -199,8 +211,8 @@ Vector4<typename Derived::Scalar> quat2axis(
   Eigen::Quaternion<Scalar> eigen_quaternion(quaternion(0), quaternion(1),
                                              quaternion(2), quaternion(3));
 
-  // Get Eigen's angle-axis [angle, x,y,z] and then switch order to Drake's
-  // axis-angle [x,y,z, angle].
+  // Switch Eigen angleAxis [angle,x,y,z] order to Drake axisAngle
+  // [x,y,z,angle].
   const Eigen::AngleAxis<Scalar> aa = QuaternionToAngleAxis(eigen_quaternion);
   Vector4<Scalar> axis_angle;
   axis_angle(3) = aa.angle();  // Drake's last element is angle.
@@ -350,12 +362,12 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
 
   // Calculate q2 using lots of information in the rotation matrix.
   // Rsum = abs( cos(q2) ) is inherently non-negative.
-  // Rik = sin(q2) may be negative, zero, or positive.
+  // R20 = -sin(q2) may be negative, zero, or positive.
   const Scalar R22 = R(2, 2);
   const Scalar R21 = R(2, 1);
   const Scalar R10 = R(1, 0);
   const Scalar R00 = R(0, 0);
-  const Scalar Rsum = sqrt((R22*R22 + R21*R21 + R10*R10 + R00*R00) / 2);
+  const Scalar Rsum = sqrt((R22 * R22 + R21 * R21 + R10 * R10 + R00 * R00) / 2);
   const Scalar R20 = R(2, 0);
   const Scalar q2 = atan2(-R20, Rsum);
 
@@ -369,8 +381,8 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
   const Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
   const Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
-  Scalar q1 = zA - zB;   // First angle in rotation sequence.
-  Scalar q3 = zA + zB;   // Third angle in rotation sequence.
+  Scalar q1 = zA - zB;  // First angle in rotation sequence.
+  Scalar q3 = zA + zB;  // Third angle in rotation sequence.
 
   // If necessary, modify angles q1 and/or q3 to be between -pi and pi.
   if (q1 > M_PI) q1 = q1 - 2 * M_PI;
@@ -395,8 +407,7 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
   const Matrix3<Scalar> rotMatrix_quaternion = quat2rotmat(quaternion);
   const Matrix3<Scalar> rotMatrix_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
-  DRAKE_ASSERT(
-      rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 20 * epsilon));
+  DRAKE_ASSERT(rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 20 * epsilon));
 #endif
 
   return spaceXYZ_angles;

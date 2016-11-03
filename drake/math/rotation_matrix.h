@@ -61,19 +61,31 @@ Vector4<typename Derived::Scalar> rotmat2quat(
  * Computes the angle axis representation from a rotation matrix.
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param R  the 3 x 3 rotation matrix.
- * @return the angle-axis representation, a 4 x 1 vector as [x, y, z, angle].
- * [x, y, z] is a unit vector and 0 <= angle <= 2*PI.
+ * @return angle-axis representation, 4 x 1 vector as [x, y, z, angle].
+ * [x, y, z] is a unit vector and 0 <= angle <= PI.
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2axis(
     const Eigen::MatrixBase<Derived>& R) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-  Eigen::AngleAxis<typename Derived::Scalar> eigen_angleAxis(R);
-  Eigen::Vector4d a;
-  a.head<3>() = eigen_angleAxis.axis();
-  a(3) = eigen_angleAxis.angle();  // Eigen's algorithm has 0 <= angle <= 2*PI.
-  DRAKE_ASSERT(0 <= a(3) && a(3) <= 2 * M_PI);
-  return a;
+  Eigen::AngleAxis<typename Derived::Scalar> angle_axis(R);
+
+  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
+  // After  October 2016, Eigen calculates  0 <= angle <= PI.
+  // Ensure consistency between pre/post October 2016 Eigen versions.
+  using Scalar = typename Derived::Scalar;
+  Scalar& angle = angle_axis.angle();
+  Vector3<Scalar>& axis = angle_axis.axis();
+  if (angle >= M_PI) {
+    angle = 2 * M_PI - angle;
+    axis = -axis;
+  }
+
+  Eigen::Vector4d aa;
+  aa.head<3>() = axis;
+  aa(3) = angle_axis.angle();
+  DRAKE_ASSERT(0 <= aa(3) && aa(3) <= M_PI);
+  return aa;
 }
 
 /**
