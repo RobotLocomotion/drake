@@ -48,10 +48,10 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
 }
 
 void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
-                        std::vector<int>& position_list) {
+                        std::vector<int> *const position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
-  position_list.insert(position_list.end(), position_indices.begin(),
+  position_list->insert(position_list->end(), position_indices.begin(),
                        position_indices.end());
 }
 
@@ -138,9 +138,9 @@ int do_main() {
   // 1 Neck Posture Constraint, posture constraints are imposed on q
   PostureConstraint kc_posture_neck(tree.get(), tspan);
   std::vector<int> neck_idx;
-  findJointAndInsert(tree.get(), "lowerNeckPitch", neck_idx);
-  findJointAndInsert(tree.get(), "neckYaw", neck_idx);
-  findJointAndInsert(tree.get(), "upperNeckPitch", neck_idx);
+  findJointAndInsert(tree.get(), "lowerNeckPitch", &neck_idx);
+  findJointAndInsert(tree.get(), "neckYaw", &neck_idx);
+  findJointAndInsert(tree.get(), "upperNeckPitch", &neck_idx);
   VectorXd neck_lb = VectorXd::Zero(neck_idx.size());
   VectorXd neck_ub = VectorXd::Zero(neck_idx.size());
   kc_posture_neck.setJointLimits(neck_idx.size(), neck_idx.data(), neck_lb,
@@ -197,9 +197,9 @@ int do_main() {
   // 4 torso posture constraint
   PostureConstraint kc_posture_torso(tree.get(), tspan);
   std::vector<int> torso_idx;
-  findJointAndInsert(tree.get(), "torsoYaw", torso_idx);
-  findJointAndInsert(tree.get(), "torsoPitch", torso_idx);
-  findJointAndInsert(tree.get(), "torsoRoll", torso_idx);
+  findJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
+  findJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
+  findJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
   // std::cout << "torso indices " << torso_idx[0] << torso_idx[1] <<
   // torso_idx[2] << std::endl;
   Vector3d torso_nominal = Vector3d::Zero(3);
@@ -214,8 +214,8 @@ int do_main() {
   // 5 knee posture constraint
   PostureConstraint kc_posture_knee(tree.get(), tspan);
   std::vector<int> knee_idx;
-  findJointAndInsert(tree.get(), "leftKneePitch", knee_idx);
-  findJointAndInsert(tree.get(), "rightKneePitch", knee_idx);
+  findJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
+  findJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
   Vector2d knee_nominal(reach_start(knee_idx[0]), reach_start(knee_idx[1]));
   Vector2d knee_lb = knee_nominal;
   // knee_lb(0) += 0.60;
@@ -230,13 +230,13 @@ int do_main() {
   // 6 left arm posture constraint
   PostureConstraint kc_posture_larm(tree.get(), tspan);
   std::vector<int> larm_idx;
-  findJointAndInsert(tree.get(), "leftShoulderPitch", larm_idx);
-  findJointAndInsert(tree.get(), "leftShoulderRoll", larm_idx);
-  findJointAndInsert(tree.get(), "leftShoulderYaw", larm_idx);
-  findJointAndInsert(tree.get(), "leftElbowPitch", larm_idx);
-  findJointAndInsert(tree.get(), "leftForearmYaw", larm_idx);
-  findJointAndInsert(tree.get(), "leftWristRoll", larm_idx);
-  findJointAndInsert(tree.get(), "leftWristPitch", larm_idx);
+  findJointAndInsert(tree.get(), "leftShoulderPitch", &larm_idx);
+  findJointAndInsert(tree.get(), "leftShoulderRoll", &larm_idx);
+  findJointAndInsert(tree.get(), "leftShoulderYaw", &larm_idx);
+  findJointAndInsert(tree.get(), "leftElbowPitch", &larm_idx);
+  findJointAndInsert(tree.get(), "leftForearmYaw", &larm_idx);
+  findJointAndInsert(tree.get(), "leftWristRoll", &larm_idx);
+  findJointAndInsert(tree.get(), "leftWristPitch", &larm_idx);
   // std::cout << "Number of elements in larm_idx " << larm_idx.size() <<
   // std::endl;
   VectorXd larm_lb = VectorXd::Zero(7);
@@ -247,13 +247,13 @@ int do_main() {
   // 7 right arm posture constraint
   PostureConstraint kc_posture_rarm(tree.get(), tspan);
   std::vector<int> rarm_idx;
-  findJointAndInsert(tree.get(), "rightShoulderPitch", rarm_idx);
-  findJointAndInsert(tree.get(), "rightShoulderRoll", rarm_idx);
-  findJointAndInsert(tree.get(), "rightShoulderYaw", rarm_idx);
-  findJointAndInsert(tree.get(), "rightElbowPitch", rarm_idx);
-  findJointAndInsert(tree.get(), "rightForearmYaw", rarm_idx);
-  findJointAndInsert(tree.get(), "rightWristRoll", rarm_idx);
-  findJointAndInsert(tree.get(), "rightWristPitch", rarm_idx);
+  findJointAndInsert(tree.get(), "rightShoulderPitch", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightShoulderRoll", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightShoulderYaw", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightElbowPitch", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightForearmYaw", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightWristRoll", &rarm_idx);
+  findJointAndInsert(tree.get(), "rightWristPitch", &rarm_idx);
   // std::cout << "Number of elements in rarm_idx " << rarm_idx.size() <<
   // std::endl;
   VectorXd rarm_lb = VectorXd::Zero(7);
