@@ -36,7 +36,7 @@ DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstancesFromSdfFileInWorldFrame(
     const std::string& filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
-    RigidBodyTree* tree);
+    RigidBodyTree<double>* tree);
 
 /**
  * Adds the model or models defined within an SDF file to a rigid body tree.
@@ -63,7 +63,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfFile(
     const std::string& filename,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    RigidBodyTree<double>* tree);
 
 /**
  * Adds a SDF model to a rigid body system based on a string containing an SDF
@@ -87,7 +87,7 @@ ModelInstanceIdTable AddModelInstancesFromSdfString(
     const std::string& sdf_string,
     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
-    RigidBodyTree* tree);
+    RigidBodyTree<double>* tree);
 
 }  // namespace sdf
 }  // namespace parsers

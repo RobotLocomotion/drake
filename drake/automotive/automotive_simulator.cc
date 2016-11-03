@@ -57,7 +57,7 @@ systems::DiagramBuilder<T>* AutomotiveSimulator<T>::get_builder() {
 }
 
 template <typename T>
-const RigidBodyTree& AutomotiveSimulator<T>::get_rigid_body_tree() {
+const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
   return *rigid_body_tree_;
 }
 

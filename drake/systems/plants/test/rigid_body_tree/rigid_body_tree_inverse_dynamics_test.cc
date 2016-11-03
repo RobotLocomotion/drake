@@ -38,13 +38,13 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
     const std::string kAtlasUrdf =
         drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_convex_hull.urdf";
 
-    tree_rpy_ = std::make_unique<RigidBodyTree>();
+    tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         kAtlasUrdf, kRollPitchYaw, nullptr /* weld_to_frame */,
         tree_rpy_.get());
     trees_.push_back(tree_rpy_.get());
 
-    tree_quaternion_ = std::make_unique<RigidBodyTree>();
+    tree_quaternion_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         kAtlasUrdf, kQuaternion, nullptr /* weld_to_frame */,
         tree_quaternion_.get());
@@ -54,9 +54,9 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
  public:
   // TODO(amcastro-tri): A stack object here (preferable to a pointer)
   // generates build issues on Windows platforms. See git-hub issue #1854.
-  std::unique_ptr<RigidBodyTree> tree_rpy_;
-  std::unique_ptr<RigidBodyTree> tree_quaternion_;
-  std::vector<RigidBodyTree*> trees_;
+  std::unique_ptr<RigidBodyTree<double>> tree_rpy_;
+  std::unique_ptr<RigidBodyTree<double>> tree_quaternion_;
+  std::vector<RigidBodyTree<double>*> trees_;
 };
 
 // Check that mass matrix time derivative minus two times Coriolis matrix is
@@ -115,7 +115,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
     kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 
-    const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
+    const typename RigidBodyTree<Scalar>::BodyToWrenchMap no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
         kinematics_cache_coriolis, no_external_wrenches,
         qdd.cast<Scalar>().eval(), true);
@@ -149,7 +149,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
 TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
   std::default_random_engine generator;
 
-  for (RigidBodyTree* tree : trees_) {
+  for (RigidBodyTree<double>* tree : trees_) {
     auto q = tree->getRandomConfiguration(generator);
     auto v = VectorXd::Random(tree->get_num_velocities()).eval();
     auto vd = VectorXd::Random(tree->get_num_velocities()).eval();
@@ -164,7 +164,8 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
       KinematicsCache<Scalar> kinematics_cache_2(tree->bodies);
       kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
       tree->doKinematics(kinematics_cache_2, true);
-      const RigidBodyTree::BodyToWrenchMap<Scalar> no_external_wrenches;
+      const typename RigidBodyTree<Scalar>::
+      BodyToWrenchMap no_external_wrenches;
       return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
                                    vd_arg);
     };
@@ -201,7 +202,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   KinematicsCache<double> kinematics_cache(tree->bodies);
   kinematics_cache.initialize(q);
   tree->doKinematics(kinematics_cache);
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   auto gravitational_forces =
       tree->dynamicsBiasTerm(kinematics_cache, no_external_wrenches, false);
 
@@ -271,11 +272,11 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
 
   // Use a quaternion-parameterized floating joint, so that torque vector for
   // this joint is the same as the floating joint wrench.
-  RigidBodyTree& tree = *tree_quaternion_;
+  RigidBodyTree<double>& tree = *tree_quaternion_;
   auto q = tree.getRandomConfiguration(generator);
   auto v = VectorXd::Random(tree.get_num_velocities()).eval();
   auto vd = VectorXd::Random(tree.get_num_velocities()).eval();
-  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
 
   KinematicsCache<double> kinematics_cache(tree.bodies);
   kinematics_cache.initialize(q, v);

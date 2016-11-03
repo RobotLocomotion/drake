@@ -14,7 +14,7 @@ namespace systems {
 using std::runtime_error;
 
 ViewerDrawTranslator::ViewerDrawTranslator(
-    const RigidBodyTree& tree) :
+    const RigidBodyTree<double>& tree) :
     LcmAndVectorBaseTranslator(
         tree.get_num_positions() + tree.get_num_velocities()),
     tree_(tree) {

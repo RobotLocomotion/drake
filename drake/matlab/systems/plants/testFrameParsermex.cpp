@@ -18,9 +18,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   char buf[BUF_SIZE];
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1], buf, BUF_SIZE);
-  RigidBodyTree cpp_model(buf);
+  RigidBodyTree<double> cpp_model(buf);
 
   if (cpp_model.frames.size() != model->frames.size()) {
     mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch",

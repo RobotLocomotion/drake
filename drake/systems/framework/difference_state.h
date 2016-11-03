@@ -42,6 +42,12 @@ class DifferenceState {
     }
   }
 
+  /// Constructs a difference state that owns a single @p datum vector.
+  explicit DifferenceState(std::unique_ptr<BasicVector<T>> datum) {
+    data_.push_back(datum.get());
+    owned_data_.push_back(std::move(datum));
+  }
+
   virtual ~DifferenceState() {}
 
   int size() const {
@@ -59,11 +65,14 @@ class DifferenceState {
   }
 
   /// Writes the values from @p other into this DifferenceState, possibly
-  /// writing through to unowned data. Aborts if the dimensions don't match.
+  /// writing through to unowned data. Asserts if the dimensions don't match.
   void CopyFrom(const DifferenceState<T>& other) {
     SetFromGeneric(other);
   }
 
+  /// Resets the values in this DifferenceState from the values in @p other,
+  /// possibly writing through to unowned data. Asserts if the dimensions don't
+  /// match.
   void SetFrom(const DifferenceState<double>& other) {
     SetFromGeneric(other);
   }
@@ -97,10 +106,10 @@ class DifferenceState {
 
   template <typename U>
   void SetFromGeneric(const DifferenceState<U>& other) {
-    DRAKE_DEMAND(size() == other.size());
+    DRAKE_ASSERT(size() == other.size());
     for (int i = 0; i < size(); i++) {
-      DRAKE_DEMAND(other.get_difference_state(i) != nullptr);
-      DRAKE_DEMAND(data_[i] != nullptr);
+      DRAKE_ASSERT(other.get_difference_state(i) != nullptr);
+      DRAKE_ASSERT(data_[i] != nullptr);
       data_[i]->set_value(
           other.get_difference_state(i)->get_value().template cast<T>());
     }

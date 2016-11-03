@@ -104,7 +104,8 @@ void surfaceTangents(const Vector3d& normal,
   }
 }
 
-int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
+int contactPhi(const RigidBodyTree<double>& r,
+               const KinematicsCache<double>& cache,
                // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                SupportStateElement& supp, VectorXd& phi) {
   int nc = static_cast<int>(supp.contact_pts.size());
@@ -124,7 +125,8 @@ int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache,
 }
 
 int contactConstraintsBV(
-    const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
+    const RigidBodyTree<double>& r,
+    const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& supp, MatrixXd& B,
@@ -184,7 +186,7 @@ int contactConstraintsBV(
 }
 
 MatrixXd individualSupportCOPs(
-    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta) {
   const int n_basis_vectors_per_contact =
@@ -266,7 +268,7 @@ bool isSupportElementActive(SupportStateElement* se,
 }
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(
-    const RigidBodyTree& r, VectorXd q, VectorXd qd,
+    const RigidBodyTree<double>& r, VectorXd q, VectorXd qd,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
@@ -317,7 +319,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(
 }
 
 drake::eigen_aligned_std_vector<SupportStateElement> getActiveSupports(
-    const RigidBodyTree& r, const VectorXd& q, const VectorXd& qd,
+    const RigidBodyTree<double>& r, const VectorXd& q, const VectorXd& qd,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Ref<const Matrix<bool, Dynamic, 1>>& contact_force_detected,
@@ -336,7 +338,7 @@ drake::eigen_aligned_std_vector<SupportStateElement> getActiveSupports(
 }
 
 Vector6d bodySpatialMotionPD(
-    const RigidBodyTree& r, const DrakeRobotState& robot_state,
+    const RigidBodyTree<double>& r, const DrakeRobotState& robot_state,
     const int body_index, const Isometry3d& body_pose_des,
     const Ref<const Vector6d>& body_v_des,
     const Ref<const Vector6d>& body_vdot_des, const Ref<const Vector6d>& Kp,

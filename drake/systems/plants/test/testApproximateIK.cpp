@@ -11,8 +11,9 @@ using namespace std;  // NOLINT(build/namespaces)
 using namespace Eigen;  // NOLINT(build/namespaces)
 
 int main() {
-  RigidBodyTree* model =
-      new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree<double>* model =
+      new RigidBodyTree<double>(
+          "examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;
   }

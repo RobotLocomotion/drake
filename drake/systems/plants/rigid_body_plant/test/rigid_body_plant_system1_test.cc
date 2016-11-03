@@ -51,7 +51,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   //////////////////////////////////////////////////////////////////////////////
   // Instantiates a RigidBodyPlant (System 2.0) model of the Kuka arm.
   //////////////////////////////////////////////////////////////////////////////
-  auto tree = make_unique<RigidBodyTree>();
+  auto tree = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,

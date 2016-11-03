@@ -40,7 +40,7 @@ class DRAKE_EXPORT ModalState {
   /// the index is out-of-bounds.
   AbstractValue& get_mutable_modal_state(int index);
 
-  /// Copies all of the modal state in @p other into this state. Aborts if the
+  /// Copies all of the modal state in @p other into this state. Asserts if the
   /// two states are not equal in size. Throws if any of the elements are of
   /// incompatible type.
   void CopyFrom(const ModalState& other);

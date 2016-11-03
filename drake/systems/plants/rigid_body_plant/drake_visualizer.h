@@ -55,7 +55,7 @@ class DRAKE_EXPORT DrakeVisualizer
    * @param[in] lcm A pointer to the object through which LCM messages can be
    * published. This pointer must remain valid for the duration of this object.
    */
-  DrakeVisualizer(const RigidBodyTree& tree,
+  DrakeVisualizer(const RigidBodyTree<double>& tree,
       drake::lcm::DrakeLcmInterface* lcm);
 
   void EvalOutput(const systems::Context<double>& context,
@@ -84,7 +84,7 @@ class DRAKE_EXPORT DrakeVisualizer
   // sized, and the names and model instance IDs of the rigid bodies are set
   // within load_message_.
   static lcmt_viewer_load_robot CreateLoadMessage(
-      const RigidBodyTree& tree);
+      const RigidBodyTree<double>& tree);
 
   // Publishes a lcmt_viewer_load_robot message containing a description
   // of what should be visualized. The message is intended to be received by the

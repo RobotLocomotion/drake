@@ -63,11 +63,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs < 1) return;
 
   // first get the model_ptr back from matlab
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
 
   int i, j, error, nq = model->get_num_positions();
 
-  static RigidBodyTree *lastModel = NULL;
+  static RigidBodyTree<double> *lastModel = NULL;
   static int lastNumJointLimits = 0;
 
   int equality_ind = 0;

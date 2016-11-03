@@ -420,16 +420,23 @@ class System {
     return path.str();
   }
 
-  /// Creates a deep copy of this system, transmogrified to use the autodiff
+  /// Creates a deep copy of @p from, transmogrified to use the autodiff
   /// scalar type, with a dynamic-sized vector of partial derivatives. Returns
   /// nullptr if the template parameter S is not the type of the concrete
   /// system, or a superclass thereof.
   ///
+  /// Usage: @code
+  ///   MySystem<double> plant;
+  ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
+  ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
+  /// @p endcode
+  ///
   /// @tparam S The specific System pointer type to return.
   template <template<typename> class S = ::drake::systems::System>
-  std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd() const {
+  static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
+      const System<double>& from) {
     return std::unique_ptr<S<AutoDiffXd>>(dynamic_cast<S<AutoDiffXd>*>(
-        DoToAutoDiffXd()));
+        from.DoToAutoDiffXd()));
   }
 
   /// Declares that @p parent is the immediately enclosing Diagram. The
@@ -500,7 +507,6 @@ class System {
     return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
- public:
   /// Causes the vector-valued port with the given @p port_index to become
   /// up-to-date, delegating to our parent Diagram if necessary. Returns
   /// the port's value, or nullptr if the port is not connected.
@@ -546,7 +552,6 @@ class System {
                                               get_input_port(port_index));
   }
 
- protected:
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
@@ -649,7 +654,8 @@ class System {
   }
 
   /// NVI implementation of ToAutoDiffXd. Caller takes ownership of the returned
-  /// pointer.
+  /// pointer. Overrides should return a more specific covariant type.
+  /// Templated overrides may assume that they are subclasses of System<double>.
   ///
   /// TODO(david-german-tri): Provide a default implementation on LeafSystem,
   /// then make this method pure virtual.

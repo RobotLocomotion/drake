@@ -47,7 +47,7 @@ class BodyOfInterest {
    * @param robot is the robot model.
    * @param cache is the kinematics cache. It needs to be initialized first
    */
-  void Update(const RigidBodyTree& robot,
+  void Update(const RigidBodyTree<double>& robot,
               const KinematicsCache<double>& cache) {
     pose_.translation() = offset_;
     pose_.linear().setIdentity();
@@ -85,7 +85,7 @@ class HumanoidStatus {
 
   // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
   // Valkyrie, and they should be specified in some separate config file.
-  explicit HumanoidStatus(const RigidBodyTree& robot_in)
+  explicit HumanoidStatus(const RigidBodyTree<double>& robot_in)
       : robot_(robot_in),
         cache_(robot_.bodies),
         bodies_of_interest_{
@@ -190,7 +190,7 @@ class HumanoidStatus {
   Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
 
   // Getters
-  inline const RigidBodyTree& robot() const { return robot_; }
+  inline const RigidBodyTree<double>& robot() const { return robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
@@ -279,7 +279,7 @@ class HumanoidStatus {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree<double>& robot_;
   KinematicsCache<double> cache_;
 
   /// Nominal position for the robot.

@@ -40,7 +40,7 @@ inline void buildSparseMatrixForContactConstraints(
 
 template <typename Scalar>
 pair<MatrixX<Scalar>, vector<MatrixX<Scalar>>> contactConstraints(
-    const RigidBodyTree &model, const KinematicsCache<Scalar> &cache,
+    const RigidBodyTree<double> &model, const KinematicsCache<Scalar> &cache,
     const Map<const Matrix3Xd> &normals, const Map<const VectorXi> &idxA,
     const Map<const VectorXi> &idxB, const Map<const Matrix3Xd> &xA,
     const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {

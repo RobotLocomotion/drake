@@ -42,7 +42,7 @@ DRAKE_EXPORT bool isSupportElementActive(
 
 DRAKE_EXPORT Eigen::Matrix<bool, Eigen::Dynamic, 1>
 getActiveSupportMask(
-    RigidBodyTree* r, Eigen::VectorXd q, Eigen::VectorXd qd,
+    RigidBodyTree<double>* r, Eigen::VectorXd q, Eigen::VectorXd qd,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
@@ -51,7 +51,8 @@ getActiveSupportMask(
 
 DRAKE_EXPORT drake::eigen_aligned_std_vector<SupportStateElement>
 getActiveSupports(
-    const RigidBodyTree& r, const Eigen::VectorXd& q, const Eigen::VectorXd& qd,
+    const RigidBodyTree<double>& r,
+    const Eigen::VectorXd& q, const Eigen::VectorXd& qd,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& available_supports,
     const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>>&
@@ -87,14 +88,15 @@ DRAKE_EXPORT void surfaceTangents(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Matrix<double, 3, m_surface_tangents>& d);
 DRAKE_EXPORT int contactPhi(
-    const RigidBodyTree& r,
+    const RigidBodyTree<double>& r,
     const KinematicsCache<double>& cache,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     SupportStateElement& supp,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::VectorXd& phi);
 DRAKE_EXPORT int contactConstraintsBV(
-    const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc,
+    const RigidBodyTree<double>& r,
+    const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     drake::eigen_aligned_std_vector<SupportStateElement>& supp,
@@ -103,12 +105,12 @@ DRAKE_EXPORT int contactConstraintsBV(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::VectorXd& Jpdotv, Eigen::MatrixXd& normals);
 DRAKE_EXPORT Eigen::MatrixXd individualSupportCOPs(
-    const RigidBodyTree& r, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     const Eigen::MatrixXd& normals, const Eigen::MatrixXd& B,
     const Eigen::VectorXd& beta);
 DRAKE_EXPORT Vector6d bodySpatialMotionPD(
-    const RigidBodyTree& r, const DrakeRobotState& robot_state,
+    const RigidBodyTree<double>& r, const DrakeRobotState& robot_state,
     const int body_index, const Eigen::Isometry3d& body_pose_des,
     const Eigen::Ref<const Vector6d>& body_v_des,
     const Eigen::Ref<const Vector6d>& body_vdot_des,
