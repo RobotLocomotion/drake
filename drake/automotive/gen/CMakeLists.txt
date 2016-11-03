@@ -11,5 +11,7 @@ if(lcm_FOUND)
     simple_car_config_translator.h
     simple_car_state.h
     simple_car_state_translator.h
+    linear_car_state.h
+    linear_car_state_translator.h
     )
 endif()
