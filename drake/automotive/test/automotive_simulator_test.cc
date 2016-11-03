@@ -142,15 +142,18 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
                        "/automotive/models/boxcar.sdf", 1);
 }
 
+// The following model is used to stress test the code some more since it has a
+// different number of joint states than the above two models.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/two_dof_robot.sdf", 3);
 }
 
-// A helper method for unit testing TrajectoryCar. Parameter @p sdf_filename is
-// the name of the file containing the model of the vehicle to be used by the
-// TrajectoryCar.
-void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
+// A helper method for unit testing TrajectoryCar. Parameters @p sdf_filename_1
+// and @p sdf_filename_2 are the names of the files containing the models of the
+// vehicles to be used by two TrajectoryCars.
+void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
+                              const std::string& sdf_file_2, int num_bodies_2) {
   typedef Curve2<double> Curve2d;
   typedef Curve2d::Point2 Point2d;
   const std::vector<Point2d> waypoints{
@@ -162,9 +165,9 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   // Set up a basic simulation with just some TrajectoryCars.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   const int model_instance_id_1 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file, curve, 1.0, 0.0);
+      simulator->AddTrajectoryCarFromSdf(sdf_file_1, curve, 1.0, 0.0);
   const int model_instance_id_2 =
-      simulator->AddTrajectoryCarFromSdf(sdf_file, curve, 1.0, 10.0);
+      simulator->AddTrajectoryCarFromSdf(sdf_file_2, curve, 1.0, 10.0);
 
   // Obtain the number of bodies in the models.
   const std::vector<const RigidBody*> vehicle_bodies_1 =
@@ -173,8 +176,8 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   const std::vector<const RigidBody*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
-  EXPECT_EQ(vehicle_bodies_1.size(), vehicle_bodies_2.size());
-  const int num_vehicle_bodies = vehicle_bodies_1.size();
+  EXPECT_EQ(vehicle_bodies_1.size(), num_bodies_1);
+  EXPECT_EQ(vehicle_bodies_2.size(), num_bodies_2);
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -183,14 +186,14 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
   const auto& tree = simulator->get_rigid_body_tree();
   EXPECT_EQ(2, tree.get_num_model_instances());
   // One body belongs to the world, the rest belong to two car models.
-  ASSERT_EQ(1 + 2 * num_vehicle_bodies, tree.get_num_bodies());
+  ASSERT_EQ(1 + num_bodies_1 + num_bodies_2, tree.get_num_bodies());
 
   // Verifies that the first car was added to the tree.
   EXPECT_EQ(vehicle_bodies_1.at(0)->get_name(), tree.get_body(1).get_name());
 
   // Verifies that the second car was added to the tree.
   EXPECT_EQ(vehicle_bodies_2.at(0)->get_name(),
-            tree.get_body(num_vehicle_bodies + 1).get_name());
+            tree.get_body(num_bodies_1 + 1).get_name());
 
   // Run for a while.
   for (int i = 0; i < 100; ++i) {
@@ -209,17 +212,23 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
 // Cover AddTrajectoryCar (and thus AddPublisher).
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/prius/prius_with_lidar.sdf");
+                           "/automotive/models/prius/prius_with_lidar.sdf", 17,
+                           GetDrakePath() +
+                           "/automotive/models/boxcar.sdf", 1);
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestBoxcar) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/boxcar.sdf");
+                           "/automotive/models/boxcar.sdf", 1,
+                           GetDrakePath() +
+                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/two_dof_robot.sdf");
+                           "/automotive/models/two_dof_robot.sdf", 3,
+                           GetDrakePath() +
+                           "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
 
 }  // namespace
