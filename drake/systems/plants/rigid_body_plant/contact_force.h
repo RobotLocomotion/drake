@@ -62,31 +62,24 @@ class DRAKE_EXPORT ContactForce {
   ContactForce(ContactForce&& other) = default;
   ContactForce& operator=(ContactForce&& other) = default;
 
-  Vector3<T> get_application_point() { return application_point_; }
   const Vector3<T>& get_application_point() const { return application_point_; }
 
-  Vector3<T> get_normal_force() { return force_.dot(normal_) * normal_; }
-  const Vector3<T> get_normal_force() const {
-    return force_.dot(normal_) * normal_;
-  }
+  const Vector3<T>& get_force() const { return force_; }
 
-  Vector3<T> get_tangent_force() { return force_ - get_normal_force(); }
-  const Vector3<T> get_tangent_force() const {
-    return force_ - get_normal_force();
-  }
+  /** Extracts the normal component of the translational force. */
+  Vector3<T> get_normal_force() const { return force_.dot(normal_) * normal_; }
 
-  Vector3<T> get_pure_torque() { return pure_torque_; }
-  const Vector3<T> get_pure_torque() const { return pure_torque_; }
+  /** Extracts the tangential component of the translational force. */
+  Vector3<T> get_tangent_force() const { return force_ - get_normal_force(); }
 
-  Vector3<T> get_normal() { return normal_; }
-  const Vector3<T> get_normal() const { return normal_; }
+  const Vector3<T>& get_pure_torque() const { return pure_torque_; }
 
-  Vector3<T> get_force() const { return force_; }
+  const Vector3<T>& get_normal() const { return normal_; }
 
   /**
    This is a utility function for returning a compact representation of the
-   spatial force: a vector in R6 representing a concatentation of a rotational
-   and translational force.
+   contact force's overall spatial force: a vector in R6 representing a
+   concatentation of a rotational and translational force.
 
    The rotational force does *not* include an `r X f` moment term.  It is simply
    the pure torque that was provided at initialization time. Ultimately, the
