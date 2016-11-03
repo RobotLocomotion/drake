@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-#include "drake/common/hash_combine.h"
+#include "drake/common/hash.h"
 
 using std::accumulate;
 using std::includes;
