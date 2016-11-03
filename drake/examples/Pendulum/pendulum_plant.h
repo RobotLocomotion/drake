@@ -73,6 +73,9 @@ class PendulumPlant : public systems::LeafSystem<T> {
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 
+  // System<T> override.
+  PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
+
  private:
   T get_tau(const MyContext& context) const {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);

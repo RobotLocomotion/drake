@@ -9,7 +9,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-void AddGround(RigidBodyTree* tree) {
+void AddGround(RigidBodyTree<double>* tree) {
   double kBoxWidth = 3;
   double kBoxDepth = 0.2;
   DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
@@ -28,7 +28,7 @@ void AddGround(RigidBodyTree* tree) {
   tree->updateStaticCollisionElements();
 }
 
-void VerifyIiwaTree(const RigidBodyTree& tree) {
+void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx =
       tree.computePositionNameToIndexMap();
 

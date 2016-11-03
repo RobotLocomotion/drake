@@ -5,7 +5,7 @@ using namespace Eigen;
 using namespace std;
 
 template <typename Scalar>
-mxArray *createKinematicsCache(RigidBodyTree &model) {
+mxArray *createKinematicsCache(RigidBodyTree<double> &model) {
   KinematicsCache<Scalar> *cache = new KinematicsCache<Scalar>(model.bodies);
   return createDrakeMexPointer(
       (void *)cache, typeid(KinematicsCache<Scalar>).name(),
@@ -44,8 +44,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("unrecognized KinematicsCache type");
     }
   } else if (nlhs == 1 && nrhs == 2) {
-    RigidBodyTree *model =
-        static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[0]));
+    RigidBodyTree<double> *model =
+        static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(prhs[0]));
     int num_derivs = static_cast<int>(mxGetScalar(prhs[1]));
     if (num_derivs <=
         DrakeJoint::AutoDiffFixedMaxSize::DerType::MaxRowsAtCompileTime) {

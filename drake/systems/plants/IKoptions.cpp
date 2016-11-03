@@ -11,7 +11,7 @@ using std::cerr;
 using std::endl;
 using std::set;
 
-IKoptions::IKoptions(RigidBodyTree *robot) {
+IKoptions::IKoptions(RigidBodyTree<double> *robot) {
   // It is important to make sure these default values are consistent with the
   // MATLAB IKoptions
   setDefaultParams(robot);
@@ -41,7 +41,7 @@ IKoptions::IKoptions(const IKoptions &rhs) {
 }
 IKoptions::~IKoptions() {}
 
-void IKoptions::setDefaultParams(RigidBodyTree *robot) {
+void IKoptions::setDefaultParams(RigidBodyTree<double> *robot) {
   robot_ = robot;
   nq_ = robot->get_num_positions();
   Q_ = MatrixXd::Identity(nq_, nq_);
@@ -64,7 +64,7 @@ void IKoptions::setDefaultParams(RigidBodyTree *robot) {
   qdf_lb_ = VectorXd::Zero(nq_);
 }
 
-RigidBodyTree *IKoptions::getRobotPtr() const { return robot_; }
+RigidBodyTree<double> *IKoptions::getRobotPtr() const { return robot_; }
 
 void IKoptions::setQ(const MatrixXd &Q) {
   if (Q.rows() != nq_ || Q.cols() != nq_) {
@@ -263,7 +263,7 @@ void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const {
   t_samples = additional_tSamples_;
 }
 
-void IKoptions::updateRobot(RigidBodyTree *new_robot) {
+void IKoptions::updateRobot(RigidBodyTree<double> *new_robot) {
   robot_ = new_robot;
   int nq_cache = nq_;
   nq_ = robot_->get_num_positions();

@@ -35,7 +35,7 @@ class AtlasPlant {
   size_t getNumInputs() const;
 
   /** @returns the underlying RigidBodyTree for the Atlas plant. **/
-  const std::shared_ptr<RigidBodyTree>& get_rigid_body_tree() const;
+  const std::shared_ptr<RigidBodyTree<double>>& get_rigid_body_tree() const;
 
   /** @returns the generalized positions followed by the sensors' outputs as
   the output of the system. **/

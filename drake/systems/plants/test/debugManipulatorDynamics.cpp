@@ -11,7 +11,7 @@ using std::endl;
 using std::default_random_engine;
 
 int main() {
-  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree<double> model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   default_random_engine generator;
   VectorXd q = model.getRandomConfiguration(generator);
@@ -27,7 +27,7 @@ int main() {
   auto M = model.massMatrix<double>(cache);
   cout << M << endl << endl;
 
-  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
   drake::WrenchVector<double> f_ext_r_foot;
   f_ext_r_foot.setRandom();
   external_wrenches.insert({model.FindBody("r_foot"), f_ext_r_foot});

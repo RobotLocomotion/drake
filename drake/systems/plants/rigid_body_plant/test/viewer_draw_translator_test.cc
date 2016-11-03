@@ -25,7 +25,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // Creates a `RigidBodyTree` with `kNumBodies` rigid bodies.
   const int kNumBodies = 2;
 
-  auto tree = make_unique<RigidBodyTree>();
+  auto tree = make_unique<RigidBodyTree<double>>();
   for (int i = 0; i < kNumBodies; ++i) {
     auto body = make_unique<RigidBody>();
     body->set_name("body" + std::to_string(i));

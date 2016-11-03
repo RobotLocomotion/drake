@@ -44,7 +44,7 @@ class AutomotiveSimulator {
   /// Returns the RigidBodyTree.  Beware that the AutomotiveSimulator::Start()
   /// method invokes RigidBodyTree::compile, which may substantially update the
   /// tree representation.
-  const RigidBodyTree& get_rigid_body_tree();
+  const RigidBodyTree<T>& get_rigid_body_tree();
 
   /// Adds a SimpleCar system to this simulation, including its DrivingCommand
   /// LCM input and EulerFloatingJoint output.
@@ -150,8 +150,9 @@ class AutomotiveSimulator {
   std::vector<int> GetModelJointStateSizes() const;
 
   // For both building and simulation.
-  std::unique_ptr<RigidBodyTree> rigid_body_tree_{
-      std::make_unique<RigidBodyTree>()};
+  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
+      std::make_unique<RigidBodyTree<T>>()};
+
   std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
 
   // === Start for building. ===

@@ -9,7 +9,8 @@ using std::cerr;
 using std::endl;
 
 int main() {
-  RigidBodyTree* model = new RigidBodyTree(drake::GetDrakePath() +
+  RigidBodyTree<double>* model =
+      new RigidBodyTree<double>(drake::GetDrakePath() +
       "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;

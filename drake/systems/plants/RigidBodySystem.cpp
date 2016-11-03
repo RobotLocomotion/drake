@@ -9,7 +9,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint_wrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
@@ -127,7 +127,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
   VectorXd C = tree->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
@@ -1050,7 +1050,8 @@ ModelInstanceIdTable RigidBodySystem::AddModelInstancesFromString(
 }
 
 Eigen::VectorXd spatialForceInFrameToJointTorque(
-    const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
+    const RigidBodyTree<double>* tree,
+    const KinematicsCache<double>& rigid_body_state,
     const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& wrench) {
   auto T_frame_to_world =
       tree->relativeTransform(rigid_body_state, 0, frame->get_frame_index());

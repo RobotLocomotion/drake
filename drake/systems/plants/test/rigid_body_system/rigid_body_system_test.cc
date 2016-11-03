@@ -32,7 +32,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 
   // Obtains a const pointer to the rigid body tree within the rigid body
   // system.
-  const std::shared_ptr<RigidBodyTree>& tree =
+  const std::shared_ptr<RigidBodyTree<double>>& tree =
       rigid_body_sys->getRigidBodyTree();
 
   // Checks that the bodies in the world can be obtained and they have the
@@ -106,7 +106,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   // Obtains a const pointer to the rigid body tree within the rigid body
   // system.
-  const std::shared_ptr<RigidBodyTree>& tree =
+  const std::shared_ptr<RigidBodyTree<double>>& tree =
       rigid_body_sys->getRigidBodyTree();
 
   // Checks that an exception is thrown if we try to find a body using a

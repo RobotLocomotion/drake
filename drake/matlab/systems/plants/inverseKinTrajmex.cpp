@@ -19,7 +19,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "inverseKinPointwisemex(model_ptr, t, qdot0_seed, q_seed, q_"
         "nom, constraint1, constraint2,..., ikoptions");
   }
-  RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double>* model =
+      (RigidBodyTree<double>*)getDrakeMexPointer(prhs[0]);
   int nq = model->get_num_positions();
   int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPrSafe(prhs[1]);

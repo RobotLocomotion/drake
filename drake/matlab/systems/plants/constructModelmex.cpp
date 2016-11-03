@@ -51,12 +51,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   if (isa(prhs[0], "DrakeMexPointer")) {  // then it's calling the destructor
-    destroyDrakeMexPointer<RigidBodyTree*>(prhs[0]);
+    destroyDrakeMexPointer<RigidBodyTree<double>*>(prhs[0]);
     return;
   }
 
   const mxArray* pRBM = prhs[0];
-  RigidBodyTree* model = new RigidBodyTree();
+  RigidBodyTree<double>* model = new RigidBodyTree<double>();
   model->bodies.clear();  // a little gross:  the default constructor makes a
                           // body "world".  zap it because we will construct one
                           // again below
@@ -470,8 +470,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   model->compile();
 
   // mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
-  plhs[0] = createDrakeMexPointer((void*)model, "RigidBodyTree",
-                                  DrakeMexPointerTypeId<RigidBodyTree>::value);
+  plhs[0] =
+      createDrakeMexPointer(
+          (void*)model, "RigidBodyTree",
+          DrakeMexPointerTypeId<RigidBodyTree<double>>::value);
   // DEBUG
   // mexPrintf("constructModelmex: END\n");
   // END_DEBUG

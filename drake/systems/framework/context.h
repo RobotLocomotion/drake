@@ -232,6 +232,15 @@ class Context {
     return std::unique_ptr<Context<T>>(DoClone());
   }
 
+  /// Initializes this context's time, state, and parameters from the real
+  /// values in @p source, regardless of this context's scalar type.
+  /// Requires a constructor T(double).
+  void SetTimeStateAndParametersFrom(const Context<double>& source) {
+    set_time(T(source.get_time()));
+    get_mutable_state()->SetFrom(source.get_state());
+    // TODO(david-german-tri): Parameters.
+  }
+
   /// Declares that @p parent is the context of the enclosing Diagram. The
   /// enclosing Diagram context is needed to evaluate inputs recursively.
   /// Aborts if the parent has already been set to something else.

@@ -45,7 +45,7 @@ class DRAKE_EXPORT KinematicsResults {
   // RigidBodyTree.
   // An alias to @tree is maintained so that the tree's lifetime must exceed
   // this object's lifetime.
-  explicit KinematicsResults(const RigidBodyTree* tree);
+  explicit KinematicsResults(const RigidBodyTree<T>* tree);
 
   // Updates KinematicsResults from a context provided by RigidBodyPlant.
   // Only RigidBodyPlant has access to this method since it is a friend.
@@ -53,7 +53,7 @@ class DRAKE_EXPORT KinematicsResults {
   // cache this method won't be needed.
   void UpdateFromContext(const Context<T>& context);
 
-  const RigidBodyTree* tree_;
+  const RigidBodyTree<T>* tree_;
   KinematicsCache<T> kinematics_cache_;
 };
 

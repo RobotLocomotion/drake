@@ -67,7 +67,10 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * variables and not at the beginning of the full state of the RigidBodyTree.
  * This is why the total number of positions needs to be added to the velocity
  * index to get its index in the RigidBodyTree's full state vector.
+ *
+ * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
+template <typename T>
 class DRAKE_EXPORT RigidBodyTree {
  public:
   /**
@@ -396,9 +399,8 @@ class DRAKE_EXPORT RigidBodyTree {
 #ifndef SWIG
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
-  template <typename Scalar>
   using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
-    RigidBody const*, drake::WrenchVector<Scalar>>;
+    RigidBody const*, drake::WrenchVector<T>>;
 #endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
@@ -471,9 +473,11 @@ class DRAKE_EXPORT RigidBodyTree {
     static_assert(DerivedPoints::RowsAtCompileTime == 3 ||
                       DerivedPoints::RowsAtCompileTime == Eigen::Dynamic,
                   "points argument has wrong number of rows");
-    auto T =
+    // Relative transformation from frame "from_body_or_frame_ind" to frame
+    // "to_body_or_frame_ind".
+    auto relative_transform =
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
-    return T * points.template cast<Scalar>();
+    return relative_transform * points.template cast<Scalar>();
   }
 
   template <typename Scalar>
@@ -1053,7 +1057,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * A toString method for this class.
    */
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
-                                                  const RigidBodyTree&);
+                                               const RigidBodyTree<double>&);
 
   /**
    * @brief Adds and takes ownership of a rigid body.
@@ -1199,4 +1203,4 @@ class DRAKE_EXPORT RigidBodyTree {
   int next_available_clique_ = 0;
 };
 
-typedef RigidBodyTree RigidBodyTreed;
+typedef RigidBodyTree<double> RigidBodyTreed;

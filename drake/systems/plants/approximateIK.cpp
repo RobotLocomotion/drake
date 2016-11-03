@@ -13,7 +13,8 @@ using namespace std;
 using namespace Eigen;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
+void approximateIK(RigidBodyTree<double>* model,
+                   const MatrixBase<DerivedA>& q_seed,
                    const MatrixBase<DerivedB>& q_nom, const int num_constraints,
                    const RigidBodyConstraint* const* constraint_array,
                    const IKoptions& ikoptions,
@@ -212,13 +213,13 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
 }
 
 template DRAKE_EXPORT void approximateIK(
-  RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
+  RigidBodyTree<double>*, const MatrixBase<Map<VectorXd>>& ,
   const MatrixBase<Map<VectorXd>>& , const int,
   const RigidBodyConstraint* const*,
   const IKoptions&, MatrixBase<Map<VectorXd>>*, int*);
 
 template DRAKE_EXPORT void approximateIK(
-  RigidBodyTree*, const MatrixBase<VectorXd>& ,
+  RigidBodyTree<double>*, const MatrixBase<VectorXd>& ,
   const MatrixBase<VectorXd>& , const int,
   const RigidBodyConstraint* const*,
   const IKoptions&, MatrixBase<VectorXd>*, int*);

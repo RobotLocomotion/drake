@@ -27,7 +27,7 @@ using Eigen::Vector3d;
 class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    tree_.reset(new RigidBodyTree());
+    tree_.reset(new RigidBodyTree<double>());
 
     // Defines four rigid bodies.
     r1b1_ = std::make_unique<RigidBody>();
@@ -47,7 +47,7 @@ class RigidBodyTreeTest : public ::testing::Test {
     r4b1_->set_name("body1");
   }
 
-  std::unique_ptr<RigidBodyTree> tree_;
+  std::unique_ptr<RigidBodyTree<double>> tree_;
   std::unique_ptr<RigidBody> r1b1_{};
   std::unique_ptr<RigidBody> r2b1_{};
   std::unique_ptr<RigidBody> r3b1_{};
@@ -360,7 +360,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   // Obtains a list of the world's children. Verifies that this list is
   // identical to base_body_list.
   std::vector<int> children_of_world_list =
-      tree_->FindChildrenOfBody(RigidBodyTree::kWorldBodyIndex);
+      tree_->FindChildrenOfBody(RigidBodyTree<double>::kWorldBodyIndex);
 
   EXPECT_EQ(base_body_list.size(), children_of_world_list.size());
 

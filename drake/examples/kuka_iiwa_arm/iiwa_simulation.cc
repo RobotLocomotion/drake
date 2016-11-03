@@ -32,7 +32,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   T_element_to_link.translation() << 0, 0,
       -kBoxDepth / 2.0;  // top of the box is at z = 0
 
-  const std::shared_ptr<RigidBodyTree>& tree =
+  const std::shared_ptr<RigidBodyTree<double>>& tree =
       rigid_body_system->getRigidBodyTree();
 
   RigidBody& world = tree->world();
