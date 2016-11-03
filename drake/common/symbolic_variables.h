@@ -122,6 +122,9 @@ class DRAKE_EXPORT Variables {
   friend DRAKE_EXPORT bool operator==(const Variables& vars1,
                                       const Variables& vars2);
 
+  friend DRAKE_EXPORT bool operator<(const Variables& vars1,
+                                     const Variables& vars2);
+
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
                                                const Variables& vars);
 
