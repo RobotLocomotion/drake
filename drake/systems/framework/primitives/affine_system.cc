@@ -116,7 +116,7 @@ std::unique_ptr<AffineSystem<double>> Linearize(
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
-  int num_inputs = (system.get_num_input_ports() > 0)
+  const int num_inputs = (system.get_num_input_ports() > 0)
                        ? system.get_input_port(0).get_size()
                        : 0,
       num_outputs = (system.get_num_output_ports() > 0)
@@ -134,7 +134,7 @@ std::unique_ptr<AffineSystem<double>> Linearize(
 
   const Eigen::VectorXd& x0 =
       context.get_continuous_state_vector().CopyToVector();
-  int num_states = x0.size();
+  const int num_states = x0.size();
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (num_inputs > 0) {
