@@ -42,7 +42,8 @@ class Quadrotor : public systems::Diagram<T> {
     plant_ =
         builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
 
-    Eigen::VectorXd hover_input = Eigen::VectorXd::Zero(4);
+    VectorX<T> hover_input(plant_->get_input_size());
+    hover_input.setZero();
     systems::ConstantVectorSource<T>* source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(
             hover_input);
@@ -51,6 +52,7 @@ class Quadrotor : public systems::Diagram<T> {
         builder.template AddSystem<systems::DrakeVisualizer>(
             plant_->get_rigid_body_tree(), &lcm_);
 
+    std::cout << plant_->get_input_size();
     builder.Connect(source->get_output_port(), plant_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
 
@@ -79,7 +81,8 @@ class Quadrotor : public systems::Diagram<T> {
   void SetDefaultState(systems::Context<T>* context) const {
     systems::Context<T>* plant_context =
         this->GetMutableSubsystemContext(context, plant_);
-    Eigen::VectorXd x0 = Eigen::VectorXd::Zero(12, 1);
+    VectorX<T> x0(plant_->get_num_states());
+    x0.setZero();
     x0(2) = 0.2;  // Resting at 0.2 m above origin, horizontally forward.
     plant_->set_state_vector(plant_context, x0);
   }
