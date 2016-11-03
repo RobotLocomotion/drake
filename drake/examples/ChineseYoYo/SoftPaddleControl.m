@@ -131,7 +131,13 @@ classdef SoftPaddleControl < DrakeSystem
   end
   
   methods (Static)
-    function run()
+    function run(time,showGraphs)
+      if nargin <2
+        showGraphs = true;
+      if nargin <1
+        time = 10;
+      end
+      end
       p = SoftPaddleHybrid();
       porig = p;
       plantSim = SimulinkModel(p.getModel());
@@ -151,12 +157,15 @@ classdef SoftPaddleControl < DrakeSystem
       x0 = p.getInitialState();
       
       tic
-      [ytraj,xtraj] = simulate(sys,[0 10],x0);
+      [ytraj,xtraj] = simulate(sys,[0 time],x0);
       toc
       
-      utraj = ytraj(10);
+      %extract utraj out of ytraj
+      utraj = ytraj(10); % take last element of ytraj, because that contains u
+      
       utraj = utraj.setOutputFrame(getInputFrame(porig));
       xtraj = xtraj.setOutputFrame(getOutputFrame(porig));
+      
       v = porig.constructVisualizer();
       v.drawWrapper(0,x0);
       %TO record a trajectory, uncomment this next line:
@@ -168,7 +177,7 @@ classdef SoftPaddleControl < DrakeSystem
       %save('trajectorytoStabilizeShort.mat','utraj','xtraj','tt');
       
       %To print out some statistics
-      if (0)
+      if (showGraphs)
         % energy / cable length plotting
         % note, set alpha=0 in Manipulator/computeConstraintForce to reveal
         % some artifacts, especially at the release guard when

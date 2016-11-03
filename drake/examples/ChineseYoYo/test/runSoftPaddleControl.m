@@ -1,8 +1,9 @@
 function runSoftPaddleControl
 % Test the Controlled Soft Paddle Robot
-
-addpathTemporary([getDrakePath,'/examples/ChineseYoYo']);
-
-SoftPaddleControl.run();
-
+curpath = pwd;
+cd('..')
+time = 1;
+showGraphs = false;
+SoftPaddleControl.run(time,showGraphs);
+cd(curpath)
 end
