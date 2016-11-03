@@ -15,7 +15,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/hash_combine.h"
+#include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
