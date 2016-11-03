@@ -145,8 +145,8 @@ class VectorBase {
     using std::abs;
     using std::max;
     T norm(0);
-    const int kSize = size();
-    for (int i=0; i < kSize; ++i) {
+    const int count = size();
+    for (int i = 0; i < count; ++i) {
       T val = abs(GetAtIndex(i));
       norm = max(norm, val);
     }
