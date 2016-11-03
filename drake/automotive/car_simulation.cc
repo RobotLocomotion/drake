@@ -114,9 +114,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
 }
 
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
-  rigid_body_sys->penetration_stiffness = 5000.0;
-  rigid_body_sys->penetration_damping =
-    rigid_body_sys->penetration_stiffness / 10.0;
+  rigid_body_sys->penetration_stiffness = 100000.0;
+  rigid_body_sys->penetration_damping = 2000.0
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
 }
 
@@ -151,7 +150,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
 
   // Sets up PD controllers for throttle and steering.
-  const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
+  const double kpSteering = 100, kdSteering = 100, kThrottle = 250;
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->get_num_positions());
   Kp.setZero();
@@ -221,7 +220,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result;
-  result.initial_step_size = 5e-3;
+  result.initial_step_size = 2e-3;
   result.timeout_seconds = std::numeric_limits<double>::infinity();
   return result;
 }
