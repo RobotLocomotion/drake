@@ -144,14 +144,14 @@ class VectorBase {
   virtual T NormInf() const {
     using std::abs;
     using std::max;
-    T nrm(0);
-    const int sz = size();
-    for (int i=0; i< sz; ++i) {
+    T norm(0);
+    const int kSize = size();
+    for (int i=0; i < kSize; ++i) {
       T val = abs(GetAtIndex(i));
-      nrm = max(nrm, val);
+      norm = max(norm, val);
     }
 
-    return nrm;
+    return norm;
   }
 
   // VectorBase objects are neither copyable nor moveable.

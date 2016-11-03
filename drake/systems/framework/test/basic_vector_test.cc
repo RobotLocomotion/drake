@@ -109,7 +109,7 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
 // Tests the infinity norm computation
 GTEST_TEST(BasicVectorTest, InfNorm) {
   BasicVector<int> vec(2);
-  vec.get_mutable_value() << 3, 4;
+  vec.get_mutable_value() << 3, -4;
   EXPECT_EQ(vec.NormInf(), 4);
 }
 
