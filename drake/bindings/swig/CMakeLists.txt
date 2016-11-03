@@ -1,12 +1,14 @@
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/cmake)
 find_package(SWIG MODULE REQUIRED)
+
+# Ignore SWIG errors about unknown base types
+list(APPEND CMAKE_SWIG_FLAGS "-w315,-401")
+# Ignore SWIG errors about not being able to wrap operator <<
+list(APPEND CMAKE_SWIG_FLAGS "-w503")
+
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 
-# Ignore SWIG errors about unknown base types
-set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w315,-401")
-# Ignore SWIG errors about not being able to wrap operator <<
-set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 # The autodiff.i in swig has for-loop variable warnings.
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} APPEND PROPERTY
   COMPILE_OPTIONS ${CXX_FLAGS_NO_SIGN_COMPARE})
