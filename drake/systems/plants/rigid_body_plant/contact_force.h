@@ -50,7 +50,8 @@ class DRAKE_EXPORT ContactForce {
 
    @param application_point         The point at which the wrench is applied.
    @param force                     The translational force.
-   @param normal                    The translational force's normal direction.
+   @param normal                    The translational force's  unit-length normal
+                                    direction.
    */
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
                const Vector3<T>& normal);

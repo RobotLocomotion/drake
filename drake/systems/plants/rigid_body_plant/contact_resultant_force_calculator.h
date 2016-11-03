@@ -15,7 +15,7 @@ namespace systems {
  ContactForce class). @sa ContactForce
 
  The resultant contact force defines a single translational force, with a
- possibly non-zero pure torque component, applied at a single application point.
+ possibly non-zero torque component, applied at a single application point.
  The application point for the force will be a minimum moment magnitude point.
  That is, if the resultant force is applied at this point, it will induce the
  minimum possible moment (relative to any other application point). This is a
@@ -111,8 +111,8 @@ namespace systems {
  It is possible for all of the contact forces to sum up to a zero resultant. But
  there may still be a resultant moment, i.e., the forces are "coupled".  In this
  case, the minimum moment point can be literally any point in space.  In this
- case, the ContactResultantForceCalculator selects the application point of the
- first added contact force as the minimum moment point.
+ case, the ContactResultantForceCalculator defines the minimum moment point to
+ be the centroid of all application points (the "average" application point.)
 
  Computation considerations
  ==========================
