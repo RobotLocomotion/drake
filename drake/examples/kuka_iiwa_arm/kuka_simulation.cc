@@ -118,7 +118,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   }
 
   void EvalOutput(const Context<double>& context,
-                  SystemOutput<double>* output) const {
+                  SystemOutput<double>* output) const override {
     systems::AbstractValue* mutable_data = output->GetMutableData(0);
     lcmt_iiwa_status& status =
         mutable_data->GetMutableValue<lcmt_iiwa_status>();

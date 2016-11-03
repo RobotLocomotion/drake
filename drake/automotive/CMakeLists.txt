@@ -27,7 +27,6 @@ drake_install_headers(
   create_trajectory_params.h
   curve2.h
   simple_car.h
-  simple_car-inl.h
   trajectory_car.h
   system1_vector.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
