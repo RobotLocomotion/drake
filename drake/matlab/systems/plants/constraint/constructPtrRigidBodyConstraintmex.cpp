@@ -9,6 +9,8 @@
 using namespace Eigen;
 using namespace std;
 
+typedef RigidBodyTree<double> RigidBodyTreed;
+
 void checkBodyOrFrameID(const int body, const RigidBodyTreed* model,
                         const char* body_var_name = "body") {
   if (body >= static_cast<int>(model->bodies.size())) {

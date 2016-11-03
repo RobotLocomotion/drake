@@ -16,6 +16,7 @@ using namespace drake;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
+typedef RigidBodyTree<double> RigidBodyTreed;
 
 /**
  * Mex function implementations

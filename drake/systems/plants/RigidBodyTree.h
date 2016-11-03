@@ -1202,5 +1202,3 @@ class DRAKE_EXPORT RigidBodyTree {
 
   int next_available_clique_ = 0;
 };
-
-typedef RigidBodyTree<double> RigidBodyTreed;

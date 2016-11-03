@@ -53,7 +53,7 @@ int AddFloatingJoint(
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map,
-    RigidBodyTreed* tree);
+    RigidBodyTree<double>* tree);
 
 }  // namespace parsers
 }  // namespace drake

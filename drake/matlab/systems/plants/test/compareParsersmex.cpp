@@ -33,7 +33,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   // first get the model_ptr back from matlab
-  RigidBodyTreed* matlab_model = (RigidBodyTreed*)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double>* matlab_model =
+      (RigidBodyTree<double>*)getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000];
   mxGetString(prhs[1], urdf_file, 1000);
@@ -51,7 +52,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "Drake:compareParsersmex:BadInputs",
         "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyTreed* cpp_model = new RigidBodyTreed(urdf_file, floating_base_type);
+  RigidBodyTree<double>* cpp_model =
+      new RigidBodyTree<double>(urdf_file, floating_base_type);
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
@@ -122,7 +124,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "Drake: CompareParserMex: ERROR: H doesn't match: " + explanation);
       }
 
-      const RigidBodyTreed::BodyToWrenchMap no_external_wrenches;
+      const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
       auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache,
                                                      no_external_wrenches);
       auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, no_external_wrenches);

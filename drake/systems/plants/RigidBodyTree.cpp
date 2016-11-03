@@ -92,7 +92,7 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const RigidBodyTreed& tree) {
+std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
   os << *tree.collision_model_.get();
   return os;
 }
