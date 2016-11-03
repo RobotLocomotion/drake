@@ -125,7 +125,7 @@ std::unique_ptr<AffineSystem<double>> Linearize(
 
   // create an autodiff version of the system
   std::unique_ptr<System<AutoDiffXd>> autodiff_system =
-      system.template ToAutoDiffXd();
+      drake::systems::System<double>::ToAutoDiffXd(system);
 
   // initialize autodiff
   std::unique_ptr<Context<AutoDiffXd>> autodiff_context =

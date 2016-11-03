@@ -507,6 +507,7 @@ class System {
     return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
+public:
   /// Causes the vector-valued port with the given @p port_index to become
   /// up-to-date, delegating to our parent Diagram if necessary. Returns
   /// the port's value, or nullptr if the port is not connected.
@@ -552,6 +553,7 @@ class System {
                                               get_input_port(port_index));
   }
 
+protected:
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
