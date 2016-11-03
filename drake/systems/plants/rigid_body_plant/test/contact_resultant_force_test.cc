@@ -206,7 +206,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
 // torque is returned.
 GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   // Do *not* change these values. The tests below will become invalid.
-  Vector3<double> pos1, pos2, expected_torque;
+  Vector3<double> pos1, pos2, expected_torque, expected_point;
   Vector3<double> norm, tan1, tan2, zero;
   pos1 << 1, 0, 0;
   pos2 << 2, 0, 0;
@@ -214,19 +214,33 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   tan1 << 1, 1, 0;
   tan2 << -1, 2, 0;
   zero = Vector3<double>::Zero();
+  expected_torque << 0, 0, 0.5;
+  expected_point = (pos1 + pos2) * 0.5;
 
   // Case 1: Two identical, tangent-only forces. Min. moment point will be
-  // the first position (pos1) and, force is <0, 3, 0> and torque is <0, 0, 2>.
+  // the centroid and, force is <0, 3, 0> and torque is <0, 0, 0.5>.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, tan1, norm, zero);
     calc.AddForce(pos2, tan2, norm, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    expected_torque << 0, 0, 2;
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), pos1));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+  }
+
+  // Case 2: Same as case 1, except reverse the order of adding forces to show
+  // that it is order invariant.
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(pos2, tan2, norm, zero);
+    calc.AddForce(pos1, tan1, norm, zero);
+    ContactForce<double> resultant = calc.ComputeResultant();
+
+    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
