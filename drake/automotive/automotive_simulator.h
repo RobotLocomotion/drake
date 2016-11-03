@@ -52,7 +52,10 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   ///
   /// @param[in] sdf_filename The name of the SDF file to load as the
-  /// visualization for the simple car.
+  /// visualization for the simple car. This file must contain one free-floating
+  /// model of a vehicle (i.e., a model that's not connected to the world). A
+  /// floating joint of type systems::plants::joints::kRollPitchYaw is added to
+  /// connect the vehicle model to the world.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to
   /// the simulation.
@@ -63,8 +66,8 @@ class AutomotiveSimulator {
   ///
   /// @pre Start() has NOT been called.
   ///
-  /// @param[in] sdf_filename The name of the SDF file to load as the
-  /// visualization for the trajectory car.
+  /// @param[in] sdf_filename See the documentation for the parameter of the
+  /// same name in AddSimpleCarFromSdf().
   ///
   /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
   ///

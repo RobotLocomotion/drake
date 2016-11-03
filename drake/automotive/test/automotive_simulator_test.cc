@@ -54,7 +54,8 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
                                      .FindModelInstanceBodies(model_instance_id)
                                      .size();
 
-  // Grab the pieces we want (testing the GetSystemByName in the process).
+  // Grab the systems we want while testing GetBuilderSystemByName() in the
+  // process.
   auto& command_sub = dynamic_cast<systems::lcm::LcmSubscriberSystem&>(
       simulator->GetBuilderSystemByName(driving_command_name));
   auto& state_pub = dynamic_cast<systems::lcm::LcmPublisherSystem&>(
@@ -69,8 +70,13 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
   // One body belongs to the world, the rest belong to the car.
   ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
 
+  // Get the rigid bodies belonging to the vehicle's model instance.
+  const std::vector<const RigidBody*> vehicle_bodies =
+      tree.FindModelInstanceBodies(model_instance_id);
+  EXPECT_EQ(vehicle_bodies.size(), num_vehicle_bodies);
+
   const auto& body = tree.get_body(1);
-  EXPECT_EQ("chassis_floor", body.get_name());
+  EXPECT_EQ(vehicle_bodies.at(0)->get_name(), body.get_name());
 
   // Set full throttle.
   DrivingCommand<double> command;
@@ -114,7 +120,8 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
   // One body belongs to the world, the rest belong to the car model.
   EXPECT_EQ(published_draw_message.num_links, 1 + num_vehicle_bodies);
   EXPECT_EQ(published_draw_message.link_name.at(0), "world");
-  EXPECT_EQ(published_draw_message.link_name.at(1), "chassis_floor");
+  EXPECT_EQ(published_draw_message.link_name.at(1),
+            vehicle_bodies.at(0)->get_name());
 
   // The subsystem pointers must not change.
   EXPECT_EQ(&simulator->GetDiagramSystemByName(driving_command_name),
@@ -126,6 +133,11 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename) {
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestPrius) {
   TestSimpleCarWithSdf(GetDrakePath() +
                        "/automotive/models/prius/prius_with_lidar.sdf");
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
+  TestSimpleCarWithSdf(GetDrakePath() +
+                       "/automotive/models/boxcar.sdf");
 }
 
 // A helper method for unit testing TrajectoryCar. Parameter @p sdf_filename is
@@ -199,6 +211,11 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file) {
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestPrius) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
                            "/automotive/models/prius/prius_with_lidar.sdf");
+}
+
+GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
+  TestTrajectoryCarWithSdf(GetDrakePath() +
+                           "/automotive/models/two_dof_robot.sdf");
 }
 
 }  // namespace
