@@ -65,8 +65,6 @@ endif()
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 
-drake_find_package(gurobi PKG_CONFIG)
-
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
 # moved it into the "C++ and MATLAB shared code" lower section of this file,
 # because the C++ IK will remain in this directory.  Only MATLAB code that will

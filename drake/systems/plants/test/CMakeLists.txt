@@ -1,5 +1,3 @@
-drake_find_package(Bullet MODULE)
-
 add_executable(urdfKinTest urdfKinTest.cpp)
 target_link_libraries(urdfKinTest drakeRBM)
 if(Bullet_FOUND)
@@ -30,9 +28,6 @@ endmacro()
 if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
-
-pods_find_pkg_config(ipopt)
-drake_find_package(snopt_c CONFIG)
 
 if(snopt_c_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)

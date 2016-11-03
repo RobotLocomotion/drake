@@ -9,6 +9,7 @@ include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
 drake_setup_platform()
+drake_find_packages()
 
 # Create a cache variable that contains the
 # max number of concurent link jobs that can be run
@@ -40,6 +41,10 @@ endif()
 
 # set up pods
 include(../cmake/pods.cmake)
+
+pods_find_pkg_config(bot2-lcmgl-client)
+pods_find_pkg_config(dreal)
+pods_find_pkg_config(ipopt)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
@@ -128,12 +133,9 @@ endif()
 enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
-drake_find_package(GTest REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_FAIL=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_SUCCEED=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
-
-drake_find_package(gflags CONFIG REQUIRED)
 
 set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
@@ -143,11 +145,7 @@ include(../cmake/procman.cmake)  # helper script for writing procman files
 find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
-drake_find_package(lcm CONFIG)
 if(lcm_FOUND)
-  drake_find_package(bot2-core CONFIG)
-  drake_find_package(robotlocomotion-lcmtypes CONFIG)
-
   add_subdirectory(lcmtypes)
 
   list(APPEND drake_jar_javafiles
@@ -190,7 +188,6 @@ pods_install_pkg_config_file(drake-java
   REQUIRES ${drake_jar_requires}
   VERSION 0.0.1)
 
-drake_find_package(Eigen3 CONFIG REQUIRED)
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
 include_directories(thirdParty/bsd/spruce/include)

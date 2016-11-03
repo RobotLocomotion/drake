@@ -10,8 +10,6 @@ pods_install_pkg_config_file(drake-control-util
   REQUIRES
   VERSION 0.0.1)
 
-drake_find_package(gurobi PKG_CONFIG)
-drake_find_package(yaml-cpp CONFIG)
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
