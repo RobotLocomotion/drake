@@ -121,13 +121,13 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
       num_outputs = (system.get_num_output_ports()>0) ? system.get_output_port(0).get_size() : 0;
 
   // create an autodiff version of the system
-  auto autodiff_system = system.template ToAutoDiffXd();
+  std::unique_ptr<System<AutoDiffXd>> autodiff_system = system.template ToAutoDiffXd();
 
   // initialize autodiff
-  auto autodiff_context = autodiff_system->CreateDefaultContext();
+  std::unique_ptr<Context<AutoDiffXd>> autodiff_context = autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  const auto& x0 = context.get_continuous_state_vector().CopyToVector();
+  const Eigen::VectorXd& x0 = context.get_continuous_state_vector().CopyToVector();
   int num_states = x0.size();
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
@@ -136,8 +136,7 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   }
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
-  auto autodiff_x0 = autodiff_context->get_mutable_continuous_state_vector();
-  autodiff_x0->SetFromVector(std::get<0>(autodiff_args));
+  autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(std::get<0>(autodiff_args));
 
   if (num_inputs>0) {
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(system.get_input_port(0).get_size());
@@ -146,25 +145,25 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
         0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
   }
 
-  auto autodiff_xdot = autodiff_system->AllocateTimeDerivatives();
+  std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot = autodiff_system->AllocateTimeDerivatives();
   autodiff_system->EvalTimeDerivatives(*autodiff_context, autodiff_xdot.get());
   auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
-  auto AB = math::autoDiffToGradientMatrix(autodiff_xdot_vec);
-  auto A = AB.leftCols(num_states);
-  auto B = AB.rightCols(num_inputs);
-  auto xDot0 = math::autoDiffToValueMatrix(autodiff_xdot_vec);
+  Eigen::MatrixXd AB = math::autoDiffToGradientMatrix(autodiff_xdot_vec);
+  Eigen::MatrixXd A = AB.leftCols(num_states);
+  Eigen::MatrixXd B = AB.rightCols(num_inputs);
+  Eigen::VectorXd xDot0 = math::autoDiffToValueMatrix(autodiff_xdot_vec);
 
   Eigen::MatrixXd C = Eigen::MatrixXd::Zero(num_outputs, num_states);
   Eigen::MatrixXd D = Eigen::MatrixXd::Zero(num_outputs, num_inputs);
   Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
 
   if (num_outputs>0) {
-    auto autodiff_y0 = autodiff_system->AllocateOutput(*autodiff_context);
+    std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 = autodiff_system->AllocateOutput(*autodiff_context);
     autodiff_system->EvalOutput(*autodiff_context, autodiff_y0.get());
     auto autodiff_y0_vec = autodiff_y0->get_vector_data(0)->CopyToVector();
 
-    auto CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);
+    Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);
     C = CD.leftCols(num_states);
     D = CD.rightCols(num_inputs);
     y0 = math::autoDiffToValueMatrix(autodiff_y0_vec);
