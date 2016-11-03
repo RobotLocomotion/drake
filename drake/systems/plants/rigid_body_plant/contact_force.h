@@ -37,24 +37,24 @@ class DRAKE_EXPORT ContactForce {
    Fully-specified constructor.
 
    @param application_point         The point at which the wrench is applied.
-   @param force                     The translational force.
    @param normal                    The translational force's unit-length normal
                                     direction.
+   @param force                     The translational force.
    @param pure_torque               The pure torque component
    */
-  ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
-               const Vector3<T>& normal, const Vector3<T>& pure_torque);
+  ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
+               const Vector3<T>& force, const Vector3<T>& pure_torque);
   /**
    Zero-pure-torque constructor.  This constructor sets the pure torque
    component to be zero.
 
    @param application_point         The point at which the wrench is applied.
-   @param force                     The translational force.
    @param normal                    The translational force's  unit-length normal
                                     direction.
+   @param force                     The translational force.
    */
-  ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
-               const Vector3<T>& normal);
+  ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
+               const Vector3<T>& force);
 
   // Contact force is copyable and movable
   ContactForce(const ContactForce& other) = default;
@@ -97,8 +97,8 @@ class DRAKE_EXPORT ContactForce {
 
  private:
   Vector3<T> application_point_{Vector3<T>::Zero()};
-  Vector3<T> force_{Vector3<T>::Zero()};
   Vector3<T> normal_{Vector3<T>::Zero()};
+  Vector3<T> force_{Vector3<T>::Zero()};
   Vector3<T> pure_torque_{Vector3<T>::Zero()};
 };
 }  // namespace systems

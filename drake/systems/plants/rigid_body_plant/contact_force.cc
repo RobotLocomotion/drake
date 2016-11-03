@@ -6,11 +6,11 @@ namespace systems {
 
 template <typename T>
 ContactForce<T>::ContactForce(const Vector3<T>& application_point,
-                              const Vector3<T>& force, const Vector3<T>& normal,
+                              const Vector3<T>& normal, const Vector3<T>& force,
                               const Vector3<T>& pure_torque)
     : application_point_(application_point),
-      force_(force),
       normal_(normal),
+      force_(force),
       pure_torque_(pure_torque) {
   DRAKE_ASSERT(abs(normal.norm() - 1.0) <
                Eigen::NumTraits<T>::dummy_precision());
@@ -18,8 +18,11 @@ ContactForce<T>::ContactForce(const Vector3<T>& application_point,
 
 template <typename T>
 ContactForce<T>::ContactForce(const Vector3<T>& application_point,
-                              const Vector3<T>& force, const Vector3<T>& normal)
-    : application_point_(application_point), force_(force), normal_(normal) {
+                              const Vector3<T>& normal, const Vector3<T>& force)
+    : application_point_(application_point),
+      normal_(normal),
+      force_(force),
+      pure_torque_(Vector3<T>::Zero()) {
   DRAKE_ASSERT(abs(normal.norm() - 1.0) <
                Eigen::NumTraits<T>::dummy_precision());
 }
