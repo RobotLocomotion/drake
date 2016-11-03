@@ -10,6 +10,8 @@
   #include <Python.h>
 #endif
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_urdf.h"
 %}
 
 %include <typemaps.i>
@@ -92,7 +94,11 @@
       return nullptr;
     }
 
-    return new RigidBodyTree<double>(urdf_filename, floating_base_type);
+    auto tree = new RigidBodyTree<double>();
+    drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+        urdf_filename, floating_base_type, tree);
+
+    return tree;
   }
 
   KinematicsCache<double> doKinematics(

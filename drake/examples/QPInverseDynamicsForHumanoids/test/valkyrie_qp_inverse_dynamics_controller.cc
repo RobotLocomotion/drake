@@ -36,21 +36,22 @@ void controller_loop() {
       std::string(
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
-  RigidBodyTree<double> robot(urdf,
-                              drake::multibody::joints::kRollPitchYaw);
+  auto robot = make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      urdf, multibody::joints::kRollPitchYaw, robot.get());
 
   DiagramBuilder<double> builder;
 
   lcm::DrakeLcm lcm;
 
   RobotStateDecoderSystem* rs_msg_to_rs =
-      builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(robot));
+      builder.AddSystem(std::make_unique<RobotStateDecoderSystem>(*robot));
   PlanEvalSystem* plan_eval =
-      builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
+      builder.AddSystem(std::make_unique<PlanEvalSystem>(*robot));
   QPControllerSystem* qp_con =
-      builder.AddSystem(std::make_unique<QPControllerSystem>(robot));
+      builder.AddSystem(std::make_unique<QPControllerSystem>(*robot));
   JointLevelControllerSystem* joint_con =
-      builder.AddSystem<JointLevelControllerSystem>(robot);
+      builder.AddSystem<JointLevelControllerSystem>(*robot);
 
   auto& robot_state_subscriber =
       *builder.AddSystem(LcmSubscriberSystem::Make<bot_core::robot_state_t>(
@@ -85,10 +86,10 @@ void controller_loop() {
   auto output = diagram->AllocateOutput(*context);
 
   // Set plan eval's desired to the initial state.
-  HumanoidStatus rs(robot);
+  HumanoidStatus rs(*robot);
   rs.Update(0, rs.GetNominalPosition(),
-            VectorX<double>::Zero(robot.get_num_velocities()),
-            VectorX<double>::Zero(robot.actuators.size()),
+            VectorX<double>::Zero(robot->get_num_velocities()),
+            VectorX<double>::Zero(robot->actuators.size()),
             Vector6<double>::Zero(), Vector6<double>::Zero());
   plan_eval->SetDesired(rs);
 
