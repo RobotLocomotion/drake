@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <limits>
 
+#include "drake/automotive/automotive_common.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 
@@ -103,7 +104,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
   if (argc < 3) {
     const std::shared_ptr<RigidBodyTree<double>>& tree =
         rigid_body_sys->getRigidBodyTree();
-    AddFlatTerrainToWorld(tree);
+    AddFlatTerrainToWorld(tree.get());
   }
 
   // Sets various simulation parameters.
@@ -134,24 +135,14 @@ double ParseDuration(int argc, const char* argv[]) {
   return std::numeric_limits<double>::infinity();
 }
 
+// TODO(liang.fok) Remove this method once System 1.0 is removed.
 void AddFlatTerrainToWorld(
     const std::shared_ptr<RigidBodyTree<double>>& rigid_body_tree,
     double box_size, double box_depth) {
-  DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
-  Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-  T_element_to_link.translation() << 0, 0,
-      -box_depth / 2;  // top of the box is at z=0
-  RigidBody& world = rigid_body_tree->world();
-  Eigen::Vector4d color;
-  color << 0.9297, 0.7930, 0.6758,
-      1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-  world.AddVisualElement(
-      DrakeShapes::VisualElement(geom, T_element_to_link, color));
-  rigid_body_tree->addCollisionElement(
-      DrakeCollision::Element(geom, T_element_to_link, &world), world,
-      "terrain");
-  rigid_body_tree->updateStaticCollisionElements();
+  AddFlatTerrainToWorld(rigid_body_tree.get(), box_size, box_depth);
 }
+
+
 
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
