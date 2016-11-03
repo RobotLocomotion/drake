@@ -10,9 +10,9 @@
 
   <link name="chassis_floor">
     <inertial>
-      <mass value="57.833"/>
+      <mass value="1360"/>
       <origin rpy="0 0 0" xyz="0 0 0" />
-      <inertia ixx="2.71553" ixy="0" ixz="0" iyy="68.9" iyz="0" izz="71.6063"/>
+      <inertia ixx="63.858358934" ixy="0" ixz="0" iyy="940.662671467" iyz="0" izz="71.6063"/>
     </inertial>
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -25,11 +25,6 @@
     </visual>
   </link>
   <link name="front_axle">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -41,11 +36,6 @@
     </visual>
   </link>
   <link name="left_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="-0.17246 -0.08623  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="__v2">
       <origin rpy="0 0 0.46364" xyz="-0.1086 -0.0543 0"/>
       <geometry>
@@ -66,11 +56,6 @@
     </visual>
   </link>
   <link name="left_hub">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="__visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -82,11 +67,6 @@
     </visual>
   </link>
   <link name="tie_rod">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0     -0.4085  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 -0.4085 0"/>
       <geometry>
@@ -138,11 +118,6 @@
     </visual>
   </link>
   <link name="right_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="-0.17246  0.08623  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 -0.02228 0"/>
       <geometry>
@@ -163,11 +138,6 @@
     </visual>
   </link>
   <link name="right_hub">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
