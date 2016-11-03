@@ -52,6 +52,8 @@ class SymbolicFormulaTest : public ::testing::Test {
 
   const Formula f1_{x_ + y_ > 0};
   const Formula f2_{x_ * y_ < 5};
+  const Formula f3_{x_ / y_ < 5};
+  const Formula f4_{x_ - y_ < 5};
   const Formula f_and_{f1_ && f2_};
   const Formula f_or_{f1_ || f2_};
   const Formula not_f_or_{!f_or_};
@@ -296,11 +298,46 @@ TEST_F(SymbolicFormulaTest, And2) {
   EXPECT_EQ(f_and_.Evaluate(env4_), (-1 + -1 > 0) && (-1 * -1 < 5));
 }
 
+TEST_F(SymbolicFormulaTest, And3) {
+  // Flattening
+  EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f3_ && f4_,
+               f1_ && f2_ && f3_ && f4_);
+  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && (f3_ && f4_),
+               f1_ && f2_ && f3_ && f4_);
+  EXPECT_PRED2(FormulaEqual, f1_ && (f2_ && f3_) && f4_,
+               f1_ && f2_ && f3_ && f4_);
+  EXPECT_PRED2(FormulaEqual, f1_ && ((f2_ && f3_) && f4_),
+               f1_ && f2_ && f3_ && f4_);
+  // Remove duplicate
+  EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f1_, f1_ && f2_);
+}
+
+TEST_F(SymbolicFormulaTest, Or1) {
+  EXPECT_PRED2(FormulaEqual, tt_, tt_ || tt_);
+  EXPECT_PRED2(FormulaEqual, tt_, ff_ || tt_);
+  EXPECT_PRED2(FormulaEqual, tt_, tt_ || ff_);
+  EXPECT_PRED2(FormulaEqual, ff_, ff_ || ff_);
+}
+
 TEST_F(SymbolicFormulaTest, Or2) {
   EXPECT_EQ(f_or_.Evaluate(env1_), (1 + 1 > 0) || (1 * 1 < 5));
   EXPECT_EQ(f_or_.Evaluate(env2_), (3 + 4 > 0) || (3 * 4 < 5));
   EXPECT_EQ(f_or_.Evaluate(env3_), (-2 + -5 > 0) || (-2 * -5 < 5));
   EXPECT_EQ(f_or_.Evaluate(env4_), (-1 + -1 > 0) || (-1 * -1 < 5));
+}
+
+TEST_F(SymbolicFormulaTest, Or3) {
+  // Flattening
+  EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f3_ || f4_,
+               f1_ || f2_ || f3_ || f4_);
+  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || (f3_ || f4_),
+               f1_ || f2_ || f3_ || f4_);
+  EXPECT_PRED2(FormulaEqual, f1_ || (f2_ || f3_) || f4_,
+               f1_ || f2_ || f3_ || f4_);
+  EXPECT_PRED2(FormulaEqual, f1_ || ((f2_ || f3_) || f4_),
+               f1_ || f2_ || f3_ || f4_);
+  // Remove duplicate
+  EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f1_, f1_ || f2_);
 }
 
 TEST_F(SymbolicFormulaTest, Not1) {
