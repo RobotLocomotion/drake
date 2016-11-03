@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find drake_examples_hsrb)/launch/demo1_sim.launch" />
+  <!--
+      TODO(liang.fok): Re-enable the following line once the Drake-ROS /tf
+      publisher is ported to System 2.0.
+  -->
+  <!-- <include file="$(find drake_hsr_examples)/launch/demo1_vis.launch" /> -->
+</launch>
