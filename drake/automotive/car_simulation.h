@@ -105,7 +105,6 @@ double ParseDuration(int argc, const char* argv[]);
 DRAKE_EXPORT
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
 
-// TODO(liang.fok) Remove this method once System 1.0 is removed.
 /**
  * Adds a box-shaped terrain to the specified rigid body tree. This directly
  * modifies the existing world rigid body within @p rigid_body_tree and thus
