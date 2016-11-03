@@ -49,7 +49,7 @@ typedef PPType::PolynomialMatrix PPMatrix;
 class RobotPlanRunner {
  public:
   /// tree is aliased
-  explicit RobotPlanRunner(const RigidBodyTree& tree)
+  explicit RobotPlanRunner(const RigidBodyTree<double>& tree)
       : tree_(tree), plan_number_(0) {
     VerifyIiwaTree(tree);
     lcm_.subscribe(kLcmStatusChannel,
@@ -182,14 +182,14 @@ class RobotPlanRunner {
   }
 
   lcm::LCM lcm_;
-  const RigidBodyTree& tree_;
+  const RigidBodyTree<double>& tree_;
   int plan_number_{};
   std::unique_ptr<PPType> plan_;
   lcmt_iiwa_status iiwa_status_;
 };
 
 int do_main(int argc, const char* argv[]) {
-  RigidBodyTree tree(
+  RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed);
 

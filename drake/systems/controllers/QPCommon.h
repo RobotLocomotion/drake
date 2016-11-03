@@ -68,7 +68,7 @@ struct VRefIntegratorParams {
 };
 
 struct IntegratorParams {
-  explicit IntegratorParams(const RigidBodyTree& robot)
+  explicit IntegratorParams(const RigidBodyTree<double>& robot)
       : gains(Eigen::VectorXd::Zero(robot.get_num_positions())),
         clamps(Eigen::VectorXd::Zero(robot.get_num_positions())),
         eta(0.0) {}
@@ -98,7 +98,7 @@ struct Bounds {
 };
 
 struct JointSoftLimitParams {
-  explicit JointSoftLimitParams(const RigidBodyTree& robot)
+  explicit JointSoftLimitParams(const RigidBodyTree<double>& robot)
       : enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
             robot.get_num_positions())),
         disable_when_body_in_support(
@@ -132,7 +132,7 @@ struct JointSoftLimitParams {
 };
 
 struct WholeBodyParams {
-  explicit WholeBodyParams(const RigidBodyTree& robot)
+  explicit WholeBodyParams(const RigidBodyTree<double>& robot)
       : Kp(Eigen::VectorXd::Zero(robot.get_num_positions())),
         Kd(Eigen::VectorXd::Zero(robot.get_num_positions())),
         w_qdd(Eigen::VectorXd::Zero(robot.get_num_velocities())),
@@ -178,7 +178,7 @@ struct BodyMotionParams {
 };
 
 struct HardwareGains {
-  explicit HardwareGains(const RigidBodyTree& robot)
+  explicit HardwareGains(const RigidBodyTree<double>& robot)
       : k_f_p(Eigen::VectorXd::Zero(robot.actuators.size())),
         k_q_p(Eigen::VectorXd::Zero(robot.actuators.size())),
         k_q_i(Eigen::VectorXd::Zero(robot.actuators.size())),
@@ -209,7 +209,7 @@ struct HardwareGains {
 };
 
 struct HardwareParams {
-  explicit HardwareParams(const RigidBodyTree& robot)
+  explicit HardwareParams(const RigidBodyTree<double>& robot)
       : gains(robot),
         joint_is_force_controlled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(
             robot.actuators.size())),
@@ -229,7 +229,7 @@ struct HardwareParams {
 };
 
 struct QPControllerParams {
-  explicit QPControllerParams(const RigidBodyTree& robot)
+  explicit QPControllerParams(const RigidBodyTree<double>& robot)
       : whole_body(robot),
         body_motion(robot.bodies.size()),
         vref_integrator(),
@@ -285,7 +285,7 @@ struct QPControllerParams {
 };
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
-    const RigidBodyTree& robot);
+    const RigidBodyTree<double>& robot);
 
 struct DesiredBodyAcceleration {
   DesiredBodyAcceleration()

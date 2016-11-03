@@ -27,11 +27,15 @@ Drake is transitioning from being primarily a MATLAB-based toolbox to a C++ tool
 
 Many of the features also use
 
-* Simulink
-* Simulink 3D Animation Toolbox
-* Control Systems Toolbox
+* Control System Toolbox
 * Curve Fitting Toolbox
-* Optimization Toolbox (as a fallback alternative to commercial solvers)
+* Image Processing Toolbox
+* Optimization Toolbox
+* Simulink
+* Simulink 3D Animation
+* Statistics and Machine Learning Toolbox
+* System Identification Toolbox
 
-A number of other toolboxes are used by some Drake algorithms/examples.  You can check your current MATLAB installation using MATLAB's ``ver`` command.
+You can check your current MATLAB installation using MATLAB's ``ver`` command.
+
 

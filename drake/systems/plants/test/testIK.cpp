@@ -20,7 +20,7 @@ namespace drake {
 namespace {
 
 GTEST_TEST(testIK, atlasIK) {
-  RigidBodyTree model(
+  RigidBodyTree<double> model(
       GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
@@ -56,7 +56,7 @@ GTEST_TEST(testIK, atlasIK) {
 }
 
 GTEST_TEST(testIK, iiwaIK) {
-  RigidBodyTree model(
+  RigidBodyTree<double> model(
       GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
 
   // Create a timespan for the constraints.  It's not particularly

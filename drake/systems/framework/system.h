@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -419,6 +420,25 @@ class System {
     return path.str();
   }
 
+  /// Creates a deep copy of @p from, transmogrified to use the autodiff
+  /// scalar type, with a dynamic-sized vector of partial derivatives. Returns
+  /// nullptr if the template parameter S is not the type of the concrete
+  /// system, or a superclass thereof.
+  ///
+  /// Usage: @code
+  ///   MySystem<double> plant;
+  ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
+  ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
+  /// @p endcode
+  ///
+  /// @tparam S The specific System pointer type to return.
+  template <template<typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
+      const System<double>& from) {
+    return std::unique_ptr<S<AutoDiffXd>>(dynamic_cast<S<AutoDiffXd>*>(
+        from.DoToAutoDiffXd()));
+  }
+
   /// Declares that @p parent is the immediately enclosing Diagram. The
   /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
   /// the parent has already been set to something else.
@@ -631,6 +651,17 @@ class System {
     // You need to override System<T>::DoMapVelocityToConfigurationDerivatives!
     DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
     configuration_derivatives->SetFromVector(generalized_velocity);
+  }
+
+  /// NVI implementation of ToAutoDiffXd. Caller takes ownership of the returned
+  /// pointer. Overrides should return a more specific covariant type.
+  /// Templated overrides may assume that they are subclasses of System<double>.
+  ///
+  /// TODO(david-german-tri): Provide a default implementation on LeafSystem,
+  /// then make this method pure virtual.
+  virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
+    DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
+    return nullptr;
   }
 
   /// Causes an InputPort in the @p context to become up-to-date, delegating to

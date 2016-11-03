@@ -21,15 +21,16 @@ DRAKE_EXPORT YAML::Node get(const YAML::Node& parent,
                                     const std::string& key);
 
 DRAKE_EXPORT QPControllerParams
-loadSingleParamSet(const YAML::Node& config, const RigidBodyTree& robot);
+loadSingleParamSet(const YAML::Node& config,
+                   const RigidBodyTree<double>& robot);
 DRAKE_EXPORT
 drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
-    YAML::Node config, const RigidBodyTree& robot);
+    YAML::Node config, const RigidBodyTree<double>& robot);
 DRAKE_EXPORT
 drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
-    YAML::Node config, const RigidBodyTree& robot,
+    YAML::Node config, const RigidBodyTree<double>& robot,
     std::ofstream& debug_output_file);
 DRAKE_EXPORT RobotPropertyCache parseKinematicTreeMetadata(
-    const YAML::Node& metadata, const RigidBodyTree& robot);
+    const YAML::Node& metadata, const RigidBodyTree<double>& robot);
 DRAKE_EXPORT KinematicModifications
 parseKinematicModifications(const YAML::Node& mods);

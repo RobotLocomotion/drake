@@ -1,5 +1,5 @@
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/cmake)
-drake_find_package(SWIG MODULE REQUIRED)
+find_package(SWIG MODULE REQUIRED)
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 
@@ -23,9 +23,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
   # Swig sometimes emits code which appears to have uninitialized
   # variables.  Err on the side of swig being correct.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-endif()
 
-drake_find_package(snopt_c CONFIG)
+  # Swig emits code which appears to have misleading indentations.
+  # Err on the side of swig being correct.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
+endif()
 
 if(PYTHON_EXECUTABLE)
   include(SwigPython)

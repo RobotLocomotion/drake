@@ -74,9 +74,12 @@ using std::unordered_map;
 using std::vector;
 using std::endl;
 
-const set<int> RigidBodyTree::default_model_instance_id_set = {0};
-const char* const RigidBodyTree::kWorldName = "world";
-const int RigidBodyTree::kWorldBodyIndex = 0;
+template <typename T>
+const set<int> RigidBodyTree<T>::default_model_instance_id_set = {0};
+template <typename T>
+const char* const RigidBodyTree<T>::kWorldName = "world";
+template <typename T>
+const int RigidBodyTree<T>::kWorldBodyIndex = 0;
 
 template <typename T>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -89,12 +92,13 @@ void getFiniteIndexes(T const& v, std::vector<int>& finite_indexes) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
+std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
   os << *tree.collision_model_.get();
   return os;
 }
 
-RigidBodyTree::RigidBodyTree(
+template <typename T>
+RigidBodyTree<T>::RigidBodyTree(
     const std::string& filename,
     const FloatingBaseType floating_base_type)
     : RigidBodyTree() {
@@ -103,15 +107,16 @@ RigidBodyTree::RigidBodyTree(
       filename, floating_base_type, this);
 }
 
-RigidBodyTree::RigidBodyTree(void)
+template <typename T>
+RigidBodyTree<T>::RigidBodyTree(void)
     : collision_model_(DrakeCollision::newModel()) {
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
   std::unique_ptr<RigidBody> world_body(new RigidBody());
-  world_body->set_name(RigidBodyTree::kWorldName);
-  world_body->set_model_name(RigidBodyTree::kWorldName);
+  world_body->set_name(RigidBodyTree<T>::kWorldName);
+  world_body->set_model_name(RigidBodyTree<T>::kWorldName);
 
   // TODO(liang.fok): Assign the world body a unique model instance ID of zero.
   // See: https://github.com/RobotLocomotion/drake/issues/3088
@@ -119,20 +124,23 @@ RigidBodyTree::RigidBodyTree(void)
   bodies.push_back(std::move(world_body));
 }
 
-RigidBodyTree::~RigidBodyTree(void) {}
+template <typename T>
+RigidBodyTree<T>::~RigidBodyTree(void) {}
 
-bool RigidBodyTree::transformCollisionFrame(
+template <typename T>
+bool RigidBodyTree<T>::transformCollisionFrame(
     const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model_->transformCollisionFrame(eid,
-      transform_body_to_joint);
+                                                   transform_body_to_joint);
 }
 
 // TODO(amcastro-tri): This implementation is very inefficient since member
-// vector RigidBodyTree::bodies changes in size with the calls to bodies.erase
-// and bodies.insert.
+// vector RigidBodyTree::bodies changes in size with the calls to
+// bodies.erase and bodies.insert.
 // A possibility would be to use std::sort or our own version of a quick sort.
-void RigidBodyTree::SortTree() {
+template <typename T>
+void RigidBodyTree<T>::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
   for (size_t i = 0; i < bodies.size() - 1; ) {
@@ -157,7 +165,8 @@ void RigidBodyTree::SortTree() {
   }
 }
 
-const RigidBodyActuator& RigidBodyTree::GetActuator(
+template <typename T>
+const RigidBodyActuator& RigidBodyTree<T>::GetActuator(
     const std::string& name) const {
   for (const auto& actuator : actuators) {
     if (actuator.name_ == name) {
@@ -165,10 +174,11 @@ const RigidBodyActuator& RigidBodyTree::GetActuator(
     }
   }
   throw std::invalid_argument("ERROR: Could not find actuator named \"" + name +
-                              "\"");
+      "\"");
 }
 
-void RigidBodyTree::compile(void) {
+template <typename T>
+void RigidBodyTree<T>::compile(void) {
   SortTree();
 
   // Welds joints for links that have zero inertia and no children (as seen in
@@ -180,8 +190,8 @@ void RigidBodyTree::compile(void) {
   // An option would be to have:
   //   RigidBodyTree::upwards_body_iterator: travels the tree upwards towards
   //   the root.
-  //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
-  //   the root towards the last leaf.
+  //   RigidBodyTree::downwards_body_iterator: travels the tree downwards
+  //   from the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); ++i) {
     if (bodies[i]->has_parent_body() &&
         bodies[i]->get_spatial_inertia().isConstant(0)) {
@@ -215,8 +225,8 @@ void RigidBodyTree::compile(void) {
 
   // Counts the number of position and velocity states in this rigid body tree.
   // Notice that the rigid bodies are accessed from the sorted vector
-  // RigidBodyTree::bodies. The order that they appear in this vector determines
-  // the values of RigidBody::get_position_start_index() and
+  // RigidBodyTree::bodies. The order that they appear in this vector
+  // determines the values of RigidBody::get_position_start_index() and
   // RigidBody::get_velocity_start_index(), which the following code sets.
   num_positions_ = 0;
   num_velocities_ = 0;
@@ -237,7 +247,7 @@ void RigidBodyTree::compile(void) {
   B = MatrixXd::Zero(num_velocities_, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ++ia) {
     for (int i = 0; i < actuators[ia].body_->getJoint().get_num_velocities();
-        ++i) {
+         ++i) {
       B(actuators[ia].body_->get_velocity_start_index() + i, ia) =
           actuators[ia].reduction_;
     }
@@ -261,7 +271,6 @@ void RigidBodyTree::compile(void) {
     }
   }
 
-
   // Updates the static collision elements and terrain contact points.
   updateStaticCollisionElements();
 
@@ -277,7 +286,8 @@ void RigidBodyTree::compile(void) {
   initialized_ = true;
 }
 
-void RigidBodyTree::CreateCollisionCliques() {
+template <typename T>
+void RigidBodyTree<T>::CreateCollisionCliques() {
   int clique_id = get_next_clique_id();
   // 1) For collision elements in the same body
   for (auto& body : bodies) {
@@ -302,20 +312,23 @@ void RigidBodyTree::CreateCollisionCliques() {
   }
 }
 
-Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
+template <typename T>
+Eigen::VectorXd RigidBodyTree<T>::getZeroConfiguration() const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
     if (body_ptr->has_parent_body()) {
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.get_num_positions()) =
-              joint.zeroConfiguration();
+          joint.zeroConfiguration();
     }
   }
   return q;
 }
 
-Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
+template <typename T>
+Eigen::VectorXd RigidBodyTree<T>::getRandomConfiguration(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::default_random_engine& generator) const {
   Eigen::VectorXd q(num_positions_);
   for (const auto& body_ptr : bodies) {
@@ -323,32 +336,34 @@ Eigen::VectorXd RigidBodyTree::getRandomConfiguration(
       const DrakeJoint& joint = body_ptr->getJoint();
       q.middleRows(
           body_ptr->get_position_start_index(), joint.get_num_positions()) =
-              joint.randomConfiguration(generator);
+          joint.randomConfiguration(generator);
     }
   }
   return q;
 }
 
-string RigidBodyTree::get_position_name(int position_num) const {
+template <typename T>
+string RigidBodyTree<T>::get_position_name(int position_num) const {
   if (position_num < 0 || position_num >= num_positions_)
     throw std::runtime_error("position_num is out of range");
 
   size_t body_index = 0;
   while (body_index + 1 < bodies.size() &&
-         bodies[body_index + 1]->get_position_start_index() <= position_num)
+      bodies[body_index + 1]->get_position_start_index() <= position_num)
     body_index++;
 
   return bodies[body_index]->getJoint().get_position_name(
       position_num - bodies[body_index]->get_position_start_index());
 }
 
-string RigidBodyTree::get_velocity_name(int velocity_num) const {
+template <typename T>
+string RigidBodyTree<T>::get_velocity_name(int velocity_num) const {
   if (velocity_num < 0 || velocity_num >= num_velocities_)
     throw std::runtime_error("velocity_num is out of range");
 
   size_t body_index = 0;
   while (body_index + 1 < bodies.size() &&
-         bodies[body_index + 1]->get_velocity_start_index() <= velocity_num)
+      bodies[body_index + 1]->get_velocity_start_index() <= velocity_num)
     body_index++;
 
   return bodies[body_index]->getJoint().get_velocity_name(
@@ -356,23 +371,27 @@ string RigidBodyTree::get_velocity_name(int velocity_num) const {
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string RigidBodyTree::getPositionName(int position_num) const {
+template <typename T>
+std::string RigidBodyTree<T>::getPositionName(int position_num) const {
   return get_position_name(position_num);
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-std::string RigidBodyTree::getVelocityName(int velocity_num) const {
+template <typename T>
+std::string RigidBodyTree<T>::getVelocityName(int velocity_num) const {
   return get_velocity_name(velocity_num);
 }
 
-string RigidBodyTree::getStateName(int state_num) const {
+template <typename T>
+string RigidBodyTree<T>::getStateName(int state_num) const {
   if (state_num < num_positions_)
     return get_position_name(state_num);
   else
     return get_velocity_name(state_num - num_positions_);
 }
 
-void RigidBodyTree::drawKinematicTree(
+template <typename T>
+void RigidBodyTree<T>::drawKinematicTree(
     std::string graphviz_dotfile_filename) const {
   ofstream dotfile;
   dotfile.open(graphviz_dotfile_filename);
@@ -425,7 +444,8 @@ void RigidBodyTree::drawKinematicTree(
        << "' to generate an image." << endl;
 }
 
-map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
+template <typename T>
+map<string, int> RigidBodyTree<T>::computePositionNameToIndexMap() const {
   map<string, int> name_to_index_map;
 
   for (int i = 0; i < num_positions_; ++i) {
@@ -434,7 +454,9 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
   return name_to_index_map;
 }
 
-DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
+template <typename T>
+DrakeCollision::ElementId RigidBodyTree<T>::addCollisionElement(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const DrakeCollision::Element& element, RigidBody& body,
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model_->addElement(element);
@@ -445,7 +467,8 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
   return id;
 }
 
-void RigidBodyTree::updateCollisionElements(
+template <typename T>
+void RigidBodyTree<T>::updateCollisionElements(
     const RigidBody& body,
     const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world) {
   for (auto id_iter = body.get_collision_element_ids().begin();
@@ -454,7 +477,8 @@ void RigidBodyTree::updateCollisionElements(
   }
 }
 
-void RigidBodyTree::updateStaticCollisionElements() {
+template <typename T>
+void RigidBodyTree<T>::updateStaticCollisionElements() {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (!body.has_parent_body()) {
@@ -463,7 +487,8 @@ void RigidBodyTree::updateStaticCollisionElements() {
   }
 }
 
-void RigidBodyTree::updateDynamicCollisionElements(
+template <typename T>
+void RigidBodyTree<T>::updateDynamicCollisionElements(
     const KinematicsCache<double>& cache) {
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
@@ -476,7 +501,8 @@ void RigidBodyTree::updateDynamicCollisionElements(
   collision_model_->updateModel();
 }
 
-void RigidBodyTree::getTerrainContactPoints(
+template <typename T>
+void RigidBodyTree<T>::getTerrainContactPoints(
     const RigidBody& body,
     Eigen::Matrix3Xd* terrain_points,
     const std::string& group_name) const {
@@ -509,27 +535,30 @@ void RigidBodyTree::getTerrainContactPoints(
   // collision element, obtain its contact points with the terrain and add it to
   // to the matrix pointed to by parameter terrain_points.
   for (auto id_iter = element_ids.begin();
-      id_iter != element_ids.end(); ++id_iter) {
+       id_iter != element_ids.end(); ++id_iter) {
     Matrix3Xd element_points;
     collision_model_->getTerrainContactPoints(*id_iter, element_points);
     terrain_points->conservativeResize(
         Eigen::NoChange, terrain_points->cols() + element_points.cols());
     terrain_points->block(0, num_points, terrain_points->rows(),
-                         element_points.cols()) = element_points;
+                          element_points.cols()) = element_points;
     num_points += element_points.cols();
   }
 }
 
-void RigidBodyTree::collisionDetectFromPoints(
+template <typename T>
+void RigidBodyTree<T>::collisionDetectFromPoints(
     const KinematicsCache<double>& cache, const Matrix3Xd& points,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     VectorXd& phi, Matrix3Xd& normal, Matrix3Xd& x, Matrix3Xd& body_x,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& body_idx, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> closest_points;
 
   collision_model_->collisionDetectFromPoints(points, use_margins,
-                                             closest_points);
+                                              closest_points);
   x.resize(3, closest_points.size());
   body_x.resize(3, closest_points.size());
   normal.resize(3, closest_points.size());
@@ -545,29 +574,39 @@ void RigidBodyTree::collisionDetectFromPoints(
   }
 }
 
-bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
-                                     const Matrix3Xd& origins,
-                                     const Matrix3Xd& ray_endpoints,
-                                     VectorXd& distances, bool use_margins) {
+template <typename T>
+bool RigidBodyTree<T>::collisionRaycast(
+    const KinematicsCache<double>& cache,
+    const Matrix3Xd& origins,
+    const Matrix3Xd& ray_endpoints,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    VectorXd& distances, bool use_margins) {
   Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
   return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
-                                           distances, normals);
+                                            distances, normals);
 }
 
-bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
-                                     const Matrix3Xd& origins,
-                                     const Matrix3Xd& ray_endpoints,
-                                     VectorXd& distances, Matrix3Xd& normals,
-                                     bool use_margins) {
+template <typename T>
+bool RigidBodyTree<T>::collisionRaycast(
+    const KinematicsCache<double>& cache,
+    const Matrix3Xd& origins,
+    const Matrix3Xd& ray_endpoints,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    VectorXd& distances, Matrix3Xd& normals,
+    bool use_margins) {
   updateDynamicCollisionElements(cache);
   return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
-                                           distances, normals);
+                                            distances, normals);
 }
 
-bool RigidBodyTree::collisionDetect(
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx,
     const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
   updateDynamicCollisionElements(cache);
@@ -575,7 +614,7 @@ bool RigidBodyTree::collisionDetect(
   vector<DrakeCollision::PointPair> points;
   bool points_found =
       collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
-          points);
+                                              points);
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -595,9 +634,13 @@ bool RigidBodyTree::collisionDetect(
   return points_found;
 }
 
-bool RigidBodyTree::collisionDetect(
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
@@ -613,9 +656,13 @@ bool RigidBodyTree::collisionDetect(
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect(
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
@@ -627,13 +674,19 @@ bool RigidBodyTree::collisionDetect(
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
-                                    VectorXd& phi, Matrix3Xd& normal,
-                                    Matrix3Xd& xA, Matrix3Xd& xB,
-                                    vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx,
-                                    const set<string>& active_element_groups,
-                                    bool use_margins) {
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect(
+    const KinematicsCache<double>& cache,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix3Xd& xA, Matrix3Xd& xB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyB_idx,
+    const set<string>& active_element_groups,
+    bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -647,11 +700,17 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
-                                    VectorXd& phi, Matrix3Xd& normal,
-                                    Matrix3Xd& xA, Matrix3Xd& xB,
-                                    vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx, bool use_margins) {
+template <typename T>
+bool RigidBodyTree<T>::collisionDetect(
+    const KinematicsCache<double>& cache,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix3Xd& xA, Matrix3Xd& xB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyB_idx, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -661,12 +720,18 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                          ids_to_check, use_margins);
 }
 
-void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
-                                        VectorXd& phi, Matrix3Xd& normal,
-                                        Matrix3Xd& xA, Matrix3Xd& xB,
-                                        vector<int>& bodyA_idx,
-                                        vector<int>& bodyB_idx,
-                                        bool use_margins) {
+template <typename T>
+void RigidBodyTree<T>::potentialCollisions(
+    const KinematicsCache<double>& cache,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    VectorXd& phi, Matrix3Xd& normal,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix3Xd& xA, Matrix3Xd& xB,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyB_idx,
+    bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> potential_collisions;
   potential_collisions =
@@ -693,8 +758,9 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   }
 }
 
+template <typename T>
 std::vector<DrakeCollision::PointPair>
-RigidBodyTree::ComputeMaximumDepthCollisionPoints(
+RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> contact_points;
@@ -719,26 +785,34 @@ RigidBodyTree::ComputeMaximumDepthCollisionPoints(
   return contact_points;
 }
 
-bool RigidBodyTree::collidingPointsCheckOnly(
+template <typename T>
+bool RigidBodyTree<T>::collidingPointsCheckOnly(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
   return collision_model_->collidingPointsCheckOnly(points,
-      collision_threshold);
+                                                    collision_threshold);
 }
 
-vector<size_t> RigidBodyTree::collidingPoints(
+template <typename T>
+vector<size_t> RigidBodyTree<T>::collidingPoints(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
   return collision_model_->collidingPoints(points, collision_threshold);
 }
 
-bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
-                                  vector<int>& bodyA_idx,
-                                  vector<int>& bodyB_idx,
-                                  Matrix3Xd& xA_in_world,
-                                  Matrix3Xd& xB_in_world, bool use_margins) {
+template <typename T>
+bool RigidBodyTree<T>::allCollisions(
+    const KinematicsCache<double>& cache,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyA_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    vector<int>& bodyB_idx,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix3Xd& xA_in_world,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    Matrix3Xd& xB_in_world, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
@@ -760,8 +834,9 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   return points_found;
 }
 
+template <typename T>
 template <typename DerivedQ>
-KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q) const {
   KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
   ret.initialize(q);
@@ -769,8 +844,9 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
   return ret;
 }
 
+template <typename T>
 template <typename DerivedQ, typename DerivedV>
-KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree<T>::doKinematics(
     const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v,
     bool compute_JdotV) const {
   KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
@@ -779,9 +855,11 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyTree::doKinematics(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
-void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
-                                 bool compute_JdotV) const {
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
+                                    bool compute_JdotV) const {
   const auto& q = cache.getQ();
   if (!initialized_)
     throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
@@ -806,7 +884,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
       // transform
       auto T_body_to_parent =
           joint.get_transform_to_parent_body().cast<Scalar>() *
-          joint.jointTransform(q_body);
+              joint.jointTransform(q_body);
       element.transform_to_world =
           parent_element.transform_to_world * T_body_to_parent;
 
@@ -854,7 +932,7 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
                 element.motion_subspace_in_body_dot_times_v);
             element.motion_subspace_in_world_dot_times_v =
                 parent_element.motion_subspace_in_world_dot_times_v +
-                joint_accel;
+                    joint_accel;
           }
         }
       }
@@ -883,8 +961,10 @@ void RigidBodyTree::doKinematics(KinematicsCache<Scalar>& cache,
   cache.setJdotVCached(compute_JdotV && cache.hasV());
 }
 
+template <typename T>
 template <typename Scalar>
-void RigidBodyTree::updateCompositeRigidBodyInertias(
+void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
   cache.checkCachedKinematicsSettings(false, false,
                                       "updateCompositeRigidBodyInertias");
@@ -895,7 +975,7 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
       auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
           element.transform_to_world,
-              body.get_spatial_inertia().cast<Scalar>());
+          body.get_spatial_inertia().cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 
@@ -912,8 +992,10 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(
   cache.setInertiasCached();
 }
 
+template <typename T>
 template <typename Scalar>
-TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
+TwistMatrix<Scalar> RigidBodyTree<T>::worldMomentumMatrix(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
@@ -932,7 +1014,7 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint =
           in_terms_of_qdot ? joint.get_num_positions() :
-              joint.get_num_velocities();
+          joint.get_num_velocities();
       if (is_part_of_model_instances(body, model_instance_id_set)) {
         int start = in_terms_of_qdot ? body.get_position_start_index()
                                      : body.get_velocity_start_index();
@@ -953,10 +1035,12 @@ TwistMatrix<Scalar> RigidBodyTree::worldMomentumMatrix(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
+TwistVector<Scalar> RigidBodyTree<T>::worldMomentumMatrixDotTimesV(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
-        const {
+const {
   cache.checkCachedKinematicsSettings(true, true,
                                       "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
@@ -969,7 +1053,7 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
       if (is_part_of_model_instances(body, model_instance_id_set)) {
         const auto& element = cache.getElement(body);
         ret.noalias() += element.inertia_in_world *
-                         element.motion_subspace_in_world_dot_times_v;
+            element.motion_subspace_in_world_dot_times_v;
         auto inertia_times_twist =
             (element.inertia_in_world * element.twist_in_world).eval();
         ret.noalias() +=
@@ -981,13 +1065,15 @@ TwistVector<Scalar> RigidBodyTree::worldMomentumMatrixDotTimesV(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
-TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
+TwistMatrix<Scalar> RigidBodyTree<T>::centroidalMomentumMatrix(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set,
     bool in_terms_of_qdot) const {
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, model_instance_id_set,
-      in_terms_of_qdot);
+                                 in_terms_of_qdot);
 
   // transform from world frame to COM frame
   auto com = centerOfMass(cache, model_instance_id_set);
@@ -1003,10 +1089,12 @@ TwistMatrix<Scalar> RigidBodyTree::centroidalMomentumMatrix(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
+TwistVector<Scalar> RigidBodyTree<T>::centroidalMomentumMatrixDotTimesV(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
-        const {
+const {
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV(cache, model_instance_id_set);
 
@@ -1027,7 +1115,8 @@ TwistVector<Scalar> RigidBodyTree::centroidalMomentumMatrixDotTimesV(
   return ret;
 }
 
-bool RigidBodyTree::is_part_of_model_instances(
+template <typename T>
+bool RigidBodyTree<T>::is_part_of_model_instances(
     const RigidBody& body,
     const std::set<int>& model_instance_id_set) const {
   for (std::set<int>::const_iterator it = model_instance_id_set.begin();
@@ -1041,8 +1130,9 @@ bool RigidBodyTree::is_part_of_model_instances(
       model_instance_id_set.end();
 }
 
-double RigidBodyTree::getMass(const std::set<int>& model_instance_id_set)
-    const {
+template <typename T>
+double RigidBodyTree<T>::getMass(const std::set<int>& model_instance_id_set)
+const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
     if (is_part_of_model_instances(*body.get(), model_instance_id_set)) {
@@ -1052,10 +1142,12 @@ double RigidBodyTree::getMass(const std::set<int>& model_instance_id_set)
   return total_mass;
 }
 
+template <typename T>
 template <typename Scalar>
-Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
+Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree<T>::centerOfMass(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache, const std::set<int>& model_instance_id_set)
-        const {
+const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass");
 
   Eigen::Matrix<Scalar, kSpaceDimension, 1> com;
@@ -1079,19 +1171,25 @@ Eigen::Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMass(
   return com;
 }
 
+template <typename T>
 template <typename Scalar>
 Matrix<Scalar, kSpaceDimension, Eigen::Dynamic>
-RigidBodyTree::centerOfMassJacobian(KinematicsCache<Scalar>& cache,
-                                    const std::set<int>& model_instance_id_set,
-                                    bool in_terms_of_qdot) const {
+RigidBodyTree<T>::centerOfMassJacobian(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    KinematicsCache<Scalar>& cache,
+    const std::set<int>& model_instance_id_set,
+    bool in_terms_of_qdot) const {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
   auto A = worldMomentumMatrix(cache, model_instance_id_set, in_terms_of_qdot);
   double total_mass = getMass(model_instance_id_set);
   return A.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
+template <typename T>
 template <typename Scalar>
-Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(
+Matrix<Scalar, kSpaceDimension, 1>
+RigidBodyTree<T>::centerOfMassJacobianDotTimesV(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
     const std::set<int>& model_instance_id_set) const {
   // kinematics cache checks are already being done in
@@ -1102,8 +1200,9 @@ Matrix<Scalar, kSpaceDimension, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(
   return cmm_dot_times_v.template bottomRows<kSpaceDimension>() / total_mass;
 }
 
+template <typename T>
 template <typename DerivedNormal, typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> RigidBodyTree::resolveCenterOfPressure(
+std::pair<Eigen::Vector3d, double> RigidBodyTree<T>::resolveCenterOfPressure(
     const KinematicsCache<double>& cache,
     const std::vector<ForceTorqueMeasurement>& force_torque_measurements,
     const Eigen::MatrixBase<DerivedNormal>& normal,
@@ -1121,7 +1220,8 @@ std::pair<Eigen::Vector3d, double> RigidBodyTree::resolveCenterOfPressure(
                                    point_on_contact_plane);
 }
 
-int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
+template <typename T>
+int RigidBodyTree<T>::getNumContacts(const set<int>& body_idx) const {
   size_t num_contacts = 0, nb = body_idx.size(), bi;
   if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
@@ -1136,14 +1236,15 @@ int RigidBodyTree::getNumContacts(const set<int>& body_idx) const {
 }
 
 /* [body_ind, Tframe] = parseBodyOrFrameID(body_or_frame_id) */
+template <typename T>
 template <typename Scalar>
-int RigidBodyTree::parseBodyOrFrameID(
+int RigidBodyTree<T>::parseBodyOrFrameID(
     const int body_or_frame_id,
     Eigen::Transform<Scalar, 3, Isometry>* Tframe) const {
   int body_ind = 0;
   if (body_or_frame_id == -1) {
     cerr << "parseBodyOrFrameID got a -1, which should have been reserved for "
-            "COM.  Shouldn't have gotten here."
+        "COM.  Shouldn't have gotten here."
          << endl;
   } else if (body_or_frame_id < 0) {
     int frame_ind = -body_or_frame_id - 2;
@@ -1156,7 +1257,8 @@ int RigidBodyTree::parseBodyOrFrameID(
     body_ind = frames[frame_ind]->get_rigid_body().get_body_index();
 
     if (Tframe) {
-      (*Tframe) = frames[frame_ind]->get_transform_to_body().cast<Scalar>();
+      (*Tframe) =
+          frames[frame_ind]->get_transform_to_body().template cast<Scalar>();
     }
   } else {
     body_ind = body_or_frame_id;
@@ -1165,15 +1267,17 @@ int RigidBodyTree::parseBodyOrFrameID(
   return body_ind;
 }
 
-int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
+template <typename T>
+int RigidBodyTree<T>::parseBodyOrFrameID(const int body_or_frame_id) const {
   return parseBodyOrFrameID<double>(body_or_frame_id, nullptr);
 }
 
-std::vector<int> RigidBodyTree::FindAncestorBodies(
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindAncestorBodies(
     int body_index) const {
   // Verifies that body_index is valid. Aborts if it is invalid.
   DRAKE_DEMAND(body_index >= 0 &&
-                     body_index < static_cast<int>(bodies.size()));
+      body_index < static_cast<int>(bodies.size()));
 
   std::vector<int> ancestor_body_list;
   const RigidBody* current_body = bodies[body_index].get();
@@ -1185,12 +1289,15 @@ std::vector<int> RigidBodyTree::FindAncestorBodies(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
-void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
-                                       int body_idx) const {
+template <typename T>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void RigidBodyTree<T>::findAncestorBodies(std::vector<int>& ancestor_bodies,
+                                          int body_idx) const {
   ancestor_bodies = FindAncestorBodies(body_idx);
 }
 
-KinematicPath RigidBodyTree::findKinematicPath(
+template <typename T>
+KinematicPath RigidBodyTree<T>::findKinematicPath(
     int start_body_or_frame_idx, int end_body_or_frame_idx) const {
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
@@ -1251,8 +1358,9 @@ KinematicPath RigidBodyTree::findKinematicPath(
   return path;
 }
 
+template <typename T>
 template <typename Scalar>
-TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
+TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
     bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const {
@@ -1269,7 +1377,7 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
     const DrakeJoint& joint = body.getJoint();
     cols +=
         in_terms_of_qdot ? joint.get_num_positions() :
-                           joint.get_num_velocities();
+        joint.get_num_velocities();
   }
 
   TwistMatrix<Scalar> J(kTwistSize, cols);
@@ -1287,7 +1395,7 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
     const DrakeJoint& joint = body.getJoint();
     int ncols_block =
         in_terms_of_qdot ? joint.get_num_positions() :
-                           joint.get_num_velocities();
+        joint.get_num_velocities();
     int sign = kinematic_path.joint_direction_signs[i];
     auto J_block = J.template block<kTwistSize, Dynamic>(
         0, col_start, kTwistSize, ncols_block);
@@ -1301,7 +1409,7 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
     if (v_or_qdot_indices != nullptr) {
       int cols_block_start =
           in_terms_of_qdot ? body.get_position_start_index() :
-              body.get_velocity_start_index();
+          body.get_velocity_start_index();
       for (int j = 0; j < ncols_block; ++j) {
         v_or_qdot_indices->push_back(cols_block_start + j);
       }
@@ -1318,8 +1426,9 @@ TwistMatrix<Scalar> RigidBodyTree::geometricJacobian(
   return J;
 }
 
+template <typename T>
 template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree::geometricJacobianDotTimesV(
+TwistVector<Scalar> RigidBodyTree<T>::geometricJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind,
     int expressed_in_body_or_frame_ind) const {
@@ -1336,7 +1445,7 @@ TwistVector<Scalar> RigidBodyTree::geometricJacobianDotTimesV(
       cache.getElement(*bodies[end_effector_body_ind]);
 
   ret = end_effector_element.motion_subspace_in_world_dot_times_v -
-        base_element.motion_subspace_in_world_dot_times_v;
+      base_element.motion_subspace_in_world_dot_times_v;
 
   int world_ind = 0;
   return transformSpatialAcceleration(cache, ret, base_body_ind,
@@ -1344,8 +1453,9 @@ TwistVector<Scalar> RigidBodyTree::geometricJacobianDotTimesV(
                                       expressed_in_body_or_frame_ind);
 }
 
+template <typename T>
 template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree::relativeTwist(
+TwistVector<Scalar> RigidBodyTree<T>::relativeTwist(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind, int expressed_in_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, false, "relativeTwist");
@@ -1353,17 +1463,18 @@ TwistVector<Scalar> RigidBodyTree::relativeTwist(
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
   int body_ind = parseBodyOrFrameID(body_or_frame_ind);
   int world = 0;
-  auto T = relativeTransform(cache, expressed_in_body_or_frame_ind, world);
+  auto Tr = relativeTransform(cache, expressed_in_body_or_frame_ind, world);
 
   const auto& base_element = cache.getElement(*bodies[base_ind]);
   const auto& body_element = cache.getElement(*bodies[body_ind]);
   TwistVector<Scalar> relative_twist_in_world =
       body_element.twist_in_world - base_element.twist_in_world;
-  return transformSpatialMotion(T, relative_twist_in_world);
+  return transformSpatialMotion(Tr, relative_twist_in_world);
 }
 
+template <typename T>
 template <typename Scalar>
-TwistVector<Scalar> RigidBodyTree::transformSpatialAcceleration(
+TwistVector<Scalar> RigidBodyTree<T>::transformSpatialAcceleration(
     const KinematicsCache<Scalar>& cache,
     const TwistVector<Scalar>& spatial_acceleration, int base_ind, int body_ind,
     int old_expressed_in_body_or_frame_ind,
@@ -1391,8 +1502,9 @@ TwistVector<Scalar> RigidBodyTree::transformSpatialAcceleration(
   return transformSpatialMotion(T_old_to_new, spatial_accel_temp);
 }
 
+template <typename T>
 template <typename Scalar>
-Transform<Scalar, 3, Isometry> RigidBodyTree::relativeTransform(
+Transform<Scalar, 3, Isometry> RigidBodyTree<T>::relativeTransform(
     const KinematicsCache<Scalar>& cache, int base_or_frame_ind,
     int body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(false, false, "relativeTransform");
@@ -1414,8 +1526,10 @@ Transform<Scalar, 3, Isometry> RigidBodyTree::relativeTransform(
   return Tworld_to_baseframe * Tbodyframe_to_world;
 }
 
+template <typename T>
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree<T>::massMatrix(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache) const {
   cache.checkCachedKinematicsSettings(false, false, "massMatrix");
 
@@ -1456,8 +1570,10 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::dynamicsBiasTerm(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
     const drake::eigen_aligned_std_unordered_map<
         RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
@@ -1467,8 +1583,10 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
   return inverseDynamics(cache, external_wrenches, vd, include_velocity_terms);
 }
 
+template <typename T>
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<Scalar>& cache,
     const drake::eigen_aligned_std_unordered_map<
         RigidBody const*, WrenchVector<Scalar>>& external_wrenches,
@@ -1654,8 +1772,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   return torques;
 }
 
+template <typename T>
 template <typename DerivedV>
-Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
+Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
     Eigen::MatrixBase<DerivedV> const& v) const {
   typedef typename DerivedV::Scalar Scalar;
   Matrix<Scalar, Dynamic, 1> ret(num_velocities_, 1);
@@ -1674,9 +1793,10 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar, typename DerivedPoints>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
-RigidBodyTree::transformPointsJacobian(
+RigidBodyTree<T>::transformPointsJacobian(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
@@ -1717,12 +1837,13 @@ RigidBodyTree::transformPointsJacobian(
   return J;
 }
 
+template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, kQuaternionSize, Eigen::Dynamic>
-RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
-                                          int from_body_or_frame_ind,
-                                          int to_body_or_frame_ind,
-                                          bool in_terms_of_qdot) const {
+RigidBodyTree<T>::relativeQuaternionJacobian(
+    const KinematicsCache<Scalar>& cache,
+    int from_body_or_frame_ind, int to_body_or_frame_ind,
+    bool in_terms_of_qdot) const {
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(to_body_or_frame_ind);
   KinematicPath kinematic_path = findKinematicPath(base_ind, body_ind);
@@ -1739,9 +1860,10 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
                        in_terms_of_qdot);
 }
 
+template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, kRpySize, Eigen::Dynamic>
-RigidBodyTree::relativeRollPitchYawJacobian(
+RigidBodyTree<T>::relativeRollPitchYawJacobian(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind, bool in_terms_of_qdot) const {
   int body_ind = parseBodyOrFrameID(from_body_or_frame_ind);
@@ -1762,12 +1884,12 @@ RigidBodyTree::relativeRollPitchYawJacobian(
                        in_terms_of_qdot);
 }
 
+template <typename T>
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
-RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
-                                          int npoints,
-                                          int from_body_or_frame_ind,
-                                          int to_body_or_frame_ind) const {
+RigidBodyTree<T>::forwardKinPositionGradient(
+    const KinematicsCache<Scalar>& cache,
+    int npoints, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(false, false,
                                       "forwardKinPositionGradient");
 
@@ -1783,9 +1905,10 @@ RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
   return ret;
 }
 
+template <typename T>
 template <typename Scalar, typename DerivedPoints>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
-RigidBodyTree::transformPointsJacobianDotTimesV(
+RigidBodyTree<T>::transformPointsJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache,
     const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
@@ -1809,7 +1932,7 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
   auto Jposdot_times_v_mat = (-rdots.colwise().cross(omega_twist)).eval();
   Jposdot_times_v_mat -=
       (r.colwise().cross(
-           J_geometric_dot_times_v.template topRows<kSpaceDimension>()))
+          J_geometric_dot_times_v.template topRows<kSpaceDimension>()))
           .eval();
   Jposdot_times_v_mat.colwise() +=
       J_geometric_dot_times_v.template bottomRows<kSpaceDimension>();
@@ -1818,9 +1941,10 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
                                          1);
 }
 
+template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
-RigidBodyTree::relativeQuaternionJacobianDotTimesV(
+RigidBodyTree<T>::relativeQuaternionJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, true,
@@ -1841,8 +1965,8 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
 
   using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
                                          1>>;  // would prefer to use 1 instead
-                                               // of Dynamic, but this causes
-                                               // issues related to
+  // of Dynamic, but this causes
+  // issues related to
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
   // 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
@@ -1864,9 +1988,10 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
-RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
+RigidBodyTree<T>::relativeRollPitchYawJacobianDotTimesV(
     const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
     int to_body_or_frame_ind) const {
   cache.checkCachedKinematicsSettings(true, true,
@@ -1889,8 +2014,8 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
 
   using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
                                          1>>;  // would prefer to use 1 instead
-                                               // of Dynamic, but this causes
-                                               // issues related to
+  // of Dynamic, but this causes
+  // issues related to
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
   // 32 bit
   auto rpy_autodiff = rpy.template cast<ADScalar>().eval();
@@ -1913,9 +2038,10 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
-                                   const std::string& model_name,
-                                   int model_instance_id) const {
+template <typename T>
+RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
+                                      const std::string& model_name,
+                                      int model_instance_id) const {
   // Obtains lower case versions of the body name and model name.
   std::string body_name_lower = body_name;
   std::string model_name_lower = model_name;
@@ -1961,9 +2087,9 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
       } else {
         throw std::logic_error(
             "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
-            body_name + "\", model name = \"" + model_name +
-            "\", model instance id = " + std::to_string(model_instance_id) +
-            ".");
+                body_name + "\", model name = \"" + model_name +
+                "\", model instance id = " + std::to_string(model_instance_id) +
+                ".");
       }
     }
   }
@@ -1980,8 +2106,9 @@ RigidBody* RigidBodyTree::FindBody(const std::string& body_name,
   }
 }
 
+template <typename T>
 std::vector<const RigidBody*>
-RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
+RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) const {
   std::vector<const RigidBody*> result;
 
   for (const auto& rigid_body : bodies) {
@@ -1997,13 +2124,15 @@ RigidBodyTree::FindModelInstanceBodies(int model_instance_id) {
   return result;
 }
 
-RigidBody* RigidBodyTree::findLink(const std::string& link_name,
-                                   const std::string& model_name,
-                                   int model_instance_id) const {
+template <typename T>
+RigidBody* RigidBodyTree<T>::findLink(const std::string& link_name,
+                                      const std::string& model_name,
+                                      int model_instance_id) const {
   return FindBody(link_name, model_name, model_instance_id);
 }
 
-shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
+template <typename T>
+shared_ptr<RigidBodyFrame> RigidBodyTree<T>::findFrame(
     const std::string& frame_name, int model_instance_id) const {
   std::string frame_name_lower = frame_name;
 
@@ -2037,9 +2166,9 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
         match_index = i;
       } else {
         throw std::logic_error(
-            "RigidBodyTree::findFrame: ERROR: Found multiple frames named \"" +
-            frame_name + "\", model_instance_id = " +
-            std::to_string(model_instance_id));
+            "RigidBodyTree::findFrame: ERROR: Found multiple frames named \""
+                + frame_name + "\", model_instance_id = " +
+                std::to_string(model_instance_id));
       }
     }
   }
@@ -2051,34 +2180,37 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
   } else {
     throw std::logic_error(
         "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
-        frame_name + "\", model instance id = " +
-        std::to_string(model_instance_id) + ".");
+            frame_name + "\", model instance id = " +
+            std::to_string(model_instance_id) + ".");
   }
 }
 
-std::vector<int> RigidBodyTree::FindBaseBodies(int model_instance_id)
-    const {
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindBaseBodies(int model_instance_id)
+const {
   return FindChildrenOfBody(kWorldBodyIndex, model_instance_id);
 }
 
-int RigidBodyTree::FindBodyIndex(const std::string& body_name,
-                                 int model_instance_id) const {
+template <typename T>
+int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
+                                    int model_instance_id) const {
   RigidBody* body = FindBody(body_name, "", model_instance_id);
   if (body == nullptr) {
     throw std::logic_error(
-        "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for rigid "
-        "body \"" +
-        body_name + "\", model_instance_id = " +
-        std::to_string(model_instance_id) + ".");
+        "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for "
+            "rigid body \"" +
+            body_name + "\", model_instance_id = " +
+            std::to_string(model_instance_id) + ".");
   }
   return body->get_body_index();
 }
 
-std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindChildrenOfBody(int parent_body_index,
     int model_instance_id) const {
   // Verifies that parameter parent_body_index is valid.
   DRAKE_DEMAND(parent_body_index >= 0 &&
-                     parent_body_index < get_num_bodies());
+      parent_body_index < get_num_bodies());
 
   // Obtains a reference to the parent body.
   const RigidBody& parent_body = get_body(parent_body_index);
@@ -2102,13 +2234,15 @@ std::vector<int> RigidBodyTree::FindChildrenOfBody(int parent_body_index,
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
-int RigidBodyTree::findLinkId(const std::string& link_name,
-                              int model_instance_id) const {
+template <typename T>
+int RigidBodyTree<T>::findLinkId(const std::string& link_name,
+                                 int model_instance_id) const {
   return FindBodyIndex(link_name, model_instance_id);
 }
 
-RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
-                                               int model_instance_id) const {
+template <typename T>
+RigidBody* RigidBodyTree<T>::FindChildBodyOfJoint(const std::string& joint_name,
+                                                  int model_instance_id) const {
   // Obtains a lower case version of joint_name.
   std::string joint_name_lower = joint_name;
   std::transform(joint_name_lower.begin(), joint_name_lower.end(),
@@ -2154,9 +2288,9 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
     if (name_match[i]) {
       if (match_found) {
         throw std::runtime_error(
-            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints found "
-            " named \"" + joint_name + "\", model instance ID = " +
-            std::to_string(model_instance_id) + ".");
+            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints "
+                "found named \"" + joint_name + "\", model instance ID = " +
+                std::to_string(model_instance_id) + ".");
       }
       ind_match = i;
       match_found = true;
@@ -2168,50 +2302,54 @@ RigidBody* RigidBodyTree::FindChildBodyOfJoint(const std::string& joint_name,
   if (!match_found) {
     throw std::runtime_error(
         "RigidBodyTree::FindChildBodyOfJoint: ERROR: Could not find unique "
-        "joint named \"" + joint_name + "\", model_instance_id = " +
-        std::to_string(model_instance_id) + ".");
+            "joint named \"" + joint_name + "\", model_instance_id = " +
+            std::to_string(model_instance_id) + ".");
   } else {
     return bodies[ind_match].get();
   }
 }
 
-int RigidBodyTree::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
-      int model_instance_id) const {
+template <typename T>
+int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
+                                                  int model_instance_id) const {
   RigidBody* link = FindChildBodyOfJoint(joint_name, model_instance_id);
   return link->get_body_index();
 }
 
-const RigidBody& RigidBodyTree::get_body(int body_index) const {
+template <typename T>
+const RigidBody& RigidBodyTree<T>::get_body(int body_index) const {
   DRAKE_DEMAND(body_index >= 0 &&
-                     body_index < get_num_bodies());
+      body_index < get_num_bodies());
   return *bodies[body_index].get();
 }
 
-int RigidBodyTree::get_num_bodies() const {
+template <typename T>
+int RigidBodyTree<T>::get_num_bodies() const {
   return static_cast<int>(bodies.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
-#ifndef SWIG
-  DRAKE_DEPRECATED("Please use get_num_bodies().")
-#endif
-int RigidBodyTree::get_number_of_bodies() const {
+template <typename T>
+int RigidBodyTree<T>::get_number_of_bodies() const {
   return get_num_bodies();
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
-RigidBody* RigidBodyTree::findJoint(const std::string& joint_name,
-    int model_id) const {
+template <typename T>
+RigidBody* RigidBodyTree<T>::findJoint(const std::string& joint_name,
+                                       int model_id) const {
   return FindChildBodyOfJoint(joint_name, model_id);
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
-int RigidBodyTree::findJointId(const std::string& joint_name, int model_id)
-    const {
+template <typename T>
+int RigidBodyTree<T>::findJointId(const std::string& joint_name, int model_id)
+const {
   return  FindIndexOfChildBodyOfJoint(joint_name, model_id);
 }
 
-std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
+template <typename T>
+std::string RigidBodyTree<T>::getBodyOrFrameName(int body_or_frame_id) const {
   if (body_or_frame_id >= 0) {
     return bodies[body_or_frame_id]->get_name();
   } else if (body_or_frame_id < -1) {
@@ -2221,8 +2359,9 @@ std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const {
   }
 }
 
+template <typename T>
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
   for (size_t i = 0; i < loops.size(); ++i) {
@@ -2244,10 +2383,11 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
-RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
-                                           bool in_terms_of_qdot) const {
+RigidBodyTree<T>::positionConstraintsJacobian(
+    const KinematicsCache<Scalar>& cache, bool in_terms_of_qdot) const {
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(
       6 * loops.size(), in_terms_of_qdot ? num_positions_ : num_velocities_);
 
@@ -2264,9 +2404,10 @@ RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar>& cache,
   return ret;
 }
 
+template <typename T>
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1>
-RigidBodyTree::positionConstraintsJacDotTimesV(
+RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     const KinematicsCache<Scalar>& cache) const {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
 
@@ -2283,10 +2424,14 @@ RigidBodyTree::positionConstraintsJacDotTimesV(
   return ret;
 }
 
+template <typename T>
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const& q,
-                                          MatrixBase<DerivedB>& phi,
-                                          MatrixBase<DerivedC>& J) const {
+void RigidBodyTree<T>::jointLimitConstraints(
+    MatrixBase<DerivedA> const& q,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    MatrixBase<DerivedB>& phi,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+    MatrixBase<DerivedC>& J) const {
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 
@@ -2311,7 +2456,8 @@ void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const& q,
   }
 }
 
-size_t RigidBodyTree::getNumJointLimitConstraints() const {
+template <typename T>
+size_t RigidBodyTree<T>::getNumJointLimitConstraints() const {
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 
@@ -2321,17 +2467,20 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const {
   return finite_min_index.size() + finite_max_index.size();
 }
 
-size_t RigidBodyTree::getNumPositionConstraints() const {
+template <typename T>
+size_t RigidBodyTree<T>::getNumPositionConstraints() const {
   return loops.size() * 6;
 }
 
-void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
+template <typename T>
+void RigidBodyTree<T>::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   // yuck!!
   frame->set_frame_index(-(static_cast<int>(frames.size()) - 1) - 2);
 }
 
-RigidBody* RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+template <typename T>
+RigidBody* RigidBodyTree<T>::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
@@ -2346,27 +2495,32 @@ RigidBody* RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   return bodies.back().get();
 }
 
-
-int RigidBodyTree::get_num_positions() const {
+template <typename T>
+int RigidBodyTree<T>::get_num_positions() const {
   return num_positions_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int RigidBodyTree::number_of_positions() const {
+template <typename T>
+int RigidBodyTree<T>::number_of_positions() const {
   return get_num_positions();
 }
 
-int RigidBodyTree::get_num_velocities() const {
+template <typename T>
+int RigidBodyTree<T>::get_num_velocities() const {
   return num_velocities_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int RigidBodyTree::number_of_velocities() const {
+template <typename T>
+int RigidBodyTree<T>::number_of_velocities() const {
   return get_num_velocities();
 }
 
+
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromURDFString(
+template <typename T>
+void RigidBodyTree<T>::addRobotFromURDFString(
     const std::string& xml_string, const std::string& root_dir,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2377,8 +2531,10 @@ void RigidBodyTree::addRobotFromURDFString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromURDFString(
+template <typename T>
+void RigidBodyTree<T>::addRobotFromURDFString(
     const std::string& xml_string,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
     const std::string& root_dir,
     const FloatingBaseType floating_base_type,
@@ -2389,7 +2545,8 @@ void RigidBodyTree::addRobotFromURDFString(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromURDF(
+template <typename T>
+void RigidBodyTree<T>::addRobotFromURDF(
     const std::string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2399,8 +2556,10 @@ void RigidBodyTree::addRobotFromURDF(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromURDF(
+template <typename T>
+void RigidBodyTree<T>::addRobotFromURDF(
     const std::string& filename,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2409,7 +2568,8 @@ void RigidBodyTree::addRobotFromURDF(
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-void RigidBodyTree::addRobotFromSDF(
+template <typename T>
+void RigidBodyTree<T>::addRobotFromSDF(
     const std::string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
@@ -2417,41 +2577,47 @@ void RigidBodyTree::addRobotFromSDF(
       floating_base_type, weld_to_frame, this);
 }
 
-
-int RigidBodyTree::add_model_instance() {
+template <typename T>
+int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
 }
 
-int RigidBodyTree::get_num_model_instances() const {
+template <typename T>
+int RigidBodyTree<T>::get_num_model_instances() const {
   return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-int RigidBodyTree::get_number_of_model_instances() const {
+template <typename T>
+int RigidBodyTree<T>::get_number_of_model_instances() const {
   return get_num_model_instances();
 }
 
 // Explicit template instantiations for massMatrix.
-template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d> RigidBodyTree::massMatrix<
-    AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&) const;
+template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
+RigidBodyTree<double>::massMatrix<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d>&) const;
 template DRAKE_EXPORT MatrixX<AutoDiffXd>
-RigidBodyTree::massMatrix<AutoDiffXd>(KinematicsCache<AutoDiffXd>&) const;
+RigidBodyTree<double>::massMatrix<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&) const;
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::massMatrix<double>(KinematicsCache<double>&) const;
+RigidBodyTree<double>::massMatrix<double>(KinematicsCache<double>&) const;
 
 // Explicit template instantiations for centerOfMass.
-template DRAKE_EXPORT Vector3<AutoDiffUpTo73d> RigidBodyTree::centerOfMass<
-    AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&,
-                     set<int, less<int>, allocator<int>> const&) const;
-template DRAKE_EXPORT Vector3<AutoDiffXd> RigidBodyTree::centerOfMass<
-    AutoDiffXd>(KinematicsCache<AutoDiffXd>&,
-                set<int, less<int>, allocator<int>> const&) const;
-template DRAKE_EXPORT Vector3d RigidBodyTree::centerOfMass<double>(
+template DRAKE_EXPORT Vector3<AutoDiffUpTo73d>
+RigidBodyTree<double>::centerOfMass<AutoDiffUpTo73d>(
+    KinematicsCache<AutoDiffUpTo73d>&,
+    set<int, less<int>, allocator<int>> const&) const;
+template DRAKE_EXPORT Vector3<AutoDiffXd>
+RigidBodyTree<double>::centerOfMass<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd>&,
+    set<int, less<int>, allocator<int>> const&) const;
+template DRAKE_EXPORT Vector3d RigidBodyTree<double>::centerOfMass<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for dynamicsBiasTerm.
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
+RigidBodyTree<double>::dynamicsBiasTerm<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
         RigidBody const*, WrenchVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
@@ -2460,7 +2626,7 @@ RigidBodyTree::dynamicsBiasTerm<AutoDiffUpTo73d>(
                                       WrenchVector<AutoDiffUpTo73d>>>> const&,
     bool) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
-RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
+RigidBodyTree<double>::dynamicsBiasTerm<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<
         RigidBody const*, WrenchVector<AutoDiffXd>, hash<RigidBody const*>,
@@ -2468,7 +2634,7 @@ RigidBodyTree::dynamicsBiasTerm<AutoDiffXd>(
         Eigen::aligned_allocator<
             pair<RigidBody const* const, WrenchVector<AutoDiffXd>>>> const&,
     bool) const;
-template DRAKE_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
+template DRAKE_EXPORT VectorXd RigidBodyTree<double>::dynamicsBiasTerm<double>(
     KinematicsCache<double>&,
     unordered_map<RigidBody const*, WrenchVector<double>,
                   hash<RigidBody const*>, equal_to<RigidBody const*>,
@@ -2478,161 +2644,164 @@ template DRAKE_EXPORT VectorXd RigidBodyTree::dynamicsBiasTerm<double>(
 
 // Explicit template instantiations for geometricJacobian.
 template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
-RigidBodyTree::geometricJacobian<AutoDiffUpTo73d>(
+RigidBodyTree<double>::geometricJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int, bool,
     vector<int, allocator<int>>*) const;
 template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
-RigidBodyTree::geometricJacobian<AutoDiffXd>(
+RigidBodyTree<double>::geometricJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int, bool,
     vector<int, allocator<int>>*) const;
 template DRAKE_EXPORT TwistMatrix<double>
-RigidBodyTree::geometricJacobian<double>(KinematicsCache<double> const&, int,
-                                         int, int, bool,
-                                         vector<int, allocator<int>>*) const;
+RigidBodyTree<double>::geometricJacobian<double>(
+    KinematicsCache<double> const&,
+    int, int, int, bool, vector<int, allocator<int>>*) const;
 
 // Explicit template instantiations for relativeTransform.
 template DRAKE_EXPORT Eigen::Transform<AutoDiffUpTo73d, 3, 1, 0>
-RigidBodyTree::relativeTransform<AutoDiffUpTo73d>(
+RigidBodyTree<double>::relativeTransform<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
 template DRAKE_EXPORT Eigen::Transform<AutoDiffXd, 3, 1, 0>
-RigidBodyTree::relativeTransform<AutoDiffXd>(KinematicsCache<AutoDiffXd> const&,
-                                             int, int) const;
+RigidBodyTree<double>::relativeTransform<AutoDiffXd>(
+    KinematicsCache<AutoDiffXd> const&, int, int) const;
 template DRAKE_EXPORT Eigen::Transform<double, 3, 1, 0>
-RigidBodyTree::relativeTransform<double>(KinematicsCache<double> const&, int,
-                                         int) const;
+RigidBodyTree<double>::relativeTransform<double>(
+    KinematicsCache<double> const&, int, int) const;
 
 // Explicit template instantiations for centerOfMassJacobian.
 template DRAKE_EXPORT Matrix3X<AutoDiffUpTo73d>
-RigidBodyTree::centerOfMassJacobian<AutoDiffUpTo73d>(
+RigidBodyTree<double>::centerOfMassJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
 template DRAKE_EXPORT Matrix3X<AutoDiffXd>
-RigidBodyTree::centerOfMassJacobian<AutoDiffXd>(
+RigidBodyTree<double>::centerOfMassJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
-template DRAKE_EXPORT Matrix3Xd RigidBodyTree::centerOfMassJacobian<double>(
-    KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&,
-    bool) const;
+template DRAKE_EXPORT Matrix3Xd
+RigidBodyTree<double>::centerOfMassJacobian<double>(
+    KinematicsCache<double>&,
+    set<int, less<int>, allocator<int>> const&, bool) const;
 
 // Explicit template instantiations for centroidalMomentumMatrix.
 template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
-RigidBodyTree::centroidalMomentumMatrix<AutoDiffUpTo73d>(
+RigidBodyTree<double>::centroidalMomentumMatrix<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
 template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
-RigidBodyTree::centroidalMomentumMatrix<AutoDiffXd>(
+RigidBodyTree<double>::centroidalMomentumMatrix<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
 template DRAKE_EXPORT TwistMatrix<double>
-RigidBodyTree::centroidalMomentumMatrix<double>(
+RigidBodyTree<double>::centroidalMomentumMatrix<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
 
 // Explicit template instantiations for forwardKinPositionGradient.
 template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
-RigidBodyTree::forwardKinPositionGradient<AutoDiffUpTo73d>(
+RigidBodyTree<double>::forwardKinPositionGradient<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;
 template DRAKE_EXPORT MatrixX<AutoDiffXd>
-RigidBodyTree::forwardKinPositionGradient<AutoDiffXd>(
+RigidBodyTree<double>::forwardKinPositionGradient<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int) const;
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::forwardKinPositionGradient<double>(
+RigidBodyTree<double>::forwardKinPositionGradient<double>(
     KinematicsCache<double> const&, int, int, int) const;
 
 // Explicit template instantiations for geometricJacobianDotTimesV.
 template DRAKE_EXPORT TwistVector<AutoDiffUpTo73d>
-RigidBodyTree::geometricJacobianDotTimesV<AutoDiffUpTo73d>(
+RigidBodyTree<double>::geometricJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;
 template DRAKE_EXPORT TwistVector<AutoDiffXd>
-RigidBodyTree::geometricJacobianDotTimesV<AutoDiffXd>(
+RigidBodyTree<double>::geometricJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, int) const;
 template DRAKE_EXPORT TwistVector<double>
-RigidBodyTree::geometricJacobianDotTimesV<double>(
+RigidBodyTree<double>::geometricJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int, int) const;
 
 // Explicit template instantiations for centerOfMassJacobianDotTimesV.
 template DRAKE_EXPORT Vector3<AutoDiffUpTo73d>
-RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffUpTo73d>(
+RigidBodyTree<double>::centerOfMassJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&) const;
 template DRAKE_EXPORT Vector3<AutoDiffXd>
-RigidBodyTree::centerOfMassJacobianDotTimesV<AutoDiffXd>(
+RigidBodyTree<double>::centerOfMassJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     set<int, less<int>, allocator<int>> const&) const;
 template DRAKE_EXPORT Vector3d
-RigidBodyTree::centerOfMassJacobianDotTimesV<double>(
+RigidBodyTree<double>::centerOfMassJacobianDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for centroidalMomentumMatrixDotTimesV.
 template DRAKE_EXPORT TwistVector<AutoDiffUpTo73d>
-RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffUpTo73d>(
+RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&) const;
 template DRAKE_EXPORT TwistVector<AutoDiffXd>
-RigidBodyTree::centroidalMomentumMatrixDotTimesV<AutoDiffXd>(
+RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     set<int, less<int>, allocator<int>> const&) const;
 template DRAKE_EXPORT TwistVector<double>
-RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(
+RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
-template DRAKE_EXPORT VectorXd RigidBodyTree::positionConstraints<double>(
+template DRAKE_EXPORT VectorXd
+RigidBodyTree<double>::positionConstraints<double>(
     KinematicsCache<double> const&) const;
 
 // Explicit template instantiations for positionConstraintsJacobian.
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::positionConstraintsJacobian<double>(
+RigidBodyTree<double>::positionConstraintsJacobian<double>(
     KinematicsCache<double> const&, bool) const;
 
 // Explicit template instantiations for positionConstraintsJacDotTimesV.
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::positionConstraintsJacDotTimesV<double>(
+RigidBodyTree<double>::positionConstraintsJacDotTimesV<double>(
     KinematicsCache<double> const&) const;
-template DRAKE_EXPORT void RigidBodyTree::jointLimitConstraints<
+template DRAKE_EXPORT void RigidBodyTree<double>::jointLimitConstraints<
     VectorXd, VectorXd, MatrixXd>(Eigen::MatrixBase<VectorXd> const&,
                                   Eigen::MatrixBase<VectorXd>&,
                                   Eigen::MatrixBase<MatrixXd>&) const;
 
 // Explicit template instantiations for relativeTwist.
 template DRAKE_EXPORT TwistVector<double>
-RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int,
-                                     int) const;
+RigidBodyTree<double>::relativeTwist<double>(
+    KinematicsCache<double> const&, int, int, int) const;
 
 // Explicit template instantiations for worldMomentumMatrix.
 template DRAKE_EXPORT TwistMatrix<AutoDiffUpTo73d>
-RigidBodyTree::worldMomentumMatrix<AutoDiffUpTo73d>(
+RigidBodyTree<double>::worldMomentumMatrix<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     set<int, less<int>, allocator<int>> const&, bool) const;
 template DRAKE_EXPORT TwistMatrix<AutoDiffXd>
-RigidBodyTree::worldMomentumMatrix<AutoDiffXd>(
+RigidBodyTree<double>::worldMomentumMatrix<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&, set<int, less<int>, allocator<int>> const&,
     bool) const;
-template DRAKE_EXPORT TwistMatrix<double> RigidBodyTree::worldMomentumMatrix<
-    double>(KinematicsCache<double>&,
+template DRAKE_EXPORT TwistMatrix<double>
+RigidBodyTree<double>::worldMomentumMatrix<double>(KinematicsCache<double>&,
             set<int, less<int>, allocator<int>> const&, bool) const;
 
 // Explicit template instantiations for worldMomentumMatrixDotTimesV.
 template DRAKE_EXPORT TwistVector<double>
-RigidBodyTree::worldMomentumMatrixDotTimesV<double>(
+RigidBodyTree<double>::worldMomentumMatrixDotTimesV<double>(
     KinematicsCache<double>&, set<int, less<int>, allocator<int>> const&) const;
 
 // Explicit template instantiations for transformSpatialAcceleration.
 template DRAKE_EXPORT TwistVector<double>
-RigidBodyTree::transformSpatialAcceleration<double>(
+RigidBodyTree<double>::transformSpatialAcceleration<double>(
     KinematicsCache<double> const&, TwistVector<double> const&, int, int, int,
     int) const;
 
 // Explicit template instantiations for frictionTorques
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::frictionTorques(
+RigidBodyTree<double>::frictionTorques(
     Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const& v) const;
-template DRAKE_EXPORT VectorX<AutoDiffXd> RigidBodyTree::frictionTorques(
+template DRAKE_EXPORT VectorX<AutoDiffXd>
+RigidBodyTree<double>::frictionTorques(
     Eigen::MatrixBase<VectorX<AutoDiffXd>> const& v) const;
-template DRAKE_EXPORT VectorX<double> RigidBodyTree::frictionTorques(
+template DRAKE_EXPORT VectorX<double> RigidBodyTree<double>::frictionTorques(
     Eigen::MatrixBase<VectorX<double>> const& v) const;
 
 // Explicit template instantiations for inverseDynamics.
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
+RigidBodyTree<double>::inverseDynamics<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
         RigidBody const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody const*>,
@@ -2641,14 +2810,15 @@ RigidBodyTree::inverseDynamics<AutoDiffUpTo73d>(
             pair<RigidBody const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
     VectorX<AutoDiffUpTo73d> const&, bool) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
-RigidBodyTree::inverseDynamics<AutoDiffXd>(
+RigidBodyTree<double>::inverseDynamics<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<RigidBody const*, TwistVector<AutoDiffXd>,
                   hash<RigidBody const*>, equal_to<RigidBody const*>,
                   Eigen::aligned_allocator<pair<
                       RigidBody const* const, TwistVector<AutoDiffXd>>>> const&,
     VectorX<AutoDiffXd> const&, bool) const;
-template DRAKE_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
+template DRAKE_EXPORT VectorX<double>
+RigidBodyTree<double>::inverseDynamics<double>(
     KinematicsCache<double>&,
     unordered_map<RigidBody const*, WrenchVector<double>,
                   hash<RigidBody const*>, equal_to<RigidBody const*>,
@@ -2657,7 +2827,7 @@ template DRAKE_EXPORT VectorX<double> RigidBodyTree::inverseDynamics<double>(
     VectorX<double> const&, bool) const;
 
 // Explicit template instantiations for jointLimitConstraints.
-template DRAKE_EXPORT void RigidBodyTree::jointLimitConstraints<
+template DRAKE_EXPORT void RigidBodyTree<double>::jointLimitConstraints<
     Eigen::Map<VectorXd>, Eigen::Map<VectorXd>, Eigen::Map<MatrixXd>>(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd>>&,
@@ -2665,7 +2835,7 @@ template DRAKE_EXPORT void RigidBodyTree::jointLimitConstraints<
 
 // Explicit template instantiations for resolveCenterOfPressure.
 template DRAKE_EXPORT pair<Vector3d, double>
-RigidBodyTree::resolveCenterOfPressure<Vector3d, Vector3d>(
+RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(
     KinematicsCache<double> const&,
     vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&,
     Eigen::MatrixBase<Vector3d> const&,
@@ -2673,162 +2843,176 @@ RigidBodyTree::resolveCenterOfPressure<Vector3d, Vector3d>(
 
 // Explicit template instantiations for transformPointsJacobian.
 template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
-RigidBodyTree::transformPointsJacobian<AutoDiffUpTo73d, Matrix3Xd>(
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d, Matrix3Xd>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Matrix3Xd> const&, int, int, bool) const;
 template DRAKE_EXPORT MatrixX<AutoDiffXd>
-RigidBodyTree::transformPointsJacobian<AutoDiffXd, Matrix3Xd>(
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffXd, Matrix3Xd>(
     KinematicsCache<AutoDiffXd> const&, Eigen::MatrixBase<Matrix3Xd> const&,
     int, int, bool) const;
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::transformPointsJacobian<double, Matrix3Xd>(
+RigidBodyTree<double>::transformPointsJacobian<double, Matrix3Xd>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Matrix3Xd> const&, int,
     int, bool) const;
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::transformPointsJacobian<double, Vector3d>(
+RigidBodyTree<double>::transformPointsJacobian<double, Vector3d>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Vector3d> const&, int,
     int, bool) const;
-template DRAKE_EXPORT MatrixXd RigidBodyTree::transformPointsJacobian<
+template DRAKE_EXPORT MatrixXd RigidBodyTree<double>::transformPointsJacobian<
     double, Eigen::Block<Matrix3Xd, 3, 1, true>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Block<Matrix3Xd, 3, 1, true>> const&, int, int,
     bool) const;
 template DRAKE_EXPORT MatrixX<AutoDiffUpTo73d>
-RigidBodyTree::transformPointsJacobian<AutoDiffUpTo73d,
-                                       Eigen::Map<Matrix3Xd const>>(
+RigidBodyTree<double>::transformPointsJacobian<AutoDiffUpTo73d,
+                                               Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
 template DRAKE_EXPORT MatrixX<AutoDiffXd>
-RigidBodyTree::transformPointsJacobian<AutoDiffXd, Eigen::Map<Matrix3Xd const>>(
+RigidBodyTree<double>::transformPointsJacobian<
+    AutoDiffXd, Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffXd> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
 template DRAKE_EXPORT MatrixXd
-RigidBodyTree::transformPointsJacobian<double, Eigen::Map<Matrix3Xd const>>(
+RigidBodyTree<double>::transformPointsJacobian<
+    double, Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int,
     bool) const;
 
 // Explicit template instantiations for transformPointsJacobianDotTimesV.
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::transformPointsJacobianDotTimesV<double, Matrix3Xd>(
+RigidBodyTree<double>::transformPointsJacobianDotTimesV<double, Matrix3Xd>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Matrix3Xd> const&, int,
     int) const;
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::transformPointsJacobianDotTimesV<double, Vector3d>(
+RigidBodyTree<double>::transformPointsJacobianDotTimesV<double, Vector3d>(
     KinematicsCache<double> const&, Eigen::MatrixBase<Vector3d> const&, int,
     int) const;
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::transformPointsJacobianDotTimesV<AutoDiffUpTo73d,
+RigidBodyTree<double>::transformPointsJacobianDotTimesV<AutoDiffUpTo73d,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffUpTo73d> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
-RigidBodyTree::transformPointsJacobianDotTimesV<AutoDiffXd,
+RigidBodyTree<double>::transformPointsJacobianDotTimesV<AutoDiffXd,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<AutoDiffXd> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::transformPointsJacobianDotTimesV<double,
+RigidBodyTree<double>::transformPointsJacobianDotTimesV<double,
                                                 Eigen::Map<Matrix3Xd const>>(
     KinematicsCache<double> const&,
     Eigen::MatrixBase<Eigen::Map<Matrix3Xd const>> const&, int, int) const;
 
 // Explicit template instantiations for relativeQuaternionJacobian.
 template DRAKE_EXPORT Matrix4Xd
-RigidBodyTree::relativeQuaternionJacobian<double>(
+RigidBodyTree<double>::relativeQuaternionJacobian<double>(
     KinematicsCache<double> const&, int, int, bool) const;
 template DRAKE_EXPORT Matrix4X<AutoDiffUpTo73d>
-RigidBodyTree::relativeQuaternionJacobian<AutoDiffUpTo73d>(
+RigidBodyTree<double>::relativeQuaternionJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, bool) const;
 template DRAKE_EXPORT Matrix4X<AutoDiffXd>
-RigidBodyTree::relativeQuaternionJacobian<AutoDiffXd>(
+RigidBodyTree<double>::relativeQuaternionJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, bool) const;
 
 // Explicit template instantiations for relativeRollPitchYawJacobian.
 template DRAKE_EXPORT Matrix3Xd
-RigidBodyTree::relativeRollPitchYawJacobian<double>(
+RigidBodyTree<double>::relativeRollPitchYawJacobian<double>(
     KinematicsCache<double> const&, int, int, bool) const;
 template DRAKE_EXPORT Matrix3X<AutoDiffUpTo73d>
-RigidBodyTree::relativeRollPitchYawJacobian<AutoDiffUpTo73d>(
+RigidBodyTree<double>::relativeRollPitchYawJacobian<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int, bool) const;
 template DRAKE_EXPORT Matrix3X<AutoDiffXd>
-RigidBodyTree::relativeRollPitchYawJacobian<AutoDiffXd>(
+RigidBodyTree<double>::relativeRollPitchYawJacobian<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int, bool) const;
 
 // Explicit template instantiations for relativeRollPitchYawJacobianDotTimesV.
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<double>(
+RigidBodyTree<double>::relativeRollPitchYawJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
-RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<AutoDiffXd>(
+RigidBodyTree<double>::relativeRollPitchYawJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<AutoDiffUpTo73d>(
+RigidBodyTree<double>::relativeRollPitchYawJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
 
 // Explicit template instantiations for relativeQuaternionJacobianDotTimesV.
 template DRAKE_EXPORT VectorXd
-RigidBodyTree::relativeQuaternionJacobianDotTimesV<double>(
+RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<double>(
     KinematicsCache<double> const&, int, int) const;
 template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
-RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
+RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d> const&, int, int) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
-RigidBodyTree::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
+RigidBodyTree<double>::relativeQuaternionJacobianDotTimesV<AutoDiffXd>(
     KinematicsCache<AutoDiffXd> const&, int, int) const;
 
 // Explicit template instantiations for doKinematics(cache).
-template DRAKE_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree<double>::doKinematics(
     KinematicsCache<double>&, bool) const;
-template DRAKE_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree<double>::doKinematics(
     KinematicsCache<AutoDiffXd>&, bool) const;
-template DRAKE_EXPORT void RigidBodyTree::doKinematics(
+template DRAKE_EXPORT void RigidBodyTree<double>::doKinematics(
     KinematicsCache<AutoDiffUpTo73d>&, bool) const;
 
 // Explicit template instantiations for doKinematics(q).
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
-    Eigen::MatrixBase<VectorXd> const&) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(Eigen::MatrixBase<VectorXd> const&) const;
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Block<MatrixXd const, -1, 1, true>> const&) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Block<MatrixXd, -1, 1, true>> const&) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&) const;
 template DRAKE_EXPORT KinematicsCache<AutoDiffXd>
-RigidBodyTree::doKinematics(
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<VectorX<AutoDiffXd>> const&) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&) const;
 
 // Explicit template instantiations for doKinematics(q, v).
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<VectorXd> const&, Eigen::MatrixBase<VectorXd> const&,
     bool) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd const, -1, 1, false>> const&,
     bool) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&,
     Eigen::MatrixBase<Eigen::Block<VectorXd, -1, 1, false>> const&, bool) const;
 template DRAKE_EXPORT KinematicsCache<AutoDiffXd>
-RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
-                            Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
-                            bool) const;
+RigidBodyTree<double>::doKinematics(
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const&,
+    Eigen::MatrixBase<VectorX<AutoDiffXd>> const&, bool) const;
 template DRAKE_EXPORT KinematicsCache<AutoDiffUpTo73d>
-RigidBodyTree::doKinematics(Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
-                            Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
-                            bool) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+RigidBodyTree<double>::doKinematics(
+    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&,
+    Eigen::MatrixBase<VectorX<AutoDiffUpTo73d>> const&, bool) const;
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd>> const&, bool) const;
-template DRAKE_EXPORT KinematicsCache<double> RigidBodyTree::doKinematics(
+template DRAKE_EXPORT KinematicsCache<double>
+RigidBodyTree<double>::doKinematics(
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&,
     Eigen::MatrixBase<Eigen::Map<VectorXd const>> const&, bool) const;
 
 // Explicit template instantiations for parseBodyOrFrameID.
-template DRAKE_EXPORT int RigidBodyTree::parseBodyOrFrameID(
+template DRAKE_EXPORT int RigidBodyTree<double>::parseBodyOrFrameID(
     const int body_or_frame_id,
     Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;
+
+// Explicitly instantiates on the most common scalar types.
+template class DRAKE_EXPORT RigidBodyTree<double>;

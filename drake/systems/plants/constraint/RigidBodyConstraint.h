@@ -13,8 +13,7 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/KinematicsCache.h"
-
-class RigidBodyTree;
+#include "drake/systems/plants/RigidBodyTree.h"
 
 namespace DrakeRigidBodyConstraint {
 extern DRAKE_EXPORT Eigen::Vector2d default_tspan;
@@ -64,23 +63,23 @@ class DRAKE_EXPORT RigidBodyConstraint {
   static const int GravityCompensationTorqueConstraintType = 27;
 
   RigidBodyConstraint(
-      int category, RigidBodyTree* robot,
+      int category, RigidBodyTree<double>* robot,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   int getType() const { return type_; }
   int getCategory() const { return category_; }
-  RigidBodyTree* getRobotPointer() const { return robot_; }
+  RigidBodyTree<double>* getRobotPointer() const { return robot_; }
   virtual ~RigidBodyConstraint(void) = 0;
 
  protected:
   std::string getTimeString(const double* t) const;
   void set_type(int type) { type_ = type; }
-  void set_robot(RigidBodyTree* robot) { robot_ = robot; }
+  void set_robot(RigidBodyTree<double>* robot) { robot_ = robot; }
   const double* tspan() const { return tspan_; }
 
  private:
   int category_{};
   int type_{};
-  RigidBodyTree* robot_{};
+  RigidBodyTree<double>* robot_{};
   double tspan_[2];
 };
 
@@ -120,7 +119,7 @@ class DRAKE_EXPORT QuasiStaticConstraint
     : public RigidBodyConstraint {
  public:
   QuasiStaticConstraint(
-      RigidBodyTree* robot,
+      RigidBodyTree<double>* robot,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan,
       const std::set<int>& model_instance_id_set =
           QuasiStaticConstraint::defaultRobotNumSet);
@@ -143,7 +142,7 @@ class DRAKE_EXPORT QuasiStaticConstraint
 
   void setShrinkFactor(double factor);
   void setActive(bool flag) { active_ = flag; }
-  void updateRobot(RigidBodyTree* robot);
+  void updateRobot(RigidBodyTree<double>* robot);
   void updateRobotnum(std::set<int>& model_instance_id_set);
 
  private:
@@ -175,7 +174,7 @@ class DRAKE_EXPORT PostureConstraint
     : public RigidBodyConstraint {
  public:
   PostureConstraint(
-      RigidBodyTree* model,
+      RigidBodyTree<double>* model,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~PostureConstraint(void) {}
   bool isTimeValid(const double* t) const;
@@ -221,7 +220,7 @@ class DRAKE_EXPORT MultipleTimeLinearPostureConstraint
     : public RigidBodyConstraint {
  public:
   MultipleTimeLinearPostureConstraint(
-      RigidBodyTree* model,
+      RigidBodyTree<double>* model,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~MultipleTimeLinearPostureConstraint() {}
   std::vector<bool> isTimeValid(const double* t, int n_breaks) const;
@@ -277,7 +276,7 @@ class DRAKE_EXPORT SingleTimeLinearPostureConstraint
     : public RigidBodyConstraint {
  public:
   SingleTimeLinearPostureConstraint(
-      RigidBodyTree* robot, const Eigen::VectorXi& iAfun,
+      RigidBodyTree<double>* robot, const Eigen::VectorXi& iAfun,
       const Eigen::VectorXi& jAvar, const Eigen::VectorXd& A,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -312,7 +311,7 @@ class DRAKE_EXPORT SingleTimeKinematicConstraint
     : public RigidBodyConstraint {
  public:
   SingleTimeKinematicConstraint(
-      RigidBodyTree* model,
+      RigidBodyTree<double>* model,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~SingleTimeKinematicConstraint() {}
   bool isTimeValid(const double* t) const;
@@ -323,7 +322,7 @@ class DRAKE_EXPORT SingleTimeKinematicConstraint
                       Eigen::VectorXd& ub) const = 0;
   virtual void name(const double* t,
                     std::vector<std::string>& name_str) const = 0;
-  virtual void updateRobot(RigidBodyTree* robot);
+  virtual void updateRobot(RigidBodyTree<double>* robot);
 
  protected:
   void set_num_constraint(int num_constraint) {
@@ -338,7 +337,7 @@ class DRAKE_EXPORT MultipleTimeKinematicConstraint
     : public RigidBodyConstraint {
  public:
   MultipleTimeKinematicConstraint(
-      RigidBodyTree* model,
+      RigidBodyTree<double>* model,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~MultipleTimeKinematicConstraint() {}
   std::vector<bool> isTimeValid(const double* t, int n_breaks) const;
@@ -352,7 +351,7 @@ class DRAKE_EXPORT MultipleTimeKinematicConstraint
                       Eigen::VectorXd& ub) const = 0;
   virtual void name(const double* t, int n_breaks,
                     std::vector<std::string>& name_str) const = 0;
-  virtual void updateRobot(RigidBodyTree* robot);
+  virtual void updateRobot(RigidBodyTree<double>* robot);
 
  protected:
   int numValidTime(const double* t, int n_breaks) const;
@@ -362,7 +361,7 @@ class DRAKE_EXPORT PositionConstraint
     : public SingleTimeKinematicConstraint {
  public:
   PositionConstraint(
-      RigidBodyTree* model, const Eigen::Matrix3Xd& pts, Eigen::MatrixXd lb,
+      RigidBodyTree<double>* model, const Eigen::Matrix3Xd& pts, Eigen::MatrixXd lb,
       Eigen::MatrixXd ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~PositionConstraint(void) {}
@@ -393,7 +392,7 @@ class DRAKE_EXPORT WorldPositionConstraint
     : public PositionConstraint {
  public:
   WorldPositionConstraint(
-      RigidBodyTree* model, int body, const Eigen::Matrix3Xd& pts,
+      RigidBodyTree<double>* model, int body, const Eigen::Matrix3Xd& pts,
       Eigen::MatrixXd lb, Eigen::MatrixXd ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldPositionConstraint();
@@ -415,7 +414,7 @@ class DRAKE_EXPORT WorldCoMConstraint
     : public PositionConstraint {
  public:
   WorldCoMConstraint(
-      RigidBodyTree* model, Eigen::Vector3d lb, Eigen::Vector3d ub,
+      RigidBodyTree<double>* model, Eigen::Vector3d lb, Eigen::Vector3d ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan,
       const std::set<int>& model_instance_id =
           WorldCoMConstraint::defaultRobotNumSet);
@@ -437,7 +436,7 @@ class DRAKE_EXPORT WorldCoMConstraint
 class DRAKE_EXPORT RelativePositionConstraint
     : public PositionConstraint {
  public:
-  RelativePositionConstraint(RigidBodyTree* model, const Eigen::Matrix3Xd& pts,
+  RelativePositionConstraint(RigidBodyTree<double>* model, const Eigen::Matrix3Xd& pts,
                              const Eigen::MatrixXd& lb,
                              const Eigen::MatrixXd& ub, int bodyA_idx,
                              int bodyB_idx,
@@ -463,7 +462,7 @@ class DRAKE_EXPORT QuatConstraint
     : public SingleTimeKinematicConstraint {
  public:
   QuatConstraint(
-      RigidBodyTree* model, double tol,
+      RigidBodyTree<double>* model, double tol,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~QuatConstraint();
   virtual void eval(const double* t, KinematicsCache<double>& cache,
@@ -483,7 +482,7 @@ class DRAKE_EXPORT WorldQuatConstraint
     : public QuatConstraint {
  public:
   WorldQuatConstraint(
-      RigidBodyTree* model, int body, const Eigen::Vector4d& quat_des,
+      RigidBodyTree<double>* model, int body, const Eigen::Vector4d& quat_des,
       double tol,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldQuatConstraint();
@@ -508,7 +507,7 @@ class DRAKE_EXPORT RelativeQuatConstraint
     : public QuatConstraint {
  public:
   RelativeQuatConstraint(
-      RigidBodyTree* model, int bodyA_idx, int bodyB_idx,
+      RigidBodyTree<double>* model, int bodyA_idx, int bodyB_idx,
       const Eigen::Vector4d& quat_des, double tol,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual void name(const double* t, std::vector<std::string>& name_str) const;
@@ -535,7 +534,7 @@ class DRAKE_EXPORT EulerConstraint
     : public SingleTimeKinematicConstraint {
  public:
   EulerConstraint(
-      RigidBodyTree* model, const Eigen::Vector3d& lb,
+      RigidBodyTree<double>* model, const Eigen::Vector3d& lb,
       const Eigen::Vector3d& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~EulerConstraint(void) {}
@@ -560,7 +559,7 @@ class DRAKE_EXPORT WorldEulerConstraint
     : public EulerConstraint {
  public:
   WorldEulerConstraint(
-      RigidBodyTree* model, int body, const Eigen::Vector3d& lb,
+      RigidBodyTree<double>* model, int body, const Eigen::Vector3d& lb,
       const Eigen::Vector3d& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldEulerConstraint();
@@ -579,7 +578,7 @@ class DRAKE_EXPORT GazeConstraint
     : public SingleTimeKinematicConstraint {
  public:
   GazeConstraint(
-      RigidBodyTree* model, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, const Eigen::Vector3d& axis,
       double conethreshold = 0.0,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~GazeConstraint(void) {}
@@ -602,7 +601,7 @@ class DRAKE_EXPORT GazeOrientConstraint
     : public GazeConstraint {
  public:
   GazeOrientConstraint(
-      RigidBodyTree* model, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, const Eigen::Vector3d& axis,
       const Eigen::Vector4d& quat_des, double conethreshold, double threshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~GazeOrientConstraint(void) {}
@@ -629,7 +628,7 @@ class DRAKE_EXPORT WorldGazeOrientConstraint
     : public GazeOrientConstraint {
  public:
   WorldGazeOrientConstraint(
-      RigidBodyTree* model, int body, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, int body, const Eigen::Vector3d& axis,
       const Eigen::Vector4d& quat_des, double conethreshold, double threshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldGazeOrientConstraint() {}
@@ -648,7 +647,7 @@ class DRAKE_EXPORT GazeDirConstraint
     : public GazeConstraint {
  public:
   GazeDirConstraint(
-      RigidBodyTree* model, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, const Eigen::Vector3d& axis,
       const Eigen::Vector3d& dir, double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~GazeDirConstraint(void) {}
@@ -671,7 +670,7 @@ class DRAKE_EXPORT WorldGazeDirConstraint
     : public GazeDirConstraint {
  public:
   WorldGazeDirConstraint(
-      RigidBodyTree* model, int body, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, int body, const Eigen::Vector3d& axis,
       const Eigen::Vector3d& dir, double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldGazeDirConstraint(void) {}
@@ -688,7 +687,7 @@ class DRAKE_EXPORT GazeTargetConstraint
     : public GazeConstraint {
  public:
   GazeTargetConstraint(
-      RigidBodyTree* model, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, const Eigen::Vector3d& axis,
       const Eigen::Vector3d& target, const Eigen::Vector3d& gaze_origin,
       double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -714,7 +713,7 @@ class DRAKE_EXPORT WorldGazeTargetConstraint
     : public GazeTargetConstraint {
  public:
   WorldGazeTargetConstraint(
-      RigidBodyTree* model, int body, const Eigen::Vector3d& axis,
+      RigidBodyTree<double>* model, int body, const Eigen::Vector3d& axis,
       const Eigen::Vector3d& target, const Eigen::Vector3d& gaze_origin,
       double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -732,7 +731,7 @@ class DRAKE_EXPORT RelativeGazeTargetConstraint
     : public GazeTargetConstraint {
  public:
   RelativeGazeTargetConstraint(
-      RigidBodyTree* model, int bodyA_idx, int bodyB_idx,
+      RigidBodyTree<double>* model, int bodyA_idx, int bodyB_idx,
       const Eigen::Vector3d& axis, const Eigen::Vector3d& target,
       const Eigen::Vector3d& gaze_origin, double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -752,7 +751,7 @@ class DRAKE_EXPORT RelativeGazeDirConstraint
     : public GazeDirConstraint {
  public:
   RelativeGazeDirConstraint(
-      RigidBodyTree* model, int bodyA_idx, int bodyB_idx,
+      RigidBodyTree<double>* model, int bodyA_idx, int bodyB_idx,
       const Eigen::Vector3d& axis, const Eigen::Vector3d& dir,
       double conethreshold,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -772,7 +771,7 @@ class DRAKE_EXPORT Point2PointDistanceConstraint
     : public SingleTimeKinematicConstraint {
  public:
   Point2PointDistanceConstraint(
-      RigidBodyTree* model, int bodyA, int bodyB, const Eigen::Matrix3Xd& ptA,
+      RigidBodyTree<double>* model, int bodyA, int bodyB, const Eigen::Matrix3Xd& ptA,
       const Eigen::Matrix3Xd& ptB, const Eigen::VectorXd& lb,
       const Eigen::VectorXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -796,7 +795,7 @@ class DRAKE_EXPORT Point2LineSegDistConstraint
     : public SingleTimeKinematicConstraint {
  public:
   Point2LineSegDistConstraint(
-      RigidBodyTree* model, int pt_body, const Eigen::Vector3d& pt,
+      RigidBodyTree<double>* model, int pt_body, const Eigen::Vector3d& pt,
       int line_body, const Eigen::Matrix<double, 3, 2>& line_ends,
       double dist_lb, double dist_ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -825,7 +824,7 @@ class DRAKE_EXPORT WorldFixedPositionConstraint
     : public MultipleTimeKinematicConstraint {
  public:
   WorldFixedPositionConstraint(
-      RigidBodyTree* model, int body, const Eigen::Matrix3Xd& pts,
+      RigidBodyTree<double>* model, int body, const Eigen::Matrix3Xd& pts,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldFixedPositionConstraint(void) {}
   virtual int getNumConstraint(const double* t, int n_breaks) const;
@@ -847,7 +846,7 @@ class DRAKE_EXPORT WorldFixedOrientConstraint
     : public MultipleTimeKinematicConstraint {
  public:
   WorldFixedOrientConstraint(
-      RigidBodyTree* model, int body,
+      RigidBodyTree<double>* model, int body,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual int getNumConstraint(const double* t, int n_breaks) const;
   virtual ~WorldFixedOrientConstraint(void) {}
@@ -868,7 +867,7 @@ class DRAKE_EXPORT WorldFixedBodyPoseConstraint
     : public MultipleTimeKinematicConstraint {
  public:
   WorldFixedBodyPoseConstraint(
-      RigidBodyTree* model, int body,
+      RigidBodyTree<double>* model, int body,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldFixedBodyPoseConstraint(void) {}
   virtual int getNumConstraint(const double* t, int n_breaks) const;
@@ -889,12 +888,12 @@ class DRAKE_EXPORT AllBodiesClosestDistanceConstraint
     : public SingleTimeKinematicConstraint {
  public:
   AllBodiesClosestDistanceConstraint(
-      RigidBodyTree* model, double lb, double ub,
+      RigidBodyTree<double>* model, double lb, double ub,
       const std::vector<int>& active_bodies_idx,
       const std::set<std::string>& active_group_names,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~AllBodiesClosestDistanceConstraint() {}
-  virtual void updateRobot(RigidBodyTree* robot);
+  virtual void updateRobot(RigidBodyTree<double>* robot);
   virtual void eval(const double* t, KinematicsCache<double>& cache,
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name) const;
@@ -912,7 +911,7 @@ class DRAKE_EXPORT MinDistanceConstraint
     : public SingleTimeKinematicConstraint {
  public:
   MinDistanceConstraint(
-      RigidBodyTree* model, double min_distance,
+      RigidBodyTree<double>* model, double min_distance,
       const std::vector<int>& active_bodies_idx,
       const std::set<std::string>& active_group_names,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -937,7 +936,7 @@ class DRAKE_EXPORT WorldPositionInFrameConstraint
     : public WorldPositionConstraint {
  public:
   WorldPositionInFrameConstraint(
-      RigidBodyTree* model, int body, const Eigen::Matrix3Xd& pts,
+      RigidBodyTree<double>* model, int body, const Eigen::Matrix3Xd& pts,
       const Eigen::Matrix4d& T_world_to_frame, const Eigen::MatrixXd& lb,
       const Eigen::MatrixXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -962,7 +961,7 @@ class DRAKE_EXPORT PostureChangeConstraint
     : public MultipleTimeLinearPostureConstraint {
  public:
   PostureChangeConstraint(
-      RigidBodyTree* model, const Eigen::VectorXi& joint_ind,
+      RigidBodyTree<double>* model, const Eigen::VectorXi& joint_ind,
       const Eigen::VectorXd& lb_change, const Eigen::VectorXd& ub_change,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~PostureChangeConstraint() {}
@@ -991,7 +990,7 @@ class DRAKE_EXPORT GravityCompensationTorqueConstraint
     : public SingleTimeKinematicConstraint {
  public:
   GravityCompensationTorqueConstraint(
-      RigidBodyTree* model, const Eigen::VectorXi& joint_indices,
+      RigidBodyTree<double>* model, const Eigen::VectorXi& joint_indices,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~GravityCompensationTorqueConstraint() {}

@@ -88,7 +88,8 @@ GTEST_TEST(testQPInverseDynamicsController, testStanding) {
       drake::GetDrakePath() +
       std::string(
           "/examples/QPInverseDynamicsForHumanoids/valkyrie_sim_drake.urdf");
-  RigidBodyTree robot(urdf, drake::systems::plants::joints::kRollPitchYaw);
+  RigidBodyTree<double> robot(
+      urdf, drake::systems::plants::joints::kRollPitchYaw);
   HumanoidStatus robot_status(robot);
 
   QPController con;

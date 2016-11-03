@@ -30,7 +30,7 @@ class DRAKE_EXPORT ViewerDrawTranslator
    * pose of each RigidBody to be included in the `drake::lcmt_viewer_draw` LCM
    * message. This reference must remain valid for the lifetime of this object.
    */
-  explicit ViewerDrawTranslator(const RigidBodyTree& tree);
+  explicit ViewerDrawTranslator(const RigidBodyTree<double>& tree);
 
   /**
    * <b>This method must not be called.</b> It is not implemented and will abort
@@ -47,7 +47,7 @@ class DRAKE_EXPORT ViewerDrawTranslator
  private:
   // The RigidBodyTree with which the poses of each RigidBody can be
   // determined given the state vector of the RigidBodyTree.
-  const RigidBodyTree& tree_;
+  const RigidBodyTree<double>& tree_;
 
   // A partially initialized LCM draw message. This is used by
   // ViewerDrawTranslator::Serialize() to avoid having to re-initialize the

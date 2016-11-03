@@ -65,7 +65,7 @@ class RBTCollisionTest: public ::testing::Test {
   }
 
   double tolerance_;
-  RigidBodyTree tree_;
+  RigidBodyTree<double> tree_;
   const RigidBody *small_sphere_, *large_box_;
   BodyToSurfacePointMap solution_;
 };

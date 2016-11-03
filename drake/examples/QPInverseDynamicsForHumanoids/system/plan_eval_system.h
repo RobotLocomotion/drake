@@ -17,7 +17,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * Input: humanoid status
    * Output: qp input
    */
-  explicit PlanEvalSystem(const RigidBodyTree& robot) : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =
@@ -147,7 +147,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   }
 
  private:
-  const RigidBodyTree& robot_;
+  const RigidBodyTree<double>& robot_;
 
   int input_port_index_humanoid_status_;
   int output_port_index_qp_input_;

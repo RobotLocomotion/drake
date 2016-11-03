@@ -119,7 +119,7 @@ void InstantaneousQPController::loadConfigurationFromYAML(
 }
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
+void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
                             const KinematicModifications& modifications) {
   for (auto it = modifications.attachments.begin();
        it != modifications.attachments.end(); ++it) {
@@ -144,7 +144,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
 }
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
+void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
                             const std::string& urdf_modifications_filename) {
   KinematicModifications modifications =
       parseKinematicModifications(YAML::LoadFile(urdf_modifications_filename));
@@ -378,7 +378,7 @@ void applyJointPDOverride(
 }
 
 double averageContactPointHeight(
-    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     std::vector<SupportStateElement,
                 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                 Eigen::aligned_allocator<SupportStateElement>>& active_supports,
@@ -401,7 +401,7 @@ double averageContactPointHeight(
 }
 
 Vector2d computeCoP(
-    const RigidBodyTree& robot, const KinematicsCache<double>& cache,
+    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
     const drake::eigen_aligned_std_map<Side, ForceTorqueMeasurement>&
         foot_force_torque_measurements,
     Vector3d point_on_contact_plane, Eigen::Vector3d normal) {
@@ -519,7 +519,7 @@ void InstantaneousQPController::estimateCoMBasedOnMeasuredZMP(
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(
-    const RigidBodyTree& robot,
+    const RigidBodyTree<double>& robot,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     KinematicsCache<double>& cache,
     const VectorXd& qdd,
@@ -589,7 +589,7 @@ void checkCentroidalMomentumMatchesTotalWrench(
 }
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
-    const RigidBodyTree& robot) {
+    const RigidBodyTree<double>& robot) {
   auto id_map = std::unordered_map<std::string, int>();
   for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
     id_map[(*it)->get_name()] = it - robot.bodies.begin();
@@ -809,7 +809,7 @@ int InstantaneousQPController::setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  RigidBodyTree::BodyToWrenchMap<double> external_wrenches;
+  RigidBodyTree<double>::BodyToWrenchMap external_wrenches;
   for (auto it = qp_input.body_wrench_data.begin();
        it != qp_input.body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;

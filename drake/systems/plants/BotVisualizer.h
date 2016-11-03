@@ -40,7 +40,7 @@ class BotVisualizer {
   using InputVector = RobotStateVector<ScalarType>;
 
   BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
-                std::shared_ptr<RigidBodyTree> tree)
+                std::shared_ptr<RigidBodyTree<double>> tree)
       : tree_(tree), lcm_(lcm) {
     init();
   }
@@ -49,7 +49,8 @@ class BotVisualizer {
                 const std::string& urdf_filename,
                 const drake::systems::plants::joints::FloatingBaseType
                     floating_base_type)
-      : tree_(new RigidBodyTree(urdf_filename, floating_base_type)), lcm_(lcm) {
+      : tree_(new RigidBodyTree<double>(
+      urdf_filename, floating_base_type)), lcm_(lcm) {
     init();
   }
 
@@ -187,7 +188,7 @@ class BotVisualizer {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-  mutable std::shared_ptr<RigidBodyTree>
+  mutable std::shared_ptr<RigidBodyTree<double>>
       tree_;  // todo: remove mutable tag after RBM cleanup
   std::shared_ptr<lcm::LCM> lcm_;
   mutable drake::lcmt_viewer_draw draw_msg_;

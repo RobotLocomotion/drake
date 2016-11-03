@@ -2,6 +2,7 @@ add_subdirectory(gen)
 add_subdirectory(test)
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
+  automotive_common.cc
   create_trajectory_params.cc
   curve2.cc
   gen/driving_command.cc
@@ -22,10 +23,10 @@ target_link_libraries(drakeAutomotive
   )
 pods_install_libraries(drakeAutomotive)
 drake_install_headers(
+  automotive_common.h
   create_trajectory_params.h
   curve2.h
   simple_car.h
-  simple_car-inl.h
   trajectory_car.h
   system1_vector.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
@@ -65,13 +66,19 @@ if(lcm_FOUND)
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)
 
-  add_executable(car_sim_lcm car_sim_lcm.cc)
-  # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
-  target_link_libraries(car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
-
   add_executable(multi_car_sim_lcm multi_car_sim_lcm.cc)
   # TODO(jwnimmer-tri) Remove drakeLCMSystem once System 1 is gone.
   target_link_libraries(multi_car_sim_lcm drakeAutomotiveLcm drakeLCMSystem drakeLCMTypes)
 
   drake_add_test(NAME multi_car_sim_lcm COMMAND multi_car_sim_lcm --duration 0.05)
+
+  add_executable(car_sim_lcm car_sim_lcm.cc)
+  target_link_libraries(car_sim_lcm
+      drakeAutomotiveLcm
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeSystemControllers
+      drakeLCMSystem2)
+
+  add_test(NAME car_sim_lcm COMMAND car_sim_lcm -simulation_sec 0.1)
 endif()

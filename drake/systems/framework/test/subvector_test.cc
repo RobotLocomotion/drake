@@ -126,6 +126,12 @@ TEST_F(SubvectorTest, SetZero) {
   for (int i = 0; i < subvec.size(); i++) EXPECT_EQ(subvec.GetAtIndex(i), 0);
 }
 
+// Tests the infinity norm.
+TEST_F(SubvectorTest, InfNorm) {
+  Subvector<int> subvec(vector_.get(), 0, kSubVectorLength);
+  EXPECT_EQ(subvec.NormInf(), 2);
+}
+
 // Tests all += * operations for VectorBase.
 TEST_F(SubvectorTest, PlusEqScaled) {
   Subvector<int> orig_vec(vector_.get(), 0, kSubVectorLength);

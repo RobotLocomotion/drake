@@ -7,9 +7,9 @@
 
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
-#include "drake/systems/plants/ConstraintWrappers.h"
+#include "drake/systems/plants/constraint_wrappers.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
-class RigidBodyTree;
 class RigidBodyConstraint;
 class IKoptions;
 
@@ -33,7 +33,7 @@ namespace plants {
 /// parameter is currently always empty untitl MathematicalProgram
 /// supports determining which constraints were infeasible.
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void inverseKinBackend(RigidBodyTree *model, const int nT,
+void inverseKinBackend(RigidBodyTree<double> *model, const int nT,
                        const double *t,
                        const Eigen::MatrixBase<DerivedA>& q_seed,
                        const Eigen::MatrixBase<DerivedB>& q_nom,
@@ -51,7 +51,7 @@ void inverseKinBackend(RigidBodyTree *model, const int nT,
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
 void inverseKinTrajBackend(
-    RigidBodyTree *model, const int nT,
+    RigidBodyTree<double> *model, const int nT,
     const double *t,
     const Eigen::MatrixBase<DerivedA>& q_seed,
     const Eigen::MatrixBase<DerivedB>& q_nom,
