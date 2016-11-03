@@ -54,11 +54,11 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
  * indices found to the end of @p position_list.
  */
 void FindJointAndInsert(const RigidBodyTree* model, const std::string& name,
-                        std::vector<int> *const position_list) {
+                        std::vector<int>* const position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
   position_list->insert(position_list->end(), position_indices.begin(),
-                       position_indices.end());
+                        position_indices.end());
 }
 
 GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
@@ -159,10 +159,10 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
   FindJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
   Vector3d torso_nominal = Vector3d::Zero(3);
-  Vector3d torso_half_range(15.0/180*M_PI, 25.0/180*M_PI, inf);
+  Vector3d torso_half_range(15.0 / 180 * M_PI, 25.0 / 180 * M_PI, inf);
   Vector3d torso_lb = torso_nominal - torso_half_range;
   Vector3d torso_ub = torso_nominal + torso_half_range;
-  torso_lb(1) = -5.0/180*M_PI;
+  torso_lb(1) = -5.0 / 180 * M_PI;
   kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
 
   // 5 knee posture constraint
@@ -173,8 +173,8 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   Vector2d knee_nominal(reach_start(knee_idx[0]), reach_start(knee_idx[1]));
   Vector2d knee_lb = knee_nominal;
   Vector2d knee_ub = knee_nominal;
-  knee_ub(0) += 108.9/180*M_PI;
-  knee_ub(1) += 108.9/180*M_PI;
+  knee_ub(0) += 108.9 / 180 * M_PI;
+  knee_ub(1) += 108.9 / 180 * M_PI;
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
@@ -249,7 +249,7 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   // After solving
   Vector3d com = tree->centerOfMass(cache);
   EXPECT_EQ(info, 1);
-  EXPECT_TRUE(com(2)>0);
+  EXPECT_GT(com(2), 0);
 
   // show it in drake visualizer
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
@@ -272,4 +272,3 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
 }  // namespace valkyrie
 }  // namespace examples
 }  // namespace drake
-
