@@ -16,6 +16,9 @@ namespace automotive {
 
 template <typename T>
 LinearCar<T>::LinearCar() {
+  this->DeclareInputPort(systems::kVectorValued,
+                         LinearCarInputIndices::kNumCoordinates,
+                         systems::kContinuousSampling);
   this->DeclareOutputPort(systems::kVectorValued,
                           LinearCarStateIndices::kNumCoordinates,
                           systems::kContinuousSampling);
@@ -51,6 +54,8 @@ void LinearCar<T>::EvalTimeDerivatives(
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
+  const LinearCarInput<T>* const input =
+      dynamic_cast<const LinearCarInput<T>*>(this->EvalVectorInput(context, 0));
   const LinearCarState<T>* const state =
       dynamic_cast<const LinearCarState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
@@ -66,21 +71,17 @@ void LinearCar<T>::EvalTimeDerivatives(
 
   // Declare the state derivatives (consistent with linear_car_state.cc).
   new_derivatives->set_x(state->v());
-  new_derivatives->set_v(T{0.0});
+  new_derivatives->set_v(input->vdot());
 }
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 LinearCar<T>::AllocateContinuousState() const {
-  return std::make_unique<systems::ContinuousState<T>>(
-      std::make_unique<LinearCarState<T>>());
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>>
-LinearCar<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  return std::make_unique<LinearCarState<T>>();
+  auto state = std::make_unique<LinearCarState<T>>();
+  // Define the initial state values.
+  state->set_x(T{0.0});
+  state->set_v(T{0.0});
+  return std::make_unique<systems::ContinuousState<T>>(std::move(state));
 }
 
 // These instantiations must match the API documentation in

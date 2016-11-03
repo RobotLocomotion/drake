@@ -1,14 +1,15 @@
 #pragma once
 
-#include "drake/automotive/gen/linear_car_input.h"
-#include "drake/automotive/gen/linear_car_state.h"
+#include "drake/automotive/gen/idm_planner_input.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace automotive {
 
-/// LinearCar -- model a car operating in a singl lane using a double
-/// integrator with acceleration input.
+/// IdmPlanner -- an IDM (Intelligent Driver Modal)[1].
+///
+/// [1] IDM: Intelligent Driver Model:
+///    https://en.wikipedia.org/wiki/Intelligent_driver_model
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -19,22 +20,20 @@ namespace automotive {
 ///
 /// @ingroup automotive_systems
 template <typename T>
-class LinearCar : public systems::LeafSystem<T> {
+class IdmPlanner : public systems::LeafSystem<T> {
  public:
-  LinearCar();
-  ~LinearCar() override;
+  IdmPlanner(const T& v_0);
+  ~IdmPlanner() override;
+
+  /// The output of this system is an algbraic relation of its inputs.
+  bool has_any_direct_feedthrough() const override { return true; }
 
   // System<T> overrides
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
-  void EvalTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
 
- protected:
-  // LeafSystem<T> overrides
-  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
+ private:
+  const T v_0_;  // Desired vehicle velocity.
 };
 
 }  // namespace automotive
