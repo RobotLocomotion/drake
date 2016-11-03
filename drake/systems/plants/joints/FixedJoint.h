@@ -5,6 +5,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/DrakeJointImpl.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
 class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   FixedJoint(const std::string& name,
@@ -105,3 +107,4 @@ class DRAKE_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+#pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

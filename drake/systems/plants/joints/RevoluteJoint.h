@@ -8,6 +8,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/plants/joints/FixedAxisOneDoFJoint.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
 class DRAKE_EXPORT RevoluteJoint
     : public FixedAxisOneDoFJoint<RevoluteJoint> {
   // disable copy construction and assignment
@@ -47,3 +49,4 @@ class DRAKE_EXPORT RevoluteJoint
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+#pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual
