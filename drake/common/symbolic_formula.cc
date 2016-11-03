@@ -139,7 +139,7 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
       // f1 ∧ (f2,1 ∧ ... f2,m)
       // => (f1 ∧ f2,1 ∧ ... f2,m)
       set<Formula> formulas2{
-          static_pointer_cast<FormulaAnd>(f1.ptr_)->get_formulas()};
+          static_pointer_cast<FormulaAnd>(f2.ptr_)->get_formulas()};
       formulas2.insert(f1);
       return Formula{make_shared<FormulaAnd>(formulas2)};
     } else {
@@ -183,7 +183,7 @@ Formula operator||(const Formula& f1, const Formula& f2) {
       // f1 ∨ (f2,1 ∨ ... f2,m)
       // => (f1 ∨ f2,1 ∨ ... f2,m)
       set<Formula> formulas{
-          static_pointer_cast<FormulaOr>(f1.ptr_)->get_formulas()};
+          static_pointer_cast<FormulaOr>(f2.ptr_)->get_formulas()};
       formulas.insert(f1);
       return Formula{make_shared<FormulaOr>(formulas)};
     } else {
