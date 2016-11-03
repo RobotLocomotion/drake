@@ -1,3 +1,6 @@
+// finds a standing posture of Valkyrie by solving IK and displays it in drake
+// visualizer
+
 #include <iostream>
 
 #include "drake/common/drake_path.h"
@@ -24,9 +27,6 @@ namespace drake {
 namespace examples {
 namespace Valkyrie {
 namespace {
-
-template <typename ScalarType>
-using StateVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
 /* Finds and returns the indices within the state vector of @p tree that contain
  * the position states of a joint named @p name. The model instance ID is
@@ -286,7 +286,7 @@ int do_main() {
   std::cout << "rfoot contact pts used for quasistatic constraint" << std::endl;
   std::cout << r_foot_pts << std::endl;
 
-  //------------------solve-----------------------------------------------------
+  // -----------------solve-----------------------------------------------------
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_posture_neck);
   constraint_array.push_back(&kc_lfoot_pos);
@@ -335,7 +335,7 @@ int do_main() {
   }
   */
 
-  // show it in drake visualizer!
+  // show it in drake visualizer
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   x.setZero();
   x.head(q_sol.size()) = q_sol;
