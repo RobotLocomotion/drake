@@ -3,22 +3,21 @@ Car Simulation Instructions
 
 This README file provides instructions on how to run Drake's car simulations.
  
-Start the Drake Visualizer
---------------------------
+Start Drake's Visualizer
+------------------------
 
-The Drake Visualizer displays the current state of the simulation. It is a
-separate process that communicates with the Drake simulation process via the
+Drake's visualizer displays the current state of the simulation. It is a
+separate process that communicates with Drake's simulation via the
 [Lightweight Communications and Marshalling (LCM)](https://lcm-proj.github.io/)
 middleware.
 
-To run the Drake Visualizer, open a terminal and execute the following commands:
+To run Drake's visualizer, open a terminal and execute the following commands:
 
 ```
-$ cd drake-distro/drake/automotive
-$ ../../build/install/bin/drake-visualizer
+$ drake-distro/build/install/bin/drake-visualizer
 ```
 
-The Drake Visualizer window should appear.
+Drake's visualizer should appear.
 
 Start the Steering Command Driver
 ---------------------------------
@@ -47,14 +46,13 @@ $ cd drake-distro/drake/automotive
 $ python steering_command_driver.py
 ```
 
-Start the Drake Simulator
--------------------------
+Start Drake's Simulator
+-----------------------
 
-To start the simulation, open a new terminal and execute the following:
+Open a new terminal and execute the following:
 
 ```
-$ cd drake-distro/drake/automotive
-$ ../../build/drake/bin/car_sim_lcm
+$ drake-distro/build/drake/bin/car_sim_lcm
 ```
 
 Additional Simulation Notes

@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
   const Vector3<double> Kp(400,   0,   0);  // Units: Nm / radians
   const Vector3<double> Ki(0,     0,   0);  // Units: Nm / radians
-  const Vector3<double> Kd(80,  100, 100);  // Units: Nm / (radians / sec).
+  const Vector3<double> Kd(80,  700, 700);  // Units: Nm / (radians / sec).
 
   // TODO(liang.fok) Automatically initialize `feedback_selector_matrix` based
   // on the simulation model, actuators, etc.
