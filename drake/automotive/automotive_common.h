@@ -23,7 +23,7 @@ namespace automotive {
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
-void AddFlatTerrainToWorld(RigidBodyTree* tree,
+void AddFlatTerrainToWorld(RigidBodyTreed* tree,
                            double box_size = 1000, double box_depth = 10);
 
 }  // namespace automotive

@@ -42,7 +42,7 @@ namespace {
 
 // Verifies that the order of rigid body names and actuator names within the
 // provided tree are as expected.
-void VerifyCarSimLcmTree(const RigidBodyTree& tree) {
+void VerifyCarSimLcmTree(const RigidBodyTreed& tree) {
   DRAKE_DEMAND(tree.get_num_bodies() == 18);
 
   std::map<std::string, int> name_to_idx =
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
   DiagramBuilder<double> builder;
 
   // Instantiates a model of the world.
-  auto rigid_body_tree = make_unique<RigidBodyTree>();
+  auto rigid_body_tree = make_unique<RigidBodyTreed>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
 
   // Instantiates a system for visualizing the model.
   lcm::DrakeLcm lcm;
-  const RigidBodyTree& tree =
+  const RigidBodyTreed& tree =
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
           get_rigid_body_tree();
   auto publisher = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
@@ -236,8 +236,8 @@ int main(int argc, char* argv[]) {
   //
   // Note that the unit of w / v is (rad / sec) / (m / sec) = (rad / m).
   //
-  // TODO(liang.fok): Obtain the following hard-coded radius from RigidBodyTree.
-  // It is currently hard-coded to match the wheel radius specified in
+  // TODO(liang.fok): Obtain the following hard-coded radius from tree. It is
+  // currently hard-coded to match the wheel radius specified in
   // drake-distro/drake/automotive/models/prius/prius_with_lidar.sdf.
   const double kWheelRadius = 0.323342;
 

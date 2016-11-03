@@ -3,7 +3,7 @@
 namespace drake {
 namespace automotive {
 
-void AddFlatTerrainToWorld(RigidBodyTree* tree, double box_size,
+void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
                            double box_depth) {
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
