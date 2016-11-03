@@ -1,0 +1,12 @@
+// GENERATED FILE DO NOT EDIT
+// See drake/tools/lcm_vector_gen.py.
+
+package drake;
+
+struct lcmt_idm_planner_input_t {
+  // The timestamp in milliseconds.
+  int64_t timestamp;
+
+  double x;
+  double v;
+}
