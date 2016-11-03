@@ -3,8 +3,8 @@
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
-namespace drake{
-namespace automotive{
+namespace drake {
+namespace automotive {
 
 const int LinearCarStateIndices::kNumCoordinates;
 const int LinearCarStateIndices::kX;

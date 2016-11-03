@@ -5,23 +5,23 @@
 
 #include <vector>
 
-#include "drake/automotive/gen/linear_car_state.h"
+#include "drake/automotive/gen/idm_planner_input.h"
 #include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-//#include "drake/lcmt_linear_car_state_t.hpp"
+//#include "drake/lcmt_idm_planner_input_t.hpp"
 
 namespace drake {
 namespace automotive {
 
 /**
  * Translates between LCM message objects and VectorBase objects for the
- * LinearCarState type.
+ * IdmPlannerInput type.
  */
-class DRAKE_EXPORT LinearCarStateTranslator
+class DRAKE_EXPORT IdmPlannerInputTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
-  LinearCarStateTranslator()
-      : LcmAndVectorBaseTranslator(LinearCarStateIndices::kNumCoordinates) {}
+  IdmPlannerInputTranslator()
+      : LcmAndVectorBaseTranslator(IdmPlannerInputIndices::kNumCoordinates) {}
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

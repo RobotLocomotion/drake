@@ -14,8 +14,8 @@
 namespace drake {
 namespace automotive {
 
-/// Describes the row indices of a LinearCarState.
-struct DRAKE_EXPORT LinearCarStateIndices {
+/// Describes the row indices of a IdmPlannerInput.
+struct DRAKE_EXPORT IdmPlannerInputIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 2;
 
@@ -26,13 +26,13 @@ struct DRAKE_EXPORT LinearCarStateIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class LinearCarState : public systems::BasicVector<T> {
+class IdmPlannerInput : public systems::BasicVector<T> {
  public:
   // An abbreviation for our row index constants.
-  typedef LinearCarStateIndices K;
+  typedef IdmPlannerInputIndices K;
 
   /// Default constructor.  Sets all rows to zero.
-  LinearCarState() : systems::BasicVector<T>(K::kNumCoordinates) {
+  IdmPlannerInput() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
   }
 
