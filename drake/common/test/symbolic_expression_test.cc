@@ -403,16 +403,16 @@ GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
 // This test checks whether symbolic::Expression is compatible with
 // std::set.
 GTEST_TEST(ExpressionTest, CompatibleWithSet) {
-  set<Expression> uset;
-  uset.emplace(Expression{Variable{"a"}});
-  uset.emplace(Expression{Variable{"b"}});
+  set<Expression> set;
+  set.emplace(Expression{Variable{"a"}});
+  set.emplace(Expression{Variable{"b"}});
 }
 
 // This test checks whether symbolic::Expression is compatible with
 // std::map.
 GTEST_TEST(ExpressionTest, CompatibleWithMap) {
-  map<Expression, Expression> umap;
-  umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
+  map<Expression, Expression> map;
+  map.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 
 // This test checks whether symbolic::Expression is compatible with
