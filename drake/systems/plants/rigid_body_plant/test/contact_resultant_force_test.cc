@@ -1,9 +1,9 @@
+#include "drake/systems/plants/rigid_body_plant/contact_force.h"
 #include "drake/systems/plants/rigid_body_plant/contact_resultant_force_calculator.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {
@@ -78,8 +78,8 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
   WrenchVector<double> full_wrench, torque_free_wrench;
   full_wrench.template head<3>() = torque;
   full_wrench.template tail<3>() = force;
-  torque_free_wrench.template tail<3>() = force;
   torque_free_wrench.template head<3>() << 0, 0, 0;
+  torque_free_wrench.template tail<3>() = force;
 
   // Case 1: The ContactForce interface -- pass an instance of ContactForce.
   {
@@ -88,7 +88,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
     calc.AddForce(cforce);
     ContactForce<double> resultant = calc.ComputeResultant();
     ASSERT_EQ(resultant.get_application_point(), pos);
-    ASSERT_EQ(resultant.get_wrench(), full_wrench);
+    ASSERT_EQ(resultant.get_spatial_force(), full_wrench);
   }
 
   // Case 2: The interface for components without pure torque.
@@ -97,7 +97,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
     calc.AddForce(pos, force, norm);
     ContactForce<double> resultant = calc.ComputeResultant();
     ASSERT_EQ(resultant.get_application_point(), pos);
-    ASSERT_EQ(resultant.get_wrench(), torque_free_wrench);
+    ASSERT_EQ(resultant.get_spatial_force(), torque_free_wrench);
   }
 
   // Case 3: The interface for components with all data.
@@ -106,7 +106,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
     calc.AddForce(pos, force, norm, torque);
     ContactForce<double> resultant = calc.ComputeResultant();
     ASSERT_EQ(resultant.get_application_point(), pos);
-    ASSERT_EQ(resultant.get_wrench(), full_wrench);
+    ASSERT_EQ(resultant.get_spatial_force(), full_wrench);
   }
 }
 

@@ -13,8 +13,9 @@ namespace systems {
  force, and a unit vector. The spatial force includes:
   - a translational force, that is a pure force applied at a point,
   - a "pure torque", the rotational force. This is not the same as the moment
-    induced by the translational force.  This is a pure, abstract force (e.g.,
+    induced by the translational force.  This is a pure, abstract torque (e.g.,
     modeling torsional friction.)
+
   The unit normal indicates the normal direction of the translational force.
   Used to decompose the force into normal and tangential components. The
   normal is typically defined by the contact normal.
@@ -22,8 +23,10 @@ namespace systems {
   The application point, normal vector, and force vectors should all be measured
   and expressed in a common frame.
 
-  The ContactForce class provides an interface for accessing the components
-  individually as well as combining the forces into a WrenchVector.
+  ContactForce is frame agnostic. However, the vectors representing application
+  point location, contact normal, force, and torque must all be expressed in a
+  common frame, with the application point measured from the origin of that
+  frame. Every use of ContactForce must make clear which frame is being used.
 
   @tparam T The scalar type. Must be a valid Eigen scalar.
  */
@@ -35,7 +38,8 @@ class DRAKE_EXPORT ContactForce {
 
    @param application_point         The point at which the wrench is applied.
    @param force                     The translational force.
-   @param normal                    The translational force's normal direction.
+   @param normal                    The translational force's unit-length normal
+                                    direction.
    @param pure_torque               The pure torque component
    */
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& force,
@@ -80,17 +84,17 @@ class DRAKE_EXPORT ContactForce {
 
   /**
    This is a utility function for returning a compact representation of the
-   spatial force.  It produces a wrench-like data structure containing the
-   spatial force, in that it is a vector in R6 representing a concatentation of
-   a rotational and translational force.
+   spatial force: a vector in R6 representing a concatentation of a rotational
+   and translational force.
 
-   However, the rotational component is *not* r X F.  Instead, it is the pure
-   torque component of the contact force. To make use of this wrench, it must
-   be associated with the application point to know where the force is appl8ied
-   and compute a moment around an origin.
-   @returns the wrench-like representation of the contact spatial force.
+   The rotational force does *not* include an `r X f` moment term.  It is simply
+   the pure torque that was provided at initialization time. Ultimately, the
+   responsibility for computing this moment term belongs to the portion of the
+   code which knows the origin around which the moment is generated.
+
+   @returns the resultant spatial force.
    */
-  WrenchVector<T> get_wrench() const {
+  WrenchVector<T> get_spatial_force() const {
     WrenchVector<T> wrench;
     wrench.template head<3>() = pure_torque_;
     wrench.template tail<3>() = force_;

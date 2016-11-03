@@ -16,15 +16,14 @@ namespace systems {
 
  The resultant contact force defines a single translational force, with a
  possibly non-zero pure torque component, applied at a single application point.
- The application point for the force will be a minimum moment
- magnitude point.  That is, if the resultant force is applied at this point,
- it will induce the minimum possible moment (relative to any other application
- point). This is a general solution that is well
- defined and can be applied to arbitrary sets of contact forces. It must be
- emphasized, that this calculation considers only the *normal* components of the
- input contact forces in computing the minimum moment point.  The remaining
- tangential components will be included in the final resultant, but will not
- affect the calculation of the point.
+ The application point for the force will be a minimum moment magnitude point.
+ That is, if the resultant force is applied at this point, it will induce the
+ minimum possible moment (relative to any other application point). This is a
+ general solution that is well defined and can be applied to arbitrary sets of
+ contact forces. It must be emphasized, that this calculation considers only the
+ *normal* components of the input contact forces in computing the minimum moment
+ point.  The remaining tangential components will be included in the final
+ resultant, but will not affect the calculation of the point.
 
  Center of Pressure
  ==================
@@ -34,7 +33,7 @@ namespace systems {
     - The normal components of all forces must lie in the same direction.
     - The force application points must all lie on a plane.
     - The plane the application points lie on must be perpendicular to the
-    common normal direction of the contact forces.
+      common normal direction of the contact forces.
  If these conditions are met, the application point will also lie on the plane
  and will be the center of pressure.  And the minimum moment due to the normal
  forces will be zero.
@@ -42,17 +41,15 @@ namespace systems {
  Usage
  =====
  The class is designed to be exercised by a contact response model.  As each
- pair
- of collision elements is evaluated, the contact model should instantiate a
- ContactResultantForceCalculator.  As each contact point between the elements
+ pair  of collision elements is evaluated, the contact model should instantiate
+ a  ContactResultantForceCalculator.  As each contact point between the elements
  is processed and a contact force is computed, the details of the contact force
  are provided to the calculator (via calls to AddForce).
-
  Currently, the contact force is defined by four values (see ContactForce):
     - the application point,
     - the component of the contact force in the *normal* direction,
     - the component of the contact force in the *tangential* direction (e.g.,
-        friction force), and
+      friction force), and
     - an optional pure torque term (e.g., torsional friction).
  The application points and force directions are assumed to be measured and
  expressed in a common frame (the resultant force and application point will
@@ -77,44 +74,39 @@ namespace systems {
  pressure as with the planar case outlined above.  Generally, there is an
  infinite set of minimum moment points for a set of contact forces; it is a line
  called the "central axis".  Any point on this line will lead to the same
- minimum moment.  The ContactResultantForceCalculator selects one of
- those points.
+ minimum moment.  The ContactResultantForceCalculator selects one of those
+ points.
 
  We assume that the "ideal" point would be where the line intersects the
- (deformed) contact
- surface. Generally, this can't be solved because it depends on a geometric
- query that is outside the scope of this calculator class.  Furthermore, in many
- cases, it is unnecessary. A point on the surface is good for visualization, but
- in contexts where only a mathematically meaningful point is all that is needed,
- then
- one point is as good as another. That said, the calculator employs a method to
- cheaply approximate the intersection of the line with the contact surface by
- doing the following.
+ (deformed) contact  surface. Generally, this can't be solved because it depends
+ on a geometric  query that is outside the scope of this calculator class.
+ Furthermore, in many  cases, it is unnecessary. A point on the surface is good
+ for visualization, but  in contexts where only a mathematically meaningful
+ point is all that is needed,  then  one point is as good as another. That said,
+ the calculator employs a method to  cheaply approximate the intersection of the
+ line with the contact surface by  doing the following.
 
  The central axis can be thought of as a line defined by a point and direction.
  The point can be any point on the line.  The direction is defined by the
  direction of the resultant normal force (i.e., the vector sum of the normal
- components
- of all forces.) The direction vector defines "positive" and "negative"
- directions on the line. The force originated from the negative direction and
- accelerates the body in the positive direction.  If we had access to the
- geometry, the point we would be interested in, would be the intersection of the
- line and (deformed) geometry that is farthest in the "negative" direction
- (i.e., closest
- to the originating source of the contact).
+ components  of all forces.) The direction vector defines "positive" and
+ "negative"  directions on the line. The force originated from the negative
+ direction and  accelerates the body in the positive direction.  If we had
+ access to the  geometry, the point we would be interested in, would be the
+ intersection of the  line and (deformed) geometry that is farthest in the
+ "negative" direction  (i.e., closest to the originating source of the contact).
 
  We will approximate this by finding the contact force application point that
  similarly lies farthest in the negative direction (simply by projecting the
  application points on the line.)  This most-negative projection point will
  serve as the reported minimum moment point.
 
- This reported minimum moment point
- can be moved along the central axis by the caller if additional information is
- available. Movement along the axis preserves its "minimal-moment" property.
- For example, if the caller had access to the (deformed) geometry, the ray
- defined by the reported minimum moment point and the resultant ContactForce
- normal direction can be intersected with the geometry to create an alternate,
- but equally valid, minimum moment point.
+ This reported minimum moment point can be moved along the central axis by the
+ caller if additional information is available. Movement along the axis
+ preserves its "minimal-moment" property. For example, if the caller had access
+ to the (deformed) geometry, the ray defined by the reported minimum moment
+ point and the resultant ContactForce normal direction can be intersected with
+ the geometry to create an alternate, but equally valid, minimum moment point.
 
  A Zero-Resultant Force
  ======================
@@ -134,9 +126,9 @@ namespace systems {
  be produced by creating two disjoint subsets, `S_a` and `S_b` and then
  performing:
  ```
-    F_a = ComputeResultant(S_a);
-    F_b = ComputeResultant(S_b);
-    F_ab = ComputeResultant({F_a, F_b});
+  F_a = ComputeResultant(S_a);
+  F_b = ComputeResultant(S_b);
+  F_ab = ComputeResultant({F_a, F_b});
  ```
  Do not expect `F` to be equal to `F_ab`.
 
@@ -177,6 +169,19 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   /**
    Compute the resultant contact force -- it's translational force, pure torque,
    and application point.
+
+   The rotational component of this ContactForce is pure torque only.  It does
+   not include an `r X f` moment term.  It will be non-zero due to
+   contributions from sources such as:
+
+        - the minimum moment (which may be non-zero in the general case),
+        - the moments induced by the tangential components of the forces
+          translated to the minimum moment point, and
+        - the sum of the pure torques of the individual input contact forces.
+
+   The responsibility of computing the moment belongs to the code that knows
+   what frame the input contact forces are defined and what the origin around
+   which the moment would be induced.
    */
   ContactForce<T> ComputeResultant() const;
 
