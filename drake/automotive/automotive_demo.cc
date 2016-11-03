@@ -26,15 +26,20 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  const std::string sdf_file =
+  // TODO(liang.fok): Generalize this demo to allow arbitrary models to be
+  // specified via command line parameters. This will involve removing some
+  // hard-coded assumptions about the model's geometry. For exeample, the call
+  // to CreateTrajectoryParams() below expects a "car" to have a particular
+  // length and width.
+  const std::string kSdfFile =
       GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   for (int i = 0; i < FLAGS_num_simple_car; ++i) {
-    simulator->AddSimpleCarFromSdf(sdf_file);
+    simulator->AddSimpleCarFromSdf(kSdfFile);
   }
   for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
     const auto& params = CreateTrajectoryParams(i);
-    simulator->AddTrajectoryCarFromSdf(sdf_file, std::get<0>(params),
+    simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
                                        std::get<1>(params),
                                        std::get<2>(params));
   }
