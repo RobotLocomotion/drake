@@ -86,7 +86,19 @@ template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
 /// A column vector consisting of one wrench.
+/// This is the classical definition of a wrench: an encoding of a translational
+/// force (`f`) applied at a positional vector (`r`).  The column vector is a
+/// concatenation of a moment and the force: `[r X f, f]^T`.  By implication,
+/// its definition is predicated on the definition of `r`, and the origin from
+/// which `r` is measured.
 template <typename Scalar>
 using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
+
+/// A column vector consisting of a concatenated rotational and translational
+/// force.  The wrench is a special case of a SpatialForce.  For a general
+/// SpatialForce the rotational force can be a pure torque or the accumulation
+/// of moments and need not necessarily be a function of the force term.
+template <typename Scalar>
+using SpatialForce = Eigen::Matrix<Scalar, 6, 1>;
 
 }  // namespace drake
