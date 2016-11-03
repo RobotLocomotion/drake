@@ -209,8 +209,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
 
   int arg_num = 0;
-  RigidBodyTree* model =
-      static_cast<RigidBodyTree*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree<double>* model =
+      static_cast<RigidBodyTree<double>*>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>& cache =
       fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
   cache.checkCachedKinematicsSettings(true, true, "solveLCPmex");

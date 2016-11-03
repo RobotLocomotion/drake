@@ -50,7 +50,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
     this->set_name("KukaIiwaArmDynamicsSim");
 
     // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto tree = make_unique<RigidBodyTree>();
+    auto tree = make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable vehicle_instance_id_table =
         drake::parsers::urdf::AddModelInstanceFromUrdfFile(
             drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",

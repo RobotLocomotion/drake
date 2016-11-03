@@ -36,7 +36,7 @@ using drake::Vector1d;
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 
 int main(int argc, const char* argv[]) {
-  RigidBodyTree tree(
+  RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
       drake::systems::plants::joints::kFixed);
 

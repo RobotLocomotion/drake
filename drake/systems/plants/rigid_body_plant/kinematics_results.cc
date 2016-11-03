@@ -7,7 +7,7 @@ namespace drake {
 namespace systems {
 
 template<typename T>
-KinematicsResults<T>::KinematicsResults(const RigidBodyTree* tree) :
+KinematicsResults<T>::KinematicsResults(const RigidBodyTree<T>* tree) :
     tree_(tree), kinematics_cache_(tree_->bodies) {
 }
 

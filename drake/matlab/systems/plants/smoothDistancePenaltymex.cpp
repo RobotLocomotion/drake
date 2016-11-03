@@ -24,7 +24,8 @@ vector<string> get_strings(const mxArray* rhs) {
   return strings;
 }
 
-void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
+void smoothDistancePenalty(double& c, MatrixXd& dc,
+                           RigidBodyTree<double>* robot,
                            const KinematicsCache<double>& cache,
                            const double min_distance, const VectorXd& dist,
                            const MatrixXd& normal, const MatrixXd& xA,
@@ -162,8 +163,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   int arg_num = 0;
-  RigidBodyTree* model =
-      static_cast<RigidBodyTree*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree<double>* model =
+      static_cast<RigidBodyTree<double>*>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>& cache =
       fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 

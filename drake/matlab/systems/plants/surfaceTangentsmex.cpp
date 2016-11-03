@@ -18,7 +18,7 @@ using namespace std;
  *     surfaceTangents(mex_model_ptr, normals)
  */
 
-inline mxArray *getTangentsArray(RigidBodyTree *const model,
+inline mxArray *getTangentsArray(RigidBodyTree<double> *const model,
                                  Map<Matrix3Xd> const &normals) {
   const size_t numContactPairs = normals.cols();
   const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
@@ -43,7 +43,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Usage: [d] = surfaceTangentsmex(mex_model_ptr, normals)");
   }
 
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   const size_t numNormals = mxGetN(prhs[1]);  // number of normal vectors
   const size_t dimNormals = mxGetM(prhs[1]);  // dimension of each normal vector
 

@@ -126,7 +126,7 @@ void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys);
  */
 DRAKE_EXPORT
 void AddFlatTerrainToWorld(
-    const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
+    const std::shared_ptr<RigidBodyTree<double>>& rigid_body_tree,
     double box_size = 1000, double box_depth = 10);
 
 /**

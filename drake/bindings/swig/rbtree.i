@@ -93,7 +93,7 @@
       return nullptr;
     }
 
-    return new RigidBodyTree(urdf_filename, floating_base_type);
+    return new RigidBodyTree<double>(urdf_filename, floating_base_type);
   }
 
   KinematicsCache<double> doKinematics(
@@ -155,3 +155,5 @@
     return $self->getRandomConfiguration(generator);
   }
 }
+
+%template(RigidBodyTree_d) RigidBodyTree<double>;

@@ -9,7 +9,7 @@ const int kPortIndex = 0;
 }  // namespace
 
 DrakeVisualizer::DrakeVisualizer(
-    const RigidBodyTree& tree, drake::lcm::DrakeLcmInterface* lcm) :
+    const RigidBodyTree<double>& tree, drake::lcm::DrakeLcmInterface* lcm) :
     lcm_(lcm), load_message_(CreateLoadMessage(tree)),
     draw_message_translator_(tree) {
   set_name("drake_visualizer");
@@ -67,7 +67,7 @@ void DrakeVisualizer::PublishLoadRobot() const {
 }
 
 lcmt_viewer_load_robot DrakeVisualizer::CreateLoadMessage(
-    const RigidBodyTree& tree) {
+    const RigidBodyTree<double>& tree) {
   lcmt_viewer_load_robot load_message;
   load_message.num_links = tree.bodies.size();
   for (const auto& body : tree.bodies) {
