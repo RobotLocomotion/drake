@@ -23,14 +23,14 @@ double round(const Eigen::AutoDiffScalar<DerType>& x) {
 
 /// Overloads isinf to mimic std::isinf from <cmath>.
 template <typename DerType>
-double isinf(const Eigen::AutoDiffScalar<DerType>& x) {
+bool isinf(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isinf;
   return isinf(x.value());
 }
 
 /// Overloads isnan to mimic std::isnan from <cmath>.
 template <typename DerType>
-double isnan(const Eigen::AutoDiffScalar<DerType>& x) {
+bool isnan(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isnan;
   return isnan(x.value());
 }

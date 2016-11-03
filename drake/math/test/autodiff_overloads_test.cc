@@ -19,6 +19,8 @@ GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 1.0 / 0.0;
   EXPECT_EQ(isinf(x), true);
+  x.value() = 0.0;
+  EXPECT_EQ(isinf(x), false);
 }
 
 // Tests correctness of isnan
@@ -26,6 +28,8 @@ GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 0.0 / 0.0;
   EXPECT_EQ(isnan(x), true);
+  x.value() = 0.0;
+  EXPECT_EQ(isnan(x), false);
 }
 
 // Tests that pow(AutoDiffScalar, AutoDiffScalar) applies the chain rule.
