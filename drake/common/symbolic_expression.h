@@ -49,7 +49,7 @@ enum class ExpressionKind {
   // TODO(soonho): add Integral
 };
 
-// Total ordering between ExpressionKinds
+/** Total ordering between ExpressionKinds. */
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
 class ExpressionCell;
@@ -140,16 +140,18 @@ class DRAKE_EXPORT Expression {
   Expression(double d);
   /** Constructs a variable. */
   explicit Expression(const Variable& name);
+  /** Returns expression kind. */
   ExpressionKind get_kind() const;
+  /** Returns hash value. */
   size_t get_hash() const;
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
   /** Checks structural equality. */
   bool EqualTo(const Expression& e) const;
-  /** Checks ordering between this and @p e. This function is used as a compare
-   * function in std::map<symbolic::Expression> and
-   * std::set<symbolic::Expression> via std::less<symbolic::Expression>. */
+  /** Provides lexicographical ordering between expressions.
+      This function is used as a compare function in map<Expression> and
+      set<Expression> via std::less<drake::symbolic::Expression>. */
   bool Less(const Expression& e) const;
 
   /** Evaluates under a given environment (by default, an empty environment). */
@@ -251,13 +253,15 @@ class DRAKE_EXPORT Expression {
  */
 class ExpressionCell {
  public:
+  /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
+  /** Returns hash value. */
   size_t get_hash() const { return hash_; }
   /** Collects variables in expression. */
   virtual Variables GetVariables() const = 0;
   /** Checks structural equality. */
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
-  /** Checks ordering between this and @p c. */
+  /** Provides lexicographical ordering between expressions. */
   virtual bool Less(const ExpressionCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
@@ -282,8 +286,8 @@ class ExpressionCell {
   const ExpressionKind kind_{};
   const size_t hash_{};
 };
-}
-}
+}  // namespace symbolic
+}  // namespace drake
 
 namespace std {
 /* Provides std::less<drake::symbolic::Expression>. */
@@ -322,7 +326,7 @@ class UnaryExpressionCell : public ExpressionCell {
   Variables GetVariables() const override;
   /** Checks structural equality. */
   bool EqualTo(const ExpressionCell& c) const override;
-  /** Checks ordering between this and @p c. */
+  /** Provides lexicographical ordering between expressions. */
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
@@ -359,7 +363,7 @@ class BinaryExpressionCell : public ExpressionCell {
   Variables GetVariables() const override;
   /** Checks structural equality. */
   bool EqualTo(const ExpressionCell& c) const override;
-  /** Checks ordering between this and @p c. */
+  /** Provides lexicographical ordering between expressions. */
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;

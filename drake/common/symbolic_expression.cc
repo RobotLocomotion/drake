@@ -27,8 +27,10 @@ using std::accumulate;
 using std::copy;
 using std::domain_error;
 using std::endl;
+using std::equal;
 using std::hash;
 using std::invalid_argument;
+using std::lexicographical_compare;
 using std::make_pair;
 using std::make_shared;
 using std::map;
@@ -598,7 +600,7 @@ ExpressionAdd::ExpressionAdd(const double constant_term,
                              const map<Expression, double>& term_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
                      hash_combine(constant_term,
-                                  hash_combine(term_to_coeff_map))},
+                                  hash_value(term_to_coeff_map))},
       constant_term_(constant_term),
       term_to_coeff_map_(term_to_coeff_map) {
   DRAKE_ASSERT(!term_to_coeff_map_.empty());
@@ -626,30 +628,13 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
   if (term_to_coeff_map_.size() != add_e.term_to_coeff_map_.size()) {
     return false;
   }
-  // Check each (term, coeff) pairs in two maps.
-  auto it1(term_to_coeff_map_.cbegin());
-  auto end1(term_to_coeff_map_.cend());
-  auto it2(add_e.term_to_coeff_map_.cbegin());
-  auto end2(add_e.term_to_coeff_map_.cend());
-  while (it1 != end1 && it2 != end2) {
-    // Compare the coefficients.
-    const double coeff1{it1->second};
-    const double coeff2{it2->second};
-    if (coeff1 != coeff2) {
-      return false;
-    }
-    // Compare the terms.
-    const Expression& term1{it1->first};
-    const Expression& term2{it2->first};
-    if (!term1.EqualTo(term2)) {
-      return false;
-    }
-    // The two values are structually equal. Check the next pair
-    ++it1;
-    ++it2;
-  }
-  // All pairs are structually equal.
-  return true;
+  return equal(term_to_coeff_map_.cbegin(), term_to_coeff_map_.cend(),
+               add_e.term_to_coeff_map_.cbegin(),
+               add_e.term_to_coeff_map_.cend(),
+               [](const pair<Expression, double>& p1,
+                  const pair<Expression, double>& p2) {
+                 return p1.first.EqualTo(p2.first) && p1.second == p2.second;
+               });
 }
 
 bool ExpressionAdd::Less(const ExpressionCell& e) const {
@@ -670,42 +655,24 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
   if (add_e.constant_term_ < constant_term_) {
     return false;
   }
-
   // Compare the two maps.
-  auto it1(term_to_coeff_map_.cbegin());
-  auto end1(term_to_coeff_map_.cend());
-  auto it2(add_e.term_to_coeff_map_.cbegin());
-  auto end2(add_e.term_to_coeff_map_.cend());
-  while (it1 != end1 && it2 != end2) {
-    // Compare the coefficients.
-    const double coeff1{it1->second};
-    const double coeff2{it2->second};
-    if (coeff1 < coeff2) {
-      return true;
-    }
-    if (coeff2 < coeff1) {
-      return false;
-    }
-    // Compare the terms.
-    const Expression& term1{it1->first};
-    const Expression& term2{it2->first};
-    if (term1.Less(term2)) {
-      return true;
-    }
-    if (term2.Less(term1)) {
-      return false;
-    }
-    // The two coefficients are equal. Check the next pair.
-    ++it1;
-    ++it2;
-  }
-  // map2 (in e) has more elements.
-  if (it1 == end1 && it2 != end2) {
-    return true;
-  }
-  // It's either the two maps are structurally equal or map1 (the one in this)
-  // has more elements.
-  return false;
+  return lexicographical_compare(
+      term_to_coeff_map_.cbegin(), term_to_coeff_map_.cend(),
+      add_e.term_to_coeff_map_.cbegin(), add_e.term_to_coeff_map_.cend(),
+      [](const pair<Expression, double>& p1,
+         const pair<Expression, double>& p2) {
+        const double coeff1 = p1.second;
+        const double coeff2 = p2.second;
+        if (coeff1 < coeff2) {
+          return true;
+        }
+        if (coeff2 < coeff1) {
+          return false;
+        }
+        const Expression& term1 = p1.first;
+        const Expression& term2 = p2.first;
+        return term1.Less(term2);
+      });
 }
 
 double ExpressionAdd::Evaluate(const Environment& env) const {
@@ -866,7 +833,7 @@ ExpressionMul::ExpressionMul(const double constant_factor,
                              const map<Expression, Expression>& term_to_exp_map)
     : ExpressionCell{ExpressionKind::Mul,
                      hash_combine(constant_factor,
-                                  hash_combine(term_to_exp_map))},
+                                  hash_value(term_to_exp_map))},
       constant_factor_(constant_factor),
       term_to_exp_map_(term_to_exp_map) {
   DRAKE_ASSERT(!term_to_exp_map_.empty());
@@ -897,29 +864,13 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
     return false;
   }
   // Check each (term, coeff) pairs in two maps.
-  auto it1(term_to_exp_map_.cbegin());
-  auto end1(term_to_exp_map_.cend());
-  auto it2(mul_e.term_to_exp_map_.cbegin());
-  auto end2(mul_e.term_to_exp_map_.cend());
-  while (it1 != end1 && it2 != end2) {
-    // Compare the bases.
-    const Expression& term1{it1->first};
-    const Expression& term2{it2->first};
-    if (!term1.EqualTo(term2)) {
-      return false;
-    }
-    // Compare the terms.
-    const Expression& exp1{it1->second};
-    const Expression& exp2{it2->second};
-    if (!exp1.EqualTo(exp2)) {
-      return false;
-    }
-    // The two values are structually equal. Check the next pair
-    ++it1;
-    ++it2;
-  }
-  // All pairs are structually equal.
-  return true;
+  return equal(term_to_exp_map_.cbegin(), term_to_exp_map_.cend(),
+               mul_e.term_to_exp_map_.cbegin(), mul_e.term_to_exp_map_.cend(),
+               [](const pair<Expression, Expression>& p1,
+                  const pair<Expression, Expression>& p2) {
+                 return p1.first.EqualTo(p2.first) &&
+                        p1.second.EqualTo(p2.second);
+               });
 }
 
 bool ExpressionMul::Less(const ExpressionCell& e) const {
@@ -940,42 +891,24 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
   if (mul_e.constant_factor_ < constant_factor_) {
     return false;
   }
-
   // Compare the two maps.
-  auto it1(term_to_exp_map_.cbegin());
-  auto end1(term_to_exp_map_.cend());
-  auto it2(mul_e.term_to_exp_map_.cbegin());
-  auto end2(mul_e.term_to_exp_map_.cend());
-  while (it1 != end1 && it2 != end2) {
-    // Compare the base.
-    const Expression& base1{it1->first};
-    const Expression& base2{it2->first};
-    if (base1.Less(base2)) {
-      return true;
-    }
-    if (base2.Less(base1)) {
-      return false;
-    }
-    // Compare the terms.
-    const Expression& exp1{it1->second};
-    const Expression& exp2{it2->second};
-    if (exp1.Less(exp2)) {
-      return true;
-    }
-    if (exp2.Less(exp1)) {
-      return false;
-    }
-    // The two are equal. Check the next pair.
-    ++it1;
-    ++it2;
-  }
-  // map2 (in e) has more elements.
-  if (it1 == end1 && it2 != end2) {
-    return true;
-  }
-  // It's either the two maps are structurally equal or map1 (the one in this)
-  // has more elements.
-  return false;
+  return lexicographical_compare(
+      term_to_exp_map_.cbegin(), term_to_exp_map_.cend(),
+      mul_e.term_to_exp_map_.cbegin(), mul_e.term_to_exp_map_.cend(),
+      [](const pair<Expression, Expression>& p1,
+         const pair<Expression, Expression>& p2) {
+        const Expression& base1 = p1.first;
+        const Expression& base2 = p2.first;
+        if (base1.Less(base2)) {
+          return true;
+        }
+        if (base2.Less(base1)) {
+          return false;
+        }
+        const Expression& exp1 = p1.second;
+        const Expression& exp2 = p2.second;
+        return exp1.Less(exp2);
+      });
 }
 
 double ExpressionMul::Evaluate(const Environment& env) const {
