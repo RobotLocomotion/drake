@@ -13,11 +13,13 @@ drake_add_matlab_test(NAME examples/Valkyrie/runValkyrieVisualize OPTIONAL bulle
 add_subdirectory(test)
 
 if(lcm_FOUND)
-  add_executable(ValkyrieIKTest ValkyrieIKTest.cpp Valkyrie_plant.cc)
+  add_executable(ValkyrieIKTest ValkyrieIKTest.cpp)
   target_link_libraries(ValkyrieIKTest
           drakeCommon
           drakeIK
-          drakeLCMSystem
-          drakeLCMTypes
-          drakeRBSystem)
+          drakeLcm
+          drakeRigidBodyPlant
+          drakeSystemFramework
+          drakeSystemAnalysis
+          drakeRBM)
 endif()

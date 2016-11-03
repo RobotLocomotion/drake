@@ -1,25 +1,29 @@
-//
-// Created by Pang Tao on 21/10/16.
-//
 #include <iostream>
 
-#include "drake/systems/LCMSystem.h"
-#include "drake/systems/plants/BotVisualizer.h"
-//#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/common/drake_path.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 // Includes for IK solver
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
-using drake::BotVisualizer;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
+
+namespace drake {
+namespace examples {
+namespace Valkyrie {
+namespace {
 
 template <typename ScalarType>
 using StateVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
@@ -51,31 +55,33 @@ void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
                        position_indices.end());
 }
 
-int main() {
-  std::shared_ptr<RigidBodyTree> tree = std::make_shared<RigidBodyTree>();
-  tree->add
-
-
+int do_main() {
+  std::shared_ptr<RigidBodyTree> tree = std::make_shared<RigidBodyTree>(
+      drake::GetDrakePath() +
+          "/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+      systems::plants::joints::kRollPitchYaw);
   // tests
   /*
-  std::cout << "Number of positions: "<< tree->get_num_positions() << std::endl;
-  for(int i=0;i<tree->get_num_positions();i++) {
-      std::cout << i << ":" << tree->get_position_name(i) << std::endl;
-  }
-
-  std::cout << "Number of velocities: "<< tree->get_num_velocities() <<
+  std::cout << "Number of positions: "<< tree2->get_num_positions() <<
   std::endl;
-  for(int i=0;i<tree->get_num_velocities();i++) {
-      std::cout << i << ":" << tree->get_velocity_name(i) << " " <<
-  tree->get_position_name(i) << std::endl;
+  for(int i=0;i<tree2->get_num_positions();i++) {
+      std::cout << i << ":" << tree2->get_position_name(i) << std::endl;
   }
 
-  std::cout << "Number of bodies: " << tree->get_num_bodies() << std::endl;
-  for(int i=0;i<tree->get_num_bodies();i++) {
-      std::cout << i << ":" << tree->getBodyOrFrameName(i) << std::endl;
+  std::cout << "Number of velocities: "<< tree2->get_num_velocities() <<
+  std::endl;
+  for(int i=0;i<tree2->get_num_velocities();i++) {
+      std::cout << i << ":" << tree2->get_velocity_name(i) << " " <<
+  tree2->get_position_name(i) << std::endl;
   }
 
-  auto leftPalmPtr = tree->FindBody("leftPalm");
+  std::cout << "Number of bodies: " << tree2->get_num_bodies() << std::endl;
+  for(int i=0;i<tree2->get_num_bodies();i++) {
+      std::cout << i << ":" << tree2->getBodyOrFrameName(i) << std::endl;
+  }
+
+  auto leftPalmPtr = tree2->FindBody("leftPalm");
   Eigen::Matrix3Xd leftPalmContactPts = leftPalmPtr->get_contact_points();
   std::cout << "LeftPalmContactPts:" << std::endl;
   std::cout << leftPalmContactPts << std::endl;
@@ -88,18 +94,18 @@ int main() {
   tspan << 0, inf;
 
   VectorXd reach_start(tree->get_num_positions());
-  reach_start << 0.0,       // base_x
-      0.0,                  // base_y
-      1.025,                // base_z
-      0.0,                  // base_roll
-      0.0,                  // base_pitch
-      0.0,                  // 5 base_yaw
-      0.0,                  // 6 torsoYaw
-      0.0,                  // 7 torsoPitch
-      0.0,                  // 8 torsoRoll
-      0.0,                  // 9 lowerNeckPitch
-      0.0,                  // 10 neckYaw
-      0.0,                  // 11 upperNeckPitch
+  reach_start << 0.0,  // base_x
+      0.0,             // base_y
+      1.025,           // base_z
+      0.0,             // base_roll
+      0.0,             // base_pitch
+      0.0,             // 5 base_yaw
+      0.0,             // 6 torsoYaw
+      0.0,             // 7 torsoPitch
+      0.0,             // 8 torsoRoll
+      0.0,             // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
       0.30019663134302466,  // 12 rightShoulderPitch
       1.25,                 // 13 rightShoulderRoll
       0.0,                  // 14 rightShoulderYaw
@@ -135,9 +141,10 @@ int main() {
   findJointAndInsert(tree.get(), "lowerNeckPitch", neck_idx);
   findJointAndInsert(tree.get(), "neckYaw", neck_idx);
   findJointAndInsert(tree.get(), "upperNeckPitch", neck_idx);
-  VectorXd neck_lb = VectorXd::Zero(3);
-  VectorXd neck_ub = VectorXd::Zero(3);
-  kc_posture_neck.setJointLimits(3, neck_idx.data(), neck_lb, neck_ub);
+  VectorXd neck_lb = VectorXd::Zero(neck_idx.size());
+  VectorXd neck_ub = VectorXd::Zero(neck_idx.size());
+  kc_posture_neck.setJointLimits(neck_idx.size(), neck_idx.data(), neck_lb,
+                                 neck_ub);
 
   // 2 left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
@@ -329,13 +336,31 @@ int main() {
   */
 
   // show it in drake visualizer!
-  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
-  if (!lcm->good()) return 1;
-  drake::NullVector<double> visualizer_state;
+  VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
+  x.setZero();
+  x.head(q_sol.size()) = q_sol;
 
-  auto visualizer =
-      std::make_shared<BotVisualizer<StateVector>>(lcm, tree);
-  visualizer->output(0, visualizer_state, q_sol);
+  lcm::DrakeLcm lcm;
+  systems::DiagramBuilder<double> builder;
+  auto source = builder.AddSystem<systems::ConstantVectorSource>(x);
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  builder.Connect(source->get_output_port(), publisher->get_input_port(0));
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  auto output = diagram->AllocateOutput(*context);
+  //  diagram->EvalOutput(*context, output.get());
+  diagram->Publish(*context);
+  // systems::Simulator<double> simulator(*diagram);
+  // simulator.Initialize();
+  // simulator.StepTo(1);
 
   return 0;
 }
+
+}  // namespace
+}  // namespace Valkyrie
+}  // namespace examples
+}  // namespace drake
+
+int main() { return drake::examples::Valkyrie::do_main(); }
