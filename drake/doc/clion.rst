@@ -98,6 +98,67 @@ You can also set the coding style through the following steps
 3. Go to File > Settings > Editor > Code Style > C/C++
 4. On the right panel, choose Set from > Predefined Style > Google
 
+Integrating Cpplint in CLion
+============================
+This will give you the ability to execute cpplint on a single file or the full
+project and have the result presented in the CLion console with each warning
+a clickable hyperlink.
+
+Creating the External Tools
+--------------------------
+
+.. role:: raw-html(raw)
+   :format: html
+
+Run Cpp Lint on Single File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Open the Settings (File > Settings) or `Alt+Ctrl+S`.
+2. Navigate to Tools > External Tools.
+3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
+4. Add the following values in the following fields:
+
+   :Name: Cpp Lint File
+   :Description: Apply cpp lint to the current file.
+   :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
+   :Parameters: $FilePath$
+   :Working directory: $ProjectFileDir$
+5. Make sure that *only* the following Options are checked:
+
+   - Open Console 
+   - Main Menu
+   - Editor Menu
+   - Project views
+6. Click the "Output Filters..." button.
+7. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a filter.
+8. Add the following values in the following fields (and click "OK):
+
+   :Name: Extract Links
+   :Description: Convert file/line references into clickable links.
+   :Regular expression to match output: $FILE_PATH$:$LINE$
+
+Run Cpp Lint on Full Project
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Repeat the steps from creating the single-file version with the following
+differences:
+
+4. Set the fields as follows:
+    :Name: Cpp Lint Project
+    :Description: Apply cpp lint to the entire project.
+    :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
+    :Parameters: <leave empty>
+    :Working directory: $ProjectFileDir$
+
+Executing
+^^^^^^^^^
+The external tools can be executed by going to Tools > External Tools > [Tool Name].
+
+Notes
+^^^^^
+There appears to be a race condition. If the python program prints the
+results before it lists the summary (e.g., `Total X files checked, found Y 
+warnings`), then the first warning will not be properly extracted.  This happens
+occasionally when running on individual files.  It is less likely when running
+cpp lint on the full project.
 
 Running a C++ executable
 ========================
