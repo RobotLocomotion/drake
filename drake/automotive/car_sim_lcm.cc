@@ -1,4 +1,3 @@
-#include <iostream>
 #include <gflags/gflags.h>
 
 #include "drake/automotive/automotive_common.h"
@@ -41,8 +40,10 @@ namespace automotive {
 namespace {
 
 // Verifies that the order of rigid body names and actuator names within the
-// provided three are as expected.
+// provided tree are as expected.
 void VerifyCarSimLcmTree(const RigidBodyTree& tree) {
+  DRAKE_DEMAND(tree.get_num_bodies() == 18);
+
   std::map<std::string, int> name_to_idx =
       tree.computePositionNameToIndexMap();
 
@@ -87,16 +88,16 @@ int main() {
   DiagramBuilder<double> builder;
 
   // Instantiates a model of the world.
-  auto tree = make_unique<RigidBodyTree>();
+  auto rigid_body_tree = make_unique<RigidBodyTree>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
       systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
-      tree.get());
-  AddFlatTerrainToWorld(tree.get());
-  VerifyCarSimLcmTree(*tree);
+      rigid_body_tree.get());
+  AddFlatTerrainToWorld(rigid_body_tree.get());
+  VerifyCarSimLcmTree(*rigid_body_tree);
 
   // Instantiates a RigidBodyPlant to simulate the model.
-  auto plant = make_unique<RigidBodyPlant<double>>(move(tree));
+  auto plant = make_unique<RigidBodyPlant<double>>(move(rigid_body_tree));
   plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
       500 /* penetration_damping */, 10 /* friction_coefficient */);
 
@@ -188,23 +189,55 @@ int main() {
 
   // Instantiates a system for visualizing the model.
   lcm::DrakeLcm lcm;
-  auto publisher = builder.AddSystem<DrakeVisualizer>(
+  const RigidBodyTree& tree =
       dynamic_cast<const RigidBodyPlant<double>*>(controller->plant())->
-          get_rigid_body_tree(), &lcm);
-
-  lcm.StartReceiveThread();
+          get_rigid_body_tree();
+  auto publisher = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
 
   // Instantiates a system for receiving user commands. The user command
   // consists of the following three-vector:
   //
   // [steering angle position, throttle velocity, brake velocity]
   //
-  static const DrivingCommandTranslator driving_command_translator;
+  // The throttle and brake velocities are with respect to the vehicle's
+  // longitudinal position.
+  //
+  const DrivingCommandTranslator driving_command_translator;
   auto command_subscriber =
       builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
           "DRIVING_COMMAND", driving_command_translator, &lcm);
 
-  // Instantiates a MIMO gain system to covert from user command space to
+  // Computes the gain necessary to convert from vehicle velocity (m / s) to
+  // wheel rotational velocity (rad / sec). Let:
+  //
+  //  - v be the vehicle velocity (m / sec)
+  //  - w be the wheel rotational velocity (rad / sec)
+  //  - r be the wheel's radius in (m)
+  //
+  // Let c be the number of meters the vehicle travels longitudinally per wheel
+  // rotation:
+  //
+  //    c = 2 * pi * r (m / wheel rev)
+  //
+  // Since there are 2 * pi (rad / wheel rev), the equation for w in terms of v
+  // is:
+  //
+  //    w = v / c * (2 * pi)
+  //
+  // Thus:
+  //
+  //    w / v = (2 * pi) / c
+  //          = (2 * pi) / (2 * pi * r)
+  //          = 1 / r
+  //
+  // Note that the unit of w / v is (rad / sec) / (m / sec) = (rad / m).
+  //
+  // TODO(liang.fok): Obtain the following hard-coded radius from RigidBodyTree.
+  // It is currently hard-coded to match the wheel radius specified in
+  // drake-distro/drake/automotive/models/prius/prius_with_lidar.sdf.
+  const double kWheelRadius = 0.323342;
+
+  // Instantiates a MatrixGain system to covert from user command space to
   // actuator command space. As mentioned above, the user command space consists
   // of the following three-vector:
   //
@@ -221,31 +254,34 @@ int main() {
   //   y = Du
   //
   // The user's steering angle position command can be passed straight
-  // through. The user's throttle and brake commands need to be multipled by
-  // a gain of 20 and -20 to get the reference velocities for the left and right
-  // wheels, respectively. Thus, the gain (`D`) should be:
+  // through using a gain of 1. The user's throttle and brake commands need to
+  // be multiplied by a gain of 1 / kWheelRadius and -1. / kWheelRadius to get
+  // the reference rotational velocities for the left and right wheels,
+  // respectively (see calculations above that relate vehicle longitudinal speed
+  // with wheel rotational velocity). Thus, the gain (`D`) should be:
   //
-  // -------------------------------------------------------
-  // Index |   kSteeringAngle   |   kThrottle   |   kBrake
-  // -------------------------------------------------------
-  //   0   |         1          |       0       |      0
-  //   1   |         0          |       0       |      0
-  //   2   |         0          |       0       |      0
-  //   3   |         0          |       0       |      0
-  //   4   |         0          |       20      |     -20
-  //   5   |         0          |       20      |     -20
-  // -------------------------------------------------------
-  MatrixX<double> mimo_gain(controller->get_input_port(1).get_size(),
-                            command_subscriber->get_output_port(0).get_size());
-  mimo_gain <<
-      1,  0,   0,
-      0,  0,   0,
-      0,  0,   0,
-      0,  0,   0,
-      0, 20, -20,
-      0, 20, -20;
+  // ---------------------------------------------------------------------
+  // Index |   kSteeringAngle   |   kThrottle         |    kBrake
+  // ---------------------------------------------------------------------
+  //   0   |         1          |       0             |      0
+  //   1   |         0          |       0             |      0
+  //   2   |         0          |       0             |      0
+  //   3   |         0          |       0             |      0
+  //   4   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
+  //   5   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
+  // ---------------------------------------------------------------------
+  MatrixX<double> matrix_gain(
+      controller->get_input_port(1).get_size(),
+      command_subscriber->get_output_port(0).get_size());
+  matrix_gain <<
+      1,                 0,                  0,
+      0,                 0,                  0,
+      0,                 0,                  0,
+      0,                 0,                  0,
+      0, 1. / kWheelRadius, -1. / kWheelRadius,
+      0, 1. / kWheelRadius, -1. / kWheelRadius;
   auto user_to_actuator_cmd_sys =
-      builder.template AddSystem<MatrixGain<double>>(mimo_gain);
+      builder.template AddSystem<MatrixGain<double>>(matrix_gain);
 
   // Instantiates a constant vector source for the feedforward torque command.
   // The feedforward torque is zero.
@@ -271,6 +307,7 @@ int main() {
                   publisher->get_input_port(0));
 
   auto diagram = builder.Build();
+  lcm.StartReceiveThread();
 
   Simulator<double> simulator(*diagram);
 
