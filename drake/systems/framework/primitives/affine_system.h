@@ -99,7 +99,7 @@ class AffineSystem : public LeafSystem<T> {
 /// (default_input));
 
 std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
-                          const Context<double>& context);
+                                                const Context<double>& context);
 
 }  // namespace systems
 }  // namespace drake

@@ -54,7 +54,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
 // setup equivalent system with a different scalar type
 template <typename T>
 AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
-  return new AffineSystem<AutoDiffXd>(A_,B_,xDot0_,C_,D_,y0_);
+  return new AffineSystem<AutoDiffXd>(A_, B_, xDot0_, C_, D_, y0_);
 }
 
 template <typename T>
@@ -106,9 +106,8 @@ void AffineSystem<T>::EvalTimeDerivatives(
 template class DRAKE_EXPORT AffineSystem<double>;
 template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
 
-
-std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
-                                                 const Context<double>& context) {
+std::unique_ptr<AffineSystem<double>> Linearize(
+    const System<double>& system, const Context<double>& context) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
   // TODO(russt): check if system is continuous time (only)
@@ -117,35 +116,44 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
 
-  int num_inputs = (system.get_num_input_ports()>0) ?  system.get_input_port(0).get_size() : 0,
-      num_outputs = (system.get_num_output_ports()>0) ? system.get_output_port(0).get_size() : 0;
+  int num_inputs = (system.get_num_input_ports() > 0)
+                       ? system.get_input_port(0).get_size()
+                       : 0,
+      num_outputs = (system.get_num_output_ports() > 0)
+                        ? system.get_output_port(0).get_size()
+                        : 0;
 
   // create an autodiff version of the system
-  std::unique_ptr<System<AutoDiffXd>> autodiff_system = system.template ToAutoDiffXd();
+  std::unique_ptr<System<AutoDiffXd>> autodiff_system =
+      system.template ToAutoDiffXd();
 
   // initialize autodiff
-  std::unique_ptr<Context<AutoDiffXd>> autodiff_context = autodiff_system->CreateDefaultContext();
+  std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
+      autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  const Eigen::VectorXd& x0 = context.get_continuous_state_vector().CopyToVector();
+  const Eigen::VectorXd& x0 =
+      context.get_continuous_state_vector().CopyToVector();
   int num_states = x0.size();
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
-  if (num_inputs>0) {
-    u0 = system.EvalEigenVectorInput(context,0);
+  if (num_inputs > 0) {
+    u0 = system.EvalEigenVectorInput(context, 0);
   }
 
-  auto autodiff_args = math::initializeAutoDiffTuple(x0,u0);
-  autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(std::get<0>(autodiff_args));
+  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
+  autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(
+      std::get<0>(autodiff_args));
 
-  if (num_inputs>0) {
+  if (num_inputs > 0) {
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
     input_vector->SetFromVector(std::get<1>(autodiff_args));
     autodiff_context->SetInputPort(
         0, std::make_unique<FreestandingInputPort>(std::move(input_vector)));
   }
 
-  std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot = autodiff_system->AllocateTimeDerivatives();
+  std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
+      autodiff_system->AllocateTimeDerivatives();
   autodiff_system->EvalTimeDerivatives(*autodiff_context, autodiff_xdot.get());
   auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
@@ -158,8 +166,9 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
   Eigen::MatrixXd D = Eigen::MatrixXd::Zero(num_outputs, num_inputs);
   Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
 
-  if (num_outputs>0) {
-    std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 = autodiff_system->AllocateOutput(*autodiff_context);
+  if (num_outputs > 0) {
+    std::unique_ptr<SystemOutput<AutoDiffXd>> autodiff_y0 =
+        autodiff_system->AllocateOutput(*autodiff_context);
     autodiff_system->EvalOutput(*autodiff_context, autodiff_y0.get());
     auto autodiff_y0_vec = autodiff_y0->get_vector_data(0)->CopyToVector();
 
@@ -169,10 +178,8 @@ std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
     y0 = math::autoDiffToValueMatrix(autodiff_y0_vec);
   }
 
-  return std::make_unique<AffineSystem<double>>(A,B,xDot0,C,D,y0);
+  return std::make_unique<AffineSystem<double>>(A, B, xDot0, C, D, y0);
 }
-
-
 
 }  // namespace systems
 }  // namespace drake
