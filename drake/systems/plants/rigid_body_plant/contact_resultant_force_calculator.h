@@ -58,9 +58,7 @@ namespace systems {
  After all of the forces have been added to the calculator, a resultant contact
  force can be requested using the appropriate method.
 
- Generally, the order in which the forces are added should have no bearing on
- the final result. The exception to this is if the normal components are coupled
- and cancel each other out. See below for details.
+ The *order* in which the forces are added has no impact on the final result.
 
  A Single Force
  ==============

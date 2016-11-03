@@ -87,10 +87,13 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
   } else {
     // There is no translational force.  Pick an arbitrary unit normal.
     norm << 1, 0, 0;
-    // There is no normal force component which means the minimum moment point
-    // can be *anywhere*.  We pick the first point just so it is "local" to the
-    // contact data.
-    min_point = forces_[0].get_application_point();
+    // No normal force component implies the minimum moment point can be
+    // *anywhere*.  We pick the centroid.
+    min_point = Vector3<T>::Zero();
+    for (const auto& force : forces_) {
+      min_point += force.get_application_point();
+    }
+    min_point /= forces_.size();
   }
 
   // Account for moments introduced by moving forces from defined point
