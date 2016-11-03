@@ -522,7 +522,7 @@ void RigidBodyTree<T>::getTerrainContactPoints(
     auto group_map = body.get_group_to_collision_ids_map();
     auto map_iter = group_map.find(group_name);
     if (map_iter == group_map.end()) {
-      throw runtime_error("RigidBodyTree<T>::getTerrainContactPoints: "
+      throw runtime_error("RigidBodyTree::getTerrainContactPoints: "
         "could not find collision group named: " + group_name);
     }
 
@@ -862,7 +862,7 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
                                     bool compute_JdotV) const {
   const auto& q = cache.getQ();
   if (!initialized_)
-    throw runtime_error("RigidBodyTree<T>::doKinematics: call compile first.");
+    throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
 
   // Only compute Jdot times V if V has been provided in the cache.
   compute_JdotV = compute_JdotV && cache.hasV();
@@ -2086,7 +2086,7 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
         match_index = i;
       } else {
         throw std::logic_error(
-            "RigidBodyTree<T>::FindBody: ERROR: found multiple bodys named \"" +
+            "RigidBodyTree::FindBody: ERROR: found multiple bodys named \"" +
                 body_name + "\", model name = \"" + model_name +
                 "\", model instance id = " + std::to_string(model_instance_id) +
                 ".");
@@ -2100,7 +2100,7 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
     return bodies[match_index].get();
   } else {
     throw std::logic_error(
-        "RigidBodyTree<T>::FindBody: ERROR: Could not find body named \"" +
+        "RigidBodyTree::FindBody: ERROR: Could not find body named \"" +
         body_name + "\", model name = \"" + model_name +
         "\", model instance id = " + std::to_string(model_instance_id) + ".");
   }
@@ -2166,7 +2166,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree<T>::findFrame(
         match_index = i;
       } else {
         throw std::logic_error(
-            "RigidBodyTree<T>::findFrame: ERROR: Found multiple frames named \""
+            "RigidBodyTree::findFrame: ERROR: Found multiple frames named \""
                 + frame_name + "\", model_instance_id = " +
                 std::to_string(model_instance_id));
       }
@@ -2179,7 +2179,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree<T>::findFrame(
     return frames[match_index];
   } else {
     throw std::logic_error(
-        "RigidBodyTree<T>::findFrame: ERROR: could not find frame named \"" +
+        "RigidBodyTree::findFrame: ERROR: could not find frame named \"" +
             frame_name + "\", model instance id = " +
             std::to_string(model_instance_id) + ".");
   }
@@ -2197,7 +2197,7 @@ int RigidBodyTree<T>::FindBodyIndex(const std::string& body_name,
   RigidBody* body = FindBody(body_name, "", model_instance_id);
   if (body == nullptr) {
     throw std::logic_error(
-        "RigidBodyTree<T>::FindBodyIndex: ERROR: Could not find index for "
+        "RigidBodyTree::FindBodyIndex: ERROR: Could not find index for "
             "rigid body \"" +
             body_name + "\", model_instance_id = " +
             std::to_string(model_instance_id) + ".");
@@ -2288,7 +2288,7 @@ RigidBody* RigidBodyTree<T>::FindChildBodyOfJoint(const std::string& joint_name,
     if (name_match[i]) {
       if (match_found) {
         throw std::runtime_error(
-            "RigidBodyTree<T>::FindChildBodyOfJoint: ERROR: Multiple joints "
+            "RigidBodyTree::FindChildBodyOfJoint: ERROR: Multiple joints "
                 "found named \"" + joint_name + "\", model instance ID = " +
                 std::to_string(model_instance_id) + ".");
       }
@@ -2301,7 +2301,7 @@ RigidBody* RigidBodyTree<T>::FindChildBodyOfJoint(const std::string& joint_name,
   // a pointer to the matching rigid body.
   if (!match_found) {
     throw std::runtime_error(
-        "RigidBodyTree<T>::FindChildBodyOfJoint: ERROR: Could not find unique "
+        "RigidBodyTree::FindChildBodyOfJoint: ERROR: Could not find unique "
             "joint named \"" + joint_name + "\", model_instance_id = " +
             std::to_string(model_instance_id) + ".");
   } else {
