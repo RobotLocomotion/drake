@@ -11,16 +11,16 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    const Vector3<T>& application_point, const Vector3<T>& force,
-    const Vector3<T>& normal) {
-  forces_.emplace_back(application_point, force, normal);
+    const Vector3<T>& application_point, const Vector3<T>& normal,
+    const Vector3<T>& force) {
+  forces_.emplace_back(application_point, normal, force);
 }
 
 template <typename T>
 void ContactResultantForceCalculator<T>::AddForce(
-    const Vector3<T>& application_point, const Vector3<T>& force,
-    const Vector3<T>& normal, const Vector3<T>& pure_torque) {
-  forces_.emplace_back(application_point, force, normal, pure_torque);
+    const Vector3<T>& application_point, const Vector3<T>& normal,
+    const Vector3<T>& force, const Vector3<T>& pure_torque) {
+  forces_.emplace_back(application_point, normal, force, pure_torque);
 }
 
 template <typename T>
@@ -107,7 +107,7 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
     auto offset = force.get_application_point() - min_point;
     result_torque += offset.cross(force.get_force());
   }
-  return ContactForce<T>(min_point, result_norm + result_tan, norm,
+  return ContactForce<T>(min_point, norm, result_norm + result_tan,
                          result_torque);
 }
 
