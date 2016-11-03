@@ -14,7 +14,7 @@ if(lcm_FOUND)
   target_link_libraries(pendulum_trajectory_optimization_test
     drakePendulumPlant drakeTrajectoryOptimization GTest::GTest GTest::Main)
 
-  if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
+  if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
     drake_add_test(NAME pendulum_trajectory_optimization_test
       COMMAND pendulum_trajectory_optimization_test)
   endif()
