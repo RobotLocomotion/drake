@@ -14,6 +14,20 @@ namespace drake {
 namespace math {
 namespace {
 
+// Tests correctness of isinf
+GTEST_TEST(AutodiffOverloadsTest, IsInf) {
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 1.0 / 0.0;
+  EXPECT_EQ(isinf(x), true);
+}
+
+// Tests correctness of isnan
+GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 0.0 / 0.0;
+  EXPECT_EQ(isnan(x), true);
+}
+
 // Tests that pow(AutoDiffScalar, AutoDiffScalar) applies the chain rule.
 GTEST_TEST(AutodiffOverloadsTest, Pow) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
