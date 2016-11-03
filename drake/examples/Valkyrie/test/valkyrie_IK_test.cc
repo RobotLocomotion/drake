@@ -1,7 +1,14 @@
 // finds a standing posture of Valkyrie by solving IK and displays it in drake
-// visualizer
+// visualizer.
 
 #include <iostream>
+
+#include "gtest/gtest.h"
+
+// Includes for IK solver.
+#include "drake/systems/plants/IKoptions.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -12,11 +19,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
-// Includes for IK solver
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -25,7 +27,7 @@ using Eigen::Matrix3Xd;
 
 namespace drake {
 namespace examples {
-namespace Valkyrie {
+namespace valkyrie {
 namespace {
 
 /* Finds and returns the indices within the state vector of @p tree that contain
@@ -47,7 +49,11 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTree* tree,
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
+/* Finds the indices within the state vector of @p tree that contains the
+ * position states of a joint named @p name, and appends the vector of
+ * indices found to the end of @p position_list.
+ */
+void FindJointAndInsert(const RigidBodyTree* model, const std::string& name,
                         std::vector<int> *const position_list) {
   auto position_indices = GetJointPositionVectorIndices(model, name);
 
@@ -55,7 +61,7 @@ void findJointAndInsert(const RigidBodyTree* model, const std::string& name,
                        position_indices.end());
 }
 
-int do_main() {
+GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   std::shared_ptr<RigidBodyTree> tree = std::make_shared<RigidBodyTree>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
@@ -87,7 +93,7 @@ int do_main() {
   std::cout << leftPalmContactPts << std::endl;
   */
 
-  // setting up constraints, based on testIKMoreConstraints.cpp and
+  // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
   double inf = std::numeric_limits<double>::infinity();
   Vector2d tspan;
@@ -138,15 +144,15 @@ int do_main() {
   // 1 Neck Posture Constraint, posture constraints are imposed on q
   PostureConstraint kc_posture_neck(tree.get(), tspan);
   std::vector<int> neck_idx;
-  findJointAndInsert(tree.get(), "lowerNeckPitch", &neck_idx);
-  findJointAndInsert(tree.get(), "neckYaw", &neck_idx);
-  findJointAndInsert(tree.get(), "upperNeckPitch", &neck_idx);
+  FindJointAndInsert(tree.get(), "lowerNeckPitch", &neck_idx);
+  FindJointAndInsert(tree.get(), "neckYaw", &neck_idx);
+  FindJointAndInsert(tree.get(), "upperNeckPitch", &neck_idx);
   VectorXd neck_lb = VectorXd::Zero(neck_idx.size());
   VectorXd neck_ub = VectorXd::Zero(neck_idx.size());
   kc_posture_neck.setJointLimits(neck_idx.size(), neck_idx.data(), neck_lb,
                                  neck_ub);
 
-  // 2 left foot position and orientation constraint, position and orientation
+  // 2 Left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
   int l_foot = tree->FindBodyIndex("leftFoot");
   // Vector4d lfoot_quat = tree->relativeQuaternion(cache, l_foot, 0);
@@ -160,19 +166,19 @@ int do_main() {
   // std::cout << "Relative position between left foot and world" << std::endl
   // << lfoot_pos0 << std::endl;
   Vector3d lfoot_pos_lb = lfoot_pos0;
-  lfoot_pos_lb(0) -= 0.0001;
-  lfoot_pos_lb(1) -= 0.0001;
-  lfoot_pos_lb(2) -= 0.0001;
+  //lfoot_pos_lb(0) -= 0.0001;
+  //lfoot_pos_lb(1) -= 0.0001;
+  //lfoot_pos_lb(2) -= 0.0001;
   Vector3d lfoot_pos_ub = lfoot_pos0;
-  lfoot_pos_ub(0) += 0.0001;
-  lfoot_pos_ub(1) += 0.0001;
-  lfoot_pos_ub(2) += 0.0001;
+  //lfoot_pos_ub(0) += 0.0001;
+  //lfoot_pos_ub(1) += 0.0001;
+  //lfoot_pos_ub(2) += 0.0001;
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
                                        lfoot_pos_ub, tspan);
-  double tol = 0.0017453292519943296;
+  double tol = 0;//0.0017453292519943296;
   WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol, tspan);
 
-  // 3 right foot position and orientation constraint
+  // 3 Right foot position and orientation constraint
   int r_foot = tree->FindBodyIndex("rightFoot");
   // Vector4d rfoot_quat = tree->relativeQuaternion(cache, r_foot, 0);
   Vector4d rfoot_quat(1, 0, 0, 0);
@@ -183,30 +189,30 @@ int do_main() {
   // std::cout << "Relative position between right foot and world" << std::endl
   // << rfoot_pos0 << std::endl;
   Vector3d rfoot_pos_lb = rfoot_pos0;
-  rfoot_pos_lb(0) -= 0.0001;
-  rfoot_pos_lb(1) -= 0.0001;
-  rfoot_pos_lb(2) -= 0.0001;
+  //rfoot_pos_lb(0) -= 0.0001;
+  //rfoot_pos_lb(1) -= 0.0001;
+  //rfoot_pos_lb(2) -= 0.0001;
   Vector3d rfoot_pos_ub = rfoot_pos0;
-  rfoot_pos_ub(0) += 0.0001;
-  rfoot_pos_ub(1) += 0.0001;
-  rfoot_pos_ub(2) += 0.0001;
+  //rfoot_pos_ub(0) += 0.0001;
+  //rfoot_pos_ub(1) += 0.0001;
+  //rfoot_pos_ub(2) += 0.0001;
   WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
                                        rfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
 
-  // 4 torso posture constraint
+  // 4 Torso posture constraint
   PostureConstraint kc_posture_torso(tree.get(), tspan);
   std::vector<int> torso_idx;
-  findJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
-  findJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
-  findJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
+  FindJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
+  FindJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
+  FindJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
   // std::cout << "torso indices " << torso_idx[0] << torso_idx[1] <<
   // torso_idx[2] << std::endl;
   Vector3d torso_nominal = Vector3d::Zero(3);
-  Vector3d torso_half_range(0.2617993877991494, 0.4363323129985824, inf);
+  Vector3d torso_half_range(15.0/180*M_PI, 25.0/180*M_PI, inf);
   Vector3d torso_lb = torso_nominal - torso_half_range;
   Vector3d torso_ub = torso_nominal + torso_half_range;
-  torso_lb(1) = -0.08726646259971647;
+  torso_lb(1) = -5.0/180*M_PI;
   kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
   // std::cout << "inf+1" << inf + 1.0 << std::endl;
   // std::cout << "-inf+1" << -inf + 1.0 << std::endl;
@@ -214,54 +220,54 @@ int do_main() {
   // 5 knee posture constraint
   PostureConstraint kc_posture_knee(tree.get(), tspan);
   std::vector<int> knee_idx;
-  findJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
-  findJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
+  FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
+  FindJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
   Vector2d knee_nominal(reach_start(knee_idx[0]), reach_start(knee_idx[1]));
   Vector2d knee_lb = knee_nominal;
-  // knee_lb(0) += 0.60;
-  // knee_lb(0) += 0.60;
   Vector2d knee_ub = knee_nominal;
-  knee_ub(0) += 1.90;
-  knee_ub(1) += 1.90;
+  knee_ub(0) += 108.9/180*M_PI;
+  knee_ub(1) += 108.9/180*M_PI;
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
   // std::cout << "knee_idx " << knee_idx[0] << knee_idx[1] << std::endl;
   // std::cout << "knee_nominal_posture" << knee_nominal << std::endl;
 
-  // 6 left arm posture constraint
+  // 6 Left arm posture constraint
   PostureConstraint kc_posture_larm(tree.get(), tspan);
   std::vector<int> larm_idx;
-  findJointAndInsert(tree.get(), "leftShoulderPitch", &larm_idx);
-  findJointAndInsert(tree.get(), "leftShoulderRoll", &larm_idx);
-  findJointAndInsert(tree.get(), "leftShoulderYaw", &larm_idx);
-  findJointAndInsert(tree.get(), "leftElbowPitch", &larm_idx);
-  findJointAndInsert(tree.get(), "leftForearmYaw", &larm_idx);
-  findJointAndInsert(tree.get(), "leftWristRoll", &larm_idx);
-  findJointAndInsert(tree.get(), "leftWristPitch", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftShoulderPitch", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftShoulderRoll", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftShoulderYaw", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftElbowPitch", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftForearmYaw", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftWristRoll", &larm_idx);
+  FindJointAndInsert(tree.get(), "leftWristPitch", &larm_idx);
   // std::cout << "Number of elements in larm_idx " << larm_idx.size() <<
   // std::endl;
-  VectorXd larm_lb = VectorXd::Zero(7);
+  Eigen::Matrix<double, 7, 1> larm_lb;
+  larm_lb.setZero();
   for (int i = 0; i < 7; i++) larm_lb(i) = reach_start(larm_idx[i]);
-  VectorXd larm_ub = larm_lb;
+  Eigen::Matrix<double, 7, 1> larm_ub = larm_lb;
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
 
-  // 7 right arm posture constraint
+  // 7 Right arm posture constraint
   PostureConstraint kc_posture_rarm(tree.get(), tspan);
   std::vector<int> rarm_idx;
-  findJointAndInsert(tree.get(), "rightShoulderPitch", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightShoulderRoll", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightShoulderYaw", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightElbowPitch", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightForearmYaw", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightWristRoll", &rarm_idx);
-  findJointAndInsert(tree.get(), "rightWristPitch", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightShoulderPitch", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightShoulderRoll", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightShoulderYaw", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightElbowPitch", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightForearmYaw", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightWristRoll", &rarm_idx);
+  FindJointAndInsert(tree.get(), "rightWristPitch", &rarm_idx);
   // std::cout << "Number of elements in rarm_idx " << rarm_idx.size() <<
   // std::endl;
-  VectorXd rarm_lb = VectorXd::Zero(7);
+  Eigen::Matrix<double, 7, 1> rarm_lb;
+  rarm_lb.setZero();
   for (int i = 0; i < 7; i++) rarm_lb(i) = reach_start(rarm_idx[i]);
-  VectorXd rarm_ub = rarm_lb;
+  Eigen::Matrix<double, 7, 1> rarm_ub = rarm_lb;
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
 
-  // 8 quasistatic constraint
+  // 8 Quasistatic constraint
   QuasiStaticConstraint kc_quasi(tree.get(), tspan);
   kc_quasi.setShrinkFactor(0.2);
   kc_quasi.setActive(true);
@@ -316,7 +322,8 @@ int do_main() {
   cache = tree->doKinematics(q_sol);
   Vector3d com = tree->centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
-
+  EXPECT_EQ(info, 1);
+  EXPECT_TRUE(com(2)>0);
   // cout for debugging
   /*
   for(auto & a:infeasible_constraint)
@@ -355,12 +362,12 @@ int do_main() {
   // simulator.Initialize();
   // simulator.StepTo(1);
 
-  return 0;
+
 }
 
 }  // namespace
-}  // namespace Valkyrie
+}  // namespace valkyrie
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::Valkyrie::do_main(); }
+//int main() { return drake::examples::valkyrie::do_main(); }
