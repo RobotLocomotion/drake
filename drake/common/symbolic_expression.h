@@ -845,7 +845,7 @@ class ExpressionMax : public BinaryExpressionCell {
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** @relates Expression
- * Retufrn a copy of @p lhs updated to record component-wise multiplication by a
+ * Return a copy of @p lhs updated to record component-wise multiplication by a
  * constant @p rhs.
  */
 template <typename MatrixL>
@@ -858,7 +858,7 @@ operator*(const MatrixL& lhs, double rhs) {
 }
 
 /** @relates Expression
- * Returfn a copy of @p rhs updated to record component-wise multiplication by a
+ * Return a copy of @p rhs updated to record component-wise multiplication by a
  * constant @p rhs.
  */
 template <typename MatrixR>
