@@ -1,5 +1,7 @@
 #include "drake/common/symbolic_formula.h"
 
+#include <map>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -17,6 +19,8 @@ namespace drake {
 namespace symbolic {
 namespace {
 
+using std::map;
+using std::set;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -175,6 +179,8 @@ TEST_F(SymbolicFormulaTest, Eq) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ == e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  const Formula f5{x_ == x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) == (2 + 3));
@@ -192,6 +198,8 @@ TEST_F(SymbolicFormulaTest, Neq) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::False());
   const Formula f4{e2_ != e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::False());
+  const Formula f5{x_ != x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) != (2 + 3));
@@ -209,6 +217,8 @@ TEST_F(SymbolicFormulaTest, Lt) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ < e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  const Formula f5{x_ < x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) < (2 + 3));
@@ -226,6 +236,8 @@ TEST_F(SymbolicFormulaTest, Gt) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ > e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  const Formula f5{x_ > x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) > (2 + 3));
@@ -243,6 +255,8 @@ TEST_F(SymbolicFormulaTest, Leq) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ <= e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  const Formula f5{x_ <= x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) <= (2 + 3));
@@ -260,6 +274,8 @@ TEST_F(SymbolicFormulaTest, Geq) {
   EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ >= e3_};
   EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  const Formula f5{x_ >= x_ + 5};
+  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) >= (2 + 3));
@@ -378,6 +394,21 @@ GTEST_TEST(FormulaTest, CompatibleWithUnorderedSet) {
 GTEST_TEST(FormulaTest, CompatibleWithUnorderedMap) {
   unordered_map<Formula, Formula> umap;
   umap.emplace(Formula::True(), Formula::False());
+}
+
+// This test checks whether symbolic::Formula is compatible with
+// std::set.
+GTEST_TEST(FormulaTest, CompatibleWithSet) {
+  set<Formula> set;
+  set.emplace(Formula::True());
+  set.emplace(Formula::False());
+}
+
+// This test checks whether symbolic::Formula is compatible with
+// std::map.
+GTEST_TEST(FormulaTest, CompatibleWithMap) {
+  map<Formula, Formula> map;
+  map.emplace(Formula::True(), Formula::False());
 }
 
 // This test checks whether symbolic::Formula is compatible with
