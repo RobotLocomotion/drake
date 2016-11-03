@@ -1,5 +1,8 @@
 #include "drake/automotive/automotive_common.h"
 
+namespace drake {
+namespace automotive {
+
 void AddFlatTerrainToWorld(RigidBodyTree* tree, double box_size,
                            double box_depth) {
   DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
@@ -19,3 +22,6 @@ void AddFlatTerrainToWorld(RigidBodyTree* tree, double box_size,
       "terrain");
   tree->updateStaticCollisionElements();
 }
+
+}  // namespace automotive
+}  // namespace drake

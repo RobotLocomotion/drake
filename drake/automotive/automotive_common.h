@@ -23,7 +23,6 @@ namespace automotive {
  * axis. Note that regardless of how deep the terrain is, the top surface of the
  * terrain will be at Z = 0.
  */
-DRAKE_EXPORT
 void AddFlatTerrainToWorld(RigidBodyTree* tree,
                            double box_size = 1000, double box_depth = 10);
 

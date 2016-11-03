@@ -2,10 +2,6 @@ Car Simulation Instructions
 ===========================
 
 This README file provides instructions on how to run Drake's car simulations.
-
-The instructions are written for Ubuntu Linux and OS X users. Windows users will
-need to adjust the instructions slightly. See the notes at the end of this
-section.
  
 Start the Drake Visualizer
 --------------------------
@@ -54,23 +50,12 @@ $ python steering_command_driver.py
 Start the Drake Simulator
 -------------------------
 
-There is currently one version of Drake's cars simulator. It integrates only
-LCM-based components (e.g., the Drake Visualizer). In the future, a second version
-will be added that integrates both LCM-based components and ROS-based components
-(e.g., RViz).
-
-### Simulation Using Drake + LCM
-
 To start the simulation, open a new terminal and execute the following:
 
 ```
 $ cd drake-distro/drake/automotive
-$ ../../build/drake/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
+$ ../../build/drake/bin/car_sim_lcm
 ```
-
-### Simulation Using Drake + LCM + ROS
-
-See: https://github.com/liangfok/drake/tree/feature/multi_car_sim_2/ros/drake_cars_examples
 
 Additional Simulation Notes
 ---------------------------
@@ -108,21 +93,8 @@ $ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-an
 
 Every time that you run the command above, it sends one LCM message.
 
-
-Adjustments for Windows
------------------------
-- Insert the configuration directory (e.g. `Release/`) after `bin/` in paths to
-the executables.
-- When running from the Windows Command Prompt you'll need to use backslashes in
-place of forward slashes.
-- To run a command in the background use `start cmdline` in place of `cmdline &`.
-
-Running the simple car simulator
+Running the Simple Car Simulator
 --------------------------------
-
-The following notes are for Ubuntu Linux and OS X users.
-This is not supported under Windows (though you can probably cobble
-together some workarounds by hand if you are motivated).
 
 Run:
 ```

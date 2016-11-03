@@ -5,6 +5,7 @@
 #include "drake/automotive/gen/driving_command_translator.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -83,7 +84,10 @@ void VerifyCarSimLcmTree(const RigidBodyTree& tree) {
   DRAKE_DEMAND(tree.actuators.at(2).name_ == "right_wheel_joint");
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  logging::HandleSpdlogGflags();
+
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   DiagramBuilder<double> builder;
 
@@ -120,16 +124,16 @@ int main() {
   //     0   |   steering angle position   | radians
   //     1   |   left wheel position       | radians
   //     2   |   right wheel position      | radians
-  //     3   |   steering angle velocity   | radians / sec
-  //     4   |   left wheel velocity       | radians / sec
-  //     5   |   right wheel velocity      | radians / sec
+  //     3   |   steering angle speed      | radians / sec
+  //     4   |   left wheel speed          | radians / sec
+  //     5   |   right wheel speed         | radians / sec
   DRAKE_DEMAND(feedback_selector_matrix.rows() == 6);
   const int kFeedbackIndexSteeringAnglePosition = 0;
   const int kFeedbackIndexLeftWheelPosition     = 1;
   const int kFeedbackIndexRightWheelPosition    = 2;
-  const int kFeedbackIndexSteeringAngleVelocity = 3;
-  const int kFeedbackIndexLeftWheelVelocity     = 4;
-  const int kFeedbackIndexRightWheelVelocity    = 5;
+  const int kFeedbackIndexSteeringAngleSpeed = 3;
+  const int kFeedbackIndexLeftWheelSpeed     = 4;
+  const int kFeedbackIndexRightWheelSpeed    = 5;
 
   // The feedback selector should input 27 values:
   //
@@ -166,21 +170,21 @@ int main() {
   const int kStateIndexSteeringAnglePosition = 7;
   const int kStateIndexLeftWheelPosition     = 9;
   const int kStateIndexRightWheelPosition    = 11;
-  const int kStateIndexSteeringAngleVelocity = 20;
-  const int kStateIndexLeftWheelVelocity     = 22;
-  const int kStateIndexRightWheelVelocity    = 24;
+  const int kStateIndexSteeringAngleSpeed = 20;
+  const int kStateIndexLeftWheelSpeed     = 22;
+  const int kStateIndexRightWheelSpeed    = 24;
   feedback_selector_matrix(kFeedbackIndexSteeringAnglePosition,
                            kStateIndexSteeringAnglePosition) = 1;
   feedback_selector_matrix(kFeedbackIndexLeftWheelPosition,
                            kStateIndexLeftWheelPosition) = 1;
   feedback_selector_matrix(kFeedbackIndexRightWheelPosition,
                            kStateIndexRightWheelPosition) = 1;
-  feedback_selector_matrix(kFeedbackIndexSteeringAngleVelocity,
-                           kStateIndexSteeringAngleVelocity) = 1;
-  feedback_selector_matrix(kFeedbackIndexLeftWheelVelocity,
-                           kStateIndexLeftWheelVelocity) = 1;
-  feedback_selector_matrix(kFeedbackIndexRightWheelVelocity,
-                           kStateIndexRightWheelVelocity) = 1;
+  feedback_selector_matrix(kFeedbackIndexSteeringAngleSpeed,
+                           kStateIndexSteeringAngleSpeed) = 1;
+  feedback_selector_matrix(kFeedbackIndexLeftWheelSpeed,
+                           kStateIndexLeftWheelSpeed) = 1;
+  feedback_selector_matrix(kFeedbackIndexRightWheelSpeed,
+                           kStateIndexRightWheelSpeed) = 1;
   auto feedback_selector =
       std::make_unique<MatrixGain<double>>(feedback_selector_matrix);
 
@@ -197,9 +201,9 @@ int main() {
   // Instantiates a system for receiving user commands. The user command
   // consists of the following three-vector:
   //
-  // [steering angle position, throttle velocity, brake velocity]
+  // [steering angle position, throttle speed, brake speed]
   //
-  // The throttle and brake velocities are with respect to the vehicle's
+  // The throttle and brake speeds are with respect to the vehicl's
   // longitudinal position.
   //
   const DrivingCommandTranslator driving_command_translator;
@@ -207,11 +211,11 @@ int main() {
       builder.template AddSystem<systems::lcm::LcmSubscriberSystem>(
           "DRIVING_COMMAND", driving_command_translator, &lcm);
 
-  // Computes the gain necessary to convert from vehicle velocity (m / s) to
-  // wheel rotational velocity (rad / sec). Let:
+  // Computes the gain necessary to convert from vehicle speed (m / s) to
+  // wheel rotational speed (rad / sec). Let:
   //
-  //  - v be the vehicle velocity (m / sec)
-  //  - w be the wheel rotational velocity (rad / sec)
+  //  - v be the vehicle speed (m / sec)
+  //  - w be the wheel rotational speed (rad / sec)
   //  - r be the wheel's radius in (m)
   //
   // Let c be the number of meters the vehicle travels longitudinally per wheel
@@ -241,12 +245,12 @@ int main() {
   // actuator command space. As mentioned above, the user command space consists
   // of the following three-vector:
   //
-  // [steering angle position, throttle velocity, brake velocity]
+  // [steering angle position, throttle speed, brake speed]
   //
   // The actuator command space consists of a six-vector:
   //
   // [steering angle position, left wheel position, right wheel position,
-  //  steering angle velocity, left wheel velocity, right wheel velocity]
+  //  steering angle speed, left wheel speed, right wheel speed]
   //
   // The MatrixGain system computes the following equation where `y` is the
   // actuator command, `D` is the gain`, and `u` is the user command:
@@ -258,7 +262,7 @@ int main() {
   // be multiplied by a gain of 1 / kWheelRadius and -1. / kWheelRadius to get
   // the reference rotational velocities for the left and right wheels,
   // respectively (see calculations above that relate vehicle longitudinal speed
-  // with wheel rotational velocity). Thus, the gain (`D`) should be:
+  // with wheel rotational speed). Thus, the gain (`D`) should be:
   //
   // ---------------------------------------------------------------------
   // Index |   kSteeringAngle   |   kThrottle         |    kBrake
@@ -270,6 +274,13 @@ int main() {
   //   4   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
   //   5   |         0          |  1. / kWheelRadius  | -1. / kWheelRadius
   // ---------------------------------------------------------------------
+  //
+  // TODO(liang.fok): Add a system that accounts for the difference in reference
+  // wheel rotational velocities necessary in vehicles with Ackermann steering.
+  // When such a vehicle turns, the kinematics of the vehicle require that the
+  // wheels on the inner side of the turn rotate slower than the wheels on the
+  // outer side of the turn.
+  //
   MatrixX<double> matrix_gain(
       controller->get_input_port(1).get_size(),
       command_subscriber->get_output_port(0).get_size());
@@ -280,17 +291,26 @@ int main() {
       0,                 0,                  0,
       0, 1. / kWheelRadius, -1. / kWheelRadius,
       0, 1. / kWheelRadius, -1. / kWheelRadius;
+  DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).get_size());
+  DRAKE_ASSERT(matrix_gain.cols() ==
+      command_subscriber->get_output_port(0).get_size());
+
+  // TODO(liang.fok): Consider replacing the the MatrixGain system below with a
+  // custom system that converts the user's commands to the vehicle's actuator's
+  // commands. Such a system would eliminate the long explanation above about
+  // how matrix_gain was derived and instead provide named getters and setters
+  // with immediately-relevant units and scale comments.
   auto user_to_actuator_cmd_sys =
       builder.template AddSystem<MatrixGain<double>>(matrix_gain);
 
-  // Instantiates a constant vector source for the feedforward torque command.
-  // The feedforward torque is zero.
+  // Instantiates a constant vector source for the feed-forward torque command.
+  // The feed-forward torque is zero.
   VectorX<double> constant_vector(controller->get_input_port(0).get_size());
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
 
-  // Connects the feedforward torque command.
+  // Connects the feed-forward torque command.
   builder.Connect(constant_zero_source->get_output_port(),
                   controller->get_input_port(0));
 
@@ -311,13 +331,19 @@ int main() {
 
   Simulator<double> simulator(*diagram);
 
-  // Zeroes the state and initializes controller state.
+  // TODO(liangfok): Modify System 2.0 to not require the following
+  // initialization.
+  //
+  // Zeros the state and initializes controller state.
   systems::Context<double>* controller_context =
       diagram->GetMutableSubsystemContext(
           simulator.get_mutable_context(), controller);
   controller->SetDefaultState(controller_context);
 
-  // Zeroes the rigid body plant's state. This is necessary because it is by
+  // TODO(liang.fok): Modify System 2.0 to not require the following
+  // initialization.
+  //
+  // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
   RigidBodyPlant<double>* rigid_body_plant =
       dynamic_cast<RigidBodyPlant<double>*>(controller->plant());
@@ -336,6 +362,5 @@ int main() {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::automotive::main();
+  return drake::automotive::main(argc, argv);
 }
