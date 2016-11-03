@@ -207,6 +207,11 @@ macro(drake_add_cmake_external PROJECT)
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
       ${_ext_CMAKE_ARGS})
+
+  if(_ext_TEST)
+    file(APPEND ${CMAKE_BINARY_DIR}/CTestExternals.cmake
+      "subdirs(\"${_ext_BINARY_DIR}\")\n")
+  endif()
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -259,6 +264,7 @@ endmacro()
 #   PUBLIC - External is public
 #   CMAKE  - External uses CMake
 #   ALWAYS - External is always built
+#   TEST   - External's tests should be included in the superbuild's tests
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -299,7 +305,7 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS)
+  set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS TEST)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR

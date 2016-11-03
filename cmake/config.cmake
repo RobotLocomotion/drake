@@ -219,6 +219,11 @@ endmacro()
 # Set up properties for the Drake superbuild.
 #------------------------------------------------------------------------------
 macro(drake_setup_superbuild)
+  enable_testing()
+  set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE
+    ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
+  file(REMOVE ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
+
   # Set default install prefix
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
