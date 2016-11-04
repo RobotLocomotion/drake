@@ -129,25 +129,36 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
 
   // 2 Left foot position and orientation constraint, position and orientation
   // constraints are imposed on frames/bodies
+  const Vector3d origin(0, 0, 0);
+
   int l_foot = tree->FindBodyIndex("leftFoot");
   Vector4d lfoot_quat(1, 0, 0, 0);
-
-  const Vector3d origin(0, 0, 0);
   auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
   Vector3d lfoot_pos_lb = lfoot_pos0;
+  lfoot_pos_lb(0) -= EPSILON;
+  lfoot_pos_lb(1) -= EPSILON;
+  lfoot_pos_lb(2) -= EPSILON;
   Vector3d lfoot_pos_ub = lfoot_pos0;
+  lfoot_pos_ub(0) += EPSILON;
+  lfoot_pos_ub(1) += EPSILON;
+  lfoot_pos_ub(2) += EPSILON;
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
                                        lfoot_pos_ub, tspan);
-  double tol = 0;
+  double tol = EPSILON;
   WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol, tspan);
 
   // 3 Right foot position and orientation constraint
   int r_foot = tree->FindBodyIndex("rightFoot");
-  Vector4d rfoot_quat(1, 0, 0, 0);
-
   auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
+  Vector4d rfoot_quat(1, 0, 0, 0);
   Vector3d rfoot_pos_lb = rfoot_pos0;
+  rfoot_pos_lb(0) -= EPSILON;
+  rfoot_pos_lb(1) -= EPSILON;
+  rfoot_pos_lb(2) -= EPSILON;
   Vector3d rfoot_pos_ub = rfoot_pos0;
+  rfoot_pos_ub(0) += EPSILON;
+  rfoot_pos_ub(1) += EPSILON;
+  rfoot_pos_ub(2) += EPSILON;
   WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
                                        rfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
@@ -211,7 +222,7 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
 
   // 8 Quasistatic constraint
   QuasiStaticConstraint kc_quasi(tree.get(), tspan);
-  kc_quasi.setShrinkFactor(0.2);
+  kc_quasi.setShrinkFactor(0.4);
   kc_quasi.setActive(true);
 
   auto leftFootPtr = tree->FindBody("leftFoot");
