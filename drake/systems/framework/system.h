@@ -54,7 +54,7 @@ struct DiscreteEvent {
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
   std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
-    nullptr};
+      nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -336,6 +336,51 @@ class System {
     return;
   }
 
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value, or nullptr if the port is not connected.
+  ///
+  /// Throws std::bad_cast if the port is not vector-valued.
+  /// Aborts if the port does not exist.
+  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
+                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalVectorInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value as an Eigen expression.
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
+      const Context<T>& context, int port_index) const {
+    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    return input_vector->get_value();
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
+  }
+
   /// Transforms the velocity to the derivative of the configuration.
   /// Generalized velocities (v) and configuration derivatives (qdot) are
   /// related linearly by `qdot = N(q) * v` (where `N` may be the identity
@@ -432,11 +477,11 @@ class System {
   /// @p endcode
   ///
   /// @tparam S The specific System pointer type to return.
-  template <template<typename> class S = ::drake::systems::System>
+  template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
       const System<double>& from) {
-    return std::unique_ptr<S<AutoDiffXd>>(dynamic_cast<S<AutoDiffXd>*>(
-        from.DoToAutoDiffXd()));
+    return std::unique_ptr<S<AutoDiffXd>>(
+        dynamic_cast<S<AutoDiffXd>*>(from.DoToAutoDiffXd()));
   }
 
   /// Declares that @p parent is the immediately enclosing Diagram. The
@@ -507,53 +552,6 @@ class System {
     return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
-public:
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value, or nullptr if the port is not connected.
-  ///
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an Eigen expression.
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
-      const Context<T>& context, int port_index) const {
-    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
-    return input_vector->get_value();
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value pointer, or nullptr if the port is not
-  /// connected.
-  const AbstractValue* EvalAbstractInput(const Context<T>& context,
-                                         int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value, or nullptr if the port is not connected.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(parent_,
-                                              get_input_port(port_index));
-  }
-
-protected:
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
