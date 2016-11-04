@@ -2,3 +2,17 @@
 # drake_add_matlab_test(NAME examples/Valkyrie/test/runValkyrieFastWalking REQUIRES gurobi lcm COMMAND runValkyrieFastWalking)
 # drake_add_matlab_test(NAME examples/Valkyrie/test/runValkyrieTurning REQUIRES gurobi lcm COMMAND runValkyrieTurning)
 # drake_add_matlab_test(NAME examples/Valkyrie/test/runValkyrieTurning270 REQUIRES gurobi lcm COMMAND runValkyrieTurning270)
+
+if(lcm_FOUND)
+    add_executable(valkyrie_ik_test valkyrie_IK_test.cc)
+    target_link_libraries(valkyrie_ik_test
+            drakeCommon
+            drakeIK
+            drakeLcm
+            drakeRigidBodyPlant
+            drakeSystemFramework
+            drakeSystemAnalysis
+            drakeRBM
+            GTest::GTest GTest::Main)
+    drake_add_test(NAME valkyrie_ik_test WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND valkyrie_ik_test)
+endif()
