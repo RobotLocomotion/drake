@@ -167,7 +167,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   // simplifications internally.
   ExpressionAddFactory add_factory{};
   if (lhs.get_kind() == ExpressionKind::Add) {
-    add_factory.Set(static_pointer_cast<ExpressionAdd>(lhs.ptr_));
+    add_factory = static_pointer_cast<ExpressionAdd>(lhs.ptr_);
     if (rhs.get_kind() == ExpressionKind::Add) {
       // 1. (e_1 + ... + e_n) + (e_{n+1} + ... + e_{m})
       // => (e_1 + ... + e_n + e_{n+1} + ... + e_{m})
@@ -179,7 +179,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   } else {
     if (rhs.get_kind() == ExpressionKind::Add) {
       // 3. lhs + (e_1 + ... + e_n)
-      add_factory.Set(static_pointer_cast<ExpressionAdd>(rhs.ptr_));
+      add_factory = static_pointer_cast<ExpressionAdd>(rhs.ptr_);
       add_factory.AddExpression(lhs);
     } else {
       // nothing to flatten: return lhs + rhs
@@ -349,7 +349,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (lhs.get_kind() == ExpressionKind::Mul) {
-    mul_factory.Set(static_pointer_cast<ExpressionMul>(lhs.ptr_));
+    mul_factory = static_pointer_cast<ExpressionMul>(lhs.ptr_);
     if (rhs.get_kind() == ExpressionKind::Mul) {
       //    (e_1 * ... * e_n) * (e_{n+1} * ... * e_{m})
       // => (e_1 * ... * e_n * e_{n*1} * ... * e_{m})
@@ -364,7 +364,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       //
       // Note that we do not preserve the original ordering because * is
       // associative.
-      mul_factory.Set(static_pointer_cast<ExpressionMul>(rhs.ptr_));
+      mul_factory = static_pointer_cast<ExpressionMul>(rhs.ptr_);
       mul_factory.AddExpression(lhs);
     } else {
       // simplification: x * x => x^2 (=pow(x,2))
@@ -662,16 +662,16 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
       add_e.term_to_coeff_map_.cbegin(), add_e.term_to_coeff_map_.cend(),
       [](const pair<Expression, double>& p1,
          const pair<Expression, double>& p2) {
-        const double coeff1 = p1.second;
-        const double coeff2 = p2.second;
+        const double coeff1{p1.second};
+        const double coeff2{p2.second};
         if (coeff1 < coeff2) {
           return true;
         }
         if (coeff2 < coeff1) {
           return false;
         }
-        const Expression& term1 = p1.first;
-        const Expression& term2 = p2.first;
+        const Expression& term1{p1.first};
+        const Expression& term2{p2.first};
         return term1.Less(term2);
       });
 }
@@ -758,9 +758,11 @@ void ExpressionAddFactory::Add(const shared_ptr<const ExpressionAdd> ptr) {
   AddMap(ptr->get_term_to_coeff_map());
 }
 
-void ExpressionAddFactory::Set(const shared_ptr<const ExpressionAdd> ptr) {
-  SetConstant(ptr->get_constant_term());
-  SetMap(ptr->get_term_to_coeff_map());
+ExpressionAddFactory& ExpressionAddFactory::operator=(
+    const shared_ptr<ExpressionAdd> ptr) {
+  constant_term_ = ptr->get_constant_term();
+  term_to_coeff_map_ = ptr->get_term_to_coeff_map();
+  return *this;
 }
 
 ExpressionAddFactory& ExpressionAddFactory::Negate() {
@@ -819,15 +821,6 @@ void ExpressionAddFactory::AddMap(
   for (const auto& p : term_to_coeff_map) {
     AddTerm(p.second, p.first);
   }
-}
-
-void ExpressionAddFactory::SetConstant(const double constant_term) {
-  constant_term_ = constant_term;
-}
-
-void ExpressionAddFactory::SetMap(
-    const map<Expression, double>& term_to_coeff_map) {
-  term_to_coeff_map_ = term_to_coeff_map;
 }
 
 ExpressionMul::ExpressionMul(const double constant_factor,
@@ -899,16 +892,16 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
       mul_e.term_to_exp_map_.cbegin(), mul_e.term_to_exp_map_.cend(),
       [](const pair<Expression, Expression>& p1,
          const pair<Expression, Expression>& p2) {
-        const Expression& base1 = p1.first;
-        const Expression& base2 = p2.first;
+        const Expression& base1{p1.first};
+        const Expression& base2{p2.first};
         if (base1.Less(base2)) {
           return true;
         }
         if (base2.Less(base1)) {
           return false;
         }
-        const Expression& exp1 = p1.second;
-        const Expression& exp2 = p2.second;
+        const Expression& exp1{p1.second};
+        const Expression& exp2{p2.second};
         return exp1.Less(exp2);
       });
 }
@@ -979,9 +972,11 @@ void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul> ptr) {
   AddMap(ptr->get_term_to_exp_map());
 }
 
-void ExpressionMulFactory::Set(const shared_ptr<const ExpressionMul> ptr) {
-  SetConstant(ptr->get_constant_factor());
-  SetMap(ptr->get_term_to_exp_map());
+ExpressionMulFactory& ExpressionMulFactory::operator=(
+    const shared_ptr<ExpressionMul> ptr) {
+  constant_factor_ = ptr->get_constant_factor();
+  term_to_exp_map_ = ptr->get_term_to_exp_map();
+  return *this;
 }
 
 Expression ExpressionMulFactory::GetExpression() const {
@@ -1043,15 +1038,6 @@ void ExpressionMulFactory::AddMap(
   for (const auto& p : term_to_exp_map) {
     AddTerm(p.first, p.second);
   }
-}
-
-void ExpressionMulFactory::SetConstant(const double constant_factor) {
-  constant_factor_ = constant_factor;
-}
-
-void ExpressionMulFactory::SetMap(
-    const map<Expression, Expression>& term_to_exp_map) {
-  term_to_exp_map_ = term_to_exp_map;
 }
 
 ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)

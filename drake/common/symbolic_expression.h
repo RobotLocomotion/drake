@@ -433,7 +433,7 @@ class ExpressionNeg : public UnaryExpressionCell {
   double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing addition.
+/** Symbolic expression representing addition (sum of products).
  *
  * It represents a summation of terms:
  * @f[
@@ -509,12 +509,14 @@ class ExpressionAddFactory {
   void AddExpression(const Expression& e);
   /** Adds ExpressionAdd pointed by @ptr to this factory. */
   void Add(std::shared_ptr<const ExpressionAdd> ptr);
-  /** Sets ExpressionAdd pointed by @ptr to this factory. */
-  void Set(std::shared_ptr<const ExpressionAdd> ptr);
+  /** Assigns a factory from a shared pointer to ExpressionAdd.  */
+  ExpressionAddFactory& operator=(std::shared_ptr<ExpressionAdd> ptr);
 
   /** Negates the expressions in factory.
    * If it represents c0 + c1 * t1 + ... + * cn * tn,
-   * this method flips it into -c0 - c1 * t1 - ... - cn * tn. */
+   * this method flips it into -c0 - c1 * t1 - ... - cn * tn.
+   * @returns *this.
+   */
   ExpressionAddFactory& Negate();
   /** Returns a symbolic expression. */
   Expression GetExpression() const;
@@ -526,16 +528,12 @@ class ExpressionAddFactory {
   void AddTerm(double coeff, const Expression& term);
   /* Adds term_to_coeff_map to this factory. */
   void AddMap(const std::map<Expression, double> term_to_coeff_map);
-  /* Sets constant_term in this factory. */
-  void SetConstant(double constant_term);
-  /* Sets term_to_coeff_map in this factory. */
-  void SetMap(const std::map<Expression, double>& term_to_coeff_map);
 
   double constant_term_{0.0};
   std::map<Expression, double> term_to_coeff_map_;
 };
 
-/** Symbolic expression representing multiplication.
+/** Symbolic expression representing multiplication of exponentiations.
  *
  * It represents a product of terms:
  * @f[
@@ -614,8 +612,8 @@ class ExpressionMulFactory {
   void AddExpression(const Expression& e);
   /** Adds ExpressionMul pointed by @ptr to this factory. */
   void Add(std::shared_ptr<const ExpressionMul> ptr);
-  /** Sets ExpressionMul pointed by @ptr in this factory. */
-  void Set(std::shared_ptr<const ExpressionMul> ptr);
+  /** Assigns a factory from a shared pointer to ExpressionMul.  */
+  ExpressionMulFactory& operator=(std::shared_ptr<ExpressionMul> ptr);
   /** Returns a symbolic expression. */
   Expression GetExpression() const;
 
@@ -626,10 +624,6 @@ class ExpressionMulFactory {
   void AddTerm(const Expression& base, const Expression& exp);
   /* Adds term_to_exp_map to this factory. */
   void AddMap(const std::map<Expression, Expression> term_to_exp_map);
-  /* Sets constant_term in this factory. */
-  void SetConstant(double constant_factor);
-  /* Sets term_to_exp_map in this factory. */
-  void SetMap(const std::map<Expression, Expression>& term_to_exp_map);
 
   double constant_factor_{1.0};
   std::map<Expression, Expression> term_to_exp_map_;
