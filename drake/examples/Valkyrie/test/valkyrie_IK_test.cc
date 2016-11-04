@@ -137,16 +137,12 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   Vector3d lfoot_pos_lb = lfoot_pos0;
   // Position and quaternion constraints are relaxed to make the problem
   // solvable by IPOPT.
-  lfoot_pos_lb(0) -= 0.0001;
-  lfoot_pos_lb(1) -= 0.0001;
-  lfoot_pos_lb(2) -= 0.0001;
+  lfoot_pos_lb -= 0.0001*Vector3d::Ones();
   Vector3d lfoot_pos_ub = lfoot_pos0;
-  lfoot_pos_ub(0) += 0.0001;
-  lfoot_pos_ub(1) += 0.0001;
-  lfoot_pos_ub(2) += 0.0001;
+  lfoot_pos_ub += 0.0001*Vector3d::Ones();
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
                                        lfoot_pos_ub, tspan);
-  double tol = 1.0 / 180 * M_PI;
+  double tol = 0.5 / 180 * M_PI;
   WorldQuatConstraint kc_lfoot_quat(tree.get(), l_foot, lfoot_quat, tol, tspan);
 
   // 3 Right foot position and orientation constraint
@@ -154,13 +150,10 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
   Vector4d rfoot_quat(1, 0, 0, 0);
   Vector3d rfoot_pos_lb = rfoot_pos0;
-  rfoot_pos_lb(0) -= 0.0001;
-  rfoot_pos_lb(1) -= 0.0001;
-  rfoot_pos_lb(2) -= 0.0001;
+  rfoot_pos_lb -= 0.0001*Vector3d::Ones();
   Vector3d rfoot_pos_ub = rfoot_pos0;
-  rfoot_pos_ub(0) += 0.0001;
-  rfoot_pos_ub(1) += 0.0001;
-  rfoot_pos_ub(2) += 0.0001;
+  rfoot_pos_ub += 0.0001*Vector3d::Ones();
+
   WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
                                        rfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
@@ -171,7 +164,7 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
   FindJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
   FindJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
-  Vector3d torso_nominal = Vector3d::Zero(3);
+  Vector3d torso_nominal = Vector3d::Zero();
   Vector3d torso_half_range(15.0 / 180 * M_PI, 25.0 / 180 * M_PI, inf);
   Vector3d torso_lb = torso_nominal - torso_half_range;
   Vector3d torso_ub = torso_nominal + torso_half_range;
@@ -183,11 +176,8 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   std::vector<int> knee_idx;
   FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
   FindJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
-  Vector2d knee_nominal(reach_start(knee_idx[0]), reach_start(knee_idx[1]));
-  Vector2d knee_lb = knee_nominal;
-  Vector2d knee_ub = knee_nominal;
-  knee_ub(0) += 108.9 / 180 * M_PI;
-  knee_ub(1) += 108.9 / 180 * M_PI;
+  Vector2d knee_lb(-4.0/180*M_PI, -4.0/180*M_PI);
+  Vector2d knee_ub(115.0/180*M_PI, 115.0/180*M_PI);
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
