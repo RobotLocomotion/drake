@@ -2,6 +2,7 @@
 # be included regardless of whether LCM is present.
 set(lcm_independent_header_files
     drake_lcm_interface.h
+    drake_lcm_message_handler_interface.h
     drake_mock_lcm.h)
 
 set(lcm_independent_source_files
