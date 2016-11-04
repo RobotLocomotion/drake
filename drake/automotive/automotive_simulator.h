@@ -50,13 +50,36 @@ class AutomotiveSimulator {
   /// LCM input and EulerFloatingJoint output.
   ///
   /// @pre Start() has NOT been called.
-  void AddSimpleCar();
+  ///
+  /// @param[in] sdf_filename The name of the SDF file to load as the
+  /// visualization for the simple car. This file must contain one free-floating
+  /// model of a vehicle (i.e., a model that's not connected to the world). A
+  /// floating joint of type systems::plants::joints::kRollPitchYaw is added to
+  /// connect the vehicle model to the world.
+  ///
+  /// @return The model instance ID of the SimpleCar that was just added to
+  /// the simulation.
+  int AddSimpleCarFromSdf(const std::string& sdf_filename);
 
   /// Adds a TrajectoryCar system to this simulation, including its
   /// EulerFloatingJoint output.
+  ///
   /// @pre Start() has NOT been called.
-  void AddTrajectoryCar(const Curve2<double>& curve, double speed,
-                        double start_time);
+  ///
+  /// @param[in] sdf_filename See the documentation for the parameter of the
+  /// same name in AddSimpleCarFromSdf().
+  ///
+  /// @param[in] curve See documentation of TrajectoryCar::TrajectoryCar.
+  ///
+  /// @param[in] speed See documentation of TrajectoryCar::TrajectoryCar.
+  ///
+  /// @param[in] start_time See documentation of TrajectoryCar::TrajectoryCar.
+  ///
+  /// @return The model instance ID of the TrajectoryCar that was just added to
+  /// the simulation.
+  int AddTrajectoryCarFromSdf(const std::string& sdf_filename,
+                              const Curve2<double>& curve, double speed,
+                              double start_time);
 
   /// Adds an LCM publisher for the given @p system.
   /// @pre Start() has NOT been called.
@@ -110,8 +133,8 @@ class AutomotiveSimulator {
 
  private:
   int allocate_vehicle_number();
-  void AddSdfModel(const std::string& sdf_filename,
-                   const SimpleCarToEulerFloatingJoint<T>*);
+  int AddSdfModel(const std::string& sdf_filename,
+                  const SimpleCarToEulerFloatingJoint<T>*);
 
   // Connects the systems that output the pose of each vehicle to the
   // visualizer. This is done by using multiplexers to connect systems that
