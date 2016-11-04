@@ -52,13 +52,13 @@ class Quadrotor : public systems::Diagram<T> {
         builder.template AddSystem<systems::DrakeVisualizer>(
             plant_->get_rigid_body_tree(), &lcm_);
 
-    std::cout << plant_->get_input_size();
     builder.Connect(source->get_output_port(), plant_->get_input_port(0));
     builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
 
     builder.BuildInto(this);
   }
 
+  // TODO(foehnph): dublicated, refactor into single location
   void AddGround(RigidBodyTree* tree) {
     double kBoxWidth = 1000;
     double kBoxDepth = 10;
@@ -83,12 +83,16 @@ class Quadrotor : public systems::Diagram<T> {
         this->GetMutableSubsystemContext(context, plant_);
     VectorX<T> x0(plant_->get_num_states());
     x0.setZero();
-    x0(2) = 0.2;  // Resting at 0.2 m above origin, horizontally forward.
+    /* x0 is the initial state where
+     * x0(0), x0(1), x0(2) are the quadrotor's x, y, z -states
+     * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
+     */
+    x0(2) = 0.2;  // setting arbitrary z-position
     plant_->set_state_vector(plant_context, x0);
   }
 
  private:
-  systems::RigidBodyPlant<T>* plant_;
+  systems::RigidBodyPlant<T>* plant_{};
   lcm::DrakeLcm lcm_;
 };
 
