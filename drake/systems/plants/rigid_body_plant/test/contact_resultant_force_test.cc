@@ -308,6 +308,47 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalNonPlanarPointTest) {
   ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
 }
 
+// Confirms that the point returned and the normal direction properly defines
+// the central axis.  Tests that any point displaced from the application
+// point along the force's normal direction produces the same moment.
+// Technically, it doesn't prove *all* points, but simply samples points.
+GTEST_TEST(ContactResultantForceTest, ValidCentralAxisTest) {
+  // Use the same skewed example from Paul Mitiguy's book as used in
+  // SkewNormalNonPlanarPointTest
+  Vector3<double> p1, p2, f1, n1, f2, n2;
+  const Vector3<double> zero = Vector3<double>::Zero();
+  p1 << -3, 0, 0;
+  p2 << 0, 1, -1;
+  f1 << 3, 0, 0;
+  n1 = f1.normalized();
+  f2 << 0, 0, 1;
+  n2 = f2.normalized();
+
+  ContactResultantForceCalculator<double> calc;
+  calc.AddForce(p1, n1, f1, zero);
+  calc.AddForce(p2, n2, f2, zero);
+  ContactForce<double> resultant = calc.ComputeResultant();
+
+  // first identify the origin used.
+  Vector3<double> point = resultant.get_application_point();
+  Vector3<double> normal_force = resultant.get_normal_force();
+  Vector3<double> origin;
+  if (abs((p1 - point).dot(normal_force)) < 1e-14) {
+    origin = p1;
+  } else if (abs((p2 - point).dot(normal_force)) < 1e-14) {
+    origin = p2;
+  } else {
+    ASSERT_NO_FATAL_FAILURE("Unable to identify origin");
+  }
+
+  Vector3<double> base_moment = (point - origin).cross(normal_force);
+  double offsets[] = {-3.0, -1.0, 1.0, 2.5};
+  for (int i = 0; i < 4; ++i) {
+    Vector3<double> p = point + normal_force * offsets[i];
+    Vector3<double> test_moment = (p - origin).cross(normal_force);
+    ASSERT_TRUE(AreEquivalent(test_moment, base_moment));
+  }
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake
