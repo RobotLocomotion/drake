@@ -65,6 +65,173 @@ class SymbolicFormulaTest : public ::testing::Test {
   const Environment env4_{{var_x_, -1}, {var_y_, -1}};
 };
 
+TEST_F(SymbolicFormulaTest, LessTrueFalse) {
+  EXPECT_FALSE(Formula::False().Less(Formula::False()));
+  EXPECT_TRUE(Formula::False().Less(Formula::True()));
+  EXPECT_FALSE(Formula::True().Less(Formula::False()));
+  EXPECT_FALSE(Formula::True().Less(Formula::True()));
+}
+
+TEST_F(SymbolicFormulaTest, LessEq) {
+  const Formula f1{x_ == y_};
+  const Formula f2{x_ == z_};
+  const Formula f3{y_ == z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessNeq) {
+  const Formula f1{x_ != y_};
+  const Formula f2{x_ != z_};
+  const Formula f3{y_ != z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessGt) {
+  const Formula f1{x_ > y_};
+  const Formula f2{x_ > z_};
+  const Formula f3{y_ > z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessGeq) {
+  const Formula f1{x_ >= y_};
+  const Formula f2{x_ >= z_};
+  const Formula f3{y_ >= z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessLt) {
+  const Formula f1{x_ < y_};
+  const Formula f2{x_ < z_};
+  const Formula f3{y_ < z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessLeq) {
+  const Formula f1{x_ <= y_};
+  const Formula f2{x_ <= z_};
+  const Formula f3{y_ <= z_};
+
+  EXPECT_FALSE(f1.Less(f1));
+  EXPECT_TRUE(f1.Less(f2));
+  EXPECT_TRUE(f1.Less(f3));
+  EXPECT_FALSE(f2.Less(f1));
+  EXPECT_FALSE(f2.Less(f2));
+  EXPECT_TRUE(f2.Less(f3));
+  EXPECT_FALSE(f3.Less(f1));
+  EXPECT_FALSE(f3.Less(f2));
+  EXPECT_FALSE(f3.Less(f3));
+}
+
+TEST_F(SymbolicFormulaTest, LessAnd) {
+  const Formula and1{f1_ && f2_ && f3_};
+  const Formula and2{f1_ && f3_};
+  const Formula and3{f2_ && f3_};
+
+  EXPECT_FALSE(and1.Less(and1));
+  EXPECT_TRUE(and1.Less(and2));
+  EXPECT_TRUE(and1.Less(and3));
+  EXPECT_FALSE(and2.Less(and1));
+  EXPECT_FALSE(and2.Less(and2));
+  EXPECT_TRUE(and2.Less(and3));
+  EXPECT_FALSE(and3.Less(and1));
+  EXPECT_FALSE(and3.Less(and2));
+  EXPECT_FALSE(and3.Less(and3));
+}
+
+TEST_F(SymbolicFormulaTest, LessOr) {
+  const Formula or1{f1_ || f2_ || f3_};
+  const Formula or2{f1_ || f3_};
+  const Formula or3{f2_ || f3_};
+
+  EXPECT_FALSE(or1.Less(or1));
+  EXPECT_TRUE(or1.Less(or2));
+  EXPECT_TRUE(or1.Less(or3));
+  EXPECT_FALSE(or2.Less(or1));
+  EXPECT_FALSE(or2.Less(or2));
+  EXPECT_TRUE(or2.Less(or3));
+  EXPECT_FALSE(or3.Less(or1));
+  EXPECT_FALSE(or3.Less(or2));
+  EXPECT_FALSE(or3.Less(or3));
+}
+
+TEST_F(SymbolicFormulaTest, LessNot) {
+  const Formula not1{!f1_};
+  const Formula not2{!f2_};
+  const Formula not3{!f3_};
+
+  EXPECT_FALSE(not1.Less(not1));
+  EXPECT_TRUE(not1.Less(not2));
+  EXPECT_TRUE(not1.Less(not3));
+  EXPECT_FALSE(not2.Less(not1));
+  EXPECT_FALSE(not2.Less(not2));
+  EXPECT_TRUE(not2.Less(not3));
+  EXPECT_FALSE(not3.Less(not1));
+  EXPECT_FALSE(not3.Less(not2));
+  EXPECT_FALSE(not3.Less(not3));
+}
+
+TEST_F(SymbolicFormulaTest, LessForall) {
+  const Formula forall1{forall({var_x_, var_y_}, f1_)};
+  const Formula forall2{forall({var_x_, var_y_, var_z_}, f1_)};
+  const Formula forall3{forall({var_x_, var_y_, var_z_}, f2_)};
+
+  EXPECT_FALSE(forall1.Less(forall1));
+  EXPECT_TRUE(forall1.Less(forall2));
+  EXPECT_TRUE(forall1.Less(forall3));
+  EXPECT_FALSE(forall2.Less(forall1));
+  EXPECT_FALSE(forall2.Less(forall2));
+  EXPECT_TRUE(forall2.Less(forall3));
+  EXPECT_FALSE(forall3.Less(forall1));
+  EXPECT_FALSE(forall3.Less(forall2));
+  EXPECT_FALSE(forall3.Less(forall3));
+}
+
 TEST_F(SymbolicFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
 
 TEST_F(SymbolicFormulaTest, False) {
