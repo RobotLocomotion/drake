@@ -192,7 +192,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
         CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
   });
 }
-/*
+
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;
 
@@ -207,6 +207,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars.value()(1), 1);
   });
 }
+
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
@@ -528,6 +529,7 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
   auto x = prog.AddContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
 
+  prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
@@ -605,20 +607,16 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   prog.AddConstraint(qp_con, {y});
   prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {x});
+      -std::numeric_limits<double>::infinity(), 4, {x});
   prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {y});
+      -std::numeric_limits<double>::infinity(), 4, {y});
   prog.AddLinearConstraint(
       Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {x});
+      -std::numeric_limits<double>::infinity(), 6, {x});
   prog.AddLinearConstraint(
       Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {y});
+      -std::numeric_limits<double>::infinity(), 6, {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
@@ -638,7 +636,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
                                 MatrixCompareType::absolute));
   });
 }
-
+/*
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
