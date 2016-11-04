@@ -460,20 +460,23 @@ class MathematicalProgram {
     std::vector<std::string> names = std::vector<std::string>(rows, name);
     return AddBinaryVariables(rows, 1, names);
   }
+
   /**
    * @param name of the variable.
-   * @return A DecisionVariableMatrix that contains only one decision variable,
-   * which is the first one with name equal to
-   * \param name.
+   * @return A DecisionVariableMatrix that contains all decision variables,
+   * whose name equals to \param name.
    */
   const DecisionVariableMatrix GetVariable(const std::string& name) const {
+    std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
     for (auto& var : variables_) {
       if (name.compare(var->name()) == 0) {
-        std::weak_ptr<const DecisionVariableScalar> var_weak_ptr(var);
-        return DecisionVariableMatrix(1, 1, {var_weak_ptr});
+        vars.push_back(std::weak_ptr<const DecisionVariableScalar>(var));
       }
     }
-    throw std::runtime_error("unable to find variable: " + name);
+    if (vars.empty()) {
+      throw std::runtime_error("unable to find variable: " + name);
+    }
+    return DecisionVariableMatrix(vars.size(), 1, vars);
   }
 
   //    const DecisionVariable& AddIntegerVariables(size_t num_new_vars,
