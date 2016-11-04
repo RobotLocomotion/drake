@@ -49,7 +49,7 @@ class DRAKE_EXPORT ContactForce {
    component to be zero.
 
    @param application_point         The point at which the wrench is applied.
-   @param normal                    The translational force's  unit-length normal
+   @param normal                    The translational force's unit-length normal
                                     direction.
    @param force                     The translational force.
    */
