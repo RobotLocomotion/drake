@@ -92,9 +92,9 @@ class DRAKE_EXPORT Formula {
   Variables GetFreeVariables() const;
   /** Checks structural equality*/
   bool EqualTo(const Formula& f) const;
-  /** Checks ordering between this and @p e. This function is used as a compare
-   * function in std::map<symbolic::Formula> and std::set<symbolic::Formula> via
-   * std::less<symbolic::Formula>. */
+  /** Checks lexicographical ordering between this and @p e. This function is
+   * used as a compare function in std::map<symbolic::Formula> and
+   * std::set<symbolic::Formula> via std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
   /** Evaluates under a given environment (by default, an empty environment)*/
   bool Evaluate(const Environment& env = Environment{}) const;

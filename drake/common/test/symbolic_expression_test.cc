@@ -186,7 +186,7 @@ TEST_F(SymbolicExpressionTest, Add1) {
 TEST_F(SymbolicExpressionTest, Add2) {
   Expression e1{x_ + y_};
   Expression e2{e1 + e1};
-  const auto str_rep_e2 = e2.to_string();
+  const auto str_rep_e2(e2.to_string());
   EXPECT_PRED2(ExpEqual, e2, 2 * x_ + 2 * y_);
   e1 += z_;
   EXPECT_PRED2(ExpEqual, e1, x_ + y_ + z_);
@@ -326,10 +326,10 @@ TEST_F(SymbolicExpressionTest, Mul2) {
 }
 
 TEST_F(SymbolicExpressionTest, Mul3) {
-  const Expression e1 = x_ * x_ * x_ * x_;
-  const Expression e2 = (x_ * x_) * (x_ * x_);
-  const Expression e3 = x_ * (x_ * x_ * x_);
-  const Expression e4 = pow(x_, 4);
+  const Expression e1{x_ * x_ * x_ * x_};
+  const Expression e2{(x_ * x_) * (x_ * x_)};
+  const Expression e3{x_ * (x_ * x_ * x_)};
+  const Expression e4{pow(x_, 4)};
   EXPECT_PRED2(ExpEqual, e1, e4);
   EXPECT_PRED2(ExpEqual, e2, e4);
   EXPECT_PRED2(ExpEqual, e3, e4);
@@ -371,16 +371,16 @@ TEST_F(SymbolicExpressionTest, Mul5) {
 }
 
 TEST_F(SymbolicExpressionTest, AddMul1) {
-  const Expression e1 = (x_ * y_ * y_ * x_) + (x_ * y_ * x_ * y_);
+  const Expression e1{(x_ * y_ * y_ * x_) + (x_ * y_ * x_ * y_)};
   EXPECT_PRED2(ExpEqual, e1, 2 * pow(x_, 2) * pow(y_, 2));
 
-  const Expression e2 = x_ + y_ + (-x_);
+  const Expression e2{x_ + y_ + (-x_)};
   EXPECT_PRED2(ExpEqual, e2, y_);
 
-  const Expression e3 = (2 * x_) + (3 * x_);
+  const Expression e3{(2 * x_) + (3 * x_)};
   EXPECT_PRED2(ExpEqual, e3, 5 * x_);
 
-  const Expression e4 = (x_ * 2 * x_) + (x_ * x_ * 3);
+  const Expression e4{(x_ * 2 * x_) + (x_ * x_ * 3)};
   EXPECT_PRED2(ExpEqual, e4, 5 * x_ * x_);
 }
 
