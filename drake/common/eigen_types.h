@@ -88,9 +88,9 @@ using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 /// A column vector consisting of one wrench.
 /// This is the classical definition of a wrench: an encoding of a translational
 /// force (`f`) applied at a positional vector (`r`).  The column vector is a
-/// concatenation of a moment and the force: `[r X f, f]^T`.  By implication,
-/// its definition is predicated on the definition of `r`, and the origin from
-/// which `r` is measured.
+/// concatenation of a moment and the force: `[r X f, f]^T`.  Its definition
+/// therefore depends on the point of application of the force ('r') and a
+/// point around which torque is computed."
 template <typename Scalar>
 using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 
