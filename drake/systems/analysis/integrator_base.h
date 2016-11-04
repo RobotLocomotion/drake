@@ -170,7 +170,10 @@ class IntegratorBase {
    * context must be set before Initialize() is called (or an std::logic_error
    * will be thrown). If Initialize() is not called, an exception will be
    * thrown when attempting to call StepOnceAtMost().
-   * @throws std::logic_error If the context has not been set.
+   * @throws std::logic_error If the context has not been set or one of the
+   *         scaling matrix coefficients is set to a negative value (this
+   *         check is only performed for integrators that support error
+   *         estimation).
    */
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
@@ -187,6 +190,10 @@ class IntegratorBase {
       const int misc_size = contstate->get_misc_continuous_state().size();
       if (v_scal_.size() != gv_size) v_scal_.setOnes(gv_size);
       if (z_scal_.size() != misc_size) z_scal_.setOnes(misc_size);
+
+      // Verify that minimum values of the scaling matrices are non-negative.
+      if (v_scal_.minCoeff() < 0 || z_scal_.minCoeff() < 0)
+        throw std::logic_error("Scaling coefficient is less than zero.")
     }
 
     // Call the derived integrator initialization routine (if any)
@@ -477,6 +484,12 @@ class IntegratorBase {
    * singularities, yet three velocity variables can repesent angular velocity
    * in 3D without singularities.
    *
+   * Finally, note that a diagonal entry of one of the scaling matrices can
+   * be set to zero to disable error estimation for that state variable
+   * (i.e., auxiliary variable or configuration/velocity variable pair), but
+   * that setting an entry to a negative value will cause an exception to be
+   * thrown when the integrator is initialized.
+   *
    * - [Nikravesh 1988] P. Nikravesh. Computer-Aided  Analysis of Mechanical
    *     Systems. Prentice Hall, 1988. Sec. 6.3.
    * - [Sherman 2011]   M. Sherman, et al. Procedia IUTAM 2:241-261 (2011),
@@ -499,8 +512,10 @@ class IntegratorBase {
    *  integrators that support accuracy estimation. Returns a VectorBlock
    *  to make the values mutable without permitting changing the size of
    *  the vector. Requires re-initializing the integrator after calling
-   *  this method; ifInitialize() is not called afterward, an exception will be
-   *  thrown when attempting to call StepOnceAtMost().
+   *  this method; if Initialize() is not called afterward, an exception will be
+   *  thrown when attempting to call StepOnceAtMost(). If the caller sets
+   *  one of the entries to a negative value, an exception will be thrown
+   *  when the integrator is initialized.
    */
   Eigen::VectorBlock<Eigen::VectorXd>
     get_mutable_generalized_state_scaling_vector() {
@@ -524,7 +539,9 @@ class IntegratorBase {
    *  to make the values mutable without permitting changing the size of
    *  the vector. Requires re-initializing the integrator after calling this
    *  method. If Initialize() is not called afterward, an exception will be
-   *  thrown when attempting to call StepOnceAtMost().
+   *  thrown when attempting to call StepOnceAtMost(). If the caller sets
+   *  one of the entries to a negative value, an exception will be thrown
+   *  when the integrator is initialized.
    */
   Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_scaling_vector() {
     initialization_done_ = false;
