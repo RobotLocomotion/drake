@@ -143,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
-  auto xhead = x.block(0, 0, 3, 1);
+  auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
@@ -636,7 +636,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
                                 MatrixCompareType::absolute));
   });
 }
-/*
+
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
@@ -733,7 +733,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
             nullptr);
   // Check that it gives the correct answer as well.
   RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(x_var.value()[0], 2, kEpsilon); });
+                      [&]() { EXPECT_NEAR(x_var.value(0), 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -762,7 +762,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+      EXPECT_NEAR(x_var.value(0), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
       // the nlopt wrapper supports those.
     });
@@ -780,8 +780,8 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var.value(0), 1, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
     });
   }
 
@@ -798,11 +798,11 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
-      EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+      EXPECT_NEAR(xy_var.value(0), 1, 0.2);
+      EXPECT_NEAR(xy_var.value(1), -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
-          {x.GetSimpleVariable(), xy_var.value()[0]},
-          {y.GetSimpleVariable(), xy_var.value()[1]}};
+          {x.GetSimpleVariable(), xy_var.value(0)},
+          {y.GetSimpleVariable(), xy_var.value(1)}};
       EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
     });
   }
@@ -824,8 +824,8 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var.value(0), -0.7, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
     });
   }
 }
@@ -967,7 +967,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   const int xDim = A.cols();
   MathematicalProgram prog_lorentz;
   auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
-  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
+  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim,  "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
   prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
   prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
@@ -1063,7 +1063,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
 }
-*/
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

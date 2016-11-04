@@ -268,9 +268,9 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   int num_states() const { return num_states_; }
   int N() const { return N_; }
   MathematicalProgram* opt_problem() { return &opt_problem_; }
-  const DecisionVariableView& h_vars() const { return h_vars_; }
-  const DecisionVariableView& u_vars() const { return u_vars_; }
-  const DecisionVariableView& x_vars() const { return x_vars_; }
+  const DecisionVariableMatrix& h_vars() const { return h_vars_; }
+  const DecisionVariableMatrix& u_vars() const { return u_vars_; }
+  const DecisionVariableMatrix& x_vars() const { return x_vars_; }
 
  private:
   /**
@@ -296,10 +296,10 @@ class DRAKE_EXPORT DirectTrajectoryOptimization {
   const int N_;  // Number of time samples
 
   MathematicalProgram opt_problem_;
-  DecisionVariableView h_vars_;  // Time deltas between each
+  DecisionVariableMatrix h_vars_;  // Time deltas between each
                                  // input/state sample.
-  DecisionVariableView u_vars_;
-  DecisionVariableView x_vars_;
+  DecisionVariableMatrix u_vars_;
+  DecisionVariableMatrix x_vars_;
 };
 
 }  // namespace solvers

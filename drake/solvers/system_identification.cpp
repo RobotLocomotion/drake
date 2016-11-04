@@ -309,7 +309,7 @@ SystemIdentification<T>::EstimateParameters(
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
       Eigen::VectorXd::Zero(num_err_terms),
-      std::list<DecisionVariableView> { error_variables });
+      std::vector<DecisionVariableMatrix> { error_variables });
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();
@@ -320,11 +320,11 @@ SystemIdentification<T>::EstimateParameters(
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    estimates[var] = parameter_variables.value()[i];
+    estimates[var] = parameter_variables.value(i);
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += error_variables.value()[i] * error_variables.value()[i];
+    error_squared += error_variables.value(i) * error_variables.value(i);
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));
