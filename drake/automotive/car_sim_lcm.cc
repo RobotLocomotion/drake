@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 
   // Instantiates a RigidBodyPlant to simulate the model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(rigid_body_tree));
-  plant->set_contact_parameters(100000.0 /* penetration_stiffness */,
+  plant->set_contact_parameters(1000000.0 /* penetration_stiffness */,
       2000.0 /* penetration_damping */, 10.0 /* friction_coefficient */);
 
   // Instantiates a PID controller for controlling the actuators in the

@@ -114,7 +114,7 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
 }
 
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
-  rigid_body_sys->penetration_stiffness = 100000.0;
+  rigid_body_sys->penetration_stiffness = 1000000.0;
   rigid_body_sys->penetration_damping = 2000.0;
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
 }
