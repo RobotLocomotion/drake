@@ -193,7 +193,7 @@ class IntegratorBase {
 
       // Verify that minimum values of the scaling matrices are non-negative.
       if (v_scal_.minCoeff() < 0 || z_scal_.minCoeff() < 0)
-        throw std::logic_error("Scaling coefficient is less than zero.")
+        throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
     // Call the derived integrator initialization routine (if any)

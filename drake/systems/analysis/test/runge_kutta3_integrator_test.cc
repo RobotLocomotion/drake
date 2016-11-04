@@ -80,11 +80,11 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   RungeKutta3Integrator<double> integrator(
       spring_mass, context.get());  // Use default Context.
 
-  // Set integrator parameters.
+  // Set integrator parameters: do no error control.
   const double DT = 1e-3;
   integrator.set_maximum_step_size(DT);
   integrator.set_minimum_step_size(DT);
-  integrator.set_target_accuracy(1e-5);
+  integrator.set_target_accuracy(1.0);
 
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
