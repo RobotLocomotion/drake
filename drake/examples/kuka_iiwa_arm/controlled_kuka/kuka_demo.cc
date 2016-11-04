@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
-#include <gtest/gtest.h>
 
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
@@ -11,12 +11,15 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
+#include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
@@ -34,16 +37,19 @@ using Eigen::VectorXi;
 using Eigen::MatrixXd;
 using std::make_unique;
 using std::move;
+using std::string;
 using std::unique_ptr;
 
 namespace drake {
 
+using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::GravityCompensator;
+using systems::Multiplexer;
 using systems::PidControlledSystem;
 using systems::RigidBodyPlant;
 using systems::Simulator;
@@ -54,10 +60,11 @@ namespace kuka_iiwa_arm {
 namespace controlled_kuka {
 namespace {
 
+const string kUrdfPath { "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf" };
+
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
-  RigidBodyTree<double> tree(
-      drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::multibody::joints::kFixed);
+  RigidBodyTree<double> tree(drake::GetDrakePath() + kUrdfPath,
+                             drake::multibody::joints::kFixed);
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
@@ -147,10 +154,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   std::vector<PPMatrix> polys;
   std::vector<double> times;
 
-  MatrixXd traj(tree.get_num_positions() + tree.get_num_velocities(),
-                 kNumTimesteps);
-  traj.setZero();
-  traj.block(0, 0, tree.get_num_positions(), kNumTimesteps) = q_sol;
+  MatrixXd traj = q_sol;
 
   // For each timestep, creates a PolynomialMatrix for each joint position.
   // Each column of traj represents a particular time, and the rows of that
@@ -193,8 +197,7 @@ class KukaDemo : public systems::Diagram<T> {
     // Instantiates an Multibody Dynamics (MBD) model of the world.
     auto rigid_body_tree = make_unique<RigidBodyTree<T>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-        "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+        drake::GetDrakePath() + kUrdfPath,
         drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
@@ -222,6 +225,23 @@ class KukaDemo : public systems::Diagram<T> {
     controller_ = builder.template AddSystem<PidControlledSystem<T>>(
         std::move(plant), kp, ki, kd);
 
+    // The iiwa's control protocol doesn't have any way to express the
+    // desired velocity for the arm, so this simulation doesn't take
+    // target velocities as an input.  The PidControlledSystem does
+    // want target velocities to calculate the D term.  Since we don't
+    // have any logic to calculate the desired target velocity (yet!)
+    // set the D term (to stabilize the arm near the commanded
+    // position) and feed a desired velocity vector of zero.
+    auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
+        Eigen::VectorXd::Zero(plant_->get_num_velocities()));
+    auto input_mux = builder.template AddSystem<Multiplexer<T>>(
+        std::vector<int>{plant_->get_num_positions(),
+                         plant_->get_num_velocities()});
+    builder.Connect(zero_source->get_output_port(),
+                    input_mux->get_input_port(1));
+    builder.Connect(input_mux->get_output_port(0),
+                    controller_->get_input_port(1));
+
     gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
         plant_->get_rigid_body_tree());
 
@@ -242,10 +262,8 @@ class KukaDemo : public systems::Diagram<T> {
     viz_publisher_ = builder.template AddSystem<DrakeVisualizer>(
         plant_->get_rigid_body_tree(), &lcm_);
 
-    // Generates an error signal for the PID controller by subtracting the
-    // desired plan state from the RigidBodyPlant's (iiwa arm) state.
     builder.Connect(desired_plan_->get_output_port(0),
-                    controller_->get_input_port(1));
+                    input_mux->get_input_port(0));
 
     // Splits the RBP output into positions (q) and velocities (v).
     builder.Connect(controller_->get_output_port(0),
@@ -309,7 +327,6 @@ int DoMain() {
 
   simulator.Initialize();
 
-  // Simulate for 20 seconds.
   simulator.StepTo(FLAGS_simulation_sec);
 
   return 0;
