@@ -67,9 +67,9 @@ MathematicalProgram::MathematicalProgram()
       //nlopt_solver_(new NloptSolver()),
       //snopt_solver_(new SnoptSolver()),
       //moby_lcp_solver_(new MobyLCPSolver()),
-      linear_system_solver_(new LinearSystemSolver())
+      linear_system_solver_(new LinearSystemSolver()),
       //equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      //gurobi_solver_(new GurobiSolver()),
+      gurobi_solver_(new GurobiSolver())
       //mosek_solver_(new MosekSolver()) {}
 {}
 
@@ -94,10 +94,10 @@ SolutionResult MathematicalProgram::Solve() {
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.
     return mosek_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
+  } */else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
+  } /*else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
