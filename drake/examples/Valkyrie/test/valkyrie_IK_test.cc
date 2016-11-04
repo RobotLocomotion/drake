@@ -239,7 +239,7 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
 
   IKoptions ikoptions(tree.get());
   VectorXd q_sol(tree->get_num_positions());
-  VectorXd q_nom = VectorXd::Zero(tree->get_num_positions());
+  VectorXd q_nom = reach_start;
   int info;
   std::vector<std::string> infeasible_constraint;
   inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),
