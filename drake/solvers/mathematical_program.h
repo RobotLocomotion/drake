@@ -354,6 +354,53 @@ class MathematicalProgram {
    * The new variables are uninitialized: callers are expected to add costs
    * and/or constraints to have any effect during optimization.
    * @param rows  The number of rows in the new variables.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x 1, containing the new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddContinuousVariables(2, 1 {"x1", "x2"});
+   * @endcode
+   * This adds a 2 x 1 vector decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, const std::vector<std::string>& names) {
+    return AddContinuousVariables(rows, 1, names);
+  }
+
+  /// Add continuous variables to this MathematicalProgram.
+  /**
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param rows  The number of rows in the new variables.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x 1, containing the new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddContinuousVariables(2, 1 {"x1", "x2"});
+   * @endcode
+   * This adds a 2 x 1 vector decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  const DecisionVariableMatrix AddContinuousVariables(std::size_t rows) {
+    std::vector<std::string> names(rows, "x");
+    return AddContinuousVariables(rows, names);
+  }
+
+  /// Add continuous variables to this MathematicalProgram.
+  /**
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
    * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
@@ -1349,17 +1396,17 @@ class MathematicalProgram {
   std::map<std::string, std::map<std::string, std::string>> solver_options_str_;
 
   AttributesSet required_capabilities_{0};
-  /*
+
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
+  //std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
+  //std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
+  //std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface>
-      equality_constrained_qp_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
-*/
+  //std::unique_ptr<MathematicalProgramSolverInterface>
+  //    equality_constrained_qp_solver_;
+  //std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
+  //std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+
   /**
    * Add variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
@@ -1383,7 +1430,7 @@ class MathematicalProgram {
                                             std::vector<std::string> names ) {
 
     int num_new_vars = rows * cols;
-    DRAKE_ASSERT(names.size() == num_new_vars);
+    DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     variables_.reserve(num_vars_ + num_new_vars);
     std::vector<std::weak_ptr<const DecisionVariableScalar>> variables_weak_ptr;
     variables_weak_ptr.reserve(num_new_vars);
@@ -1396,6 +1443,7 @@ class MathematicalProgram {
 
     DecisionVariableMatrix v_matrix(rows, cols, variables_weak_ptr);
     num_vars_ += num_new_vars;
+    x_initial_guess_.conservativeResize(num_vars_);
     variable_views_.push_back(v_matrix);
 
     return variable_views_.back();
