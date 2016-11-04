@@ -11,6 +11,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/gain.h"
 #include "drake/systems/framework/primitives/integrator.h"
+#include "drake/systems/framework/primitives/zero_order_hold.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 
 namespace drake {
@@ -624,6 +625,113 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
                 diagram->integrator0(), diagram->integrator1(),
             }),
             diagram->GetSystems());
+}
+
+// A diagram that has difference state.
+class DifferenceStateDiagram : public Diagram<double> {
+ public:
+  DifferenceStateDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    hold1_ = builder.template AddSystem<ZeroOrderHold<double>>(2.0, kSize);
+    hold2_ = builder.template AddSystem<ZeroOrderHold<double>>(3.0, kSize);
+    builder.ExportInput(hold1_->get_input_port(0));
+    builder.ExportInput(hold2_->get_input_port(0));
+    builder.BuildInto(this);
+  }
+
+  ZeroOrderHold<double>* hold1() { return hold1_; }
+  ZeroOrderHold<double>* hold2() { return hold2_; }
+
+ private:
+  const int kSize = 1;
+  ZeroOrderHold<double>* hold1_ = nullptr;
+  ZeroOrderHold<double>* hold2_ = nullptr;
+};
+
+class DifferenceStateTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    context_ = diagram_.CreateDefaultContext();
+    context_->FixInputPort(0, BasicVector<double>::Make({17.0}));
+    context_->FixInputPort(1, BasicVector<double>::Make({23.0}));
+  }
+
+ protected:
+  DifferenceStateDiagram diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Tests that the next update time after 0.05 is 2.0.
+TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold1) {
+  context_->set_time(0.05);
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+
+  EXPECT_EQ(2.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that the next update time after 5.1 is 6.0.
+TEST_F(DifferenceStateTest, CalcNextUpdateTimeHold2) {
+  context_->set_time(5.1);
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+
+  // Even though two subsystems are updating, there is only one update action
+  // on the Diagram.
+  EXPECT_EQ(6.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+  EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that on the 9-second tick, only hold2 latches its inputs. Then, on
+// the 12-second tick, both hold1 and hold2 latch their inputs.
+TEST_F(DifferenceStateTest, UpdateDifferenceVariables) {
+  // Initialize the zero-order holds to different values than their input ports.
+  Context<double>* ctx1 =
+      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold1());
+  ctx1->get_mutable_difference_state(0)->SetAtIndex(0, 1001.0);
+  Context<double>* ctx2 =
+      diagram_.GetMutableSubsystemContext(context_.get(), diagram_.hold2());
+  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+
+  // Allocate the difference variables.
+  std::unique_ptr<DifferenceState<double>> updates =
+      diagram_.AllocateDifferenceVariables();
+
+  // Set the time to 8.5, so only hold2 updates.
+  context_->set_time(8.5);
+
+  // Request the next update time.
+  UpdateActions<double> actions;
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+  EXPECT_EQ(9.0, actions.time);
+  ASSERT_EQ(1u, actions.events.size());
+
+  // Fast forward to 9.0 sec and do the update.
+  context_->set_time(9.0);
+  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
+  context_->get_mutable_difference_state()->SetFrom(*updates);
+  EXPECT_EQ(1001.0, ctx1->get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
+
+  // Restore hold2 to its original value.
+  ctx2->get_mutable_difference_state(0)->SetAtIndex(0, 1002.0);
+  // Set the time to 11.5, so both hold1 and hold2 update.
+  context_->set_time(11.5);
+  diagram_.CalcNextUpdateTime(*context_, &actions);
+  EXPECT_EQ(12.0, actions.time);
+  // A single update event on the Diagram is expanded to update events on
+  // each constituent system.
+  ASSERT_EQ(1u, actions.events.size());
+
+  // Fast forward to 12.0 sec and do the update again.
+  context_->set_time(12.0);
+  diagram_.EvalDifferenceUpdates(*context_, actions.events[0], updates.get());
+  context_->get_mutable_difference_state()->SetFrom(*updates);
+  EXPECT_EQ(17.0, ctx1->get_difference_state(0)->GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2->get_difference_state(0)->GetAtIndex(0));
 }
 
 }  // namespace

@@ -54,6 +54,10 @@ class DifferenceState {
     return static_cast<int>(data_.size());
   }
 
+  const std::vector<BasicVector<T>*>& get_data() const {
+    return data_;
+  }
+
   const BasicVector<T>* get_difference_state(int index) const {
     DRAKE_ASSERT(index >= 0 && index < size());
     return data_[index];
