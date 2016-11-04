@@ -7,40 +7,37 @@ namespace systems {
 
 template <typename T>
 ContactInfo<T>::ContactInfo(DrakeCollision::ElementId element1,
-                            DrakeCollision::ElementId element2,
-                            std::unique_ptr<ContactManifold<T>> manifold)
+                            DrakeCollision::ElementId element2)
     : element1_(element1),
       element2_(element2),
-      contact_manifold_(move(manifold)) {}
+      resultant_force_(),
+      contact_details_() {}
 
 template <typename T>
 ContactInfo<T>::ContactInfo(const ContactInfo<T>& other)
     : element1_(other.element1_),
       element2_(other.element2_),
-      contact_manifold_(move(other.contact_manifold_->Clone())) {}
+      resultant_force_(move(other.resultant_force_)) {
+  contact_details_.reserve(other.contact_details_.size());
+  for (const auto& detail : other.contact_details_) {
+    std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
+    contact_details_.push_back(std::move(copy));
+  }
+}
 
 template <typename T>
 ContactInfo<T>& ContactInfo<T>::operator=(const ContactInfo<T>& other) {
   if (this == &other) return *this;
   element1_ = other.element1_;
   element2_ = other.element2_;
-  contact_manifold_ = move(other.contact_manifold_->Clone());
+  resultant_force_ = other.resultant_force_;
+  contact_details_.clear();
+  contact_details_.reserve(other.contact_details_.size());
+  for (const auto& detail : other.contact_details_) {
+    std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
+    contact_details_.push_back(std::move(copy));
+  }
   return *this;
-}
-
-template <typename T>
-DrakeCollision::ElementId ContactInfo<T>::get_element_id_1() const {
-  return element1_;
-}
-
-template <typename T>
-DrakeCollision::ElementId ContactInfo<T>::get_element_id_2() const {
-  return element2_;
-}
-
-template <typename T>
-const ContactManifold<T>& ContactInfo<T>::get_contact_manifold() const {
-  return *contact_manifold_.get();
 }
 
 // Explicitly instantiates on the most common scalar types.
