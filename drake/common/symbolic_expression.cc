@@ -600,7 +600,8 @@ ExpressionAdd::ExpressionAdd(const double constant_term,
                              const map<Expression, double>& term_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
                      hash_combine(constant_term,
-                                  hash_value(term_to_coeff_map))},
+                                  hash_value<map<Expression, double>>{}(
+                                      term_to_coeff_map))},
       constant_term_(constant_term),
       term_to_coeff_map_(term_to_coeff_map) {
   DRAKE_ASSERT(!term_to_coeff_map_.empty());
@@ -833,7 +834,8 @@ ExpressionMul::ExpressionMul(const double constant_factor,
                              const map<Expression, Expression>& term_to_exp_map)
     : ExpressionCell{ExpressionKind::Mul,
                      hash_combine(constant_factor,
-                                  hash_value(term_to_exp_map))},
+                                  hash_value<map<Expression, Expression>>{}(
+                                      term_to_exp_map))},
       constant_factor_(constant_factor),
       term_to_exp_map_(term_to_exp_map) {
   DRAKE_ASSERT(!term_to_exp_map_.empty());
