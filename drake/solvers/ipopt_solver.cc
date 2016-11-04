@@ -40,7 +40,7 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(const Constraint& c, const VariableList& variable_list,
+size_t GetNumGradients(const Constraint& c, const VariableVector& variable_list,
                        Index* num_grad) {
   size_t var_count = 0;
   for (const DecisionVariableView& v : variable_list) {
@@ -64,7 +64,7 @@ size_t GetNumGradients(const Constraint& c, const VariableList& variable_list,
 /// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
 ///
 /// @return the number of row/column pairs filled in.
-size_t GetGradientMatrix(const Constraint& c, const VariableList& variable_list,
+size_t GetGradientMatrix(const Constraint& c, const VariableVector& variable_list,
                          Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
@@ -96,7 +96,7 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 ///
 /// @return number of gradient entries populated
 size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
-                          const VariableList& variable_list, Number* result,
+                          const VariableVector& variable_list, Number* result,
                           Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
