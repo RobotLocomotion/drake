@@ -48,12 +48,17 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // quadratic costs ...
   for (auto const& binding : prog.quadratic_costs()) {
     size_t index = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      A_full.block(v.index(), v.index(), v.size(), v.size()) +=
-          binding.constraint()->Q().block(index, index, v.size(), v.size());
-      b_full.segment(v.index(), v.size()) -=
-          binding.constraint()->b().segment(index, v.size());
-      index += v.size();
+    const auto& Q = binding.constraint()->Q();
+    const auto& b = binding.constraint()->b();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      int num_v_variables = v.NumberOfVariables();
+      for (int i = 0; i < num_v_variables; ++i) {
+        for (int j = 0; j < num_v_variables; ++j) {
+          A_full(v.index(i), v.index(j)) += Q(index + i, index + j);
+        }
+        b_full(v.index(i)) -= b(index + i);
+      }
+      index += num_v_variables;
     }
   }
 
@@ -63,12 +68,15 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      A_full.block(constraint_index, v.index(), n, v.size()) =
-          c->A().middleCols(var_index, v.size());
-      A_full.block(v.index(), constraint_index, v.size(), n) =
-          (c->A().middleCols(var_index, v.size())).transpose();
-      var_index += v.size();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      int num_v_variables = v.NumberOfVariables();
+      for (int i = 0; i < num_v_variables; ++i) {
+        A_full.block(constraint_index, v.index(i), n, 1) =
+        c->A().col(var_index + i);
+        A_full.block(v.index(i), constraint_index, 1, n) =
+            (c->A().col(var_index + i)).transpose();
+      }
+      var_index += num_v_variables;
     }
     b_full.segment(constraint_index, n) =
         c->lower_bound().segment(0, n);  // = c->upper_bound() since it's

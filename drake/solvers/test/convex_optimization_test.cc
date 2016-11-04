@@ -464,12 +464,12 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
 
   MathematicalProgram prog;
   const int kXdim = x1.rows();
-  auto t = prog.AddContinuousVariables(2, {"t","t"});
-  auto a = prog.AddContinuousVariables(kXdim, std::vector<std::string>(kXdim, "a"));
+  auto t = prog.AddContinuousVariables(2, "t");
+  auto a = prog.AddContinuousVariables(kXdim, "a");
   // R1a = R1' * a
   // R2a = R2' * a
-  auto R1a = prog.AddContinuousVariables(R1.cols(), std::vector<std::string>(R1.cols(), "R1a"));
-  auto R2a = prog.AddContinuousVariables(R2.cols(), std::vector<std::string>(R2.cols(), "R2a"));
+  auto R1a = prog.AddContinuousVariables(R1.cols(), "R1a");
+  auto R2a = prog.AddContinuousVariables(R2.cols(), "R2a");
   Eigen::MatrixXd R1_transpose = R1.transpose();
   Eigen::MatrixXd R2_transpose = R2.transpose();
   Eigen::MatrixXd A_R1a(R1.cols(), R1.cols() + R1.rows());
@@ -535,11 +535,11 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     // 1 >= |u1|
     // 1 >= |u2|
     MathematicalProgram prog_intersect;
-    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(), std::vector<std::string>(R1.cols(), "u1"));
-    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), std::vector<std::string>(R2.cols(), "u2"));
-    auto y = prog_intersect.AddContinuousVariables(kXdim, std::vector<std::string>(kXdim, "y"));
+    auto u1 = prog_intersect.AddContinuousVariables(R1.cols(), "u1");
+    auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), "u2");
+    auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
 
-    auto slack = prog_intersect.AddContinuousVariables(1, {"slack"});
+    auto slack = prog_intersect.AddContinuousVariables(1, "slack");
     prog_intersect.AddBoundingBoxConstraint(1, 1, slack);
 
     prog_intersect.AddLorentzConeConstraint({slack, u1});
@@ -611,10 +611,10 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   MathematicalProgram prog_socp;
 
-  auto x_socp = prog_socp.AddContinuousVariables(kXdim, std::vector<std::string>(kXdim, "x"));
-  auto y = prog_socp.AddContinuousVariables(1, {"y"});
-  auto z = prog_socp.AddContinuousVariables(1, {"z"});
-  auto w = prog_socp.AddContinuousVariables(kXdim, std::vector<std::string>(kXdim, "w"));
+  auto x_socp = prog_socp.AddContinuousVariables(kXdim, "x");
+  auto y = prog_socp.AddContinuousVariables(1, "y");
+  auto z = prog_socp.AddContinuousVariables(1, "z");
+  auto w = prog_socp.AddContinuousVariables(kXdim, "w");
 
   prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z);
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
@@ -648,7 +648,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
-  auto x_qp = prog_qp.AddContinuousVariables(kXdim, std::vector<std::string>(kXdim, "x"));
+  auto x_qp = prog_qp.AddContinuousVariables(kXdim, "x");
   prog_qp.AddQuadraticCost(Q, c, {x_qp});
   prog_qp.AddLinearConstraint(A, b_lb, b_ub, {x_qp});
   RunSolver(&prog_qp, solver);
@@ -738,9 +738,9 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                            const MathematicalProgramSolverInterface& solver) {
   int num_nodes = weight.rows();
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(num_nodes, std::vector<std::string>(num_nodes, "x"));
-  auto y = prog.AddContinuousVariables(num_nodes, std::vector<std::string>(num_nodes, "y"));
-  auto t = prog.AddContinuousVariables(num_nodes - 1, std::vector<std::string>(num_nodes - 1, "t"));
+  auto x = prog.AddContinuousVariables(num_nodes, "x");
+  auto y = prog.AddContinuousVariables(num_nodes, "y");
+  auto t = prog.AddContinuousVariables(num_nodes - 1, "t");
   prog.AddBoundingBoxConstraint(end_pos1, end_pos1, {x(0), y(0)});
   prog.AddBoundingBoxConstraint(end_pos2, end_pos2,
                                 {x(num_nodes - 1), y(num_nodes - 1)});
@@ -750,8 +750,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                                 std::numeric_limits<double>::infinity()),
       {t});
   auto t_plus_l0 = prog.AddContinuousVariables(
-      num_nodes - 1,
-      std::vector<std::string>(num_nodes - 1, "t_plus_l0"));  // The slack variable equals to t_i + spring_rest_length
+      num_nodes - 1, "t_plus_l0");  // The slack variable equals to t_i + spring_rest_length
   Eigen::MatrixXd A1(num_nodes - 1, 2 * (num_nodes - 1));
   A1 << Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1),
       -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);
@@ -760,8 +759,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       {t_plus_l0, t});
   // x_diff(i) = x(i+1) - x(i)
   // y_diff(i) = y(i+1) - y(i)
-  auto x_diff = prog.AddContinuousVariables(num_nodes - 1, std::vector<std::string>(num_nodes - 1, "xd"));
-  auto y_diff = prog.AddContinuousVariables(num_nodes - 1, std::vector<std::string>(num_nodes - 1, "yd"));
+  auto x_diff = prog.AddContinuousVariables(num_nodes - 1, "xd");
+  auto y_diff = prog.AddContinuousVariables(num_nodes - 1, "yd");
   Eigen::MatrixXd A2(num_nodes - 1, 2 * num_nodes - 1);
   A2.setZero();
   A2.block(0, 0, num_nodes - 1, num_nodes - 1) =
@@ -781,7 +780,7 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
-  auto z = prog.AddContinuousVariables(2, {"z1", "z2"});
+  auto z = prog.AddContinuousVariables(2, "z");
   prog.AddBoundingBoxConstraint(1, 1, z(0));
   prog.AddRotatedLorentzConeConstraint({z, t});
 
