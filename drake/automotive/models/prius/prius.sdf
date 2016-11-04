@@ -8,12 +8,13 @@
       <pose>0 0 0.378326 0 0 0</pose>
       <inertial>
        <pose>0 0 0 0 0 0</pose>
-        <!-- curb weight from 
-        https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download 
+        <!-- curb weight 3,072 lbs. (~1400 kg) based on 
+        https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download
+        allocate 1360 to the chassis_floor and the rest to the wheels and the body
         -->
         <mass>1360</mass>
-        <!-- the inertia is calculated by assuming the chassis_floor link as 
-        cuboid shape, and using fomula from https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+        <!-- the inertia is calculated by assuming the chassis_floor link as a
+        cuboid, and using fomula from https://en.wikipedia.org/wiki/List_of_moments_of_inertia
         -->
         <inertia>
           <ixx>63.858358934</ixx>
