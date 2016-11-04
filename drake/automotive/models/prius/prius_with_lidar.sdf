@@ -157,8 +157,6 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -259,8 +257,6 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -334,8 +330,6 @@
         </material>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -394,8 +388,6 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
