@@ -113,5 +113,43 @@ SolutionResult MathematicalProgram::Solve() {
   }
 }
 
+DecisionVariableMatrix MathematicalProgram::GetVariable(
+    const std::string& name) const {
+  std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
+  for (auto& var : variables_) {
+    if (name.compare(var->name()) == 0) {
+      vars.push_back(std::weak_ptr<const DecisionVariableScalar>(var));
+    }
+  }
+  if (vars.empty()) {
+    throw std::runtime_error("unable to find variable: " + name);
+  }
+  return DecisionVariableMatrix(vars.size(), 1, vars);
+}
+
+DecisionVariableMatrix MathematicalProgram::AddVariables(
+    DecisionVariableScalar::VarType type, size_t rows, size_t cols,
+    std::vector<std::string> names) {
+  int num_new_vars = rows * cols;
+  DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
+  variables_.reserve(num_vars_ + num_new_vars);
+  std::vector<std::weak_ptr<const DecisionVariableScalar>> variables_weak_ptr;
+  variables_weak_ptr.reserve(num_new_vars);
+  variables_.reserve(num_vars_ + num_new_vars);
+  for (int i = 0; i < num_new_vars; ++i) {
+    auto vi =
+        std::make_shared<DecisionVariableScalar>(type, names[i], num_vars_ + i);
+    variables_.push_back(vi);
+    variables_weak_ptr.push_back(
+        std::weak_ptr<const DecisionVariableScalar>(vi));
+  }
+
+  DecisionVariableMatrix v_matrix(rows, cols, variables_weak_ptr);
+  num_vars_ += num_new_vars;
+  x_initial_guess_.conservativeResize(num_vars_);
+  variable_views_.push_back(v_matrix);
+
+  return variable_views_.back();
+}
 }  // namespace solvers
 }  // namespace drake

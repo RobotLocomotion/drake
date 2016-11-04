@@ -215,7 +215,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
           grad_sign = -1;
         }
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          grad[(result_idx * n) + v.index(j)] = ty(i).derivatives()(v.index(j)) * grad_sign;
+          grad[(result_idx * n) + v.index(j)] =
+              ty(i).derivatives()(v.index(j)) * grad_sign;
         }
         result_idx++;
         DRAKE_ASSERT(result_idx <= m);
@@ -318,8 +319,12 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         const int idx = v.index(k);
         xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
-        if (x[idx] < xlow[idx]) { x[idx] = xlow[idx]; }
-        if (x[idx] > xupp[idx]) { x[idx] = xupp[idx]; }
+        if (x[idx] < xlow[idx]) {
+          x[idx] = xlow[idx];
+        }
+        if (x[idx] > xupp[idx]) {
+          x[idx] = xupp[idx];
+        }
         ++var_count;
       }
     }

@@ -326,10 +326,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, vd.index(i), num_torque_, 1) = rs.M().bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, vd.index(i), num_torque_, 1) =
+        rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, basis.index(i), num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, basis.index(i), num_torque_, 1) =
+        -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
 

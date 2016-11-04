@@ -40,8 +40,8 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(const Constraint& c, const VariableVector& variable_vector,
-                       Index* num_grad) {
+size_t GetNumGradients(const Constraint& c,
+                       const VariableVector& variable_vector, Index* num_grad) {
   size_t var_count = GetVariableVectorSize(variable_vector);
 
   const size_t num_constraints = c.num_constraints();
@@ -61,7 +61,8 @@ size_t GetNumGradients(const Constraint& c, const VariableVector& variable_vecto
 /// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
 ///
 /// @return the number of row/column pairs filled in.
-size_t GetGradientMatrix(const Constraint& c, const VariableVector& variable_vector,
+size_t GetGradientMatrix(const Constraint& c,
+                         const VariableVector& variable_vector,
                          Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;

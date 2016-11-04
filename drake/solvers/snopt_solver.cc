@@ -228,7 +228,8 @@ void EvaluateNonlinearConstraints(
       for (snopt::integer i = 0;
            i < static_cast<snopt::integer>(num_constraints); i++) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          G[(*grad_index)++] = static_cast<snopt::doublereal>(ty(i).derivatives()(v.index(j)));
+          G[(*grad_index)++] =
+              static_cast<snopt::doublereal>(ty(i).derivatives()(v.index(j)));
         }
       }
     }
@@ -281,7 +282,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
     for (const DecisionVariableMatrix& v : binding.variable_list()) {
       for (int j = 0; j < v.NumberOfVariables(); ++j) {
-        G[v.index(j)] += static_cast<snopt::doublereal>(ty(0).derivatives()(v.index(j)));
+        G[v.index(j)] +=
+            static_cast<snopt::doublereal>(ty(0).derivatives()(v.index(j)));
       }
     }
   }
