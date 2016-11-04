@@ -25,7 +25,7 @@ class Quadrotor : public systems::Diagram<T> {
   Quadrotor() {
     this->set_name("Quadrotor");
 
-    auto tree = std::make_unique<RigidBodyTree>();
+    auto tree = std::make_unique<RigidBodyTree<T>>();
 
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
@@ -59,7 +59,7 @@ class Quadrotor : public systems::Diagram<T> {
   }
 
   // TODO(foehnph): dublicated, refactor into single location
-  void AddGround(RigidBodyTree* tree) {
+  void AddGround(RigidBodyTree<T>* tree) {
     double kBoxWidth = 1000;
     double kBoxDepth = 10;
     DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
