@@ -66,10 +66,10 @@ class DRAKE_EXPORT ContactForce {
 
   const Vector3<T>& get_force() const { return force_; }
 
-  /** Extracts the normal component of the translational force. */
+  /** Computes the normal component of the translational force. */
   Vector3<T> get_normal_force() const { return force_.dot(normal_) * normal_; }
 
-  /** Extracts the tangential component of the translational force. */
+  /** Computes the tangential component of the translational force. */
   Vector3<T> get_tangent_force() const { return force_ - get_normal_force(); }
 
   const Vector3<T>& get_pure_torque() const { return pure_torque_; }

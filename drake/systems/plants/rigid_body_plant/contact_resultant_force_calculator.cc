@@ -30,26 +30,27 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
     return forces_[0];
   }
 
-  // compute resultant wrench and resultant normal force -- the component of the
-  // resultant force due to the normal components of the contact forces.
+  // Compute resultant spatial force -- as the sum of the torques, and the
+  // sums of the normal and tangential components of the contact forces,
+  // respectively.
   Vector3<T> result_torque = Vector3<T>::Zero();
-  Vector3<T> result_tan = Vector3<T>::Zero();
-  Vector3<T> result_norm = Vector3<T>::Zero();
+  Vector3<T> tangent_component_sum = Vector3<T>::Zero();
+  Vector3<T> normal_component_sum = Vector3<T>::Zero();
   for (const auto& force : forces_) {
-    result_norm += force.get_normal_force();
+    normal_component_sum += force.get_normal_force();
     result_torque += force.get_pure_torque();
-    result_tan += force.get_tangent_force();
+    tangent_component_sum += force.get_tangent_force();
   }
 
   Vector3<T> min_point;
-  Vector3<T> norm;
-  T denom = result_norm.dot(result_norm);
-  if (denom > 1e-14) {
-    norm = result_norm.normalized();
-    // pick the first force application point as a temporary origin.  This
+  Vector3<T> normal;
+  T denom = normal_component_sum.dot(normal_component_sum);
+  if (denom > Eigen::NumTraits<T>::dummy_precision()) {
+    normal = normal_component_sum.normalized();
+    // Pick the first force application point as a temporary origin.  This
     // assumes contacts are all local and will keep the math near the origin,
     // even if the points in the world frame are off in some distant region.
-    Vector3<T> O_temp = forces_[0].get_application_point();
+    Vector3<T> temp_origin = forces_[0].get_application_point();
 
     // For the sake of efficiency, this loop is doing two activities:
     //  1) Compute the moment around the temporary origin induced by the normal
@@ -62,11 +63,11 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
     for (size_t i = 0; i < forces_.size(); ++i) {
       const auto& force = forces_[i];
       // Compute normal moment.
-      Vector3<T> local_r = force.get_application_point() - O_temp;
+      Vector3<T> local_r = force.get_application_point() - temp_origin;
       normal_moment += local_r.cross(force.get_normal_force());
 
       // Update optimal origin candidate.
-      T projection = local_r.dot(result_norm);
+      T projection = local_r.dot(normal_component_sum);
       if (projection < best) {
         best = projection;
         candidate_index = i;
@@ -76,17 +77,17 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
     // Use the mean-shift theorem to change the resultant moment from the
     // temporary origin to the "optimal" origin.  Only necessary if the
     // "optimal" origin is not the first point we arbitrarily selected.
-    Vector3<T> O = O_temp;
+    Vector3<T> origin = temp_origin;
     if (candidate_index != 0) {
-      O = forces_[candidate_index].get_application_point();
-      normal_moment -= (O - O_temp).cross(result_norm);
+      origin = forces_[candidate_index].get_application_point();
+      normal_moment -= (origin - temp_origin).cross(normal_component_sum);
     }
 
     // Compute the minimum moment point.
-    min_point = result_norm.cross(normal_moment) / denom + O;
+    min_point = normal_component_sum.cross(normal_moment) / denom + origin;
   } else {
     // There is no translational force.  Pick an arbitrary unit normal.
-    norm << 1, 0, 0;
+    normal << 1, 0, 0;
     // No normal force component implies the minimum moment point can be
     // *anywhere*.  We pick the centroid.
     min_point = Vector3<T>::Zero();
@@ -104,10 +105,11 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
   //    2. If the minimum moment point is not the "center of pressure", there
   //       must be some residual moment that gets induced.
   for (const auto& force : forces_) {
-    auto offset = force.get_application_point() - min_point;
-    result_torque += offset.cross(force.get_force());
+    auto arm = force.get_application_point() - min_point;
+    result_torque += arm.cross(force.get_force());
   }
-  return ContactForce<T>(min_point, norm, result_norm + result_tan,
+  return ContactForce<T>(min_point, normal,
+                         normal_component_sum + tangent_component_sum,
                          result_torque);
 }
 
