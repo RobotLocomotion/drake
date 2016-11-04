@@ -83,7 +83,7 @@ TEST_F(AffineSystemTest, Output) {
 }
 
 // Test that linearizing and affine system returns an identical affine system
-TEST_F(AffineSystemTest, LinearizeAffine) {
+GTEST_TEST(testLinearize, fromAffine) {
   Eigen::Matrix3d A;
   Eigen::Matrix<double, 3, 1> B;
   Eigen::Vector3d xDot0;
