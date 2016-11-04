@@ -61,11 +61,516 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression neg_pi_{-3.141592};
   const Expression e_{2.718};
 
-  const Expression c1_{0.0};
+  const Expression c1_{-10.0};
   const Expression c2_{1.0};
   const Expression c3_{3.14159};
   const Expression c4_{-2.718};
 };
+
+TEST_F(SymbolicExpressionTest, LessConstant) {
+  EXPECT_FALSE(c1_.Less(c1_));
+  EXPECT_TRUE(c1_.Less(c2_));
+  EXPECT_TRUE(c1_.Less(c3_));
+  EXPECT_FALSE(c2_.Less(c1_));
+  EXPECT_FALSE(c2_.Less(c2_));
+  EXPECT_TRUE(c2_.Less(c3_));
+  EXPECT_FALSE(c3_.Less(c1_));
+  EXPECT_FALSE(c3_.Less(c2_));
+  EXPECT_FALSE(c3_.Less(c3_));
+}
+
+TEST_F(SymbolicExpressionTest, LessVariable) {
+  EXPECT_FALSE(x_.Less(x_));
+  EXPECT_TRUE(x_.Less(y_));
+  EXPECT_TRUE(x_.Less(z_));
+  EXPECT_FALSE(y_.Less(x_));
+  EXPECT_FALSE(y_.Less(y_));
+  EXPECT_TRUE(y_.Less(z_));
+  EXPECT_FALSE(z_.Less(x_));
+  EXPECT_FALSE(z_.Less(y_));
+  EXPECT_FALSE(z_.Less(z_));
+}
+
+TEST_F(SymbolicExpressionTest, LessNeg) {
+  // defined in the ascending order.
+  const Expression neg1{-c3_};
+  const Expression neg2{-c1_};
+  const Expression neg3{-x_};  // note: Constant kind < Variable kind
+
+  EXPECT_FALSE(neg1.Less(neg1));
+  EXPECT_TRUE(neg1.Less(neg2));
+  EXPECT_TRUE(neg1.Less(neg3));
+  EXPECT_FALSE(neg2.Less(neg1));
+  EXPECT_FALSE(neg2.Less(neg2));
+  EXPECT_TRUE(neg2.Less(neg3));
+  EXPECT_FALSE(neg3.Less(neg1));
+  EXPECT_FALSE(neg3.Less(neg2));
+  EXPECT_FALSE(neg3.Less(neg3));
+}
+
+TEST_F(SymbolicExpressionTest, LessAdd) {
+  const Expression add1{c1_ + x_ + y_};
+  const Expression add2{c1_ + y_ + z_};
+  const Expression add3{c3_ + x_ + y_};
+  const Expression add4{c3_ + y_ + z_};
+
+  EXPECT_FALSE(add1.Less(add1));
+  EXPECT_TRUE(add1.Less(add2));
+  EXPECT_TRUE(add1.Less(add3));
+  EXPECT_TRUE(add1.Less(add4));
+  EXPECT_FALSE(add2.Less(add1));
+  EXPECT_FALSE(add2.Less(add2));
+  EXPECT_TRUE(add2.Less(add3));
+  EXPECT_TRUE(add2.Less(add4));
+  EXPECT_FALSE(add3.Less(add1));
+  EXPECT_FALSE(add3.Less(add2));
+  EXPECT_FALSE(add3.Less(add3));
+  EXPECT_TRUE(add3.Less(add4));
+  EXPECT_FALSE(add4.Less(add1));
+  EXPECT_FALSE(add4.Less(add2));
+  EXPECT_FALSE(add4.Less(add3));
+  EXPECT_FALSE(add4.Less(add4));
+}
+
+TEST_F(SymbolicExpressionTest, LessSub) {
+  const Expression sub1{c1_ - x_ - y_};
+  const Expression sub2{c1_ - y_ - z_};
+  const Expression sub3{c3_ - x_ - y_};
+  const Expression sub4{c3_ - y_ - z_};
+
+  EXPECT_FALSE(sub1.Less(sub1));
+  EXPECT_TRUE(sub1.Less(sub2));
+  EXPECT_TRUE(sub1.Less(sub3));
+  EXPECT_TRUE(sub1.Less(sub4));
+  EXPECT_FALSE(sub2.Less(sub1));
+  EXPECT_FALSE(sub2.Less(sub2));
+  EXPECT_TRUE(sub2.Less(sub3));
+  EXPECT_TRUE(sub2.Less(sub4));
+  EXPECT_FALSE(sub3.Less(sub1));
+  EXPECT_FALSE(sub3.Less(sub2));
+  EXPECT_FALSE(sub3.Less(sub3));
+  EXPECT_TRUE(sub3.Less(sub4));
+  EXPECT_FALSE(sub4.Less(sub1));
+  EXPECT_FALSE(sub4.Less(sub2));
+  EXPECT_FALSE(sub4.Less(sub3));
+  EXPECT_FALSE(sub4.Less(sub4));
+}
+
+TEST_F(SymbolicExpressionTest, LessMul) {
+  const Expression mul1{c1_ * x_ * y_};
+  const Expression mul2{c1_ * y_ * z_};
+  const Expression mul3{c3_ * x_ * y_};
+  const Expression mul4{c3_ * y_ * z_};
+
+  EXPECT_FALSE(mul1.Less(mul1));
+  EXPECT_TRUE(mul1.Less(mul2));
+  EXPECT_TRUE(mul1.Less(mul3));
+  EXPECT_TRUE(mul1.Less(mul4));
+  EXPECT_FALSE(mul2.Less(mul1));
+  EXPECT_FALSE(mul2.Less(mul2));
+  EXPECT_TRUE(mul2.Less(mul3));
+  EXPECT_TRUE(mul2.Less(mul4));
+  EXPECT_FALSE(mul3.Less(mul1));
+  EXPECT_FALSE(mul3.Less(mul2));
+  EXPECT_FALSE(mul3.Less(mul3));
+  EXPECT_TRUE(mul3.Less(mul4));
+  EXPECT_FALSE(mul4.Less(mul1));
+  EXPECT_FALSE(mul4.Less(mul2));
+  EXPECT_FALSE(mul4.Less(mul3));
+  EXPECT_FALSE(mul4.Less(mul4));
+}
+
+TEST_F(SymbolicExpressionTest, LessDiv) {
+  const Expression div1{x_ / y_};
+  const Expression div2{x_ / z_};
+  const Expression div3{y_ / z_};
+
+  EXPECT_FALSE(div1.Less(div1));
+  EXPECT_TRUE(div1.Less(div2));
+  EXPECT_TRUE(div1.Less(div3));
+  EXPECT_FALSE(div2.Less(div1));
+  EXPECT_FALSE(div2.Less(div2));
+  EXPECT_TRUE(div2.Less(div3));
+  EXPECT_FALSE(div3.Less(div1));
+  EXPECT_FALSE(div3.Less(div2));
+  EXPECT_FALSE(div3.Less(div3));
+}
+
+TEST_F(SymbolicExpressionTest, LessLog) {
+  const Expression log1{log(x_)};
+  const Expression log2{log(y_)};
+  const Expression log3{log(x_plus_y_)};
+  const Expression log4{log(x_plus_z_)};
+
+  EXPECT_FALSE(log1.Less(log1));
+  EXPECT_TRUE(log1.Less(log2));
+  EXPECT_TRUE(log1.Less(log3));
+  EXPECT_TRUE(log1.Less(log4));
+  EXPECT_FALSE(log2.Less(log1));
+  EXPECT_FALSE(log2.Less(log2));
+  EXPECT_TRUE(log2.Less(log3));
+  EXPECT_TRUE(log2.Less(log4));
+  EXPECT_FALSE(log3.Less(log1));
+  EXPECT_FALSE(log3.Less(log2));
+  EXPECT_FALSE(log3.Less(log3));
+  EXPECT_TRUE(log3.Less(log4));
+  EXPECT_FALSE(log4.Less(log1));
+  EXPECT_FALSE(log4.Less(log2));
+  EXPECT_FALSE(log4.Less(log3));
+  EXPECT_FALSE(log4.Less(log4));
+}
+
+TEST_F(SymbolicExpressionTest, LessAbs) {
+  const Expression abs1{abs(x_)};
+  const Expression abs2{abs(y_)};
+  const Expression abs3{abs(x_plus_y_)};
+  const Expression abs4{abs(x_plus_z_)};
+
+  EXPECT_FALSE(abs1.Less(abs1));
+  EXPECT_TRUE(abs1.Less(abs2));
+  EXPECT_TRUE(abs1.Less(abs3));
+  EXPECT_TRUE(abs1.Less(abs4));
+  EXPECT_FALSE(abs2.Less(abs1));
+  EXPECT_FALSE(abs2.Less(abs2));
+  EXPECT_TRUE(abs2.Less(abs3));
+  EXPECT_TRUE(abs2.Less(abs4));
+  EXPECT_FALSE(abs3.Less(abs1));
+  EXPECT_FALSE(abs3.Less(abs2));
+  EXPECT_FALSE(abs3.Less(abs3));
+  EXPECT_TRUE(abs3.Less(abs4));
+  EXPECT_FALSE(abs4.Less(abs1));
+  EXPECT_FALSE(abs4.Less(abs2));
+  EXPECT_FALSE(abs4.Less(abs3));
+  EXPECT_FALSE(abs4.Less(abs4));
+}
+
+TEST_F(SymbolicExpressionTest, LessExp) {
+  const Expression exp1{exp(x_)};
+  const Expression exp2{exp(y_)};
+  const Expression exp3{exp(x_plus_y_)};
+  const Expression exp4{exp(x_plus_z_)};
+
+  EXPECT_FALSE(exp1.Less(exp1));
+  EXPECT_TRUE(exp1.Less(exp2));
+  EXPECT_TRUE(exp1.Less(exp3));
+  EXPECT_TRUE(exp1.Less(exp4));
+  EXPECT_FALSE(exp2.Less(exp1));
+  EXPECT_FALSE(exp2.Less(exp2));
+  EXPECT_TRUE(exp2.Less(exp3));
+  EXPECT_TRUE(exp2.Less(exp4));
+  EXPECT_FALSE(exp3.Less(exp1));
+  EXPECT_FALSE(exp3.Less(exp2));
+  EXPECT_FALSE(exp3.Less(exp3));
+  EXPECT_TRUE(exp3.Less(exp4));
+  EXPECT_FALSE(exp4.Less(exp1));
+  EXPECT_FALSE(exp4.Less(exp2));
+  EXPECT_FALSE(exp4.Less(exp3));
+  EXPECT_FALSE(exp4.Less(exp4));
+}
+
+TEST_F(SymbolicExpressionTest, LessSqrt) {
+  const Expression sqrt1{sqrt(x_)};
+  const Expression sqrt2{sqrt(y_)};
+  const Expression sqrt3{sqrt(x_plus_y_)};
+  const Expression sqrt4{sqrt(x_plus_z_)};
+
+  EXPECT_FALSE(sqrt1.Less(sqrt1));
+  EXPECT_TRUE(sqrt1.Less(sqrt2));
+  EXPECT_TRUE(sqrt1.Less(sqrt3));
+  EXPECT_TRUE(sqrt1.Less(sqrt4));
+  EXPECT_FALSE(sqrt2.Less(sqrt1));
+  EXPECT_FALSE(sqrt2.Less(sqrt2));
+  EXPECT_TRUE(sqrt2.Less(sqrt3));
+  EXPECT_TRUE(sqrt2.Less(sqrt4));
+  EXPECT_FALSE(sqrt3.Less(sqrt1));
+  EXPECT_FALSE(sqrt3.Less(sqrt2));
+  EXPECT_FALSE(sqrt3.Less(sqrt3));
+  EXPECT_TRUE(sqrt3.Less(sqrt4));
+  EXPECT_FALSE(sqrt4.Less(sqrt1));
+  EXPECT_FALSE(sqrt4.Less(sqrt2));
+  EXPECT_FALSE(sqrt4.Less(sqrt3));
+  EXPECT_FALSE(sqrt4.Less(sqrt4));
+}
+
+TEST_F(SymbolicExpressionTest, LessSin) {
+  const Expression sin1{sin(x_)};
+  const Expression sin2{sin(y_)};
+  const Expression sin3{sin(x_plus_y_)};
+  const Expression sin4{sin(x_plus_z_)};
+
+  EXPECT_FALSE(sin1.Less(sin1));
+  EXPECT_TRUE(sin1.Less(sin2));
+  EXPECT_TRUE(sin1.Less(sin3));
+  EXPECT_TRUE(sin1.Less(sin4));
+  EXPECT_FALSE(sin2.Less(sin1));
+  EXPECT_FALSE(sin2.Less(sin2));
+  EXPECT_TRUE(sin2.Less(sin3));
+  EXPECT_TRUE(sin2.Less(sin4));
+  EXPECT_FALSE(sin3.Less(sin1));
+  EXPECT_FALSE(sin3.Less(sin2));
+  EXPECT_FALSE(sin3.Less(sin3));
+  EXPECT_TRUE(sin3.Less(sin4));
+  EXPECT_FALSE(sin4.Less(sin1));
+  EXPECT_FALSE(sin4.Less(sin2));
+  EXPECT_FALSE(sin4.Less(sin3));
+  EXPECT_FALSE(sin4.Less(sin4));
+}
+
+TEST_F(SymbolicExpressionTest, LessCos) {
+  const Expression cos1{cos(x_)};
+  const Expression cos2{cos(y_)};
+  const Expression cos3{cos(x_plus_y_)};
+  const Expression cos4{cos(x_plus_z_)};
+
+  EXPECT_FALSE(cos1.Less(cos1));
+  EXPECT_TRUE(cos1.Less(cos2));
+  EXPECT_TRUE(cos1.Less(cos3));
+  EXPECT_TRUE(cos1.Less(cos4));
+  EXPECT_FALSE(cos2.Less(cos1));
+  EXPECT_FALSE(cos2.Less(cos2));
+  EXPECT_TRUE(cos2.Less(cos3));
+  EXPECT_TRUE(cos2.Less(cos4));
+  EXPECT_FALSE(cos3.Less(cos1));
+  EXPECT_FALSE(cos3.Less(cos2));
+  EXPECT_FALSE(cos3.Less(cos3));
+  EXPECT_TRUE(cos3.Less(cos4));
+  EXPECT_FALSE(cos4.Less(cos1));
+  EXPECT_FALSE(cos4.Less(cos2));
+  EXPECT_FALSE(cos4.Less(cos3));
+  EXPECT_FALSE(cos4.Less(cos4));
+}
+
+TEST_F(SymbolicExpressionTest, LessTan) {
+  const Expression tan1{tan(x_)};
+  const Expression tan2{tan(y_)};
+  const Expression tan3{tan(x_plus_y_)};
+  const Expression tan4{tan(x_plus_z_)};
+
+  EXPECT_FALSE(tan1.Less(tan1));
+  EXPECT_TRUE(tan1.Less(tan2));
+  EXPECT_TRUE(tan1.Less(tan3));
+  EXPECT_TRUE(tan1.Less(tan4));
+  EXPECT_FALSE(tan2.Less(tan1));
+  EXPECT_FALSE(tan2.Less(tan2));
+  EXPECT_TRUE(tan2.Less(tan3));
+  EXPECT_TRUE(tan2.Less(tan4));
+  EXPECT_FALSE(tan3.Less(tan1));
+  EXPECT_FALSE(tan3.Less(tan2));
+  EXPECT_FALSE(tan3.Less(tan3));
+  EXPECT_TRUE(tan3.Less(tan4));
+  EXPECT_FALSE(tan4.Less(tan1));
+  EXPECT_FALSE(tan4.Less(tan2));
+  EXPECT_FALSE(tan4.Less(tan3));
+  EXPECT_FALSE(tan4.Less(tan4));
+}
+
+TEST_F(SymbolicExpressionTest, LessAsin) {
+  const Expression asin1{asin(x_)};
+  const Expression asin2{asin(y_)};
+  const Expression asin3{asin(x_plus_y_)};
+  const Expression asin4{asin(x_plus_z_)};
+
+  EXPECT_FALSE(asin1.Less(asin1));
+  EXPECT_TRUE(asin1.Less(asin2));
+  EXPECT_TRUE(asin1.Less(asin3));
+  EXPECT_TRUE(asin1.Less(asin4));
+  EXPECT_FALSE(asin2.Less(asin1));
+  EXPECT_FALSE(asin2.Less(asin2));
+  EXPECT_TRUE(asin2.Less(asin3));
+  EXPECT_TRUE(asin2.Less(asin4));
+  EXPECT_FALSE(asin3.Less(asin1));
+  EXPECT_FALSE(asin3.Less(asin2));
+  EXPECT_FALSE(asin3.Less(asin3));
+  EXPECT_TRUE(asin3.Less(asin4));
+  EXPECT_FALSE(asin4.Less(asin1));
+  EXPECT_FALSE(asin4.Less(asin2));
+  EXPECT_FALSE(asin4.Less(asin3));
+  EXPECT_FALSE(asin4.Less(asin4));
+}
+
+TEST_F(SymbolicExpressionTest, LessAcos) {
+  const Expression acos1{acos(x_)};
+  const Expression acos2{acos(y_)};
+  const Expression acos3{acos(x_plus_y_)};
+  const Expression acos4{acos(x_plus_z_)};
+
+  EXPECT_FALSE(acos1.Less(acos1));
+  EXPECT_TRUE(acos1.Less(acos2));
+  EXPECT_TRUE(acos1.Less(acos3));
+  EXPECT_TRUE(acos1.Less(acos4));
+  EXPECT_FALSE(acos2.Less(acos1));
+  EXPECT_FALSE(acos2.Less(acos2));
+  EXPECT_TRUE(acos2.Less(acos3));
+  EXPECT_TRUE(acos2.Less(acos4));
+  EXPECT_FALSE(acos3.Less(acos1));
+  EXPECT_FALSE(acos3.Less(acos2));
+  EXPECT_FALSE(acos3.Less(acos3));
+  EXPECT_TRUE(acos3.Less(acos4));
+  EXPECT_FALSE(acos4.Less(acos1));
+  EXPECT_FALSE(acos4.Less(acos2));
+  EXPECT_FALSE(acos4.Less(acos3));
+  EXPECT_FALSE(acos4.Less(acos4));
+}
+
+TEST_F(SymbolicExpressionTest, LessAtan) {
+  const Expression atan1{atan(x_)};
+  const Expression atan2{atan(y_)};
+  const Expression atan3{atan(x_plus_y_)};
+  const Expression atan4{atan(x_plus_z_)};
+
+  EXPECT_FALSE(atan1.Less(atan1));
+  EXPECT_TRUE(atan1.Less(atan2));
+  EXPECT_TRUE(atan1.Less(atan3));
+  EXPECT_TRUE(atan1.Less(atan4));
+  EXPECT_FALSE(atan2.Less(atan1));
+  EXPECT_FALSE(atan2.Less(atan2));
+  EXPECT_TRUE(atan2.Less(atan3));
+  EXPECT_TRUE(atan2.Less(atan4));
+  EXPECT_FALSE(atan3.Less(atan1));
+  EXPECT_FALSE(atan3.Less(atan2));
+  EXPECT_FALSE(atan3.Less(atan3));
+  EXPECT_TRUE(atan3.Less(atan4));
+  EXPECT_FALSE(atan4.Less(atan1));
+  EXPECT_FALSE(atan4.Less(atan2));
+  EXPECT_FALSE(atan4.Less(atan3));
+  EXPECT_FALSE(atan4.Less(atan4));
+}
+
+TEST_F(SymbolicExpressionTest, LessSinh) {
+  const Expression sinh1{sinh(x_)};
+  const Expression sinh2{sinh(y_)};
+  const Expression sinh3{sinh(x_plus_y_)};
+  const Expression sinh4{sinh(x_plus_z_)};
+
+  EXPECT_FALSE(sinh1.Less(sinh1));
+  EXPECT_TRUE(sinh1.Less(sinh2));
+  EXPECT_TRUE(sinh1.Less(sinh3));
+  EXPECT_TRUE(sinh1.Less(sinh4));
+  EXPECT_FALSE(sinh2.Less(sinh1));
+  EXPECT_FALSE(sinh2.Less(sinh2));
+  EXPECT_TRUE(sinh2.Less(sinh3));
+  EXPECT_TRUE(sinh2.Less(sinh4));
+  EXPECT_FALSE(sinh3.Less(sinh1));
+  EXPECT_FALSE(sinh3.Less(sinh2));
+  EXPECT_FALSE(sinh3.Less(sinh3));
+  EXPECT_TRUE(sinh3.Less(sinh4));
+  EXPECT_FALSE(sinh4.Less(sinh1));
+  EXPECT_FALSE(sinh4.Less(sinh2));
+  EXPECT_FALSE(sinh4.Less(sinh3));
+  EXPECT_FALSE(sinh4.Less(sinh4));
+}
+
+TEST_F(SymbolicExpressionTest, LessCosh) {
+  const Expression cosh1{cosh(x_)};
+  const Expression cosh2{cosh(y_)};
+  const Expression cosh3{cosh(x_plus_y_)};
+  const Expression cosh4{cosh(x_plus_z_)};
+
+  EXPECT_FALSE(cosh1.Less(cosh1));
+  EXPECT_TRUE(cosh1.Less(cosh2));
+  EXPECT_TRUE(cosh1.Less(cosh3));
+  EXPECT_TRUE(cosh1.Less(cosh4));
+  EXPECT_FALSE(cosh2.Less(cosh1));
+  EXPECT_FALSE(cosh2.Less(cosh2));
+  EXPECT_TRUE(cosh2.Less(cosh3));
+  EXPECT_TRUE(cosh2.Less(cosh4));
+  EXPECT_FALSE(cosh3.Less(cosh1));
+  EXPECT_FALSE(cosh3.Less(cosh2));
+  EXPECT_FALSE(cosh3.Less(cosh3));
+  EXPECT_TRUE(cosh3.Less(cosh4));
+  EXPECT_FALSE(cosh4.Less(cosh1));
+  EXPECT_FALSE(cosh4.Less(cosh2));
+  EXPECT_FALSE(cosh4.Less(cosh3));
+  EXPECT_FALSE(cosh4.Less(cosh4));
+}
+
+TEST_F(SymbolicExpressionTest, LessTanh) {
+  const Expression tanh1{tanh(x_)};
+  const Expression tanh2{tanh(y_)};
+  const Expression tanh3{tanh(x_plus_y_)};
+  const Expression tanh4{tanh(x_plus_z_)};
+
+  EXPECT_FALSE(tanh1.Less(tanh1));
+  EXPECT_TRUE(tanh1.Less(tanh2));
+  EXPECT_TRUE(tanh1.Less(tanh3));
+  EXPECT_TRUE(tanh1.Less(tanh4));
+  EXPECT_FALSE(tanh2.Less(tanh1));
+  EXPECT_FALSE(tanh2.Less(tanh2));
+  EXPECT_TRUE(tanh2.Less(tanh3));
+  EXPECT_TRUE(tanh2.Less(tanh4));
+  EXPECT_FALSE(tanh3.Less(tanh1));
+  EXPECT_FALSE(tanh3.Less(tanh2));
+  EXPECT_FALSE(tanh3.Less(tanh3));
+  EXPECT_TRUE(tanh3.Less(tanh4));
+  EXPECT_FALSE(tanh4.Less(tanh1));
+  EXPECT_FALSE(tanh4.Less(tanh2));
+  EXPECT_FALSE(tanh4.Less(tanh3));
+  EXPECT_FALSE(tanh4.Less(tanh4));
+}
+
+TEST_F(SymbolicExpressionTest, LessPow) {
+  const Expression pow1{pow(x_, y_)};
+  const Expression pow2{pow(x_, z_)};
+  const Expression pow3{pow(y_, z_)};
+
+  EXPECT_FALSE(pow1.Less(pow1));
+  EXPECT_TRUE(pow1.Less(pow2));
+  EXPECT_TRUE(pow1.Less(pow3));
+  EXPECT_FALSE(pow2.Less(pow1));
+  EXPECT_FALSE(pow2.Less(pow2));
+  EXPECT_TRUE(pow2.Less(pow3));
+  EXPECT_FALSE(pow3.Less(pow1));
+  EXPECT_FALSE(pow3.Less(pow2));
+  EXPECT_FALSE(pow3.Less(pow3));
+}
+
+TEST_F(SymbolicExpressionTest, LessAtan2) {
+  const Expression atan2_1{atan2(x_, y_)};
+  const Expression atan2_2{atan2(x_, z_)};
+  const Expression atan2_3{atan2(y_, z_)};
+
+  EXPECT_FALSE(atan2_1.Less(atan2_1));
+  EXPECT_TRUE(atan2_1.Less(atan2_2));
+  EXPECT_TRUE(atan2_1.Less(atan2_3));
+  EXPECT_FALSE(atan2_2.Less(atan2_1));
+  EXPECT_FALSE(atan2_2.Less(atan2_2));
+  EXPECT_TRUE(atan2_2.Less(atan2_3));
+  EXPECT_FALSE(atan2_3.Less(atan2_1));
+  EXPECT_FALSE(atan2_3.Less(atan2_2));
+  EXPECT_FALSE(atan2_3.Less(atan2_3));
+}
+
+TEST_F(SymbolicExpressionTest, LessMin) {
+  const Expression min1{min(x_, y_)};
+  const Expression min2{min(x_, z_)};
+  const Expression min3{min(y_, z_)};
+
+  EXPECT_FALSE(min1.Less(min1));
+  EXPECT_TRUE(min1.Less(min2));
+  EXPECT_TRUE(min1.Less(min3));
+  EXPECT_FALSE(min2.Less(min1));
+  EXPECT_FALSE(min2.Less(min2));
+  EXPECT_TRUE(min2.Less(min3));
+  EXPECT_FALSE(min3.Less(min1));
+  EXPECT_FALSE(min3.Less(min2));
+  EXPECT_FALSE(min3.Less(min3));
+}
+
+TEST_F(SymbolicExpressionTest, LessMax) {
+  const Expression max1{max(x_, y_)};
+  const Expression max2{max(x_, z_)};
+  const Expression max3{max(y_, z_)};
+
+  EXPECT_FALSE(max1.Less(max1));
+  EXPECT_TRUE(max1.Less(max2));
+  EXPECT_TRUE(max1.Less(max3));
+  EXPECT_FALSE(max2.Less(max1));
+  EXPECT_FALSE(max2.Less(max2));
+  EXPECT_TRUE(max2.Less(max3));
+  EXPECT_FALSE(max3.Less(max1));
+  EXPECT_FALSE(max3.Less(max2));
+  EXPECT_FALSE(max3.Less(max3));
+}
 
 TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x_.to_string(), var_x_.get_name());
@@ -83,7 +588,7 @@ TEST_F(SymbolicExpressionTest, Variable) {
 }
 
 TEST_F(SymbolicExpressionTest, Constant) {
-  EXPECT_EQ(c1_.Evaluate(), 0);
+  EXPECT_EQ(c1_.Evaluate(), -10);
   EXPECT_EQ(c2_.Evaluate(), 1);
   EXPECT_EQ(c3_.Evaluate(), 3.14159);
   EXPECT_EQ(c4_.Evaluate(), -2.718);
