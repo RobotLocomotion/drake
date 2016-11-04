@@ -65,7 +65,6 @@ class TestSystem : public System<double> {
     actions->time = context.get_time() + 1;
     actions->events.emplace_back();
     DiscreteEvent<double>& event = actions->events.back();
-    event.recipient = this;
     if (context.get_time() < 10.0) {
       // Use the default publish action.
       event.action = DiscreteEvent<double>::kPublishAction;
