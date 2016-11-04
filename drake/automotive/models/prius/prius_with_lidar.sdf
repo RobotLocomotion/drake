@@ -8,7 +8,13 @@
       <pose>0 0 0.378326 0 0 0</pose>
       <inertial>
        <pose>0 0 0 0 0 0</pose>
+        <!-- curb weight from 
+        https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download 
+        -->
         <mass>1360</mass>
+        <!-- the inertia is calculated by assuming the chassis_floor link as 
+        cuboid shape, and using fomula from https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+        -->
         <inertia>
           <ixx>63.858358934</ixx>
           <ixy>0</ixy>
@@ -388,7 +394,7 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-                <laser_retro>0</laser_retro>
+        <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
