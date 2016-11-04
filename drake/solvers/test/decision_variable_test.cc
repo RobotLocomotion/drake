@@ -17,7 +17,8 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   v_mutable.reserve(6);
   v_immutable.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    auto vi = std::make_shared<DecisionVariableScalar>(DecisionVariableScalar::VarType::CONTINUOUS, "x", i);
+    auto vi = std::make_shared<DecisionVariableScalar>(
+        DecisionVariableScalar::VarType::CONTINUOUS, "x", i);
     v_mutable.push_back(vi);
     v_immutable.push_back(std::weak_ptr<const DecisionVariableScalar>(vi));
     v_mutable[i]->set_value(2 * i);

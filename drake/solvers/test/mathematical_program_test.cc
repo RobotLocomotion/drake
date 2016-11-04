@@ -292,9 +292,8 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(
-      constraint.transpose(),
-      -std::numeric_limits<double>::infinity(), 40);
+  prog.AddLinearConstraint(constraint.transpose(),
+                           -std::numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -376,13 +375,11 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
-  prog.AddLinearConstraint(
-      constraint1.transpose(),
-      -std::numeric_limits<double>::infinity(), 6.5);
+  prog.AddLinearConstraint(constraint1.transpose(),
+                           -std::numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
-  prog.AddLinearConstraint(
-      constraint2.transpose(),
-      -std::numeric_limits<double>::infinity(), 20);
+  prog.AddLinearConstraint(constraint2.transpose(),
+                           -std::numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -605,18 +602,14 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
       new GloptipolyConstrainedExampleConstraint());
   prog.AddConstraint(qp_con, {x});
   prog.AddConstraint(qp_con, {y});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      -std::numeric_limits<double>::infinity(), 4, {x});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      -std::numeric_limits<double>::infinity(), 4, {y});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      -std::numeric_limits<double>::infinity(), 6, {x});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      -std::numeric_limits<double>::infinity(), 6, {y});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {x});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {y});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {x});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
@@ -887,7 +880,6 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-
 // Test how an equality-constrained QP is dispatched
 //   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
 //     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
@@ -942,7 +934,6 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tActual: " << actual_answer.transpose();
 }
 
-
 // Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
 // nonlinear optimization problem.
 // The objective is to find the smallest distance from a hyperplane
@@ -967,7 +958,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   const int xDim = A.cols();
   MathematicalProgram prog_lorentz;
   auto t_lorentz = prog_lorentz.AddContinuousVariables(1, "t");
-  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim,  "x");
+  auto x_lorentz = prog_lorentz.AddContinuousVariables(xDim, "x");
   prog_lorentz.AddLorentzConeConstraint({t_lorentz, x_lorentz});
   prog_lorentz.AddLinearEqualityConstraint(A, b, {x_lorentz});
   prog_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_lorentz});
@@ -1006,8 +997,8 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
-  prog_rotated_lorentz.AddBoundingBoxConstraint(
-      1.0, 1.0, slack_rotated_lorentz);
+  prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
+                                                slack_rotated_lorentz);
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
