@@ -68,7 +68,7 @@ class DecisionVariableMatrix {
         is_symmetric_(is_symmetric),
         vars_(vars.begin(), vars.end()) {
     DRAKE_ASSERT(!is_symmetric || rows == cols);
-    DRAKE_ASSERT(vars.size() == NumberOfVariables());
+    DRAKE_ASSERT(static_cast<int>(vars.size()) == NumberOfVariables());
   }
 
   /**
@@ -80,6 +80,7 @@ class DecisionVariableMatrix {
    * Return the number of columns in the matrix.
    */
   size_t cols() const {return cols_;}
+
   /**
    * Returns a new DecisionVariableMatrix, at i'th row and j'th column of
    * the original matrix.
@@ -87,6 +88,22 @@ class DecisionVariableMatrix {
   DecisionVariableMatrix operator()(int i, int j) const {
     return DecisionVariableMatrix(1, 1,
                                   {vars_[MatrixIndicesToVectorIndex(i, j)]});
+  }
+
+  /**
+   * Returns a new DecisionVariableMatrix, containing the i'th decision
+   * variable stored in the original matrix.
+   *For a non-symmetric matrix, the decision variables are stored in the column
+   * major, as the stacked columns of the matrix; for a symmetric matrix, the
+   * decision variables are stored as the stacked columns of the lower triangular
+   * part of the matrix.
+   * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
+   * (0-indexed) is at M(2, 1);
+   * for a 3 x 3 symmetric matrix M, the 5'th decision variable (0-indexed) is
+   * at M(2, 2).
+   */
+  DecisionVariableMatrix operator()(int i) const {
+    return DecisionVariableMatrix(1, 1, {vars_[i]});
   }
 
   /**
@@ -112,7 +129,7 @@ class DecisionVariableMatrix {
    * @return The value of the decision variable.
    */
   double value(size_t i) const {
-    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(static_cast<int>(i) < NumberOfVariables());
     DRAKE_ASSERT(!vars_[i].expired());
     return vars_[i].lock()->value();
   }
@@ -139,7 +156,7 @@ class DecisionVariableMatrix {
    * @return The type of the decision variable.
    */
   DecisionVariableScalar::VarType type(size_t i) const {
-    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(static_cast<int>(i) < NumberOfVariables());
     DRAKE_ASSERT(!vars_[i].expired());
     return vars_[i].lock()->type();
   }
@@ -166,7 +183,7 @@ class DecisionVariableMatrix {
    * @return The name of the decision variable.
    */
   std::string name(size_t i) const {
-    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(static_cast<int>(i) < NumberOfVariables());
     DRAKE_ASSERT(!vars_[i].expired());
     return vars_[i].lock()->name();
   }
@@ -193,7 +210,7 @@ class DecisionVariableMatrix {
    * @return The index of the decision variable.
    */
   size_t index(size_t i) const {
-    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(static_cast<int>(i) < NumberOfVariables());
     DRAKE_ASSERT(!vars_[i].expired());
     return vars_[i].lock()->index();
   }
