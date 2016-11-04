@@ -26,7 +26,7 @@ using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
-using drake::solvers::DecisionVariableView;
+using drake::solvers::DecisionVariableMatrix;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::SolutionResult;
 
@@ -85,7 +85,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint* constraint, int nq,
-    const drake::solvers::DecisionVariableView& vars,
+    const drake::solvers::DecisionVariableMatrix& vars,
     MathematicalProgram* prog) {
   DRAKE_ASSERT(
       constraint->getCategory() ==
@@ -124,7 +124,7 @@ void AddSingleTimeLinearPostureConstraint(
 void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint* constraint,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableView& vars,
+    const drake::solvers::DecisionVariableMatrix& vars,
     drake::solvers::MathematicalProgram* prog) {
   DRAKE_ASSERT(constraint->getCategory() ==
                RigidBodyConstraint::QuasiStaticConstraintCategory);
@@ -133,7 +133,7 @@ void AddQuasiStaticConstraint(
       static_cast<const QuasiStaticConstraint*>(constraint);
   if (!qsc->isTimeValid(t)) { return; }
   int num_vars = qsc->getNumWeights();
-  DecisionVariableView qsc_vars =
+  DecisionVariableMatrix qsc_vars =
       prog->AddContinuousVariables(num_vars, "qsc");
   auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
       qsc, kin_helper);
@@ -218,7 +218,7 @@ void inverseKinBackend(
     MathematicalProgram prog;
     SetIKSolverOptions(ikoptions, &prog);
 
-    DecisionVariableView vars =
+    DecisionVariableMatrix vars =
         prog.AddContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
