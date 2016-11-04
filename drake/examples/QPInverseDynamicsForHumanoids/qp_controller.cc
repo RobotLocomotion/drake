@@ -110,9 +110,9 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // The order of insertion is important, the rest of the program assumes this
   // layout.
   prog_ = solvers::MathematicalProgram();
-  solvers::DecisionVariableView vd =
+  solvers::DecisionVariableMatrix vd =
       prog_.AddContinuousVariables(num_vd_, "vd");
-  solvers::DecisionVariableView basis =
+  solvers::DecisionVariableMatrix basis =
       prog_.AddContinuousVariables(num_basis_, "basis");
 
   // Allocate various matrices and vectors.
@@ -296,8 +296,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // [1] An efficiently solvable quadratic program for stabilizing dynamic
   // locomotion, Scott Kuindersma, Frank Permenter, and Russ Tedrake
   // http://groups.csail.mit.edu/robotics-center/public_papers/Kuindersma13.pdf
-  const solvers::DecisionVariableView vd = prog_.GetVariable("vd");
-  const solvers::DecisionVariableView basis = prog_.GetVariable("basis");
+  const solvers::DecisionVariableMatrix vd = prog_.GetVariable("vd");
+  const solvers::DecisionVariableMatrix basis = prog_.GetVariable("basis");
 
   int basis_start = basis.index();
   int vd_start = vd.index();

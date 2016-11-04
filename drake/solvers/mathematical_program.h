@@ -347,51 +347,30 @@ class MathematicalProgram {
  public:
   MathematicalProgram();
 
-  /// Add continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
-   * existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
-   * and/or constraints to have any effect during optimization.
-   * @param rows  The number of rows in the new variables.
-   * @param names A vector of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x 1, containing the new vars (not all the vars stored).
-   *
-   * Example:
-   * @code{.cc}
-   * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, 1 {"x1", "x2"});
-   * @endcode
-   * This adds a 2 x 1 vector decision variables into the program.
-   *
-   * The name of the variable is only used for the user for understand.
+   * Add continuous variables to this MathematicalProgram.
+   * @see AddContinuousVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
    */
   const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, const std::vector<std::string>& names) {
     return AddContinuousVariables(rows, 1, names);
   }
 
-  /// Add continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
-   * existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
-   * and/or constraints to have any effect during optimization.
-   * @param rows  The number of rows in the new variables.
-   * @param names A vector of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x 1, containing the new vars (not all the vars stored).
-   *
-   * Example:
-   * @code{.cc}
-   * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, 1 {"x1", "x2"});
-   * @endcode
-   * This adds a 2 x 1 vector decision variables into the program.
-   *
-   * The name of the variable is only used for the user for understand.
+   * Add continuous variables to this MathematicalProgram, with default name "x".
+   * @see AddContinuousVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
    */
   const DecisionVariableMatrix AddContinuousVariables(std::size_t rows) {
     std::vector<std::string> names(rows, "x");
     return AddContinuousVariables(rows, names);
+  }
+
+  /**
+   * Add continuous variables to this MathematicalProgram, all new variables
+   * are assigned @p name.
+   * @see AddContinuousVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
+   */
+  const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, const std::string& name) {
+    return AddContinuousVariables(rows, 1, std::vector<std::string>(rows, name));
   }
 
   /// Add continuous variables to this MathematicalProgram.
@@ -418,24 +397,9 @@ class MathematicalProgram {
     return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols, names);
   }
 
-  /// Add continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal vector of any
-   * existing vars. All new variables are named "x".
-   * The new variables are uninitialized: callers are expected to add costs
-   * and/or constraints to have any effect during optimization.
-   * @param rows  The number of rows in the new variables.
-   * @param cols  The number of columns in the new variables.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
-   *
-   * Example:
-   * @code{.cc}
-   * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, 3);
-   * @endcode
-   * This adds a 2 x 3 matrix decision variables into the program.
-   *
-   * The name of the variable is only used for the user for understand.
+   * Add continuous variables to this MathematicalProgram, with default name "x".
+   * @see AddContinuousVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
    */
   const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, std::size_t cols) {
     std::vector<std::string> names(rows * cols, "x");
@@ -469,31 +433,33 @@ class MathematicalProgram {
     return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols, names);
   }
 
-  /// Add binary variables to this MathematicalProgram.
   /**
-   * Add binary variables, appending them to an internal vector of any
-   * existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
-   * and/or constraints to have any effect during optimization.
-   * @param rows  The number of rows in the new variables.
-   * @param cols  The number of columns in the new variables.
-   * @param names A vector of strings containing the name for each variable.
-   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
-   *
-   * Example:
-   * @code{.cc}
-   * MathematicalProgram prog;
-   * auto b = prog.AddContinuousVariables(2, 3, {"b1", "b2", "b3", "b4", "b5", "b6"});
-   * @endcode
-   * This adds a 2 x 3 matrix decision variables into the program.
-   *
-   * The name of the variable is only used for the user for understand.
+   * Add binary variables to this MathematicalProgram, with default name "b".
+   * @see AddBinaryVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
    */
   DecisionVariableMatrix AddBinaryVariables(size_t rows, size_t cols) {
     std::vector<std::string> names = std::vector<std::string>(rows * cols, "b");
     return AddBinaryVariables(rows, cols, names);
   }
 
+  /**
+   * Add binary variables to this MathematicalProgram, with default name "b".
+   * @see AddBinaryVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
+   */
+  DecisionVariableMatrix AddBinaryVariables(size_t rows) {
+    std::vector<std::string> names = std::vector<std::string>(rows, "b");
+    return AddBinaryVariables(rows, 1, names);
+  }
+
+  /**
+   * Add binary variables to this MathematicalProgram, all new variables are
+   * assigned the same name.
+   * @see AddBinaryVariables(size_t rows, size_t cols, const std::vector<std::string>& names);
+   */
+  DecisionVariableMatrix AddBinaryVariables(size_t rows, const std::string& name) {
+    std::vector<std::string> names = std::vector<std::string>(rows, name);
+    return AddBinaryVariables(rows, 1, names);
+  }
   /**
    * @param name of the variable.
    * @return A DecisionVariableMatrix that contains only one decision variable,
@@ -1400,10 +1366,10 @@ class MathematicalProgram {
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
-  //std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
-  //std::unique_ptr<MathematicalProgramSolverInterface>
-  //    equality_constrained_qp_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface>
+      equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
 
