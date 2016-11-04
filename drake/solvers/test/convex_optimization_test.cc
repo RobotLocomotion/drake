@@ -858,19 +858,19 @@ void TestFindSpringEquilibrium(
 void GetLinearProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverToListIfAvailable("Gurobi", solvers);
-  //AddSolverToListIfAvailable("Mosek", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 
 void GetQuadraticProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverToListIfAvailable("Gurobi", solvers);
-  //AddSolverToListIfAvailable("Mosek", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 
 void GetSecondOrderConicProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
   AddSolverToListIfAvailable("Gurobi", solvers);
-  //AddSolverToListIfAvailable("Mosek", solvers);
+  AddSolverToListIfAvailable("Mosek", solvers);
 }
 }  // namespace
 
