@@ -62,17 +62,18 @@ MathematicalProgram::MathematicalProgram()
       x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
-      required_capabilities_(kNoCapabilities) {}/*,
+      required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
-      nlopt_solver_(new NloptSolver()),
-      snopt_solver_(new SnoptSolver()),
-      moby_lcp_solver_(new MobyLCPSolver()),
-      linear_system_solver_(new LinearSystemSolver()),
-      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      gurobi_solver_(new GurobiSolver()),
-      mosek_solver_(new MosekSolver()) {}*/
+      //nlopt_solver_(new NloptSolver()),
+      //snopt_solver_(new SnoptSolver()),
+      //moby_lcp_solver_(new MobyLCPSolver()),
+      linear_system_solver_(new LinearSystemSolver())
+      //equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      //gurobi_solver_(new GurobiSolver()),
+      //mosek_solver_(new MosekSolver()) {}
+{}
 
-SolutionResult MathematicalProgram::Solve() { return SolutionResult::kSolutionFound;/*
+SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
   // want to tweak the order of preference of solvers based on the types of
   // constraints present.
@@ -83,7 +84,7 @@ SolutionResult MathematicalProgram::Solve() { return SolutionResult::kSolutionFo
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_,
+  }/* else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
@@ -108,11 +109,11 @@ SolutionResult MathematicalProgram::Solve() { return SolutionResult::kSolutionFo
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
-  } else {
+  }*/ else {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
-  }*/
+  }
 }
 
 }  // namespace solvers

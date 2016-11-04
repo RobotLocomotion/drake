@@ -34,10 +34,12 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      Aeq.block(constraint_index, v.index(), n, v.size()) =
-          c->A().middleCols(var_index, v.size());
-      var_index += v.size();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      int num_v_variables = v.NumberOfVariables();
+      for (int i = 0; i < num_v_variables; ++i) {
+        Aeq.block(constraint_index, v.index(i), n, 1) = c->A().col(var_index);
+        ++var_index;
+      }
     }
     beq.segment(constraint_index, n) =
         c->lower_bound();  // = c->upper_bound() since it's an equality

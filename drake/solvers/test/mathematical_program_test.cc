@@ -76,7 +76,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::make_shared<Unique>());
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
-/*
+
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void CheckSolverType(MathematicalProgram& prog,
                      std::string desired_solver_name) {
@@ -90,12 +90,12 @@ void CheckSolverType(MathematicalProgram& prog,
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
-  NloptSolver nlopt_solver;
-  SnoptSolver snopt_solver;
+  //NloptSolver nlopt_solver;
+  //SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-      std::make_pair("SNOPT", &snopt_solver),
-      std::make_pair("NLopt", &nlopt_solver),
+      //std::make_pair("SNOPT", &snopt_solver),
+      //std::make_pair("NLopt", &nlopt_solver),
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
@@ -143,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
-  auto xhead = x.head(3);
+  auto xhead = x.block(0, 0, 3, 1);
 
   Vector4d b = Vector4d::Random();
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
@@ -182,7 +182,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.AddConstraint(bbcon, {x.head(2)});
+  prog.AddConstraint(bbcon, {x.block(0, 0, 2, 1)});
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
@@ -192,7 +192,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
         CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
   });
 }
-
+/*
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;
 
