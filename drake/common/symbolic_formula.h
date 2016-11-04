@@ -20,8 +20,8 @@ namespace symbolic {
 
 /** Kinds of symbolic formulas. */
 enum class FormulaKind {
-  True,   ///< ⊤
   False,  ///< ⊥
+  True,   ///< ⊤
   Eq,     ///< =
   Neq,    ///< !=
   Gt,     ///< >
@@ -44,7 +44,7 @@ class FormulaCell;
 It has the following grammar:
 
 \verbatim
-    F := ⊤ | ⊥ | E = E | E ≠ E | E > E | E ≥ E | E < E | E ≤ E
+    F := ⊥ | ⊤ | E = E | E ≠ E | E > E | E ≥ E | E < E | E ≤ E
        | E ∧ ... ∧ E | E ∨ ... ∨ E | ¬F | ∀ x₁, ..., xn. F
 \endverbatim
 
