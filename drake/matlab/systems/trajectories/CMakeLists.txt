@@ -3,13 +3,10 @@ if(Matlab_FOUND)
   drake_add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
 endif()
 
-drake_find_package(Bullet MODULE)
-
 if(Bullet_FOUND AND Matlab_FOUND)
   find_package(BLAS MODULE)
-  drake_find_package(snopt_c CONFIG)
 
-  if(BLAS_FOUND AND snopt_c_FOUND)
+  if(BLAS_FOUND AND snopt_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(replanFunnels_mex drakeMexUtil snopt_c

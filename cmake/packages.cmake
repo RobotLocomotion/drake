@@ -44,6 +44,7 @@ macro(drake_find_package PACKAGE)
 
   if(DFP_PKG_CONFIG)
     find_package(PkgConfig MODULE REQUIRED)
+    set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
     pkg_check_modules("${PACKAGE}" ${dfp_required} ${dfp_quiet}
       ${DFP_UNPARSED_ARGUMENTS} "${PACKAGE}")
   else()
@@ -67,4 +68,37 @@ macro(drake_find_package PACKAGE)
   unset(DFP_QUIET)
   unset(DFP_REQUIRED)
   unset(DFP_UNPARSED_ARGUMENTS)
+endmacro()
+
+#------------------------------------------------------------------------------
+# Find external packages.
+#------------------------------------------------------------------------------
+macro(drake_find_packages)
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # BEGIN required packages
+
+  drake_find_package(Eigen3 CONFIG REQUIRED)
+  drake_find_package(gflags CONFIG REQUIRED)
+  drake_find_package(GTest MODULE REQUIRED)
+
+  # END required packages
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # BEGIN optional packages
+
+  drake_find_package(avl CONFIG)
+  drake_find_package(bot2-core CONFIG)
+  drake_find_package(Bullet MODULE)
+  drake_find_package(gurobi PKG_CONFIG)
+  drake_find_package(lcm CONFIG)
+  drake_find_package(mosek PKG_CONFIG)
+  drake_find_package(NLopt CONFIG)
+  drake_find_package(octomap CONFIG)
+  drake_find_package(robotlocomotion-lcmtypes CONFIG)
+  drake_find_package(snopt CONFIG)
+  drake_find_package(spdlog CONFIG)
+  drake_find_package(xfoil CONFIG)
+  drake_find_package(yaml-cpp CONFIG)
+
+  # END optional packages
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 endmacro()

@@ -1,5 +1,3 @@
-drake_find_package(Bullet MODULE)
-
 add_executable(urdfKinTest urdfKinTest.cpp)
 target_link_libraries(urdfKinTest drakeRBM)
 if(Bullet_FOUND)
@@ -31,14 +29,11 @@ if(gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-pods_find_pkg_config(ipopt)
-drake_find_package(snopt_c CONFIG)
-
-if(snopt_c_FOUND OR ipopt_FOUND)
+if(snopt_FOUND OR ipopt_FOUND)
   add_ik_gtest(testIK)
   add_ik_gtest(testIKpointwise)
 endif()
-if(snopt_c_FOUND)
+if(snopt_FOUND)
   add_ik_gtest(testIKMoreConstraints)
   add_ik_gtest(testIKtraj)
 endif()
@@ -71,7 +66,7 @@ if(lcm_FOUND)
   target_link_libraries(compareRigidBodySystems drakeRBSystem GTest::GTest GTest::Main)
   drake_add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 
-  if(snopt_c_FOUND)
+  if(snopt_FOUND)
     drake_add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/automotive/models/prius")
   endif()
 

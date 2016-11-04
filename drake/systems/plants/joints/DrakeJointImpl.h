@@ -63,8 +63,8 @@
     return derived_.frictionTorque(v);                                       \
   };
 
-
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
 template <typename Derived>
 class DrakeJointImpl : public DrakeJoint {
  public:
@@ -107,6 +107,7 @@ class DrakeJointImpl : public DrakeJoint {
  private:
   Derived& derived_;
 };
+#pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual
 
 /*
  * from
