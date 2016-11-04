@@ -1,8 +1,9 @@
 #include "drake/solvers/decision_variable.h"
 
+
 namespace drake {
 namespace solvers {
-Eigen::MatrixXd DecisionVariableMatrix::value() const{
+Eigen::MatrixXd DecisionVariableMatrix::value() const {
   Eigen::MatrixXd mat(rows_, cols_);
   for (int i = 0; i < static_cast<int>(rows_); ++i) {
     for (int j = 0; j < static_cast<int>(cols_); ++j) {
@@ -23,7 +24,9 @@ Eigen::VectorXd DecisionVariableMatrix::VariableValue() const {
   return vec;
 }
 
-DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start, size_t col_start, size_t rows,
+DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start,
+                                                     size_t col_start,
+                                                     size_t rows,
                                                      size_t cols) const {
   DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
   std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
@@ -49,7 +52,7 @@ DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start, size_t co
 }
 
 bool DecisionVariableMatrix::covers(size_t index) const {
-  for(int i = 0; i < static_cast<int>(vars_.size()); ++i) {
+  for (int i = 0; i < static_cast<int>(vars_.size()); ++i) {
     DRAKE_ASSERT(!vars_[i].expired());
     if (vars_[i].lock()->index() == index) {
       return true;
@@ -57,5 +60,5 @@ bool DecisionVariableMatrix::covers(size_t index) const {
   }
   return false;
 }
-} // namespace solvers
-} // namespace drake
+}  // namespace solvers
+}  // namespace drake
