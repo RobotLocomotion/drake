@@ -40,12 +40,9 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
-size_t GetNumGradients(const Constraint& c, const VariableVector& variable_list,
+size_t GetNumGradients(const Constraint& c, const VariableVector& variable_vector,
                        Index* num_grad) {
-  size_t var_count = 0;
-  for (const DecisionVariableMatrix& v : variable_list) {
-    var_count += v.NumberOfVariables();
-  }
+  size_t var_count = GetVariableVectorSize(variable_vector);
 
   const size_t num_constraints = c.num_constraints();
   *num_grad = num_constraints * var_count;
@@ -64,12 +61,12 @@ size_t GetNumGradients(const Constraint& c, const VariableVector& variable_list,
 /// http://www.coin-or.org/Ipopt/documentation/node38.html#app.triplet
 ///
 /// @return the number of row/column pairs filled in.
-size_t GetGradientMatrix(const Constraint& c, const VariableVector& variable_list,
+size_t GetGradientMatrix(const Constraint& c, const VariableVector& variable_vector,
                          Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
 
-  for (const DecisionVariableMatrix& v : variable_list) {
+  for (const DecisionVariableMatrix& v : variable_vector) {
     for (int i = 0; i < static_cast<int>(m); ++i) {
       for (int j = 0; j < v.NumberOfVariables(); ++j) {
         iRow[grad_index] = constraint_idx + i;
@@ -96,7 +93,7 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 ///
 /// @return number of gradient entries populated
 size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
-                          const VariableVector& variable_list, Number* result,
+                          const VariableVector& variable_vector, Number* result,
                           Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
@@ -105,12 +102,12 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  size_t var_count = GetVariableVectorSize(variable_list);
+  size_t var_count = GetVariableVectorSize(variable_vector);
 
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const DecisionVariableMatrix& v : variable_list) {
+  for (const DecisionVariableMatrix& v : variable_vector) {
     int num_v_variables = v.NumberOfVariables();
     for (int i = 0; i < num_v_variables; ++i) {
       this_x(index + i) = tx(v.index(i));
@@ -128,11 +125,11 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   }
 
   // Extract the appropriate derivatives from our result into the
-  // gradient array.  Like above, we need to use variable_list to
+  // gradient array.  Like above, we need to use variable_vector to
   // figure out where the derivatives we actually care about are
   // located.
   size_t grad_idx = 0;
-  for (const DecisionVariableMatrix& v : variable_list) {
+  for (const DecisionVariableMatrix& v : variable_vector) {
     for (size_t i = 0; i < c.num_constraints(); i++) {
       for (int j = 0; j < v.NumberOfVariables(); j++) {
         grad[grad_idx++] = ty(i).derivatives()(v.index(j));
