@@ -109,12 +109,10 @@ class DRAKE_EXPORT Formula {
   friend DRAKE_EXPORT Formula operator&&(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator||(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator!(const Formula& f);
-  friend DRAKE_EXPORT bool operator==(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator==(const Expression& e1,
                                          const Expression& e2);
   friend DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
   friend DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
-  friend DRAKE_EXPORT bool operator!=(const Formula& f1, const Formula& f2);
   friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
                                          const Expression& e2);
   friend DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
@@ -149,17 +147,12 @@ class DRAKE_EXPORT Formula {
 /** Returns a formula @p f, universally quantified by variables @p vars. */
 DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
 
-/** Checks total ordering between @p f1 and @f2. */
-DRAKE_EXPORT bool operator<(const Formula& f1, const Formula& f2);
-
 DRAKE_EXPORT Formula operator&&(const Formula& f1, const Formula& f2);
 DRAKE_EXPORT Formula operator||(const Formula& f1, const Formula& f2);
 DRAKE_EXPORT Formula operator!(const Formula& f);
-DRAKE_EXPORT bool operator==(const Formula& f1, const Formula& f2);
 DRAKE_EXPORT Formula operator==(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
-DRAKE_EXPORT bool operator!=(const Formula& f1, const Formula& f2);
 DRAKE_EXPORT Formula operator!=(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator!=(const Expression& e1, double v2);
