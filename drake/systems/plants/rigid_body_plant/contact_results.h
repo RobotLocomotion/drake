@@ -48,10 +48,10 @@ class DRAKE_EXPORT ContactResults {
   // invalid.
   void Clear();
 
-  // Adds a contact between two collision elements into the contact set.
-  void AddContact(DrakeCollision::ElementId elementA,
-                  DrakeCollision::ElementId elementB, const Vector3<T>& point,
-                  const WrenchVector<T>& wrench);
+  // Reports a contact between two elements and prepares a ContactInfo. The
+  // caller should populate the ContactInfo with the appropriate details.
+  ContactInfo<T>& AddContact(DrakeCollision::ElementId elementA,
+                  DrakeCollision::ElementId elementB);
 
   std::vector<ContactInfo<T>> contacts_;
 };

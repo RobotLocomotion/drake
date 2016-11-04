@@ -32,6 +32,9 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactForce {
  public:
+  /** Default constructor.  All values are initialized to NaN. */
+  ContactForce();
+
   /**
    Fully-specified constructor.
 

@@ -2,8 +2,7 @@ set(source_files kinematics_results.cc rigid_body_plant.cc
     contact_force.cc
     contact_resultant_force_calculator.cc
     contact_detail.cc
-    contact_manifold.cc
-    sampled_contact_manifold.cc
+    point_contact_detail.cc
     contact_results.cc
     contact_info.cc
     )
@@ -45,9 +44,7 @@ drake_install_headers(
     kinematics_results.h rigid_body_plant.h
     contact_results.h
     contact_info.h
-    contact_manifold.h
-    contact_detail.h
-    sampled_contact_manifold.h)
+    contact_detail.h)
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rigid-body-plant
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
