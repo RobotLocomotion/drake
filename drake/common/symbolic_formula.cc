@@ -68,8 +68,8 @@ bool Formula::EqualTo(const Formula& f) const {
 }
 
 bool Formula::Less(const Formula& f) const {
-  const FormulaKind k1 = get_kind();
-  const FormulaKind k2 = f.get_kind();
+  const FormulaKind k1{get_kind()};
+  const FormulaKind k2{f.get_kind()};
   if (k1 < k2) {
     return true;
   }
@@ -642,7 +642,7 @@ bool FormulaForall::Less(const FormulaCell& f) const {
   if (k2 < k1) {
     return false;
   }
-  const FormulaForall& forall_f = static_cast<const FormulaForall&>(f);
+  const FormulaForall& forall_f{static_cast<const FormulaForall&>(f)};
   if (vars_ < forall_f.vars_) {
     return true;
   }
