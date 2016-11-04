@@ -354,7 +354,8 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
 
 NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
                                  const set<Formula>& formulas)
-    : FormulaCell{k, hash_value(formulas)}, formulas_{formulas} {}
+    : FormulaCell{k, hash_value<set<Formula>>{}(formulas)},
+      formulas_{formulas} {}
 
 Variables NaryFormulaCell::GetFreeVariables() const {
   Variables ret{};
