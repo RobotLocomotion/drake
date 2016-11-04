@@ -67,11 +67,6 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
  */
   bool supports_error_estimation() const override { return true; }
 
-  /**
-   * The integrator supports error control.
-   */
-  bool supports_error_control() const override { return true; }
-
   /// This integrator provides third order error estimates.
   int get_error_estimate_order() const override { return 3; }
 
@@ -86,6 +81,6 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   // These are pre-allocated temporaries for use by integration.
   std::unique_ptr <ContinuousState<T>> derivs0_, derivs1_, derivs2_;
 };
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake
 

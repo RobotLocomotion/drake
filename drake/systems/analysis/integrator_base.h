@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/context.h"
@@ -85,13 +87,6 @@ class IntegratorBase {
    * Without error estimation, target accuracy will be unused.
    */
   virtual bool supports_error_estimation() const = 0;
-
-  /**
-   * Indicates whether an integrator supports stepping with error control.
-   * Without stepping with error control, initial step size targets will be
-   * unused.
-   */
-  virtual bool supports_error_control() const = 0;
 
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
@@ -186,7 +181,7 @@ class IntegratorBase {
 
     // TODO(edrumwri): Compute v_scal_, z_scal_ automatically.
     // Set error scaling vectors if not already done.
-    if (supports_error_control()) {
+    if (supports_error_estimation()) {
       const auto& contstate = context_->get_state().get_continuous_state();
       const int gv_size = contstate->get_generalized_velocity().size();
       const int misc_size = contstate->get_misc_continuous_state().size();
@@ -204,17 +199,18 @@ class IntegratorBase {
    * If no request is made, the integrator will estimate a suitable size
    * for the initial step attempt. *If the integrator does not support error
    * control*, this method will throw a std::logic_error (call
-   * supports_error_control() to verify before calling this method). For
+   * supports_error_estimation() to verify before calling this method). For
    * variable-step integration, the initial target will be treated as a maximum
    * step size subject to accuracy requirements and event occurrences. You can
    * find out what size *actually* worked with
    * `get_actual_initial_step_size_taken()`.
-   * @throws std::logic_error If the integrator does not support error control.
+   * @throws std::logic_error If the integrator does not support error
+   *     estimation.
    */
   void request_initial_step_size_target(const T& step_size) {
-    if (!supports_error_control())
+    if (!supports_error_estimation())
       throw std::logic_error(
-          "Integrator does not support error control and "
+          "Integrator does not support error estimation and "
           "user has initial step size target");
     req_initial_step_size_ = step_size;
   }
@@ -266,7 +262,7 @@ class IntegratorBase {
    * The size of the smallest step taken *as the result of a controlled
    * integration step adjustment* since the last Initialize() or
    * ResetStatistics() call. This value will be NaN for integrators without
-   * error control.
+   * error estimation.
    */
   const T& get_smallest_adapted_step_size_taken() const {
     return smallest_adapted_step_size_taken_;
@@ -350,70 +346,136 @@ class IntegratorBase {
 
   /**
    * @name Scaling vector functions.
-   * @{
-   * These functions allow accessing and modifying the scaling factors for
-   * the generalized coordinate, generalized velocity, and miscellaneous
-   * state variables; these scaling factors are applied when computing the
-   * norm of the integration error estimate toward error-controlled integration.
-   * They allow, for example, combining linear and angular errors in a
-   * reasonable way (see [Sherman 2011] for elaboration on that topic).
-   * get_generalized_state_scaling_vector() and
-   * get_mutable_generalized_state_scaling_vector() get the vector
-   * representations of diagonal matrices that scale both
-   * generalized coordinate and generalized velocity error estimates.
-   * get_misc_state_scaling_vector() and get_mutable_misc_state_scaling_vector()
-   * get the vector representations of diagonal matrices that scale
-   * miscellaneous continuous state variable error estimates.
    *
-   * Setting an entry of the vector to value y, where y < 0, will have an
-   * identical effect to setting the entry to -y (i.e., a positive value).
-   * Setting an entry of the vector to a zero value will cause the integrator
-   * to ignore errors in that component for purposes of error-controlled
+   * This group of functions describes how errors for state variables with
+   * heterogeneous units are scaled in the context of error-controlled
    * integration.
    *
-   * Default scaling values for both vectors are unity (i.e., vectors of
-   * "ones").
+   * A collection of state variables is generally defined in heterogenous units
+   * (e.g. centimeters, angles, velocities, energy). Some of the state
+   * variables cannot even be expressed in meaningful units, like
+   * quaternions. We must be able to scale errors in these
+   * heterogeneous variables to determine whether the error across all state
+   * variables is acceptable given the user-specified accuracy
+   * requirement for the simulation being performed (see
+   * [Sherman 2011] for elaboration on that topic). The scaling factors are
+   * normally determined automatically using the system's unit
+   * dimensions, so *most users can stop reading now!*
    *
-   * For elaboration upon how we apply scaling factors to both coordinate
-   * and velocity variables, consider a mass-spring system described by state
-   * variable x and velocity variable v. The user may request that the velocity
-   * be accurate to 1e-3 units (e.g., millimeter/sec accuracy), which implies
-   * that the spring position will be accurate to within at least a millimeter
-   * over a second. Thus can the user specify error tolerances for configuration
-   * variables, which might ordinarily be challenging to do when, for example,
-   * such variables represent unit quaternions.
+   * Users interested in more precise control over scaling may
+   * use the methods in this group to access and modify weighting factors for
+   * individual state variables. Changes to these weights can only be made prior
+   * to integrator initialization, or as a result of an event which is followed
+   * by re-initialization.
    *
-   * Assume the existence of a nq x n matrix N and its pseudo-inverse N+ such
-   * that `N+ * N = I` (the identity matrix- note that N * N+ != I, as N
-   * non-square), `v = N+ * qdot`, and `qdot = N * v`, where `qdot` represents
-   * the time derivatives of the configuration variables and `v = dx/dt`
-   * represents the velocity variables. `qdot` and `v` may generally be
-   * distinct, as in the case where `q` corresponds to unit quaternions and
-   * `v` corresponds to an angular velocity vector. [Nikravesh 1988] shows how
-   * such a matrix `N` can be determined and provides more information. Given
-   * this relationship between `N` and `N+`, we can relate scaled errors in
-   * configuration coordinates (`q`) to scaled errors in generalized
-   * configuration (`x`), as the following derivation shows:
+   * <h4>How to choose weights</h4>
    *
-   * <pre>
-   * v = N+ * qdot
-   * dx/dt = N+ * dq/dt                 Use synonyms for qdot and v
-   * dx = N+ * dq                       Change time derivatives to differentials
-   * W_v * dx = W_v * N+ * dq           Pre-multiply both sides by W_v
-   * N * W_v * dx = N * W_v * N+ * dq   Pre-multiply both sides by N
-   * N * W_v * dx = W_q * dq            Assign W_q := N*W_v*N+
+   * The weight `wᵢ` for a state variable `xᵢ` should be
+   * chosen so that the product `wᵢ * dxᵢ` is unitless, and in particular is 1
+   * when `dxᵢ` represents a "unit effect" of state variable `xᵢ`; that is, the
+   * change in `xᵢ` that produces a unit change in some quantity of interest in
+   * the system being simulated. The user-specified integration accuracy will
+   * then operate upon this weighted error. For example, if a "characteristic
+   * length" for the system being simulated is 0.1 meters, and `x₀` is a
+   * length variable measured in meters, then `w₀` should be 10 so that
+   * `w₀*dx₀=1` when `dx₀=0.1`. For angles representing pointing accuracy we
+   * typically assume a "unit angle" is one radian (about 60 degrees), so if x₁
+   * is a pointing angle then w₁=1 is an appropriate weight. We can scale
+   * an error vector `e=[dx₀ dx₁]` to a unitless fractional error
+   * `f=[w₀*dx₀ w₁*dx₁]`. Now to achieve a given accuracy `a`, say `a=.0001`, we
+   * need only check that `|fᵢ|<=a` for each element `i` of `f`. We'll be more
+   * precise about this below.
+   *
+   * <h4>How the weights are used</h4>
+   *
+   * Separate weights are determined for each of
+   * - `n` generalized quasi-coordinates `ꝗ`  (position variables in the
+   *   velocity variable space), and
+   * - `nz` miscellaneous state variables `z`.
+   *
+   * Weights on the generalized velocity variables `v (= dꝗ/dt)` are derived
+   * directly from the weights on `ꝗ`, scaled by a unit time. Weights on the
+   * actual `nq` generalized coordinates (which are generally not equal to the
+   * `n` quasi-coordinates and can include unit quaternions) can
+   * be calculated efficiently from weights on the quasi-coordinates, using the
+   * relationship <pre>
+   *        dq/dt = N(q) v
+   *   =>      dq = N(q) dꝗ
    * </pre>
    *
-   * Finally, this documentation reinforces the distinction between `q` and `x`.
-   * `q` corresponds to "generalized configuration coordinates" and is generally
-   * not a minimal representation. `x` corresponds to "generalized
-   * configuration" and _may be_ a minimal representation. The distinction is
-   * particularly useful when one considers `q` to be unit quaternions and
-   * `v` to be an angular velocity vector. It is currently believed that
-   * no set of singularity-free, 3D orientation coordinates can be
-   * differentiated with respect to time to yield angular velocity.
-   * Nevertheless, such a conceivable set of 3D coordinates
-   * is useful when considering the discussion in the previous paragraph.
+   * The errors in the `ꝗ` and `z` variables are scaled by the diagonal elements
+   * of diagonal weighting matrices Wꝗ and Wz, respectively. In the absence of
+   * other information, the default for all scaling values is one, so `Wꝗ` and
+   * `Wz` are `n × n` and `nz × nz` identity matrices. The weighting matrix Wv
+   * for the velocity variables is just `Wv=τ*Wꝗ` where τ is a "characteristic
+   * time" for the system, that is, the quantity in time units that represents a
+   * significant evolution of the trajectory. This does *not* mean the fastest
+   * oscillation in the system but rather the time over which velocity errors
+   * may propagate before their position error effects are noticed. Typically
+   * `τ=1.0` or `0.1` seconds for human-scale mechanical systems. Note that
+   * larger values of `τ` are more conservative since they increase the velocity
+   * weights.
+   *
+   * The block-diagonal weighting matrix `Wq` on generalized coordinates
+   * `q` is calculated from `N` and `Wꝗ` (see below).
+   *
+   * In addition to these weights, accuracy for some of the state variables is
+   * maintained to a *relative* error (e.g. 0.01%) while others are maintained
+   * to an absolute tolerance. Even relative-error variables must be evaluated
+   * against absolute tolerances when they are near zero where relative errors
+   * can be undefined or unreasonably strict.
+   *
+   * The weighting matrices `Wq`, `Wv`, and `Wz` are used to compute a weighted
+   * infinity norm as follows. Although `Wv` and `Wz` are constant, the actual
+   * weightings may be state dependent for relative-error calculations. First
+   * define adjusted block diagonal matrix `E=diag(Eq,Ev,Ez)` as follows:
+   * <pre>
+   *   Eq = Wq
+   *   Ev: Ev(i,i) = { min(Wv(i,i), 1/|vᵢ|)     if vᵢ is relative
+   *                 { Wv(i,i)                  if vᵢ is absolute
+   *   Ez: Ez(i,i) = { min(Wz(i,i), 1/|zᵢ|)     if zᵢ is relative
+   *                 { Wz(i,i)                  if zᵢ is absolute
+   * </pre>
+   * (`Ev` and `Ez` are diagonal.) A `v` or `z` will be maintained to relative
+   * accuracy unless (a) it is "close" to zero, or (b) the variable has been
+   * defined as requiring absolute accuracy. Position variables `q` are always
+   * maintained to absolute accuracy (see [Sherman 2011] for rationale).
+   *
+   * Now given an error estimate vector `e=[eq ev ez]`, the vector `f=E*e`
+   * can be considered to provide a unitless fractional error for each of the
+   * state variables. To achieve a given user-specified accuracy `a`, we require
+   * that norm_inf(`f`) <= `a`. (That is, no element of `f` can have absolute
+   * value larger than `a`.)
+   *
+   * <h4>Determining weights for q</h4>
+   *
+   * The kinematic differential equations `qdot=N(q)*v` employ an `nq × n`
+   * matrix `N`. By construction, this relationship is invertible using `N`'s
+   * left pseudo-inverse `N⁺` so that `v=N⁺ qdot` and `N⁺ N = I` (the identity
+   * matrix); however, `N N⁺ != I`, as `N` has more rows than columns generally.
+   * [Nikravesh 1988] shows how such a matrix `N` can be determined and provides
+   * more information. Given this relationship between `N` and `N⁺`, we can
+   * relate scaled errors in configuration coordinates `q` to scaled errors in
+   * generalized quasi-coordinates `ꝗ`, as the following derivation shows: <pre>
+   *            v = N⁺ qdot         Inverse kinematic differential equation
+   *        dꝗ/dt = N⁺ dq/dt        Use synonyms for v and qdot
+   *           dꝗ = N⁺ dq           Change time derivatives to differentials
+   *        Wꝗ dꝗ = Wꝗ N⁺ dq        Pre-multiply both sides by Wꝗ
+   *      N Wꝗ dꝗ = N Wꝗ N⁺ dq      Pre-multiply both sides by N
+   *      N Wꝗ dꝗ = Wq dq           Define Wq := N Wꝗ N⁺
+   * </pre>
+   * The last equation shows that `Wq` as defined above provides the expected
+   * relationship between the weighted `ꝗ` variables in velocity space and the
+   * weighted `q` variables in configuration space.
+   *
+   * Note that generalized quasi-coordinates `ꝗ` can only be defined locally for
+   * a particular configuration `q`, such that the generalized velocities
+   * `v=dꝗ/dt`. There is in general no meaningful set of `n` generalized
+   * coordinates which can be differentiated with respect to time to yield `v`.
+   * For example, the Hairy Ball Theorem implies that it is not possible for
+   * three orientation variables to represent all 3D rotations without
+   * singularities, yet three velocity variables can repesent angular velocity
+   * in 3D without singularities.
    *
    * - [Nikravesh 1988] P. Nikravesh. Computer-Aided  Analysis of Mechanical
    *     Systems. Prentice Hall, 1988. Sec. 6.3.
@@ -436,10 +498,13 @@ class IntegratorBase {
    *  generalized coordinate and velocity state variables. Only used for
    *  integrators that support accuracy estimation. Returns a VectorBlock
    *  to make the values mutable without permitting changing the size of
-   *  the vector.
+   *  the vector. Requires re-initializing the integrator after calling
+   *  this method; ifInitialize() is not called afterward, an exception will be
+   *  thrown when attempting to call StepOnceAtMost().
    */
   Eigen::VectorBlock<Eigen::VectorXd>
     get_mutable_generalized_state_scaling_vector() {
+      initialization_done_ = false;
       return v_scal_.head(v_scal_.rows());
   }
 
@@ -457,9 +522,12 @@ class IntegratorBase {
    *  miscellaneous continuous state variables. Only used for integrators that
    *  support accuracy estimation. Returns a VectorBlock
    *  to make the values mutable without permitting changing the size of
-   *  the vector.
+   *  the vector. Requires re-initializing the integrator after calling this
+   *  method. If Initialize() is not called afterward, an exception will be
+   *  thrown when attempting to call StepOnceAtMost().
    */
   Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_scaling_vector() {
+    initialization_done_ = false;
     return z_scal_.head(z_scal_.rows());
   }
 
@@ -485,8 +553,8 @@ class IntegratorBase {
    * Default code for taking a single error controlled step of @p dt_max
    * or smaller. Integrators may use a different function than this one to
    * effect integration with error control- this particular function is expected
-   * to be called by an integrator's DoStepAtMost() method- but this default
-   * method is expected to function well in most circumstances.
+   * to be called by an error estimating integrator's DoStepAtMost() method- but
+   * this default method is expected to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
    *               requirements.
@@ -517,21 +585,21 @@ class IntegratorBase {
    * within error bounds; however, the process of (1) taking a trial
    * integration step, (2) calculating the error, and (3) adjusting the step
    * size- can be repeated until convergence. This code adapted from Simbody.
-   * @param[in] err
+   * @param err
    *      The norm of the integrator error that was computed using
    *       @p current_step_size.
-   * @param[in] dt_was_artificially_limited
+   * @param dt_was_artificially_limited
    *      `true` if step_size was artificially limited (by, e.g., stepping to
    *      a publishing time).
-   * @param[in] current_step_size
+   * @param current_step_size
    *      The current step size on entry.
-   * @param[out] new_step_size
-   *      The adjusted integration step size on return.
-   * @returns `true` if the new step size is at least as large as the current,
-   *          `false` otherwise.
+   * @returns a pair of types bool and T; the bool will be set to `true` if the
+   *      new step size is at least as large as the current, `false` otherwise.
+   *      The value of the T type will be set to the recommended next step size.
    */
-  bool CalcAdjustedStepSize(const T& err, bool dt_was_artificially_limited,
-                            const T& current_step_size, T& new_step_size) const;
+  std::pair<bool, T> CalcAdjustedStepSize(const T& err,
+                                          bool dt_was_artificially_limited,
+                                          const T& current_step_size) const;
 
   /** Derived classes can override this method to perform special
    * initialization. This method is called during the Initialize() method. This
@@ -727,26 +795,25 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
     //--------------------------------------------------------------------
     T err_nrm = CalcErrorNorm();
-    T new_step_size;
-    step_succeeded = CalcAdjustedStepSize(
-        err_nrm, dt_was_artificially_limited, current_step_size, new_step_size);
-
+    std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(err_nrm,
+                                                    dt_was_artificially_limited,
+                                                    current_step_size);
     if (!step_succeeded) {
       report_error_test_failure();
 
-      // Record the adaptive step size taken.
+      // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
-          get_smallest_adapted_step_size_taken() < new_step_size)
-        set_smallest_adapted_step_size_taken(new_step_size);
+          get_smallest_adapted_step_size_taken() < current_step_size)
+        set_smallest_adapted_step_size_taken(current_step_size);
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
       xc->SetFromVector(get_interval_start_state());
       derivs0->SetFromVector(get_interval_start_state_deriv());
     } else {  // Step succeeded.
-      ideal_next_step_size_ = new_step_size;
+      ideal_next_step_size_ = current_step_size;
       if (isnan(get_actual_initial_step_size_taken()))
-        set_actual_initial_step_size_taken(new_step_size);
+        set_actual_initial_step_size_taken(current_step_size);
     }
   } while (!step_succeeded);
 }
@@ -795,7 +862,7 @@ T IntegratorBase<T>::CalcErrorNorm() {
   unscaled_err = gz_err.CopyToVector();
   T z_nrm = (z_scal * unscaled_err).template lpNorm<Eigen::Infinity>();
 
-  // Compute W_q * dq = N * W_v * N+ * dq.
+  // Compute Wq * dq = N * Wv * N+ * dq.
   unscaled_err = gq_err.CopyToVector();
   system.MapConfigurationDerivativesToVelocity(context, unscaled_err,
                                                pinvN_dq_err.get());
@@ -811,13 +878,14 @@ T IntegratorBase<T>::CalcErrorNorm() {
 }
 
 template <class T>
-bool IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
+std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
                                              bool dt_was_artificially_limited,
-                                             const T& current_step_size,
-                                             T &new_step_size) const {
+                                             const T& current_step_size) const {
   using std::pow;
   using std::min;
   using std::max;
+  using std::isnan;
+  using std::isinf;
 
   // Magic numbers come from Simbody.
   const double kSafety = 0.9;
@@ -830,11 +898,11 @@ bool IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
   int err_order = get_error_estimate_order();
 
   /// Indicator for new step size not set properly.
-  new_step_size = T(-1);
+  T new_step_size(-1);
 
   // First, make a first guess at the next step size to use based on
   // the supplied error norm. Watch out for NaN!
-  if (std::isnan(err) || std::isinf(err))  // e.g., integrand returned NaN.
+  if (isnan(err) || isinf(err))  // e.g., integrand returned NaN.
     new_step_size = kMinShrink * current_step_size;
   else if (err == 0)  // A "perfect" step; can happen if no dofs for example.
     new_step_size = kMaxGrow * current_step_size;
@@ -876,13 +944,17 @@ bool IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
   // a special status from StepOnceAtMost().
   if (get_maximum_step_size() < std::numeric_limits<double>::infinity())
     new_step_size = min(new_step_size, get_maximum_step_size());
-  if (get_minimum_step_size() > 0)
+  if (get_minimum_step_size() > 0) {
+    if (new_step_size < get_minimum_step_size())
+      throw std::runtime_error("Error control wants to select step smaller "
+                                   "than minimum allowed for this integrator.");
     new_step_size = max(new_step_size, get_minimum_step_size());
+  }
 
   // Note: this is an odd definition of success. It only works because we're
   // refusing to shrink the step size above if accuracy was achieved.
   bool success = (new_step_size >= current_step_size);
-  return success;
+  return std::make_pair(success, new_step_size);
 }
 
 template <class T>

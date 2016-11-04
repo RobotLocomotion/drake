@@ -45,8 +45,8 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);
 }
 
-/// Verifies accuracy estimation and error control are supported.
-GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+/// Verifies error estimation is supported.
+GTEST_TEST(IntegratorTest, ErrorEst) {
   // Spring-mass system is necessary only to setup the problem.
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double DT = 1e-3;
@@ -55,8 +55,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
       spring_mass, context.get());
 
   EXPECT_GE(integrator.get_error_estimate_order(), 1);
-  EXPECT_EQ(integrator.supports_accuracy_estimation(), true);
-  EXPECT_EQ(integrator.supports_error_control(), true);
+  EXPECT_EQ(integrator.supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
   EXPECT_NO_THROW(integrator.request_initial_step_size_target(DT));
 }

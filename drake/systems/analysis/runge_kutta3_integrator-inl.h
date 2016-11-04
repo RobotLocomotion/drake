@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "runge_kutta3_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -83,9 +83,9 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   err_est_vec_ = -IntegratorBase<T>::get_interval_start_state();
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
-  const int sz = err_est_vec_.size();
-  for (int i=0; i< sz; ++i)                         // Eigen does not currently
-    err_est_vec_[i] = abs(err_est_vec_[i]);    // support iterators.
+  const int count = err_est_vec_.size();
+  for (int i=0; i< count; ++i)                       // Eigen does not currently
+    err_est_vec_[i] = abs(err_est_vec_[i]);          // support iterators.
   IntegratorBase<T>::get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 }
 

@@ -41,11 +41,6 @@ class ExplicitEulerIntegrator : public IntegratorBase<T> {
    */
   bool supports_error_estimation() const override { return false; }
 
-  /**
-   * Explicit Euler ntegrator does not support error control.
-   */
-  bool supports_error_control() const override { return false; }
-
   /// Integrator does not provide an error estimate.
   int get_error_estimate_order() const override { return 0; }
 
