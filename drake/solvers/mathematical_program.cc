@@ -69,9 +69,8 @@ MathematicalProgram::MathematicalProgram()
       //moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
       //equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      gurobi_solver_(new GurobiSolver())
-      //mosek_solver_(new MosekSolver()) {}
-{}
+      gurobi_solver_(new GurobiSolver()),
+      mosek_solver_(new MosekSolver()) {}
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
@@ -88,13 +87,13 @@ SolutionResult MathematicalProgram::Solve() {
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
+  }*/ else if (is_satisfied(required_capabilities_, kMosekCapabilities) &&
              mosek_solver_->available()) {
     // TODO(hongkai.dai@tri.global): based on my limited experience, Mosek is
     // faster than Gurobi for convex optimization problem. But we should run
     // a more thorough comparison.
     return mosek_solver_->Solve(*this);
-  } */else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
   } /*else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
