@@ -635,8 +635,7 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   prog_socp.AddLinearCost(drake::Vector1d(1.0), {y});
   RunSolver(&prog_socp, solver);
   Eigen::VectorXd x_socp_value = x_socp.value();
-  double objective_value_socp =
-      c.transpose() * x_socp_value + y.value(0);
+  double objective_value_socp = c.transpose() * x_socp_value + y.value(0);
 
   // Check the solution
   EXPECT_NEAR(2 * y.value().coeff(0), w.value().squaredNorm(), 1E-6);
@@ -750,7 +749,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                                 std::numeric_limits<double>::infinity()),
       {t});
   auto t_plus_l0 = prog.AddContinuousVariables(
-      num_nodes - 1, "t_plus_l0");  // The slack variable equals to t_i + spring_rest_length
+      num_nodes - 1,
+      "t_plus_l0");  // The slack variable equals to t_i + spring_rest_length
   Eigen::MatrixXd A1(num_nodes - 1, 2 * (num_nodes - 1));
   A1 << Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1),
       -Eigen::MatrixXd::Identity(num_nodes - 1, num_nodes - 1);

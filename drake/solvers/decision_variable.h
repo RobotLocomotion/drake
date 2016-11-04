@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -24,7 +25,6 @@ class DecisionVariableScalar {
    * @param type Support CONTINUOUS, INTEGER or BINARY.
    * @param name The name of the variable.
    * @param index The index of the variable in the optimization program.
-   * @return
    */
   DecisionVariableScalar(VarType type, const std::string& name, size_t index)
       : type_(type), name_(name), value_(0), index_(index) {}
@@ -86,8 +86,7 @@ class DecisionVariableMatrix {
    */
   DecisionVariableMatrix(
       size_t rows, size_t cols,
-      const std::vector<std::weak_ptr<const DecisionVariableScalar>>&
-          vars,
+      const std::vector<std::weak_ptr<const DecisionVariableScalar>>& vars,
       bool is_symmetric = false)
       : rows_(rows),
         cols_(cols),
@@ -100,12 +99,12 @@ class DecisionVariableMatrix {
   /**
    * Return the number of rows in the matrix.
    */
-  size_t rows() const {return rows_;}
+  size_t rows() const { return rows_; }
 
   /**
    * Return the number of columns in the matrix.
    */
-  size_t cols() const {return cols_;}
+  size_t cols() const { return cols_; }
 
   /**
    * Returns a new DecisionVariableMatrix, at i'th row and j'th column of
@@ -121,7 +120,8 @@ class DecisionVariableMatrix {
    * variable stored in the original matrix.
    *For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
-   * decision variables are stored as the stacked columns of the lower triangular
+   * decision variables are stored as the stacked columns of the lower
+   *triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -146,7 +146,8 @@ class DecisionVariableMatrix {
    * Returns the value of the i'th decision variable stored in the matrix.
    * For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
-   * decision variables are stored as the stacked columns of the lower triangular
+   * decision variables are stored as the stacked columns of the lower
+   * triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -173,7 +174,8 @@ class DecisionVariableMatrix {
    * Returns the type of the i'th decision variable stored in the matrix.
    * For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
-   * decision variables are stored as the stacked columns of the lower triangular
+   * decision variables are stored as the stacked columns of the lower
+   * triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -200,7 +202,8 @@ class DecisionVariableMatrix {
    * Returns the name of the i'th decision variable stored in the matrix.
    * For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
-   * decision variables are stored as the stacked columns of the lower triangular
+   * decision variables are stored as the stacked columns of the lower
+   * triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -227,7 +230,8 @@ class DecisionVariableMatrix {
    * Returns the index of the i'th decision variable stored in the matrix.
    * For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
-   * decision variables are stored as the stacked columns of the lower triangular
+   * decision variables are stored as the stacked columns of the lower
+   * triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -345,6 +349,7 @@ class DecisionVariableMatrix {
    * @return True if the variable is included in the matrix; false otherwise.
    */
   bool covers(size_t index) const;
+
  private:
   size_t rows_;
   size_t cols_;
@@ -384,7 +389,7 @@ class DecisionVariableMatrix {
 };
 
 typedef std::vector<DecisionVariableMatrix> VariableVector;
-inline int GetVariableVectorSize(const VariableVector &vars) {
+inline int GetVariableVectorSize(const VariableVector& vars) {
   int var_dim = 0;
   for (const auto& var : vars) {
     var_dim += var.NumberOfVariables();

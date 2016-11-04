@@ -45,8 +45,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
 
     if (body_motion_row_idx_as_cost[body_ctr].size() > 0)
       num_body_motion_as_cost++;
-    if (body_motion_row_idx_as_eq[body_ctr].size() > 0)
-      num_body_motion_as_eq++;
+    if (body_motion_row_idx_as_eq[body_ctr].size() > 0) num_body_motion_as_eq++;
     body_ctr++;
   }
 
@@ -131,9 +130,11 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // control code. Thus only their dimensions matter during allocation.
 
   // Dynamics
-  eq_dynamics_ = prog_.AddLinearEqualityConstraint(
-                           Eigen::MatrixXd::Zero(6, num_variable_),
-                           Eigen::Vector6d::Zero(), {vd, basis}).get();
+  eq_dynamics_ =
+      prog_
+          .AddLinearEqualityConstraint(Eigen::MatrixXd::Zero(6, num_variable_),
+                                       Eigen::Vector6d::Zero(), {vd, basis})
+          .get();
   eq_dynamics_->set_description("dynamics eq");
 
   // Contact constraints, 3 rows per contact point
@@ -146,11 +147,13 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
           prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
     } else if (contact.acceleration_constraint_type() == ConstraintType::Hard) {
       eq_contacts_[eq_ctr++] =
-          prog_.AddLinearEqualityConstraint(
-                    Eigen::MatrixXd::Zero(3 * contact.contact_points().size(),
-                                          num_vd_),
-                    Eigen::VectorXd::Zero(3 * contact.contact_points().size()),
-                    {vd}).get();
+          prog_
+              .AddLinearEqualityConstraint(
+                  Eigen::MatrixXd::Zero(3 * contact.contact_points().size(),
+                                        num_vd_),
+                  Eigen::VectorXd::Zero(3 * contact.contact_points().size()),
+                  {vd})
+              .get();
     } else {
       throw std::runtime_error("contact constraints cannot be skipped.");
     }
@@ -160,19 +163,22 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Contact force scalar (Beta), which is constant and does not depend on the
   // robot configuration.
   ineq_contact_wrench_ =
-      prog_.AddLinearConstraint(
-                Eigen::MatrixXd::Identity(num_basis_, num_basis_),
-                Eigen::VectorXd::Zero(num_basis_),
-                Eigen::VectorXd::Constant(num_basis_,
-                                          kUpperBoundForContactBasis),
-                {basis}).get();
+      prog_
+          .AddLinearConstraint(
+              Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+              Eigen::VectorXd::Zero(num_basis_),
+              Eigen::VectorXd::Constant(num_basis_, kUpperBoundForContactBasis),
+              {basis})
+          .get();
   ineq_contact_wrench_->set_description("contact force basis ineq");
   // Torque limit
   ineq_torque_limit_ =
-      prog_.AddLinearConstraint(
-                Eigen::MatrixXd::Zero(num_torque_, num_variable_),
-                Eigen::VectorXd::Zero(num_torque_),
-                Eigen::VectorXd::Zero(num_torque_), {vd, basis}).get();
+      prog_
+          .AddLinearConstraint(
+              Eigen::MatrixXd::Zero(num_torque_, num_variable_),
+              Eigen::VectorXd::Zero(num_torque_),
+              Eigen::VectorXd::Zero(num_torque_), {vd, basis})
+          .get();
   ineq_torque_limit_->set_description("torque limit ineq");
 
   // Set up cost / eq constraints for centroidal momentum change.
@@ -234,8 +240,10 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
 
   // Regularize basis.
   cost_basis_reg_ =
-      prog_.AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
-                             Eigen::VectorXd::Zero(num_basis_), {basis}).get();
+      prog_
+          .AddQuadraticCost(Eigen::MatrixXd::Identity(num_basis_, num_basis_),
+                            Eigen::VectorXd::Zero(num_basis_), {basis})
+          .get();
   cost_basis_reg_->set_description("basis reg cost");
   basis_reg_mat_ = Eigen::MatrixXd::Identity(num_basis_, num_basis_);
   basis_reg_vec_ = Eigen::VectorXd::Zero(num_basis_);
@@ -324,10 +332,12 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
   for (int i = 0; i < num_vd_; ++i) {
-    torque_linear_.block(0, vd.index(i), num_torque_, 1) = rs.M().bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, vd.index(i), num_torque_, 1) =
+        rs.M().bottomRows(num_torque_).col(i);
   }
   for (int i = 0; i < num_basis_; ++i) {
-    torque_linear_.block(0, basis.index(i), num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
+    torque_linear_.block(0, basis.index(i), num_torque_, 1) =
+        -JB_.bottomRows(num_torque_).col(i);
   }
   torque_constant_ = rs.bias_term().tail(num_torque_);
 
