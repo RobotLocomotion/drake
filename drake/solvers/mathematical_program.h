@@ -1399,7 +1399,7 @@ class DRAKE_EXPORT MathematicalProgram {
   AttributesSet required_capabilities_{0};
 
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
-  //std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
   //std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
