@@ -122,7 +122,7 @@ Run Cpp Lint on Single File
    :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
    :Parameters: $FilePath$
    :Working directory: $ProjectFileDir$
-5. Make sure that *only* the following Options are checked:
+5. Make sure that *only* the following Options are checked (the "Synchronize files after execution" is unnecessary because cpp lint is a read-only operation):
 
    - Open Console 
    - Main Menu
@@ -135,6 +135,8 @@ Run Cpp Lint on Single File
    :Name: Extract Links
    :Description: Convert file/line references into clickable links.
    :Regular expression to match output: $FILE_PATH$:$LINE$
+9. Click "Ok" on the "Edit filter" dialog.
+10. Click "OK" on the "Output Filters" dialog.
 
 Run Cpp Lint on Full Project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -142,11 +144,13 @@ Repeat the steps from creating the single-file version with the following
 differences:
 
 4. Set the fields as follows:
+
     :Name: Cpp Lint Project
     :Description: Apply cpp lint to the entire project.
     :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
     :Parameters: <leave empty>
     :Working directory: $ProjectFileDir$
+Continue on with steps 5 to the end.
 
 Executing
 ^^^^^^^^^
@@ -158,7 +162,12 @@ There appears to be a race condition. If the python program prints the
 results before it lists the summary (e.g., `Total X files checked, found Y 
 warnings`), then the first warning will not be properly extracted.  This happens
 occasionally when running on individual files.  It is less likely when running
-cpp lint on the full project.
+cpp lint on the full project, but it is still possible.  So, confirm that the
+console reports zero warnings. This is particularly important when evaluating
+the full project; cpplint wil print hundreds of "." characters which the 
+console does *not* wrap.  If the race condition affects you, the warning will
+be appended to this very long string, out of view. The summary will let you
+know if this has happened.
 
 Running a C++ executable
 ========================
