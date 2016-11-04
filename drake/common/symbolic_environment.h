@@ -37,7 +37,9 @@ class DRAKE_EXPORT Environment {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
-  typedef typename std::unordered_map<key_type, mapped_type> map;
+  typedef
+      typename std::unordered_map<key_type, mapped_type, hash_value<key_type>>
+          map;
   /** std::pair<key_type, mapped_type> */
   typedef typename map::value_type value_type;
   typedef typename map::iterator iterator;
