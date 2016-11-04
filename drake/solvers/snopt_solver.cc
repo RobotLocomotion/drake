@@ -200,17 +200,20 @@ struct SNOPTRun {
  */
 template <typename Binding>
 void EvaluateNonlinearConstraints(
-    const std::list<Binding>& constraint_list, snopt::doublereal F[],
+    const std::vector<Binding>& constraint_list, snopt::doublereal F[],
     snopt::doublereal G[], size_t* constraint_index, size_t* grad_index,
     const math::AutoDiffMatrixType<Eigen::VectorXd, Eigen::Dynamic>& tx) {
   TaylorVecXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      this_x.conservativeResize(index + v.size());
-      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
-      index += v.size();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      int num_v_variables = v.NumberOfVariables();
+      this_x.conservativeResize(index + num_v_variables);
+      for (int i = 0; i < num_v_variables; ++i) {
+        this_x(index + i) = tx(v.index(i));
+      }
+      index += num_v_variables;
     }
     TaylorVecXd ty;
     ty.resize(num_constraints);
@@ -221,12 +224,11 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
-    for (const DecisionVariableView& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
       for (snopt::integer i = 0;
            i < static_cast<snopt::integer>(num_constraints); i++) {
-        for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-          G[(*grad_index)++] =
-              static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+        for (int j = 0; j < v.NumberOfVariables(); ++j) {
+          G[(*grad_index)++] = static_cast<snopt::doublereal>(ty(i).derivatives()(v.index(j)));
         }
       }
     }
@@ -265,18 +267,21 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
     size_t index = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      this_x.conservativeResize(index + v.size());
-      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
-      index += v.size();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      int num_v_variables = v.NumberOfVariables();
+      this_x.conservativeResize(index + num_v_variables);
+      for (int i = 0; i < num_v_variables; ++i) {
+        this_x(index + i) = tx(v.index(i));
+      }
+      index += num_v_variables;
     }
     obj->Eval(this_x, ty);
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-        G[j] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (int j = 0; j < v.NumberOfVariables(); ++j) {
+        G[v.index(j)] += static_cast<snopt::doublereal>(ty(0).derivatives()(v.index(j)));
       }
     }
   }
@@ -305,13 +310,13 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
  */
 template <typename Binding>
 void UpdateNumNonlinearConstraintsAndGradients(
-    const std::list<Binding>& constraint_list,
+    const std::vector<Binding>& constraint_list,
     size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      *max_num_gradients += n * v.size();
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      *max_num_gradients += n * v.NumberOfVariables();
     }
     *num_nonlinear_constraints += n;
   }
@@ -319,7 +324,7 @@ void UpdateNumNonlinearConstraintsAndGradients(
 
 template <typename Binding>
 void UpdateConstraintBoundsAndGradients(
-    const std::list<Binding>& constraint_list, snopt::doublereal* Flow,
+    const std::vector<Binding>& constraint_list, snopt::doublereal* Flow,
     snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
     size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
@@ -332,11 +337,11 @@ void UpdateConstraintBoundsAndGradients(
       Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (const DecisionVariableView& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
       for (size_t i = 0; i < n; i++) {
-        for (size_t j = 0; j < v.size(); j++) {
+        for (int j = 0; j < v.NumberOfVariables(); ++j) {
           iGfun[*grad_index] = *constraint_index + i + 1;  // row order
-          jGvar[*grad_index] = v.index() + j + 1;
+          jGvar[*grad_index] = v.index(j) + 1;
           (*grad_index)++;
         }
       }
@@ -371,12 +376,12 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     const auto& lb = c->lower_bound();
     const auto& ub = c->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      for (size_t k = 0; k < v.size(); k++) {
-        xlow[v.index() + k] = std::max<snopt::doublereal>(
-            static_cast<snopt::doublereal>(lb(var_count)), xlow[v.index() + k]);
-        xupp[v.index() + k] = std::min<snopt::doublereal>(
-            static_cast<snopt::doublereal>(ub(var_count)), xupp[v.index() + k]);
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (int k = 0; k < v.NumberOfVariables(); ++k) {
+        xlow[v.index(k)] = std::max<snopt::doublereal>(
+            static_cast<snopt::doublereal>(lb(var_count)), xlow[v.index(k)]);
+        xupp[v.index(k)] = std::min<snopt::doublereal>(
+            static_cast<snopt::doublereal>(ub(var_count)), xupp[v.index(k)]);
         ++var_count;
       }
     }
@@ -441,16 +446,16 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     size_t n = c->num_constraints();
     size_t var_index = 0;
     Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();
-    for (const DecisionVariableView& v : binding.variable_list()) {
-      for (size_t k = 0; k < v.size(); ++k) {
+    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (int k = 0; k < v.NumberOfVariables(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint,
                                                            var_index + k);
              it; ++it) {
           tripletList.push_back(
-              T(linear_constraint_index + it.row(), v.index() + k, it.value()));
+              T(linear_constraint_index + it.row(), v.index(k), it.value()));
         }
       }
-      var_index += v.size();
+      var_index += v.NumberOfVariables();
     }
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
