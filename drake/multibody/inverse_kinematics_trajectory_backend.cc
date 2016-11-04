@@ -22,7 +22,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::VectorXi;
 
-using drake::solvers::DecisionVariableView;
+using drake::solvers::DecisionVariableMatrix;
 using drake::solvers::SolutionResult;
 using drake::solvers::MathematicalProgram;
 
@@ -380,9 +380,9 @@ void inverseKinTrajBackend(
   // Create our decision variables.  "q" represents all positions of
   // the model at each timestep in nT.  "qdot0" and "qdotf" are qdot
   // at the initial and final timestep.
-  DecisionVariableView q = prog.AddContinuousVariables(nT * nq, "q");
-  DecisionVariableView qdot0 = prog.AddContinuousVariables(nq, "qdot0");
-  DecisionVariableView qdotf = prog.AddContinuousVariables(nq, "qdotf");
+  DecisionVariableMatrix q = prog.AddContinuousVariables(nT * nq, "q");
+  DecisionVariableMatrix qdot0 = prog.AddContinuousVariables(nq, "qdot0");
+  DecisionVariableMatrix qdotf = prog.AddContinuousVariables(nq, "qdotf");
 
   std::shared_ptr<drake::solvers::Constraint> cost =
       std::make_shared<IKTrajectoryCost>(helper, q_nom);
@@ -533,7 +533,7 @@ void inverseKinTrajBackend(
   const auto q_value = q.value();
   q_sol->resize(nq, nT);
   for (int i = 0; i < nT; i++) {
-    q_sol->col(i) = q_value.segment(i * nq, nq);
+    q_sol->col(i) = q_value.block(i * nq, 0, nq, 1);
   }
 
   qdot_sol->resize(nq, nT);
