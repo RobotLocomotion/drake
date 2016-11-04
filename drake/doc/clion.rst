@@ -110,20 +110,20 @@ Creating the External Tools
 .. role:: raw-html(raw)
    :format: html
 
-Run Cpp Lint on Single File
+Run Cpplint on Single File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 1. Open the Settings (File > Settings) or `Alt+Ctrl+S`.
 2. Navigate to Tools > External Tools.
 3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
 4. Add the following values in the following fields:
 
-   :Name: Cpp Lint File
-   :Description: Apply cpp lint to the current file.
+   :Name: Cpplint File
+   :Description: Apply cpplint to the current file.
    :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
    :Parameters: --allstdout $FilePath$
    :Working directory: $ProjectFileDir$
 5. Make sure that *only* the following Options are checked (the "Synchronize files
-   after execution" is unnecessary because cpp lint is a read-only operation):
+   after execution" is unnecessary because cpplint is a read-only operation):
 
    - Open Console 
    - Main Menu
@@ -139,15 +139,15 @@ Run Cpp Lint on Single File
 9. Click "Ok" on the "Edit filter" dialog.
 10. Click "OK" on the "Output Filters" dialog.
 
-Run Cpp Lint on Full Project
+Run CppLint on Full Project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Repeat the steps from creating the single-file version with the following
 differences:
 
 4. Set the fields as follows:
 
-    :Name: Cpp Lint Project
-    :Description: Apply cpp lint to the entire project.
+    :Name: Cpplint Project
+    :Description: Apply cpplint to the entire project.
     :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
     :Parameters: --allstdout 
     :Working directory: $ProjectFileDir$
