@@ -142,11 +142,9 @@ GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestBox) {
                        "/automotive/models/boxcar.sdf", 1);
 }
 
-// The following model is used to stress test the code some more since it has a
-// different number of joint states than the above two models.
 GTEST_TEST(AutomotiveSimulatorTest, SimpleCarTestTwoDofBot) {
   TestSimpleCarWithSdf(GetDrakePath() +
-                       "/automotive/models/two_dof_robot.sdf", 3);
+                       "/automotive/models/prius/prius.sdf", 13);
 }
 
 // A helper method for unit testing TrajectoryCar. Parameters @p sdf_filename_1
@@ -226,7 +224,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestBoxcar) {
 
 GTEST_TEST(AutomotiveSimulatorTest, TrajectoryCarTestTwoDofBot) {
   TestTrajectoryCarWithSdf(GetDrakePath() +
-                           "/automotive/models/two_dof_robot.sdf", 3,
+                           "/automotive/models/prius/prius.sdf", 13,
                            GetDrakePath() +
                            "/automotive/models/prius/prius_with_lidar.sdf", 17);
 }
