@@ -12,16 +12,42 @@
 namespace drake {
 namespace solvers {
 
+/**
+ * This class stores the type, the name, the value, and the index of a
+ * decision variable in an optimization program.
+ */
 class DecisionVariableScalar {
  public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
+  /**
+   * Construct a decision variable.
+   * @param type Support CONTINUOUS, INTEGER or BINARY.
+   * @param name The name of the variable.
+   * @param index The index of the variable in the optimization program.
+   * @return
+   */
   DecisionVariableScalar(VarType type, const std::string& name, size_t index)
       : type_(type), name_(name), value_(0), index_(index) {}
 
+  /**
+   * @return The type of the variable.
+   */
   VarType type() const { return type_; }
 
+  /**
+   * @return The name of the variable.
+   */
   std::string name() const { return name_; }
+
+  /**
+   * @return The value of the variable. This method is only meaningful after
+   * calling Solve() in MathematicalProgram.
+   */
   double value() const { return value_; }
+
+  /**
+   * @return The index of the variable in the optimization program.
+   */
   size_t index() const { return index_; }
 
   void set_value(double new_value) { value_ = new_value; }
@@ -259,12 +285,60 @@ class DecisionVariableMatrix {
   DecisionVariableMatrix row(size_t i) const { return block(i, 0, 1, cols_); }
 
   /**
-   * Construct a new MatrixDecisionVariable from a column of the original
+   * Construct a new DecisionVariableMatrix from a column of the original
    * matrix.
    * @param j The index of the column.
    */
   DecisionVariableMatrix col(size_t j) const { return block(0, j, rows_, 1); }
 
+  /**
+   * Construct a new DecisionVariableMatrix containing the first @p i decision
+   * variables of the original matrix. Only works if the original matrix is
+   * a column vector (has only one column).
+   */
+  DecisionVariableMatrix head(size_t i) const {
+    DRAKE_ASSERT(cols_ == 1);
+    return block(0, 0, i, 1);
+  }
+
+  /**
+   * Construct a new DecisionVariableMatrix containing the last @p i decision
+   * variables of the original matrix. Only works if the original matrix is
+   * a column vector (has only one column).
+   */
+  DecisionVariableMatrix tail(size_t i) const {
+    DRAKE_ASSERT(cols_ == 1);
+    return block(cols_ - i, 0, i, 1);
+  }
+
+  /**
+   * Construct a new DecisionVariableMatrix containing a chunk of the decision
+   * variables of the original matrix, starting from the @p start_row,
+   * with @p i elements. Only works if the original matrix is
+   * a column vector (has only one column).
+   */
+  DecisionVariableMatrix segment(size_t start_row, size_t rows) const {
+    DRAKE_ASSERT(cols_ == 1);
+    return block(start_row, 0, rows, 1);
+  }
+
+  /**
+   * Construct a new DecisionVariableMatrix containing a chunk of the decision
+   * variables of the original matrix, starting from the @p start_row,
+   * with @p rows rows.
+   */
+  DecisionVariableMatrix middleRows(size_t start_row, size_t rows) const {
+    return block(start_row, 0, rows, cols_);
+  }
+
+  /**
+   * Construct a new DecisionVariableMatrix containing a chunk of the decision
+   * variables of the original matrix, starting from the @p start_col,
+   * with @p cols columns.
+   */
+  DecisionVariableMatrix middleCols(size_t start_col, size_t cols) const {
+    return block(0, start_col, rows_, cols);
+  }
   /**
    * Determine if the variable with given index is included in this matrix.
    * @param index The index of the variable in the mathematical program.
