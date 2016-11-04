@@ -200,13 +200,13 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename C>
   class Binding {
    public:
-    Binding(const std::shared_ptr<C>& c, const VariableList& v)
+    Binding(const std::shared_ptr<C>& c, const VariableVector& v)
         : constraint_(c), variable_list_(v) {
       for (const auto& var : variable_list_) {
-        for (int i = 0; i < static_cast<int>(var.size()); ++i) {
+        for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
           // The variables are contiguous in var, so the index
           // is shifted by i from the starting index var.index().
-          variable_indices_.push_back(var.index() + i);
+          variable_indices_.push_back(var.index(i));
         }
       }
     }
@@ -219,7 +219,7 @@ class DRAKE_EXPORT MathematicalProgram {
 
     const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-    const VariableList& variable_list() const { return variable_list_; }
+    const VariableVector& variable_list() const { return variable_list_; }
 
     /**
      * @return A Eigen::VectorXd for all the variables in the variable list.
@@ -227,9 +227,9 @@ class DRAKE_EXPORT MathematicalProgram {
     Eigen::VectorXd VariableListToVectorXd() const {
       size_t dim = 0;
       Eigen::VectorXd X(GetNumElements());
-      for (auto& var : variable_list_) {
-        X.segment(dim, var.size()) = var.value();
-        dim += var.size();
+      for (const auto& var : variable_list_) {
+        X.segment(dim, var.NumberOfVariables()) = var.VariableValue();
+        dim += var.NumberOfVariables();
       }
       return X;
     }
@@ -238,7 +238,7 @@ class DRAKE_EXPORT MathematicalProgram {
      * @brief returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool Covers(size_t index) const {
-      for (auto view : variable_list_) {
+      for (const auto& view : variable_list_) {
         if (view.covers(index)) {
           return true;
         }
@@ -250,8 +250,8 @@ class DRAKE_EXPORT MathematicalProgram {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       size_t count = 0;
-      for (auto view : variable_list_) {
-        count += view.size();
+      for (const auto& view : variable_list_) {
+        count += view.NumberOfVariables();
       }
       return count;
     }
@@ -264,11 +264,11 @@ class DRAKE_EXPORT MathematicalProgram {
                       Eigen::VectorXd* output) const {
       DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
-      for (auto view : variable_list_) {
+      for (const auto& view : variable_list_) {
         const auto& solution_segment =
-            solution.segment(solution_index, view.size());
-        output->segment(view.index(), view.size()) = solution_segment;
-        solution_index += view.size();
+            solution.segment(solution_index, view.NumberOfVariables());
+        output->segment(view.index(0), view.NumberOfVariables()) = solution_segment;
+        solution_index += view.NumberOfVariables();
       }
     }
 
@@ -301,7 +301,7 @@ class DRAKE_EXPORT MathematicalProgram {
 
    private:
     std::shared_ptr<C> constraint_;
-    VariableList variable_list_;
+    VariableVector variable_list_;
     std::vector<int> variable_indices_;  // This stores the indices of all the
     // variables in the variable_list_;
   };
@@ -350,90 +350,116 @@ class DRAKE_EXPORT MathematicalProgram {
 
   /// Add continuous variables to this MathematicalProgram.
   /**
-   * Add continuous variables, appending them to an internal list of any
+   * Add continuous variables, appending them to an internal vector of any
    * existing vars.
    * The new variables are uninitialized: callers are expected to add costs
    * and/or constraints to have any effect during optimization.
-   *
-   * @return The DecisionVariableView of the new vars (not all the vars stored).
+   * @param rows  The number of rows in the new variables.
+   * @param cols  The number of columns in the new variables.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
    *
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddContinuousVariables(2, "x");
+   * auto x = prog.AddContinuousVariables(2, 3, {"x1", "x2", "x3", "x4", "x5", "x6"});
    * @endcode
-   * This adds two continuous variables into the optimization program.
-   * x.name() is "b".
+   * This adds a 2 x 3 matrix decision variables into the program.
    *
-   * It is OK to call AddContinuousVariables() with the same name. The following code
-   * is legitimate
-   * @code{.cc}
-   * MathematicalProgram prog;
-   * auto x1 = prog.AddContinuousVariables(2, "x");
-   * auto x2 = prog.AddContinuousVariables(2, "x");
-   * @endcode
    * The name of the variable is only used for the user for understand.
    */
-  const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
-                                                    std::string name = "x") {
-    DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,
-                       num_new_vars, num_vars_);
-    num_vars_ += num_new_vars;
-    variables_.push_back(v);
-    variable_views_.push_back(DecisionVariableView(variables_.back()));
-    x_initial_guess_.conservativeResize(num_vars_);
-    x_initial_guess_.tail(num_new_vars) =
-        0.1 * Eigen::VectorXd::Random(num_new_vars);
-
-    return variable_views_.back();
+  const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, std::size_t cols, const std::vector<std::string>& names) {
+    return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols, names);
   }
 
+  /// Add continuous variables to this MathematicalProgram.
   /**
-   * Add binary variables to MathematicalProgram.
-   * Appending new binary variables to an internal list of any existing vars.
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars. All new variables are named "x".
    * The new variables are uninitialized: callers are expected to add costs
    * and/or constraints to have any effect during optimization.
-   * @param num_new_vars Number of new binary variables.
-   * @param name The name of the binary variables, default is "b".
-   * @return The DecisionVariableView of the new binary variables (not all the
-   * variables stored in MathematicalProgram).
+   * @param rows  The number of rows in the new variables.
+   * @param cols  The number of columns in the new variables.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
    *
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto b = prog.AddBinaryVariables(2, "b");
+   * auto x = prog.AddContinuousVariables(2, 3);
    * @endcode
-   * This adds two binary variables into the optimization program.
-   * b.name() is "b".
+   * This adds a 2 x 3 matrix decision variables into the program.
    *
-   * It is OK to call AddBinaryVariables() with the same name. The following code
-   * is legitimate
+   * The name of the variable is only used for the user for understand.
+   */
+  const DecisionVariableMatrix AddContinuousVariables(std::size_t rows, std::size_t cols) {
+    std::vector<std::string> names(rows * cols, "x");
+    return AddContinuousVariables(rows, cols, names);
+  }
+
+  /// Add binary variables to this MathematicalProgram.
+  /**
+   * Add binary variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param rows  The number of rows in the new variables.
+   * @param cols  The number of columns in the new variables.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
+   *
+   * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto b1 = prog.AddBinaryVariables(2, "b");
-   * auto b2 = prog.AddBinaryVariables(2, "b");
+   * auto b = prog.AddContinuousVariables(2, 3, {"b1", "b2", "b3", "b4", "b5", "b6");
    * @endcode
-   * The name of the variable is only used for the user to understand.
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
    */
-  const DecisionVariableView AddBinaryVariables(std::size_t num_new_vars,
-                                                std::string name = "b") {
+  DecisionVariableMatrix AddBinaryVariables(size_t rows, size_t cols,
+                                                const std::vector<std::string>& names) {
     required_capabilities_ |= kBinaryVariable;
-    DecisionVariable v(DecisionVariable::VarType::BINARY, name, num_new_vars,
-                       num_vars_);
-    num_vars_ += num_new_vars;
-    variables_.push_back(v);
-    variable_views_.push_back(DecisionVariableView(variables_.back()));
-    x_initial_guess_.conservativeResize(num_vars_);
-    return variable_views_.back();
+
+    return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols, names);
   }
+
+  /// Add binary variables to this MathematicalProgram.
+  /**
+   * Add binary variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param rows  The number of rows in the new variables.
+   * @param cols  The number of columns in the new variables.
+   * @param names A vector of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto b = prog.AddContinuousVariables(2, 3, {"b1", "b2", "b3", "b4", "b5", "b6"});
+   * @endcode
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  DecisionVariableMatrix AddBinaryVariables(size_t rows, size_t cols) {
+    std::vector<std::string> names = std::vector<std::string>(rows * cols, "b");
+    return AddBinaryVariables(rows, cols, names);
+  }
+
   /**
    * @param name of the variable.
-   * @return The DecisionVariableView of first variable that matches
+   * @return A DecisionVariableMatrix that contains only one decision variable,
+   * which is the first one with name equal to
    * \param name.
    */
-  const DecisionVariableView GetVariable(const std::string& name) const {
-    for (auto& var : variable_views_) {
-      if (name.compare(var.name()) == 0) return var;
+  const DecisionVariableMatrix GetVariable(const std::string& name) const {
+    for (auto& var : variables_) {
+      if (name.compare(var->name()) == 0) {
+        std::weak_ptr<const DecisionVariableScalar> var_weak_ptr(var);
+        return DecisionVariableMatrix(1, 1, {var_weak_ptr});
+      }
     }
     throw std::runtime_error("unable to find variable: " + name);
   }
@@ -443,7 +469,7 @@ class DRAKE_EXPORT MathematicalProgram {
   //  ...
 
   void AddCost(const std::shared_ptr<Constraint>& obj,
-               const VariableList& vars) {
+               const VariableVector& vars) {
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
@@ -468,7 +494,7 @@ class DRAKE_EXPORT MathematicalProgram {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddCost(F&& f, const VariableList& vars) {
+  AddCost(F&& f, const VariableVector& vars) {
     auto c = MakeCost(std::forward<F>(f));
     AddCost(c, vars);
     return c;
@@ -489,7 +515,7 @@ class DRAKE_EXPORT MathematicalProgram {
   // Provide an explicit alternative for this case.
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
-                                      const VariableList& vars) {
+                                      const VariableVector& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
     AddCost(c, vars);
@@ -506,9 +532,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * the linear cost data structure.
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
-               const VariableList& vars) {
+               const VariableVector& vars) {
     required_capabilities_ |= kLinearCost;
-    int var_dim = GetVariableListSize(vars);
+    int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
     linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
   }
@@ -520,7 +546,7 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::MatrixBase<DerivedC>& c, const VariableList& vars) {
+      const Eigen::MatrixBase<DerivedC>& c, const VariableVector& vars) {
     using Scalar = typename DerivedC::Scalar;
     auto cost = std::make_shared<LinearConstraint>(
         c, drake::Vector1<Scalar>::Constant(
@@ -549,9 +575,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * the quadratic cost data structure.
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
-               const VariableList& vars) {
+               const VariableVector& vars) {
     required_capabilities_ |= kQuadraticCost;
-    int var_dim = GetVariableListSize(vars);
+    int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
@@ -562,7 +588,7 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
+      const Eigen::MatrixBase<Derivedb>& x_desired, const VariableVector& vars) {
     auto cost = std::make_shared<QuadraticConstraint>(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity());
@@ -588,7 +614,7 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& b, const VariableList& vars) {
+      const Eigen::MatrixBase<Derivedb>& b, const VariableVector& vars) {
     auto cost = std::make_shared<QuadraticConstraint>(
         Q, b, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity());
@@ -623,7 +649,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * expensive solver.
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kGenericConstraint;
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
@@ -633,9 +659,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = GetVariableListSize(vars);
+    int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
@@ -648,7 +674,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableVector& vars) {
     auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
@@ -678,7 +704,7 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename DerivedA>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub,
-      const VariableList& vars) {
+      const VariableVector& vars) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                vars);
@@ -704,9 +730,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * subset of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kLinearEqualityConstraint;
-    int var_dim = GetVariableListSize(vars);
+    int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
@@ -734,7 +760,7 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
+      const Eigen::MatrixBase<DerivedB>& beq, const VariableVector& vars) {
     auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
     AddConstraint(constraint, vars);
     return constraint;
@@ -760,12 +786,12 @@ class DRAKE_EXPORT MathematicalProgram {
    * @f]
    * @param a A row vector.
    * @param beq A scalar.
-   * @param vars A list of DecisionVariableView.
+   * @param vars A list of DecisionVariableMatrix.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double beq,
-      const VariableList& vars) {
+      const VariableVector& vars) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
   }
@@ -791,9 +817,9 @@ class DRAKE_EXPORT MathematicalProgram {
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = GetVariableListSize(vars);
+    int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }
@@ -806,7 +832,7 @@ class DRAKE_EXPORT MathematicalProgram {
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableVector& vars) {
     auto constraint = std::make_shared<BoundingBoxConstraint>(lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
@@ -825,8 +851,8 @@ class DRAKE_EXPORT MathematicalProgram {
   }
 
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const DecisionVariableView& var) {
-    DRAKE_ASSERT(var.size() == 1);
+      double lb, double ub, const DecisionVariableMatrix& var) {
+    DRAKE_ASSERT(var.NumberOfVariables() == 1);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     {var});
   }
@@ -842,7 +868,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kLorentzConeConstraint;
     lorentz_cone_constraint_.push_back(
         Binding<LorentzConeConstraint>(con, vars));
@@ -859,7 +885,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
-      const VariableList& vars) {
+      const VariableVector& vars) {
     auto constraint = std::make_shared<LorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
@@ -889,17 +915,17 @@ class DRAKE_EXPORT MathematicalProgram {
    * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
    * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
-   * @param vars A list of DecisionVariableView.
+   * @param vars A list of DecisionVariableMatrix.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                     const VariableList& vars) {
+                     const VariableVector& vars) {
     required_capabilities_ |= kRotatedLorentzConeConstraint;
     rotated_lorentz_cone_constraint_.push_back(
         Binding<RotatedLorentzConeConstraint>(con, vars));
   }
 
   /**
-   * @param vars A list of DecisionVariableView.
+   * @param vars A list of DecisionVariableMatrix.
    * Example: if you want to add the rotated Lorentz cone constraint
    * <!--
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
@@ -914,7 +940,7 @@ class DRAKE_EXPORT MathematicalProgram {
    * @endcode
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const VariableList& vars) {
+      const VariableVector& vars) {
     auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
@@ -944,7 +970,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
-                                     const VariableList& vars) {
+                                     const VariableVector& vars) {
     required_capabilities_ |= kLinearComplementarityConstraint;
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -988,7 +1014,7 @@ class DRAKE_EXPORT MathematicalProgram {
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-      const VariableList& vars) {
+      const VariableVector& vars) {
     // Polynomials that are actually affine (a sum of linear terms + a
     // constant) can be special-cased.  Other polynomials are treated as
     // generic for now.
@@ -1062,9 +1088,12 @@ class DRAKE_EXPORT MathematicalProgram {
   // void addQuadraticCost ...
 
   template <typename Derived>
-  void SetInitialGuess(const DecisionVariableView& var,
+  void SetInitialGuess(const DecisionVariableMatrix& var,
                        const Eigen::MatrixBase<Derived>& x0) {
-    x_initial_guess_.segment(var.index(), var.size()) = x0;
+    DRAKE_ASSERT(var.NumberOfVariables() == x0.size());
+    for (int i = 0; i < x0.size(); ++i) {
+      x_initial_guess_(var.index(i)) = x0(i);
+    }
   }
 
   /**
@@ -1084,17 +1113,15 @@ class DRAKE_EXPORT MathematicalProgram {
 
   void PrintSolution() {
     for (const auto& v : variables_) {
-      std::cout << v.name() << " = " << v.value().transpose() << std::endl;
+      std::cout << v->name() << " = " << v->value() << std::endl;
     }
   }
 
   template <typename Derived>
   void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == num_vars_);
-    size_t index = 0;
     for (auto& v : variables_) {
-      v.set_value(x.middleRows(index, v.value().rows()));
-      index += v.value().rows();
+      v->set_value(x(v->index()));
     }
   }
 
@@ -1168,41 +1195,41 @@ class DRAKE_EXPORT MathematicalProgram {
     solver_result_ = solver_result;
   }
 
-  const std::list<Binding<Constraint>>& generic_costs() const {
+  const std::vector<Binding<Constraint>>& generic_costs() const {
     return generic_costs_;
   }  // e.g. for snopt_user_fun
 
-  const std::list<Binding<Constraint>>& generic_constraints() const {
+  const std::vector<Binding<Constraint>>& generic_constraints() const {
     return generic_constraints_;
   }  // e.g. for snopt_user_fun
 
-  const std::list<Binding<LinearEqualityConstraint>>&
+  const std::vector<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
     return linear_equality_constraints_;
   }
   /** Getter for linear costs. */
-  const std::list<Binding<LinearConstraint>>& linear_costs() const {
+  const std::vector<Binding<LinearConstraint>>& linear_costs() const {
     return linear_costs_;
   }
 
   /** Getter for quadratic costs. */
-  const std::list<Binding<QuadraticConstraint>>& quadratic_costs() const {
+  const std::vector<Binding<QuadraticConstraint>>& quadratic_costs() const {
     return quadratic_costs_;
   }
 
   // TODO(naveenoid) : getter for quadratic_constraints
-  const std::list<Binding<LinearConstraint>>& linear_constraints() const {
+  const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
 
   /** Getter for Lorentz cone constraint */
-  const std::list<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
+  const std::vector<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
       const {
     return lorentz_cone_constraint_;
   }
 
   /** Getter for rotated Lorentz cone constraint */
-  const std::list<Binding<RotatedLorentzConeConstraint>>&
+  const std::vector<Binding<RotatedLorentzConeConstraint>>&
   rotated_lorentz_cone_constraints() const {
     return rotated_lorentz_cone_constraint_;
   }
@@ -1213,25 +1240,25 @@ class DRAKE_EXPORT MathematicalProgram {
    * generic costs, then quadratic costs appended to
    * generic costs).
    */
-  std::list<Binding<Constraint>> GetAllCosts() const {
-    std::list<Binding<Constraint>> costlist = generic_costs_;
+  std::vector<Binding<Constraint>> GetAllCosts() const {
+    std::vector<Binding<Constraint>> costlist = generic_costs_;
     costlist.insert(costlist.end(), linear_costs_.begin(), linear_costs_.end());
     costlist.insert(costlist.end(), quadratic_costs_.begin(),
                     quadratic_costs_.end());
     return costlist;
   }
 
-  std::list<Binding<LinearConstraint>> GetAllLinearConstraints() const {
-    std::list<Binding<LinearConstraint>> conlist = linear_constraints_;
+  std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const {
+    std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
     conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
                    linear_equality_constraints_.end());
     return conlist;
   }
-  const std::list<Binding<BoundingBoxConstraint>>& bounding_box_constraints()
+  const std::vector<Binding<BoundingBoxConstraint>>& bounding_box_constraints()
       const {
     return bbox_constraints_;
   }
-  const std::list<Binding<LinearComplementarityConstraint>>&
+  const std::vector<Binding<LinearComplementarityConstraint>>&
   linear_complementarity_constraints() const {
     return linear_complementarity_constraints_;
   }
@@ -1266,13 +1293,11 @@ class DRAKE_EXPORT MathematicalProgram {
    * of x(i) in the MathematicalProgram, where x is the vector containing all
    * decision variables.
    */
-  std::vector<DecisionVariable::VarType> VariableTypes() const {
-    std::vector<DecisionVariable::VarType> variable_type;
+  std::vector<DecisionVariableScalar::VarType> VariableTypes() const {
+    std::vector<DecisionVariableScalar::VarType> variable_type;
     variable_type.resize(num_vars());
     for (const auto& v : variables_) {
-      for (int i = v.index(); i < static_cast<int>(v.index() + v.size()); ++i) {
-        variable_type[i] = v.type();
-      }
+      variable_type[v->index()] = v->type();
     }
     return variable_type;
   }
@@ -1286,36 +1311,33 @@ class DRAKE_EXPORT MathematicalProgram {
    */
   const Eigen::VectorXd GetSolutionVectorValues() const {
     Eigen::VectorXd solution(num_vars_);
-    int start_index = 0;
-    for (auto& var : variables_) {
-      solution.segment(start_index, var.size()) = var.value();
-      start_index += var.size();
+    for (const auto& var : variables_) {
+      solution(var->index()) = var->value();
     }
     return solution;
   }
 
  private:
-  // note: use std::list instead of std::vector because realloc in std::vector
-  // invalidates existing references to the elements
-  std::list<DecisionVariable> variables_;
-  VariableList variable_views_;
-  std::list<Binding<Constraint>> generic_costs_;
-  std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<QuadraticConstraint>> quadratic_costs_;
-  std::list<Binding<LinearConstraint>> linear_costs_;
+
+  std::vector<std::shared_ptr<DecisionVariableScalar>> variables_;
+  VariableVector variable_views_;
+  std::vector<Binding<Constraint>> generic_costs_;
+  std::vector<Binding<Constraint>> generic_constraints_;
+  std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
+  std::vector<Binding<LinearConstraint>> linear_costs_;
   // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
-  std::list<Binding<LinearConstraint>> linear_constraints_;
-  std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
-  std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
-  std::list<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
-  std::list<Binding<RotatedLorentzConeConstraint>>
+  std::vector<Binding<LinearConstraint>> linear_constraints_;
+  std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
+  std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
+  std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
+  std::vector<Binding<RotatedLorentzConeConstraint>>
       rotated_lorentz_cone_constraint_;
 
   // Invariant:  The bindings in this list must be non-overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
-  std::list<Binding<LinearComplementarityConstraint>>
+  std::vector<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
 
   size_t num_vars_;
@@ -1328,6 +1350,7 @@ class DRAKE_EXPORT MathematicalProgram {
   std::map<std::string, std::map<std::string, std::string>> solver_options_str_;
 
   AttributesSet required_capabilities_{0};
+  /*
   std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
@@ -1337,6 +1360,48 @@ class DRAKE_EXPORT MathematicalProgram {
       equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+*/
+  /**
+   * Add variables to MathematicalProgram.
+   * Appending new variables to an internal vector of any existing vars.
+   * The new variables are uninitialized: callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * @param rows, number of rows in the variables
+   * @param cols, number of cols in the variables
+   * @param name A vector containing the name of each variable
+   * @return The DecisionVariableMatrix of size rows x cols new variables (not all the
+   * variables stored in MathematicalProgram).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * auto x = prog.AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, 2, 3, {"x1", "x2", "x3", "x4", "x5", "x6"});
+   * @endcode
+   * This adds a matrix of size 2 x 3 as new variables into the optimization program.
+   * The name of the variable is only used for the user to understand.
+   */
+  DecisionVariableMatrix AddVariables(DecisionVariableScalar::VarType type, size_t rows, size_t cols,
+                                            std::vector<std::string> names ) {
+
+    int num_new_vars = rows * cols;
+    DRAKE_ASSERT(names.size() == num_new_vars);
+    variables_.reserve(num_vars_ + num_new_vars);
+    std::vector<std::weak_ptr<const DecisionVariableScalar>> variables_weak_ptr;
+    variables_weak_ptr.reserve(num_new_vars);
+    variables_.reserve(num_vars_ + num_new_vars);
+    for (int i = 0; i < num_new_vars; ++i) {
+      auto vi = std::make_shared<DecisionVariableScalar>(type, names[i], num_vars_ + i);
+      variables_.push_back(vi);
+      variables_weak_ptr.push_back(std::weak_ptr<const DecisionVariableScalar>(vi));
+    }
+
+    DecisionVariableMatrix v_matrix(rows, cols, variables_weak_ptr);
+    num_vars_ += num_new_vars;
+    variable_views_.push_back(v_matrix);
+
+    return variable_views_.back();
+
+  }
 };
 
 }  // namespace solvers
