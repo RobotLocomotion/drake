@@ -33,10 +33,10 @@ void AddSolverToListIfAvailable(
       solver_list->push_back(std::move(gurobi_solver));
     }
   } else if (solver_name == "Mosek") {
-    auto mosek_solver = std::make_unique<MosekSolver>();
-    if (mosek_solver->available()) {
-      solver_list->push_back(std::move(mosek_solver));
-    }
+    //auto mosek_solver = std::make_unique<MosekSolver>();
+    //if (mosek_solver->available()) {
+    //  solver_list->push_back(std::move(mosek_solver));
+    //}
   }
 }
 }  // namespace test
