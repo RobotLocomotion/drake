@@ -1,6 +1,7 @@
 # pragma once
 
-#include "drake/lcm/drake_lcm_interface.h"
+//#include "drake/lcm/drake_lcm_interface.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -25,7 +26,7 @@ class IiwaWorldSimulator {
   /// A constructor configuring this object to use DrakeLcm, which encapsulates
   /// a _real_ LCM instance
   IiwaWorldSimulator();
-  explicit IiwaWorldSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
+//  explicit IiwaWorldSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
 
   ~IiwaWorldSimulator();
 
@@ -44,7 +45,7 @@ class IiwaWorldSimulator {
 
   /// Adds a Iiwa arm system to this simulation.
   /// @pre Start() has NOT been called.
-  int AddIiwaArm(bool with_gripper = true);
+  int AddIiwaArm();
 
 //  void AddObject(std::string object_name);
 //
@@ -53,6 +54,8 @@ class IiwaWorldSimulator {
 //  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
 //                    int vehicle_number);
 //
+
+  int AddObject();
 
   int allocate_object_number();
 
@@ -81,13 +84,13 @@ class IiwaWorldSimulator {
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree> rigid_body_tree_{
       std::make_unique<RigidBodyTree>()};
-  std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
+  lcm::DrakeLcm lcm_;
 
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
-  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
-      drake_visualizer_inputs_;
+//  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
+//      drake_visualizer_inputs_;
   int next_object_number_{0};
   bool started_{false};
 

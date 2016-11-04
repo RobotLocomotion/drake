@@ -5,6 +5,7 @@
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_simulator.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -19,25 +20,41 @@
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
+
+using lcm::DrakeLcm;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::DrakeVisualizer;
+using systems::RigidBodyPlant;
+using systems::Simulator;
+using systems::VectorBase;
+using systems::plants::joints::kFixed;
+
+
+using parsers::ModelInstanceIdTable;
+using parsers::urdf::AddModelInstanceFromUrdfFile;
+
 namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-IiwaWorldSimulator<T>::IiwaWorldSimulator()
-    : IiwaWorldSimulator(std::make_unique<lcm::DrakeLcm>()) {}
+IiwaWorldSimulator<T>::IiwaWorldSimulator() {}
+//    : IiwaWorldSimulator(std::make_unique<lcm::DrakeLcm>()) {}
 
-template <typename T>
-IiwaWorldSimulator<T>::IiwaWorldSimulator(
-    std::unique_ptr<lcm::DrakeLcmInterface> lcm) :
-    lcm_(std::move(lcm)) {}
+//template <typename T>
+//IiwaWorldSimulator<T>::IiwaWorldSimulator(
+//    std::unique_ptr<lcm::DrakeLcmInterface> lcm) :
+//    lcm_(std::move(lcm)) {}
 
 template <typename T>
 IiwaWorldSimulator<T>::~IiwaWorldSimulator() {
-  lcm_.reset();
 }
 
 template <typename T>
-int IiwaWorldSimulator<T>::AddIiwaArm(bool with_gripper) {
+int IiwaWorldSimulator<T>::AddIiwaArm() {
 
   DRAKE_DEMAND(!started_);
 
@@ -47,6 +64,34 @@ int IiwaWorldSimulator<T>::AddIiwaArm(bool with_gripper) {
           systems::plants::joints::kFixed, nullptr /* weld to frame */, rigid_body_tree_.get());
 
   AddGround(rigid_body_tree_.get());
+
+//  const int object_number = allocate_object_number();
+
+//  const parsers::ModelInstanceIdTable table =
+//      parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
+//          sdf_filename, kRollPitchYaw, rigid_body_tree_.get());
+
+  const int model_instance_id = table.begin()->second;
+  const std::vector<const RigidBody*> bodies =
+      rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
+//  rigid_body_tree_publisher_inputs_.push_back(
+//      std::make_pair(model_instance_id, coord_transform));
+  return model_instance_id;
+}
+
+
+template <typename T>
+int IiwaWorldSimulator<T>::AddObject() {
+
+  DRAKE_DEMAND(!started_);
+
+
+  parsers::ModelInstanceIdTable table =
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          drake::GetDrakePath() + "/examples/kuka_iiwa_arm/models/desk/transcendesk55inch.sdf.urdf",
+          systems::plants::joints::kFixed, nullptr /* weld to frame */, rigid_body_tree_.get());
+
+//  AddGround(rigid_body_tree_.get());
 
 //  const int object_number = allocate_object_number();
 
@@ -73,52 +118,49 @@ void IiwaWorldSimulator<T>::Build() {
     // DrakeVisualizer.  We stack them up in joint order as the position input
     // to the publisher, and then also need to feed zeros for all of the joint
     // velocities.
-
-    std::cout<<"Building the diagram\n";
-
-    const int num_joints = drake_visualizer_inputs_.size();
-    const int num_ports_into_mux =  1;// 2 * num_joints;  // For position + velocity.
-    std::cout<<"Num joints :"<<num_joints<<"\n";
-    const int num_elements_per_joint = 6; //6 DoF.
-        //EulerFloatingJointStateIndices::kNumCoordinates;
-
-    // Create and cascade a mux and publisher.
-    auto multiplexer = builder_->template AddSystem<systems::Multiplexer<T>>(
-        std::vector<int>());
-  // num_ports_into_mux, num_elements_per_joint));
-    auto rigid_body_tree_publisher =
-        builder_->template AddSystem<systems::DrakeVisualizer>(
-            *rigid_body_tree_, lcm_.get());
-    builder_->Connect(*multiplexer, *rigid_body_tree_publisher);
-
-    // Create a zero-velocity source.
-    auto zero_velocity =
-        builder_->template AddSystem<systems::ConstantVectorSource>(
-            Vector6<T>::Zero().eval());
-
-    // Connect systems that provide joint positions to the mux position inputs.
-    // Connect the zero-velocity source to all of the mux velocity inputs.
-    for (int input_index = 0; input_index < num_joints; ++input_index) {
-      const RigidBody* body{};
-      const systems::System<T>* system{};
-      std::tie(body, system) = drake_visualizer_inputs_[input_index];
-      // The 0'th index is the world, so our bodies start at number 1.
-      DRAKE_DEMAND(body->get_body_index() == (1 + input_index));
-      // Ensure the Publisher inputs correspond to the joints we have.
-      DRAKE_DEMAND(body->get_position_start_index() == (
-          input_index * num_elements_per_joint));
-
-      builder_->Connect(system->get_output_port(0),
-                        multiplexer->get_input_port(input_index));
-      builder_->Connect(zero_velocity->get_output_port(),
-                        multiplexer->get_input_port(num_joints + input_index));
-    }
-//  }
   rigid_body_tree_->compile();
+
+
+  std::cout<<"Building the diagram\n";
+
+//  auto plant = builder_.template AddSystem<systems::RigidBodyPlant<T>>();
+  auto plant =
+  builder_->template AddSystem<systems::RigidBodyPlant<T>>(move(rigid_body_tree_));
+    plant->set_contact_parameters(3000 /* penetration stiffness */,
+                                 0 /* penetration damping */,
+                                   1.0 /* friction coefficient */);
+
+
+  // Feed in constant inputs of zero into the RigidBodyPlant.
+  VectorX<T> constant_value(plant->get_input_size());
+
+  std::cout<< " Input size : "<< plant->get_input_size();
+  constant_value.setZero();
+  auto const_source_ = builder_->template AddSystem<ConstantVectorSource<T>>(
+        constant_value);
+
+    // Creates and adds LCM publisher for visualization.
+  auto viz_publisher_ = builder_->template AddSystem<DrakeVisualizer>(
+     plant->get_rigid_body_tree(), &lcm_);
+
+    // Connects the constant source output port to the RigidBodyPlant's input
+    // port. This effectively results in the robot being uncontrolled.
+  builder_->Connect(const_source_->get_output_port(),
+                    plant->get_input_port(0));
+
+    // Connects to publisher for visualization.
+  builder_->Connect(plant->get_output_port(0),
+                    viz_publisher_->get_input_port(0));
+
+  builder_->ExportOutput(plant->get_output_port(0));
+
 
   diagram_ = builder_->Build();
   simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
-  lcm_->StartReceiveThread();
+//  lcm_->StartReceiveThread();
+  Context<T>* plant_context =
+      diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(), plant);
+  plant->SetZeroConfiguration(plant_context);
 
   simulator_->Initialize();
 
@@ -154,7 +196,6 @@ int IiwaWorldSimulator<T>::allocate_object_number() {
   DRAKE_DEMAND(!started_);
   return next_object_number_++;
 }
-
 
 template class DRAKE_EXPORT IiwaWorldSimulator<double>;
 }
