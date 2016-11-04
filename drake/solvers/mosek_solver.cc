@@ -20,7 +20,7 @@ namespace {
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename Binding>
 MSKrescodee AddLinearConstraintsFromBindings(
-    MSKtask_t* task, const std::list<Binding>& constraint_list,
+    MSKtask_t* task, const std::vector<Binding>& constraint_list,
     bool is_equality_constraint) {
   for (const auto& binding : constraint_list) {
     auto constraint = binding.constraint();
@@ -111,9 +111,9 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); ++i) {
-        int x_idx = var.index() + i;
+    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
+        int x_idx = var.index(i);
         x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
         x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
         var_count++;
@@ -160,7 +160,7 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
  */
 template <typename Bindings>
 MSKrescodee AddSecondOrderConeConstraints(
-    const std::list<Bindings>& second_order_cone_constraints,
+    const std::vector<Bindings>& second_order_cone_constraints,
     bool is_rotated_cone, MSKtask_t* task, std::vector<bool>* is_new_variable) {
   MSKrescodee rescode = MSK_RES_OK;
 
@@ -274,11 +274,11 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   for (const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableView& var : binding.variable_list()) {
-      for (int i = 0; i < static_cast<int>(var.size()); ++i) {
+    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+      for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(
-              Eigen::Triplet<double>(var.index() + i, 0, c(var_count)));
+              Eigen::Triplet<double>(var.index(i), 0, c(var_count)));
         }
         var_count++;
       }
@@ -324,15 +324,15 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
                                 bool* with_integer_or_binary_variable) {
   MSKrescodee rescode = MSK_RES_OK;
   int num_vars = prog.num_vars();
-  const std::vector<DecisionVariable::VarType>& var_type = prog.VariableTypes();
+  const std::vector<DecisionVariableScalar::VarType>& var_type = prog.VariableTypes();
   for (int i = 0; i < num_vars && rescode == MSK_RES_OK; ++i) {
-    if (var_type[i] == DecisionVariable::VarType::INTEGER) {
+    if (var_type[i] == DecisionVariableScalar::VarType::INTEGER) {
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
       *with_integer_or_binary_variable = true;
-    } else if (var_type[i] == DecisionVariable::VarType::BINARY) {
+    } else if (var_type[i] == DecisionVariableScalar::VarType::BINARY) {
       *with_integer_or_binary_variable = true;
       rescode = MSK_putvartype(*task, i, MSK_VAR_TYPE_INT);
       double xi_lb = NAN;
