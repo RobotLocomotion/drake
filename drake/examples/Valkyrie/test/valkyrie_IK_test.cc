@@ -135,6 +135,8 @@ GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
   Vector4d lfoot_quat(1, 0, 0, 0);
   auto lfoot_pos0 = tree->transformPoints(cache, origin, l_foot, 0);
   Vector3d lfoot_pos_lb = lfoot_pos0;
+  // Position and quaternion constraints are relaxed to make the problem
+  // solvable by IPOPT.
   lfoot_pos_lb(0) -= 0.0001;
   lfoot_pos_lb(1) -= 0.0001;
   lfoot_pos_lb(2) -= 0.0001;
