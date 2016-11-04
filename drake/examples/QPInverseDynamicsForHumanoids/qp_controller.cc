@@ -298,9 +298,6 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   const solvers::DecisionVariableMatrix vd = prog_.GetVariable("vd");
   const solvers::DecisionVariableMatrix basis = prog_.GetVariable("basis");
 
-  int basis_start = basis.index();
-  int vd_start = vd.index();
-
   // Stack the contact Jacobians and basis matrices for each contact link.
   int rowIdx = 0;
   int colIdx = 0;
@@ -328,17 +325,23 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   // top. Need to lift the assumption.
   // tau = M_l * vd + h_l - (J^T * basis)_l * Beta
   // tau = torque_linear_ * X + torque_constant_
-  torque_linear_.block(0, vd_start, num_torque_, num_vd_) =
-      rs.M().bottomRows(num_torque_);
-  torque_linear_.block(0, basis_start, num_torque_, num_basis_) =
-      -JB_.bottomRows(num_torque_);
+  for (int i = 0; i < num_vd_; ++i) {
+    torque_linear_.block(0, vd.index(i), num_torque_, 1) = rs.M().bottomRows(num_torque_).col(i);
+  }
+  for (int i = 0; i < num_basis_; ++i) {
+    torque_linear_.block(0, basis.index(i), num_torque_, 1) = -JB_.bottomRows(num_torque_).col(i);
+  }
   torque_constant_ = rs.bias_term().tail(num_torque_);
 
   ////////////////////////////////////////////////////////////////////
   // Equality constraints:
   // Equations of motion part, 6 rows
-  dynamics_linear_.block(0, vd_start, 6, num_vd_) = rs.M().topRows(6);
-  dynamics_linear_.block(0, basis_start, 6, num_basis_) = -JB_.topRows(6);
+  for (int i = 0; i < num_vd_; ++i) {
+    dynamics_linear_.block(0, vd.index(i), 6, 1) = rs.M().topRows(6).col(i);
+  }
+  for (int i = 0; i < num_basis_; ++i) {
+    dynamics_linear_.block(0, basis.index(i), 6, 1) = -JB_.topRows(6).col(i);
+  }
   dynamics_constant_ = -rs.bias_term().head<6>();
   eq_dynamics_->UpdateConstraint(dynamics_linear_, dynamics_constant_);
 
@@ -557,7 +560,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     resolved_contact.set_body(contact.body());
     // Copy basis.
     resolved_contact.mutable_basis() =
-        basis.value().segment(basis_index, contact.num_basis());
+        basis.value().block(basis_index, 0, contact.num_basis(), 1);
     basis_index += contact.num_basis();
     resolved_contact.mutable_num_basis_per_contact_point() =
         contact.num_basis_per_contact_point();
