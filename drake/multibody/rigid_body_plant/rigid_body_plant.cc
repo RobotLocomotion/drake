@@ -11,6 +11,7 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/collision/Element.h"
+#include "contact_resultant_force_calculator.h"
 
 using std::make_unique;
 using std::move;
@@ -492,20 +493,21 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         if (contacts != nullptr) {
           Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
 
-          WrenchVector<T> wrench;
+          ContactInfo<T>& contactInfo = contacts->AddContact(pair.elementA->getId(), pair.elementB->getId());
+          // TODO(SeanCurtis-TRI): Construct this with the list to be populated with details.
+          ContactResultantForceCalculator<T> calculator;
+
           // This contact model produces responses that only have a force
           //  component (i.e., the torque portion of the wrench is zero.)
           //  In contrast, other models (e.g., torsional friction model) can
           //  also introduce a "pure torque" component to the wrench.
-          wrench.template head<3>().setZero();
-          wrench.template tail<3>() = R.transpose() * fA;
+          Vector3<T> force = R.transpose() * fA;
+          Vector3<T> normal = R.transpose().template block<3,1>(0, 2);
 
-          // TODO(SeanCurtis-TRI): This call would have to change based on the
-          //  contact model.  This call instantiates a sampled contact manifold.
-          //  Other contact models would have to instantiate an alternate
-          //  representation.
-          contacts->AddContact(pair.elementA->getId(), pair.elementB->getId(),
-              point, wrench);
+          // TODO(SeanCurtis-TRI): Add interface for supplying a contact detail.
+          calculator.AddForce(point, force, normal);
+
+          contactInfo.set_resultant_force(calculator.ComputeResultant());
         }
       }
     }

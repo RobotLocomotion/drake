@@ -10,6 +10,15 @@ namespace systems {
 using std::abs;
 
 template <typename T>
+    ContactForce<T>::ContactForce() {
+  T kNan((T)NAN);
+  application_point_ << kNan, kNan, kNan;
+  force_ << kNan, kNan, kNan;
+  normal_ << kNan, kNan, kNan;
+  pure_torque_ << kNan, kNan, kNan;
+}
+
+template <typename T>
 ContactForce<T>::ContactForce(const Vector3<T>& application_point,
                               const Vector3<T>& normal, const Vector3<T>& force,
                               const Vector3<T>& torque)

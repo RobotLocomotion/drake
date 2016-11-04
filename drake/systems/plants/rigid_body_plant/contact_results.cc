@@ -1,7 +1,8 @@
 #include "drake/systems/plants/rigid_body_plant/contact_results.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/plants/rigid_body_plant/sampled_contact_manifold.h"
+#include "drake/common/drake_export.h"
+#include "drake/common/eigen_types.h"
 
 using std::make_unique;
 using std::move;
@@ -29,14 +30,10 @@ void ContactResults<T>::Clear() {
 }
 
 template <typename T>
-void ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
-                                   DrakeCollision::ElementId elementB,
-                                   const Vector3<T>& point,
-                                   const WrenchVector<T>& wrench) {
-  auto manifold = std::make_unique<SampledContactManifold<T>>();
-  auto detail = make_unique<ContactDetail<T>>(point, wrench);
-  manifold->AddContactDetail(move(detail));
-  contacts_.emplace_back(elementA, elementB, move(manifold));
+ContactInfo<T>& ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
+                           DrakeCollision::ElementId elementB) {
+  contacts_.emplace_back(elementA, elementB);
+  return contacts_[contacts_.size() -1];
 }
 
 // Explicitly instantiates on the most common scalar types.

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <Eigen/Geometry>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"

@@ -5,7 +5,8 @@
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/Element.h"
-#include "drake/systems/plants/rigid_body_plant/contact_manifold.h"
+#include "drake/systems/plants/rigid_body_plant/contact_detail.h"
+#include "drake/systems/plants/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {
@@ -15,11 +16,17 @@ namespace systems {
  including:
     - The pair of collision elements that are contacting (e1, e2), referenced
         by their unique identifiers.
-    - The collision manifold representing the forces engendered by the contact.
-        (@see ContactManifold).
+    - A resultant ContactForce -- a single ContactForce with the equivalent
+      effect of applying all individual ContactDetails to element e1.
+    - An optional list of ContactDetail instances.
 
- The forces in the collision manifold are all defined such that they act on
- the first element in the pair (e1).
+ Some forms of ContactDetail are more expensive than others. A contact response
+ model may chose *not* to cache all of the details to save copying time and
+ memory.  This beahvior is subjec to user configuration; the user *can*
+ specify copying, even for expensive ContactDetail types.
+
+ The resultant force and contact details, if they are included, are all defined
+ such that they act on the first element in the pair (e1).
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
@@ -31,25 +38,41 @@ class DRAKE_EXPORT ContactInfo {
 
    @param element1      The identifier for the first collision element.
    @param element2      The identifier for the second collision element.
-   @param manifold      The manifold of contact responses.
    */
   ContactInfo(DrakeCollision::ElementId element1,
-              DrakeCollision::ElementId element2,
-              std::unique_ptr<ContactManifold<T>> manifold);
+              DrakeCollision::ElementId element2);
 
   ContactInfo(const ContactInfo<T>& other);
   ContactInfo& operator=(const ContactInfo<T>& other);
   ContactInfo(ContactInfo<T>&& other) = delete;
   ContactInfo& operator=(ContactInfo<T>&& other) = delete;
 
-  DrakeCollision::ElementId get_element_id_1() const;
-  DrakeCollision::ElementId get_element_id_2() const;
-  const ContactManifold<T>& get_contact_manifold() const;
+  DrakeCollision::ElementId get_element_id_1() const { return element1_; };
+  DrakeCollision::ElementId get_element_id_2() const { return element2_; };
+
+  void set_resultant_force(const ContactForce<T> force) {
+    resultant_force_ = force;
+  }
+
+  const ContactForce<T>& get_resultant_force() const {
+    return resultant_force_;
+  }
+
+  const std::vector<std::unique_ptr<ContactDetail<T>>>& get_contact_details()
+      const {
+    return contact_details_;
+  }
+
+  std::vector<std::unique_ptr<ContactDetail<T>>>&
+  get_mutable_contact_details() {
+    return contact_details_;
+  }
 
  private:
   DrakeCollision::ElementId element1_{};
   DrakeCollision::ElementId element2_{};
-  std::unique_ptr<ContactManifold<T>> contact_manifold_;
+  ContactForce<T> resultant_force_;
+  std::vector<std::unique_ptr<ContactDetail<T>>> contact_details_;
 };
 
 }  // namespace systems

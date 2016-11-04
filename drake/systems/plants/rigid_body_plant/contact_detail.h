@@ -4,66 +4,35 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/plants/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {
 
 /**
-  The base class for defining a contact response.  It consists of a wrench
-  and a point.  The point is measured and expressed in the world frame and
-  serves as the origin of a world-aligned frame in which the wrench is
-  expressed.
+  The base class for defining a contact detail.  The contact can take different
+  forms (e.g., single ContactForce, a collection of ContactForce instances,
+  a patch with pressure defined over the patch domain, etc.)  The details of
+  the contact detail are a function of the contact response model that generates
+  it.
 
-  These two pieces of data are considered to be the minimum amount of data,
-  regardless of the contact model used. However, the intention is for the
-  creation of new sub-classes which augment the set of per-contact point
-  data based on other contact models.
-
-  For example, in Hertzian contact, the ContactDetail would include the geometry
-  of the contact ellipse.  For soft-body dynamics, which would produce a patch
-  of contacts, an indvidual ContactDetail instance may include topological
-  information.
+  All ContactDetail implementations provide a common interface; they have the
+  ability to produce a single equivalent resultant ContactForce to the
+  underlying data.
 
   @tparam T      The scalar type. It must be a valid Eigen scalar.
  */
 template <typename T>
 class DRAKE_EXPORT ContactDetail {
  public:
-  /**
-   Constructor for a fully specified contact detail: a wrench and its
-   application point -- both expressed in the world frame.
-
-   @param[in] point      The contact point at which the force is applied.
-   @param[in] wrench     The contact wrench.
-   */
-  ContactDetail(const Vector3<T>& point, const WrenchVector<T>& wrench);
-
   virtual ~ContactDetail() {}
 
-  // ContactDetail requires both move and copy constructors.
-  //  Copy constructor because it is used as an abstract value in an output
-  //    port; the Value class requires copy constructors.
-  //  Move constructor because ContactManifold::ComputeNetResponse returns a
-  //    ContactDetail by value and the move constructor facilitates this.
-  ContactDetail(const ContactDetail<T>& other) = default;
-  ContactDetail<T>& operator=(const ContactDetail<T>& other) = default;
-  ContactDetail(ContactDetail<T>&& other) = default;
-  ContactDetail<T>& operator=(ContactDetail<T>&& other) = default;
+  virtual std::unique_ptr<ContactDetail<T>> Clone() const;
 
-  /** The point the Force is applied, expressed in the world frame. */
-  const Vector3<T>& get_application_point() const { return application_point_; }
-
-  /** Returns the *spatial* wrench. */
-  const WrenchVector<T>& get_wrench() const { return wrench_; }
-
-  virtual std::unique_ptr<ContactDetail> Clone() const;
-
- private:
-  // The point at which the wrench is applied, expressed in the world frame.
-  Vector3<T> application_point_{};
-
-  // The contact wrench expressed in the world frame.
-  WrenchVector<T> wrench_{};
+  /**
+   Computes a single equivalent contact force to the underlying contact details.
+   */
+  virtual ContactForce<T> ComputeContactForce() const = 0;
 };
 
 }  // namespace systems
