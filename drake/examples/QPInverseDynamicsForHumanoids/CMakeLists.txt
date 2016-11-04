@@ -14,7 +14,7 @@ target_link_libraries(drakeQPController
 
 drake_find_package(gurobi PKG_CONFIG)
 if(gurobi_FOUND)
-  drake_add_cc_test(NAME valkyrie_balancing_test)
+  drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
   target_link_libraries(valkyrie_balancing_test
     drakeQPController
     GTest::GTest GTest::Main)
