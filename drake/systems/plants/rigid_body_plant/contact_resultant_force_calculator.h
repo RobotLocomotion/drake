@@ -41,8 +41,8 @@ namespace systems {
  Usage
  =====
  The class is designed to be exercised by a contact response model.  As each
- pair  of collision elements is evaluated, the contact model should instantiate
- a  ContactResultantForceCalculator.  As each contact point between the elements
+ pair of collision elements is evaluated, the contact model should instantiate
+ a ContactResultantForceCalculator.  As each contact point between the elements
  is processed and a contact force is computed, the details of the contact force
  are provided to the calculator (via calls to AddForce).
  Currently, the contact force is defined by four values (see ContactForce):
@@ -76,23 +76,23 @@ namespace systems {
  points.
 
  We assume that the "ideal" point would be where the line intersects the
- (deformed) contact  surface. Generally, this can't be solved because it depends
- on a geometric  query that is outside the scope of this calculator class.
- Furthermore, in many  cases, it is unnecessary. A point on the surface is good
- for visualization, but  in contexts where only a mathematically meaningful
- point is all that is needed,  then  one point is as good as another. That said,
- the calculator employs a method to  cheaply approximate the intersection of the
- line with the contact surface by  doing the following.
+ (deformed) contact surface. Generally, this can't be solved because it depends
+ on a geometric query that is outside the scope of this calculator class.
+ Furthermore, in many cases, it is unnecessary. A point on the surface is good
+ for visualization, but in contexts where only a mathematically meaningful
+ point is all that is needed, then one point is as good as another. That said,
+ the calculator employs a method to cheaply approximate the intersection of the
+ line with the contact surface by doing the following.
 
  The central axis can be thought of as a line defined by a point and direction.
  The point can be any point on the line.  The direction is defined by the
  direction of the resultant normal force (i.e., the vector sum of the normal
- components  of all forces.) The direction vector defines "positive" and
- "negative"  directions on the line. The force originated from the negative
- direction and  accelerates the body in the positive direction.  If we had
- access to the  geometry, the point we would be interested in, would be the
- intersection of the  line and (deformed) geometry that is farthest in the
- "negative" direction  (i.e., closest to the originating source of the contact).
+ components of all forces.) The direction vector defines "positive" and
+ "negative" directions on the line. The force originated from the negative
+ direction and accelerates the body in the positive direction.  If we had
+ access to the geometry, the point we would be interested in, would be the
+ intersection of the line and (deformed) geometry that is farthest in the
+ "negative" direction (i.e., closest to the originating source of the contact).
 
  We will approximate this by finding the contact force application point that
  similarly lies farthest in the negative direction (simply by projecting the
@@ -148,8 +148,8 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   /**
    Adds a new force to the calculator.
    @param application_point     The application point of the force.
-   @param normal                    The translational force's  unit-length normal
-                                    direction.
+   @param normal                The translational force's  unit-length normal
+                                direction.
    @param force                 The translational force.
    */
   void AddForce(const Vector3<T>& application_point, const Vector3<T>& normal,
@@ -158,8 +158,8 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   /**
    Adds a new force with an arbitrary pure torque to the calculator.
    @param application_point     The application point of the force.
-   @param normal                    The translational force's  unit-length normal
-                                    direction.
+   @param normal                The translational force's  unit-length normal
+                                direction.
    @param force                 The translational force.
    @param pure_torque           The pure torque for the wrench.
    */
@@ -176,7 +176,7 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
         - the minimum moment (which may be non-zero in the general case),
         - the moments induced by the tangential components of the forces
-          translated to the minimum moment point, and
+          shifted to the minimum moment point, and
         - the sum of the pure torques of the individual input contact forces.
 
    The responsibility of computing the moment belongs to the code that knows
