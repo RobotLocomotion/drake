@@ -13,6 +13,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
@@ -422,7 +423,7 @@ TEST_F(SymbolicExpressionTest, Div3) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_set.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
-  unordered_set<Expression> uset;
+  unordered_set<Expression, hash_value<Expression>> uset;
   uset.emplace(Expression{Variable{"a"}});
   uset.emplace(Expression{Variable{"b"}});
 }
@@ -430,7 +431,7 @@ GTEST_TEST(ExpressionTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Expression is compatible with
 // std::unordered_map.
 GTEST_TEST(ExpressionTest, CompatibleWithUnorderedMap) {
-  unordered_map<Expression, Expression> umap;
+  unordered_map<Expression, Expression, hash_value<Expression>> umap;
   umap.emplace(Expression{Variable{"a"}}, Expression{Variable{"b"}});
 }
 

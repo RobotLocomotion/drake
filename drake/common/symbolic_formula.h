@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
@@ -176,6 +177,13 @@ DRAKE_EXPORT Formula operator>=(double v1, const Expression& e2);
 DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
 
 }  // namespace symbolic
+
+/** Computes the hash value of a symbolic formula. */
+template <>
+struct hash_value<symbolic::Formula> {
+  size_t operator()(const symbolic::Formula& f) const { return f.get_hash(); }
+};
+
 }  // namespace drake
 
 namespace std {
@@ -185,14 +193,6 @@ struct less<drake::symbolic::Formula> {
   bool operator()(const drake::symbolic::Formula& lhs,
                   const drake::symbolic::Formula& rhs) const {
     return lhs.Less(rhs);
-  }
-};
-
-/* Provides std::hash<drake::symbolic::Formula>. */
-template <>
-struct hash<drake::symbolic::Formula> {
-  size_t operator()(const drake::symbolic::Formula& e) const {
-    return e.get_hash();
   }
 };
 

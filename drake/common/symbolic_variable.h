@@ -7,6 +7,7 @@
 #include <string>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace symbolic {
@@ -54,14 +55,10 @@ DRAKE_EXPORT bool operator<(const Variable& lhs, const Variable& rhs);
 DRAKE_EXPORT bool operator==(const Variable& lhs, const Variable& rhs);
 
 }  // namespace symbolic
-}  // namespace drake
 
-namespace std {
-/* Provides std::hash<drake::symbolic::Variable>. */
+/** Computes the hash value of a symbolic variable. */
 template <>
-struct hash<drake::symbolic::Variable> {
-  size_t operator()(const drake::symbolic::Variable& v) const {
-    return v.get_hash();
-  }
+struct hash_value<symbolic::Variable> {
+  size_t operator()(const symbolic::Variable& v) const { return v.get_hash(); }
 };
-}  // namespace std
+}  // namespace drake

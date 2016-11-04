@@ -513,7 +513,7 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, hash<Variable>{}(v)}, var_{v} {}
+    : ExpressionCell{ExpressionKind::Var, hash_value<Variable>{}(v)}, var_{v} {}
 
 Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
 

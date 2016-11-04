@@ -101,7 +101,7 @@ TEST_F(SymbolicVariableTest, ToString) {
 // This test checks whether symbolic::Variable is compatible with
 // std::unordered_set.
 TEST_F(SymbolicVariableTest, CompatibleWithUnorderedSet) {
-  unordered_set<Variable> uset;
+  unordered_set<Variable, hash_value<Variable>> uset;
   uset.emplace(x_);
   uset.emplace(y_);
 }
@@ -109,7 +109,7 @@ TEST_F(SymbolicVariableTest, CompatibleWithUnorderedSet) {
 // This test checks whether symbolic::Variable is compatible with
 // std::unordered_map.
 TEST_F(SymbolicVariableTest, CompatibleWithUnorderedMap) {
-  unordered_map<Variable, Variable> umap;
+  unordered_map<Variable, Variable, hash_value<Variable>> umap;
   umap.emplace(x_, y_);
 }
 

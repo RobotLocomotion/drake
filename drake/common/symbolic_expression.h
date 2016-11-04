@@ -12,6 +12,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
@@ -287,6 +288,14 @@ class ExpressionCell {
   const size_t hash_{};
 };
 }  // namespace symbolic
+
+/** Computes the hash value of a symbolic expression. */
+template <>
+struct hash_value<symbolic::Expression> {
+  size_t operator()(const symbolic::Expression& e) const {
+    return e.get_hash();
+  }
+};
 }  // namespace drake
 
 namespace std {
@@ -296,14 +305,6 @@ struct less<drake::symbolic::Expression> {
   bool operator()(const drake::symbolic::Expression& lhs,
                   const drake::symbolic::Expression& rhs) const {
     return lhs.Less(rhs);
-  }
-};
-
-/* Provides std::hash<drake::symbolic::Expression>. */
-template <>
-struct hash<drake::symbolic::Expression> {
-  size_t operator()(const drake::symbolic::Expression& e) const {
-    return e.get_hash();
   }
 };
 
