@@ -17,22 +17,6 @@ bool AreEquivalent(const Eigen::MatrixBase<DerivedA>& m1,
   return CompareMatrices(m1, m2, kTolerance, MatrixCompareType::absolute);
 }
 
-// Utility method for asserting the state of the torque component of the wrench.
-template <typename DerivedA, typename DerivedB>
-bool AssertTorque(const SpatialForce<DerivedA>& wrench,
-                  const Eigen::MatrixBase<DerivedB>& torque) {
-  Vector3<DerivedA> test_torque = wrench.template head<3>();
-  return AreEquivalent(test_torque, torque);
-}
-
-// Utility method for asserting the state of the force component of the wrench.
-template <typename DerivedA, typename DerivedB>
-bool AssertForce(const SpatialForce<DerivedA>& wrench,
-                 const Eigen::MatrixBase<DerivedB>& force) {
-  Vector3<DerivedA> test_force = wrench.template tail<3>();
-  return AreEquivalent(test_force, force);
-}
-
 // Tests the ContactForce class.  The class is very simple. It's only
 // functionality is:
 //    1. Constructor logic,
