@@ -1,5 +1,6 @@
 #include "drake/common/symbolic_formula.h"
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -18,15 +19,17 @@
 namespace drake {
 namespace symbolic {
 
+using std::equal;
 using std::hash;
+using std::lexicographical_compare;
 using std::make_shared;
 using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
+using std::set;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
-using std::set;
 
 bool operator<(FormulaKind k1, FormulaKind k2) {
   return static_cast<int>(k1) < static_cast<int>(k2);
@@ -103,19 +106,17 @@ Formula forall(const Variables& vars, const Formula& f) {
   return Formula{make_shared<FormulaForall>(vars, f)};
 }
 
-bool operator<(const Formula& f1, const Formula& f2) { return f1.Less(f2); }
-
 Formula operator&&(const Formula& f1, const Formula& f2) {
   // ff && x => ff    x && ff => ff
-  if (f1 == Formula::False() || f2 == Formula::False()) {
+  if (f1.EqualTo(Formula::False()) || f2.EqualTo(Formula::False())) {
     return Formula::False();
   }
   // tt && f2 => f2
-  if (f1 == Formula::True()) {
+  if (f1.EqualTo(Formula::True())) {
     return f2;
   }
   // f1 && tt => f1
-  if (f2 == Formula::True()) {
+  if (f2.EqualTo(Formula::True())) {
     return f1;
   }
   // Flattening
@@ -151,15 +152,15 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
 
 Formula operator||(const Formula& f1, const Formula& f2) {
   // tt || x => tt    x || tt => tt
-  if (f1 == Formula::True() || f2 == Formula::True()) {
+  if (f1.EqualTo(Formula::True()) || f2.EqualTo(Formula::True())) {
     return Formula::True();
   }
   // ff || f2 => f2
-  if (f1 == Formula::False()) {
+  if (f1.EqualTo(Formula::False())) {
     return f2;
   }
   // f1 || ff => f1
-  if (f2 == Formula::False()) {
+  if (f2.EqualTo(Formula::False())) {
     return f1;
   }
   // Flattening
@@ -194,10 +195,10 @@ Formula operator||(const Formula& f1, const Formula& f2) {
 }
 
 Formula operator!(const Formula& f) {
-  if (f == Formula::True()) {
+  if (f.EqualTo(Formula::True())) {
     return Formula::False();
   }
-  if (f == Formula::False()) {
+  if (f.EqualTo(Formula::False())) {
     return Formula::True();
   }
   return Formula{make_shared<FormulaNot>(f)};
@@ -207,8 +208,6 @@ ostream& operator<<(ostream& os, const Formula& e) {
   DRAKE_ASSERT(e.ptr_ != nullptr);
   return e.ptr_->Display(os);
 }
-
-bool operator==(const Formula& f1, const Formula& f2) { return f1.EqualTo(f2); }
 
 Formula operator==(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 == 0  =>  True
@@ -227,8 +226,6 @@ Formula operator==(const double v1, const Expression& e2) {
 Formula operator==(const Expression& e1, const double v2) {
   return e1 == Expression{v2};
 }
-
-bool operator!=(const Formula& f1, const Formula& f2) { return !(f1 == f2); }
 
 Formula operator!=(const Expression& e1, const Expression& e2) {
   // Simplification: E1 - E2 != 0  =>  True
@@ -371,7 +368,10 @@ bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
     return false;
   }
   const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
-  return formulas_ == nary_f.formulas_;
+  return equal(
+      formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
+      nary_f.formulas_.cend(),
+      [](const Formula& f1, const Formula& f2) { return f1.EqualTo(f2); });
 }
 
 bool NaryFormulaCell::Less(const FormulaCell& f) const {
@@ -384,7 +384,10 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
     return false;
   }
   const NaryFormulaCell& nary_f{static_cast<const NaryFormulaCell&>(f)};
-  return formulas_ < nary_f.formulas_;
+  return lexicographical_compare(
+      formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
+      nary_f.formulas_.cend(),
+      [](const Formula& f1, const Formula& f2) { return f1.Less(f2); });
 }
 
 ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
