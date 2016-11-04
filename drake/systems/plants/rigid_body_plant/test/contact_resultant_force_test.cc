@@ -226,7 +226,8 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
 
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
   // Case 2: Same as case 1, except reverse the order of adding forces to show
@@ -239,7 +240,8 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
 
     ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
-    ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
   }
 }
 
