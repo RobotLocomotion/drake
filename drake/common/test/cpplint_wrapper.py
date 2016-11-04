@@ -89,6 +89,9 @@ def multiprocess_cpplint(cmdline, files, args):
 
     # Act on the results.
     num_errors = len(errors)
+    err_dest = sys.stderr
+    if args.allstdout is True:
+        err_dest = sys.stdout
     if num_errors == 0:
         print ' TOTAL %d files passed' % len(files)
         return 0
@@ -96,7 +99,7 @@ def multiprocess_cpplint(cmdline, files, args):
         print ' TOTAL %d files checked, found %d warnings' % (
             len(files), num_errors)
         for line in errors:
-            print >>sys.stderr, line
+            print >>err_dest, line
         return 1
 
 
@@ -129,6 +132,10 @@ def main():
     parser.add_argument(
         '--num-processes', metavar='N', type=int, default=None,
         help='limit to this number of processes (default all CPUs)')
+    parser.add_argument(
+        '--allstdout', action='store_true',
+        dest='allstdout', default='False',
+        help='Writes error messages to std out, otherwise written to std err' )
     parser.add_argument(
         'pathnames', nargs='*', default=[drake_dir, drake_ros_dir],
         help='list of files and/or directories to check'

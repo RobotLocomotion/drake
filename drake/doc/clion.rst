@@ -120,9 +120,10 @@ Run Cpp Lint on Single File
    :Name: Cpp Lint File
    :Description: Apply cpp lint to the current file.
    :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
-   :Parameters: $FilePath$
+   :Parameters: --allstdout $FilePath$
    :Working directory: $ProjectFileDir$
-5. Make sure that *only* the following Options are checked (the "Synchronize files after execution" is unnecessary because cpp lint is a read-only operation):
+5. Make sure that *only* the following Options are checked (the "Synchronize files
+   after execution" is unnecessary because cpp lint is a read-only operation):
 
    - Open Console 
    - Main Menu
@@ -148,26 +149,13 @@ differences:
     :Name: Cpp Lint Project
     :Description: Apply cpp lint to the entire project.
     :Program: $ProjectFileDir$/common/test/cpplint_wrapper.py
-    :Parameters: <leave empty>
+    :Parameters: --allstdout 
     :Working directory: $ProjectFileDir$
 Continue on with steps 5 to the end.
 
 Executing
 ^^^^^^^^^
 The external tools can be executed by going to Tools > External Tools > [Tool Name].
-
-Notes
-^^^^^
-There appears to be a race condition. If the python program prints the
-results before it lists the summary (e.g., `Total X files checked, found Y 
-warnings`), then the first warning will not be properly extracted.  This happens
-occasionally when running on individual files.  It is less likely when running
-cpp lint on the full project, but it is still possible.  So, confirm that the
-console reports zero warnings. This is particularly important when evaluating
-the full project; cpplint wil print hundreds of "." characters which the 
-console does *not* wrap.  If the race condition affects you, the warning will
-be appended to this very long string, out of view. The summary will let you
-know if this has happened.
 
 Running a C++ executable
 ========================
