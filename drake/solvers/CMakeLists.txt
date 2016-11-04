@@ -14,6 +14,7 @@ endif()
 set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
+  decision_variable.cc
   mathematical_program.cc moby_lcp_solver.cc
   system_identification.cc linear_system_solver.cc
   equality_constrained_qp_solver.cc)

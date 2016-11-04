@@ -62,7 +62,7 @@ struct Unique {
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.AddContinuousVariables(1);
+  prog.AddContinuousVariables(1, 1);
 
   Movable movable;
   prog.AddCost(std::move(movable));
@@ -76,7 +76,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::make_shared<Unique>());
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
-
+/*
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void CheckSolverType(MathematicalProgram& prog,
                      std::string desired_solver_name) {
@@ -584,12 +584,11 @@ class GloptipolyConstrainedExampleConstraint
   }
 };
 
-/** gloptiPolyConstrainedMinimization
- * @brief from section 5.8.2 of the gloptipoly3 documentation
- *
- * Which is from section 3.5 in
- *   Handbook of Test Problems in Local and Global Optimization
- */
+// gloptiPolyConstrainedMinimization
+// @brief from section 5.8.2 of the gloptipoly3 documentation
+//
+// Which is from section 3.5 in
+//   Handbook of Test Problems in Local and Global Optimization
 GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   MathematicalProgram prog;
 
@@ -640,10 +639,9 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   });
 }
 
-/**
- * Test that the Eval() method of LinearComplementarityConstraint correctly
- * returns the slack.
- */
+//
+// Test that the Eval() method of LinearComplementarityConstraint correctly
+// returns the slack.
 GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -667,13 +665,12 @@ GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
 }
 
-/** Simple linear complementarity problem example.
- * @brief a hand-created LCP easily solved.
- *
- * Note: This test is meant to test that MathematicalProgram.Solve() works in
- * this case; tests of the correctness of the Moby LCP solver itself live in
- * testMobyLCP.
- */
+// Simple linear complementarity problem example.
+// @brief a hand-created LCP easily solved.
+//
+// Note: This test is meant to test that MathematicalProgram.Solve() works in
+// this case; tests of the correctness of the Moby LCP solver itself live in
+// testMobyLCP.
 GTEST_TEST(testMathematicalProgram, simpleLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -693,10 +690,9 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
                               MatrixCompareType::absolute));
 }
 
-/** Multiple LC constraints in a single optimization problem
- * @brief Just two copies of the simpleLCP example, to make sure that the
- * write-through of LCP results to the solution vector works correctly.
- */
+// Multiple LC constraints in a single optimization problem
+// @brief Just two copies of the simpleLCP example, to make sure that the
+// write-through of LCP results to the solution vector works correctly.
 GTEST_TEST(testMathematicalProgram, multiLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -722,9 +718,8 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
                               MatrixCompareType::absolute));
 }
 
-/**
- * Test that linear polynomial constraints get turned into linear constraints.
- */
+//
+// Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
   MathematicalProgram problem;
@@ -752,7 +747,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
 #define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
 #endif
 
-/** Simple test of polynomial constraints. */
+// Simple test of polynomial constraints.
 GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
@@ -837,18 +832,17 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   }
 }
 
-/*
- * Test how an unconstrained QP is dispatched and solved:
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1).
- *   - on the same problem plus the additional problem
- *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
- *     with the first problem, has min at (x1=1, x2=2, x3=1)
- * The first case tests a single quadratic cost, and the
- * second case tests multiple quadratic costs affecting
- * different variable views. All fall under the
- * umbrella of the Equality Constrained QP Solver.
- */
+//
+// Test how an unconstrained QP is dispatched and solved:
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1).
+//   - on the same problem plus the additional problem
+//     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
+//     with the first problem, has min at (x1=1, x2=2, x3=1)
+// The first case tests a single quadratic cost, and the
+// second case tests multiple quadratic costs affecting
+// different variable views. All fall under the
+// umbrella of the Equality Constrained QP Solver.
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -876,7 +870,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto y = prog.AddContinuousVariables(1);
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableList vars;
+  VariableVector vars;
   vars.push_back(x.segment(1, 1));
   vars.push_back(y);
 
@@ -895,15 +889,14 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/*
- * Test how an equality-constrained QP is dispatched
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
- *     The resulting constrained min is at (x1=0.5, x2=0.5).
- *   - on the same problem with an additional variable x3,
- *     with (2*x1 - x3 = 0). Resulting solution should be
- *     (x1=0.5, x2=0.5, x3=1.0)
- */
+
+// Test how an equality-constrained QP is dispatched
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
+//     The resulting constrained min is at (x1=0.5, x2=0.5).
+//   - on the same problem with an additional variable x3,
+//     with (2*x1 - x3 = 0). Resulting solution should be
+//     (x1=0.5, x2=0.5, x3=1.0)
 GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -935,7 +928,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableList vars;
+  VariableVector vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
@@ -951,27 +944,26 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tActual: " << actual_answer.transpose();
 }
 
-/*
- * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
- * nonlinear optimization problem.
- * The objective is to find the smallest distance from a hyperplane
- * A * x = b to the origin.
- * We can solve the following SOCP with Lorentz cone constraint
- * min  t
- *  s.t t >= sqrt(x'*x)
- *      A * x = b.
- * Alternatively, we can solve the following SOCP with rotated Lorentz cone
- * constraint
- * min t
- * s.t t >= x'*x
- *     A * x = b.
- *
- * The optimal solution of this equality constrained QP can be found using
- * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
- * satisfy
- * A_hat * [x*; z*] = [b; 0]
- * where A_hat = [A 0; 2*I A'].
- */
+
+// Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
+// nonlinear optimization problem.
+// The objective is to find the smallest distance from a hyperplane
+// A * x = b to the origin.
+// We can solve the following SOCP with Lorentz cone constraint
+// min  t
+//  s.t t >= sqrt(x'*x)
+//      A * x = b.
+// Alternatively, we can solve the following SOCP with rotated Lorentz cone
+// constraint
+// min t
+// s.t t >= x'*x
+//     A * x = b.
+//
+// The optimal solution of this equality constrained QP can be found using
+// Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
+// satisfy
+// A_hat * [x*; z*] = [b; 0]
+// where A_hat = [A 0; 2*I A'].
 void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   DRAKE_ASSERT(A.rows() == b.rows());
   const int xDim = A.cols();
@@ -1073,6 +1065,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
 }
+*/
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
