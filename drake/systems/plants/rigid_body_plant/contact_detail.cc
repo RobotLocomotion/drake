@@ -2,16 +2,8 @@
 
 namespace drake {
 namespace systems {
-template <typename T>
-ContactDetail<T>::ContactDetail(const Vector3<T>& point,
-                                const WrenchVector<T>& wrench)
-    : application_point_(point), wrench_(wrench) {}
 
-template <typename T>
-std::unique_ptr<ContactDetail<T>> ContactDetail<T>::Clone() const {
-  return std::make_unique<ContactDetail<T>>(*this);
-}
-
+// this comment is way too long because it spills over the line like it shouldn't do.
 // Explicitly instantiates on the most common scalar types.
 template class ContactDetail<double>;
 

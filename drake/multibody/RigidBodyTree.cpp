@@ -758,7 +758,7 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
-bool RigidBodyTree::AllPairsClosestPoints(
+bool RigidBodyTree<T>::AllPairsClosestPoints(
     const KinematicsCache<double>& cache,
     std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
   vector<DrakeCollision::ElementId> ids_to_check;
@@ -769,10 +769,10 @@ bool RigidBodyTree::AllPairsClosestPoints(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::AllPairsClosestPointsInSet(
-    const KinematicsCache<double> &cache,
-    const vector<DrakeCollision::ElementId> &ids_to_check,
-    std::vector<DrakeCollision::PointPair> *pairs, bool use_margins) {
+bool RigidBodyTree<T>::AllPairsClosestPointsInSet (
+    const KinematicsCache<double>& cache,
+    const vector<DrakeCollision::ElementId>& ids_to_check,
+    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
   updateDynamicCollisionElements(cache);
   return collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
                                                  *pairs);
@@ -1149,8 +1149,8 @@ bool RigidBodyTree<T>::is_part_of_model_instances(
 }
 
 template <typename T>
-double RigidBodyTree<T>::getMass(const std::set<int>& model_instance_id_set)
-const {
+double RigidBodyTree<T>::getMass(
+    const std::set<int>& model_instance_id_set) const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
     if (is_part_of_model_instances(*body.get(), model_instance_id_set)) {
