@@ -128,11 +128,15 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   }
 
   // Extract the appropriate derivatives from our result into the
-  // gradient array.
+  // gradient array.  Like above, we need to use variable_list to
+  // figure out where the derivatives we actually care about are
+  // located.
   size_t grad_idx = 0;
-  for (size_t i = 0; i < c.num_constraints(); ++i) {
-    for (size_t j = 0; j < var_count; ++j) {
-      grad[grad_idx++] = ty(i).derivatives()(j);
+  for (const DecisionVariableMatrix& v : variable_list) {
+    for (size_t i = 0; i < c.num_constraints(); i++) {
+      for (int j = 0; j < v.NumberOfVariables(); j++) {
+        grad[grad_idx++] = ty(i).derivatives()(v.index(j));
+      }
     }
   }
   return grad_idx;
@@ -437,12 +441,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
-      int this_x_count = 0;
       for (const DecisionVariableMatrix& v : binding.variable_list()) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          cost_cache_->grad[v.index(j)] += ty(0).derivatives()(this_x_count + j);
+          cost_cache_->grad[j] += ty(0).derivatives()(v.index(j));
         }
-        this_x_count += v.NumberOfVariables();
       }
     }
   }
