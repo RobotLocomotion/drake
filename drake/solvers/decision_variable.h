@@ -100,12 +100,48 @@ class DecisionVariableMatrix {
   }
 
   /**
+   * Returns the value of the i'th decision variable stored in the matrix.
+   * For a non-symmetric matrix, the decision variables are stored in the column
+   * major, as the stacked columns of the matrix; for a symmetric matrix, the
+   * decision variables are stored as the stacked columns of the lower triangular
+   * part of the matrix.
+   * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
+   * (0-indexed) is at M(2, 1);
+   * for a 3 x 3 symmetric matrix M, the 5'th decision variable (0-indexed) is
+   * at M(2, 2).
+   * @return The value of the decision variable.
+   */
+  double value(size_t i) const {
+    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(!vars_[i].expired());
+    return vars_[i].lock()->value();
+  }
+
+  /**
    * Return the type of the variable at i'th row and j'th column of the matrix.
    */
   DecisionVariableScalar::VarType type(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
     DRAKE_ASSERT(!vars_[vector_index].expired());
     return vars_[vector_index].lock()->type();
+  }
+
+  /**
+   * Returns the type of the i'th decision variable stored in the matrix.
+   * For a non-symmetric matrix, the decision variables are stored in the column
+   * major, as the stacked columns of the matrix; for a symmetric matrix, the
+   * decision variables are stored as the stacked columns of the lower triangular
+   * part of the matrix.
+   * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
+   * (0-indexed) is at M(2, 1);
+   * for a 3 x 3 symmetric matrix M, the 5'th decision variable (0-indexed) is
+   * at M(2, 2).
+   * @return The type of the decision variable.
+   */
+  DecisionVariableScalar::VarType type(size_t i) const {
+    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(!vars_[i].expired());
+    return vars_[i].lock()->type();
   }
 
   /**
@@ -118,12 +154,48 @@ class DecisionVariableMatrix {
   }
 
   /**
+   * Returns the name of the i'th decision variable stored in the matrix.
+   * For a non-symmetric matrix, the decision variables are stored in the column
+   * major, as the stacked columns of the matrix; for a symmetric matrix, the
+   * decision variables are stored as the stacked columns of the lower triangular
+   * part of the matrix.
+   * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
+   * (0-indexed) is at M(2, 1);
+   * for a 3 x 3 symmetric matrix M, the 5'th decision variable (0-indexed) is
+   * at M(2, 2).
+   * @return The name of the decision variable.
+   */
+  std::string name(size_t i) const {
+    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(!vars_[i].expired());
+    return vars_[i].lock()->name();
+  }
+
+  /**
    * Return the index of the variable at i'th row and j'th column of the matrix.
    */
   size_t index(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
     DRAKE_ASSERT(!vars_[vector_index].expired());
     return vars_[vector_index].lock()->index();
+  }
+
+  /**
+   * Returns the index of the i'th decision variable stored in the matrix.
+   * For a non-symmetric matrix, the decision variables are stored in the column
+   * major, as the stacked columns of the matrix; for a symmetric matrix, the
+   * decision variables are stored as the stacked columns of the lower triangular
+   * part of the matrix.
+   * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
+   * (0-indexed) is at M(2, 1);
+   * for a 3 x 3 symmetric matrix M, the 5'th decision variable (0-indexed) is
+   * at M(2, 2).
+   * @return The index of the decision variable.
+   */
+  size_t index(size_t i) const {
+    DRAKE_ASSERT(i < NumberOfVariables());
+    DRAKE_ASSERT(!vars_[i].expired());
+    return vars_[i].lock()->index();
   }
 
   bool is_symmetric() const { return is_symmetric_; }
@@ -133,7 +205,6 @@ class DecisionVariableMatrix {
    * is not symmetric, there are rows_ * cols_ decision variables; otherwise,
    * the number of decision variables is the number of entries in the lower
    * triangular part of the matrix.
-   * @return
    */
   int NumberOfVariables() const {
     if (!is_symmetric_) {
@@ -143,19 +214,15 @@ class DecisionVariableMatrix {
     }
   }
   /**
-   * Return the value of all the decision variables stored inside the class
+   * Return the value of matrix.
+   * @return A matrix of the size rows_ * cols_;
    */
-  Eigen::MatrixXd value() const {
-    Eigen::MatrixXd mat(rows_, cols_);
-    for (int i = 0; i < static_cast<int>(rows_); ++i) {
-      for (int j = 0; j < static_cast<int>(cols_); ++j) {
-        size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-        DRAKE_ASSERT(!vars_[vector_index].expired());
-        mat(i, j) = vars_[vector_index].lock()->value();
-      }
-    }
-    return mat;
-  }
+  Eigen::MatrixXd value() const;
+
+  /** Return the value of the decision variables
+   * @return A vector of the size NumberOfVariables().
+   */
+  Eigen::VectorXd VariableValue() const;
 
   /**
    * Construct a new DecisionVariableMatrix by taking a sub-block from the
@@ -166,29 +233,7 @@ class DecisionVariableMatrix {
    * @param cols The number of columns in the sub-block.
    */
   DecisionVariableMatrix block(size_t row_start, size_t col_start, size_t rows,
-                               size_t cols) const {
-    DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
-    std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
-    if (IsBlockSymmetric(row_start, col_start, rows, cols)) {
-      vars.reserve(rows * (rows + 1) / 2);
-      for (int j = 0; j < static_cast<int>(cols); ++j) {
-        for (int i = j; i < static_cast<int>(rows); ++i) {
-          vars.push_back(
-              vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
-        }
-      }
-      return DecisionVariableMatrix(rows, rows, vars, true);
-    } else {
-      vars.reserve(rows * cols);
-      for (int j = 0; j < static_cast<int>(cols); ++j) {
-        for (int i = 0; i < static_cast<int>(rows); ++i) {
-          vars.push_back(
-              vars_[MatrixIndicesToVectorIndex(row_start + i, col_start + j)]);
-        }
-      }
-      return DecisionVariableMatrix(rows, cols, vars, false);
-    }
-  }
+                               size_t cols) const;
 
   /**
    * Construct a new DecisionVariableMatrix from a row of the original matrix.
@@ -203,6 +248,12 @@ class DecisionVariableMatrix {
    */
   DecisionVariableMatrix col(size_t j) const { return block(0, j, rows_, 1); }
 
+  /**
+   * Determine if the variable with given index is included in this matrix.
+   * @param index The index of the variable in the mathematical program.
+   * @return True if the variable is included in the matrix; false otherwise.
+   */
+  bool covers(size_t index) const;
  private:
   size_t rows_;
   size_t cols_;
@@ -241,136 +292,11 @@ class DecisionVariableMatrix {
   }
 };
 
-/**
- * DecisionVariable
- * @brief Provides storage for a decision variable inside an
- * MathematicalProgram.
- */
-class DecisionVariable {
- public:
-  enum class VarType { CONTINUOUS, INTEGER, BINARY };
-
-  DecisionVariable(VarType type, const std::string& name, size_t num_vars,
-                   size_t start_index)
-      : type_(type),
-        name_(name),
-        data_(Eigen::VectorXd::Zero(num_vars)),
-        start_index_(start_index) {}
-
-  /** index()
-   * @brief returns the first index of this variable in the entire variable
-   * vector for the program
-   */
-  size_t index() const { return start_index_; }
-  /** size()
-   * @brief returns the number of elements in the decision variable vector
-   */
-  size_t size() const { return data_.size(); }
-  /** name()
-   * @return the name of the DecisionVariable
-   */
-  const std::string& name() const { return name_; }
-  /** value()
-   * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
-   */
-  const Eigen::VectorXd& value() const { return data_; }
-  void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
-
-  VarType type() const { return type_; }
-
- private:
-  VarType type_;
-  std::string name_;
-  Eigen::VectorXd data_;
-  size_t start_index_;
-};
-
-class DecisionVariableView {  // enables users to access pieces of the decision
-                              // variables like they would any other eigen
-                              // vector
- public:
-  /// Create a view which covers an entire DecisionVariable.
-  ///
-  /// @p var is aliased, and must remain valid for the lifetime of the view.
-  explicit DecisionVariableView(const DecisionVariable& var)
-      : var_(var), start_index_(0), size_(var_.size()) {}
-
-  /// Create a view covering part of a DecisionVariable.
-  ///
-  /// @p var is aliased, and must remain valid for the lifetime of the view.
-  DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
-      : var_(var), start_index_(start), size_(n) {
-    DRAKE_ASSERT((start + n) <= static_cast<size_t>(var.size()));
-  }
-
-  /** index()
-   * @brief returns the first index of this variable in the entire variable
-   * vector for the program
-   */
-  size_t index() const { return var_.index() + start_index_; }
-
-  /** size()
-   * @brief returns the number of elements in the decision variable vector
-   */
-  size_t size() const { return size_; }
-
-  /** value()
-   * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
-   */
-  Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
-    return var_.value().segment(start_index_, size_);
-  }
-
-  std::string name() const {
-    if ((start_index_ == 0) &&
-        (size_ == static_cast<size_t>(var_.value().size()))) {
-      return var_.name();
-    } else {
-      return var_.name() + "(" + std::to_string(start_index_) + ":" +
-             std::to_string(start_index_ + size_) + ")";
-    }
-  }
-
-  /** covers()
-   * @brief returns true iff the given @p index of the enclosing
-   * MathematicalProgram is included in this VariableView.*/
-  bool covers(size_t var_index) const {
-    return (var_index >= index()) && (var_index < (index() + size_));
-  }
-
-  const DecisionVariableView operator()(size_t i) const {
-    DRAKE_ASSERT(i <= size_);
-    return DecisionVariableView(var_, start_index_ + i, 1);
-  }
-  const DecisionVariableView row(size_t i) const {
-    DRAKE_ASSERT(i <= size_);
-    return DecisionVariableView(var_, start_index_ + i, 1);
-  }
-  const DecisionVariableView head(size_t n) const {
-    DRAKE_ASSERT(n <= size_);
-    return DecisionVariableView(var_, start_index_, n);
-  }
-  const DecisionVariableView tail(size_t n) const {
-    DRAKE_ASSERT(n <= size_);
-    return DecisionVariableView(var_, start_index_ + size_ - n, n);
-  }
-  const DecisionVariableView segment(size_t start, size_t n) const {
-    DRAKE_ASSERT(start + n <= size_);
-    return DecisionVariableView(var_, start_index_ + start, n);
-  }
-
- private:
-  const DecisionVariable& var_;
-  size_t start_index_, size_;
-};
-
-typedef std::list<DecisionVariableView> VariableList;
-inline int GetVariableListSize(const VariableList& vars) {
+typedef std::vector<DecisionVariableMatrix> VariableVector;
+inline int GetVariableVectorSize(const VariableVector &vars) {
   int var_dim = 0;
   for (const auto& var : vars) {
-    var_dim += var.size();
+    var_dim += var.NumberOfVariables();
   }
   return var_dim;
 }
