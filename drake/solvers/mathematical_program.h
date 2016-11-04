@@ -1405,7 +1405,7 @@ class MathematicalProgram {
   //std::unique_ptr<MathematicalProgramSolverInterface>
   //    equality_constrained_qp_solver_;
   std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
-  //std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
+  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
 
   /**
    * Add variables to MathematicalProgram.
