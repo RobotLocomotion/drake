@@ -68,11 +68,13 @@ void IdmPlanner<T>::EvalOutput(
                 input_ego->v() * (input_ego->v() - input_agent->v()) /
                 (2 * sqrt(a * b))) /
                (input_agent->x() - input_ego->x() - l_a), 2.0)));
+}
 
-  // TODO(david-german-tri): Remove this copy by allowing output ports to be
-  // mere pointers to state variables (or cache lines).
-  output_vector->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+template <typename T>
+std::unique_ptr<systems::BasicVector<T>>
+IdmPlanner<T>::AllocateOutputVector(
+    const systems::SystemPortDescriptor<T>& descriptor) const {
+  return std::make_unique<systems::BasicVector<T>>(1 /* output vector size */);
 }
 
 // These instantiations must match the API documentation in
