@@ -952,7 +952,7 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgramUnitBall) {
   }
 }
 
-GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
+GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
   std::list<std::unique_ptr<MathematicalProgramSolverInterface>> solvers;
   GetQuadraticProgramSolvers(&solvers);
   Eigen::VectorXd solution;
