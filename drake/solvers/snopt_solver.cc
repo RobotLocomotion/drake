@@ -271,8 +271,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     for (const DecisionVariableMatrix& v : binding.variable_list()) {
       int num_v_variables = v.NumberOfVariables();
       this_x.conservativeResize(index + num_v_variables);
-      for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(v.index(i));
+      for (int j = 0; j < num_v_variables; ++j) {
+        this_x(index + j) = tx(v.index(j));
       }
       index += num_v_variables;
     }
