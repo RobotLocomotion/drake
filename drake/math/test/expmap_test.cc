@@ -29,8 +29,10 @@ void ConvertQuaternionToExpmapAndBack(const Vector4d& quat) {
 
   EXPECT_NEAR(std::abs(quat.dot(quat_back)), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 GTEST_TEST(ExpmapTest, QuaternionConversion) {

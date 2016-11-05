@@ -63,11 +63,12 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Since this joint's child body's frame and parent body's frame are
   // coincident, transform_to_parent_body should be identity.
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(
      transform_to_parent_body.matrix(),
      Eigen::Isometry3d::Identity().matrix(),
      Eigen::NumTraits<double>::epsilon(),
-     MatrixCompareType::absolute));
+     MatrixCompareType::absolute, &error_message)) << error_message;
 
   // Evaluates the functional correctness of transform_to_parent_body.
   // Since the joint has zero pose, we expect a point expressed in the child
@@ -133,11 +134,12 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
       << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(
      transform_to_parent_body.matrix(),
      expected_transform_to_parent_body.matrix(),
      Eigen::NumTraits<double>::epsilon(),
-     MatrixCompareType::absolute));
+     MatrixCompareType::absolute, &error_message)) << error_message;
 
   // Evaluates the functional correctness of transform_to_parent_body.
   // Since the joint has a pose of Z=1, we expect a point expressed in the child

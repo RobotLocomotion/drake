@@ -64,14 +64,17 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
   // Ensure that value is correct.
   auto value_expected = quadratic_form(x);
   auto value = autoDiffToValueMatrix(jac_chunk_size_default);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   // Ensure that Jacobian is correct.
   auto jac = autoDiffToGradientMatrix(jac_chunk_size_default);
   auto jac_expected = (x.transpose() * (A + A.transpose())).eval();
   EXPECT_TRUE(
-      CompareMatrices(jac_expected, jac, 1e-12, MatrixCompareType::absolute));
+      CompareMatrices(jac_expected, jac, 1e-12, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 class AutoDiffHessianTest : public ::testing::Test {};
@@ -124,8 +127,10 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   auto value_expected = quadratic_function(x);
   auto value_autodiff = autoDiffToValueMatrix(hess_chunk_size_default);
   auto value = autoDiffToValueMatrix(value_autodiff);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   // Ensure that the two ways of computing the Jacobian from AutoDiff match.
   auto jac_autodiff = autoDiffToGradientMatrix(hess_chunk_size_default);
@@ -138,14 +143,16 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
                        (D * x + e).transpose() * C.transpose() * A)
                           .eval();
   EXPECT_TRUE(
-      CompareMatrices(jac_expected, jac1, 1e-12, MatrixCompareType::absolute));
+      CompareMatrices(jac_expected, jac1, 1e-12, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 
   // Ensure that the Hessian is correct.
   auto hess_expected =
       (A.transpose() * C * D + D.transpose() * C.transpose() * A).eval();
   auto hess = autoDiffToGradientMatrix(jac_autodiff);
   EXPECT_TRUE(
-      CompareMatrices(hess_expected, hess, 1e-12, MatrixCompareType::absolute));
+      CompareMatrices(hess_expected, hess, 1e-12, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 }  // namespace

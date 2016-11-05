@@ -50,9 +50,11 @@ GTEST_TEST(testIK, atlasIK) {
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
+  std::string error_message;
   EXPECT_TRUE(
       CompareMatrices(com, Vector3d(0, 0, 1), 1e-6,
-                      MatrixCompareType::absolute));
+                      MatrixCompareType::absolute, &error_message))
+          << error_message;
 }
 
 GTEST_TEST(testIK, iiwaIK) {
@@ -112,9 +114,11 @@ GTEST_TEST(testIK, iiwaIK) {
 
   // Check that the link we were trying to position wound up where we expected.
   KinematicsCache<double> cache = model.doKinematics(q_sol);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(
       pos_end, model.relativeTransform(cache, 0, link_7_idx).translation(),
-      pos_tol + 1e-6, MatrixCompareType::absolute));
+      pos_tol + 1e-6, MatrixCompareType::absolute, &error_message))
+          << error_message;
 }
 
 }  // namespace

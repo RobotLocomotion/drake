@@ -41,11 +41,13 @@ GTEST_TEST(testGyroscope, AllTests) {
   rigid_body_sys->addSensor(gyroscope);
   const double tol = 1e-6;
 
-  for (size_t i = 0; i < 100; i++) {
+  for (size_t i = 0; i < 100; ++i) {
     Vector3d ang_vel = Vector3d::Random();
 
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(getGyroscopeOutput(rigid_body_sys, ang_vel),
-                                ang_vel, tol, MatrixCompareType::absolute));
+                                ang_vel, tol, MatrixCompareType::absolute,
+                                &error_message)) << error_message;
   }
 }
 
