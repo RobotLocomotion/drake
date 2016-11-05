@@ -15,7 +15,7 @@ class DRAKE_EXPORT DrealSolver
   // Dreal was available during compilation.
   bool available() const override;
 
-  std::string SolverName() const override;
+  std::string SolverName() const override{ return "dReal"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };

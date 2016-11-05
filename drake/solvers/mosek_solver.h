@@ -18,7 +18,7 @@ class DRAKE_EXPORT MosekSolver :
   */
   bool available() const override;
 
-  std::string SolverName() const override;
+  std::string SolverName() const override { return "Mosek";}
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
