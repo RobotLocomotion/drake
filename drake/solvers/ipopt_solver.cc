@@ -441,7 +441,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       cost_cache_->result[0] += ty(0).value();
       for (const DecisionVariableMatrix& v : binding.variable_list()) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          cost_cache_->grad[j] += ty(0).derivatives()(v.index(j));
+          cost_cache_->grad[v.index(j)] += ty(0).derivatives()(v.index(j));
         }
       }
     }
