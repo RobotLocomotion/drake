@@ -3,7 +3,7 @@
 if(lcm_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
   add_executable(run_quadrotor_dynamics run_quadrotor_dynamics.cc)
   target_link_libraries(run_quadrotor_dynamics drakeRigidBodyPlant drakeLCMSystem2 gflags)
-  drake_add_test(NAME run_quadrotor_dynamics COMMAND runQuadrotorDynamics --duration=1.0 SIZE medium)
+  drake_add_test(NAME run_quadrotor_dynamics COMMAND run_quadrotor_dynamics --duration=1.0 SIZE medium)
 
   add_executable(runQuadrotorLQR runLQR.cpp)
   target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)

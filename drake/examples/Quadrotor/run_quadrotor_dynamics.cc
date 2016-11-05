@@ -58,7 +58,7 @@ class Quadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  // TODO(foehnph): dublicated, refactor into single location
+  // TODO(foehnph): duplicated, refactor into single location.
   void AddGround(RigidBodyTree<T>* tree) {
     double kBoxWidth = 1000;
     double kBoxDepth = 10;
