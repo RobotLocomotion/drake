@@ -26,7 +26,7 @@ cc_library(
         "eigen_types.h",
         "number_traits.h",
     ],
-    deps = ["@eigen//:eigen"],
+    deps = ["@eigen//:eigen", "@spdlog//:spdlog"],
     linkstatic = 1)
 
 # Drake's ScalarType libraries.
