@@ -11,10 +11,6 @@ namespace solvers {
 
 bool LinearSystemSolver::available() const { return true; }
 
-std::string LinearSystemSolver::SolverName() const {
-  return "Linear System Solver";
-}
-
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {

@@ -13,10 +13,6 @@ namespace solvers {
 
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
-std::string EqualityConstrainedQPSolver::SolverName() const {
-  return "Equality Constrained QP Solver";
-}
-
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // Given a QP with equality constraints, we can use the KKT conditions
