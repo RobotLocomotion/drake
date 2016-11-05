@@ -4,6 +4,7 @@
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
+#include "drake/automotive/gen/single_lane_ego_and_agent_state.h"
 #include "drake/automotive/linear_car.h"
 #include "drake/automotive/idm_planner.h"
 
