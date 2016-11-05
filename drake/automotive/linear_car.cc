@@ -10,6 +10,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/math/autodiff_overloads.h"
+//#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace automotive {
@@ -26,6 +27,16 @@ LinearCar<T>::LinearCar() {
 
 template <typename T>
 LinearCar<T>::~LinearCar() {}
+
+template <typename T>
+const systems::SystemPortDescriptor<T>& LinearCar<T>::get_input_port() const {
+  return systems::System<T>::get_input_port(0);
+}
+
+template <typename T>
+const systems::SystemPortDescriptor<T>& LinearCar<T>::get_output_port() const {
+  return systems::System<T>::get_output_port(0);
+}
 
 template <typename T>
 void LinearCar<T>::EvalOutput(
