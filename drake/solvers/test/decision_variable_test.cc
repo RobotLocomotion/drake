@@ -22,7 +22,7 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
     v_mutable.push_back(vi);
     v_immutable.push_back(std::weak_ptr<const DecisionVariableScalar>(vi));
     v_mutable[i]->set_value(2 * i);
-    EXPECT_EQ(v_immutable[i].lock()->value(), 2 * i);
+    EXPECT_DOUBLE_EQ(v_immutable[i].lock()->value(), 2 * i);
   }
 
   // Constructs a non-symmetric DecisionVariableMatrix from v_immutable.
@@ -42,8 +42,8 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   mat_value_expected << 0, 4, 8, 2, 6, 10;
   for (int j = 0; j < 3; ++j) {
     for (int i = 0; i < 2; ++i) {
-      EXPECT_EQ(X.value(i, j), mat_value_expected(i, j));
-      EXPECT_EQ(X(i, j).value(0, 0), mat_value_expected(i, j));
+      EXPECT_DOUBLE_EQ(X.value(i, j), mat_value_expected(i, j));
+      EXPECT_DOUBLE_EQ(X(i, j).value(0, 0), mat_value_expected(i, j));
       EXPECT_EQ(X.index(i, j), j * 2 + i);
     }
   }
@@ -54,8 +54,8 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   symmetric_matrix_index << 0, 1, 2, 1, 3, 4, 2, 4, 5;
   for (int j = 0; j < 3; ++j) {
     for (int i = 0; i < 3; ++i) {
-      EXPECT_EQ(S.value(i, j), symmetric_matrix_expected(i, j));
-      EXPECT_EQ(S(i, j).value(0, 0), symmetric_matrix_expected(i, j));
+      EXPECT_DOUBLE_EQ(S.value(i, j), symmetric_matrix_expected(i, j));
+      EXPECT_DOUBLE_EQ(S(i, j).value(0, 0), symmetric_matrix_expected(i, j));
       EXPECT_EQ(S.index(i, j), symmetric_matrix_index(i, j));
     }
   }
@@ -77,13 +77,13 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
   // Change value of the referenced decision variable.
   double new_value = 5;
   v_mutable[2]->set_value(new_value);
-  EXPECT_EQ(v_immutable[2].lock()->value(), new_value);
-  EXPECT_EQ(X(0, 1).value(0, 0), new_value);
-  EXPECT_EQ(X.value(0, 1), new_value);
-  EXPECT_EQ(S(2, 0).value(0, 0), new_value);
-  EXPECT_EQ(S(0, 2).value(0, 0), new_value);
-  EXPECT_EQ(S.value(0, 2), new_value);
-  EXPECT_EQ(S.value(2, 0), new_value);
+  EXPECT_DOUBLE_EQ(v_immutable[2].lock()->value(), new_value);
+  EXPECT_DOUBLE_EQ(X(0, 1).value(0, 0), new_value);
+  EXPECT_DOUBLE_EQ(X.value(0, 1), new_value);
+  EXPECT_DOUBLE_EQ(S(2, 0).value(0, 0), new_value);
+  EXPECT_DOUBLE_EQ(S(0, 2).value(0, 0), new_value);
+  EXPECT_DOUBLE_EQ(S.value(0, 2), new_value);
+  EXPECT_DOUBLE_EQ(S.value(2, 0), new_value);
   mat_block_value = X_block.value();
   mat_value_expected(0, 1) = new_value;
   EXPECT_TRUE(CompareMatrices(mat_block_value,
@@ -98,6 +98,23 @@ GTEST_TEST(TestDecisionVariable, TestConstructor) {
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(S.col(0).value(),
                               symmetric_matrix_expected.col(0), 1E-10,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(S.col(1).value(),
+                              symmetric_matrix_expected.col(1), 1E-10,
+                              MatrixCompareType::absolute));
+
+  // Test head, tail, segment
+  DecisionVariableMatrix x_vec(6, 1, v_immutable, false);
+  Eigen::Matrix<double, 6, 1> x_expected;
+  for (int i = 0; i < 6; ++i) {
+    x_expected(i) = mat_value_expected(i);
+  }
+  EXPECT_TRUE(CompareMatrices(x_vec.head(2).value(), x_expected.head(2), 1E-10,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x_vec.tail(2).value(), x_expected.tail(2), 1E-10,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x_vec.segment(3, 2).value(),
+                              x_expected.segment(3, 2), 1E-10,
                               MatrixCompareType::absolute));
 }
 }  // namespace solvers
