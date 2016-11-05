@@ -110,10 +110,10 @@ GTEST_TEST(testLinearize, fromAffine) {
       0, std::make_unique<FreestandingInputPort>(std::move(u0vec)));
 
   // This Context is not an equilibrium point.
-  EXPECT_THROW(Linearize(system,*context),std::runtime_error);
+  EXPECT_THROW(Linearize(system, *context), std::runtime_error);
 
   // Set x0 to the actual equilibrium point.
-  x0 = A.colPivHouseholderQr().solve(-B*u0 - xDot0);
+  x0 = A.colPivHouseholderQr().solve(-B * u0 - xDot0);
   context->get_mutable_continuous_state_vector()->SetFromVector(x0);
 
   auto linearized_system = Linearize(system, *context);
