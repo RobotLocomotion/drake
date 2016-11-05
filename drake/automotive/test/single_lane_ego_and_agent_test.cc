@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace automotive {
-  //namespace {
+namespace {
 
 class SingleLaneEgoAndAgentTest : public ::testing::Test {
  protected:
@@ -86,6 +86,6 @@ TEST_F(SingleLaneEgoAndAgentTest, Derivatives) {
   // TODO(rick.poyner@tri.global): exercise the dynamics at all, ever.
 }
 
-  //}  // namespace
+}  // namespace
 }  // namespace automotive
 }  // namespace drake

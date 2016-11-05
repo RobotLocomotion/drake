@@ -95,6 +95,13 @@ LinearCar<T>::AllocateContinuousState() const {
   return std::make_unique<systems::ContinuousState<T>>(std::move(state));
 }
 
+template <typename T>
+std::unique_ptr<systems::BasicVector<T>>
+LinearCar<T>::AllocateOutputVector(
+    const systems::SystemPortDescriptor<T>& descriptor) const {
+  return std::make_unique<LinearCarState<T>>();
+}
+
 // These instantiations must match the API documentation in
 // idm_with_trajectory_agent.h.
 template class DRAKE_EXPORT LinearCar<double>;

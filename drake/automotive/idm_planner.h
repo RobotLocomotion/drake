@@ -32,6 +32,10 @@ class IdmPlanner : public systems::LeafSystem<T> {
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
+ protected:
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override;
+
  private:
   const T v_0_;  // Desired vehicle velocity.
 };
