@@ -12,10 +12,6 @@ bool DrealSolver::available() const {
   return false;
 }
 
-std::string DrealSolver::SolverName() const {
-  return "dReal";
-}
-
 SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
   throw std::runtime_error("not implemented yet");
 }

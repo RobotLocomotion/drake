@@ -13,7 +13,7 @@ class NloptSolver : public MathematicalProgramSolverInterface {
   // NLOpt was available during compilation.
   bool available() const override;
 
-  std::string SolverName() const override;
+  std::string SolverName() const override { return "NLopt"; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
