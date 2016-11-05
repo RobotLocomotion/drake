@@ -8,7 +8,6 @@
 #include <string>
 
 #include "drake/common/constants.h"
-#include "drake/common/drake_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
