@@ -312,7 +312,7 @@ class DecisionVariableMatrix {
    */
   DecisionVariableMatrix tail(size_t i) const {
     DRAKE_ASSERT(cols_ == 1);
-    return block(cols_ - i, 0, i, 1);
+    return block(rows_ - i, 0, i, 1);
   }
 
   /**
