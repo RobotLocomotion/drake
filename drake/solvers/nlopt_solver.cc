@@ -294,6 +294,8 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
 
 bool NloptSolver::available() const { return true; }
 
+std::string NloptSolver::SolverName() const { return "NLopt"; }
+
 SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   int nx = prog.num_vars();
 
@@ -393,7 +395,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   }
 
   prog.SetDecisionVariableValues(sol);
-  prog.SetSolverResult("NLopt", nlopt_result);
+  prog.SetSolverResult(SolverName(), nlopt_result);
   return result;
 }
 

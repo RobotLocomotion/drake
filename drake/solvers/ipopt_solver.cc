@@ -491,6 +491,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 bool IpoptSolver::available() const { return true; }
 
+std::string IpoptSolver::SolverName() const { return "IPOPT";}
+
 SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 

@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <vector>
+#include <string>
 
 #include <Eigen/SparseCore>
 
@@ -43,6 +44,9 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 double zero_tol = -1.0) const;
 
   bool available() const override { return true; }
+
+  std::string SolverName() const override {return "MobyLCP"; }
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
  private:
