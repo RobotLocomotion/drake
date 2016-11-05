@@ -11,8 +11,11 @@ namespace solvers {
 
 bool LinearSystemSolver::available() const { return true; }
 
-SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
-     const {
+std::string LinearSystemSolver::SolverName() const {
+  return "Linear System Solver";
+}
+
+SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.constraint()->A().rows();
@@ -51,7 +54,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog)
   prog.SetDecisionVariableValues(
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
 
-  prog.SetSolverResult("Linear System Solver", 0);
+  prog.SetSolverResult(SolverName(), 0);
   return SolutionResult::kSolutionFound;
 }
 
