@@ -261,7 +261,7 @@ class DecisionVariableMatrix {
       return rows_ * (rows_ + 1) / 2;
     }
   }
-  
+
   /**
    * Return the value of matrix.
    * @return A matrix of the size rows_ * cols_;
