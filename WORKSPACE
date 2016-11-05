@@ -19,3 +19,10 @@ new_git_repository(
     commit = "1b7acef29a4c53b5867e5d9da7e97bde436219f9",
     build_file = "tools/eigen.BUILD",
 )
+
+new_git_repository(
+    name = "spdlog",
+    remote = "https://github.com/gabime/spdlog.git",
+    commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
+    build_file = "tools/spdlog.BUILD",
+)
