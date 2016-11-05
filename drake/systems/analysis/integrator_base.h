@@ -568,9 +568,10 @@ class IntegratorBase {
 
   /**
    * Default code for taking a single error controlled step of @p dt_max
-   * or smaller. Integrators may use a different function than this one to
-   * effect integration with error control- this particular function is expected
-   * to be called by an error estimating integrator's DoStepAtMost() method- but
+   * or smaller. This particular function can be called directly by
+   * an error estimating integrator's DoStepAtMost() method to effect
+   * error-controlled integration. The integrator can effect error controlled
+   * integration without calling this method, if the implementer so chooses, but
    * this default method is expected to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
@@ -868,8 +869,8 @@ T IntegratorBase<T>::CalcErrorNorm() {
     pinvN_dq_err = std::make_unique<BasicVector<T>>(gv_err.size());
     scaled_q_err = std::make_unique<BasicVector<T>>(gq_err.size());
   }
-  DRAKE_ASSERT(pinvN_dq_err->size() == gv_err.size());
-  DRAKE_ASSERT(scaled_q_err->size() == gq_err.size());
+  DRAKE_DEMAND(pinvN_dq_err->size() == gv_err.size());
+  DRAKE_DEMAND(scaled_q_err->size() == gq_err.size());
 
   // Computes the infinity norm of the un-scaled velocity variables.
   unscaled_err = gv_err.CopyToVector();
