@@ -381,7 +381,7 @@ class IntegratorBase {
   }
 
   double target_accuracy_{nan()};        // means "unspecified, use default"
-  T req_initial_step_size_{nan()};  // means "unspecified, use default"
+  T req_initial_step_size_{nan()};       // means "unspecified, use default"
 };
 
 template <class T>
