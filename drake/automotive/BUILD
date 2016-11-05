@@ -27,6 +27,29 @@ cc_library(
     deps = DEPS,
     linkstatic = 1)
 
+cc_library(
+    name = "generated_translators",
+    srcs = [
+        "gen/driving_command_translator.cc",
+        "gen/euler_floating_joint_state_translator.cc",
+        "gen/idm_with_trajectory_agent_state_translator.cc",
+        "gen/simple_car_config_translator.cc",
+        "gen/simple_car_state_translator.cc",
+    ],
+    hdrs = [
+        "gen/driving_command_translator.h",
+        "gen/euler_floating_joint_state_translator.h",
+        "gen/idm_with_trajectory_agent_state_translator.h",
+        "gen/simple_car_config_translator.h",
+        "gen/simple_car_state_translator.h",
+    ],
+    deps = DEPS + [
+        ":generated_vectors",
+        "//drake/systems/lcm:translator",
+        "//drake/lcmtypes:automotive",
+    ],
+    linkstatic = 1)
+
 DEPS = [":generated_vectors"]
 cc_library(
     name = "curve2",
