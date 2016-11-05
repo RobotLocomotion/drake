@@ -19,6 +19,7 @@ gen_lcm_and_vector "simple car config" wheelbase track max_abs_steering_angle ma
 gen_lcm_and_vector "linear car input" vdot
 gen_lcm_and_vector "linear car state" x v
 gen_lcm_and_vector "idm planner input" x v
+gen_lcm_and_vector "single lane ego and agent state" x_e v_e x_a v_a
 
 gen_vector_yaml "idm with trajectory agent parameters" $drake/automotive/idm_with_trajectory_agent_parameters.yaml
 gen_vector_yaml "idm planner parameters" $drake/automotive/idm_planner_parameters.yaml
