@@ -261,6 +261,7 @@ class DecisionVariableMatrix {
       return rows_ * (rows_ + 1) / 2;
     }
   }
+  
   /**
    * Return the value of matrix.
    * @return A matrix of the size rows_ * cols_;
@@ -352,10 +353,10 @@ class DecisionVariableMatrix {
   bool covers(size_t index) const;
 
  private:
-  size_t rows_;
-  size_t cols_;
-  bool is_symmetric_;
-  std::vector<std::weak_ptr<const DecisionVariableScalar>> vars_;
+  const size_t rows_;
+  const size_t cols_;
+  const bool is_symmetric_;
+  const std::vector<std::weak_ptr<const DecisionVariableScalar>> vars_;
 
   /**
    * Return the index in vars_ given matrix index (i, j).
