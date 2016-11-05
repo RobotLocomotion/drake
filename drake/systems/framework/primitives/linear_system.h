@@ -50,8 +50,8 @@ class LinearSystem : public AffineSystem<T> {
 /// @param system The system or subsystem to linearize.
 /// @param context Defines the nominal operating point about which the system
 /// should be linearized.  See note below.
-/// @param tolerance Specifies the tolerance on ensuring that the derivative
-/// vector isZero at the nominal operating point.  @default 1e-6.
+/// @param equilibrium_check_tolerance Specifies the tolerance on ensuring that
+/// the derivative vector isZero at the nominal operating point.  @default 1e-6.
 /// @retval A LinearSystem that approximates the original system in the
 /// vicinity of the operating point.  See note below.
 /// @throws std::runtime_error if the system the operating point is not an
@@ -70,9 +70,9 @@ class LinearSystem : public AffineSystem<T> {
 /// then the created systems inputs are (u-u0), states are (x-x0), and
 /// outputs are (y-y0).
 
-std::unique_ptr<LinearSystem<double>> Linearize(const System<double>& system,
-                                                const Context<double>& context,
-                                                const double tolerance = 1e-6);
+std::unique_ptr<LinearSystem<double>> Linearize(
+    const System<double>& system, const Context<double>& context,
+    const double equilibrium_check_tolerance = 1e-6);
 
 }  // namespace systems
 }  // namespace drake

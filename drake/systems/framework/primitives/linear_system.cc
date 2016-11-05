@@ -21,9 +21,9 @@ LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
 template class DRAKE_EXPORT LinearSystem<double>;
 template class DRAKE_EXPORT LinearSystem<AutoDiffXd>;
 
-std::unique_ptr<LinearSystem<double>> Linearize(const System<double>& system,
-                                                const Context<double>& context,
-                                                const double tolerance) {
+std::unique_ptr<LinearSystem<double>> Linearize(
+    const System<double>& system, const Context<double>& context,
+    const double equilibrium_check_tolerance) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
   // TODO(russt): check if system is continuous time (only)
@@ -74,7 +74,8 @@ std::unique_ptr<LinearSystem<double>> Linearize(const System<double>& system,
   auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
 
   // Ensure that xdot0 = f(x0,u0) == 0.
-  if (!math::autoDiffToValueMatrix(autodiff_xdot_vec).isZero(tolerance)) {
+  if (!math::autoDiffToValueMatrix(autodiff_xdot_vec)
+           .isZero(equilibrium_check_tolerance)) {
     throw std::runtime_error(
         "The nominal operating point (x0,u0) is not an equilibrium point of "
         "the system.  Without additional information, a time-invariant "
