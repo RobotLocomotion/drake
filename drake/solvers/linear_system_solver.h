@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_export.h"
 
 #include "drake/solvers/mathematical_program.h"
@@ -11,6 +13,9 @@ class DRAKE_EXPORT LinearSystemSolver
     : public MathematicalProgramSolverInterface {
  public:
   bool available() const override;
+
+  std::string SolverName() const override;
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 

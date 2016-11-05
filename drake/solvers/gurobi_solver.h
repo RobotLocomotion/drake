@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/common/drake_export.h"
 
 #include "drake/solvers/mathematical_program.h"
@@ -12,6 +14,9 @@ class DRAKE_EXPORT GurobiSolver : public MathematicalProgramSolverInterface {
   // This solver is implemented in various pieces depending on if
   // Gurobi was available during compilation.
   bool available() const override;
+
+  std::string SolverName() const override;
+
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
 
