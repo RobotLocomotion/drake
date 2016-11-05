@@ -82,7 +82,7 @@ TEST_F(AffineSystemTest, Output) {
   EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
 }
 
-// Test that linearizing and affine system returns an identical affine system
+// Test that linearizing an affine system returns an identical affine system.
 GTEST_TEST(testLinearize, fromAffine) {
   Eigen::Matrix3d A;
   Eigen::Matrix<double, 3, 1> B;

@@ -87,7 +87,7 @@ class AffineSystem : public LeafSystem<T> {
   const int num_states_;
 };
 
-/// Takes the first-order Taylor expansion of a System around an nominal
+/// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
 ///
 /// @param system The system or subsystem to linearize.

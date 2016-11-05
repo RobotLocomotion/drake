@@ -51,7 +51,7 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   this->DeclareContinuousState(num_states_);
 }
 
-// setup equivalent system with a different scalar type
+// Setup equivalent system with a different scalar type.
 template <typename T>
 AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
   return new AffineSystem<AutoDiffXd>(A_, B_, xDot0_, C_, D_, y0_);
@@ -123,16 +123,16 @@ std::unique_ptr<AffineSystem<double>> Linearize(
                         ? system.get_output_port(0).get_size()
                         : 0;
 
-  // create an autodiff version of the system
+  // Create an autodiff version of the system.
   std::unique_ptr<System<AutoDiffXd>> autodiff_system =
       drake::systems::System<double>::ToAutoDiffXd(system);
 
-  // initialize autodiff
+  // Initialize autodiff.
   std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  const Eigen::VectorXd& x0 =
+  const Eigen::VectorXd x0 =
       context.get_continuous_state_vector().CopyToVector();
   const int num_states = x0.size();
 
