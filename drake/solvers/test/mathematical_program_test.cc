@@ -62,7 +62,7 @@ struct Unique {
 
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
-  prog.AddContinuousVariables(1, 1);
+  prog.AddContinuousVariables(1);
 
   Movable movable;
   prog.AddCost(std::move(movable));
@@ -181,8 +181,8 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.AddConstraint(bbcon, {x.block(0, 0, 2, 1)});
+      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
+  prog.AddConstraint(bbcon, {x.head(2)});
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
