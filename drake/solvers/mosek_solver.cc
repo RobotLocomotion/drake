@@ -361,6 +361,8 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 
 bool MosekSolver::available() const { return true; }
 
+std::string MosekSolver::SolverName() const { return "Mosek";}
+
 SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKenv_t env = nullptr;
@@ -487,7 +489,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult("Mosek", result);
+  prog.SetSolverResult(SolverName(), result);
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

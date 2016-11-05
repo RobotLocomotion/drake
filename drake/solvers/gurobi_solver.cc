@@ -364,6 +364,8 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
 
 bool GurobiSolver::available() const { return true; }
 
+std::string GurobiSolver::SolverName() const {return "Gurobi"; }
+
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
@@ -483,7 +485,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult("Gurobi", error);
+  prog.SetSolverResult(SolverName(), error);
 
   GRBfreemodel(model);
   GRBfreeenv(env);
