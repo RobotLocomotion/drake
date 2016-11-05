@@ -43,6 +43,9 @@ class LinearCar : public systems::LeafSystem<T> {
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
       const override;
+
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const override;
 };
 
 }  // namespace automotive
