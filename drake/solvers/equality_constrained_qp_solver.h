@@ -11,7 +11,9 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
  public:
   bool available() const override;
 
-  std::string SolverName() const override{ return "Equality Constrained QP Solver"; }
+  std::string SolverName() const override {
+    return "Equality Constrained QP Solver";
+  }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 };
