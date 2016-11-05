@@ -13,6 +13,10 @@ namespace solvers {
 
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
+std::string EqualityConstrainedQPSolver::SolverName() const {
+  return "Equality Constrained QP Solver";
+}
+
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // Given a QP with equality constraints, we can use the KKT conditions
@@ -72,7 +76,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       int num_v_variables = v.NumberOfVariables();
       for (int i = 0; i < num_v_variables; ++i) {
         A_full.block(constraint_index, v.index(i), n, 1) =
-        c->A().col(var_index + i);
+            c->A().col(var_index + i);
         A_full.block(v.index(i), constraint_index, 1, n) =
             (c->A().col(var_index + i)).transpose();
       }
@@ -89,7 +93,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
   prog.SetDecisionVariableValues(sol.segment(0, prog.num_vars()));
 
-  prog.SetSolverResult("Equality Constrained QP Solver", 0);
+  prog.SetSolverResult(SolverName(), 0);
   return SolutionResult::kSolutionFound;
 }
 
