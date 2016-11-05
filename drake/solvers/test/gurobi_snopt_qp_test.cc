@@ -57,13 +57,13 @@ GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
   SolutionResult result;
   SnoptSolver snopt;
   result = snopt.Solve(prog);
-  EXPECT_TRUE(result == SolutionResult::kSolutionFound);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   Eigen::VectorXd snopt_solution = prog.GetSolutionVectorValues();
 
   GurobiSolver gurobi;
   result = gurobi.Solve(prog);
-  EXPECT_TRUE(result == SolutionResult::kSolutionFound);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   Eigen::VectorXd gurobi_solution = prog.GetSolutionVectorValues();
 

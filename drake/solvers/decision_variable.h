@@ -60,7 +60,7 @@ class DecisionVariableScalar {
 };
 
 /**
- * This class stores the references to the decision variables as a matrix.
+ * This class stores a matrix of weak pointers, pointing to decision variables.
  * If the matrix is not symmetric, namely X(i,j) does not necessarily equals to
  * X(j, i), then the decision variables are the stacked column of the matrix.
  * If the matrix is symmetric, then the decision variables are the stacked
@@ -97,18 +97,18 @@ class DecisionVariableMatrix {
   }
 
   /**
-   * Return the number of rows in the matrix.
+   * @return The number of rows in the matrix.
    */
   size_t rows() const { return rows_; }
 
   /**
-   * Return the number of columns in the matrix.
+   * @return The number of columns in the matrix.
    */
   size_t cols() const { return cols_; }
 
   /**
-   * Returns a new DecisionVariableMatrix, at i'th row and j'th column of
-   * the original matrix.
+   * @return A new DecisionVariableMatrix containing only 1 decision variable,
+   * at the i'th row and the j'th column of the original matrix.
    */
   DecisionVariableMatrix operator()(int i, int j) const {
     return DecisionVariableMatrix(1, 1,
@@ -118,10 +118,10 @@ class DecisionVariableMatrix {
   /**
    * Returns a new DecisionVariableMatrix, containing the i'th decision
    * variable stored in the original matrix.
-   *For a non-symmetric matrix, the decision variables are stored in the column
+   * For a non-symmetric matrix, the decision variables are stored in the column
    * major, as the stacked columns of the matrix; for a symmetric matrix, the
    * decision variables are stored as the stacked columns of the lower
-   *triangular
+   * triangular
    * part of the matrix.
    * For example, for a 3 x 3 non-symmetric matrix M, the 5'th decision variable
    * (0-indexed) is at M(2, 1);
@@ -133,8 +133,8 @@ class DecisionVariableMatrix {
   }
 
   /**
-   * Returns the value of the decision variable at i'th row and j'th column
-   * of the original matrix.
+   * @return The value of the decision variable at the i'th row and the
+   * j'th column of the original matrix.
    */
   double value(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
@@ -162,7 +162,7 @@ class DecisionVariableMatrix {
   }
 
   /**
-   * Return the type of the variable at i'th row and j'th column of the matrix.
+   * @return the type of the variable at i'th row and j'th column of the matrix.
    */
   DecisionVariableScalar::VarType type(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
@@ -190,7 +190,7 @@ class DecisionVariableMatrix {
   }
 
   /**
-   * Return the name of the variable at i'th row and j'th column of the matrix.
+   * @return The name of the variable at i'th row and j'th column of the matrix.
    */
   std::string name(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
@@ -218,7 +218,8 @@ class DecisionVariableMatrix {
   }
 
   /**
-   * Return the index of the variable at i'th row and j'th column of the matrix.
+   * @return The index of the variable at the i'th row and the j'th column
+   * of the matrix.
    */
   size_t index(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
