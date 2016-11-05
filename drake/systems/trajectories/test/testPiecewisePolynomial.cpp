@@ -142,12 +142,12 @@ void testValueOutsideOfRange() {
   std::string error_message;
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getStartTime()),
                               piecewise.value(piecewise.getStartTime() - 1.0),
-                              1e-10, MatrixCompareType::absolute
+                              1e-10, MatrixCompareType::absolute,
                               &error_message)) << error_message;
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getEndTime()),
                               piecewise.value(piecewise.getEndTime() + 1.0),
-                              1e-10, MatrixCompareType::absolute
+                              1e-10, MatrixCompareType::absolute,
                               &error_message)) << error_message;
 }
 
