@@ -16,6 +16,9 @@ target_link_libraries(trajectory_car_test drakeAutomotive)
 drake_add_cc_test(linear_car_test)
 target_link_libraries(linear_car_test drakeAutomotive)
 
+drake_add_cc_test(idm_planner_test)
+target_link_libraries(idm_planner_test drakeAutomotive)
+
 drake_add_cc_test(single_lane_ego_and_agent_test)
 target_link_libraries(single_lane_ego_and_agent_test drakeAutomotive)
 
