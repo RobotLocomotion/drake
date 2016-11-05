@@ -1,6 +1,4 @@
-#include "gtest/gtest.h"
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/affine_system.h"
 #include "drake/systems/framework/primitives/test/affine_linear_test.h"
 
@@ -80,48 +78,6 @@ TEST_F(AffineSystemTest, Output) {
   expected_output = C_ * x + D_ * u + y0_;
 
   EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
-}
-
-// Test that linearizing an affine system returns an identical affine system.
-GTEST_TEST(testLinearize, fromAffine) {
-  Eigen::Matrix3d A;
-  Eigen::Matrix<double, 3, 1> B;
-  Eigen::Vector3d xDot0;
-  Eigen::Matrix<double, 2, 3> C;
-  Eigen::Vector2d D;
-  Eigen::Vector2d y0;
-  A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  B << 10, 11, 12;
-  xDot0 << 13, 14, 15;
-  C << 16, 17, 18, 19, 20, 21;
-  D << 22, 23;
-  y0 << 24, 25;
-  AffineSystem<double> system(A, B, xDot0, C, D, y0);
-  auto context = system.CreateDefaultContext();
-  Eigen::Vector3d x0;
-  x0 << 26, 27, 28;
-  context->get_mutable_continuous_state_vector()->SetFromVector(x0);
-  double u0 = 29;
-  auto u0vec = std::make_unique<BasicVector<double>>(1);
-  u0vec->SetAtIndex(0, u0);
-  context->SetInputPort(
-      0, std::make_unique<FreestandingInputPort>(std::move(u0vec)));
-  auto linearized_system = Linearize(system, *context);
-
-  double tol = 1e-10;
-  EXPECT_TRUE(CompareMatrices(A, linearized_system->A(), tol,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(B, linearized_system->B(), tol,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(A * x0 + B * u0 + xDot0,
-                              linearized_system->xDot0(), tol,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(C, linearized_system->C(), tol,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(D, linearized_system->D(), tol,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(C * x0 + D * u0 + y0, linearized_system->y0(),
-                              tol, MatrixCompareType::absolute));
 }
 
 }  // namespace

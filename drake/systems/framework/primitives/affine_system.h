@@ -87,22 +87,5 @@ class AffineSystem : public LeafSystem<T> {
   const int num_states_;
 };
 
-/// Takes the first-order Taylor expansion of a System around a nominal
-/// operating point (defined by the Context).
-///
-/// @param system The system or subsystem to linearize.
-/// @param context Defines the nominal operating point about which the system
-/// should be linearized.
-///
-/// Note that the inputs in the Context must be connected, either to the
-/// output of some upstream System within a Diagram (e.g., if system is a
-/// reference to a subsystem in a Diagram), or to a FreestandingInputPort
-/// using, e.g.
-///   context->SetInputPort(0,
-///            std::make_unique<FreestandingInputPort>(default_input));
-
-std::unique_ptr<AffineSystem<double>> Linearize(const System<double>& system,
-                                                const Context<double>& context);
-
 }  // namespace systems
 }  // namespace drake

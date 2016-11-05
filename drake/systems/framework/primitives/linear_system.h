@@ -44,5 +44,35 @@ class LinearSystem : public AffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& D);
 };
 
+/// Takes the first-order Taylor expansion of a System around a nominal
+/// operating point (defined by the Context).
+///
+/// @param system The system or subsystem to linearize.
+/// @param context Defines the nominal operating point about which the system
+/// should be linearized.  See note below.
+/// @param tolerance Specifies the tolerance on ensuring that the derivative
+/// vector isZero at the nominal operating point.  @default 1e-6.
+/// @retval A LinearSystem that approximates the original system in the
+/// vicinity of the operating point.  See note below.
+/// @throws std::runtime_error if the system the operating point is not an
+/// equilibrium point of the system (within the specified tolerance)
+///
+/// Note: The inputs in the Context must be connected, either to the
+/// output of some upstream System within a Diagram (e.g., if system is a
+/// reference to a subsystem in a Diagram), or to a FreestandingInputPort
+/// using, e.g.
+///   context->SetInputPort(0,
+///            std::make_unique<FreestandingInputPort>(default_input));
+///
+/// Note: The inputs, states, and outputs of the returned system are NOT the
+/// same as the original system.  Denote x0,u0 as the nominal state and input
+/// defined by the Context, and y0 as the value of the output at (x0,u0),
+/// then the created systems inputs are (u-u0), states are (x-x0), and
+/// outputs are (y-y0).
+
+std::unique_ptr<LinearSystem<double>> Linearize(const System<double>& system,
+                                                const Context<double>& context,
+                                                const double tolerance = 1e-6);
+
 }  // namespace systems
 }  // namespace drake
