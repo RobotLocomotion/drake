@@ -15,5 +15,6 @@ gen_lcm_and_vector "driving command" steering_angle throttle brake
 gen_lcm_and_vector "euler floating joint state" x y z roll pitch yaw
 gen_lcm_and_vector "idm with trajectory agent state" x_e v_e x_a v_a a_a
 gen_vector_yaml "idm with trajectory agent parameters" $drake/automotive/idm_with_trajectory_agent_parameters.yaml
+gen_vector_yaml "idm planner parameters" $drake/automotive/idm_planner_parameters.yaml
 gen_lcm_and_vector "simple car state" x y heading velocity
 gen_lcm_and_vector "simple car config" wheelbase track max_abs_steering_angle max_velocity max_acceleration velocity_lookahead_time velocity_kp

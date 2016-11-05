@@ -13,5 +13,7 @@ if(lcm_FOUND)
     simple_car_state_translator.h
     linear_car_state.h
     linear_car_state_translator.h
+    single_lane_ego_and_agent_state.h
+    single_lane_ego_and_agent_state_translator.h
     )
 endif()
