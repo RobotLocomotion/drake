@@ -31,6 +31,8 @@ drake_add_cc_test(polynomial_test)
 target_link_libraries(polynomial_test drakeCommon)
 
 drake_add_cc_test(eigen_matrix_compare_test)
+target_link_libraries(eigen_matrix_compare_test drakeCommon)
+
 drake_add_cc_test(eigen_stl_types_test)
 
 drake_add_cc_test(drake_throw_test)
