@@ -7,7 +7,6 @@
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/common/drake_export.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
@@ -62,7 +61,8 @@ const RigidBodyTree<T>& AutomotiveSimulator<T>::get_rigid_body_tree() {
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::AddSimpleCar() {
+int AutomotiveSimulator<T>::AddSimpleCarFromSdf(
+    const std::string& sdf_filename) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
@@ -78,14 +78,13 @@ void AutomotiveSimulator<T>::AddSimpleCar() {
   builder_->Connect(*simple_car, *coord_transform);
   AddPublisher(*simple_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  // TODO(liang.fok) Allow model to be client selectable.
-  AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-              coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform);
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::AddTrajectoryCar(const Curve2<double>& curve,
-                                              double speed, double start_time) {
+int AutomotiveSimulator<T>::AddTrajectoryCarFromSdf(
+    const std::string& sdf_filename, const Curve2<double>& curve, double speed,
+    double start_time) {
   DRAKE_DEMAND(!started_);
   const int vehicle_number = allocate_vehicle_number();
 
@@ -97,13 +96,11 @@ void AutomotiveSimulator<T>::AddTrajectoryCar(const Curve2<double>& curve,
   builder_->Connect(*trajectory_car, *coord_transform);
   AddPublisher(*trajectory_car, vehicle_number);
   AddPublisher(*coord_transform, vehicle_number);
-  // TODO(liang.fok) Allow model to be client selectable.
-  AddSdfModel(GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-              coord_transform);
+  return AddSdfModel(sdf_filename, coord_transform);
 }
 
 template <typename T>
-void AutomotiveSimulator<T>::AddSdfModel(
+int AutomotiveSimulator<T>::AddSdfModel(
     const std::string& sdf_filename,
     const SimpleCarToEulerFloatingJoint<T>* coord_transform) {
   const parsers::ModelInstanceIdTable table =
@@ -116,6 +113,7 @@ void AutomotiveSimulator<T>::AddSdfModel(
   const int model_instance_id = table.begin()->second;
   rigid_body_tree_publisher_inputs_.push_back(
       std::make_pair(model_instance_id, coord_transform));
+  return model_instance_id;
 }
 
 template <typename T>

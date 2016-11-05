@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -16,30 +17,16 @@ namespace qp_inverse_dynamics {
  * and the last 3 are linear.
  */
 class BodyOfInterest {
- private:
-  /// Name of the BodyOfInterest
-  std::string name_;
-  /// The link which this BOI is attached to
-  const RigidBody& body_;
-  /// Offset is specified in the body frame.
-  Eigen::Vector3d offset_;
-
-  Eigen::Isometry3d pose_;
-  /// This is the task space velocity, or twist of a frame that has the same
-  /// orientation as the world frame, but located at the origin of the body
-  /// frame.
-  Eigen::Vector6d vel_;
-  /// Task space Jacobian, xdot = J * v
-  Eigen::MatrixXd J_;
-  /// Task space Jd * v
-  Eigen::Vector6d Jdot_times_v_;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
  public:
-  explicit BodyOfInterest(const std::string& name, const RigidBody& body,
-                          const Eigen::Vector3d& off)
-      : name_(name), body_(body), offset_(off) {}
+  /**
+   * @param name Name of this object. It does not have to match \p body's name.
+   * @param body Reference to a RigidBody, which must be valid through the
+   * lifespan of this obejct.
+   * @param off Offset expressed in the body frame.
+   */
+  BodyOfInterest(const std::string& name, const RigidBody& body,
+                 const Eigen::Vector3d& off)
+      : name_(name), body_(&body), offset_(off) {}
 
   /**
    * Updates pose, velocity, Jacobian, Jacobian_dot_times_v based on @p robot
@@ -51,19 +38,40 @@ class BodyOfInterest {
               const KinematicsCache<double>& cache) {
     pose_.translation() = offset_;
     pose_.linear().setIdentity();
-    pose_ = robot.relativeTransform(cache, 0, body_.get_body_index()) * pose_;
+    pose_ = robot.relativeTransform(cache, 0, body_->get_body_index()) * pose_;
 
-    vel_ = GetTaskSpaceVel(robot, cache, body_, offset_);
-    J_ = GetTaskSpaceJacobian(robot, cache, body_, offset_);
-    Jdot_times_v_ = GetTaskSpaceJacobianDotTimesV(robot, cache, body_, offset_);
+    vel_ = GetTaskSpaceVel(robot, cache, *body_, offset_);
+    J_ = GetTaskSpaceJacobian(robot, cache, *body_, offset_);
+    Jdot_times_v_ =
+        GetTaskSpaceJacobianDotTimesV(robot, cache, *body_, offset_);
   }
 
   inline const std::string& name() const { return name_; }
-  inline const RigidBody& body() const { return body_; }
+  inline const RigidBody& body() const { return *body_; }
   inline const Eigen::Isometry3d& pose() const { return pose_; }
   inline const Eigen::Vector6d& velocity() const { return vel_; }
   inline const Eigen::MatrixXd& J() const { return J_; }
   inline const Eigen::Vector6d& Jdot_times_v() const { return Jdot_times_v_; }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+ private:
+  // Name of the BodyOfInterest
+  std::string name_;
+  // The link which this BOI is attached to
+  const RigidBody* body_;
+  // Offset is specified in the body frame.
+  Eigen::Vector3d offset_;
+
+  Eigen::Isometry3d pose_;
+  // This is the task space velocity, or twist of a frame that has the same
+  // orientation as the world frame, but located at the origin of the body
+  // frame.
+  Eigen::Vector6d vel_;
+  // Task space Jacobian, xdot = J * v
+  Eigen::MatrixXd J_;
+  // Task space Jd * v
+  Eigen::Vector6d Jdot_times_v_;
 };
 
 /**
@@ -83,52 +91,55 @@ class HumanoidStatus {
   /// frame.
   static const Eigen::Matrix3d kFootToSensorRotationOffset;
 
-  // TODO(siyuan.feng@tri.global): The names of the links are hard coded for
-  // Valkyrie, and they should be specified in some separate config file.
-  explicit HumanoidStatus(const RigidBodyTree<double>& robot_in)
-      : robot_(robot_in),
-        cache_(robot_.bodies),
+  /**
+   * @param robot Reference to a RigidBodyTree, which must be valid through the
+   * lifespan of this obejct.
+   */
+  explicit HumanoidStatus(const RigidBodyTree<double>& robot)
+      : robot_(&robot),
+        cache_(robot_->bodies),
+        // TODO(siyuan.feng): The names of the links are hard coded for
+        // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
-            BodyOfInterest("pelvis", *robot_.FindBody("pelvis"),
+            BodyOfInterest("pelvis", *robot_->FindBody("pelvis"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("torso", *robot_.FindBody("torso"),
+            BodyOfInterest("torso", *robot_->FindBody("torso"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("leftFoot", *robot_.FindBody("leftFoot"),
+            BodyOfInterest("leftFoot", *robot_->FindBody("leftFoot"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("rightFoot", *robot_.FindBody("rightFoot"),
+            BodyOfInterest("rightFoot", *robot_->FindBody("rightFoot"),
                            Eigen::Vector3d::Zero()),
-            BodyOfInterest("leftFootSensor", *robot_.FindBody("leftFoot"),
+            BodyOfInterest("leftFootSensor", *robot_->FindBody("leftFoot"),
                            kFootToSensorPositionOffset),
-            BodyOfInterest("rightFootSensor", *robot_.FindBody("rightFoot"),
+            BodyOfInterest("rightFootSensor", *robot_->FindBody("rightFoot"),
                            kFootToSensorPositionOffset)} {
     time_ = 0;
 
-    position_.resize(robot_.get_num_positions());
-    velocity_.resize(robot_.get_num_velocities());
-    joint_torque_.resize(robot_.actuators.size());
-    nominal_position_ = robot_.getZeroConfiguration();
+    position_.resize(robot_->get_num_positions());
+    velocity_.resize(robot_->get_num_velocities());
+    joint_torque_.resize(robot_->actuators.size());
+    nominal_position_ = robot_->getZeroConfiguration();
 
     // Build various lookup maps.
     body_name_to_id_ = std::unordered_map<std::string, int>();
-    for (auto it = robot_.bodies.begin(); it != robot_.bodies.end(); ++it) {
-      body_name_to_id_[(*it)->get_name()] = it - robot_.bodies.begin();
+    for (auto it = robot_->bodies.begin(); it != robot_->bodies.end(); ++it) {
+      body_name_to_id_[(*it)->get_name()] = it - robot_->bodies.begin();
     }
 
     name_to_position_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_.get_num_positions(); i++) {
-      name_to_position_index_[robot_.get_position_name(i)] = i;
+    for (int i = 0; i < robot_->get_num_positions(); ++i) {
+      name_to_position_index_[robot_->get_position_name(i)] = i;
     }
     name_to_velocity_index_ = std::unordered_map<std::string, int>();
-    for (int i = 0; i < robot_.get_num_velocities(); i++) {
-      name_to_velocity_index_[robot_.get_velocity_name(i)] = i;
+    for (int i = 0; i < robot_->get_num_velocities(); ++i) {
+      name_to_velocity_index_[robot_->get_velocity_name(i)] = i;
     }
-    for (int i = 0; i < static_cast<int>(robot_.actuators.size()); i++) {
-      actuator_name_to_actuator_index_[robot_.actuators.at(i).name_] = i;
+    for (int i = 0; i < static_cast<int>(robot_->actuators.size()); ++i) {
+      actuator_name_to_actuator_index_[robot_->actuators.at(i).name_] = i;
     }
 
-    // TODO(siyuan.feng@tri.global): these are hard coded for Valkyrie, and they
-    // should be included in the model file or loaded from a separate config
-    // file.
+    // TODO(siyuan.feng): these are hard coded for Valkyrie, and they should
+    // be included in the model file or loaded from a separate config file.
     nominal_position_[name_to_position_index().at("rightHipRoll")] = 0.01;
     nominal_position_[name_to_position_index().at("rightHipPitch")] = -0.5432;
     nominal_position_[name_to_position_index().at("rightKneePitch")] = 1.2195;
@@ -150,20 +161,40 @@ class HumanoidStatus {
     nominal_position_[name_to_position_index().at("leftShoulderYaw")] = 0.5;
     nominal_position_[name_to_position_index().at("leftElbowPitch")] =
         -M_PI / 2.;
-  }
 
-  void UpdateFromOther(const HumanoidStatus& other) {
-    if (&robot_ != &other.robot()) {
-      throw std::runtime_error("can't assign with different robot ref");
-    }
+    leg_joint_names_.insert("rightHipYaw");
+    leg_joint_names_.insert("rightHipRoll");
+    leg_joint_names_.insert("rightHipPitch");
+    leg_joint_names_.insert("rightKneePitch");
+    leg_joint_names_.insert("rightAnklePitch");
+    leg_joint_names_.insert("rightAnkleRoll");
+    leg_joint_names_.insert("leftHipYaw");
+    leg_joint_names_.insert("leftHipRoll");
+    leg_joint_names_.insert("leftHipPitch");
+    leg_joint_names_.insert("leftKneePitch");
+    leg_joint_names_.insert("leftAnklePitch");
+    leg_joint_names_.insert("leftAnkleRoll");
 
-    if (&other == this) {
-      return;
-    }
+    back_joint_names_.insert("torsoYaw");
+    back_joint_names_.insert("torsoPitch");
+    back_joint_names_.insert("torsoRoll");
 
-    Update(other.time(), other.position(), other.velocity(),
-           other.joint_torque(), other.foot_wrench_raw(Side::LEFT),
-           other.foot_wrench_raw(Side::RIGHT));
+    arm_joint_names_.insert("rightShoulderPitch");
+    arm_joint_names_.insert("rightShoulderRoll");
+    arm_joint_names_.insert("rightShoulderYaw");
+    arm_joint_names_.insert("rightElbowPitch");
+    arm_joint_names_.insert("rightForearmYaw");
+    arm_joint_names_.insert("rightWristRoll");
+    arm_joint_names_.insert("rightWristPitch");
+    arm_joint_names_.insert("leftShoulderPitch");
+    arm_joint_names_.insert("leftShoulderRoll");
+    arm_joint_names_.insert("leftShoulderYaw");
+    arm_joint_names_.insert("leftElbowPitch");
+    arm_joint_names_.insert("leftForearmYaw");
+    arm_joint_names_.insert("leftWristRoll");
+    arm_joint_names_.insert("leftWristPitch");
+
+    neck_joint_names_.insert("lowerNeckPitch");
   }
 
   /**
@@ -182,7 +213,21 @@ class HumanoidStatus {
               const Eigen::Ref<const Eigen::VectorXd>& v,
               const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
               const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
-              const Eigen::Ref<const Eigen::Vector6d>& r_wrench);
+              const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
+    if (q.size() != position_.size() || v.size() != velocity_.size() ||
+        joint_torque.size() != joint_torque_.size()) {
+      throw std::runtime_error("robot state update dimension mismatch.");
+    }
+    time_ = t;
+    position_ = q;
+    velocity_ = v;
+    joint_torque_ = joint_torque;
+    foot_wrench_raw_[Side::LEFT] = l_wrench;
+    foot_wrench_raw_[Side::RIGHT] = r_wrench;
+    Update();
+  }
+
+  void Update();
 
   /**
    * Returns a nominal q.
@@ -190,7 +235,7 @@ class HumanoidStatus {
   Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
 
   // Getters
-  inline const RigidBodyTree<double>& robot() const { return robot_; }
+  inline const RigidBodyTree<double>& robot() const { return *robot_; }
   inline const KinematicsCache<double>& cache() const { return cache_; }
   inline const std::unordered_map<std::string, int>& body_name_to_id() const {
     return body_name_to_id_;
@@ -201,16 +246,33 @@ class HumanoidStatus {
   }
   inline const std::unordered_map<std::string, int>& name_to_velocity_index()
       const {
-    return name_to_position_index_;
+    return name_to_velocity_index_;
   }
   inline const std::unordered_map<std::string, int>& actuator_name_to_id()
       const {
     return actuator_name_to_actuator_index_;
   }
+  inline const std::set<std::string>& leg_joint_names() const {
+    return leg_joint_names_;
+  }
+  inline const std::set<std::string>& arm_joint_names() const {
+    return arm_joint_names_;
+  }
+  inline const std::set<std::string>& back_joint_names() const {
+    return back_joint_names_;
+  }
+  inline const std::set<std::string>& neck_joint_names() const {
+    return neck_joint_names_;
+  }
+
   inline double time() const { return time_; }
   inline const Eigen::VectorXd& position() const { return position_; }
   inline const Eigen::VectorXd& velocity() const { return velocity_; }
   inline const Eigen::VectorXd& joint_torque() const { return joint_torque_; }
+  inline double position(int i) const { return position_[i]; }
+  inline double velocity(int i) const { return velocity_[i]; }
+  inline double joint_torque(int i) const { return joint_torque_[i]; }
+
   inline const Eigen::MatrixXd& M() const { return M_; }
   inline const Eigen::VectorXd& bias_term() const { return bias_term_; }
   inline const Eigen::Vector3d& com() const { return com_; }
@@ -279,22 +341,26 @@ class HumanoidStatus {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBodyTree<double>& robot_;
+  const RigidBodyTree<double>* robot_;
   KinematicsCache<double> cache_;
 
-  /// Nominal position for the robot.
-  /// TODO(siyuan.feng@tri.global): should read this from the model file
-  /// eventually.
+  // Nominal position for the robot.
+  // TODO(siyuan.feng): should read this from the model file eventually.
   Eigen::VectorXd nominal_position_;
 
-  /// Map body name to its index.
+  // Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
-  /// Map position name to its index.
+  // Map position name to its index.
   std::unordered_map<std::string, int> name_to_position_index_;
-  /// Map velocity name to its index.
+  // Map velocity name to its index.
   std::unordered_map<std::string, int> name_to_velocity_index_;
-  /// Map actuator name to its index.
+  // Map actuator name to its index.
   std::unordered_map<std::string, int> actuator_name_to_actuator_index_;
+
+  std::set<std::string> leg_joint_names_;
+  std::set<std::string> arm_joint_names_;
+  std::set<std::string> back_joint_names_;
+  std::set<std::string> neck_joint_names_;
 
   double time_;
 
@@ -313,8 +379,8 @@ class HumanoidStatus {
   Eigen::MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
   Eigen::Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
 
-  /// Centroidal momentum = [angular; linear] momentum.
-  /// [angular; linear] = centroidal_momentum_matrix_ * v
+  // Centroidal momentum = [angular; linear] momentum.
+  // [angular; linear] = centroidal_momentum_matrix_ * v
   Eigen::MatrixXd centroidal_momentum_matrix_;
   Eigen::Vector6d centroidal_momentum_matrix_dot_times_v_;
   Eigen::Vector6d centroidal_momentum_;
@@ -322,22 +388,24 @@ class HumanoidStatus {
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
 
-  /// Center of pressure
+  // Center of pressure
   Eigen::Vector2d cop_;
-  /// Individual center of pressure in foot frame
+  // Individual center of pressure in foot frame
   Eigen::Vector2d cop_in_sole_frame_[2];
 
-  /// Wrench expressed in a frame that is aligned with the world frame, and
-  /// is located at the origin of the foot frame.
+  // Wrench expressed in a frame that is aligned with the world frame, and
+  // is located at the origin of the foot frame.
   Eigen::Vector6d foot_wrench_in_world_frame_[2];
 
-  /// Wrench expressed in a frame that is aligned with the foot frame, and
-  /// is offsetted from the foot frame by kFootToSoleOffset.
+  // Wrench expressed in a frame that is aligned with the foot frame, and
+  // is offsetted from the foot frame by kFootToSoleOffset.
   Eigen::Vector6d foot_wrench_in_sole_frame_[2];
 
-  /// Untransformed raw measurement from the foot force torque sensor
+  // Untransformed raw measurement from the foot force torque sensor
   Eigen::Vector6d foot_wrench_raw_[2];
 };
+
+std::ostream& operator<<(std::ostream& out, const HumanoidStatus& robot_status);
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples
