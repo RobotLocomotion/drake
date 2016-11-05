@@ -182,6 +182,9 @@ class MathematicalProgramSolverInterface {
   /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
 
+  /// Returns the name of the solver.
+  virtual std::string SolverName() const = 0;
+
   /// Sets values for the decision variables on the given MathematicalProgram
   /// @p prog, or:
   ///  * If no solver is available, throws std::runtime_error
