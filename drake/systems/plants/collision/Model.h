@@ -7,14 +7,13 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/collision/point_pair.h"
 
 namespace DrakeCollision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
 
-class DRAKE_EXPORT Model {
+class Model {
  public:
   Model() {}
 
@@ -238,7 +237,7 @@ class DRAKE_EXPORT Model {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                         const Model&);
 
  protected:

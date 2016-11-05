@@ -212,13 +212,13 @@ void approximateIK(RigidBodyTree<double>* model,
   return;
 }
 
-template DRAKE_EXPORT void approximateIK(
+template void approximateIK(
   RigidBodyTree<double>*, const MatrixBase<Map<VectorXd>>& ,
   const MatrixBase<Map<VectorXd>>& , const int,
   const RigidBodyConstraint* const*,
   const IKoptions&, MatrixBase<Map<VectorXd>>*, int*);
 
-template DRAKE_EXPORT void approximateIK(
+template void approximateIK(
   RigidBodyTree<double>*, const MatrixBase<VectorXd>& ,
   const MatrixBase<VectorXd>& , const int,
   const RigidBodyConstraint* const*,

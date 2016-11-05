@@ -137,10 +137,8 @@ const {
 }
 
 template class
-DRAKE_EXPORT
 PidControlledSpringMassSystem<double>;
 template class
-DRAKE_EXPORT
 PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems

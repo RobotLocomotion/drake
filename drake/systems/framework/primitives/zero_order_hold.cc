@@ -6,8 +6,8 @@
 namespace drake {
 namespace systems {
 
-template class DRAKE_EXPORT ZeroOrderHold<double>;
-template class DRAKE_EXPORT ZeroOrderHold<AutoDiffXd>;
+template class ZeroOrderHold<double>;
+template class ZeroOrderHold<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -23,7 +22,7 @@ namespace lcm {
  * System<double>'s port. The output port value is the most recently
  * decoded message, modulo any network or threading delays.
  */
-class DRAKE_EXPORT LcmSubscriberSystem : public LeafSystem<double>,
+class LcmSubscriberSystem : public LeafSystem<double>,
     public drake::lcm::DrakeLcmMessageHandlerInterface  {
  public:
   /**

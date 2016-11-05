@@ -5,10 +5,9 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 
 namespace DrakeShapes {
-enum DRAKE_EXPORT Shape {
+enum Shape {
   UNKNOWN = 0,
   BOX = 1,
   SPHERE = 2,
@@ -25,7 +24,7 @@ std::string ShapeToString(Shape ss);
 
 const double MIN_RADIUS = 1e-7;
 
-class DRAKE_EXPORT Geometry {
+class Geometry {
  public:
   Geometry();
   Geometry(const Geometry& other);
@@ -48,7 +47,7 @@ class DRAKE_EXPORT Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const Geometry&);
 
  protected:
@@ -62,7 +61,7 @@ class DRAKE_EXPORT Geometry {
   static const int NUM_BBOX_POINTS;
 };
 
-class DRAKE_EXPORT Sphere : public Geometry {
+class Sphere : public Geometry {
  public:
   explicit Sphere(double radius);
   virtual ~Sphere() {}
@@ -77,14 +76,14 @@ class DRAKE_EXPORT Sphere : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const Sphere&);
 
   double radius;
   static const int NUM_POINTS;
 };
 
-class DRAKE_EXPORT Box : public Geometry {
+class Box : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
@@ -99,12 +98,12 @@ class DRAKE_EXPORT Box : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&, const Box&);
+  friend std::ostream& operator<<(std::ostream&, const Box&);
 
   Eigen::Vector3d size;
 };
 
-class DRAKE_EXPORT Cylinder : public Geometry {
+class Cylinder : public Geometry {
  public:
   Cylinder(double radius, double length);
   virtual ~Cylinder() {}
@@ -117,14 +116,14 @@ class DRAKE_EXPORT Cylinder : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const Cylinder&);
 
   double radius;
   double length;
 };
 
-class DRAKE_EXPORT Capsule : public Geometry {
+class Capsule : public Geometry {
  public:
   Capsule(double radius, double length);
   virtual ~Capsule() {}
@@ -137,7 +136,7 @@ class DRAKE_EXPORT Capsule : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const Capsule&);
 
   double radius;
@@ -146,7 +145,7 @@ class DRAKE_EXPORT Capsule : public Geometry {
   static const int NUM_POINTS;
 };
 
-class DRAKE_EXPORT Mesh : public Geometry {
+class Mesh : public Geometry {
  public:
   /** Constructs a representation of a mesh to be loaded from
   @p resolved_filename. @p uri provides a unique identifier used to interact
@@ -162,7 +161,7 @@ class DRAKE_EXPORT Mesh : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const Mesh&);
 
   Eigen::Vector3d scale_;
@@ -193,7 +192,7 @@ class DRAKE_EXPORT Mesh : public Geometry {
   std::string FindFileWithObjExtension() const;
 };
 
-class DRAKE_EXPORT MeshPoints : public Geometry {
+class MeshPoints : public Geometry {
  public:
   explicit MeshPoints(const Eigen::Matrix3Xd& points);
   virtual ~MeshPoints() {}
@@ -207,7 +206,7 @@ class DRAKE_EXPORT MeshPoints : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                      const MeshPoints&);
 
   Eigen::Matrix3Xd points;

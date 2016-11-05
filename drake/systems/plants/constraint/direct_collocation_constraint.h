@@ -4,7 +4,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
@@ -21,7 +20,7 @@ namespace systems {
 ///
 /// Each evaluation of the constraint considers a pair of state
 /// vectors + input vectors along with an accompanying timestep.
-class DRAKE_EXPORT DirectCollocationConstraint :
+class DirectCollocationConstraint :
       public solvers::Constraint {
  public:
   /// The format of the input to the eval() function is defined by @p
@@ -63,7 +62,7 @@ class DRAKE_EXPORT DirectCollocationConstraint :
 
 /// Implements a dynamic constraint which uses the continuous dynamics
 /// of a system.
-class DRAKE_EXPORT System2DirectCollocationConstraint
+class System2DirectCollocationConstraint
     : public DirectCollocationConstraint {
  public:
   /// Create a direct colocation constraint for a system.  Systems

@@ -6,8 +6,8 @@
 namespace drake {
 namespace systems {
 
-template class DRAKE_EXPORT PassThrough<double>;
-template class DRAKE_EXPORT PassThrough<AutoDiffXd>;
+template class PassThrough<double>;
+template class PassThrough<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

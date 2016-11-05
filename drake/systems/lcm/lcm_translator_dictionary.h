@@ -6,7 +6,6 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -19,7 +18,7 @@ namespace lcm {
  * translators contained within the dictionary are guaranteed to remain in
  * existence throughout the lifespan of this object.
  */
-class DRAKE_EXPORT LcmTranslatorDictionary {
+class LcmTranslatorDictionary {
  public:
   /**
    * The constructor. The dictionary is initially empty.

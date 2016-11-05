@@ -10,7 +10,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
@@ -107,7 +106,7 @@ separate function, Expression::EqualTo, is provided.
 
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
-class DRAKE_EXPORT Expression {
+class Expression {
  public:
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
@@ -150,91 +149,91 @@ class DRAKE_EXPORT Expression {
   /** Return e, the base of natural logarithms. */
   static Expression E();
 
-  friend DRAKE_EXPORT Expression operator+(Expression lhs,
+  friend Expression operator+(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator+(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator+(Expression lhs, double rhs);
+  friend Expression operator+(double lhs, const Expression& rhs);
+  friend Expression operator+(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
+  friend Expression& operator+=(Expression& lhs,
                                              const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs, double rhs);
+  friend Expression& operator+=(Expression& lhs, double rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
   /** Provides postfix increment operator (i.e. x++). */
   Expression operator++(int);
 
-  friend DRAKE_EXPORT Expression operator-(Expression lhs,
+  friend Expression operator-(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator-(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator-(Expression lhs, double rhs);
+  friend Expression operator-(double lhs, const Expression& rhs);
+  friend Expression operator-(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
+  friend Expression& operator-=(Expression& lhs,
                                              const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs, double rhs);
+  friend Expression& operator-=(Expression& lhs, double rhs);
 
   /** Provides unary minus operator. */
-  friend DRAKE_EXPORT Expression operator-(Expression e);
+  friend Expression operator-(Expression e);
   /** Provides prefix decrement operator (i.e. --x). */
   Expression& operator--();
   /** Provides postfix decrement operator (i.e. x--). */
   Expression operator--(int);
 
-  friend DRAKE_EXPORT Expression operator*(Expression lhs,
+  friend Expression operator*(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator*(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator*(Expression lhs, double rhs);
+  friend Expression operator*(double lhs, const Expression& rhs);
+  friend Expression operator*(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
+  friend Expression& operator*=(Expression& lhs,
                                              const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs, double rhs);
+  friend Expression& operator*=(Expression& lhs, double rhs);
 
-  friend DRAKE_EXPORT Expression operator/(Expression lhs,
+  friend Expression operator/(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator/(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator/(Expression lhs, double rhs);
+  friend Expression operator/(double lhs, const Expression& rhs);
+  friend Expression operator/(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
+  friend Expression& operator/=(Expression& lhs,
                                              const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs, double rhs);
+  friend Expression& operator/=(Expression& lhs, double rhs);
 
-  friend DRAKE_EXPORT Expression log(const Expression& e);
-  friend DRAKE_EXPORT Expression abs(const Expression& e);
-  friend DRAKE_EXPORT Expression exp(const Expression& e);
-  friend DRAKE_EXPORT Expression sqrt(const Expression& e);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
+  friend Expression log(const Expression& e);
+  friend Expression abs(const Expression& e);
+  friend Expression exp(const Expression& e);
+  friend Expression sqrt(const Expression& e);
+  friend Expression pow(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Expression sin(const Expression& e);
-  friend DRAKE_EXPORT Expression cos(const Expression& e);
-  friend DRAKE_EXPORT Expression tan(const Expression& e);
-  friend DRAKE_EXPORT Expression asin(const Expression& e);
-  friend DRAKE_EXPORT Expression acos(const Expression& e);
-  friend DRAKE_EXPORT Expression atan(const Expression& e);
-  friend DRAKE_EXPORT Expression atan2(const Expression& e1,
+  friend Expression pow(double v1, const Expression& e2);
+  friend Expression pow(const Expression& e1, double v2);
+  friend Expression sin(const Expression& e);
+  friend Expression cos(const Expression& e);
+  friend Expression tan(const Expression& e);
+  friend Expression asin(const Expression& e);
+  friend Expression acos(const Expression& e);
+  friend Expression atan(const Expression& e);
+  friend Expression atan2(const Expression& e1,
                                        const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Expression sinh(const Expression& e);
-  friend DRAKE_EXPORT Expression cosh(const Expression& e);
-  friend DRAKE_EXPORT Expression tanh(const Expression& e);
-  friend DRAKE_EXPORT Expression min(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression min(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Expression min(const Expression& e1,
+  friend Expression atan2(double v1, const Expression& e2);
+  friend Expression atan2(const Expression& e1, double v2);
+  friend Expression sinh(const Expression& e);
+  friend Expression cosh(const Expression& e);
+  friend Expression tanh(const Expression& e);
+  friend Expression min(double v1, const Expression& e2);
+  friend Expression min(const Expression& e1, double v2);
+  friend Expression min(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression max(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1,
+  friend Expression max(double v1, const Expression& e2);
+  friend Expression max(const Expression& e1, double v2);
+  friend Expression max(const Expression& e1,
                                      const Expression& e2);
 
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
+  friend std::ostream& operator<<(std::ostream& os,
                                                const Expression& e);
-  friend DRAKE_EXPORT void swap(Expression& a, Expression& b) {
+  friend void swap(Expression& a, Expression& b) {
     std::swap(a.ptr_, b.ptr_);
   }
 
@@ -438,7 +437,7 @@ class ExpressionLog : public UnaryExpressionCell {
   explicit ExpressionLog(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression log(const Expression& e);
+  friend Expression log(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [0, +oo). */
@@ -452,7 +451,7 @@ class ExpressionAbs : public UnaryExpressionCell {
   explicit ExpressionAbs(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression abs(const Expression& e);
+  friend Expression abs(const Expression& e);
 
  private:
   double DoEvaluate(double v) const override;
@@ -475,7 +474,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
   explicit ExpressionSqrt(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression sqrt(const Expression& e);
+  friend Expression sqrt(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [0, +oo). */
@@ -489,10 +488,10 @@ class ExpressionPow : public BinaryExpressionCell {
   explicit ExpressionPow(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
+  friend Expression pow(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1, double v2);
+  friend Expression pow(double v1, const Expression& e2);
+  friend Expression pow(const Expression& e1, double v2);
 
  private:
   /* Throws std::domain_error if v1 is finite negative and v2 is finite
@@ -537,7 +536,7 @@ class ExpressionAsin : public UnaryExpressionCell {
   explicit ExpressionAsin(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression asin(const Expression& e);
+  friend Expression asin(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
@@ -551,7 +550,7 @@ class ExpressionAcos : public UnaryExpressionCell {
   explicit ExpressionAcos(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression acos(const Expression& e);
+  friend Expression acos(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
@@ -700,7 +699,7 @@ operator/=(MatrixL& lhs, double rhs) {
 
 /** Specializes is_numeric to be false for symbolic::Expression type. */
 template <>
-struct DRAKE_EXPORT is_numeric<symbolic::Expression> {
+struct is_numeric<symbolic::Expression> {
   static constexpr bool value = false;
 };
 }  // namespace drake

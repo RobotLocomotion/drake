@@ -8,7 +8,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -16,7 +15,7 @@ namespace examples {
 namespace pendulum {
 
 /// Describes the row indices of a PendulumStateVector.
-struct DRAKE_EXPORT PendulumStateVectorIndices {
+struct PendulumStateVectorIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 2;
 

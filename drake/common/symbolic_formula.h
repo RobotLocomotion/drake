@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
@@ -63,7 +62,7 @@ The following simple simplifications are implemented:
     F1 ∨ F2        ->  True    (if either F1 or F2 is True)
 \endverbatim
 */
-class DRAKE_EXPORT Formula {
+class Formula {
  public:
   /** Default constructor (deleted). */
   Formula() = delete;
@@ -97,39 +96,39 @@ class DRAKE_EXPORT Formula {
   static Formula True();
   static Formula False();
 
-  friend DRAKE_EXPORT Formula operator&&(const Formula& f1, const Formula& f2);
-  friend DRAKE_EXPORT Formula operator||(const Formula& f1, const Formula& f2);
-  friend DRAKE_EXPORT Formula operator!(const Formula& f);
-  friend DRAKE_EXPORT bool operator==(const Formula& f1, const Formula& f2);
-  friend DRAKE_EXPORT Formula operator==(const Expression& e1,
+  friend Formula operator&&(const Formula& f1, const Formula& f2);
+  friend Formula operator||(const Formula& f1, const Formula& f2);
+  friend Formula operator!(const Formula& f);
+  friend bool operator==(const Formula& f1, const Formula& f2);
+  friend Formula operator==(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
-  friend DRAKE_EXPORT bool operator!=(const Formula& f1, const Formula& f2);
-  friend DRAKE_EXPORT Formula operator!=(const Expression& e1,
+  friend Formula operator==(double v1, const Expression& e2);
+  friend Formula operator==(const Expression& e1, double v2);
+  friend bool operator!=(const Formula& f1, const Formula& f2);
+  friend Formula operator!=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator!=(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Formula operator<(const Expression& e1,
+  friend Formula operator!=(double v1, const Expression& e2);
+  friend Formula operator!=(const Expression& e1, double v2);
+  friend Formula operator<(const Expression& e1,
                                         const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Formula operator<=(const Expression& e1,
+  friend Formula operator<(double v1, const Expression& e2);
+  friend Formula operator<(const Expression& e1, double v2);
+  friend Formula operator<=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator<=(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Formula operator>(const Expression& e1,
+  friend Formula operator<=(double v1, const Expression& e2);
+  friend Formula operator<=(const Expression& e1, double v2);
+  friend Formula operator>(const Expression& e1,
                                         const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>(const Expression& e1, double v2);
-  friend DRAKE_EXPORT Formula operator>=(const Expression& e1,
+  friend Formula operator>(double v1, const Expression& e2);
+  friend Formula operator>(const Expression& e1, double v2);
+  friend Formula operator>=(const Expression& e1,
                                          const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
+  friend Formula operator>=(double v1, const Expression& e2);
+  friend Formula operator>=(const Expression& e1, double v2);
 
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
+  friend std::ostream& operator<<(std::ostream& os,
                                                const Formula& f);
-  friend DRAKE_EXPORT void swap(Formula& a, Formula& b) {
+  friend void swap(Formula& a, Formula& b) {
     std::swap(a.ptr_, b.ptr_);
   }
 
@@ -138,26 +137,26 @@ class DRAKE_EXPORT Formula {
 };
 
 /** Returns a formula \p f, universally quantified by variables \p vars. */
-DRAKE_EXPORT Formula forall(const Variables& vars, const Formula& f);
+Formula forall(const Variables& vars, const Formula& f);
 
-DRAKE_EXPORT Formula operator==(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator==(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator==(const Expression& e1, double v2);
-DRAKE_EXPORT Formula operator!=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator!=(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator!=(const Expression& e1, double v2);
-DRAKE_EXPORT Formula operator<(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator<(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator<(const Expression& e1, double v2);
-DRAKE_EXPORT Formula operator<=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator<=(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator<=(const Expression& e1, double v2);
-DRAKE_EXPORT Formula operator>(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator>(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator>(const Expression& e1, double v2);
-DRAKE_EXPORT Formula operator>=(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Formula operator>=(double v1, const Expression& e2);
-DRAKE_EXPORT Formula operator>=(const Expression& e1, double v2);
+Formula operator==(const Expression& e1, const Expression& e2);
+Formula operator==(double v1, const Expression& e2);
+Formula operator==(const Expression& e1, double v2);
+Formula operator!=(const Expression& e1, const Expression& e2);
+Formula operator!=(double v1, const Expression& e2);
+Formula operator!=(const Expression& e1, double v2);
+Formula operator<(const Expression& e1, const Expression& e2);
+Formula operator<(double v1, const Expression& e2);
+Formula operator<(const Expression& e1, double v2);
+Formula operator<=(const Expression& e1, const Expression& e2);
+Formula operator<=(double v1, const Expression& e2);
+Formula operator<=(const Expression& e1, double v2);
+Formula operator>(const Expression& e1, const Expression& e2);
+Formula operator>(double v1, const Expression& e2);
+Formula operator>(const Expression& e1, double v2);
+Formula operator>=(const Expression& e1, const Expression& e2);
+Formula operator>=(double v1, const Expression& e2);
+Formula operator>=(const Expression& e1, double v2);
 
 /** Represents an abstract class which is the base of concrete symbolic-formula
  * classes (i.e. symbolic::FormulaAnd, symbolic::FormulaEq).
