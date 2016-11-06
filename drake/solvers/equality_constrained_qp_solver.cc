@@ -50,7 +50,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     size_t index = 0;
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       int num_v_variables = v.NumberOfVariables();
       for (int i = 0; i < num_v_variables; ++i) {
         for (int j = 0; j < num_v_variables; ++j) {
@@ -68,7 +68,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       int num_v_variables = v.NumberOfVariables();
       for (int i = 0; i < num_v_variables; ++i) {
         A_full.block(constraint_index, v.index(i), n, 1) =

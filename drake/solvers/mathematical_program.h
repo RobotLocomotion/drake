@@ -203,8 +203,8 @@ class MathematicalProgram {
   class Binding {
    public:
     Binding(const std::shared_ptr<C>& c, const VariableVector& v)
-        : constraint_(c), variable_list_(v) {
-      for (const auto& var : variable_list_) {
+        : constraint_(c), variable_vector_(v) {
+      for (const auto& var : variable_vector_) {
         for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
           // The variables are contiguous in var, so the index
           // is shifted by i from the starting index var.index().
@@ -217,19 +217,19 @@ class MathematicalProgram {
         const Binding<U>& b,
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-        : Binding(b.constraint(), b.variable_list()) {}
+        : Binding(b.constraint(), b.variable_vector()) {}
 
     const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-    const VariableVector& variable_list() const { return variable_list_; }
+    const VariableVector& variable_vector() const { return variable_vector_; }
 
     /**
-     * @return A Eigen::VectorXd for all the variables in the variable list.
+     * @return A Eigen::VectorXd for all the variables in the variable vector.
      */
-    Eigen::VectorXd VariableListToVectorXd() const {
+    Eigen::VectorXd VariableVectorToVectorXd() const {
       size_t dim = 0;
       Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_list_) {
+      for (const auto& var : variable_vector_) {
         X.segment(dim, var.NumberOfVariables()) = var.VariableValue();
         dim += var.NumberOfVariables();
       }
@@ -240,7 +240,7 @@ class MathematicalProgram {
      * @brief returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool Covers(size_t index) const {
-      for (const auto& view : variable_list_) {
+      for (const auto& view : variable_vector_) {
         if (view.covers(index)) {
           return true;
         }
@@ -252,7 +252,7 @@ class MathematicalProgram {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       size_t count = 0;
-      for (const auto& view : variable_list_) {
+      for (const auto& view : variable_vector_) {
         count += view.NumberOfVariables();
       }
       return count;
@@ -266,7 +266,7 @@ class MathematicalProgram {
                       Eigen::VectorXd* output) const {
       DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
-      for (const auto& view : variable_list_) {
+      for (const auto& view : variable_vector_) {
         const auto& solution_segment =
             solution.segment(solution_index, view.NumberOfVariables());
         output->segment(view.index(0), view.NumberOfVariables()) =
@@ -304,9 +304,9 @@ class MathematicalProgram {
 
    private:
     std::shared_ptr<C> constraint_;
-    VariableVector variable_list_;
+    VariableVector variable_vector_;
     std::vector<int> variable_indices_;  // This stores the indices of all the
-    // variables in the variable_list_;
+    // variables in the variable_vector_;
   };
 
   template <typename F>
@@ -731,7 +731,9 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
    * @param ub A scalar, the upper bound.
-   * @param vars A list of decision variables.
+   * @param vars A std::vector of variables. Each element in the
+   * std::vector is a DecisionVariableMatrix object, which contains
+   * a matrix of decision variables.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -818,7 +820,7 @@ class MathematicalProgram {
    * @f]
    * @param a A row vector.
    * @param beq A scalar.
-   * @param vars A list of DecisionVariableMatrix.
+   * @param vars A std::vector of DecisionVariableMatrix.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -947,7 +949,7 @@ class MathematicalProgram {
    * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
    * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
-   * @param vars A list of DecisionVariableMatrix.
+   * @param vars A std::vector of DecisionVariableMatrix.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const VariableVector& vars) {
@@ -957,7 +959,8 @@ class MathematicalProgram {
   }
 
   /**
-   * @param vars A list of DecisionVariableMatrix.
+   * @param vars A std::vector of DecisionVariableMatrix.
+   * Each DecisionVariableMatrix object should have only one column.
    * Example: if you want to add the rotated Lorentz cone constraint
    * <!--
    * x(0) * x(1) >= x(2)^2 + ...x(N-1)^2
