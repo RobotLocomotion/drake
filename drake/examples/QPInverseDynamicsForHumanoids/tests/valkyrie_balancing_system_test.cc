@@ -2,9 +2,10 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/system/robot_state_msg_to_humanoid_status_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_system.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -58,12 +59,11 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
       builder.AddSystem(std::make_unique<PlanEvalSystem>(robot));
   RobotStateMsgToHumanoidStatusSystem* rs_msg_to_rs = builder.AddSystem(
       std::make_unique<RobotStateMsgToHumanoidStatusSystem>(robot));
-
   DrakeVisualizer* viz_publisher =
       builder.template AddSystem<DrakeVisualizer>(robot, &lcm);
+  JointLevelControllerSystem* joint_con =
+      builder.template AddSystem<JointLevelControllerSystem>(robot, &lcm);
 
-  builder.Connect(qp_con->get_output_port_qp_output(),
-                  val_sim->get_input_port_qp_output());
   builder.Connect(val_sim->get_output_port_robot_state_msg(),
                   rs_msg_to_rs->get_input_port_robot_state_msg());
   builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
@@ -72,8 +72,17 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
                   plan_eval->get_input_port_humanoid_status());
   builder.Connect(plan_eval->get_output_port_qp_input(),
                   qp_con->get_input_port_qp_input());
+
   builder.Connect(val_sim->get_output_port_raw_state(),
                   viz_publisher->get_input_port(0));
+
+  builder.Connect(joint_con->get_output_port_vd(),
+                  val_sim->get_input_port_vd());
+
+  builder.Connect(rs_msg_to_rs->get_output_port_humanoid_status(),
+                  joint_con->get_input_port_humanoid_status());
+  builder.Connect(qp_con->get_output_port_qp_output(),
+                  joint_con->get_input_port_qp_output());
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
@@ -112,7 +121,7 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
-      rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()),
+      rs1->velocity(), VectorX<double>::Zero(rs1->robot().get_num_velocities()),
       1e-4, MatrixCompareType::absolute));
 }
 

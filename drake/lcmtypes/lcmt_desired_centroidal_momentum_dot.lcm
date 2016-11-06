@@ -1,0 +1,8 @@
+package drake;
+
+struct lcmt_desired_centroidal_momentum_dot {
+  int64_t timestamp;
+
+  // Should always be of dimension 6, and the first 3 are angular momentum dot.
+  lcmt_constrained_values centroidal_momentum_dot;
+}
