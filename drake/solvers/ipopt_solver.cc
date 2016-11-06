@@ -193,23 +193,23 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     nnz_jac_g = 0;
     Index num_grad = 0;
     for (const auto& c : problem_->generic_constraints()) {
-      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      m += GetNumGradients(*(c.constraint()), c.variable_vector(), &num_grad);
       nnz_jac_g += num_grad;
     }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
-      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      m += GetNumGradients(*(c.constraint()), c.variable_vector(), &num_grad);
       nnz_jac_g += num_grad;
     }
     for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
-      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      m += GetNumGradients(*(c.constraint()), c.variable_vector(), &num_grad);
       nnz_jac_g += num_grad;
     }
     for (const auto& c : problem_->linear_constraints()) {
-      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      m += GetNumGradients(*(c.constraint()), c.variable_vector(), &num_grad);
       nnz_jac_g += num_grad;
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
-      m += GetNumGradients(*(c.constraint()), c.variable_list(), &num_grad);
+      m += GetNumGradients(*(c.constraint()), c.variable_vector(), &num_grad);
       nnz_jac_g += num_grad;
     }
 
@@ -233,7 +233,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const auto& lower_bound = c->lower_bound();
       const auto& upper_bound = c->upper_bound();
       int var_count = 0;
-      for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (const DecisionVariableMatrix& v : binding.variable_vector()) {
         for (int k = 0; k < v.NumberOfVariables(); ++k) {
           const int idx = v.index(k);
           x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
@@ -335,31 +335,31 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                   // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
         grad_idx +=
-            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+            GetGradientMatrix(*(c.constraint()), c.variable_vector(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->lorentz_cone_constraints()) {
         grad_idx +=
-            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+            GetGradientMatrix(*(c.constraint()), c.variable_vector(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
         grad_idx +=
-            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+            GetGradientMatrix(*(c.constraint()), c.variable_vector(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->linear_constraints()) {
         grad_idx +=
-            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+            GetGradientMatrix(*(c.constraint()), c.variable_vector(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
       for (const auto& c : problem_->linear_equality_constraints()) {
         grad_idx +=
-            GetGradientMatrix(*(c.constraint()), c.variable_list(),
+            GetGradientMatrix(*(c.constraint()), c.variable_vector(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
         constraint_idx += c.constraint()->num_constraints();
       }
@@ -427,7 +427,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     for (auto const& binding : problem_->GetAllCosts()) {
       int index = 0;
-      for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (const DecisionVariableMatrix& v : binding.variable_vector()) {
         int num_v_variables = v.NumberOfVariables();
         this_x.conservativeResize(index + num_v_variables);
         for (int i = 0; i < num_v_variables; ++i) {
@@ -439,7 +439,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
-      for (const DecisionVariableMatrix& v : binding.variable_list()) {
+      for (const DecisionVariableMatrix& v : binding.variable_vector()) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
           cost_cache_->grad[v.index(j)] += ty(0).derivatives()(v.index(j));
         }
@@ -455,27 +455,27 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = constraint_cache_->grad.data();
 
     for (const auto& c : problem_->generic_constraints()) {
-      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_vector(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
-      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_vector(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
-      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_vector(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->linear_constraints()) {
-      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_vector(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
-      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_list(),
+      grad += EvaluateConstraint(xvec, (*c.constraint()), c.variable_vector(),
                                  result, grad);
       result += c.constraint()->num_constraints();
     }
