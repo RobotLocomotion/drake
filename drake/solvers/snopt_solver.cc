@@ -5,9 +5,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
-#include <list>
-#include <memory>
-#include <string>
 #include <vector>
 
 #include "drake/math/autodiff.h"
@@ -207,7 +204,7 @@ void EvaluateNonlinearConstraints(
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       int num_v_variables = v.NumberOfVariables();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
@@ -224,7 +221,7 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       for (snopt::integer i = 0;
            i < static_cast<snopt::integer>(num_constraints); i++) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
@@ -268,7 +265,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   for (auto const& binding : current_problem->GetAllCosts()) {
     auto const& obj = binding.constraint();
     size_t index = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       int num_v_variables = v.NumberOfVariables();
       this_x.conservativeResize(index + num_v_variables);
       for (int j = 0; j < num_v_variables; ++j) {
@@ -280,7 +277,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       for (int j = 0; j < v.NumberOfVariables(); ++j) {
         G[v.index(j)] +=
             static_cast<snopt::doublereal>(ty(0).derivatives()(v.index(j)));
@@ -317,7 +314,7 @@ void UpdateNumNonlinearConstraintsAndGradients(
   for (auto const& binding : constraint_list) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       *max_num_gradients += n * v.NumberOfVariables();
     }
     *num_nonlinear_constraints += n;
@@ -339,7 +336,7 @@ void UpdateConstraintBoundsAndGradients(
       Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       for (size_t i = 0; i < n; i++) {
         for (int j = 0; j < v.NumberOfVariables(); ++j) {
           iGfun[*grad_index] = *constraint_index + i + 1;  // row order
@@ -378,7 +375,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     const auto& lb = c->lower_bound();
     const auto& ub = c->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       for (int k = 0; k < v.NumberOfVariables(); ++k) {
         xlow[v.index(k)] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(var_count)), xlow[v.index(k)]);
@@ -448,7 +445,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     size_t n = c->num_constraints();
     size_t var_index = 0;
     Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       for (int k = 0; k < v.NumberOfVariables(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint,
                                                            var_index + k);
