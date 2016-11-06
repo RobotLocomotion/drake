@@ -5,9 +5,10 @@ if(lcm_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
   target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem drakeLCMTypes Threads::Threads)
   drake_add_test(NAME runQuadrotorDynamics COMMAND runQuadrotorDynamics 5.0 1.0 --non-realtime SIZE medium)
 
-  add_executable(runQuadrotorLQR runLQR.cpp)
-  target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)
-  drake_add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR --non-realtime SIZE medium)
+# TODO(russt): port this to System2.0 and re-enable
+#  add_executable(runQuadrotorLQR runLQR.cpp)
+#  target_link_libraries(runQuadrotorLQR drakeRBM drakeLCMTypes lcm)
+#  drake_add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR --non-realtime SIZE medium)
 endif()
 
 # drake_add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)  # FIXME: see #3313
