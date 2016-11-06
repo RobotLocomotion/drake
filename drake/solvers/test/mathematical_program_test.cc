@@ -127,6 +127,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
     for (int i = 0; i < 4; ++i) {
       EXPECT_GE(x.value().coeff(i), lb(i) - 1E-10);
@@ -148,6 +149,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   Vector4d b = Vector4d::Random();
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
 
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
@@ -725,6 +727,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);
   // Check that it gives the correct answer as well.
+  problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(problem,
                       [&]() { EXPECT_NEAR(x_var.value(0), 2, kEpsilon); });
 }
@@ -754,6 +757,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(x_var.value(0), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
@@ -772,6 +776,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(x_var.value(0), 1, 0.2);
       EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
@@ -790,6 +795,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     RunNonlinearProgram(problem, [&]() {
       EXPECT_NEAR(xy_var.value(0), 1, 0.2);
       EXPECT_NEAR(xy_var.value(1), -2, 0.2);
@@ -847,6 +853,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   prog.AddQuadraticCost(Q, c);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -866,6 +873,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   vars.push_back(y);
 
   prog.AddQuadraticCost(Q, c, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 1.0;
@@ -902,6 +910,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   constraint1 << 1, 1;
   prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -923,6 +932,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   vars.push_back(y);
 
   prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
