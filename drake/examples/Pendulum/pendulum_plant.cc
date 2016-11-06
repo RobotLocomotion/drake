@@ -84,8 +84,8 @@ PendulumPlant<AutoDiffXd>* PendulumPlant<T>::DoToAutoDiffXd() const {
   return new PendulumPlant<AutoDiffXd>();
 }
 
-template class DRAKE_EXPORT PendulumPlant<double>;
-template class DRAKE_EXPORT PendulumPlant<AutoDiffXd>;
+template class PendulumPlant<double>;
+template class PendulumPlant<AutoDiffXd>;
 
 }  // namespace pendulum
 }  // namespace examples

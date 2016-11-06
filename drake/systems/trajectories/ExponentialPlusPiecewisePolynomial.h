@@ -5,14 +5,13 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/common/drake_export.h"
 
 /**
  * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
  */
 
 template <typename CoefficientType = double>
-class DRAKE_EXPORT ExponentialPlusPiecewisePolynomial
+class ExponentialPlusPiecewisePolynomial
     : public PiecewiseFunction {
  public:
   typedef Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic>

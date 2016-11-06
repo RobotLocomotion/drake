@@ -75,5 +75,5 @@ void ExponentialPlusPiecewisePolynomial<CoefficientType>::shiftRight(
   piecewise_polynomial_part_.shiftRight(offset);
 }
 
-template class DRAKE_EXPORT
+template class
     ExponentialPlusPiecewisePolynomial<double>;

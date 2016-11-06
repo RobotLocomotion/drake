@@ -7,7 +7,6 @@
 #include <set>
 #include <string>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -23,7 +22,7 @@ namespace symbolic {
  * Variables::IsStrictSubsetOf, Variables::IsStrictSupersetOf).
  */
 
-class DRAKE_EXPORT Variables {
+class Variables {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef typename drake::symbolic::Variable value_type;
@@ -119,10 +118,10 @@ class DRAKE_EXPORT Variables {
   /** Return true if \p vars is a strict superset of the Variables. */
   bool IsStrictSupersetOf(const Variables& vars) const;
 
-  friend DRAKE_EXPORT bool operator==(const Variables& vars1,
+  friend bool operator==(const Variables& vars1,
                                       const Variables& vars2);
 
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                const Variables& vars);
 
  private:
@@ -131,27 +130,27 @@ class DRAKE_EXPORT Variables {
 
 /** Updates \p var1 with the result of set-union(\p var1, \p var2). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Variables operator+=(Variables& vars1, const Variables& vars2);
+Variables operator+=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-union(\p vars, { \p var }). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Variables operator+=(Variables& vars, const Variable& var);
+Variables operator+=(Variables& vars, const Variable& var);
 /** Returns set-union of \p var1 and \p var2. */
-DRAKE_EXPORT Variables operator+(Variables vars1, const Variables& vars2);
+Variables operator+(Variables vars1, const Variables& vars2);
 /** Returns set-union of \p vars and {\p var}. */
-DRAKE_EXPORT Variables operator+(Variables vars, const Variable& var);
+Variables operator+(Variables vars, const Variable& var);
 /** Returns set-union of {\p var} and \p vars. */
-DRAKE_EXPORT Variables operator+(const Variable& var, Variables vars);
+Variables operator+(const Variable& var, Variables vars);
 
 /** Updates \p var1 with the result of set-minus(\p var1, \p var2). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Variables operator-=(Variables& vars1, const Variables& vars2);
+Variables operator-=(Variables& vars1, const Variables& vars2);
 /** Updates \p vars with the result of set-minus(\p vars, {\p var}). */
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Variables operator-=(Variables& vars, const Variable& var);
+Variables operator-=(Variables& vars, const Variable& var);
 /** Returns set-minus(\p var1, \p vars2). */
-DRAKE_EXPORT Variables operator-(Variables vars1, const Variables& vars2);
+Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(\p vars, { \p var }). */
-DRAKE_EXPORT Variables operator-(Variables vars, const Variable& var);
+Variables operator-(Variables vars, const Variable& var);
 
 }  // namespace symbolic
 }  // namespace drake

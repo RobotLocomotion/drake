@@ -4,14 +4,13 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/plants/RigidBody.h"
 
 namespace tinyxml2 {
 class XMLElement;
 }
 
-class DRAKE_EXPORT RigidBodyFrame {
+class RigidBodyFrame {
  public:
   /**
    * A constructor where the transform-to-body is specified using an

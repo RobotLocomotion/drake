@@ -260,7 +260,7 @@ void RigidBodyTree<T>::surfaceTangents(
   }
 }
 
-template DRAKE_EXPORT void RigidBodyTree<double>::computeContactJacobians<
+template void RigidBodyTree<double>::computeContactJacobians<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(
     KinematicsCache<Eigen::AutoDiffScalar<
         Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const &,
@@ -275,7 +275,7 @@ template DRAKE_EXPORT void RigidBodyTree<double>::computeContactJacobians<
     Eigen::Matrix<
         Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1,
         0, -1, -1> &) const;
-template DRAKE_EXPORT void RigidBodyTree<double>::computeContactJacobians<
+template void RigidBodyTree<double>::computeContactJacobians<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(
     KinematicsCache<Eigen::AutoDiffScalar<
         Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const &,
@@ -290,7 +290,7 @@ template DRAKE_EXPORT void RigidBodyTree<double>::computeContactJacobians<
     Eigen::Matrix<
         Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1,
         0, -1, -1> &) const;
-template DRAKE_EXPORT void
+template void
 RigidBodyTree<double>::computeContactJacobians<double>(
     KinematicsCache<double> const &,
     Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0,
@@ -303,7 +303,7 @@ RigidBodyTree<double>::computeContactJacobians<double>(
                Eigen::OuterStride<-1> > const &,
     Eigen::Matrix<double, -1, -1, 0, -1, -1> &) const;
 
-template DRAKE_EXPORT void RigidBodyTree<double>::surfaceTangents(
+template void RigidBodyTree<double>::surfaceTangents(
     Eigen::Map<Eigen::Matrix3Xd> const &normals,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::vector<Eigen::Map<Eigen::Matrix3Xd>> &tangents) const;

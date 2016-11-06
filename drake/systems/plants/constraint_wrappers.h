@@ -5,7 +5,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -21,11 +20,11 @@ namespace plants {
 
 /// Helper class to avoid recalculating a kinematics cache which is
 /// going to be used repeatedly by multiple other classes.
-/// TODO(amcastro-tri): DRAKE_EXPORT is used here in the header instead of at
+/// TODO(amcastro-tri): is used here in the header instead of at
 /// the place of explicit instantiation. Explore a solution for this problem as
 /// described in #3940.
 template <typename Scalar>
-class DRAKE_EXPORT KinematicsCacheHelper {
+class KinematicsCacheHelper {
  public:
   explicit KinematicsCacheHelper(
       const std::vector<std::unique_ptr<RigidBody>>& bodies);
@@ -40,7 +39,7 @@ class DRAKE_EXPORT KinematicsCacheHelper {
   KinematicsCache<Scalar> kinsol_;
 };
 
-class DRAKE_EXPORT SingleTimeKinematicConstraintWrapper :
+class SingleTimeKinematicConstraintWrapper :
       public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.
@@ -61,7 +60,7 @@ class DRAKE_EXPORT SingleTimeKinematicConstraintWrapper :
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
-class DRAKE_EXPORT QuasiStaticConstraintWrapper :
+class QuasiStaticConstraintWrapper :
       public drake::solvers::Constraint {
  public:
   /// All pointers are aliased for the lifetime of the wrapper.  Also,

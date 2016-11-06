@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
@@ -39,7 +38,7 @@ namespace systems {
  *
  * @ingroup rigid_body_systems
  */
-class DRAKE_EXPORT DrakeVisualizer
+class DrakeVisualizer
     : public LeafSystem<double> {
  public:
   /**

@@ -13,7 +13,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -71,7 +70,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
  * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <typename T>
-class DRAKE_EXPORT RigidBodyTree {
+class RigidBodyTree {
  public:
   /**
    * Defines the name of the rigid body within a rigid body tree that represents
@@ -1056,7 +1055,7 @@ class DRAKE_EXPORT RigidBodyTree {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
+  friend std::ostream& operator<<(std::ostream&,
                                                const RigidBodyTree<double>&);
 
   /**
@@ -1190,7 +1189,7 @@ class DRAKE_EXPORT RigidBodyTree {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 
-  // The following was required for building w/ DRAKE_EXPORT on windows (due
+  // The following was required for building w/ on windows (due
   // to the unique_ptrs).  See
   // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
  private:

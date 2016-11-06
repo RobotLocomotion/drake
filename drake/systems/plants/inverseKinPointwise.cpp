@@ -13,7 +13,7 @@ using Eigen::MatrixXd;
 using drake::systems::plants::inverseKinBackend;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-DRAKE_EXPORT void inverseKinPointwise(
+void inverseKinPointwise(
     RigidBodyTree<double>* model, const int nT, const double* t,
     const MatrixBase<DerivedA>& q_seed, const MatrixBase<DerivedB>& q_nom,
     const int num_constraints,
@@ -25,14 +25,14 @@ DRAKE_EXPORT void inverseKinPointwise(
                     info, infeasible_constraint);
 }
 
-template DRAKE_EXPORT void inverseKinPointwise(
+template void inverseKinPointwise(
     RigidBodyTree<double>* model, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     const RigidBodyConstraint* const* constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol, int *info,
     std::vector<std::string>* infeasible_constraint);
-template DRAKE_EXPORT void inverseKinPointwise(
+template void inverseKinPointwise(
     RigidBodyTree<double>* model, const int nT, const double* t,
     const MatrixBase<MatrixXd>& q_seed, const MatrixBase<MatrixXd>& q_nom,
     const int num_constraints,
@@ -40,7 +40,7 @@ template DRAKE_EXPORT void inverseKinPointwise(
     const IKoptions& ikoptions, MatrixBase<MatrixXd>* q_sol, int* info,
     std::vector<std::string>* infeasible_constraint);
 
-DRAKE_EXPORT IKResults inverseKinPointwiseSimple(
+IKResults inverseKinPointwiseSimple(
     RigidBodyTree<double>* model,
     const Eigen::VectorXd& t,
     const Eigen::MatrixXd& q_seed,

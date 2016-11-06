@@ -16,7 +16,6 @@
 #include "BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/zmpUtil.h"
-#include "drake/common/drake_export.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file
@@ -158,7 +157,7 @@ struct QPLocomotionPlanSettings {
   }
 };
 
-class DRAKE_EXPORT QPLocomotionPlan {
+class QPLocomotionPlan {
  private:
   RigidBodyTree<double>& robot_;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings_;

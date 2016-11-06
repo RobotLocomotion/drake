@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/system1/System.h"
 #include "drake/systems/plants/KinematicsCache.h"
@@ -145,7 +144,7 @@ class LoopConstraint : public LinearEqualityConstraint {
  *
  * @concept{system_concept}
  */
-class DRAKE_EXPORT RigidBodySystem {
+class RigidBodySystem {
  public:
   template <typename ScalarType>
   using InputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
@@ -435,7 +434,7 @@ class DRAKE_EXPORT RigidBodySystem {
   bool isTimeVarying() const { return false; }
   bool isDirectFeedthrough() const { return direct_feedthrough; }
 
-  friend DRAKE_EXPORT StateVector<double> getInitialState(
+  friend StateVector<double> getInitialState(
       const RigidBodySystem& sys);
 
   /**
@@ -471,7 +470,7 @@ class DRAKE_EXPORT RigidBodySystem {
  * @brief interface class for elements which define a generalized force acting
  * on the rigid body system
  */
-class DRAKE_EXPORT RigidBodyForceElement {
+class RigidBodyForceElement {
  public:
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyForceElement(RigidBodySystem& sys_in, const std::string& name_in,
@@ -508,7 +507,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
 /** RigidBodyPropellor
  * @brief Models the forces and moments produced by a simple propellor
  */
-class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
+class RigidBodyPropellor : public RigidBodyForceElement {
  public:
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
@@ -551,7 +550,7 @@ class DRAKE_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 /** RigidBodySpringDamper
  * @brief Models the forces produced by a linear spring-damper
  */
-class DRAKE_EXPORT RigidBodySpringDamper
+class RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -649,7 +648,7 @@ class AdditiveGaussianNoiseModel
  *
  * This is an abstract top-level class of all rigid body sensors in Drake.
  */
-class DRAKE_EXPORT RigidBodySensor {
+class RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -702,7 +701,7 @@ class DRAKE_EXPORT RigidBodySensor {
  * @brief Uses raycast to simulate a depth image at some evenly spaced pixel
  * rows and columns.
  */
-class DRAKE_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
+class RigidBodyDepthSensor : public RigidBodySensor {
  public:
   RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
                        const std::shared_ptr<RigidBodyFrame> frame,
@@ -821,7 +820,7 @@ class DRAKE_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 /** RigidBodyAccelerometer
  * @brief Simulates a sensor that measures linear acceleration
  */
-class DRAKE_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
+class RigidBodyAccelerometer : public RigidBodySensor {
  public:
   RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name,
                          const std::shared_ptr<RigidBodyFrame> frame);
@@ -849,7 +848,7 @@ class DRAKE_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
 /** RigidBodyGyroscope
  * @brief Simulates a sensor that measures angular rates
  */
-class DRAKE_EXPORT RigidBodyGyroscope : public RigidBodySensor {
+class RigidBodyGyroscope : public RigidBodySensor {
  public:
   RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name,
                      const std::shared_ptr<RigidBodyFrame> frame);
@@ -872,7 +871,7 @@ class DRAKE_EXPORT RigidBodyGyroscope : public RigidBodySensor {
 /** RigidBodyMagnetometer
  * @brief Simulates a sensor that measures magnetic fields
  */
-class DRAKE_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
+class RigidBodyMagnetometer : public RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

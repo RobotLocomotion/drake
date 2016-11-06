@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/value.h"
 
@@ -19,7 +18,7 @@ namespace lcm {
  * Value<lcmt_drake_signal>.  See Serializer for a message-specific concrete
  * subclass.
  */
-class DRAKE_EXPORT SerializerInterface {
+class SerializerInterface {
  public:
   virtual ~SerializerInterface();
 

@@ -11,7 +11,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-class DRAKE_EXPORT RollPitchYawFloatingJoint
+class RollPitchYawFloatingJoint
     : public DrakeJointImpl<RollPitchYawFloatingJoint> {
  public:
   // disable copy construction and assignment

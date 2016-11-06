@@ -7,7 +7,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-class DRAKE_EXPORT HelicalJoint
+class HelicalJoint
     : public FixedAxisOneDoFJoint<HelicalJoint> {
   // disable copy construction and assignment
   // HelicalJoint(const HelicalJoint&) = delete;
