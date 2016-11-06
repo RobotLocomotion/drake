@@ -201,8 +201,10 @@ GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
   // SNOPT and IPOPT diverge slightly in their output, so use a
   // slightly reduced tolerance.
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
-                              1e-4, MatrixCompareType::absolute));
+                              1e-4, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 }  // namespace

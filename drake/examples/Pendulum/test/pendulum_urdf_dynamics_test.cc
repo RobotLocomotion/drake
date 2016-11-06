@@ -27,8 +27,10 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
 
     auto xdot = toEigen(p.dynamics(0.0, x0, u0));
     auto xdot_rb = rbsys.dynamics(0.0, x0_rb, u0_rb);
+    std::string error_message;
     EXPECT_TRUE(
-        CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
+        CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute,
+            &error_message)) << error_message;
   }
 }
 

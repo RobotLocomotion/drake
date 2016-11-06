@@ -26,9 +26,11 @@ GTEST_TEST(TestTrajectoryLogger, TestTrajectoryLogger) {
     t(i) = i * 0.01;
     traj_val[i] << i, 2 * i;
     auto logger_output = traj_logger->output(t(i), traj_logger_x, traj_val[i]);
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(logger_output, traj_val[i],
                                 Eigen::NumTraits<double>::epsilon(),
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   }
   auto traj = traj_logger->getTrajectory();
   EXPECT_EQ(traj.time.size(), kNt);

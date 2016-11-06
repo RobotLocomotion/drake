@@ -139,11 +139,13 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // generalized position and velocity.
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
+  std::string error_message;
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
-                                     drake::MatrixCompareType::absolute));
+                                     drake::MatrixCompareType::absolute,
+                                     &error_message)) << error_message;
   EXPECT_TRUE(drake::CompareMatrices(
       v, Eigen::VectorXd::Zero(robot.get_num_velocities()), 1e-4,
-      drake::MatrixCompareType::absolute));
+      drake::MatrixCompareType::absolute, &error_message)) << error_message;
 }
 
 }  // namespace qp_inverse_dynamics

@@ -435,14 +435,17 @@ TEST_F(RotationConversionTest, AxisRotmat) {
     auto rotmat_expected = Matrix3d::Identity() + std::sin(ai(3)) * axis_skew +
                            (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
     auto rotmat = axis2rotmat(ai);
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(rotmat, rotmat_expected, 1E-10,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
 
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with axis2rotmat
     auto rotmat_expected2 = ai_eigen.toRotationMatrix();
     EXPECT_TRUE(CompareMatrices(rotmat_expected2, rotmat, 1E-10,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
 
     // axis2rotmat should be the inversion of rotmat2axis
     auto a_expected = rotmat2axis(rotmat);
@@ -486,8 +489,10 @@ TEST_F(RotationConversionTest, QuatRotmat) {
     Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
     Matrix3d rotmat_expected = qi_eigen.toRotationMatrix();
     Matrix3d rotmat = quat2rotmat(qi);
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     // quat2rotmat should be the inversion of rotmat2quat
     auto quat_expected = rotmat2quat(rotmat);
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
@@ -562,8 +567,10 @@ TEST_F(RotationConversionTest, RPYRotmat) {
         Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
         Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
     Matrix3d rotmat = rpy2rotmat(rpyi);
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(rotmat, rotation_expected.toRotationMatrix(),
-                                1E-10, MatrixCompareType::absolute));
+                                1E-10, MatrixCompareType::absolute,
+                                &error_message)) << error_message;
     // rpy2rotmat should be the inversion of rotmat2rpy
     Vector3d rpy_expected = rotmat2rpy(rotmat);
     EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));

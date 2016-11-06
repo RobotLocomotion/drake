@@ -77,8 +77,10 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(1, 2);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 // Test a simple linear programming problem with only bounding box constraint
@@ -142,8 +144,10 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /////////////////////////////////////////
@@ -190,8 +194,10 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(0.25, 0.75);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-8,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /// Adapt from the simple test on the Gurobi documentation.
@@ -240,8 +246,10 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   Eigen::VectorXd expected(3);
   expected << 0, 1, 2.0 / 3.0;
 
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
+      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 // Closed form (exact) solution test of QP problem.
@@ -272,8 +280,10 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
   Eigen::MatrixXd Q_symmetric = 0.5 * (Q + Q.transpose());
   Eigen::VectorXd expected = -Q_symmetric.colPivHouseholderQr().solve(b);
 
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
+      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 // Closed form (exact) solution test of QP problem.
@@ -325,8 +335,10 @@ void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
   Eigen::VectorXd expected = -Q.ldlt().solve(b);
 
   RunSolver(&prog, solver);
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
+      CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 // Test the simple QP
@@ -349,8 +361,10 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
                                    Vector1d::Constant(2), {x(0), x(2)});
 
   RunSolver(&prog, solver);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d(0.8, 0.2, 0.6), x.value(), 1e-9,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /// Solve a series of QPs with the objective being the Euclidean distance
@@ -400,8 +414,10 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 
     RunSolver(&prog, solver);
 
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   }
 
   // provide some test coverage for changing Q
@@ -420,8 +436,10 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     ASSERT_NO_THROW(result = prog.Solve());
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-5,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   }
 }
 
@@ -499,15 +517,19 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
 
   // Check the solution.
   // First check if each constraint is satisfied.
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(R1a.value(), R1_transpose * a.value(), 1e-7,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(CompareMatrices(R2a.value(), R2_transpose * a.value(), 1e-7,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_NEAR(t.value().coeff(0), R1a.value().norm(), 1e-6);
   EXPECT_NEAR(t.value().coeff(1), R2a.value().norm(), 1e-6);
   EXPECT_TRUE(CompareMatrices((x2 - x1).transpose() * a.value(),
                               drake::Vector1d(1.0), 1e-8,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   // Now check if the solution is meaningful, that it really finds a separating
   // hyperplane.
@@ -563,9 +585,11 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     EXPECT_LE(u1.value().norm(), 1);
     EXPECT_LE(u2.value().norm(), 1);
     EXPECT_TRUE(CompareMatrices(y.value(), x1 + R1 * u1.value(), 1e-8,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_TRUE(CompareMatrices(y.value(), x2 + R2 * u2.value(), 1e-8,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   }
 }
 
@@ -636,13 +660,17 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   double objective_value_socp =
       c.transpose() * x_socp.value() + y.value().coeff(0);
 
+  std::string error_message;
+
   // Check the solution
   EXPECT_NEAR(2 * y.value().coeff(0), w.value().squaredNorm(), 1E-6);
   EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1e-6,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_GE(y.value().coeff(0), 0);
   EXPECT_TRUE(CompareMatrices(w.value(), Q_sqrt * x_socp.value(), 1E-6,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   // Now solve the problem as a QP.
   MathematicalProgram prog_qp;
@@ -654,10 +682,11 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
       0.5 * (x_qp.value().transpose() * Q * x_qp.value()).coeff(0, 0) +
       c.transpose() * x_qp.value();
 
-  // TODO(hongkai.dai@tri.global): tighten the tolerance. socp does not really
-  // converge to true optimal yet.
+  // TODO(hongkai.dai): Tighten the tolerance. SOCP does not really converge to
+  // true optimal yet.
   EXPECT_TRUE(CompareMatrices(x_qp.value(), x_socp.value(), 2e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(std::abs(objective_value_qp - objective_value_socp) < 1E-6);
 }
 
@@ -829,9 +858,12 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
                            right_spring_length;
     }
     Eigen::Vector2d weight_i(0, -weight(i));
+
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(
         weight_i + left_spring_force + right_spring_force,
-        Eigen::Vector2d::Zero(), precision, MatrixCompareType::absolute));
+        Eigen::Vector2d::Zero(), precision, MatrixCompareType::absolute,
+        &error_message)) << error_message;
   }
 }
 

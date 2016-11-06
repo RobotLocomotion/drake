@@ -133,9 +133,11 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
 
   // Assert that property holds.
   auto skew = (mass_matrix_dot - 2 * coriolis_matrix).eval();
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices((skew + skew.transpose()).eval(),
                               MatrixXd::Zero(num_velocities, num_velocities),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 // Check that the gradient of the output of inverseDynamics with respect to
@@ -177,8 +179,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     ASSERT_EQ(tree->get_num_velocities(),
               mass_matrix_from_inverse_dynamics.cols());
 
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(mass_matrix, mass_matrix_from_inverse_dynamics,
-                                1e-10, MatrixCompareType::absolute));
+                                1e-10, MatrixCompareType::absolute,
+                                &error_message)) << error_message;
   }
 }
 
@@ -228,9 +232,11 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
           .value()
           .derivatives();
 
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(gravitational_forces,
                               gravitational_forces_from_potential_energy, 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 // Check that momentum rate of change is equal to the sum of all external
@@ -337,8 +343,10 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   auto momentum_rate = autoDiffToGradientMatrix(momentum_world_time_autodiff);
 
   // Newton-Euler: total wrench should equal momentum rate of change.
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(momentum_rate, total_wrench_world, 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 }  // namespace

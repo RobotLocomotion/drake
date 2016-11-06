@@ -66,10 +66,13 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
   Eigen::VectorXd d_1_expected(x.size());
   d_1_expected << 0.1508698, 14.488559, -6.715012, 14.818155,
       7.315012, -2.96, -3.04;
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(result(0).derivatives(), d_0_expected, 1e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(CompareMatrices(result(1).derivatives(), d_1_expected, 1e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 }  // anonymous namespace

@@ -141,8 +141,10 @@ GTEST_TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
   auto b = (drake::SquareTwistMatrix<double>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 }  // namespace
