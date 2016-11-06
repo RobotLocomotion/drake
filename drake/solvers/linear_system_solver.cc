@@ -33,7 +33,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_list()) {
+    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
       int num_v_variables = v.NumberOfVariables();
       for (int i = 0; i < num_v_variables; ++i) {
         Aeq.block(constraint_index, v.index(i), n, 1) = c->A().col(var_index);

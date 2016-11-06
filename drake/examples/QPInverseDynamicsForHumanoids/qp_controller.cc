@@ -522,7 +522,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   VectorX<double> tmp_vec;
   for (auto& cost_b : costs) {
     solvers::Constraint* cost = cost_b.constraint().get();
-    cost->Eval(cost_b.VariableListToVectorXd(), tmp_vec);
+    cost->Eval(cost_b.VariableVectorToVectorXd(), tmp_vec);
     output->mutable_cost(ctr).first = cost->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
@@ -530,13 +530,13 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
 
   for (auto& eq_b : eqs) {
     solvers::LinearEqualityConstraint* eq = eq_b.constraint().get();
-    DRAKE_ASSERT((eq->A() * eq_b.VariableListToVectorXd() - eq->lower_bound())
+    DRAKE_ASSERT((eq->A() * eq_b.VariableVectorToVectorXd() - eq->lower_bound())
                      .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
     solvers::LinearConstraint* ineq = ineq_b.constraint().get();
-    tmp_vec = ineq->A() * ineq_b.VariableListToVectorXd();
+    tmp_vec = ineq->A() * ineq_b.VariableVectorToVectorXd();
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] + 1e-6);
