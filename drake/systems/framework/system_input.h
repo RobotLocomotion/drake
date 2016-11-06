@@ -18,8 +18,7 @@ namespace systems {
 /// The InputPort describes a single input to a System. Users should not
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
-class DRAKE_EXPORT InputPort
-    : public detail::OutputPortListenerInterface {
+class DRAKE_EXPORT InputPort : public detail::OutputPortListenerInterface {
  public:
   ~InputPort() override;
 
@@ -114,6 +113,12 @@ class DRAKE_EXPORT FreestandingInputPort : public InputPort {
   template <template <typename T> class V, typename T>
   explicit FreestandingInputPort(std::unique_ptr<V<T>> vec)
       : output_port_(std::move(vec)) {
+    output_port_.add_dependent(this);
+  }
+
+  /// Constructs a vector-valued FreestandingInputPort from an Eigen vector.
+  explicit FreestandingInputPort(const Eigen::Ref<const Eigen::MatrixXd>& data)
+      : output_port_(std::make_unique<BasicVector<double>>(data)) {
     output_port_.add_dependent(this);
   }
 

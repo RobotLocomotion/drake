@@ -1,6 +1,4 @@
 if(lcm_FOUND)
-  drake_install_headers(Pendulum.h)
-
   add_library_with_exports(LIB_NAME drakePendulumPlant
     SOURCE_FILES pendulum_swing_up.cc pendulum_plant.cc)
   target_link_libraries(drakePendulumPlant drakeSystemFramework

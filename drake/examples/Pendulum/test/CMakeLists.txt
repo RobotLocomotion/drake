@@ -1,6 +1,8 @@
 if(lcm_FOUND)
   drake_add_cc_test(pendulum_urdf_dynamics_test)
-  target_link_libraries(pendulum_urdf_dynamics_test drakeRBSystem drakeLCMSystem)
+  target_link_libraries(pendulum_urdf_dynamics_test
+      drakePendulumPlant
+      drakeRigidBodyPlant)
 
   drake_add_cc_test(pendulum_dynamic_constraint_test)
   target_link_libraries(pendulum_dynamic_constraint_test

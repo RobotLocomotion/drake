@@ -5,7 +5,7 @@
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/lqr.h"
+#include "drake/systems/controllers/linear_optimal_control.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -32,10 +32,8 @@ int do_main(int argc, char* argv[]) {
   auto pendulum_context = pendulum->CreateDefaultContext();
   pendulum->set_theta(pendulum_context.get(), M_PI);
   pendulum->set_thetadot(pendulum_context.get(), 0);
-  auto tau = std::make_unique<systems::BasicVector<double>>(1);
-  tau->SetAtIndex(0, 0);
   pendulum_context->SetInputPort(
-      0, std::make_unique<systems::FreestandingInputPort>(std::move(tau)));
+      0, std::make_unique<systems::FreestandingInputPort>(Vector1d::Zero()));
 
   Eigen::MatrixXd Q(2, 2);
   Q << 10, 0, 0, 1;
