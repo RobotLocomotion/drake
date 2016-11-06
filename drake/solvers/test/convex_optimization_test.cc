@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -33,6 +34,9 @@ void TestLinearProgramFeasibility(
   prog.AddBoundingBoxConstraint(1.0, std::numeric_limits<double>::infinity(),
                                 x(1));
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+  }
   RunSolver(&prog, solver);
 
   Eigen::Vector3d A_times_x = A * x.value();
@@ -71,6 +75,9 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
                       std::numeric_limits<double>::infinity()),
       {x(0), x(1)});
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  }
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(1, 2);
@@ -90,6 +97,9 @@ void TestLinearProgram1(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearCost(Eigen::RowVector2d(1.0, -2.0));
   prog.AddBoundingBoxConstraint(Eigen::Vector2d(0, -1), Eigen::Vector2d(2, 4));
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  }
   RunSolver(&prog, solver);
 
   EXPECT_TRUE(x.value().isApprox(Eigen::Vector2d(0, 4)));
@@ -136,6 +146,9 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()),
       {x(0), x(2), x(3)});
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector4d::Zero());
+  }
   RunSolver(&prog, solver);
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
@@ -184,6 +197,9 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1), 1);
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  }
   RunSolver(&prog, solver);
 
   Eigen::Vector2d x_expected(0.25, 0.75);
@@ -232,6 +248,9 @@ void TestQuadraticProgram1(const MathematicalProgramSolverInterface& solver) {
   // This test also handles linear equality constraint
   prog.AddLinearEqualityConstraint(Eigen::RowVector3d(3, 1, 3), 3);
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+  }
   RunSolver(&prog, solver);
 
   Eigen::VectorXd expected(3);
@@ -263,6 +282,9 @@ void TestQuadraticProgram2(const MathematicalProgramSolverInterface& solver) {
 
   prog.AddQuadraticCost(Q, b);
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 5, 1>::Zero());
+  }
   RunSolver(&prog, solver);
 
   // Exact solution.
@@ -321,6 +343,9 @@ void TestQuadraticProgram3(const MathematicalProgramSolverInterface& solver) {
   // Exact solution.
   Eigen::VectorXd expected = -Q.ldlt().solve(b);
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Matrix<double, 6, 1>::Zero());
+  }
   RunSolver(&prog, solver);
   EXPECT_TRUE(
       CompareMatrices(x.value(), expected, 1e-8, MatrixCompareType::absolute));
@@ -345,6 +370,9 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
                                    Vector1d::Constant(2), {x(0), x(2)});
 
+  if (solver.SolverName() == "SNOPT") {
+    prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
+  }
   RunSolver(&prog, solver);
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d(0.8, 0.2, 0.6), x.value(), 1e-9,
                               MatrixCompareType::absolute));
@@ -395,6 +423,9 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
           (x_desired(0) + x_desired(1) + 1.0) / 2.0;
     }
 
+    if (solver.SolverName() == "SNOPT") {
+      prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+    }
     RunSolver(&prog, solver);
 
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1e-4,
@@ -997,6 +1028,9 @@ GTEST_TEST(TestConvexOptimization, TestQuadraticProgram5) {
     prog.AddLinearConstraint(CI_xy, ci_xy_lower, ci_xy_upper, {x, y});
     prog.AddLinearConstraint(CI_z, ci_z_lower, ci_z_upper, {z});
 
+    if (solver->SolverName() == "SNOPT") {
+      prog.SetInitialGuessForAllVariables(drake::Vector6<double>::Zero());
+    }
     RunSolver(&prog, *solver);
 
     if (get_solution) {

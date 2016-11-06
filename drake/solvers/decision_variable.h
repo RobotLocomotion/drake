@@ -391,13 +391,21 @@ class DecisionVariableMatrix {
 };
 
 typedef std::vector<DecisionVariableMatrix> VariableVector;
-inline int GetVariableVectorSize(const VariableVector& vars) {
-  int var_dim = 0;
-  for (const auto& var : vars) {
-    var_dim += var.NumberOfVariables();
-  }
-  return var_dim;
-}
 
+/**
+ * Given a vector of DecisionVariableMatrix @p vars, computes the TOTAL number
+ * of scalar decision variables stored in @p vars, including duplication.
+ * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
+ * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
+ * x1 for twice.
+ */
+int GetVariableVectorSize(const VariableVector& vars);
+
+/**
+ * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
+ * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
+ * scalar).
+ */
+bool VariableVectorContainsColumnVectorsOnly(const VariableVector& vars);
 }  // end namespace solvers
 }  // end namespace drake
