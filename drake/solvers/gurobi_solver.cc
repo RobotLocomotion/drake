@@ -72,7 +72,7 @@ int AddLorentzConeConstraints(GRBmodel* model,
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_list();
+    auto variable_list = binding.variable_vector();
     for (const DecisionVariableMatrix& var : variable_list) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         variable_indices.push_back(static_cast<int>(var.index(i)));
@@ -122,7 +122,7 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_list();
+    auto variable_list = binding.variable_vector();
     for (const DecisionVariableMatrix& var : variable_list) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         variable_indices.push_back(static_cast<int>(var.index(i)));
@@ -190,10 +190,10 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
     // constraint_variable_index[i] is the index of the i'th decision variable
-    // binding.VariableListToVectorXd(i).
+    // binding.VariableVectorToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         constraint_variable_index[constraint_variable_count] = var.index(i);
         constraint_variable_count++;
@@ -227,7 +227,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         b_nonzero_coefs.push_back(Eigen::Triplet<double>(
             var.index(i), 0, c(constraint_variable_count)));
@@ -293,7 +293,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         variable_indices.push_back(var.index(i));
       }
@@ -312,7 +312,7 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrix& var : binding.variable_list()) {
+    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
       for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); i++) {
         variable_indices.push_back(var.index(i));
       }
@@ -405,7 +405,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
     for (const DecisionVariableMatrix& decision_variable_view :
-         binding.variable_list()) {
+        binding.variable_vector()) {
       for (int k = 0; k < decision_variable_view.NumberOfVariables(); ++k) {
         const int idx = decision_variable_view.index(k);
         xlow[idx] = std::max(lower_bound(var_idx), xlow[idx]);
