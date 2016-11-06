@@ -12,13 +12,16 @@ namespace examples {
 namespace qp_inverse_dynamics {
 namespace {
 
-static std::string urdf =
+static std::string get_urdf_name() {
+  std::string urdf =
     drake::GetDrakePath() +
     std::string(
         "/examples/Valkyrie/urdf/urdf/"
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  return urdf;
+}
 static RigidBodyTree<double> robot(
-    urdf, drake::systems::plants::joints::kRollPitchYaw);
+    get_urdf_name(), drake::systems::plants::joints::kRollPitchYaw);
 
 // Test if an Eigen vector (row or column) equals a std vector.
 template <typename Derived, typename Scalar>

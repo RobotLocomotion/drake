@@ -27,12 +27,10 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
       : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
-    output_port_index_qp_input =
+    output_port_index_qp_input_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
 
     set_name("plan_eval");
-
-    HumanoidStatus robot_status(robot_);
 
     // TODO(siyuan.feng): Move these to some param / config file eventually.
     // Set up gains.
@@ -57,7 +55,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
         context, input_port_index_humanoid_status_);
 
     // Output:
-    lcmt_qp_input& msg = output->GetMutableData(output_port_index_qp_input)
+    lcmt_qp_input& msg = output->GetMutableData(output_port_index_qp_input_)
                              ->GetMutableValue<lcmt_qp_input>();
 
     // Update desired accelerations.
@@ -122,14 +120,14 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
    * @return Port for the output: QPInput.
    */
   inline const SystemPortDescriptor<double>& get_output_port_qp_input() const {
-    return get_output_port(output_port_index_qp_input);
+    return get_output_port(output_port_index_qp_input_);
   }
 
  private:
   const RigidBodyTree<double>& robot_;
 
   int input_port_index_humanoid_status_;
-  int output_port_index_qp_input;
+  int output_port_index_qp_input_;
 
   // Gains and setpoints.
   VectorSetpoint<double> joint_PDff_;

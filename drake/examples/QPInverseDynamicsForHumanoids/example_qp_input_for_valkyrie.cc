@@ -1,3 +1,5 @@
+#include <string>
+
 #include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 
