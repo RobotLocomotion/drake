@@ -45,10 +45,10 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
         output->GetMutableData(output_port_index_humanoid_status_)
             ->GetMutableValue<HumanoidStatus>();
 
-    Eigen::VectorXd pos(hum_status.position().size());
-    Eigen::VectorXd vel(hum_status.velocity().size());
-    Eigen::VectorXd joint_torque(hum_status.joint_torque().size());
-    Eigen::Vector6d l_foot_wrench, r_foot_wrench;
+    VectorX<double> pos(hum_status.position().size());
+    VectorX<double> vel(hum_status.velocity().size());
+    VectorX<double> joint_torque(hum_status.joint_torque().size());
+    Vector6<double> l_foot_wrench, r_foot_wrench;
     double time;
 
     DecodeRobotStateLcmMsg(*msg, hum_status.name_to_position_index(), &time,

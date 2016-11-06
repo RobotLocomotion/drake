@@ -22,6 +22,10 @@ using Vector1 = Eigen::Matrix<Scalar, 1, 1>;
 /// A column vector of size 1 of doubles.
 using Vector1d = Eigen::Matrix<double, 1, 1>;
 
+/// A column vector of size 2, templated on scalar type.
+template <typename Scalar>
+using Vector2 = Eigen::Matrix<Scalar, 2, 1>;
+
 /// A column vector of size 3, templated on scalar type.
 template <typename Scalar>
 using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
@@ -38,6 +42,10 @@ using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
+/// A matrix of 2 rows and 2 columns, templated on scalar type.
+template <typename Scalar>
+using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
+
 /// A matrix of 3 rows and 3 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
@@ -45,6 +53,10 @@ using Matrix3 = Eigen::Matrix<Scalar, 3, 3>;
 /// A matrix of 6 rows and 6 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix6 = Eigen::Matrix<Scalar, 6, 6>;
+
+/// A matrix of 2 rows, dynamic columns, templated on scalar type.
+template <typename Scalar>
+using Matrix2X = Eigen::Matrix<Scalar, 2, Eigen::Dynamic>;
 
 /// A matrix of 3 rows, dynamic columns, templated on scalar type.
 template <typename Scalar>
@@ -65,6 +77,10 @@ using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 /// A quaternion templated on scalar type.
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;
+
+/// An AngleAxis templated on scalar type.
+template <typename Scalar>
+using AngleAxis = Eigen::AngleAxis<Scalar>;
 
 /// An Isometry templated on scalar type.
 template <typename Scalar>
