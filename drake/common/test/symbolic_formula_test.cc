@@ -25,12 +25,39 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
-bool FormulaEqual(const Formula& f1, const Formula& f2) {
+static bool formulaEqual(const Formula& f1, const Formula& f2) {
   return f1.EqualTo(f2);
 }
 
-bool FormulaNotEqual(const Formula& f1, const Formula& f2) {
-  return !FormulaEqual(f1, f2);
+static bool formulaNotEqual(const Formula& f1, const Formula& f2) {
+  return !formulaEqual(f1, f2);
+}
+
+static bool formulaLess(const Formula& f1, const Formula& f2) {
+  return f1.Less(f2);
+}
+
+static bool formulaNotLess(const Formula& f1, const Formula& f2) {
+  return !formulaLess(f1, f2);
+}
+
+// Checks if a given 'formulas' is ordered by Formula::Less.
+static void checkOrdering(const vector<Formula>& formulas) {
+  for (size_t i{0}; i < formulas.size(); ++i) {
+    for (size_t j{0}; j < formulas.size(); ++j) {
+      if (i < j) {
+        EXPECT_PRED2(formulaLess, formulas[i], formulas[j])
+            << "(Formulas[" << i << "] = " << formulas[i] << ")"
+            << " is not less than "
+            << "(Formulas[" << j << "] = " << formulas[j] << ")";
+      } else {
+        EXPECT_PRED2(formulaNotLess, formulas[i], formulas[j])
+            << "(Formulas[" << i << "] = " << formulas[i] << ")"
+            << " is less than "
+            << "(Formulas[" << j << "] = " << formulas[j] << ")";
+      }
+    }
+  }
 }
 
 // Provides common variables that are used by the following tests.
@@ -66,170 +93,77 @@ class SymbolicFormulaTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicFormulaTest, LessTrueFalse) {
-  EXPECT_FALSE(Formula::False().Less(Formula::False()));
-  EXPECT_TRUE(Formula::False().Less(Formula::True()));
-  EXPECT_FALSE(Formula::True().Less(Formula::False()));
-  EXPECT_FALSE(Formula::True().Less(Formula::True()));
+  checkOrdering({Formula::False(), Formula::True()});
 }
 
 TEST_F(SymbolicFormulaTest, LessEq) {
   const Formula f1{x_ == y_};
   const Formula f2{x_ == z_};
   const Formula f3{y_ == z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessNeq) {
   const Formula f1{x_ != y_};
   const Formula f2{x_ != z_};
   const Formula f3{y_ != z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessGt) {
   const Formula f1{x_ > y_};
   const Formula f2{x_ > z_};
   const Formula f3{y_ > z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessGeq) {
   const Formula f1{x_ >= y_};
   const Formula f2{x_ >= z_};
   const Formula f3{y_ >= z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessLt) {
   const Formula f1{x_ < y_};
   const Formula f2{x_ < z_};
   const Formula f3{y_ < z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessLeq) {
   const Formula f1{x_ <= y_};
   const Formula f2{x_ <= z_};
   const Formula f3{y_ <= z_};
-
-  EXPECT_FALSE(f1.Less(f1));
-  EXPECT_TRUE(f1.Less(f2));
-  EXPECT_TRUE(f1.Less(f3));
-  EXPECT_FALSE(f2.Less(f1));
-  EXPECT_FALSE(f2.Less(f2));
-  EXPECT_TRUE(f2.Less(f3));
-  EXPECT_FALSE(f3.Less(f1));
-  EXPECT_FALSE(f3.Less(f2));
-  EXPECT_FALSE(f3.Less(f3));
+  checkOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessAnd) {
   const Formula and1{f1_ && f2_ && f3_};
   const Formula and2{f1_ && f3_};
   const Formula and3{f2_ && f3_};
-
-  EXPECT_FALSE(and1.Less(and1));
-  EXPECT_TRUE(and1.Less(and2));
-  EXPECT_TRUE(and1.Less(and3));
-  EXPECT_FALSE(and2.Less(and1));
-  EXPECT_FALSE(and2.Less(and2));
-  EXPECT_TRUE(and2.Less(and3));
-  EXPECT_FALSE(and3.Less(and1));
-  EXPECT_FALSE(and3.Less(and2));
-  EXPECT_FALSE(and3.Less(and3));
+  checkOrdering({and1, and2, and3});
 }
 
 TEST_F(SymbolicFormulaTest, LessOr) {
   const Formula or1{f1_ || f2_ || f3_};
   const Formula or2{f1_ || f3_};
   const Formula or3{f2_ || f3_};
-
-  EXPECT_FALSE(or1.Less(or1));
-  EXPECT_TRUE(or1.Less(or2));
-  EXPECT_TRUE(or1.Less(or3));
-  EXPECT_FALSE(or2.Less(or1));
-  EXPECT_FALSE(or2.Less(or2));
-  EXPECT_TRUE(or2.Less(or3));
-  EXPECT_FALSE(or3.Less(or1));
-  EXPECT_FALSE(or3.Less(or2));
-  EXPECT_FALSE(or3.Less(or3));
+  checkOrdering({or1, or2, or3});
 }
 
 TEST_F(SymbolicFormulaTest, LessNot) {
   const Formula not1{!f1_};
   const Formula not2{!f2_};
   const Formula not3{!f3_};
-
-  EXPECT_FALSE(not1.Less(not1));
-  EXPECT_TRUE(not1.Less(not2));
-  EXPECT_TRUE(not1.Less(not3));
-  EXPECT_FALSE(not2.Less(not1));
-  EXPECT_FALSE(not2.Less(not2));
-  EXPECT_TRUE(not2.Less(not3));
-  EXPECT_FALSE(not3.Less(not1));
-  EXPECT_FALSE(not3.Less(not2));
-  EXPECT_FALSE(not3.Less(not3));
+  checkOrdering({not1, not2, not3});
 }
 
 TEST_F(SymbolicFormulaTest, LessForall) {
   const Formula forall1{forall({var_x_, var_y_}, f1_)};
   const Formula forall2{forall({var_x_, var_y_, var_z_}, f1_)};
   const Formula forall3{forall({var_x_, var_y_, var_z_}, f2_)};
-
-  EXPECT_FALSE(forall1.Less(forall1));
-  EXPECT_TRUE(forall1.Less(forall2));
-  EXPECT_TRUE(forall1.Less(forall3));
-  EXPECT_FALSE(forall2.Less(forall1));
-  EXPECT_FALSE(forall2.Less(forall2));
-  EXPECT_TRUE(forall2.Less(forall3));
-  EXPECT_FALSE(forall3.Less(forall1));
-  EXPECT_FALSE(forall3.Less(forall2));
-  EXPECT_FALSE(forall3.Less(forall3));
+  checkOrdering({forall1, forall2, forall3});
 }
 
 TEST_F(SymbolicFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
@@ -246,47 +180,47 @@ TEST_F(SymbolicFormulaTest, EqualTo1) {
   const Formula f_gt{x_ > y_};
   const Formula f_ge{x_ >= y_};
 
-  EXPECT_PRED2(FormulaEqual, f_eq, f_eq);
-  EXPECT_PRED2(FormulaNotEqual, f_eq, f_ne);
-  EXPECT_PRED2(FormulaNotEqual, f_eq, f_lt);
-  EXPECT_PRED2(FormulaNotEqual, f_eq, f_le);
-  EXPECT_PRED2(FormulaNotEqual, f_eq, f_gt);
-  EXPECT_PRED2(FormulaNotEqual, f_eq, f_ge);
+  EXPECT_PRED2(formulaEqual, f_eq, f_eq);
+  EXPECT_PRED2(formulaNotEqual, f_eq, f_ne);
+  EXPECT_PRED2(formulaNotEqual, f_eq, f_lt);
+  EXPECT_PRED2(formulaNotEqual, f_eq, f_le);
+  EXPECT_PRED2(formulaNotEqual, f_eq, f_gt);
+  EXPECT_PRED2(formulaNotEqual, f_eq, f_ge);
 
-  EXPECT_PRED2(FormulaNotEqual, f_ne, f_eq);
-  EXPECT_PRED2(FormulaEqual, f_ne, f_ne);
-  EXPECT_PRED2(FormulaNotEqual, f_ne, f_lt);
-  EXPECT_PRED2(FormulaNotEqual, f_ne, f_le);
-  EXPECT_PRED2(FormulaNotEqual, f_ne, f_gt);
-  EXPECT_PRED2(FormulaNotEqual, f_ne, f_ge);
+  EXPECT_PRED2(formulaNotEqual, f_ne, f_eq);
+  EXPECT_PRED2(formulaEqual, f_ne, f_ne);
+  EXPECT_PRED2(formulaNotEqual, f_ne, f_lt);
+  EXPECT_PRED2(formulaNotEqual, f_ne, f_le);
+  EXPECT_PRED2(formulaNotEqual, f_ne, f_gt);
+  EXPECT_PRED2(formulaNotEqual, f_ne, f_ge);
 
-  EXPECT_PRED2(FormulaNotEqual, f_lt, f_eq);
-  EXPECT_PRED2(FormulaNotEqual, f_lt, f_ne);
-  EXPECT_PRED2(FormulaEqual, f_lt, f_lt);
-  EXPECT_PRED2(FormulaNotEqual, f_lt, f_le);
-  EXPECT_PRED2(FormulaNotEqual, f_lt, f_gt);
-  EXPECT_PRED2(FormulaNotEqual, f_lt, f_ge);
+  EXPECT_PRED2(formulaNotEqual, f_lt, f_eq);
+  EXPECT_PRED2(formulaNotEqual, f_lt, f_ne);
+  EXPECT_PRED2(formulaEqual, f_lt, f_lt);
+  EXPECT_PRED2(formulaNotEqual, f_lt, f_le);
+  EXPECT_PRED2(formulaNotEqual, f_lt, f_gt);
+  EXPECT_PRED2(formulaNotEqual, f_lt, f_ge);
 
-  EXPECT_PRED2(FormulaNotEqual, f_le, f_eq);
-  EXPECT_PRED2(FormulaNotEqual, f_le, f_ne);
-  EXPECT_PRED2(FormulaNotEqual, f_le, f_lt);
-  EXPECT_PRED2(FormulaEqual, f_le, f_le);
-  EXPECT_PRED2(FormulaNotEqual, f_le, f_gt);
-  EXPECT_PRED2(FormulaNotEqual, f_le, f_ge);
+  EXPECT_PRED2(formulaNotEqual, f_le, f_eq);
+  EXPECT_PRED2(formulaNotEqual, f_le, f_ne);
+  EXPECT_PRED2(formulaNotEqual, f_le, f_lt);
+  EXPECT_PRED2(formulaEqual, f_le, f_le);
+  EXPECT_PRED2(formulaNotEqual, f_le, f_gt);
+  EXPECT_PRED2(formulaNotEqual, f_le, f_ge);
 
-  EXPECT_PRED2(FormulaNotEqual, f_gt, f_eq);
-  EXPECT_PRED2(FormulaNotEqual, f_gt, f_ne);
-  EXPECT_PRED2(FormulaNotEqual, f_gt, f_lt);
-  EXPECT_PRED2(FormulaNotEqual, f_gt, f_le);
-  EXPECT_PRED2(FormulaEqual, f_gt, f_gt);
-  EXPECT_PRED2(FormulaNotEqual, f_gt, f_ge);
+  EXPECT_PRED2(formulaNotEqual, f_gt, f_eq);
+  EXPECT_PRED2(formulaNotEqual, f_gt, f_ne);
+  EXPECT_PRED2(formulaNotEqual, f_gt, f_lt);
+  EXPECT_PRED2(formulaNotEqual, f_gt, f_le);
+  EXPECT_PRED2(formulaEqual, f_gt, f_gt);
+  EXPECT_PRED2(formulaNotEqual, f_gt, f_ge);
 
-  EXPECT_PRED2(FormulaNotEqual, f_ge, f_eq);
-  EXPECT_PRED2(FormulaNotEqual, f_ge, f_ne);
-  EXPECT_PRED2(FormulaNotEqual, f_ge, f_lt);
-  EXPECT_PRED2(FormulaNotEqual, f_ge, f_le);
-  EXPECT_PRED2(FormulaNotEqual, f_ge, f_gt);
-  EXPECT_PRED2(FormulaEqual, f_ge, f_ge);
+  EXPECT_PRED2(formulaNotEqual, f_ge, f_eq);
+  EXPECT_PRED2(formulaNotEqual, f_ge, f_ne);
+  EXPECT_PRED2(formulaNotEqual, f_ge, f_lt);
+  EXPECT_PRED2(formulaNotEqual, f_ge, f_le);
+  EXPECT_PRED2(formulaNotEqual, f_ge, f_gt);
+  EXPECT_PRED2(formulaEqual, f_ge, f_ge);
 }
 
 TEST_F(SymbolicFormulaTest, EqualTo2) {
@@ -297,17 +231,17 @@ TEST_F(SymbolicFormulaTest, EqualTo2) {
   const Formula f_or{f1 || f2};
   const Formula f_not{!f1};
 
-  EXPECT_PRED2(FormulaEqual, f_and, f_and);
-  EXPECT_PRED2(FormulaNotEqual, f_and, f_or);
-  EXPECT_PRED2(FormulaNotEqual, f_and, f_not);
+  EXPECT_PRED2(formulaEqual, f_and, f_and);
+  EXPECT_PRED2(formulaNotEqual, f_and, f_or);
+  EXPECT_PRED2(formulaNotEqual, f_and, f_not);
 
-  EXPECT_PRED2(FormulaNotEqual, f_or, f_and);
-  EXPECT_PRED2(FormulaEqual, f_or, f_or);
-  EXPECT_PRED2(FormulaNotEqual, f_or, f_not);
+  EXPECT_PRED2(formulaNotEqual, f_or, f_and);
+  EXPECT_PRED2(formulaEqual, f_or, f_or);
+  EXPECT_PRED2(formulaNotEqual, f_or, f_not);
 
-  EXPECT_PRED2(FormulaNotEqual, f_not, f_and);
-  EXPECT_PRED2(FormulaNotEqual, f_not, f_or);
-  EXPECT_PRED2(FormulaEqual, f_not, f_not);
+  EXPECT_PRED2(formulaNotEqual, f_not, f_and);
+  EXPECT_PRED2(formulaNotEqual, f_not, f_or);
+  EXPECT_PRED2(formulaEqual, f_not, f_not);
 }
 
 TEST_F(SymbolicFormulaTest, EqualTo3) {
@@ -316,40 +250,40 @@ TEST_F(SymbolicFormulaTest, EqualTo3) {
   const Formula f_forall3{forall({var_x_, var_y_}, f_and_)};
   const Formula f_forall4{forall({var_x_, var_y_, var_z_}, f_and_)};
 
-  EXPECT_PRED2(FormulaEqual, f_forall1, f_forall1);
-  EXPECT_PRED2(FormulaNotEqual, f_forall1, f_forall2);
-  EXPECT_PRED2(FormulaNotEqual, f_forall1, f_forall3);
-  EXPECT_PRED2(FormulaNotEqual, f_forall1, f_forall4);
+  EXPECT_PRED2(formulaEqual, f_forall1, f_forall1);
+  EXPECT_PRED2(formulaNotEqual, f_forall1, f_forall2);
+  EXPECT_PRED2(formulaNotEqual, f_forall1, f_forall3);
+  EXPECT_PRED2(formulaNotEqual, f_forall1, f_forall4);
 
-  EXPECT_PRED2(FormulaNotEqual, f_forall2, f_forall1);
-  EXPECT_PRED2(FormulaEqual, f_forall2, f_forall2);
-  EXPECT_PRED2(FormulaNotEqual, f_forall2, f_forall3);
-  EXPECT_PRED2(FormulaNotEqual, f_forall2, f_forall4);
+  EXPECT_PRED2(formulaNotEqual, f_forall2, f_forall1);
+  EXPECT_PRED2(formulaEqual, f_forall2, f_forall2);
+  EXPECT_PRED2(formulaNotEqual, f_forall2, f_forall3);
+  EXPECT_PRED2(formulaNotEqual, f_forall2, f_forall4);
 
-  EXPECT_PRED2(FormulaNotEqual, f_forall3, f_forall1);
-  EXPECT_PRED2(FormulaNotEqual, f_forall3, f_forall2);
-  EXPECT_PRED2(FormulaEqual, f_forall3, f_forall3);
-  EXPECT_PRED2(FormulaNotEqual, f_forall3, f_forall4);
+  EXPECT_PRED2(formulaNotEqual, f_forall3, f_forall1);
+  EXPECT_PRED2(formulaNotEqual, f_forall3, f_forall2);
+  EXPECT_PRED2(formulaEqual, f_forall3, f_forall3);
+  EXPECT_PRED2(formulaNotEqual, f_forall3, f_forall4);
 
-  EXPECT_PRED2(FormulaNotEqual, f_forall4, f_forall1);
-  EXPECT_PRED2(FormulaNotEqual, f_forall4, f_forall2);
-  EXPECT_PRED2(FormulaNotEqual, f_forall4, f_forall3);
-  EXPECT_PRED2(FormulaEqual, f_forall4, f_forall4);
+  EXPECT_PRED2(formulaNotEqual, f_forall4, f_forall1);
+  EXPECT_PRED2(formulaNotEqual, f_forall4, f_forall2);
+  EXPECT_PRED2(formulaNotEqual, f_forall4, f_forall3);
+  EXPECT_PRED2(formulaEqual, f_forall4, f_forall4);
 }
 
 TEST_F(SymbolicFormulaTest, Eq) {
   const Formula f1{e1_ == e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::False());
   const Formula f2{e1_ == e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::False());
   const Formula f3{e1_ == e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ == e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::True());
   const Formula f5{x_ == x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
+  EXPECT_PRED2(formulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) == (2 + 3));
@@ -358,17 +292,17 @@ TEST_F(SymbolicFormulaTest, Eq) {
 
 TEST_F(SymbolicFormulaTest, Neq) {
   const Formula f1{e1_ != e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::True());
   const Formula f2{e1_ != e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::True());
   const Formula f3{e1_ != e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::False());
   const Formula f4{e2_ != e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::False());
   const Formula f5{x_ != x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
+  EXPECT_PRED2(formulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) != (2 + 3));
@@ -377,17 +311,17 @@ TEST_F(SymbolicFormulaTest, Neq) {
 
 TEST_F(SymbolicFormulaTest, Lt) {
   const Formula f1{e1_ < e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::True());
   const Formula f2{e1_ < e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::True());
   const Formula f3{e1_ < e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ < e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::True());
   const Formula f5{x_ < x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
+  EXPECT_PRED2(formulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) < (2 + 3));
@@ -396,17 +330,17 @@ TEST_F(SymbolicFormulaTest, Lt) {
 
 TEST_F(SymbolicFormulaTest, Gt) {
   const Formula f1{e1_ > e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::True());
   const Formula f2{e1_ > e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::False());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::True());
   const Formula f3{e1_ > e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ > e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::True());
   const Formula f5{x_ > x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
+  EXPECT_PRED2(formulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) > (2 + 3));
@@ -415,17 +349,17 @@ TEST_F(SymbolicFormulaTest, Gt) {
 
 TEST_F(SymbolicFormulaTest, Leq) {
   const Formula f1{e1_ <= e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::False());
   const Formula f2{e1_ <= e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::False());
   const Formula f3{e1_ <= e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ <= e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::True());
   const Formula f5{x_ <= x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::True());
+  EXPECT_PRED2(formulaEqual, f5, Formula::True());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) <= (2 + 3));
@@ -434,17 +368,17 @@ TEST_F(SymbolicFormulaTest, Leq) {
 
 TEST_F(SymbolicFormulaTest, Geq) {
   const Formula f1{e1_ >= e1_};
-  EXPECT_PRED2(FormulaEqual, f1, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f1, Formula::False());
+  EXPECT_PRED2(formulaEqual, f1, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f1, Formula::False());
   const Formula f2{e1_ >= e1_prime_};
-  EXPECT_PRED2(FormulaEqual, f2, Formula::True());
-  EXPECT_PRED2(FormulaNotEqual, f2, Formula::False());
+  EXPECT_PRED2(formulaEqual, f2, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f2, Formula::False());
   const Formula f3{e1_ >= e3_};
-  EXPECT_PRED2(FormulaNotEqual, f3, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f3, Formula::True());
   const Formula f4{e2_ >= e3_};
-  EXPECT_PRED2(FormulaNotEqual, f4, Formula::True());
+  EXPECT_PRED2(formulaNotEqual, f4, Formula::True());
   const Formula f5{x_ >= x_ + 5};
-  EXPECT_PRED2(FormulaEqual, f5, Formula::False());
+  EXPECT_PRED2(formulaEqual, f5, Formula::False());
 
   const Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
   EXPECT_EQ(f3.Evaluate(env), (2 + 3) >= (2 + 3));
@@ -452,10 +386,10 @@ TEST_F(SymbolicFormulaTest, Geq) {
 }
 
 TEST_F(SymbolicFormulaTest, And1) {
-  EXPECT_PRED2(FormulaEqual, tt_, tt_ && tt_);
-  EXPECT_PRED2(FormulaEqual, ff_, ff_ && tt_);
-  EXPECT_PRED2(FormulaEqual, ff_, tt_ && ff_);
-  EXPECT_PRED2(FormulaEqual, ff_, ff_ && ff_);
+  EXPECT_PRED2(formulaEqual, tt_, tt_ && tt_);
+  EXPECT_PRED2(formulaEqual, ff_, ff_ && tt_);
+  EXPECT_PRED2(formulaEqual, ff_, tt_ && ff_);
+  EXPECT_PRED2(formulaEqual, ff_, ff_ && ff_);
 }
 
 TEST_F(SymbolicFormulaTest, And2) {
@@ -467,23 +401,23 @@ TEST_F(SymbolicFormulaTest, And2) {
 
 TEST_F(SymbolicFormulaTest, And3) {
   // Flattening
-  EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f3_ && f4_,
+  EXPECT_PRED2(formulaEqual, f1_ && f2_ && f3_ && f4_,
                f1_ && f2_ && f3_ && f4_);
-  EXPECT_PRED2(FormulaEqual, (f1_ && f2_) && (f3_ && f4_),
+  EXPECT_PRED2(formulaEqual, (f1_ && f2_) && (f3_ && f4_),
                f1_ && f2_ && f3_ && f4_);
-  EXPECT_PRED2(FormulaEqual, f1_ && (f2_ && f3_) && f4_,
+  EXPECT_PRED2(formulaEqual, f1_ && (f2_ && f3_) && f4_,
                f1_ && f2_ && f3_ && f4_);
-  EXPECT_PRED2(FormulaEqual, f1_ && ((f2_ && f3_) && f4_),
+  EXPECT_PRED2(formulaEqual, f1_ && ((f2_ && f3_) && f4_),
                f1_ && f2_ && f3_ && f4_);
   // Remove duplicate
-  EXPECT_PRED2(FormulaEqual, f1_ && f2_ && f1_, f1_ && f2_);
+  EXPECT_PRED2(formulaEqual, f1_ && f2_ && f1_, f1_ && f2_);
 }
 
 TEST_F(SymbolicFormulaTest, Or1) {
-  EXPECT_PRED2(FormulaEqual, tt_, tt_ || tt_);
-  EXPECT_PRED2(FormulaEqual, tt_, ff_ || tt_);
-  EXPECT_PRED2(FormulaEqual, tt_, tt_ || ff_);
-  EXPECT_PRED2(FormulaEqual, ff_, ff_ || ff_);
+  EXPECT_PRED2(formulaEqual, tt_, tt_ || tt_);
+  EXPECT_PRED2(formulaEqual, tt_, ff_ || tt_);
+  EXPECT_PRED2(formulaEqual, tt_, tt_ || ff_);
+  EXPECT_PRED2(formulaEqual, ff_, ff_ || ff_);
 }
 
 TEST_F(SymbolicFormulaTest, Or2) {
@@ -495,23 +429,23 @@ TEST_F(SymbolicFormulaTest, Or2) {
 
 TEST_F(SymbolicFormulaTest, Or3) {
   // Flattening
-  EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f3_ || f4_,
+  EXPECT_PRED2(formulaEqual, f1_ || f2_ || f3_ || f4_,
                f1_ || f2_ || f3_ || f4_);
-  EXPECT_PRED2(FormulaEqual, (f1_ || f2_) || (f3_ || f4_),
+  EXPECT_PRED2(formulaEqual, (f1_ || f2_) || (f3_ || f4_),
                f1_ || f2_ || f3_ || f4_);
-  EXPECT_PRED2(FormulaEqual, f1_ || (f2_ || f3_) || f4_,
+  EXPECT_PRED2(formulaEqual, f1_ || (f2_ || f3_) || f4_,
                f1_ || f2_ || f3_ || f4_);
-  EXPECT_PRED2(FormulaEqual, f1_ || ((f2_ || f3_) || f4_),
+  EXPECT_PRED2(formulaEqual, f1_ || ((f2_ || f3_) || f4_),
                f1_ || f2_ || f3_ || f4_);
   // Remove duplicate
-  EXPECT_PRED2(FormulaEqual, f1_ || f2_ || f1_, f1_ || f2_);
+  EXPECT_PRED2(formulaEqual, f1_ || f2_ || f1_, f1_ || f2_);
 }
 
 TEST_F(SymbolicFormulaTest, Not1) {
-  EXPECT_PRED2(FormulaEqual, ff_, !tt_);
-  EXPECT_PRED2(FormulaEqual, tt_, !ff_);
-  EXPECT_PRED2(FormulaEqual, tt_, !(!tt_));
-  EXPECT_PRED2(FormulaEqual, ff_, !(!ff_));
+  EXPECT_PRED2(formulaEqual, ff_, !tt_);
+  EXPECT_PRED2(formulaEqual, tt_, !ff_);
+  EXPECT_PRED2(formulaEqual, tt_, !(!tt_));
+  EXPECT_PRED2(formulaEqual, ff_, !(!ff_));
 }
 
 TEST_F(SymbolicFormulaTest, Not2) {
