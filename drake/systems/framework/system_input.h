@@ -116,12 +116,6 @@ class DRAKE_EXPORT FreestandingInputPort : public InputPort {
     output_port_.add_dependent(this);
   }
 
-  /// Constructs a vector-valued FreestandingInputPort from an Eigen vector.
-  explicit FreestandingInputPort(const Eigen::Ref<const Eigen::MatrixXd>& data)
-      : output_port_(std::make_unique<BasicVector<double>>(data)) {
-    output_port_.add_dependent(this);
-  }
-
   /// Constructs an abstract-valued FreestandingInputPort.
   /// Takes ownership of @p data.
   explicit FreestandingInputPort(std::unique_ptr<AbstractValue> data);

@@ -40,7 +40,7 @@ class Context {
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Set the current time in seconds.
-  virtual void set_time(const T& time_sec)  {
+  virtual void set_time(const T& time_sec) {
     get_mutable_step_info()->time_sec = time_sec;
   }
 
@@ -78,7 +78,6 @@ class Context {
   const VectorBase<T>& get_continuous_state_vector() const {
     return get_continuous_state()->get_vector();
   }
-
 
   /// Returns a mutable pointer to the difference component of the state,
   /// which may be of size zero.
@@ -141,6 +140,18 @@ class Context {
   /// implementations, may require a recursive search through a tree of
   /// subcontexts. Asserts if @p index is out of range.
   virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
+
+  /// Creates a FreestandingInputPort to hold the constant value, and
+  /// sets the input port (disconnecting whatever input port was previously
+  /// there).
+  BasicVector<T>* SetInputPortToConstantValue(int index,
+                                   const Eigen::Ref<const VectorX<T>>& data) {
+    auto vec = std::make_unique<BasicVector<T>>(data);
+    BasicVector<T>* ptr = vec.get();
+    SetInputPort(index, std::make_unique<systems::FreestandingInputPort>(
+                            std::move(vec)));
+    return ptr;
+  }
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
@@ -307,4 +318,3 @@ class Context {
 
 }  // namespace systems
 }  // namespace drake
-

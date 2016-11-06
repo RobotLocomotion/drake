@@ -32,8 +32,7 @@ int do_main(int argc, char* argv[]) {
   auto pendulum_context = pendulum->CreateDefaultContext();
   pendulum->set_theta(pendulum_context.get(), M_PI);
   pendulum->set_thetadot(pendulum_context.get(), 0);
-  pendulum_context->SetInputPort(
-      0, std::make_unique<systems::FreestandingInputPort>(Vector1d::Zero()));
+  pendulum_context->SetInputPortToConstantValue(0, Vector1d::Zero());
 
   Eigen::MatrixXd Q(2, 2);
   Q << 10, 0, 0, 1;

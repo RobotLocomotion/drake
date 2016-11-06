@@ -21,15 +21,8 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto context_rbp = rbp.CreateDefaultContext();
   auto context_p = p.CreateDefaultContext();
 
-  auto input_rbp =
-      std::make_unique<systems::FreestandingInputPort>(Vector1d::Zero());
-  systems::FreestandingInputPort* rbp_u = input_rbp.get();
-  context_rbp->SetInputPort(0, std::move(input_rbp));
-
-  auto input_p =
-      std::make_unique<systems::FreestandingInputPort>(Vector1d::Zero());
-  systems::FreestandingInputPort* p_u = input_p.get();
-  context_p->SetInputPort(0, std::move(input_p));
+  auto u_rbp = context_rbp->SetInputPortToConstantValue(0, Vector1d::Zero());
+  auto u_p = context_p->SetInputPortToConstantValue(0, Vector1d::Zero());
 
   Eigen::Vector2d x;
   Vector1d u;
@@ -43,8 +36,8 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
     context_rbp->get_mutable_continuous_state_vector()->SetFromVector(x);
     context_p->get_mutable_continuous_state_vector()->SetFromVector(x);
 
-    rbp_u->GetMutableVectorData<double>()->SetFromVector(u);
-    p_u->GetMutableVectorData<double>()->SetFromVector(u);
+    u_rbp->SetFromVector(u);
+    u_p->SetFromVector(u);
 
     rbp.EvalTimeDerivatives(*context_rbp, xdot_rbp.get());
     p.EvalTimeDerivatives(*context_p, xdot_p.get());
