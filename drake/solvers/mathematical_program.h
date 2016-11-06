@@ -501,6 +501,7 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<Constraint>& obj,
                const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
@@ -564,6 +565,7 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
                const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearCost;
     int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
@@ -607,6 +609,7 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
                const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kQuadraticCost;
     int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
@@ -692,6 +695,7 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearConstraint;
     int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
@@ -765,6 +769,7 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearEqualityConstraint;
     int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
@@ -852,6 +857,7 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearConstraint;
     int var_dim = GetVariableVectorSize(vars);
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
@@ -903,6 +909,7 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLorentzConeConstraint;
     lorentz_cone_constraint_.push_back(
         Binding<LorentzConeConstraint>(con, vars));
@@ -953,6 +960,7 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kRotatedLorentzConeConstraint;
     rotated_lorentz_cone_constraint_.push_back(
         Binding<RotatedLorentzConeConstraint>(con, vars));
@@ -1006,6 +1014,7 @@ class MathematicalProgram {
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
                                      const VariableVector& vars) {
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearComplementarityConstraint;
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -1054,6 +1063,7 @@ class MathematicalProgram {
     // constant) can be special-cased.  Other polynomials are treated as
     // generic for now.
     // TODO(ggould-tri) There may be other such special easy cases.
+    DRAKE_ASSERT(VariableVectorContainsColumnVectorsOnly(vars));
     bool all_affine = true;
     for (int i = 0; i < polynomials.rows(); i++) {
       if (!polynomials[i].IsAffine()) {
@@ -1122,6 +1132,9 @@ class MathematicalProgram {
   // DecisionVariable&>& vars)
   // void addQuadraticCost ...
 
+  /**
+   * Set the initial guess for the decision variables stored in @p var to be x0.
+   */
   template <typename Derived>
   void SetInitialGuess(const DecisionVariableMatrix& var,
                        const Eigen::MatrixBase<Derived>& x0) {
@@ -1129,6 +1142,16 @@ class MathematicalProgram {
     for (int i = 0; i < x0.size(); ++i) {
       x_initial_guess_(var.index(i)) = x0(i);
     }
+  }
+
+  /**
+   * Set the intial guess for ALL decision variables.
+   * @param x0 A vector of appropriate size (num_vars() x 1).
+   */
+  template<typename Derived>
+  void SetInitialGuessForAllVariables(const Eigen::MatrixBase<Derived>& x0) {
+    DRAKE_ASSERT(x0.rows() == static_cast<int>(num_vars_) && x0.cols() == 1);
+    x_initial_guess_ = x0;
   }
 
   /**

@@ -60,5 +60,23 @@ bool DecisionVariableMatrix::covers(size_t index) const {
   }
   return false;
 }
+
+int GetVariableVectorSize(const VariableVector& vars) {
+  int var_dim = 0;
+  for (const auto& var : vars) {
+    var_dim += var.NumberOfVariables();
+  }
+  return var_dim;
+}
+
+bool VariableVectorContainsColumnVectorsOnly(const VariableVector& vars) {
+  for (const DecisionVariableMatrix& var : vars) {
+    if (var.cols() != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace solvers
 }  // namespace drake
