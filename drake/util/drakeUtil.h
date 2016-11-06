@@ -1,12 +1,5 @@
 #pragma once
 
-/*
- * drakeUtil.h
- *
- *  Created on: Jun 19, 2013
- *      Author: russt
- */
-
 #include <stdexcept>
 #include <utility>
 #include <vector>

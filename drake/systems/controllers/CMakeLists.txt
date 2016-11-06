@@ -1,5 +1,12 @@
-drake_install_headers(
-  LQR.h)
+
+add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES lqr.cc)
+target_link_libraries(drakeLinearControl drakeSystemFramework)
+pods_install_libraries(drakeLinearControl)
+drake_install_headers(lqr.h)
+pods_install_pkg_config_file(drake-linear-control
+  LIBS -ldrakeLinearControl
+  REQUIRES
+  VERSION 0.0.1)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
