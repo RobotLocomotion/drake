@@ -30,10 +30,10 @@ void ContactResults<T>::Clear() {
 }
 
 template <typename T>
-ContactInfo<T>& ContactResults<T>::AddContact(DrakeCollision::ElementId elementA,
-                           DrakeCollision::ElementId elementB) {
+ContactInfo<T>& ContactResults<T>::AddContact(
+    DrakeCollision::ElementId elementA, DrakeCollision::ElementId elementB) {
   contacts_.emplace_back(elementA, elementB);
-  return contacts_[contacts_.size() -1];
+  return contacts_[contacts_.size() - 1];
 }
 
 // Explicitly instantiates on the most common scalar types.
