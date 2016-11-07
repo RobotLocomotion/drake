@@ -71,7 +71,8 @@ class ContactResultTest : public ::testing::Test {
   //  each other such there is 2 * `distance` units gap between them.  Negative
   //  numbers imply collision.
   const ContactResults<double>& RunTest(double distance) {
-    auto unique_tree = unique_ptr<RigidBodyTree<double>>(new RigidBodyTree<double>());
+    auto unique_tree =
+        unique_ptr<RigidBodyTree<double>>(new RigidBodyTree<double>());
     tree_ = unique_tree.get();
 
     Vector3d pos;
@@ -158,13 +159,15 @@ TEST_F(ContactResultTest, SingleCollision) {
   const double stiffness = 150.0;
   double force = stiffness * offset * 2;
   expected_spatial_force << 0, 0, 0, -force, 0, 0;
-  ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
+  ASSERT_TRUE(
+      CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
 
   const auto& details = info.get_contact_details();
   ASSERT_EQ(details.size(), 1);
   auto detail = details[0].get();
   auto detail_force = detail->ComputeContactForce();
-  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(), expected_spatial_force));
+  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
+                              expected_spatial_force));
 }
 }  // namespace
 }  // namespace test
