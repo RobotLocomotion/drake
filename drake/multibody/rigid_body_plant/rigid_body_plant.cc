@@ -8,10 +8,10 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
-#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/collision/Element.h"
-#include "contact_resultant_force_calculator.h"
+#include "drake/systems/plants/parser_urdf.h"
 
 using std::make_unique;
 using std::move;
@@ -155,8 +155,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   // (output port 2).
   {
     auto contact_results =
-        make_unique<Value<ContactResults<T>>>(
-            ContactResults<T>());
+        make_unique<Value<ContactResults<T>>>(ContactResults<T>());
     output->add_port(move(contact_results));
   }
 
@@ -196,9 +195,8 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   kinematics_results.UpdateFromContext(context);
 
   // Evaluates the contact results output port.
-  auto& contact_results =
-      output->GetMutableData(contact_output_port_id_)->
-          template GetMutableValue<ContactResults<T>>();
+  auto& contact_results = output->GetMutableData(contact_output_port_id_)
+                              ->template GetMutableValue<ContactResults<T>>();
   ComputeContactResults(context, &contact_results);
 }
 
@@ -397,7 +395,6 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
 template <typename T>
 void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
-
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
 
@@ -405,8 +402,9 @@ void RigidBodyPlant<T>::ComputeContactResults(
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state_vector()).get_value();
+  auto x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);
@@ -418,16 +416,14 @@ void RigidBodyPlant<T>::ComputeContactResults(
 
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
-    const KinematicsCache<T>& kinsol,
-    ContactResults<T> * contacts) const {
-
+    const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   std::vector<DrakeCollision::PointPair> pairs;
 
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  const_cast<RigidBodyTree<T> *>(tree_.get())->AllPairsClosestPoints(
-      kinsol, &pairs);
+  const_cast<RigidBodyTree<T>*>(tree_.get())
+      ->AllPairsClosestPoints(kinsol, &pairs);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -437,10 +433,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     if (pair.distance < 0.0) {  // There is contact.
       int bodyA_idx = pair.elementA->get_body()->get_body_index();
       int bodyB_idx = pair.elementB->get_body()->get_body_index();
-      auto JA = tree_->transformPointsJacobian(
-          kinsol, pair.ptA, bodyA_idx, 0, false);
-      auto JB = tree_->transformPointsJacobian(
-          kinsol, pair.ptB, bodyB_idx, 0, false);
+      auto JA =
+          tree_->transformPointsJacobian(kinsol, pair.ptA, bodyA_idx, 0, false);
+      auto JB =
+          tree_->transformPointsJacobian(kinsol, pair.ptB, bodyB_idx, 0, false);
       Vector3<T> this_normal = pair.normal;
 
       // Computes a local surface coordinate frame with the local z axis
@@ -455,7 +451,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       } else {                       // Now the general case.
         tangent1 << this_normal(1), -this_normal(0), 0.0;
         tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-            this_normal(0) * this_normal(0));
+                         this_normal(0) * this_normal(0));
       }
       Vector3<T> tangent2 = this_normal.cross(tangent1);
       // Transformation from world frame to local surface frame.
@@ -463,7 +459,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       R.row(0) = tangent1;
       R.row(1) = tangent2;
       R.row(2) = this_normal;
-      auto J = R * (JA - JB);          // J = [ D1; D2; n ]
+      auto J = R * (JA - JB);  // J = [ D1; D2; n ]
       // [ tangent1dot; tangent2dot; phidot ]
       auto relative_velocity = J * kinsol.getV();
 
@@ -472,15 +468,14 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // and damping for tangential force:  fA_tangent = -b * tangentdot
         // (bounded by the friction cone).
         Vector3<T> fA;
-        fA(2) = std::max<T>(
-            -penetration_stiffness_ * pair.distance -
-                penetration_damping_ * relative_velocity(2), 0.0);
+        fA(2) = std::max<T>(-penetration_stiffness_ * pair.distance -
+                                penetration_damping_ * relative_velocity(2),
+                            0.0);
         fA.head(2) =
-            -std::min<T>(
-                penetration_damping_,
-                friction_coefficient_ * fA(2) /
-                    (relative_velocity.head(2).norm() + EPSILON)) *
-                relative_velocity.head(2);  // Epsilon avoids divide by zero.
+            -std::min<T>(penetration_damping_,
+                         friction_coefficient_ * fA(2) /
+                             (relative_velocity.head(2).norm() + EPSILON)) *
+            relative_velocity.head(2);  // Epsilon avoids divide by zero.
 
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
@@ -502,7 +497,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           //  In contrast, other models (e.g., torsional friction model) can
           //  also introduce a "pure torque" component to the wrench.
           Vector3<T> force = R.transpose() * fA;
-          Vector3<T> normal = R.transpose().template block<3,1>(0, 2);
+          Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
 
           // TODO(SeanCurtis-TRI): Add interface for supplying a contact detail.
           calculator.AddForce(point, normal, force);
