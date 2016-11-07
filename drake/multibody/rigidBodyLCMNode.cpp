@@ -8,7 +8,7 @@
 #include "drake/system1/LCMSystem.h"
 #include "drake/system1/cascade_system.h"
 #include "BotVisualizer.h"
-#include "RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 using std::make_shared;

@@ -6,10 +6,10 @@
 #include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/system1/System.h"
-#include "KinematicsCache.h"
-#include "RigidBodyTree.h"
+#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "parser_model_instance_id_table.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
 
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kQuaternion;
