@@ -488,9 +488,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         if (contacts != nullptr) {
           Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
 
-          ContactInfo<T>& contactInfo = contacts->AddContact(pair.elementA->getId(), pair.elementB->getId());
-          // TODO(SeanCurtis-TRI): Construct this with the list to be populated with details.
-          ContactResultantForceCalculator<T> calculator;
+          ContactInfo<T>& contactInfo = contacts->AddContact(
+              pair.elementA->getId(), pair.elementB->getId());
+          ContactResultantForceCalculator<T> calculator(
+              &contactInfo.get_mutable_contact_details());
 
           // This contact model produces responses that only have a force
           //  component (i.e., the torque portion of the wrench is zero.)
