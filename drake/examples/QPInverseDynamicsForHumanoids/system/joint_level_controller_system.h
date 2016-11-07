@@ -39,7 +39,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
  public:
   JointLevelControllerSystem(const RigidBodyTree<double>& robot,
                              drake::lcm::DrakeLcmInterface* lcm)
-      : robot_(robot), lcm_(lcm) {
+      : robot_(robot), lcm_(lcm), robot_cmd_msg_initialized_(false) {
     in_port_idx_qp_output_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
 
@@ -83,7 +83,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     // Make message.
     robot_cmd_msg_.utime = static_cast<uint64_t>(rs->time() * 1e6);
 
-    int act_size = robot_.actuators.size();
+    int act_size = static_cast<int>(robot_.actuators.size());
     robot_cmd_msg_.num_joints = act_size;
     robot_cmd_msg_.joint_names.resize(robot_cmd_msg_.num_joints);
     robot_cmd_msg_.position.resize(robot_cmd_msg_.num_joints);
@@ -120,11 +120,17 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     // deprecated simulation as well.
     // Consider removing this from atlas_command_t.
     robot_cmd_msg_.desired_controller_period_ms = 0;
+
+    robot_cmd_msg_initialized_ = true;
   }
 
   void DoPublish(const Context<double>& context) const override {
     // Encode and send the lcm message.
     std::vector<uint8_t> raw_bytes;
+
+    if (!robot_cmd_msg_initialized_)
+      return;
+
     int msg_size = robot_cmd_msg_.getEncodedSize();
     raw_bytes.resize(msg_size);
     robot_cmd_msg_.encode(raw_bytes.data(), 0, msg_size);
@@ -171,6 +177,9 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   int in_port_idx_humanoid_status_;
   int out_port_index_vd_;
 
+  // LCM publishing interface
+  drake::lcm::DrakeLcmInterface* const lcm_;
+
   // I made this mutable primarily because I want to avoid calling EvalInput
   // twice on in_port_idx_qp_output_, which calls the qp controller twice to
   // solve for the exact same problem.
@@ -183,9 +192,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   // conceptually more hacky.
   // TODO(siyuan.feng) remove this eventually.
   mutable bot_core::atlas_command_t robot_cmd_msg_;
-
-  // LCM publishing interface
-  drake::lcm::DrakeLcmInterface* const lcm_;
+  mutable bool robot_cmd_msg_initialized_;
 
   // Joint level gains, these are in actuator order.
   VectorX<double> k_q_p_;
