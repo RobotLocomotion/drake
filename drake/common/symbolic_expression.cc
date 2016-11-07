@@ -621,12 +621,8 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
     return false;
   }
   const ExpressionAdd& add_e{static_cast<const ExpressionAdd&>(e)};
-  // Compare constant_term
+  // Compare constant_term.
   if (constant_term_ != add_e.constant_term_) {
-    return false;
-  }
-  // Compare the sizes of the two maps.
-  if (term_to_coeff_map_.size() != add_e.term_to_coeff_map_.size()) {
     return false;
   }
   return equal(term_to_coeff_map_.cbegin(), term_to_coeff_map_.cend(),
@@ -743,8 +739,8 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
     const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
     const double constant_factor{ptr->get_constant_factor()};
     if (constant_factor != 1.0) {
-      // Instead of adding (1.0 * (c0 * b1^t1 ... bn^tn)),
-      // add (c0, b1^t1 ... bn^tn).
+      // Instead of adding (1.0 * (constant_factor * b1^t1 ... bn^tn)),
+      // add (constant_factor, 1.0 * b1^t1 ... bn^tn).
       return AddTerm(constant_factor,
                      ExpressionMulFactory(1.0, ptr->get_term_to_exp_map())
                          .GetExpression());
@@ -850,12 +846,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
     return false;
   }
   const ExpressionMul& mul_e{static_cast<const ExpressionMul&>(e)};
-  // Compare constant_factor
+  // Compare constant_factor.
   if (constant_factor_ != mul_e.constant_factor_) {
-    return false;
-  }
-  // Compare the sizes of the two maps.
-  if (term_to_exp_map_.size() != mul_e.term_to_exp_map_.size()) {
     return false;
   }
   // Check each (term, coeff) pairs in two maps.
