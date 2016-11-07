@@ -22,13 +22,14 @@ using systems::BasicVector;
 using systems::Value;
 
 /**
- * A stub for a more complex interface to joint level control.
+ * A stub for a more complex interface for joint level controllers.
  * The idea is to separate all joint level control from the higher level
  * full state feedback controller, e.g. qp inverse dynamics controller.
  * This can also run at a higher rate than the full state feedback controller.
  *
  * Possible things to be implemented here:
- *  set points, gains, integrators, filters
+ *  joint level set points, gains, integrators, filters,
+ *  disturbance observers, etc.
  *
  * Input: HumanoidStatus
  * Input: QPOutput
@@ -41,6 +42,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
       : robot_(robot), lcm_(lcm) {
     in_port_idx_qp_output_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+
     in_port_idx_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
 
@@ -50,8 +52,8 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
             robot_.get_num_velocities(),
             systems::kInheritedSampling).get_index();
 
-    int act_size = robot_.actuators.size();
     // TODO(siyuan.fent): Load gains from some config.
+    int act_size = robot_.actuators.size();
     k_q_p_ = VectorX<double>::Zero(act_size);
     k_q_i_ = VectorX<double>::Zero(act_size);
     k_qd_p_ = VectorX<double>::Zero(act_size);
@@ -89,6 +91,8 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     robot_cmd_msg_.effort.resize(robot_cmd_msg_.num_joints);
 
     // Compute actuator torques from dof torques.
+    // Since dof_torque = B * u, and assuming no coupling between joints,
+    // u = B.transpose() * dof_torque.
     VectorX<double> act_torques =
         robot_.B.transpose() * qp_output->dof_torques();
 
@@ -112,8 +116,9 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     // This is only used for the Virtural Robotics Challenge's gazebo simulator.
     // Should be deprecated by now.
     robot_cmd_msg_.k_effort.resize(robot_cmd_msg_.num_joints, 0);
-    // TODO(siyuan.feng): I am not sure what this does exactly. Probably also
-    // deprecated.
+    // TODO(siyuan.feng): I am not sure what this does exactly, most likely for
+    // deprecated simulation as well.
+    // Consider removing this from atlas_command_t.
     robot_cmd_msg_.desired_controller_period_ms = 0;
   }
 
@@ -169,10 +174,13 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
   // I made this mutable primarily because I want to avoid calling EvalInput
   // twice on in_port_idx_qp_output_, which calls the qp controller twice to
   // solve for the exact same problem.
-  // This will be solve properly when the sys2 cache lands.
-  //
-  // Another way to bypass this is to put the acceleration as part of the
-  // atlas_command_t message, but I think that's conceptually more hacky.
+  // There are three ways to eliminate this:
+  // 1. Use a real simulator that does not depend the vd from the inverse
+  // dynamics controller.
+  // 2. I think sys2 cache will fix this (caching the result from the first
+  // EvalInput call).
+  // 3. Put vd as part of the atlas_command_t message, but I think that's
+  // conceptually more hacky.
   // TODO(siyuan.feng) remove this eventually.
   mutable bot_core::atlas_command_t robot_cmd_msg_;
 

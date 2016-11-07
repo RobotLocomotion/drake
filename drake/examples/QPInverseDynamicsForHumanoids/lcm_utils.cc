@@ -21,7 +21,7 @@ void DecodeBodyAcceleration(const RigidBodyTree<double>& robot,
   cArrayToEigenVector(msg.accelerations, acc->mutable_accelerations());
 
   if (!acc->is_valid()) {
-    throw std::runtime_error("invalid ResolvedContact");
+    throw std::runtime_error("Decoded BodyAcceleration is invalid.");
   }
 }
 
@@ -29,7 +29,7 @@ void EncodeBodyAcceleration(const BodyAcceleration& acc,
                             lcmt_body_acceleration* msg) {
   if (!msg) return;
   if (!acc.is_valid()) {
-    throw std::runtime_error("invalid ResolvedContact");
+    throw std::runtime_error("Can't encode invalid BodyAcceleration.");
   }
   msg->body_name = acc.body_name();
   eigenVectorToCArray(acc.accelerations(), msg->accelerations);
@@ -57,7 +57,7 @@ void DecodeResolvedContact(const RigidBodyTree<double>& robot,
   cArrayToEigenVector(msg.reference_point, contact->mutable_reference_point());
 
   if (!contact->is_valid()) {
-    throw std::runtime_error("invalid ResolvedContact");
+    throw std::runtime_error("Decoded ResolvedContact is invalid.");
   }
 }
 
@@ -65,7 +65,7 @@ void EncodeResolvedContact(const ResolvedContact& contact,
                            lcmt_resolved_contact* msg) {
   if (!msg) return;
   if (!contact.is_valid()) {
-    throw std::runtime_error("invalid ResolvedContact");
+    throw std::runtime_error("Can't encode invalid ResolvedContact.");
   }
   msg->body_name = contact.body_name();
   msg->num_all_basis = contact.basis().size();
@@ -106,7 +106,7 @@ void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
   qp_input->mutable_w_basis_reg() = msg.w_basis_reg;
 
   if (!qp_input->is_valid(robot.get_num_velocities())) {
-    throw std::runtime_error("invalid QPInput");
+    throw std::runtime_error("Decoded QPInput is invalid.");
   }
 }
 
@@ -114,7 +114,7 @@ void EncodeQPInput(const QPInput& qp_input, lcmt_qp_input* msg) {
   if (!msg) return;
 
   if (!qp_input.is_valid()) {
-    throw std::runtime_error("invalid QPInput");
+    throw std::runtime_error("Can't encode invalid QPInput.");
   }
 
   msg->num_contacts = static_cast<int>(qp_input.contact_information().size());
@@ -154,7 +154,7 @@ int8_t EncodeConstraintType(ConstraintType type) {
     case ConstraintType::Soft:
       return lcmt_constrained_values::SOFT;
     default:
-      throw std::runtime_error("unknown constraint type");
+      throw std::runtime_error("Can't encode unknown ConstraintType.");
   }
 }
 
@@ -167,7 +167,7 @@ ConstraintType DecodeConstraintType(int8_t type) {
     case lcmt_constrained_values::SOFT:
       return ConstraintType::Soft;
     default:
-      throw std::runtime_error("unknown constraint type");
+      throw std::runtime_error("Can't decode unknown ConstraintType.");
   }
 }
 
@@ -181,7 +181,7 @@ void DecodeDesiredBodyMotion(const RigidBodyTree<double>& robot,
   DecodeConstrainedValues(msg.constrained_accelerations, body_motion);
 
   if (!body_motion->is_valid()) {
-    throw std::runtime_error("invalid DesiredBodyMotion");
+    throw std::runtime_error("Decoded DesiredBodyMotion is invalid.");
   }
 }
 
@@ -189,7 +189,7 @@ void EncodeDesiredBodyMotion(const DesiredBodyMotion& body_motion,
                              lcmt_desired_body_motion* msg) {
   if (!msg) return;
   if (!body_motion.is_valid()) {
-    throw std::runtime_error("invalid DesiredBodyMotion");
+    throw std::runtime_error("Can't encode invalid DesiredBodyMotion.");
   }
 
   msg->body_name = body_motion.body().get_name();
@@ -205,7 +205,7 @@ void DecodeDesiredDoFMotions(const lcmt_desired_dof_motions& msg,
   DecodeConstrainedValues(msg.constrained_accelerations, dof_motions);
 
   if (!dof_motions->is_valid()) {
-    throw std::runtime_error("invalid DesiredDoFMotions");
+    throw std::runtime_error("Decoded DesiredDoFMotions is invalid.");
   }
 }
 
@@ -213,7 +213,7 @@ void EncodeDesiredDoFMotions(const DesiredDoFMotions& dof_motions,
                              lcmt_desired_dof_motions* msg) {
   if (!msg) return;
   if (!dof_motions.is_valid()) {
-    throw std::runtime_error("invalid DesiredDoFMotions");
+    throw std::runtime_error("Can't encode invalid DesiredDoFMotions.");
   }
 
   msg->num_dof = dof_motions.size();
@@ -227,7 +227,8 @@ void DecodeDesiredCentroidalMomentumDot(
   if (!momdot) return;
   DecodeConstrainedValues(msg.centroidal_momentum_dot, momdot);
   if (!momdot->is_valid()) {
-    throw std::runtime_error("invalid DesiredCentroidalMomentumDot");
+    throw std::runtime_error(
+        "Decoded DesiredCentroidalMomentumDot is invalid.");
   }
 }
 
@@ -236,7 +237,8 @@ void EncodeDesiredCentroidalMomentumDot(
     lcmt_desired_centroidal_momentum_dot* msg) {
   if (!msg) return;
   if (!momdot.is_valid()) {
-    throw std::runtime_error("invalid DesiredCentroidalMomentumDot");
+    throw std::runtime_error(
+        "Can't encode invalid DesiredCentroidalMomentumDot.");
   }
 
   EncodeConstrainedValues(momdot, &(msg->centroidal_momentum_dot));
@@ -260,7 +262,7 @@ void DecodeConstrainedValues(const lcmt_constrained_values& msg,
   stdVectorToEigenVector(msg.weights, val->mutable_weights());
 
   if (!val->is_valid()) {
-    throw std::runtime_error("invalid ConstrainedValues");
+    throw std::runtime_error("Decoded ConstrainedValues is invalid.");
   }
 }
 
@@ -268,7 +270,7 @@ void EncodeConstrainedValues(const ConstrainedValues& val,
                              lcmt_constrained_values* msg) {
   if (!msg) return;
   if (!val.is_valid()) {
-    throw std::runtime_error("invalid ConstrainedValues");
+    throw std::runtime_error("Can't encode invalid ConstrainedValues.");
   }
 
   msg->size = val.size();
@@ -301,7 +303,7 @@ void DecodeContactInformation(const RigidBodyTree<double>& robot,
   info->mutable_weight() = msg.weight;
 
   if (!info->is_valid()) {
-    throw std::runtime_error("invalid ContactInformation.");
+    throw std::runtime_error("Decoded ContactInformation is invalid.");
   }
 }
 
@@ -309,7 +311,7 @@ void EncodeContactInformation(const ContactInformation& info,
                               lcmt_contact_information* msg) {
   if (!msg) return;
   if (!info.is_valid()) {
-    throw std::runtime_error("invalid ContactInformation.");
+    throw std::runtime_error("Can't encode invalid ContactInformation.");
   }
 
   msg->body_name = info.body().get_name();

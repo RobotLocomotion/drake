@@ -113,9 +113,9 @@ static void TestEncodeContactInformation(const ContactInformation& info,
   TestEigenMatrixAndStdVectorOfStdVector(info.contact_points(),
                                          msg.contact_points);
   TestEigenVectorAndCArray(info.normal(), msg.normal);
-  EXPECT_EQ(msg.mu, info.mu());
-  EXPECT_EQ(msg.Kd, info.Kd());
-  EXPECT_EQ(msg.weight, info.weight());
+  EXPECT_DOUBLE_EQ(msg.mu, info.mu());
+  EXPECT_DOUBLE_EQ(msg.Kd, info.Kd());
+  EXPECT_DOUBLE_EQ(msg.weight, info.weight());
   EXPECT_EQ(msg.acceleration_constraint_type,
             EncodeConstraintType(info.acceleration_constraint_type()));
 }
@@ -174,7 +174,7 @@ static void TestEncodeQPInput(const QPInput& qp_input,
       msg.desired_centroidal_momentum_dot.centroidal_momentum_dot);
 
   // Basis regularization weight
-  EXPECT_EQ(msg.w_basis_reg, qp_input.w_basis_reg());
+  EXPECT_DOUBLE_EQ(msg.w_basis_reg, qp_input.w_basis_reg());
 }
 
 // Test equality of the given ResolvedContact and lcmt_resolved_contact message.

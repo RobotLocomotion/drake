@@ -32,39 +32,32 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Figure out size of the constrained dimensions of body motions.
   int num_body_motion_as_cost = 0;
   int num_body_motion_as_eq = 0;
-  std::vector<std::list<int>> body_motion_row_idx_as_cost(
-      all_body_motions.size());
-  std::vector<std::list<int>> body_motion_row_idx_as_eq(
-      all_body_motions.size());
   int body_ctr = 0;
   for (const auto& pair : all_body_motions) {
     const DesiredBodyMotion& body_motion = pair.second;
-    body_motion_row_idx_as_cost[body_ctr] =
-        body_motion.GetConstraintTypeIndices(ConstraintType::Soft);
-    body_motion_row_idx_as_eq[body_ctr] =
-        body_motion.GetConstraintTypeIndices(ConstraintType::Hard);
-
-    if (body_motion_row_idx_as_cost[body_ctr].size() > 0)
+    if (!body_motion.GetConstraintTypeIndices(ConstraintType::Soft).empty())
       num_body_motion_as_cost++;
-
-    if (body_motion_row_idx_as_eq[body_ctr].size() > 0) num_body_motion_as_eq++;
+    if (!body_motion.GetConstraintTypeIndices(ConstraintType::Hard).empty())
+      num_body_motion_as_eq++;
     body_ctr++;
   }
 
   // Figure out size of the constrained dimensions of desired dof motions.
-  std::list<int> cost_row_idx;
-  std::list<int> eq_row_idx;
-  cost_row_idx = all_dof_motions.GetConstraintTypeIndices(ConstraintType::Soft);
-  eq_row_idx = all_dof_motions.GetConstraintTypeIndices(ConstraintType::Hard);
-  int num_dof_motion_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
-  int num_dof_motion_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
+  int num_dof_motion_as_cost =
+      all_dof_motions.GetConstraintTypeIndices(ConstraintType::Soft).empty()
+        ? 0 : 1;
+  int num_dof_motion_as_eq =
+      all_dof_motions.GetConstraintTypeIndices(ConstraintType::Hard).empty()
+        ? 0 : 1;
 
   // Figure out size of the constrained dimensions of centroidal momentum
   // change.
-  cost_row_idx = cen_mom_change.GetConstraintTypeIndices(ConstraintType::Soft);
-  eq_row_idx = cen_mom_change.GetConstraintTypeIndices(ConstraintType::Hard);
-  int num_cen_mom_dot_as_cost = (cost_row_idx.size() > 0) ? 1 : 0;
-  int num_cen_mom_dot_as_eq = (eq_row_idx.size() > 0) ? 1 : 0;
+  int num_cen_mom_dot_as_cost =
+      cen_mom_change.GetConstraintTypeIndices(ConstraintType::Soft).empty()
+        ? 0 : 1;
+  int num_cen_mom_dot_as_eq =
+      cen_mom_change.GetConstraintTypeIndices(ConstraintType::Hard).empty()
+        ? 0 : 1;
 
   int num_contact_as_cost = 0;
   int num_contact_as_eq = 0;
@@ -74,6 +67,7 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
         ConstraintType::Soft) {
       num_contact_as_cost++;
     } else {
+      // Either hard or soft because contact constraint can't be skipped.
       num_contact_as_eq++;
     }
   }
@@ -147,15 +141,14 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr++] =
           prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
-    } else if (contact.acceleration_constraint_type() == ConstraintType::Hard) {
+    } else {
+      // Either hard or soft because contact constraint can't be skipped.
       eq_contacts_[eq_ctr++] =
           prog_.AddLinearEqualityConstraint(
                     MatrixX<double>::Zero(3 * contact.num_contact_points(),
                                           num_vd_),
                     VectorX<double>::Zero(3 * contact.num_contact_points()),
                     {vd}).get();
-    } else {
-      throw std::runtime_error("contact constraints cannot be skipped.");
     }
   }
 
@@ -187,7 +180,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     cost_cen_mom_dot_ = nullptr;
   }
   if (num_cen_mom_dot_as_eq_) {
-    // Dimension doesn't matter, will be reset when updating the constaint.
+    // Dimension doesn't matter for equality constraints,
+    // will be reset when updating the constraint.
     eq_cen_mom_dot_ =
         prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
     eq_cen_mom_dot_->set_description("centroidal momentum change eq");
@@ -200,23 +194,16 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   body_J_.resize(all_body_motions.size());
   cost_body_motion_.resize(num_body_motion_as_cost_);
   eq_body_motion_.resize(num_body_motion_as_eq_);
-  cost_ctr = eq_ctr = 0;
-  for (const auto& row_idx_as_cost : body_motion_row_idx_as_cost) {
-    if (row_idx_as_cost.size() > 0) {
-      cost_body_motion_[cost_ctr++] =
-          prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
-    }
+  for (int i = 0; i < num_body_motion_as_cost_; ++i) {
+    cost_body_motion_[i] =
+        prog_.AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
   }
-  for (const auto& row_idx_as_eq : body_motion_row_idx_as_eq) {
-    if (row_idx_as_eq.size() > 0) {
-      // Dimension doesn't matter, will be reset when updating the constaint.
-      eq_body_motion_[eq_ctr++] =
-          prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd})
-              .get();
-    }
+  for (int i = 0; i < num_body_motion_as_eq_; ++i) {
+    // Dimension doesn't matter for equality constraints,
+    // will be reset when updating the constraint.
+    eq_body_motion_[i] = prog_.AddLinearEqualityConstraint(
+        tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
   }
-  DRAKE_ASSERT(cost_ctr == num_body_motion_as_cost_);
-  DRAKE_ASSERT(eq_ctr == num_body_motion_as_eq_);
 
   // Set up cost / eq constraints for dof motion.
   if (num_dof_motion_as_cost_ > 0) {
@@ -227,7 +214,8 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
     cost_dof_motion_ = nullptr;
   }
   if (num_dof_motion_as_eq_ > 0) {
-    // Dimension doesn't matter, will be reset when updating the constaint.
+    // Dimension doesn't matter for equality constraints,
+    // will be reset when updating the constraint.
     eq_dof_motion_ =
         prog_.AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, {vd}).get();
     eq_dof_motion_->set_description("vd eq");
@@ -445,19 +433,23 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     if (!row_idx_as_cost.empty()) {
       AddAsCosts(body_J_[body_ctr], linear_term, body_motion_d.weights(),
                  row_idx_as_cost, cost_body_motion_[cost_ctr]);
-      cost_body_motion_[cost_ctr]->set_description(body_motion_d.body_name() +
-                                                   " cost");
+      cost_body_motion_[cost_ctr]->set_description(
+          body_motion_d.body_name() + " cost");
       cost_ctr++;
     }
     if (!row_idx_as_eq.empty()) {
       AddAsConstraints(body_J_[body_ctr], -linear_term, row_idx_as_eq,
                        eq_body_motion_[eq_ctr]);
-      eq_body_motion_[eq_ctr]->set_description(body_motion_d.body_name() +
-                                               " eq");
+      eq_body_motion_[eq_ctr]->set_description(
+          body_motion_d.body_name() + " eq");
       eq_ctr++;
     }
     body_ctr++;
   }
+  DRAKE_ASSERT(
+      body_ctr == static_cast<int>(input.desired_body_motions().size()));
+  DRAKE_ASSERT(cost_ctr == static_cast<int>(cost_body_motion_.size()));
+  DRAKE_ASSERT(eq_ctr == static_cast<int>(eq_body_motion_.size()));
 
   // Joint motion
   row_idx_as_cost = input.desired_dof_motions().GetConstraintTypeIndices(
