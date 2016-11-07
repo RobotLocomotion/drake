@@ -258,7 +258,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -327,7 +327,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE
+drake_add_external(director PUBLIC CMAKE TEST
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
     -DUSE_DRAKE=ON
