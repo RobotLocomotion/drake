@@ -9,11 +9,11 @@
 #include "drake/solvers/mathematical_program.h"
 // TODO(amcastro-tri): parsers are not "plants" and should therefore be moved
 // somewhere else. Maybe inside "multibody_dynamics/parsers" when that exists.
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/systems/plants/collision/Element.h"
 #include "contact_resultant_force_calculator.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/collision/Element.h"
+#include "drake/systems/plants/parser_urdf.h"
 
 using std::make_unique;
 using std::move;
@@ -34,12 +34,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
   // The input to this system are the generalized forces commanded on the
   // actuators.
   // TODO(amcastro-tri): add separate input ports for each model_instance_id.
-  System<T>::DeclareInputPort(
-      kVectorValued, get_num_actuators(), kContinuousSampling);
+  System<T>::DeclareInputPort(kVectorValued, get_num_actuators(),
+                              kContinuousSampling);
   // The output of the system is the state vector.
   // TODO(amcastro-tri): add separate output ports for each model_id.
-  state_output_port_id_ = this->DeclareOutputPort(
-      kVectorValued, get_num_states(), kContinuousSampling).get_index();
+  state_output_port_id_ =
+      this->DeclareOutputPort(kVectorValued, get_num_states(),
+                              kContinuousSampling)
+          .get_index();
   // Declares an abstract valued port for kinematics results.
   kinematics_output_port_id_ =
       this->DeclareAbstractOutputPort(kInheritedSampling).get_index();
@@ -48,13 +50,14 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
 }
 
 template <typename T>
-RigidBodyPlant<T>::~RigidBodyPlant() { }
+RigidBodyPlant<T>::~RigidBodyPlant() {}
 
 // TODO(liang.fok) Remove this method once a more advanced contact modeling
 // framework is available.
 template <typename T>
 void RigidBodyPlant<T>::set_contact_parameters(double penetration_stiffness,
-  double penetration_damping, double friction_coefficient) {
+                                               double penetration_damping,
+                                               double friction_coefficient) {
   penetration_stiffness_ = penetration_stiffness;
   penetration_damping_ = penetration_damping;
   friction_coefficient_ = friction_coefficient;
@@ -106,18 +109,20 @@ int RigidBodyPlant<T>::get_output_size() const {
 }
 
 template <typename T>
-void RigidBodyPlant<T>::set_position(Context<T>* context,
-                                     int position_index, T position) const {
+void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
+                                     T position) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_continuous_state()->get_mutable_generalized_position()
+  context->get_mutable_continuous_state()
+      ->get_mutable_generalized_position()
       ->SetAtIndex(position_index, position);
 }
 
 template <typename T>
-void RigidBodyPlant<T>::set_velocity(Context<T>* context,
-                                     int velocity_index, T velocity) const {
+void RigidBodyPlant<T>::set_velocity(Context<T>* context, int velocity_index,
+                                     T velocity) const {
   DRAKE_ASSERT(context != nullptr);
-  context->get_mutable_continuous_state()->get_mutable_generalized_velocity()
+  context->get_mutable_continuous_state()
+      ->get_mutable_generalized_velocity()
       ->SetAtIndex(velocity_index, velocity);
 }
 
@@ -126,8 +131,7 @@ void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  context->get_mutable_continuous_state_vector()
-      ->SetFromVector(x);
+  context->get_mutable_continuous_state_vector()->SetFromVector(x);
 }
 
 template <typename T>
@@ -144,9 +148,8 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   // Allocates an output for the RigidBodyPlant kinematics results
   // (output port 1).
   {
-    auto kinematics_results =
-        make_unique<Value<KinematicsResults<T>>>(
-            KinematicsResults<T>(tree_.get()));
+    auto kinematics_results = make_unique<Value<KinematicsResults<T>>>(
+        KinematicsResults<T>(tree_.get()));
     output->add_port(move(kinematics_results));
   }
 
@@ -154,8 +157,7 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
   // (output port 2).
   {
     auto contact_results =
-        make_unique<Value<ContactResults<T>>>(
-            ContactResults<T>());
+        make_unique<Value<ContactResults<T>>>(ContactResults<T>());
     output->add_port(move(contact_results));
   }
 
@@ -163,15 +165,15 @@ std::unique_ptr<SystemOutput<T>> RigidBodyPlant<T>::AllocateOutput(
 }
 
 template <typename T>
-std::unique_ptr<ContinuousState<T>>
-RigidBodyPlant<T>::AllocateContinuousState() const {
+std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
+    const {
   // The state is second-order.
   DRAKE_ASSERT(System<T>::get_input_port(0).get_size() == get_num_actuators());
   // TODO(amcastro-tri): add z state to track energy conservation.
   return std::make_unique<ContinuousState<T>>(
       std::make_unique<BasicVector<T>>(get_num_states()),
-      get_num_positions() /* num_q */,
-      get_num_velocities() /* num_v */, 0 /* num_z */);
+      get_num_positions() /* num_q */, get_num_velocities() /* num_v */,
+      0 /* num_z */);
 }
 
 template <typename T>
@@ -181,8 +183,8 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   DRAKE_ASSERT_VOID(System<T>::CheckValidContext(context));
 
   // Evaluates the state output port.
-  BasicVector<T>* output_vector = output->GetMutableVectorData(
-      state_output_port_id_);
+  BasicVector<T>* output_vector =
+      output->GetMutableVectorData(state_output_port_id_);
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   output_vector->get_mutable_value() =
@@ -190,14 +192,13 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
 
   // Evaluates the kinematics results output port.
   auto& kinematics_results =
-      output->GetMutableData(kinematics_output_port_id_)->
-          template GetMutableValue<KinematicsResults<T>>();
+      output->GetMutableData(kinematics_output_port_id_)
+          ->template GetMutableValue<KinematicsResults<T>>();
   kinematics_results.UpdateFromContext(context);
 
   // Evaluates the contact results output port.
-  auto& contact_results =
-      output->GetMutableData(contact_output_port_id_)->
-          template GetMutableValue<ContactResults<T>>();
+  auto& contact_results = output->GetMutableData(contact_output_port_id_)
+                              ->template GetMutableValue<ContactResults<T>>();
   ComputeContactResults(context, &contact_results);
 }
 
@@ -214,8 +215,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state_vector()).get_value();
+  auto x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
@@ -245,8 +247,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   const typename RigidBodyTree<T>::BodyToWrenchMap no_external_wrenches;
   // right_hand_side is the right hand side of the system's equations:
   // [H, -J^T] * [vdot; f] = -right_hand_side.
-  VectorX<T> right_hand_side = tree_->dynamicsBiasTerm(kinsol,
-                                                       no_external_wrenches);
+  VectorX<T> right_hand_side =
+      tree_->dynamicsBiasTerm(kinsol, no_external_wrenches);
   if (num_actuators > 0) right_hand_side -= tree_->B * u;
 
   // Applies joint limit forces.
@@ -258,9 +260,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
       auto const& joint = b->getJoint();
       // Joint limit forces are only implemented for single-axis joints.
       if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
-        const T limit_force = JointLimitForce(joint,
-                                              q(b->get_position_start_index()),
-                                              v(b->get_velocity_start_index()));
+        const T limit_force =
+            JointLimitForce(joint, q(b->get_position_start_index()),
+                            v(b->get_velocity_start_index()));
         right_hand_side(b->get_velocity_start_index()) -= limit_force;
       }
     }
@@ -273,8 +275,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
 
-    prog.AddContinuousVariables(
-        nc, "position constraint force");
+    prog.AddContinuousVariables(nc, "position constraint force");
 
     auto phi = tree_->positionConstraints(kinsol);
     auto J = tree_->positionConstraintsJacobian(kinsol, false);
@@ -284,8 +285,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     // phiddot = -2 * alpha * phidot - alpha^2 * phi.
     prog.AddLinearEqualityConstraint(
         J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
-    H_and_neg_JT.conservativeResize(
-        Eigen::NoChange, H_and_neg_JT.cols() + J.rows());
+    H_and_neg_JT.conservativeResize(Eigen::NoChange,
+                                    H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
 
@@ -296,7 +297,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   VectorX<T> xdot(get_num_states());
   xdot << kinsol.transformPositionDotMappingToVelocityMapping(
-      MatrixX<T>::Identity(nq, nq)) * v, vdot.value();
+              MatrixX<T>::Identity(nq, nq)) *
+              v,
+      vdot.value();
 
   derivatives->SetFromVector(xdot);
 }
@@ -308,8 +311,9 @@ void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
     VectorBase<T>* positions_derivative) const {
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state_vector()).get_value();
+  auto x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
 
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
@@ -331,12 +335,13 @@ void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
 
   positions_derivative->SetFromVector(
       kinsol.transformPositionDotMappingToVelocityMapping(
-          MatrixX<T>::Identity(nq, nq)) * v);
+          MatrixX<T>::Identity(nq, nq)) *
+      v);
 }
 
 template <typename T>
-T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
-                                     const T& position, const T& velocity) {
+T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
+                                     const T& velocity) {
   const T qmin = joint.getJointLimitMin()(0);
   const T qmax = joint.getJointLimitMax()(0);
   DRAKE_DEMAND(qmin < qmax);
@@ -346,13 +351,13 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
   DRAKE_DEMAND(joint_dissipation >= 0);
   if (position > qmax) {
     const T violation = position - qmax;
-    const T limit_force = (-joint_stiffness * violation *
-                           (1 + joint_dissipation * velocity));
+    const T limit_force =
+        (-joint_stiffness * violation * (1 + joint_dissipation * velocity));
     return std::min(limit_force, 0.);
   } else if (position < qmin) {
     const T violation = position - qmin;
-    const T limit_force = (-joint_stiffness * violation *
-                           (1 - joint_dissipation * velocity));
+    const T limit_force =
+        (-joint_stiffness * violation * (1 - joint_dissipation * velocity));
     return std::max(limit_force, 0.);
   }
   return 0;
@@ -361,7 +366,6 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
 template <typename T>
 void RigidBodyPlant<T>::ComputeContactResults(
     const Context<T>& context, ContactResults<T>* contacts) const {
-
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
 
@@ -369,8 +373,9 @@ void RigidBodyPlant<T>::ComputeContactResults(
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state_vector()).get_value();
+  auto x =
+      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
+          .get_value();
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);
@@ -382,16 +387,14 @@ void RigidBodyPlant<T>::ComputeContactResults(
 
 template <typename T>
 VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
-    const KinematicsCache<T>& kinsol,
-    ContactResults<T> * contacts) const {
-
+    const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
   std::vector<DrakeCollision::PointPair> pairs;
 
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  const_cast<RigidBodyTree<T> *>(tree_.get())->AllPairsClosestPoints(
-      kinsol, &pairs);
+  const_cast<RigidBodyTree<T>*>(tree_.get())
+      ->AllPairsClosestPoints(kinsol, &pairs);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -401,10 +404,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
     if (pair.distance < 0.0) {  // There is contact.
       int bodyA_idx = pair.elementA->get_body()->get_body_index();
       int bodyB_idx = pair.elementB->get_body()->get_body_index();
-      auto JA = tree_->transformPointsJacobian(
-          kinsol, pair.ptA, bodyA_idx, 0, false);
-      auto JB = tree_->transformPointsJacobian(
-          kinsol, pair.ptB, bodyB_idx, 0, false);
+      auto JA =
+          tree_->transformPointsJacobian(kinsol, pair.ptA, bodyA_idx, 0, false);
+      auto JB =
+          tree_->transformPointsJacobian(kinsol, pair.ptB, bodyB_idx, 0, false);
       Vector3<T> this_normal = pair.normal;
 
       // Computes a local surface coordinate frame with the local z axis
@@ -419,7 +422,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       } else {                       // Now the general case.
         tangent1 << this_normal(1), -this_normal(0), 0.0;
         tangent1 /= sqrt(this_normal(1) * this_normal(1) +
-            this_normal(0) * this_normal(0));
+                         this_normal(0) * this_normal(0));
       }
       Vector3<T> tangent2 = this_normal.cross(tangent1);
       // Transformation from world frame to local surface frame.
@@ -427,7 +430,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
       R.row(0) = tangent1;
       R.row(1) = tangent2;
       R.row(2) = this_normal;
-      auto J = R * (JA - JB);          // J = [ D1; D2; n ]
+      auto J = R * (JA - JB);  // J = [ D1; D2; n ]
       // [ tangent1dot; tangent2dot; phidot ]
       auto relative_velocity = J * kinsol.getV();
 
@@ -436,15 +439,14 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // and damping for tangential force:  fA_tangent = -b * tangentdot
         // (bounded by the friction cone).
         Vector3<T> fA;
-        fA(2) = std::max<T>(
-            -penetration_stiffness_ * pair.distance -
-                penetration_damping_ * relative_velocity(2), 0.0);
+        fA(2) = std::max<T>(-penetration_stiffness_ * pair.distance -
+                                penetration_damping_ * relative_velocity(2),
+                            0.0);
         fA.head(2) =
-            -std::min<T>(
-                penetration_damping_,
-                friction_coefficient_ * fA(2) /
-                    (relative_velocity.head(2).norm() + EPSILON)) *
-                relative_velocity.head(2);  // Epsilon avoids divide by zero.
+            -std::min<T>(penetration_damping_,
+                         friction_coefficient_ * fA(2) /
+                             (relative_velocity.head(2).norm() + EPSILON)) *
+            relative_velocity.head(2);  // Epsilon avoids divide by zero.
 
         // fB is equal and opposite to fA: fB = -fA.
         // Therefore the generalized forces tau_c due to contact are:
@@ -466,7 +468,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           //  In contrast, other models (e.g., torsional friction model) can
           //  also introduce a "pure torque" component to the wrench.
           Vector3<T> force = R.transpose() * fA;
-          Vector3<T> normal = R.transpose().template block<3,1>(0, 2);
+          Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
 
           // TODO(SeanCurtis-TRI): Add interface for supplying a contact detail.
           calculator.AddForce(point, normal, force);
