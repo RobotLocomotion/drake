@@ -200,7 +200,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
   std::string filename =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
 
   VectorX<double> q;
@@ -224,7 +224,7 @@ TEST_F(RigidBodyTreeTest, TestDoKinematicsWithVectorBlocks) {
 TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
   std::string filename =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
 
   ModelInstanceIdTable model_instance_id_table =
       AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
@@ -256,15 +256,15 @@ void VerifyBodyListIsCorrect(std::vector<const RigidBody*> body_list,
 TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   std::string filename_2dof_robot =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
 
   std::string filename_3dof_robot =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/three_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/three_dof_robot.urdf";
 
   std::string filename_4dof_robot =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/four_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/four_dof_robot.urdf";
 
   ModelInstanceIdTable model_instance_id_table_1 =
       AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_2dof_robot,
@@ -340,7 +340,7 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
 
   std::string file_name =
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_tree/two_dof_robot.urdf";
+      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
 
   std::vector<int> model_instance_id_list;
 

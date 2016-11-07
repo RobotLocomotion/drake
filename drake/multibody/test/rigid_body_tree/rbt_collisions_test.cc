@@ -49,7 +49,7 @@ class RBTCollisionTest: public ::testing::Test {
   void SetUp() override {
     drake::parsers::sdf::AddModelInstancesFromSdfFileInWorldFrame(
         drake::GetDrakePath() +
-        "/systems/plants/test/rigid_body_tree/small_sphere_on_large_box.sdf",
+        "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
             drake::multibody::joints::kQuaternion, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
