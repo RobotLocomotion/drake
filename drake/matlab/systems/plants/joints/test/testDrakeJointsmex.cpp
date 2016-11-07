@@ -1,7 +1,7 @@
 #include <mex.h>
 #include <matrix.h>
 
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/multibody/joints/DrakeJoints.h"
 
 #include <memory>
 #include <vector>

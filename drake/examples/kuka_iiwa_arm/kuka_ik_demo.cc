@@ -17,7 +17,7 @@
 #include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 namespace drake {

@@ -1,5 +1,5 @@
 #include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "../systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include <math.h>

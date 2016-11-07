@@ -7,7 +7,7 @@
 #include "drake/multibody/BotVisualizer.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/feedback_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;

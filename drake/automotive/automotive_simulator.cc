@@ -16,7 +16,7 @@
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
