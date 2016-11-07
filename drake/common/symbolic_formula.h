@@ -276,8 +276,10 @@ class RelationalFormulaCell : public FormulaCell {
   const Expression e2_;
 };
 
-/** Represents the base class for N-ary logic operators (∧ and ∨). Internally
- * this class maintains a set of symbolic formulas.
+/** Represents the base class for N-ary logic operators (∧ and ∨).
+ *
+ * @note Internally this class maintains a set of symbolic formulas to avoid
+ * duplicated elements (i.e. f1 ∧ ... ∧ f1).
  */
 class NaryFormulaCell : public FormulaCell {
  public:
