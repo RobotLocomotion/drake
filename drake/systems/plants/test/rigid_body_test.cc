@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/multibody/RigidBody.h"
-#include "drake/systems/plants/joints/FixedJoint.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/QuaternionFloatingJoint.h"
 
 namespace drake {
 namespace systems {

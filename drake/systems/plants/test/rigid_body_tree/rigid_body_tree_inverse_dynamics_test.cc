@@ -24,8 +24,8 @@ using drake::math::jacobian;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using drake::CompareMatrices;
-using drake::systems::plants::joints::kRollPitchYaw;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kRollPitchYaw;
+using drake::multibody::joints::kQuaternion;
 
 constexpr const int kChunkSize =
     drake::AutoDiffUpTo73d::DerType::MaxRowsAtCompileTime;

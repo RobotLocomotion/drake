@@ -49,7 +49,7 @@ namespace parsers {
  */
 DRAKE_EXPORT
 int AddFloatingJoint(
-    systems::plants::joints::FloatingBaseType floating_base_type,
+    multibody::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map,

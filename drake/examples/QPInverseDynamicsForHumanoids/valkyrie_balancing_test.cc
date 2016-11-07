@@ -27,7 +27,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree<double> robot(urdf,
-      drake::systems::plants::joints::kRollPitchYaw);
+      drake::multibody::joints::kRollPitchYaw);
   HumanoidStatus robot_status(robot);
 
   QPController con;

@@ -22,7 +22,7 @@ GTEST_TEST(LidarTest, BasicTest) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
       GetDrakePath() + "/systems/plants/test/lidarTest.sdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.
   auto sensors = rigid_body_sys->GetSensors();

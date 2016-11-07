@@ -15,9 +15,9 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "KinematicsCache.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/systems/plants/joints/FixedJoint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/DrakeJoint.h"
+#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "parser_sdf.h"
 #include "parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -55,7 +55,7 @@ using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::Gradient;
-using drake::systems::plants::joints::FloatingBaseType;
+using drake::multibody::joints::FloatingBaseType;
 
 using std::allocator;
 using std::cerr;

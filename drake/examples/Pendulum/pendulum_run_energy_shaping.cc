@@ -61,7 +61,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   RigidBodyTree<double> tree(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      systems::plants::joints::kFixed);
+      multibody::joints::kFixed);
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();

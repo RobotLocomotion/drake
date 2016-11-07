@@ -19,7 +19,7 @@ using std::make_shared;
 using Eigen::VectorXd;
 
 using drake::RigidBodySystem;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kQuaternion;
 
 char* model_file_1 = nullptr;
 char* model_file_2 = nullptr;

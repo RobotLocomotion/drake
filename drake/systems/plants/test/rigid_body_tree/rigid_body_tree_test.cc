@@ -6,8 +6,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
-#include "drake/systems/plants/joints/RevoluteJoint.h"
+#include "drake/multibody/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/joints/RevoluteJoint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
@@ -20,7 +20,7 @@ namespace {
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileWithRpyJointToWorld;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kQuaternion;
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 

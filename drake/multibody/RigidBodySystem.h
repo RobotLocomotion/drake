@@ -8,12 +8,12 @@
 #include "drake/system1/System.h"
 #include "KinematicsCache.h"
 #include "RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "parser_model_instance_id_table.h"
 
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kQuaternion;
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kQuaternion;
+using drake::multibody::joints::kRollPitchYaw;
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)

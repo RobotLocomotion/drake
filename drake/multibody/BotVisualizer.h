@@ -11,7 +11,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/system1/System.h"
 #include "RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -47,7 +47,7 @@ class BotVisualizer {
 
   BotVisualizer(std::shared_ptr<lcm::LCM> lcm,
                 const std::string& urdf_filename,
-                const drake::systems::plants::joints::FloatingBaseType
+                const drake::multibody::joints::FloatingBaseType
                     floating_base_type)
       : tree_(new RigidBodyTree<double>(
       urdf_filename, floating_base_type)), lcm_(lcm) {

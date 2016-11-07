@@ -13,8 +13,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/DrakeJoints.h"
 #include "parser_common.h"
 #include "parser_model_instance_id_table.h"
 #include "RigidBodyTree.h"
@@ -55,7 +55,7 @@ using std::unique_ptr;
 using tinyxml2::XMLElement;
 using tinyxml2::XMLDocument;
 
-using drake::systems::plants::joints::FloatingBaseType;
+using drake::multibody::joints::FloatingBaseType;
 
 void ParseSdfInertial(
     RigidBody* body, XMLElement* node, RigidBodyTree<double>* model,

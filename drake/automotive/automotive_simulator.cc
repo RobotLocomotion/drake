@@ -25,7 +25,7 @@
 namespace drake {
 namespace automotive {
 
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::kRollPitchYaw;
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()

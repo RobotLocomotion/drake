@@ -15,7 +15,7 @@ CreateSimulatedSchunkSystem() {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/examples/schunk_gripper/models/schunk_gripper.sdf",
-      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
 
   return std::make_unique<drake::systems::RigidBodyPlant<T>>(

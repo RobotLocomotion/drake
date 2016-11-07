@@ -16,7 +16,7 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
   rbsys.AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-      drake::systems::plants::joints::kRollPitchYaw);
+      drake::multibody::joints::kRollPitchYaw);
 
   auto p = Quadrotor();
 

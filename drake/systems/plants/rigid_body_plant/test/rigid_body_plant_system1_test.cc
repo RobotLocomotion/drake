@@ -46,7 +46,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   // URDF becomes part of the world.
   rbs1->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   //////////////////////////////////////////////////////////////////////////////
   // Instantiates a RigidBodyPlant (System 2.0) model of the Kuka arm.
@@ -54,7 +54,7 @@ GTEST_TEST(RigidBodySystemTest, CompareWithRBS1Dynamics) {
   auto tree = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
 
   // Instantiates a RigidBodyPlant (System 2.0) from an MBD model of the world.

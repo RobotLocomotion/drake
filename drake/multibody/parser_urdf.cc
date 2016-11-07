@@ -9,8 +9,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/joints/DrakeJoints.h"
 #include "material_map.h"
 #include "parser_common.h"
 #include "parser_model_instance_id_table.h"
@@ -42,8 +42,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kRollPitchYaw;
 
 namespace {
 

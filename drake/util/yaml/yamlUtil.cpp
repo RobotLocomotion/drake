@@ -1,14 +1,14 @@
 #include "yamlUtil.h"
 // #include <regex>
 
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 using namespace std;
 
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
+using drake::multibody::joints::kRollPitchYaw;
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node) {
