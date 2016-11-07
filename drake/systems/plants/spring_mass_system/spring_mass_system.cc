@@ -186,14 +186,10 @@ void SpringMassSystem<T>::EvalTimeDerivatives(
   derivative_vector->set_conservative_work(EvalConservativePower(context));
 }
 
-template class
-SpringMassStateVector<double>;
-template class
-SpringMassStateVector<AutoDiffXd>;
-template class
-SpringMassSystem<double>;
-template class
-SpringMassSystem<AutoDiffXd>;
+template class SpringMassStateVector<double>;
+template class SpringMassStateVector<AutoDiffXd>;
+template class SpringMassSystem<double>;
+template class SpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

@@ -344,5 +344,5 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
 }
 
 template class PiecewisePolynomial<double>;
-// template class
-// PiecewisePolynomial<std::complex<double>>; // doesn't work yet
+// doesn't work yet
+// template class PiecewisePolynomial<std::complex<double>>;
