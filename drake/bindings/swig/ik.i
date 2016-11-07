@@ -29,4 +29,4 @@
 
 %include "drake/multibody/IKoptions.h"
 %include "drake/multibody/RigidBodyIK.h"
-%include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+%include "drake/multibody/constraint/RigidBodyConstraint.h"

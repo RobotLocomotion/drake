@@ -68,6 +68,7 @@ pods_install_pkg_config_file(drake-ik
   REQUIRES drake-rbm
   VERSION 0.0.1)
 
-add_subdirectory(shapes)
 add_subdirectory(collision)
+add_subdirectory(constraint)
 add_subdirectory(joints)
+add_subdirectory(shapes)
