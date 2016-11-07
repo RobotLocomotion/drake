@@ -13,10 +13,6 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
-  gen/linear_car_state.cc
-  gen/linear_car_input.cc
-  gen/idm_planner_input.cc
-  gen/single_lane_ego_and_agent_state.cc
   idm_with_trajectory_agent.cc
   simple_car.cc
   trajectory_car.cc

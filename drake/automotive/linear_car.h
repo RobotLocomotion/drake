@@ -1,15 +1,15 @@
 #pragma once
 
-#include "drake/automotive/gen/linear_car_input.h"
-#include "drake/automotive/gen/linear_car_state.h"
+//#include "drake/automotive/gen/linear_car_input.h"
+//#include "drake/automotive/gen/linear_car_state.h"
 #include "drake/systems/framework/leaf_system.h"
 //#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace automotive {
 
-/// LinearCar -- model a car operating in a singl lane using a double
-/// integrator with acceleration input.
+/// LinearCar -- model a car operating in a single lane using a double
+/// integrator with an acceleration input.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
@@ -24,6 +24,9 @@ class LinearCar : public systems::LeafSystem<T> {
  public:
   LinearCar();
   ~LinearCar() override;
+
+  /// Declare that the outputs are all algebraically isolated from the input.
+  bool has_any_direct_feedthrough() const override { return false; }
 
   /// Returns the input port.
   const systems::SystemPortDescriptor<T>& get_input_port() const;
