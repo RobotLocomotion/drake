@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using Eigen::VectorXd;
 using std::make_unique;
