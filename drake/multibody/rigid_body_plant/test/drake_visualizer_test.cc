@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 #include <memory>
 #include <vector>

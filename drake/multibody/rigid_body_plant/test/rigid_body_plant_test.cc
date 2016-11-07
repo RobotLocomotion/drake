@@ -12,7 +12,7 @@
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
@@ -43,7 +43,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
-      "/systems/plants/rigid_body_plant/test/world.urdf",
+      "/multibody/rigid_body_plant/test/world.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
 
@@ -348,7 +348,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
-      "/systems/plants/rigid_body_plant/test/limited_prismatic.sdf",
+      "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
   RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
