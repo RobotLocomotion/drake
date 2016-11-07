@@ -7,8 +7,8 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/system1/LinearSystem.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/BotVisualizer.h"
+#include "drake/multibody/RigidBodySystem.h"
 #include "drake/system1/simulation_options.h"
 
 namespace drake {

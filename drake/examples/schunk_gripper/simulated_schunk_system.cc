@@ -1,7 +1,7 @@
 #include "drake/examples/schunk_gripper/simulated_schunk_system.h"
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/parser_sdf.h"
+#include "drake/multibody/parser_sdf.h"
 #include "drake/common/drake_path.h"
 
 namespace drake {

@@ -11,7 +11,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::AutoDiffScalar;

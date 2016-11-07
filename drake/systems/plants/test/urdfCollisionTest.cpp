@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using std::cerr;
 using std::cout;

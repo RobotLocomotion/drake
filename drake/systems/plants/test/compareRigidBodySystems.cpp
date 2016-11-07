@@ -1,4 +1,4 @@
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/RigidBodySystem.h"
 
 #include <iostream>
 #include <string>
@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/multibody/RigidBodyFrame.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 
 namespace drake {

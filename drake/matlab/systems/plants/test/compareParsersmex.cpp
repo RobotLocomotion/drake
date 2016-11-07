@@ -5,7 +5,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 

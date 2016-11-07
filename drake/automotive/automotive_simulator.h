@@ -12,7 +12,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace automotive {

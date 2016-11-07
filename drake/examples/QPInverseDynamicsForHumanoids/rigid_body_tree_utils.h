@@ -1,7 +1,7 @@
 #pragma once
 
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace Eigen {
 typedef Matrix<double, 6, 1> Vector6d;

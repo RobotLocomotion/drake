@@ -14,7 +14,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/matrix_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/parser_sdf.h"
+#include "drake/multibody/parser_sdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 

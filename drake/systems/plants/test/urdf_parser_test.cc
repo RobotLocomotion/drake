@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace systems {

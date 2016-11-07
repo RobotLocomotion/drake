@@ -4,11 +4,11 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodySystem.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_urdf.h"
 
 namespace drake {
 namespace systems {

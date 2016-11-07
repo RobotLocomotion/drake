@@ -4,7 +4,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/system1/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
-#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/multibody/BotVisualizer.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/feedback_system.h"
 #include "drake/systems/plants/joints/floating_base_types.h"

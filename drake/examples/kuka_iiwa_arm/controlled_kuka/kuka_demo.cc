@@ -15,14 +15,14 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 

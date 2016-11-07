@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using Eigen::VectorXd;
 using std::cout;

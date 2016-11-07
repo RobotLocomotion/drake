@@ -9,9 +9,9 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/plants/joints/PrismaticJoint.h"
 #include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
 using Eigen::Isometry3d;

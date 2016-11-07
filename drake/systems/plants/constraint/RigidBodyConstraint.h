@@ -12,8 +12,8 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace DrakeRigidBodyConstraint {
 extern DRAKE_EXPORT Eigen::Vector2d default_tspan;

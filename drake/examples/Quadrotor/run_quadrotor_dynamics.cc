@@ -7,8 +7,8 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 
