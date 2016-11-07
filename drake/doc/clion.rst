@@ -98,9 +98,10 @@ You can also set the coding style through the following steps
 3. Go to File > Settings > Editor > Code Style > C/C++
 4. On the right panel, choose Set from > Predefined Style > Google
 
+.. _integrating_cpplint_with_clion:
 Integrating Cpplint in CLion
 ============================
-This will give you the ability to execute cpplint on a single file or the full
+This will give you the ability to execute ``cpplint`` on a single file or the full
 project and have the result presented in the CLion console with each warning
 a clickable hyperlink.
 
@@ -110,7 +111,7 @@ Creating the External Tools
 .. role:: raw-html(raw)
    :format: html
 
-Run Cpplint on Single File
+Run ``Cpplint`` on Single File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
@@ -140,7 +141,7 @@ Run Cpplint on Single File
 9. Click ``OK`` on the ``Edit filter`` dialog.
 10. Click ``OK`` on the ``Output Filters`` dialog.
 
-Run CppLint on Full Project
+Run ``CppLint`` on Full Project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Repeat the steps from creating the single-file version with the following
 differences:
@@ -172,8 +173,8 @@ in two ways:
 2. in the menu bar, select ``Tools`` > ``External Tools`` > ``Cpplint File``
 
 To check the whole project, in the menu bar, select ``Tools`` > 
-``External Tools`` > ``Cpplint Project`` (alternatively, this can also be
-done through the right-click context menu.)
+``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
+done through the right-click context menu.
 
 Running a C++ executable
 ========================
