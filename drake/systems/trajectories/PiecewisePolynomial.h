@@ -148,13 +148,13 @@ class DRAKE_EXPORT PiecewisePolynomial
   const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
                                       Eigen::Index col = 0) const;
 
-  virtual int getSegmentPolynomialDegree(int segment_index,
-                                         Eigen::Index row = 0,
-                                         Eigen::Index col = 0) const;
+  int getSegmentPolynomialDegree(int segment_index,
+                                 Eigen::Index row = 0,
+                                 Eigen::Index col = 0) const override;
 
-  virtual Eigen::Index rows() const;
+  Eigen::Index rows() const override;
 
-  virtual Eigen::Index cols() const;
+  Eigen::Index cols() const override;
 
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
