@@ -109,7 +109,7 @@ bool Expression::Less(const Expression& e) const {
   DRAKE_ASSERT(ptr_ != nullptr);
   DRAKE_ASSERT(e.ptr_ != nullptr);
   if (ptr_ == e.ptr_) {
-    return false;  // this equals to e, not less-than.n
+    return false;  // this equals to e, not less-than.
   }
   const ExpressionKind k1{get_kind()};
   const ExpressionKind k2{e.get_kind()};
@@ -143,16 +143,16 @@ Expression operator+(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs) {
-  // simplification: 0 + x => x
+  // Simplification: 0 + x => x
   if (lhs.EqualTo(Expression::Zero())) {
     lhs = rhs;
     return lhs;
   }
-  // simplification: x + 0 => x
+  // Simplification: x + 0 => x
   if (rhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
-  // simplification: Expression(c1) + Expression(c2) => Expression(c1 + c2)
+  // Simplification: Expression(c1) + Expression(c2) => Expression(c1 + c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
     const double v1{
@@ -162,7 +162,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
     lhs = Expression{v1 + v2};
     return lhs;
   }
-  // simplification: flattening. To build a new expression, we use
+  // Simplification: flattening. To build a new expression, we use
   // ExprefssionAddFactory which holds intermediate terms and does
   // simplifications internally.
   ExpressionAddFactory add_factory{};
@@ -210,16 +210,16 @@ Expression operator-(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
-  // simplification: E - E => 0
+  // Simplification: E - E => 0
   if (lhs.EqualTo(rhs)) {
     lhs = Expression::Zero();
     return lhs;
   }
-  // simplification: x - 0 => x
+  // Simplification: x - 0 => x
   if (rhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
-  // simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
+  // Simplification: Expression(c1) - Expression(c2) => Expression(c1 - c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
     const double v1{
@@ -246,7 +246,7 @@ Expression operator-(Expression e) {
   if (e.get_kind() == ExpressionKind::Neg) {
     return static_pointer_cast<ExpressionNeg>(e.ptr_)->get_expression();
   }
-  // Simplification: push '-' inside over '+'
+  // Simplification: push '-' inside over '+'.
   // -(E_1 + ... + E_n) => (-E_1 + ... + -E_n)
   if (e.get_kind() == ExpressionKind::Add) {
     return ExpressionAddFactory{static_pointer_cast<ExpressionAdd>(e.ptr_)}
@@ -274,35 +274,35 @@ Expression operator*(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator*=(Expression& lhs, const Expression& rhs) {
-  // simplification: 1 * x => x
+  // Simplification: 1 * x => x
   if (lhs.EqualTo(Expression::One())) {
     lhs = rhs;
     return lhs;
   }
-  // simplification: x * 1 => x
+  // Simplification: x * 1 => x
   if (rhs.EqualTo(Expression::One())) {
     return lhs;
   }
-  // simplification: -1 * x => -x
+  // Simplification: -1 * x => -x
   if (lhs.EqualTo(-Expression::One())) {
     lhs = -rhs;
     return lhs;
   }
-  // simplification: x * -1 => -x
+  // Simplification: x * -1 => -x
   if (rhs.EqualTo(-Expression::One())) {
     lhs = -lhs;
     return lhs;
   }
-  // simplification: 0 * x => 0
+  // Simplification: 0 * x => 0
   if (lhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
-  // simplification: x * 0 => 0
+  // Simplification: x * 0 => 0
   if (rhs.EqualTo(Expression::Zero())) {
     lhs = Expression::Zero();
     return lhs;
   }
-  // Pow-related simplifications
+  // Pow-related simplifications.
   if (lhs.get_kind() == ExpressionKind::Pow) {
     const auto lhs_ptr(static_pointer_cast<ExpressionPow>(lhs.ptr_));
     const Expression& e1{lhs_ptr->get_1st_expression()};
@@ -310,7 +310,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
       const Expression& e3{rhs_ptr->get_1st_expression()};
       if (e1.EqualTo(e3)) {
-        // simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
+        // Simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
         //                 => pow(e1, e2 + e3)
         const Expression& e2{lhs_ptr->get_2nd_expression()};
         const Expression& e4{rhs_ptr->get_2nd_expression()};
@@ -319,7 +319,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       }
     }
     if (e1.EqualTo(rhs)) {
-      // simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
+      // Simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
       const Expression& e2{lhs_ptr->get_2nd_expression()};
       lhs = pow(e1, e2 + 1);
       return lhs;
@@ -329,7 +329,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
       const Expression& e1{rhs_ptr->get_1st_expression()};
       if (e1.EqualTo(lhs)) {
-        // simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
+        // Simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
         const Expression& e2{rhs_ptr->get_2nd_expression()};
         lhs = pow(e1, 1 + e2);
         return lhs;
@@ -338,7 +338,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   }
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
-    // simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
+    // Simplification: Expression(c1) * Expression(c2) => Expression(c1 * c2)
     const double v1{
         static_pointer_cast<ExpressionConstant>(lhs.ptr_)->get_value()};
     const double v2{
@@ -346,7 +346,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     lhs = Expression{v1 * v2};
     return lhs;
   }
-  // simplification: flattening
+  // Simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (lhs.get_kind() == ExpressionKind::Mul) {
     mul_factory = static_pointer_cast<ExpressionMul>(lhs.ptr_);
@@ -367,7 +367,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       mul_factory = static_pointer_cast<ExpressionMul>(rhs.ptr_);
       mul_factory.AddExpression(lhs);
     } else {
-      // simplification: x * x => x^2 (=pow(x,2))
+      // Simplification: x * x => x^2 (=pow(x,2))
       if (lhs.EqualTo(rhs)) {
         lhs = pow(lhs, 2.0);
         return lhs;
@@ -389,11 +389,11 @@ Expression operator/(Expression lhs, const Expression& rhs) {
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator/=(Expression& lhs, const Expression& rhs) {
-  // simplification: x / 1 => x
+  // Simplification: x / 1 => x
   if (rhs.EqualTo(Expression::One())) {
     return lhs;
   }
-  // simplification: Expression(c1) / Expression(c2) => Expression(c1 / c2)
+  // Simplification: Expression(c1) / Expression(c2) => Expression(c1 / c2)
   if (lhs.get_kind() == ExpressionKind::Constant &&
       rhs.get_kind() == ExpressionKind::Constant) {
     const double v1{
@@ -408,7 +408,7 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
     lhs = Expression{v1 / v2};
     return lhs;
   }
-  // simplification: E / E => 1
+  // Simplification: E / E => 1
   if (lhs.EqualTo(rhs)) {
     lhs = Expression::One();
     return lhs;
@@ -1311,7 +1311,7 @@ ostream& operator<<(ostream& os, const Expression& e) {
 }
 
 Expression log(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1322,7 +1322,7 @@ Expression log(const Expression& e) {
 }
 
 Expression abs(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1332,7 +1332,7 @@ Expression abs(const Expression& e) {
 }
 
 Expression exp(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1342,14 +1342,14 @@ Expression exp(const Expression& e) {
 }
 
 Expression sqrt(const Expression& e) {
-  // simplification: constant folding
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
     ExpressionSqrt::check_domain(v);
     return Expression{std::sqrt(v)};
   }
-  // simplification: sqrt(pow(x, 2)) => abs(x)
+  // Simplification: sqrt(pow(x, 2)) => abs(x)
   if (e.get_kind() == ExpressionKind::Pow) {
     const auto e_pow(static_pointer_cast<ExpressionPow>(e.ptr_));
     if (e_pow->get_2nd_expression().EqualTo(Expression{2.0})) {
@@ -1360,12 +1360,12 @@ Expression sqrt(const Expression& e) {
 }
 
 Expression pow(const Expression& e1, const Expression& e2) {
-  // simplification
+  // Simplification
   if (e2.get_kind() == ExpressionKind::Constant) {
     const double v2{
         static_pointer_cast<ExpressionConstant>(e2.ptr_)->get_value()};
     if (e1.get_kind() == ExpressionKind::Constant) {
-      // constant folding
+      // Constant folding
       const double v1{
           static_pointer_cast<ExpressionConstant>(e1.ptr_)->get_value()};
       ExpressionPow::check_domain(v1, v2);
@@ -1404,7 +1404,7 @@ Expression pow(const double v1, const Expression& e2) {
 }
 
 Expression sin(const Expression& e) {
-  // simplification
+  // simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1414,7 +1414,7 @@ Expression sin(const Expression& e) {
 }
 
 Expression cos(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1425,7 +1425,7 @@ Expression cos(const Expression& e) {
 }
 
 Expression tan(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1435,7 +1435,7 @@ Expression tan(const Expression& e) {
 }
 
 Expression asin(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1446,7 +1446,7 @@ Expression asin(const Expression& e) {
 }
 
 Expression acos(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1457,7 +1457,7 @@ Expression acos(const Expression& e) {
 }
 
 Expression atan(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1467,7 +1467,7 @@ Expression atan(const Expression& e) {
 }
 
 Expression atan2(const Expression& e1, const Expression& e2) {
-  // simplification
+  // Simplification: constant folding.
   if (e1.get_kind() == ExpressionKind::Constant &&
       e2.get_kind() == ExpressionKind::Constant) {
     const double v1{
@@ -1488,7 +1488,7 @@ Expression atan2(const double v1, const Expression& e2) {
 }
 
 Expression sinh(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1498,7 +1498,7 @@ Expression sinh(const Expression& e) {
 }
 
 Expression cosh(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1508,7 +1508,7 @@ Expression cosh(const Expression& e) {
 }
 
 Expression tanh(const Expression& e) {
-  // simplification
+  // Simplification: constant folding.
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v{
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
@@ -1522,7 +1522,7 @@ Expression min(const Expression& e1, const Expression& e2) {
   if (e1.EqualTo(e2)) {
     return e1;
   }
-  // simplification: constant folding
+  // Simplification: constant folding.
   if (e1.get_kind() == ExpressionKind::Constant &&
       e2.get_kind() == ExpressionKind::Constant) {
     const double v1{
@@ -1535,11 +1535,11 @@ Expression min(const Expression& e1, const Expression& e2) {
 }
 
 Expression max(const Expression& e1, const Expression& e2) {
-  // simplification: max(x, x) => x
+  // Simplification: max(x, x) => x
   if (e1.EqualTo(e2)) {
     return e1;
   }
-  // simplification: constant folding
+  // Simplification: constant folding
   if (e1.get_kind() == ExpressionKind::Constant &&
       e2.get_kind() == ExpressionKind::Constant) {
     const double v1{
