@@ -2,7 +2,6 @@
 
 #include <type_traits>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_gcc48.h"
 
 /// @file
@@ -71,7 +70,6 @@
 namespace drake {
 namespace detail {
 // Abort the program with an error message.
-DRAKE_EXPORT
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
