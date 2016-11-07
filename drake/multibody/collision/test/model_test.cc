@@ -810,7 +810,7 @@ GTEST_TEST(ModelTest, StaticMeshes) {
   Isometry3d pose = Isometry3d::Identity();
 
   std::string file_name = drake::GetDrakePath() +
-      "/systems/plants/collision/test/spherical_cap.obj";
+      "/multibody/collision/test/spherical_cap.obj";
   DrakeShapes::Mesh cap(file_name, file_name);
 
   // Creates collision elements.
