@@ -1,4 +1,3 @@
-add_subdirectory(@AcrobotPlantCpp)
 add_subdirectory(test)
 
 drake_add_matlab_test(NAME examples/Acrobot/runLQR COMMAND runLQR)
