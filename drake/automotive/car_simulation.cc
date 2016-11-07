@@ -193,12 +193,12 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(
           tree->get_num_positions() + rigid_body->get_velocity_start_index(),
-          DrivingCommandIndices::kThrottle) = 1/0.323342;
+          DrivingCommandIndices::kThrottle) = 1. / 0.323342;
 
       // Saves the mapping between the driving command and the braking command.
       map_driving_cmd_to_x_d(
           tree->get_num_positions() + rigid_body->get_velocity_start_index(),
-          DrivingCommandIndices::kBrake) = -1/0.323342;
+          DrivingCommandIndices::kBrake) = -1. / 0.323342;
     }
   }
 
