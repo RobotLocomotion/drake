@@ -8,7 +8,6 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/trajectory_car.h"
-#include "drake/common/drake_export.h"
 
 namespace drake {
 namespace automotive {
@@ -20,7 +19,6 @@ namespace automotive {
  * @param index Selects which pre-programmed trajectory to use.
  * @return tuple of curve, speed, start_time
  */
-DRAKE_EXPORT
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index);
 
 }  // namespace automotive
