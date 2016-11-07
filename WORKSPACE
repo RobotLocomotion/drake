@@ -26,3 +26,16 @@ new_git_repository(
     commit = "43a4048b92ef5b7eff6dc637a621c7da3a41d194",
     build_file = "tools/spdlog.BUILD",
 )
+
+new_local_repository(
+    name = "gtk",
+    path = "/usr",
+    build_file = "tools/gtk.BUILD",
+)
+
+new_git_repository(
+    name = "lcm",
+    remote = "https://github.com/lcm-proj/lcm.git",
+    commit = "a8cda6a64b31739a781b67408c63bec08b15ab32",
+    build_file = "tools/lcm.BUILD",
+)
