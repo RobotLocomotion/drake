@@ -12,21 +12,20 @@ namespace systems {
  Ultimately, a contact force consists of an application point, a spatial
  force, and a unit vector. The spatial force includes:
   - a translational force, that is a pure force applied at a point,
-  - a "pure torque", the rotational force. This is not the same as the moment
-    induced by the translational force.  This is a pure, abstract torque (e.g.,
-    modeling torsional friction.)
+  - a torque, the rotational force. This is not the same as the moment
+    induced by the translational force.  This torque can arise from a
+    combination of different sources (e.g., torsional friction, the sum of
+    various moments, etc.)
 
   The unit normal indicates the normal direction of the translational force.
   Used to decompose the force into normal and tangential components. The
   normal is typically defined by the contact normal.
 
-  The application point, normal vector, and force vectors should all be measured
-  and expressed in a common frame.
-
-  ContactForce is frame agnostic. However, the vectors representing application
-  point location, contact normal, force, and torque must all be expressed in a
-  common frame, with the application point measured from the origin of that
-  frame. Every use of ContactForce must make clear which frame is being used.
+  A ContactForce makes no assumptions about the frame in which it is defined
+  except that the vectors representing application point location, contact
+  normal, force, and torque are all expressed in a common frame, with the
+  application point measured from the origin of that frame. Every use of
+  ContactForce must make clear which frame is being used.
 
   @tparam T The scalar type. Must be a valid Eigen scalar.
  */
@@ -40,13 +39,13 @@ class DRAKE_EXPORT ContactForce {
    @param normal                    The translational force's unit-length normal
                                     direction.
    @param force                     The translational force.
-   @param pure_torque               The pure torque component
+   @param torque                    The torque component
    */
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
-               const Vector3<T>& force, const Vector3<T>& pure_torque);
+               const Vector3<T>& force, const Vector3<T>& torque);
   /**
-   Zero-pure-torque constructor.  This constructor sets the pure torque
-   component to be zero.
+   Zero-torque constructor.  This constructor sets the torque component to be
+   zero.
 
    @param application_point         The point at which the wrench is applied.
    @param normal                    The translational force's unit-length normal
@@ -72,34 +71,35 @@ class DRAKE_EXPORT ContactForce {
   /** Computes the tangential component of the translational force. */
   Vector3<T> get_tangent_force() const { return force_ - get_normal_force(); }
 
-  const Vector3<T>& get_pure_torque() const { return pure_torque_; }
+  const Vector3<T>& get_torque() const { return torque_; }
 
   const Vector3<T>& get_normal() const { return normal_; }
 
   /**
    This is a utility function for returning a compact representation of the
-   contact force's overall spatial force: a vector in R6 representing a
-   concatentation of a rotational and translational force.
+   contact force's overall spatial force: a pair of vectors in R3 representing a
+   rotational and translational force.
 
-   The rotational force does *not* include an `r X f` moment term.  It is simply
-   the pure torque that was provided at initialization time. Ultimately, the
-   responsibility for computing this moment term belongs to the portion of the
-   code which knows the origin around which the moment is generated.
+   The rotational force does *not* necessarily include an `r X f` moment term.
+   It is simply the pure torque that was provided at initialization time.
+   Ultimately, the responsibility for computing this moment term belongs to the
+   portion of the code which knows the origin around which the moment is
+   generated.
 
    @returns the resultant spatial force.
    */
   SpatialForce <T> get_spatial_force() const {
     SpatialForce<T> spatial_force;
-    spatial_force.template head<3>() = pure_torque_;
+    spatial_force.template head<3>() = torque_;
     spatial_force.template tail<3>() = force_;
     return spatial_force;
   }
 
  private:
-  Vector3<T> application_point_{Vector3<T>::Zero()};
-  Vector3<T> normal_{Vector3<T>::Zero()};
-  Vector3<T> force_{Vector3<T>::Zero()};
-  Vector3<T> pure_torque_{Vector3<T>::Zero()};
+  Vector3<T> application_point_{};
+  Vector3<T> normal_{};
+  Vector3<T> force_{};
+  Vector3<T> torque_{};
 };
 }  // namespace systems
 }  // namespace drake

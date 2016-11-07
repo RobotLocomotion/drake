@@ -35,7 +35,7 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   ASSERT_EQ(f1.get_normal_force(), norm_force);
   ASSERT_EQ(f1.get_tangent_force(), tan_force);
   ASSERT_EQ(f1.get_force(), force);
-  ASSERT_EQ(f1.get_pure_torque(), Vector3<double>::Zero());
+  ASSERT_EQ(f1.get_torque(), Vector3<double>::Zero());
   ASSERT_EQ(f1.get_application_point(), pos);
 
   // Case 2. Fully-specified constructor.
@@ -43,7 +43,7 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   ASSERT_EQ(f2.get_normal_force(), norm_force);
   ASSERT_EQ(f2.get_tangent_force(), tan_force);
   ASSERT_EQ(f1.get_force(), force);
-  ASSERT_EQ(f2.get_pure_torque(), torque);
+  ASSERT_EQ(f2.get_torque(), torque);
   ASSERT_EQ(f2.get_application_point(), pos);
 }
 
@@ -121,7 +121,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     calc.AddForce(pos2, norm, force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 2));
     expected_point = (pos1 + pos2) * 0.5;
     ASSERT_TRUE(
@@ -136,7 +136,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     calc.AddForce(pos2, norm, 2.0 * force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 3));
     expected_point = pos1 / 3. + pos2 * 2. / 3.;
     ASSERT_TRUE(
@@ -151,7 +151,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     calc.AddForce(pos3, norm, 3.0 * force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 6));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
     ASSERT_TRUE(
@@ -175,7 +175,7 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
 
     Vector3<double> expected_torque;
     expected_torque << 0, 0, -0.4;
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
     ASSERT_TRUE(
         AreEquivalent(resultant.get_force(), force * 6 + tan1 + tan2 + tan3));
     expected_point << 4.0 / 3, 5.0 / 2, 0;
@@ -208,7 +208,7 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
     calc.AddForce(pos2, norm, tan2, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
     ASSERT_TRUE(
         AreEquivalent(resultant.get_application_point(), expected_point));
@@ -222,7 +222,7 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
     calc.AddForce(pos1, norm, tan1, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
     ASSERT_TRUE(
         AreEquivalent(resultant.get_application_point(), expected_point));
@@ -254,7 +254,7 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
 
     Vector3<double> expected_torque;
     expected_torque << 0, 0.2, 0.4;
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), f1 + f2));
     expected_point << 1.6, 0, 0;
     ASSERT_TRUE(
@@ -274,7 +274,7 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalPlanarPointTest) {
     // constant values encoded above.
     Vector3<double> expected_torque;
     expected_torque << 0.023961661341853, -0.000000000000000, 0.599041533546326;
-    ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
     ASSERT_TRUE(AreEquivalent(resultant.get_force(), f1 + f2 + f3));
     expected_point << 1.399361022364217, 0.990415335463259, -0.015974440894569;
     ASSERT_TRUE(
@@ -301,53 +301,11 @@ GTEST_TEST(ContactResultantForceTest, SkewNormalNonPlanarPointTest) {
 
   Vector3<double> expected_torque;
   expected_torque << 0.9, 0, 0.3;
-  ASSERT_TRUE(AreEquivalent(resultant.get_pure_torque(), expected_torque));
+  ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
   ASSERT_TRUE(AreEquivalent(resultant.get_force(), f1 + f2));
   Vector3<double> expected_point;
   expected_point << -2.7, 0.1, -0.9;
   ASSERT_TRUE(AreEquivalent(resultant.get_application_point(), expected_point));
-}
-
-// Confirms that the point returned and the normal direction properly defines
-// the central axis.  Tests that any point displaced from the application
-// point along the force's normal direction produces the same moment.
-// Technically, it doesn't prove *all* points, but simply samples points.
-GTEST_TEST(ContactResultantForceTest, ValidCentralAxisTest) {
-  // Use the same skewed example from Paul Mitiguy's book as used in
-  // SkewNormalNonPlanarPointTest
-  Vector3<double> p1, p2, f1, n1, f2, n2;
-  const Vector3<double> zero = Vector3<double>::Zero();
-  p1 << -3, 0, 0;
-  p2 << 0, 1, -1;
-  f1 << 3, 0, 0;
-  n1 = f1.normalized();
-  f2 << 0, 0, 1;
-  n2 = f2.normalized();
-
-  ContactResultantForceCalculator<double> calc;
-  calc.AddForce(p1, n1, f1, zero);
-  calc.AddForce(p2, n2, f2, zero);
-  ContactForce<double> resultant = calc.ComputeResultant();
-
-  // first identify the origin used.
-  Vector3<double> point = resultant.get_application_point();
-  Vector3<double> normal_force = resultant.get_normal_force();
-  Vector3<double> origin;
-  if (abs((p1 - point).dot(normal_force)) < 1e-14) {
-    origin = p1;
-  } else if (abs((p2 - point).dot(normal_force)) < 1e-14) {
-    origin = p2;
-  } else {
-    ASSERT_NO_FATAL_FAILURE("Unable to identify origin");
-  }
-
-  Vector3<double> base_moment = (point - origin).cross(normal_force);
-  double offsets[] = {-3.0, -1.0, 1.0, 2.5};
-  for (int i = 0; i < 4; ++i) {
-    Vector3<double> p = point + normal_force * offsets[i];
-    Vector3<double> test_moment = (p - origin).cross(normal_force);
-    ASSERT_TRUE(AreEquivalent(test_moment, base_moment));
-  }
 }
 }  // namespace
 }  // namespace systems

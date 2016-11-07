@@ -113,6 +113,8 @@ namespace systems {
  case, the minimum moment point can be literally any point in space.  In this
  case, the ContactResultantForceCalculator defines the minimum moment point to
  be the centroid of all application points (the "average" application point.)
+ Similarly, the normal direction of this resultant force is likewise meaningless
+ but will be set to the +x direction (i.e., <1, 0, 0>).
 
  Computation considerations
  ==========================

@@ -25,10 +25,31 @@ void ContactResultantForceCalculator<T>::AddForce(
 
 template <typename T>
 ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
-  // Treat a single force specially.
+  // Treat a single force specially; it is its own resultant.
   if (forces_.size() == 1) {
     return forces_[0];
   }
+
+  // For a set of forces applied at specific points (whose sum is non-zero)
+  // there is a line of points (called the central axis) about which the forces
+  // have a moment with minimum magnitude. A point, Q, on the line can be
+  // found as follows:
+  //
+  //   Q = ( F x M ) / ||F||^2
+  //
+  // Where,
+  //    Q: a point on the central axis (defined relative to origin O). In fact,
+  //       it is the projection of O on that line.  Thus, a different O can lead
+  //       to a different Q, but they all lie on the central axis and all have
+  //       the "minimum moment" property.
+  //    F: The sum of the set of forces.
+  //    M: The sum of the moments induced by each force (around origin O).
+  //    All points and vectors are defined in a common frame whose origin is O.
+  // See Paul Mitiguy's book for more details.
+  //
+  // This method implements this equation with the caveat that only the
+  // *normal* components of the set of contact forces is used in the
+  // calculation.
 
   // Compute resultant spatial force -- as the sum of the torques, and the
   // sums of the normal and tangential components of the contact forces,
@@ -38,7 +59,7 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
   Vector3<T> normal_component_sum = Vector3<T>::Zero();
   for (const auto& force : forces_) {
     normal_component_sum += force.get_normal_force();
-    result_torque += force.get_pure_torque();
+    result_torque += force.get_torque();
     tangent_component_sum += force.get_tangent_force();
   }
 
