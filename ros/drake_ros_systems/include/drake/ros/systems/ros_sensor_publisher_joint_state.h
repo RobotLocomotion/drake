@@ -10,7 +10,7 @@
 #include "sensor_msgs/JointState.h"
 
 #include "drake/system1/System.h"
-#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/multibody/KinematicsCache.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/system1/vector.h"
