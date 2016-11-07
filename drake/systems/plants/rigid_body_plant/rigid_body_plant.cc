@@ -9,11 +9,11 @@
 #include "drake/solvers/mathematical_program.h"
 // TODO(amcastro-tri): parsers are not "plants" and should therefore be moved
 // somewhere else. Maybe inside "multibody_dynamics/parsers" when that exists.
-#include "contact_resultant_force_calculator.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/rigid_body_plant/contact_resultant_force_calculator.h"
 
 using std::make_unique;
 using std::move;

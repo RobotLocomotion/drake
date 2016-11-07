@@ -769,7 +769,7 @@ bool RigidBodyTree<T>::AllPairsClosestPoints(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::AllPairsClosestPointsInSet (
+bool RigidBodyTree<T>::AllPairsClosestPointsInSet(
     const KinematicsCache<double>& cache,
     const vector<DrakeCollision::ElementId>& ids_to_check,
     std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
