@@ -1,7 +1,7 @@
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "../constraint/RigidBodyConstraint.h"
-#include "../IKoptions.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/IKoptions.h"
 #include <iostream>
 #include <cstdlib>
 #include <limits>

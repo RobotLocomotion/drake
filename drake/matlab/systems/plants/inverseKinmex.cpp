@@ -2,8 +2,8 @@
 
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
 #include <Eigen/Dense>
 #include "drake/matlab/util/drakeMexUtil.h"
 

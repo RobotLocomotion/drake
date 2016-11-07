@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 
