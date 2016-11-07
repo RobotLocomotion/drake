@@ -96,7 +96,7 @@ def multiprocess_cpplint(cmdline, files, args):
         print ' TOTAL %d files checked, found %d warnings' % (
             len(files), num_errors)
         for line in errors:
-            print >>sys.stderr, line
+            print >>sys.stdout, line
         return 1
 
 
