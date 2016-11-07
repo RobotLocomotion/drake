@@ -86,10 +86,10 @@ pods_install_pkg_config_file(drake-ik
   REQUIRES drake-rbm
   VERSION 0.0.1)
 
-add_subdirectory(../systems/plants/shapes)
+add_subdirectory(shapes)
 add_subdirectory(../systems/plants/rigid_body_plant)
 add_subdirectory(../systems/plants/spring_mass_system)
-add_subdirectory(../systems/plants/collision)
+add_subdirectory(collision)
 add_subdirectory(../systems/plants/constraint)
-add_subdirectory(../systems/plants/joints)
+add_subdirectory(joints)
 add_subdirectory(../systems/plants/test)
