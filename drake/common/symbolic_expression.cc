@@ -311,7 +311,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const Expression& e3{rhs_ptr->get_1st_expression()};
       if (e1.EqualTo(e3)) {
         // Simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
-        //                 => pow(e1, e2 + e3)
+        //                 => pow(e1, e2 + e4)
         const Expression& e2{lhs_ptr->get_2nd_expression()};
         const Expression& e4{rhs_ptr->get_2nd_expression()};
         lhs = pow(e1, e2 + e4);
