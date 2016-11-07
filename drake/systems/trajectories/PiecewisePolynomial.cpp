@@ -343,6 +343,6 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }
 
-template class DRAKE_EXPORT PiecewisePolynomial<double>;
-// template class DRAKE_EXPORT
+template class PiecewisePolynomial<double>;
+// template class
 // PiecewisePolynomial<std::complex<double>>; // doesn't work yet

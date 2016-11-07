@@ -39,8 +39,8 @@ void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT ConstantVectorSource<double>;
-template class DRAKE_EXPORT ConstantVectorSource<AutoDiffXd>;
+template class ConstantVectorSource<double>;
+template class ConstantVectorSource<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
