@@ -200,6 +200,10 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
+  # Set default lib directory name suffix.
+  set(LIB_SUFFIX "" CACHE STRING "lib directory name suffix")
+  mark_as_advanced(LIB_SUFFIX)
+
   drake_setup_compiler()
   drake_setup_matlab()
   drake_setup_java()
