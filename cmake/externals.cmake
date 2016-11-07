@@ -186,7 +186,8 @@ macro(drake_add_cmake_external PROJECT)
     Java_JAVAC_EXECUTABLE
     Java_JAVAH_EXECUTABLE
     Java_VERSION_STRING
-    CMAKE_JAVA_COMPILE_FLAGS)
+    CMAKE_JAVA_COMPILE_FLAGS
+    LIB_SUFFIX)
 
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
