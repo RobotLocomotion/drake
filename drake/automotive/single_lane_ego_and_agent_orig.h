@@ -2,11 +2,11 @@
 
 #include <memory>
 
-//#include "drake/systems/framework/primitives/integrator.h"
+#include "drake/systems/framework/primitives/integrator.h"
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-//#include "drake/automotive/gen/single_lane_ego_and_agent_state.h"
+#include "drake/automotive/gen/single_lane_ego_and_agent_state.h"
 #include "drake/automotive/linear_car.h"
 #include "drake/automotive/idm_planner.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
@@ -14,23 +14,7 @@
 namespace drake {
 namespace automotive {
 
-/// System with cars arranged in a diagram:
-///
-///   +--------------+         +-------------+
-///   |   Constant   | v_dot_a |  Agent Car  |  x_a, v_a
-///   | Acceleration |-------->|             |----+
-///   |    Input     |         | (LinearCar) |    |
-///   +--------------+         +-------------+    |
-///                                               |
-///       +-------------------------------------+
-///       | port
-///       |  1   +--------------+         +-------------+
-///       +----->|   Planner    | v_dot_e |   Ego Car   |  x_e, v_e
-///              |              |-------->|             |----+
-///       +----->| (IdmPlanner) |         | (LinearCar) |    |
-///       | port +--------------+         +-------------+    |
-///       |  0                                               |
-///       +--------------------------------------------------+
+/// 
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -52,12 +36,25 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
 
   ~SingleLaneEgoAndAgent() override {}
 
-  bool has_any_direct_feedthrough() const override;
+  /// Returns the output port to the ego car states.
+  const systems::SystemPortDescriptor<T>& get_ego_car_output_port() const;
+
+  /// Returns the output port to the agent car states.
+  const systems::SystemPortDescriptor<T>& get_agent_car_output_port() const;
 
   /// Sets @p context to a default state.
   void SetDefaultState(systems::Context<T>* context) const;
 
+ protected:
+  // LeafSystem<T> overrides
+  std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
+      const;
+
+  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
+      const systems::SystemPortDescriptor<T>& descriptor) const;
+
  private:
+  systems::Integrator<T>* integrator_ = nullptr;
   LinearCar<T>* ego_car_ = nullptr;
   LinearCar<T>* agent_car_ = nullptr;
   IdmPlanner<T>* planner_ = nullptr;

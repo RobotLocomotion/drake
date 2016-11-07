@@ -1,9 +1,14 @@
 #pragma once
+ 
+#include <cstdint>
+#include <memory>
 
-//#include "drake/automotive/gen/linear_car_input.h"
-//#include "drake/automotive/gen/linear_car_state.h"
+#include "drake/automotive/gen/linear_car_input.h"
+#include "drake/automotive/gen/linear_car_state.h"
+#include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
-//#include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace automotive {
@@ -20,21 +25,21 @@ namespace automotive {
 ///
 /// @ingroup automotive_systems
 template <typename T>
-class LinearCar : public systems::LeafSystem<T> {
+  class LinearCar : public systems::LeafSystem<T> {
  public:
-  LinearCar();
+  /// Constructs an %LinearCar system.
+  /// @param size number of elements in the signal to be processed.
+  explicit LinearCar();
   ~LinearCar() override;
 
-  /// Declare that the outputs are all algebraically isolated from the input.
-  bool has_any_direct_feedthrough() const override { return false; }
-
-  /// Returns the input port.
-  const systems::SystemPortDescriptor<T>& get_input_port() const;
-
-  /// Returns the output port.
-  const systems::SystemPortDescriptor<T>& get_output_port() const;
+  /// Sets the value of the state in the context.
+  /// @p value must be a column vector of the appropriate size.
+  void set_states(systems::Context<T>* context,
+                          const Eigen::Ref<const VectorX<T>>& value) const;
 
   // System<T> overrides
+  bool has_any_direct_feedthrough() const override;
+
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
@@ -45,10 +50,7 @@ class LinearCar : public systems::LeafSystem<T> {
  protected:
   // LeafSystem<T> overrides
   std::unique_ptr<systems::ContinuousState<T>> AllocateContinuousState()
-      const override;
-
-  std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
-      const systems::SystemPortDescriptor<T>& descriptor) const override;
+    const override;
 };
 
 }  // namespace automotive

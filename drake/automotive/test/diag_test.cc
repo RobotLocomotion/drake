@@ -1,4 +1,4 @@
-#include "drake/automotive/single_lane_ego_and_agent.h"
+#include "drake/automotive/diag.h"
 
 #include <memory>
 
@@ -22,12 +22,22 @@ std::unique_ptr<systems::FreestandingInputPort> MakeInput(
   return make_unique<systems::FreestandingInputPort>(std::move(data));
 }
 
-class SingleLaneEgoAndAgentTest : public ::testing::Test {
+class DiagTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = controller_.CreateDefaultContext();
     output_ = controller_.AllocateOutput(*context_);
     derivatives_ = controller_.AllocateTimeDerivatives();
+
+    // Error signal input port.
+    //auto vec0 = std::make_unique<systems::BasicVector<double>>(port_size_);
+    //vec0->get_mutable_value() << error_signal_;
+    //context_->SetInputPort(0, MakeInput(std::move(vec0)));
+
+    // Error signal rate input port.
+    //auto vec1 = std::make_unique<systems::BasicVector<double>>(port_size_);
+    //vec1->get_mutable_value() << error_rate_signal_;
+    //context_->SetInputPort(1, MakeInput(std::move(vec1)));
   }
 
   systems::VectorBase<double>* continuous_state() {
@@ -37,13 +47,17 @@ class SingleLaneEgoAndAgentTest : public ::testing::Test {
     return result;
   }
 
-  SingleLaneEgoAndAgent<double> controller_{10.0, 0.0};
+  const VectorX<double> kp_{VectorX<double>::Ones(1) * 2.0};
+  const VectorX<double> ki_{VectorX<double>::Ones(1) * 3.0};
+  const VectorX<double> kd_{VectorX<double>::Ones(1) * 1.0};
+
+  Diag<double> controller_{kp_, ki_, kd_, 10.0, 0.0};
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
-TEST_F(SingleLaneEgoAndAgentTest, Topology) {
+TEST_F(DiagTest, Topology) {
   ASSERT_EQ(0, controller_.get_num_input_ports());
 
   ASSERT_EQ(2, controller_.get_num_output_ports());
@@ -60,7 +74,7 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
 }
 
 // Evaluates the output.
-TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
+TEST_F(DiagTest, EvalOutput) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, output_);
 
@@ -90,7 +104,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
 }
 
 // Evaluate the derivatives.
-TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
+TEST_F(DiagTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
@@ -107,5 +121,5 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
 }
 
 }  // namespace
-}  // namespace automotive
+}  // namespace systems
 }  // namespace drake

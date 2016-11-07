@@ -22,6 +22,9 @@ target_link_libraries(idm_planner_test drakeAutomotive)
 drake_add_cc_test(single_lane_ego_and_agent_test)
 target_link_libraries(single_lane_ego_and_agent_test drakeAutomotive)
 
+drake_add_cc_test(diag_test)
+target_link_libraries(diag_test drakeAutomotive)
+
 if(lcm_FOUND)
   drake_add_cc_test(simple_car_state_translator_test)
   target_link_libraries(simple_car_state_translator_test drakeAutomotiveLcm)

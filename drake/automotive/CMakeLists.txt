@@ -18,7 +18,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   trajectory_car.cc
   linear_car.cc
   idm_planner.cc
+  idm_planner_four_inputs.cc
   single_lane_ego_and_agent.cc
+  diag.cc
   )
 target_link_libraries(drakeAutomotive
   drakeCommon

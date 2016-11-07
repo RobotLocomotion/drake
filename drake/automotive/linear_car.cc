@@ -18,10 +18,10 @@ namespace automotive {
 template <typename T>
 LinearCar<T>::LinearCar() {
   this->DeclareInputPort(systems::kVectorValued,
-                         LinearCarInputIndices::kNumCoordinates,
+                         1, //LinearCarInputIndices::kNumCoordinates,
                          systems::kContinuousSampling);
   this->DeclareOutputPort(systems::kVectorValued,
-                          LinearCarStateIndices::kNumCoordinates,
+                          2, //LinearCarStateIndices::kNumCoordinates,
                           systems::kContinuousSampling);
 }
 
@@ -52,8 +52,10 @@ void LinearCar<T>::EvalOutput(
 
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
-  output_vector->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+  //output_vector->get_mutable_value() =
+  //    context.get_continuous_state()->CopyToVector();
+  this->GetMutableOutputVector(output, 0) =
+    this->CopyContinuousStateVector(context);
 }
 
 template <typename T>
@@ -61,45 +63,53 @@ void LinearCar<T>::EvalTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
+  DRAKE_ASSERT(derivatives != nullptr);
 
   // Obtain the state.
   const systems::VectorBase<T>& context_state =
       context.get_continuous_state_vector();
-  const LinearCarInput<T>* const input =
-      dynamic_cast<const LinearCarInput<T>*>(this->EvalVectorInput(context, 0));
-  const LinearCarState<T>* const state =
-      dynamic_cast<const LinearCarState<T>*>(&context_state);
-  DRAKE_ASSERT(state != nullptr);
+  //const LinearCarInput<T>* const input =
+  //    dynamic_cast<const LinearCarInput<T>*>(this->EvalVectorInput(context, 0));
+  auto input = this->EvalVectorInput(context, 0);
+  //DRAKE_ASSERT(input != nullptr);
+  //const LinearCarState<T>* const state =
+  //    dynamic_cast<const LinearCarState<T>*>(&context_state);
+  //DRAKE_ASSERT(state != nullptr);
 
   // Obtain the structure we need to write into.
-  DRAKE_ASSERT(derivatives != nullptr);
   systems::VectorBase<T>* const derivatives_state =
       derivatives->get_mutable_vector();
   DRAKE_ASSERT(derivatives_state != nullptr);
-  LinearCarState<T>* const new_derivatives =
-      dynamic_cast<LinearCarState<T>*>(derivatives_state);
-  DRAKE_ASSERT(new_derivatives != nullptr);
+  //LinearCarState<T>* const new_derivatives =
+  //    dynamic_cast<LinearCarState<T>*>(derivatives_state);
+  //DRAKE_ASSERT(new_derivatives != nullptr);
 
   // Declare the state derivatives (consistent with linear_car_state.cc).
-  new_derivatives->set_x(state->v());
-  new_derivatives->set_v(input->vdot());
+  //new_derivatives->set_x(state->v());
+  //new_derivatives->set_v(input->vdot());
+  derivatives_state->SetAtIndex(0, context_state.GetAtIndex(1));
+  derivatives_state->SetAtIndex(1, input->GetAtIndex(0));
 }
 
 template <typename T>
 std::unique_ptr<systems::ContinuousState<T>>
 LinearCar<T>::AllocateContinuousState() const {
-  auto state = std::make_unique<LinearCarState<T>>();
+  //auto state = std::make_unique<LinearCarState<T>>();
   // Define the initial state values.
-  state->set_x(T{0.0});
-  state->set_v(T{0.0});
-  return std::make_unique<systems::ContinuousState<T>>(std::move(state));
+  //state->set_x(T{0.0});
+  //state->set_v(T{0.0});
+  const int size = systems::System<T>::get_output_port(0).get_size();
+  DRAKE_ASSERT(systems::System<T>::get_input_port(0).get_size() == size);
+  return std::make_unique<systems::ContinuousState<T>>(
+      std::make_unique<systems::BasicVector<T>>(size));
 }
 
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>>
 LinearCar<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
-  return std::make_unique<LinearCarState<T>>();
+  //return std::make_unique<LinearCarState<T>>();
+  return std::make_unique<systems::BasicVector<T>>(2);
 }
 
 // These instantiations must match the API documentation in
