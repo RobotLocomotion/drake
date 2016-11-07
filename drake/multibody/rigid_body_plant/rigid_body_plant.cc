@@ -1,4 +1,4 @@
-#include "rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 #include <algorithm>
 #include <memory>
