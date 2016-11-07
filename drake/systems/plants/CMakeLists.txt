@@ -9,6 +9,13 @@ pods_install_pkg_config_file(drake-rbsystem
         -ldrakeIK
         VERSION 0.0.1)
 
+if(lcm_FOUND)
+    add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
+    target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
+    pods_install_executables(rigidBodyLCMNode)
+    drake_install_headers(BotVisualizer.h)
+endif()
+
 # TODO(amcastro-tri): Remove these once director is updated to use header files
 # in drake/multibody/
 drake_install_headers(

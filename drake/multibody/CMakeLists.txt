@@ -44,13 +44,6 @@ pods_install_pkg_config_file(drake-rbm
   REQUIRES
   VERSION 0.0.1)
 
-if(lcm_FOUND)
-  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
-  target_link_libraries(rigidBodyLCMNode gflags drakeRBSystem drakeLCMSystem Threads::Threads)
-  pods_install_executables(rigidBodyLCMNode)
-  drake_install_headers(BotVisualizer.h)
-endif()
-
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 

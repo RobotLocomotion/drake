@@ -7,7 +7,7 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/system1/LCMSystem.h"
 #include "drake/system1/cascade_system.h"
-#include "BotVisualizer.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
