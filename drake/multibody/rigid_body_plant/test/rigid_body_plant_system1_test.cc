@@ -5,7 +5,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using Eigen::VectorXd;

@@ -7,7 +7,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
+#include "viewer_draw_translator.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"

@@ -71,5 +71,6 @@ pods_install_pkg_config_file(drake-ik
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(joints)
+add_subdirectory(rigid_body_plant)
 add_subdirectory(shapes)
 add_subdirectory(test)

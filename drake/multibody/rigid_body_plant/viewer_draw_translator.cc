@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/viewer_draw_translator.h"
+#include "viewer_draw_translator.h"
 
 #include <cstdint>
 #include <vector>

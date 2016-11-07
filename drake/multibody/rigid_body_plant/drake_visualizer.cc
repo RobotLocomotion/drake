@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake_visualizer.h"
 
 namespace drake {
 namespace systems {

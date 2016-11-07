@@ -5,15 +5,15 @@ set(source_files kinematics_results.cc rigid_body_plant.cc)
 set(lcm_dependent_header_files)
 if (lcm_FOUND)
   set(lcm_dependent_header_files
-      drake_visualizer.h
-      viewer_draw_translator.h)
+          drake_visualizer.h
+          viewer_draw_translator.h)
 endif()
 
 set(lcm_dependent_source_files)
 if (lcm_FOUND)
   set(lcm_dependent_source_files
-      drake_visualizer.cc
-      viewer_draw_translator.cc)
+          drake_visualizer.cc
+          viewer_draw_translator.cc)
 endif()
 
 set(lcm_dependent_link_libraries)
@@ -34,7 +34,7 @@ target_link_libraries(drakeRigidBodyPlant
 
 drake_install_headers(
     ${lcm_dependent_header_files}
-    kinematics_results.h rigid_body_plant.h)
+        kinematics_results.h rigid_body_plant.h)
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rigid-body-plant
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
