@@ -5,7 +5,7 @@
 #include "drake/system1/LCMSystem.h"
 #include "drake/system1/LinearSystem.h"
 #include "drake/system1/pd_control_system.h"
-#include "drake/multibody/BotVisualizer.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 

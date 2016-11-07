@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/system1/LCMSystem.h"
-#include "drake/multibody/BotVisualizer.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
 

@@ -2,7 +2,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_simulation.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
 #include "drake/system1/LCMSystem.h"
-#include "drake/multibody/BotVisualizer.h"
+#include "drake/systems/plants/BotVisualizer.h"
 #include "drake/multibody/RigidBodyTree.h"
 
 #include "drake/lcmt_iiwa_status.hpp"

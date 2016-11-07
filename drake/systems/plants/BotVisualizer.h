@@ -10,7 +10,7 @@
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/system1/System.h"
-#include "RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 #include "drake/lcmt_viewer_load_robot.hpp"
