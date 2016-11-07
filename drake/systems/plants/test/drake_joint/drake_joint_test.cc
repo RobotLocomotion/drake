@@ -6,7 +6,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/RigidBodySystem.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
 

@@ -4,7 +4,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/Acrobot.h"
 #include "drake/multibody/RigidBodySystem.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {

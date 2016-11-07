@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {

@@ -6,7 +6,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/RigidBodyFrame.h"
 #include "drake/multibody/RigidBodySystem.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {

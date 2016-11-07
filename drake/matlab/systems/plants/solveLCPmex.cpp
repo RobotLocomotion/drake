@@ -4,7 +4,7 @@
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/util/MexWrapper.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/solvers/fast_qp.h"
 #include <sstream>
 #include "rigidBodyTreeMexConversions.h"

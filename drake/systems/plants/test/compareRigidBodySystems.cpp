@@ -7,7 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/RigidBodyFrame.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace systems {

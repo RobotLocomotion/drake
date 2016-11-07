@@ -5,7 +5,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
