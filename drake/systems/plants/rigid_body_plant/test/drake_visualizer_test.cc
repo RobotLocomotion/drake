@@ -141,7 +141,7 @@ void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
     geometry_data.color[2] = 0.3;
     geometry_data.color[3] = 1.0;
     geometry_data.string_data = drake::GetDrakePath() +
-        "/systems/plants/collision/test/spherical_cap.obj";
+        "/multibody/collision/test/spherical_cap.obj";
     geometry_data.num_float_data = 3;
     geometry_data.float_data.push_back(1);
     geometry_data.float_data.push_back(1);
@@ -399,7 +399,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Mesh shape("spherical_cap.obj",
         drake::GetDrakePath() +
-        "/systems/plants/collision/test/spherical_cap.obj");
+        "/multibody/collision/test/spherical_cap.obj");
     Eigen::Vector4d material(0.2, 0.7, 0.3, 1.0);
 
     DrakeShapes::VisualElement visual_element(
