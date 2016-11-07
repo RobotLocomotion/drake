@@ -20,8 +20,8 @@ ContactInfo<T>::ContactInfo(const ContactInfo<T>& other)
       resultant_force_(move(other.resultant_force_)) {
   contact_details_.reserve(other.contact_details_.size());
   for (const auto& detail : other.contact_details_) {
-    std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
-    contact_details_.push_back(std::move(copy));
+    std::unique_ptr<ContactDetail<T>> detail_copy(detail->Clone());
+    contact_details_.push_back(std::move(detail_copy));
   }
 }
 
@@ -34,8 +34,8 @@ ContactInfo<T>& ContactInfo<T>::operator=(const ContactInfo<T>& other) {
   contact_details_.clear();
   contact_details_.reserve(other.contact_details_.size());
   for (const auto& detail : other.contact_details_) {
-    std::unique_ptr<ContactDetail<T>> copy(detail->Clone());
-    contact_details_.push_back(std::move(copy));
+    std::unique_ptr<ContactDetail<T>> detail_copy(detail->Clone());
+    contact_details_.push_back(std::move(detail_copy));
   }
   return *this;
 }

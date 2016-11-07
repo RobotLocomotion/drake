@@ -12,6 +12,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/plants/collision/Element.h"
 #include "drake/systems/plants/parser_urdf.h"
+#include "drake/systems/plants/rigid_body_plant/contact_resultant_force_calculator.h"
 
 using std::make_unique;
 using std::move;

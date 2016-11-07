@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -47,8 +48,8 @@ class DRAKE_EXPORT ContactInfo {
   ContactInfo(ContactInfo<T>&& other) = delete;
   ContactInfo& operator=(ContactInfo<T>&& other) = delete;
 
-  DrakeCollision::ElementId get_element_id_1() const { return element1_; };
-  DrakeCollision::ElementId get_element_id_2() const { return element2_; };
+  DrakeCollision::ElementId get_element_id_1() const { return element1_; }
+  DrakeCollision::ElementId get_element_id_2() const { return element2_; }
 
   void set_resultant_force(const ContactForce<T> force) {
     resultant_force_ = force;
