@@ -94,8 +94,8 @@ void AffineSystem<T>::EvalTimeDerivatives(
   derivatives->SetFromVector(A_ * x + B_ * u + xDot0_);
 }
 
-template class DRAKE_EXPORT AffineSystem<double>;
-template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
+template class AffineSystem<double>;
+template class AffineSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

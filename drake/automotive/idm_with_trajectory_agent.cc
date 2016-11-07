@@ -115,9 +115,9 @@ IdmWithTrajectoryAgent<T>::AllocateOutputVector(
 
 // These instantiations must match the API documentation in
 // idm_with_trajectory_agent.h.
-template class DRAKE_EXPORT IdmWithTrajectoryAgent<double>;
-template class DRAKE_EXPORT IdmWithTrajectoryAgent<drake::TaylorVarXd>;
-template class DRAKE_EXPORT IdmWithTrajectoryAgent<drake::symbolic::Expression>;
+template class IdmWithTrajectoryAgent<double>;
+template class IdmWithTrajectoryAgent<drake::TaylorVarXd>;
+template class IdmWithTrajectoryAgent<drake::symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake

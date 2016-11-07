@@ -333,7 +333,7 @@ int AutomotiveSimulator<T>::allocate_vehicle_number() {
   return next_vehicle_number_++;
 }
 
-template class DRAKE_EXPORT AutomotiveSimulator<double>;
+template class AutomotiveSimulator<double>;
 
 }  // namespace automotive
 }  // namespace drake
