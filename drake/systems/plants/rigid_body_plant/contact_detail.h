@@ -27,7 +27,7 @@ class DRAKE_EXPORT ContactDetail {
  public:
   virtual ~ContactDetail() {}
 
-  virtual std::unique_ptr<ContactDetail<T>> Clone() const;
+  virtual std::unique_ptr<ContactDetail<T>> Clone() const = 0;
 
   /**
    Computes a single equivalent contact force to the underlying contact details.
