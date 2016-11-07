@@ -82,3 +82,16 @@ Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
       x_to_the_y * log(x) * ygrad);
 }
 #endif  // EIGEN_VERSION...
+
+#if !EIGEN_VERSION_AT_LEAST(3, 2, 93)  // False when built via Drake superbuild.
+namespace Eigen {
+/// Overloads max to mimic std::max from <algorithm>.
+/// Required for old, broken Eigen versions.
+template <typename DerType>
+const Eigen::AutoDiffScalar<DerType>& max(
+    const Eigen::AutoDiffScalar<DerType>& x,
+    const Eigen::AutoDiffScalar<DerType>& y) {
+  return (x > y) ? x : y;
+}
+}
+#endif  // EIGEN_VERSION...
