@@ -5,6 +5,8 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/trajectory.h"
 
+using Eigen::MatrixXd;
+
 namespace drake {
 
 /**
@@ -14,11 +16,13 @@ namespace drake {
 class PiecewisePolynomialTrajectory : public Trajectory {
  public:
   explicit PiecewisePolynomialTrajectory(
+      const MatrixXd& traj, const std::vector<double>& times );
+
+  explicit PiecewisePolynomialTrajectory(
       const PiecewisePolynomial<double>& pp)
       : pp_(pp) {}
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
-      double t) const override {
+  PiecewisePolynomial<double>::CoefficientMatrix value(double t) const override {
     return pp_.value(t);
   }
 
@@ -35,7 +39,7 @@ class PiecewisePolynomialTrajectory : public Trajectory {
   Eigen::Index cols() const override { return pp_.cols(); }
 
  private:
-  const PiecewisePolynomial<double> pp_;
+  PiecewisePolynomial<double> pp_;
 };
 
 }  // namespace drake

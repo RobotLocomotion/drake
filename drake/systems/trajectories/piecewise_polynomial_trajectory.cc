@@ -1,0 +1,42 @@
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
+
+namespace drake {
+
+PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
+  const MatrixXd& traj, const std::vector<double>& times)
+{
+  typedef PiecewisePolynomial<double> PPType;
+  typedef PPType::PolynomialType PolynomialOfDouble;
+  typedef PPType::PolynomialMatrix PolyMatrixOfDouble;
+
+  std::vector<PolyMatrixOfDouble> polys;
+  std::vector<double> segment_times;
+  int num_time_steps = times.size();
+  // For each timestep, creates a PolynomialMatrix for each joint position.
+  // Each column of traj represents a particular time, and the rows of that
+  // column contain values for each joint coordinate.
+  for (int i = 0; i < num_time_steps; ++i) {
+    PolyMatrixOfDouble poly_matrix(traj.rows(), 1);
+    const auto traj_now = traj.col(i);
+
+    // Produces interpolating polynomials for each joint coordinate.
+    if (i != num_time_steps - 1) {
+      for (int row = 0; row < traj.rows(); ++row) {
+        Eigen::Vector2d coeffs(0, 0);
+        coeffs[0] = traj_now(row);
+        // Sets the coefficient such that it will reach the value of
+        // the next timestep at the time when we advance to the next
+        // piece.  In the event that we're at the end of the
+        // trajectory, this will be left 0.
+        coeffs[1] = (traj(row, i + 1) - coeffs[0]) /
+            (times.at(i+1) - times.at(i));
+        poly_matrix(row) = PolynomialOfDouble(coeffs);
+      }
+      polys.push_back(poly_matrix);
+    }
+    segment_times.push_back(times.at(i));
+  }
+  pp_ = PPType(polys, segment_times);
+}
+
+}  // namespace drake

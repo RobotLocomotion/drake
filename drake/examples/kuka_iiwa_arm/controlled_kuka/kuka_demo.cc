@@ -60,7 +60,8 @@ namespace kuka_iiwa_arm {
 namespace controlled_kuka {
 namespace {
 
-const string kUrdfPath { "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf" };
+const string kUrdfPath {
+    "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf" };
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   RigidBodyTree<double> tree(drake::GetDrakePath() + kUrdfPath,
@@ -111,7 +112,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
 
   // TODO(naveenoid): Explain here in a comment why kNumTimesteps = 5.
   const int kNumTimesteps = 5;
-  double t[kNumTimesteps] = { 0.0, 2.0, 5.0, 7.0, 9.0 };
+  const std::vector<double> t { 0.0, 2.0, 5.0, 7.0, 9.0 };
   MatrixXd q0(tree.get_num_positions(), kNumTimesteps);
   for (int i = 0; i < kNumTimesteps; ++i) {
     q0.col(i) = zero_conf;
@@ -128,9 +129,9 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   MatrixXd q_sol(tree.get_num_positions(), kNumTimesteps);
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, kNumTimesteps, t, q0, q0, constraint_array.size(),
-                      constraint_array.data(), ikoptions, &q_sol, info,
-                      &infeasible_constraint);
+  inverseKinPointwise(&tree, kNumTimesteps, &t[0], q0, q0,
+                      constraint_array.size(), constraint_array.data(),
+                      ikoptions, &q_sol, info, &infeasible_constraint);
   bool info_good = true;
   for (int i = 0; i < kNumTimesteps; ++i) {
     drake::log()->info("INFO[{}] = {} ", i, info[i]);
@@ -145,42 +146,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  // This code comes from TrajectoryRunner in kuka_id_demo.
-  // TODO(naveenoid): Remove duplicated code by refactoring TrajectoryRunner
-  // out of kuka_ik_demo.
-  typedef PiecewisePolynomial<double> PPType;
-  typedef PPType::PolynomialType PPPoly;
-  typedef PPType::PolynomialMatrix PPMatrix;
-  std::vector<PPMatrix> polys;
-  std::vector<double> times;
-
-  MatrixXd traj = q_sol;
-
-  // For each timestep, creates a PolynomialMatrix for each joint position.
-  // Each column of traj represents a particular time, and the rows of that
-  // column contain values for each joint coordinate.
-  for (int i = 0; i < kNumTimesteps; ++i) {
-    PPMatrix poly_matrix(traj.rows(), 1);
-    const auto traj_now = traj.col(i);
-
-    // Produces interpolating polynomials for each joint coordinate.
-    if (i != kNumTimesteps - 1) {
-      for (int row = 0; row < traj.rows(); ++row) {
-        Eigen::Vector2d coeffs(0, 0);
-        coeffs[0] = traj_now(row);
-        // Sets the coefficient such that it will reach the value of
-        // the next timestep at the time when we advance to the next
-        // piece.  In the event that we're at the end of the
-        // trajectory, this will be left 0.
-        coeffs[1] = (traj(row, i + 1) - coeffs[0]) / (t[i + 1] - t[i]);
-        poly_matrix(row) = PPPoly(coeffs);
-      }
-      polys.push_back(poly_matrix);
-    }
-    times.push_back(t[i]);
-  }
-  auto pp_traj = make_unique<PiecewisePolynomialTrajectory>(
-      PPType(polys, times));
+  auto pp_traj = make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
   return pp_traj;
 }
 
