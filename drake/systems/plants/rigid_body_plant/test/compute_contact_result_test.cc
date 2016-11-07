@@ -148,20 +148,23 @@ TEST_F(ContactResultTest, SingleCollision) {
   ASSERT_NE(e1, e2);
   ASSERT_TRUE(b1 == body1_ || b1 == body2_);
   ASSERT_TRUE(b2 == body1_ || b2 == body2_);
-//  const ContactManifold<double>& manifold = info.get_contact_manifold();
-//  ASSERT_EQ(manifold.get_num_contacts(), 1);
-//  auto detail = manifold.get_ith_contact(0);
-//  Vector3d expected_pt = Vector3d::Zero();
-//  ASSERT_TRUE(CompareMatrices(detail->get_application_point(), expected_pt));
-//  // Note: This is fragile.  This is the value copied from rigid_body_plant.h
-//  //  If the hard-coded value changes, or the code changes for the value to
-//  //  be set in some other manner, then this test may fail.
-//  const double stiffness = 150.0;
-//  double force = stiffness * offset * 2;
-//  WrenchVector<double> expected_F;
-//  // The force vector points from body2 to body1.
-//  expected_F << 0, 0, 0, -force, 0, 0;
-//  ASSERT_TRUE(CompareMatrices(detail->get_wrench(), expected_F));
+
+  // Confirms the contact details are as expected.
+  const auto& resultant = info.get_resultant_force();
+  SpatialForce<double> expected_spatial_force;
+  // Note: This is fragile.  This is the value copied from rigid_body_plant.h
+  //  If the hard-coded value changes, or the code changes for the value to
+  //  be set in some other manner, then this test may fail.
+  const double stiffness = 150.0;
+  double force = stiffness * offset * 2;
+  expected_spatial_force << 0, 0, 0, -force, 0, 0;
+  ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
+
+  const auto& details = info.get_contact_details();
+  ASSERT_EQ(details.size(), 1);
+  auto detail = details[0].get();
+  auto detail_force = detail->ComputeContactForce();
+  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(), expected_spatial_force));
 }
 }  // namespace
 }  // namespace test
