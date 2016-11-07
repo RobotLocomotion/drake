@@ -7,8 +7,8 @@
 
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/solution_result.h"
-#include "constraint_wrappers.h"
-#include "RigidBodyTree.h"
+#include "drake/multibody/constraint_wrappers.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 class RigidBodyConstraint;
 class IKoptions;

@@ -1,3 +1,5 @@
+#include "drake/multibody/IKoptions.h"
+
 #include <set>
 
 #include "RigidBodyTree.h"

@@ -1,4 +1,4 @@
-#include "parser_sdf.h"
+#include "drake/multibody/parser_sdf.h"
 
 #include <algorithm>
 #include <fstream>
@@ -15,10 +15,10 @@
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/DrakeJoints.h"
-#include "parser_common.h"
-#include "parser_model_instance_id_table.h"
-#include "RigidBodyTree.h"
-#include "xmlUtil.h"
+#include "drake/multibody/parser_common.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 // from

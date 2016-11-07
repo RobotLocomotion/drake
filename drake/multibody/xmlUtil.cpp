@@ -1,4 +1,4 @@
-#include "xmlUtil.h"
+#include "drake/multibody/xmlUtil.h"
 
 #include <fstream>
 #include <sstream>

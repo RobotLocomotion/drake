@@ -1,4 +1,4 @@
-#include "parser_model_instance_id_table.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
 
 #include <stdexcept>
 

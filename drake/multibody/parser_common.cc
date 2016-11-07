@@ -1,4 +1,4 @@
-#include "parser_common.h"
+#include "drake/multibody/parser_common.h"
 
 #include <string>
 

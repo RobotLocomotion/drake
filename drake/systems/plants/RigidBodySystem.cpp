@@ -1,4 +1,4 @@
-#include "RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 #include <algorithm>
 #include <limits>

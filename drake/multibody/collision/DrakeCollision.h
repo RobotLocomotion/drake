@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "drake/common/drake_export.h"
-#include "Model.h"
+#include "drake/multibody/collision/Model.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 

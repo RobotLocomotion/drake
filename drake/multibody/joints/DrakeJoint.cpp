@@ -1,4 +1,4 @@
-#include "DrakeJoint.h"
+#include "drake/multibody/joints/DrakeJoint.h"
 
 #include <limits>
 

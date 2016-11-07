@@ -1,4 +1,4 @@
-#include "inverseKinBackend.h"
+#include "drake/multibody/inverseKinBackend.h"
 
 #include <stdexcept>
 #include <vector>
@@ -13,7 +13,7 @@
 #include "drake/math/gradient.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "constraint_wrappers.h"
+#include "drake/multibody/constraint_wrappers.h"
 #include "IKoptions.h"
 #include "RigidBodyTree.h"
 

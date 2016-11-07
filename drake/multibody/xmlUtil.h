@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "pose_map.h"
+#include "drake/multibody/pose_map.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 template <typename Scalar>

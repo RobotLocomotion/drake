@@ -1,4 +1,4 @@
-#include "Element.h"
+#include "drake/multibody/collision/Element.h"
 
 #include <iostream>
 

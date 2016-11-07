@@ -12,8 +12,8 @@
 #include "drake/math/gradient.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "KinematicsCache.h"
-#include "RigidBodyTree.h"
+#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace systems {

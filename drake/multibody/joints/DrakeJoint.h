@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/gradient.h"
 #include "drake/common/drake_export.h"
-#include "floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 // TODO(liang.Fok) Document these method once #3608 is resolved.
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar)                      \

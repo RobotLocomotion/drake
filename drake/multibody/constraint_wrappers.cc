@@ -1,4 +1,4 @@
-#include "constraint_wrappers.h"
+#include "drake/multibody/constraint_wrappers.h"
 
 namespace drake {
 namespace systems {

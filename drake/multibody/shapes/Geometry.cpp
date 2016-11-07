@@ -1,4 +1,4 @@
-#include "Geometry.h"
+#include "drake/multibody/shapes/Geometry.h"
 
 #include <algorithm>
 #include <cstdio>

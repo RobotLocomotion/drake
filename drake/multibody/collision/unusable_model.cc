@@ -1,4 +1,4 @@
-#include "unusable_model.h"
+#include "drake/multibody/collision/unusable_model.h"
 
 #include "drake/common/drake_assert.h"
 
