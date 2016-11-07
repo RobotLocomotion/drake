@@ -2,13 +2,10 @@
 
 #include <memory>
 
-//#include "drake/systems/framework/primitives/integrator.h"
-
+#include "drake/automotive/idm_planner.h"
+#include "drake/automotive/linear_car.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
-//#include "drake/automotive/gen/single_lane_ego_and_agent_state.h"
-#include "drake/automotive/linear_car.h"
-#include "drake/automotive/idm_planner.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 
 namespace drake {
@@ -56,6 +53,10 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
 
   /// Sets @p context to a default state.
   void SetDefaultState(systems::Context<T>* context) const;
+
+  /// Getters for the ego and agent car systems.
+  const LinearCar<T>* get_ego_car_system() { return ego_car_; }
+  const LinearCar<T>* get_agent_car_system() { return agent_car_; }
 
  private:
   LinearCar<T>* ego_car_ = nullptr;
