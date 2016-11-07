@@ -13,7 +13,7 @@
       <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg) based on the PDF linked below.
       https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download -->
 
-      <!-- Our simplified model as of now assumes that only six links have non-zero weight: the chassis_floor, the body, and the four wheels. The chassis_floor's share of the curb weight is arbitrarily set to 1,360 kg, with the only justification of bringing the center of mass reasonable low.  -->
+      <!-- Our simplified model as of now assumes that only six links have non-zero weight: the chassis_floor, the body, and the four wheels. The chassis_floor's share of the curb weight is set to 1,360 kg, and the only justification for this otherwise arbitrary value is to bring the center of mass reasonable low.  -->
 
       <!-- TODO(shensquared): Refine the weight distribution when the model is of higher fidelity. -->
      
