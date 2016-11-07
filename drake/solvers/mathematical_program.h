@@ -410,7 +410,7 @@ class MathematicalProgram {
       std::size_t rows, std::size_t cols,
       const std::vector<std::string>& names) {
     return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, cols,
-                        names);
+                        false, names);
   }
 
   /**
@@ -452,7 +452,7 @@ class MathematicalProgram {
     required_capabilities_ |= kBinaryVariable;
 
     return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols,
-                        names);
+                        false, names);
   }
 
   /**
@@ -485,6 +485,20 @@ class MathematicalProgram {
                                             const std::string& name) {
     std::vector<std::string> names = std::vector<std::string>(rows, name);
     return AddBinaryVariables(rows, 1, names);
+  }
+
+  /**
+   * Add a symmetrix matrix as decision variables to this MathematicalProgram.
+   * The optimization will only use the stacked columns of the
+   * lower triangular part of the symmetric matrix as decision variables.
+   * @param names A std::vector containing the names of each entry in the lower
+   * triagular part of the symmetric matrix. The length of @p names is
+   * @p rows * (rows+1) / 2.
+   */
+  DecisionVariableMatrix AddSymmetricContinuousVariables(
+      size_t rows, const std::vector<std::string>& names) {
+    return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
+                        true, names);
   }
 
   /**
@@ -1148,7 +1162,7 @@ class MathematicalProgram {
    * Set the intial guess for ALL decision variables.
    * @param x0 A vector of appropriate size (num_vars() x 1).
    */
-  template<typename Derived>
+  template <typename Derived>
   void SetInitialGuessForAllVariables(const Eigen::MatrixBase<Derived>& x0) {
     DRAKE_ASSERT(x0.rows() == static_cast<int>(num_vars_) && x0.cols() == 1);
     x_initial_guess_ = x0;
@@ -1441,6 +1455,7 @@ class MathematicalProgram {
    */
   DecisionVariableMatrix AddVariables(DecisionVariableScalar::VarType type,
                                       size_t rows, size_t cols,
+                                      bool is_symmetric,
                                       std::vector<std::string> names);
 };
 

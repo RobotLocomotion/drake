@@ -12,7 +12,6 @@
 
 namespace drake {
 namespace solvers {
-
 /**
  * This class stores the type, the name, the value, and the index of a
  * decision variable in an optimization program.
@@ -20,14 +19,6 @@ namespace solvers {
 class DecisionVariableScalar {
  public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
-  /**
-   * Construct a decision variable.
-   * @param type Support CONTINUOUS, INTEGER or BINARY.
-   * @param name The name of the variable.
-   * @param index The index of the variable in the optimization program.
-   */
-  DecisionVariableScalar(VarType type, const std::string& name, size_t index)
-      : type_(type), name_(name), value_(0), index_(index) {}
 
   /**
    * @return The type of the variable.
@@ -52,7 +43,19 @@ class DecisionVariableScalar {
 
   void set_value(double new_value) { value_ = new_value; }
 
+  friend class MathematicalProgram;
+
  private:
+  /**
+   * Construct a decision variable. We make this constructor private so that
+   * only the friend class (aka MathematicalProgram) can construct a decision
+   * variable.
+   * @param type Support CONTINUOUS, INTEGER or BINARY.
+   * @param name The name of the variable.
+   * @param index The index of the variable in the optimization program.
+   */
+  DecisionVariableScalar(VarType type, const std::string& name, size_t index)
+      : type_(type), name_(name), value_(0), index_(index) {}
   const VarType type_;
   const std::string name_;
   double value_;

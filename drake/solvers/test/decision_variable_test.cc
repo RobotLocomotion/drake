@@ -1,4 +1,5 @@
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/mathematical_program.h"
 
 #include "gtest/gtest.h"
 
@@ -6,116 +7,86 @@
 
 namespace drake {
 namespace solvers {
-GTEST_TEST(TestDecisionVariable, TestConstructor) {
-  DecisionVariableScalar x(DecisionVariableScalar::VarType::CONTINUOUS, "x", 0);
-  EXPECT_EQ(x.type(), DecisionVariableScalar::VarType::CONTINUOUS);
-  EXPECT_EQ(static_cast<int>(x.index()), 0);
-
-  // Now create a vector of decision variables.
-  std::vector<std::shared_ptr<DecisionVariableScalar>> v_mutable;
-  std::vector<std::weak_ptr<const DecisionVariableScalar>> v_immutable;
-  v_mutable.reserve(6);
-  v_immutable.reserve(6);
-  for (int i = 0; i < 6; ++i) {
-    auto vi = std::make_shared<DecisionVariableScalar>(
-        DecisionVariableScalar::VarType::CONTINUOUS, "x", i);
-    v_mutable.push_back(vi);
-    v_immutable.push_back(std::weak_ptr<const DecisionVariableScalar>(vi));
-    v_mutable[i]->set_value(2 * i);
-    EXPECT_DOUBLE_EQ(v_immutable[i].lock()->value(), 2 * i);
-  }
-
-  // Constructs a non-symmetric DecisionVariableMatrix from v_immutable.
-  DecisionVariableMatrix X(2, 3, v_immutable, false);
-  EXPECT_FALSE(X.is_symmetric());
-  EXPECT_EQ(X.NumberOfVariables(), 6);
-  EXPECT_EQ(X.rows(), 2);
-  EXPECT_EQ(X.cols(), 3);
-  // Constructs a symmetric 3 x 3 DecisionVariableMatrix from v_immutable.
-  DecisionVariableMatrix S(3, 3, v_immutable, true);
-  EXPECT_TRUE(S.is_symmetric());
-  EXPECT_EQ(S.NumberOfVariables(), 6);
-  EXPECT_EQ(S.rows(), 3);
-  EXPECT_EQ(S.cols(), 3);
-  // Check value(i, j) function, and overloaded operator (i, j).
-  Eigen::Matrix<double, 2, 3> mat_value_expected;
-  mat_value_expected << 0, 4, 8, 2, 6, 10;
-  for (int j = 0; j < 3; ++j) {
-    for (int i = 0; i < 2; ++i) {
-      EXPECT_DOUBLE_EQ(X.value(i, j), mat_value_expected(i, j));
-      EXPECT_DOUBLE_EQ(X(i, j).value(0, 0), mat_value_expected(i, j));
-      EXPECT_EQ(X.index(i, j), j * 2 + i);
+template <typename Derived>
+void CheckValue(const DecisionVariableMatrix& mat,
+                const Eigen::MatrixBase<Derived>& mat_value) {
+  EXPECT_EQ(mat.rows(), mat_value.rows());
+  EXPECT_EQ(mat.cols(), mat_value.cols());
+  EXPECT_TRUE(CompareMatrices(mat.value(), mat_value, 1E-10,
+                              MatrixCompareType::absolute));
+  // Check value(i, j).
+  for (int i = 0; i < static_cast<int>(mat.rows()); ++i) {
+    for (int j = 0; j < static_cast<int>(mat.cols()); ++j) {
+      EXPECT_DOUBLE_EQ(mat.value(i, j), mat_value(i, j));
     }
   }
-  // Check value(i, j) and overloaded operator (i, j) for a symmetric matrix.
-  Eigen::Matrix3d symmetric_matrix_expected;
-  symmetric_matrix_expected << 0, 2, 4, 2, 6, 8, 4, 8, 10;
-  Eigen::Matrix3i symmetric_matrix_index;
-  symmetric_matrix_index << 0, 1, 2, 1, 3, 4, 2, 4, 5;
-  for (int j = 0; j < 3; ++j) {
-    for (int i = 0; i < 3; ++i) {
-      EXPECT_DOUBLE_EQ(S.value(i, j), symmetric_matrix_expected(i, j));
-      EXPECT_DOUBLE_EQ(S(i, j).value(0, 0), symmetric_matrix_expected(i, j));
-      EXPECT_EQ(S.index(i, j), symmetric_matrix_index(i, j));
+  // Check row(i).
+  for (int i = 0; i < static_cast<int>(mat.rows()); ++i) {
+    EXPECT_TRUE(CompareMatrices(mat.row(i).value(), mat_value.row(i), 1E-10,
+                                MatrixCompareType::absolute));
+  }
+  // Check col(j).
+  for (int j = 0; j < static_cast<int>(mat.cols()); ++j) {
+    EXPECT_TRUE(CompareMatrices(mat.col(j).value(), mat_value.col(j), 1E-10,
+                                MatrixCompareType::absolute));
+  }
+
+  // Check block(row_start, col_start, rows, cols).
+  for (int row_start = 0; row_start < static_cast<int>(mat.rows());
+       ++row_start) {
+    for (int col_start = 0; col_start < static_cast<int>(mat.cols());
+         ++col_start) {
+      for (int rows = 1; row_start + rows < static_cast<int>(mat.rows());
+           ++rows) {
+        for (int cols = 1; col_start + cols < static_cast<int>(mat.cols());
+             ++cols) {
+          EXPECT_TRUE(CompareMatrices(
+              mat.block(row_start, col_start, rows, cols).value(),
+              mat_value.block(row_start, col_start, rows, cols), 1E-10,
+              MatrixCompareType::absolute));
+        }
+      }
     }
   }
-  // Check value() function.
-  Eigen::MatrixXd mat_value = X.value();
-  EXPECT_TRUE(CompareMatrices(mat_value, mat_value_expected, 1E-10,
-                              MatrixCompareType::absolute));
-  Eigen::MatrixXd symmetric_mat_value = S.value();
-  EXPECT_TRUE(CompareMatrices(symmetric_mat_value, symmetric_matrix_expected,
-                              1E-10, MatrixCompareType::absolute));
+}
 
-  // Check block() function
-  const DecisionVariableMatrix& X_block = X.block(0, 1, 2, 2);
-  Eigen::MatrixXd mat_block_value = X_block.value();
-  EXPECT_TRUE(CompareMatrices(mat_block_value,
-                              mat_value_expected.block(0, 1, 2, 2), 1E-10,
-                              MatrixCompareType::absolute));
+GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
+  MathematicalProgram prog;
+  auto X = prog.AddContinuousVariables(2, 3, std::vector<std::string>(6, "X"));
+  EXPECT_EQ(prog.num_vars(), 6);
+  auto S =
+      prog.AddSymmetricContinuousVariables(3, std::vector<std::string>(6, "S"));
+  EXPECT_EQ(prog.num_vars(), 12);
+  auto x = prog.AddContinuousVariables(6, "x");
+  EXPECT_EQ(prog.num_vars(), 18);
+  Eigen::Matrix<double, 6, 1> x_value;
+  x_value << 0, 2, 4, 6, 8, 10;
+  Eigen::Matrix<double, 6, 1> s_value;
+  s_value << 0, -2, -4, -6, -8, -10;
+  Eigen::Matrix<double, 3, 3> S_expected;
+  S_expected << 0, -2, -4, -2, -6, -8, -4, -8, -10;
+  Eigen::Matrix<double, 18, 1> var_values;
+  var_values << x_value, s_value, x_value;
+  prog.SetDecisionVariableValues(var_values);
+  Eigen::MatrixXd X_expected = x_value;
+  X_expected.resize(2, 3);
 
-  // Change value of the referenced decision variable.
-  double new_value = 5;
-  v_mutable[2]->set_value(new_value);
-  EXPECT_DOUBLE_EQ(v_immutable[2].lock()->value(), new_value);
-  EXPECT_DOUBLE_EQ(X(0, 1).value(0, 0), new_value);
-  EXPECT_DOUBLE_EQ(X.value(0, 1), new_value);
-  EXPECT_DOUBLE_EQ(S(2, 0).value(0, 0), new_value);
-  EXPECT_DOUBLE_EQ(S(0, 2).value(0, 0), new_value);
-  EXPECT_DOUBLE_EQ(S.value(0, 2), new_value);
-  EXPECT_DOUBLE_EQ(S.value(2, 0), new_value);
-  mat_block_value = X_block.value();
-  mat_value_expected(0, 1) = new_value;
-  EXPECT_TRUE(CompareMatrices(mat_block_value,
-                              mat_value_expected.block(0, 1, 2, 2), 1E-10,
-                              MatrixCompareType::absolute));
-  symmetric_matrix_expected(2, 0) = new_value;
-  symmetric_matrix_expected(0, 2) = new_value;
-  EXPECT_TRUE(CompareMatrices(S.value(), symmetric_matrix_expected, 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(S.row(2).value(),
-                              symmetric_matrix_expected.row(2), 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(S.col(0).value(),
-                              symmetric_matrix_expected.col(0), 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(S.col(1).value(),
-                              symmetric_matrix_expected.col(1), 1E-10,
-                              MatrixCompareType::absolute));
+  CheckValue(X, X_expected);
+  CheckValue(S, S_expected);
+  CheckValue(x, x_value);
 
-  // Test head, tail, segment
-  DecisionVariableMatrix x_vec(6, 1, v_immutable, false);
-  Eigen::Matrix<double, 6, 1> x_expected;
-  for (int i = 0; i < 6; ++i) {
-    x_expected(i) = mat_value_expected(i);
+  // Check head(i), tail(i) and segment(i, j).
+  for (int i = 0; i < static_cast<int>(x.rows()); ++i) {
+    EXPECT_TRUE(CompareMatrices(x.head(i).value(), x_value.head(i), 1E-10,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(x.tail(i).value(), x_value.tail(i), 1E-10,
+                                MatrixCompareType::absolute));
+    for (int j = 1; i + j < static_cast<int>(x.rows()); ++j) {
+      EXPECT_TRUE(CompareMatrices(x.segment(i, j).value(),
+                                  x_value.segment(i, j), 1E-10,
+                                  MatrixCompareType::absolute));
+    }
   }
-  EXPECT_TRUE(CompareMatrices(x_vec.head(2).value(), x_expected.head(2), 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(x_vec.tail(2).value(), x_expected.tail(2), 1E-10,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(x_vec.segment(3, 2).value(),
-                              x_expected.segment(3, 2), 1E-10,
-                              MatrixCompareType::absolute));
 }
 }  // namespace solvers
 }  // namespace drake

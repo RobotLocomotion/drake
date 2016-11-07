@@ -1,6 +1,5 @@
 #include "drake/solvers/decision_variable.h"
 
-
 namespace drake {
 namespace solvers {
 Eigen::MatrixXd DecisionVariableMatrix::value() const {
