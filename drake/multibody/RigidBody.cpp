@@ -1,4 +1,4 @@
-#include "RigidBody.h"
+#include "drake/multibody/RigidBody.h"
 
 #include <stdexcept>
 

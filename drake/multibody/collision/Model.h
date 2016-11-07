@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "Element.h"
-#include "point_pair.h"
+#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/collision/point_pair.h"
 
 namespace DrakeCollision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;

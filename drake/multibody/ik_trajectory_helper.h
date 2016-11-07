@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "IKoptions.h"
+#include "drake/multibody/IKoptions.h"
 
 namespace drake {
 namespace systems {

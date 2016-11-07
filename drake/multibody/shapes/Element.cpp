@@ -1,4 +1,4 @@
-#include "Element.h"
+#include "drake/multibody/shapes/Element.h"
 
 using Eigen::Isometry3d;
 

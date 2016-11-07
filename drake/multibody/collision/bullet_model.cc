@@ -1,10 +1,10 @@
-#include "bullet_model.h"
+#include "drake/multibody/collision/bullet_model.h"
 #include "drake/common/drake_assert.h"
 
 #include <iostream>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "DrakeCollision.h"
+#include "drake/multibody/collision/DrakeCollision.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;

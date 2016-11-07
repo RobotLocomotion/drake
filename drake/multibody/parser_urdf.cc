@@ -1,4 +1,4 @@
-#include "parser_urdf.h"
+#include "drake/multibody/parser_urdf.h"
 
 #include <algorithm>
 #include <fstream>
@@ -11,10 +11,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/DrakeJoints.h"
-#include "material_map.h"
-#include "parser_common.h"
-#include "parser_model_instance_id_table.h"
-#include "xmlUtil.h"
+#include "drake/multibody/material_map.h"
+#include "drake/multibody/parser_common.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/xmlUtil.h"
 
 namespace drake {
 namespace parsers {

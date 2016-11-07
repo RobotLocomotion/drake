@@ -1,4 +1,4 @@
-#include "rigid_body_actuator.h"
+#include "drake/multibody/rigid_body_actuator.h"
 
 RigidBodyActuator::RigidBodyActuator(const std::string& name,
                                      const RigidBody* body,

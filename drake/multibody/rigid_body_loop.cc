@@ -1,4 +1,4 @@
-#include "rigid_body_loop.h"
+#include "drake/multibody/rigid_body_loop.h"
 
 RigidBodyLoop::RigidBodyLoop(std::shared_ptr<RigidBodyFrame> frameA,
                              std::shared_ptr<RigidBodyFrame> frameB,

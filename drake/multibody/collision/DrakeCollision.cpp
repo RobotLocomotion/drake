@@ -1,9 +1,9 @@
-#include "DrakeCollision.h"
+#include "drake/multibody/collision/DrakeCollision.h"
 
 #ifdef BULLET_COLLISION
-#include "bullet_model.h"
+#include "drake/multibody/collision/bullet_model.h"
 #endif
-#include "unusable_model.h"
+#include "drake/multibody/collision/unusable_model.h"
 
 using std::unique_ptr;
 

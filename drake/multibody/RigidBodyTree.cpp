@@ -1,4 +1,4 @@
-#include "RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 #include <algorithm>
 #include <fstream>
@@ -14,12 +14,12 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "KinematicsCache.h"
+#include "drake/multibody/KinematicsCache.h"
 #include "drake/multibody/joints/DrakeJoint.h"
 #include "drake/multibody/joints/FixedJoint.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "parser_sdf.h"
-#include "parser_urdf.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
