@@ -505,7 +505,7 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           Vector3<T> normal = R.transpose().template block<3,1>(0, 2);
 
           // TODO(SeanCurtis-TRI): Add interface for supplying a contact detail.
-          calculator.AddForce(point, force, normal);
+          calculator.AddForce(point, normal, force);
 
           contactInfo.set_resultant_force(calculator.ComputeResultant());
         }
