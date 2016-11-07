@@ -8,13 +8,14 @@
       <pose>0 0 0.378326 0 0 0</pose>
       <inertial>
        <pose>0 0 0 0 0 0</pose>
-        <!-- curb weight 3,072 lbs. (~1400 kg) based on 
-        https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download
-        allocate 1360 to the chassis_floor and the rest to the wheels and the body
-        -->
+        <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg) based on the PDF linked below.
+        https://pressroom.toyota.com/releases/toyota+2015+prius+product+specs.download -->
+
+        <!-- Our simplified model as of now assumes that only six links have non-zero weight: the chassis_floor, the body, and the four wheels. The chassis_floor's share of the curb weight is arbitrarily set to 1,360 kg, with the only justification of bringing the center of mass reasonable low.  -->
+
+        <!-- TODO(shensquared): Refine the weight distribution when the model is of higher fidelity. -->
         <mass>1360</mass>
-        <!-- the inertia is calculated by assuming the chassis_floor link as a
-        cuboid, and using fomula from https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+        <!-- the inertia is calculated by assuming the chassis_floor link is a cuboid, and then using the formula from https://en.wikipedia.org/wiki/List_of_moments_of_inertia
         -->
         <inertia>
           <ixx>63.858358934</ixx>
@@ -404,6 +405,7 @@
       <inertial>
         <pose>0 0 0 0 0 0</pose>
         <mass>54.2794</mass>
+        <!-- TODO(shensquared): Work with Steve to verify the inertia values below are reasonable -->
         <inertia>
           <ixx>0.0216238</ixx>
           <ixy>0</ixy>
