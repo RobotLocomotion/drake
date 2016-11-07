@@ -11,11 +11,11 @@ namespace systems {
  */
 template <typename T>
 class DRAKE_EXPORT PointContactDetail : public ContactDetail<T> {
-public:
-  PointContactDetail(const ContactForce<T>& force);
+ public:
+  explicit PointContactDetail(const ContactForce<T>& force);
   std::unique_ptr<ContactDetail<T>> Clone() const override;
   ContactForce<T> ComputeContactForce() const override { return force_; }
-private:
+ private:
   ContactForce<T> force_;
 };
 
