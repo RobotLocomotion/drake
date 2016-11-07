@@ -15,11 +15,11 @@ namespace automotive {
 template <typename T>
 IdmPlanner<T>::IdmPlanner(const T& v_0) : v_0_(v_0) {
   this->DeclareInputPort(systems::kVectorValued,
-                          IdmPlannerInputIndices::kNumCoordinates,
-                          systems::kContinuousSampling);
+                         2, //IdmPlannerInputIndices::kNumCoordinates,
+                         systems::kContinuousSampling);
   this->DeclareInputPort(systems::kVectorValued,
-                          IdmPlannerInputIndices::kNumCoordinates,
-                          systems::kContinuousSampling);
+                         2, //IdmPlannerInputIndices::kNumCoordinates,
+                         systems::kContinuousSampling);
   this->DeclareOutputPort(systems::kVectorValued,
                           1,
                           systems::kContinuousSampling);
@@ -36,12 +36,14 @@ void IdmPlanner<T>::EvalOutput(
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
   // Obtain the structures we need to read from and write into.
-  const IdmPlannerInput<T>* const input_ego =
-      dynamic_cast<const IdmPlannerInput<T>*>(
-                                    this->EvalVectorInput(context, 0));
-  const IdmPlannerInput<T>* const input_agent =
-      dynamic_cast<const IdmPlannerInput<T>*>(
-                                    this->EvalVectorInput(context, 1));
+  //const IdmPlannerInput<T>* const input_ego =
+  //    dynamic_cast<const IdmPlannerInput<T>*>(
+  //                                  this->EvalVectorInput(context, 0));
+  //const IdmPlannerInput<T>* const input_agent =
+  //    dynamic_cast<const IdmPlannerInput<T>*>(
+  //                                  this->EvalVectorInput(context, 1));
+  const auto input_ego = this->EvalVectorInput(context, 0);
+  const auto input_agent = this->EvalVectorInput(context, 1);
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
@@ -63,11 +65,21 @@ void IdmPlanner<T>::EvalOutput(
   const T& l_a = params.l_a();
 
   output_vector->SetAtIndex(0,
+      a * (1.0 - pow(input_ego->GetAtIndex(1) / v_0_, delta) -
+           pow((s_0 + input_ego->GetAtIndex(1) * time_headway +
+                input_ego->GetAtIndex(1) * (input_ego->GetAtIndex(1)
+                   - input_agent->GetAtIndex(1)) /
+                (2 * sqrt(a * b))) /
+               (input_agent->GetAtIndex(0)
+                   - input_ego->GetAtIndex(0) - l_a), 2.0)));
+  /*
+  output_vector->SetAtIndex(0,
       a * (1.0 - pow(input_ego->v() / v_0_, delta) -
            pow((s_0 + input_ego->v() * time_headway +
                 input_ego->v() * (input_ego->v() - input_agent->v()) /
                 (2 * sqrt(a * b))) /
                (input_agent->x() - input_ego->x() - l_a), 2.0)));
+  */
 }
 
 template <typename T>

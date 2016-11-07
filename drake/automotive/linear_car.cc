@@ -99,7 +99,7 @@ LinearCar<T>::AllocateContinuousState() const {
   //state->set_x(T{0.0});
   //state->set_v(T{0.0});
   const int size = systems::System<T>::get_output_port(0).get_size();
-  DRAKE_ASSERT(systems::System<T>::get_input_port(0).get_size() == size);
+  //DRAKE_ASSERT(systems::System<T>::get_input_port(0).get_size() == size);
   return std::make_unique<systems::ContinuousState<T>>(
       std::make_unique<systems::BasicVector<T>>(size));
 }

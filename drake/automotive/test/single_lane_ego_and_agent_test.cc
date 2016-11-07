@@ -102,7 +102,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
 
   EXPECT_EQ(0.0, continuous_state()->GetAtIndex(0));
   EXPECT_EQ(0.0, continuous_state()->GetAtIndex(1));
-  EXPECT_NEAR(0.95061, continuous_state()->GetAtIndex(2), 1e-6);
+  EXPECT_NEAR(0.0, continuous_state()->GetAtIndex(2), 1e-6);
   EXPECT_EQ(0.0, continuous_state()->GetAtIndex(3));
 }
 

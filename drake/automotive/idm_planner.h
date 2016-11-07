@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/automotive/gen/idm_planner_input.h"
+//#include "drake/automotive/gen/idm_planner_input.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
