@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using std::cout;
 using std::cerr;

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 #include "../RigidBodyConstraint.h"
 

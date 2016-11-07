@@ -9,8 +9,8 @@
 #include "drake/solvers/mathematical_program.h"
 // TODO(amcastro-tri): parsers are not "plants" and should therefore be moved
 // somewhere else. Maybe inside "multibody_dynamics/parsers" when that exists.
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/KinematicsCache.h"
 #include "drake/common/eigen_autodiff_types.h"
 
 using std::make_unique;

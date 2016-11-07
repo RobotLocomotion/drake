@@ -4,7 +4,7 @@
 #include "drake/matlab/util/drakeMexUtil.h"
 #include <Eigen/Dense>
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "constructPtrRigidBodyConstraint.h"
 #include <cstdio>
 

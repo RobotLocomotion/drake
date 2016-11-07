@@ -8,7 +8,7 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"
 #include "drake/systems/controllers/QPCommon.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 DRAKE_EXPORT YAML::Node applyDefaults(const YAML::Node& node,
                                               const YAML::Node& default_node);

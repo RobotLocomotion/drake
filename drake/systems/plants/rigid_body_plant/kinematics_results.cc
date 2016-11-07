@@ -1,7 +1,7 @@
 #include "drake/systems/plants/rigid_body_plant/kinematics_results.h"
 
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/multibody/KinematicsCache.h"
 
 namespace drake {
 namespace systems {

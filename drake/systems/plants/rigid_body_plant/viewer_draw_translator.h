@@ -7,7 +7,7 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace systems {

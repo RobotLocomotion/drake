@@ -8,7 +8,7 @@
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using namespace std;
 using namespace Eigen;

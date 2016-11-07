@@ -5,7 +5,7 @@
 
 #include "drake/automotive/automotive_common.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
 
 namespace drake {
 namespace automotive {

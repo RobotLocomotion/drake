@@ -9,7 +9,7 @@
 
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 const int m_surface_tangents =
