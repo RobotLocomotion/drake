@@ -110,16 +110,6 @@ Expression operator+(Expression lhs, const Expression& rhs) {
   return lhs;
 }
 
-Expression operator+(const double lhs, const Expression& rhs) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{lhs}) + rhs;
-}
-
-Expression operator+(Expression lhs, const double rhs) {
-  lhs += rhs;
-  return lhs;
-}
-
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs) {
   // simplification #1 : 0 + x => x
@@ -145,12 +135,6 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const double rhs) {
-  lhs += Expression{rhs};
-  return lhs;
-}
-
 Expression& Expression::operator++() {
   *this += Expression::One();
   return *this;
@@ -164,17 +148,6 @@ Expression Expression::operator++(int) {
 
 Expression operator-(Expression lhs, const Expression& rhs) {
   lhs -= rhs;
-  return lhs;
-}
-
-Expression operator-(const double lhs, const Expression& rhs) {
-  Expression ret{lhs};
-  ret -= rhs;
-  return ret;
-}
-
-Expression operator-(Expression lhs, const double rhs) {
-  lhs -= Expression{rhs};
   return lhs;
 }
 
@@ -203,12 +176,6 @@ Expression& operator-=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const double rhs) {
-  lhs -= Expression{rhs};
-  return lhs;
-}
-
 Expression operator-(Expression e) {
   if (e.get_kind() == ExpressionKind::Constant) {
     const double v =
@@ -232,16 +199,6 @@ Expression Expression::operator--(int) {
 
 Expression operator*(Expression lhs, const Expression& rhs) {
   lhs *= rhs;
-  return lhs;
-}
-
-Expression operator*(const double lhs, const Expression& rhs) {
-  // Uses () to avoid a conflict between cpplint and clang-format.
-  return (Expression{lhs}) * rhs;
-}
-
-Expression operator*(Expression lhs, const double rhs) {
-  lhs *= Expression{rhs};
   return lhs;
 }
 
@@ -289,25 +246,8 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   return lhs;
 }
 
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const double rhs) {
-  lhs *= Expression{rhs};
-  return lhs;
-}
-
 Expression operator/(Expression lhs, const Expression& rhs) {
   lhs /= rhs;
-  return lhs;
-}
-
-Expression operator/(const double lhs, const Expression& rhs) {
-  Expression ret{lhs};
-  ret /= rhs;
-  return ret;
-}
-
-Expression operator/(Expression lhs, const double rhs) {
-  lhs /= Expression{rhs};
   return lhs;
 }
 
@@ -338,11 +278,6 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
     return lhs;
   }
   lhs.ptr_ = make_shared<ExpressionDiv>(lhs, rhs);
-  return lhs;
-}
-
-Expression& operator/=(Expression& lhs, const double rhs) {
-  lhs /= Expression{rhs};
   return lhs;
 }
 
@@ -969,14 +904,6 @@ Expression min(const Expression& e1, const Expression& e2) {
   return Expression{make_shared<ExpressionMin>(e1, e2)};
 }
 
-Expression min(const Expression& e1, const double v2) {
-  return min(e1, Expression{v2});
-}
-
-Expression min(const double v1, const Expression& e2) {
-  return min(Expression{v1}, e2);
-}
-
 Expression max(const Expression& e1, const Expression& e2) {
   // simplification #1: max(x, x) -> x
   if (e1.EqualTo(e2)) {
@@ -992,14 +919,6 @@ Expression max(const Expression& e1, const Expression& e2) {
     return Expression{std::max(v1, v2)};
   }
   return Expression{make_shared<ExpressionMax>(e1, e2)};
-}
-
-Expression max(const Expression& e1, const double v2) {
-  return max(e1, Expression{v2});
-}
-
-Expression max(const double v1, const Expression& e2) {
-  return max(Expression{v1}, e2);
 }
 
 }  // namespace symbolic
