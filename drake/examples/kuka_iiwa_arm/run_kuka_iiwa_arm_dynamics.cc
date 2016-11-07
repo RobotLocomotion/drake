@@ -34,7 +34,7 @@ using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::VectorBase;
-using systems::plants::joints::kFixed;
+using multibody::joints::kFixed;
 
 namespace examples {
 namespace kuka_iiwa_arm {

@@ -80,14 +80,14 @@
 %extend RigidBodyTree {
   RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {
     // FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2
-    drake::systems::plants::joints::FloatingBaseType floating_base_type;
+    drake::multibody::joints::FloatingBaseType floating_base_type;
 
     if (joint_type == "FIXED")
-      floating_base_type = drake::systems::plants::joints::kFixed;
+      floating_base_type = drake::multibody::joints::kFixed;
     else if (joint_type == "ROLLPITCHYAW")
-      floating_base_type = drake::systems::plants::joints::kRollPitchYaw;
+      floating_base_type = drake::multibody::joints::kRollPitchYaw;
     else if (joint_type == "QUATERNION")
-      floating_base_type = drake::systems::plants::joints::kQuaternion;
+      floating_base_type = drake::multibody::joints::kQuaternion;
     else {
       std::cerr << "Joint Type not supported" << std::endl;
       return nullptr;

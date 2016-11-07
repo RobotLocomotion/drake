@@ -18,7 +18,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   RigidBodyTree<double> tree(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      systems::plants::joints::kFixed);
+      multibody::joints::kFixed);
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(1);
 
   systems::DiagramBuilder<double> builder;

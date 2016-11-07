@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <drake/systems/plants/joints/FixedJoint.h>
+#include <drake/multibody/joints/FixedJoint.h>
 #include <drake/multibody/parser_common.h>
 #include <drake/multibody/parser_model_instance_id_table.h>
 #include "drake/common/eigen_types.h"
@@ -14,7 +14,7 @@ namespace {
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::parsers::AddFloatingJoint;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kQuaternion;
 using DrakeCollision::Element;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;

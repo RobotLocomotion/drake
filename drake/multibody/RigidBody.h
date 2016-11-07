@@ -13,8 +13,8 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/joints/DrakeJoint.h"
 
 class DRAKE_EXPORT RigidBody {
  public:

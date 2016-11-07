@@ -10,7 +10,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/RigidBody.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
 
 namespace drake {
 namespace systems {

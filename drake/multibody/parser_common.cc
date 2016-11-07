@@ -2,19 +2,19 @@
 
 #include <string>
 
-#include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
-#include "drake/systems/plants/joints/RollPitchYawFloatingJoint.h"
-#include "drake/systems/plants/joints/FixedJoint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/DrakeJoint.h"
+#include "drake/multibody/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace parsers {
 
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kRollPitchYaw;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kRollPitchYaw;
+using drake::multibody::joints::kQuaternion;
 
 int AddFloatingJoint(
     const FloatingBaseType floating_base_type,

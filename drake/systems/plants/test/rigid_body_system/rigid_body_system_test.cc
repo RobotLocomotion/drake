@@ -23,7 +23,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/world.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Verifies that the number of states, inputs, and outputs are all zero.
   EXPECT_EQ(rigid_body_sys->getNumStates(), 0u);
@@ -75,7 +75,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
           "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
-      drake::systems::plants::joints::kQuaternion, weld_to_frame);
+      drake::multibody::joints::kQuaternion, weld_to_frame);
 
   // Checks that the rigid body system has the correct number of states. The
   // rigid body system has 36 positions + 32 velocities = 68 states.

@@ -29,11 +29,11 @@ class Quadrotor : public systems::Diagram<T> {
 
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-        systems::plants::joints::kRollPitchYaw, nullptr, tree.get());
+        multibody::joints::kRollPitchYaw, nullptr, tree.get());
 
     drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
-        systems::plants::joints::kFixed, nullptr, tree.get());
+        multibody::joints::kFixed, nullptr, tree.get());
 
     AddGround(tree.get());
 

@@ -56,7 +56,7 @@ namespace {
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
@@ -194,7 +194,7 @@ class KukaDemo : public systems::Diagram<T> {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() +
         "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
-        drake::systems::plants::joints::kFixed,
+        drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
     AddGround(rigid_body_tree.get());

@@ -11,7 +11,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "constraint_wrappers.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "parser_model_instance_id_table.h"
 #include "parser_sdf.h"
 #include "parser_urdf.h"
@@ -38,7 +38,7 @@ using std::string;
 
 using drake::math::quatRotateVec;
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::FloatingBaseType;
+using drake::multibody::joints::FloatingBaseType;
 
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;

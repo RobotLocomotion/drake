@@ -126,7 +126,7 @@ class DRAKE_EXPORT Model {
   Clearing cached results allows the collision model to perform a fresh
   computation without any coupling with previous history.
 
-  @see drake/systems/plants/collision/test/model_test.cc. **/
+  @see drake/multibody/collision/test/model_test.cc. **/
   virtual void ClearCachedResults(bool use_margins) = 0;
 
   /** \brief Compute closest distance from each point to any surface in the

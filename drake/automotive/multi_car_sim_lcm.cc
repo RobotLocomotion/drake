@@ -51,7 +51,7 @@ int main(int argc, const char* argv[]) {
 
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
       "/automotive/models/prius/prius.sdf",
-      drake::systems::plants::joints::kQuaternion, car_offset);
+      drake::multibody::joints::kQuaternion, car_offset);
   }
 
   SetRigidBodySystemParameters(rigid_body_sys.get());

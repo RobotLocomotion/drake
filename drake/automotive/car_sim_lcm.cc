@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   auto rigid_body_tree = make_unique<RigidBodyTreed>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-      systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
+      multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
   AddFlatTerrainToWorld(rigid_body_tree.get());
   VerifyCarSimLcmTree(*rigid_body_tree);

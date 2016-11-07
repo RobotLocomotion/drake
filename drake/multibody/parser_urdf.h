@@ -7,7 +7,7 @@
 #include "drake/common/drake_export.h"
 #include "RigidBodyFrame.h"
 #include "RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "parser_model_instance_id_table.h"
 #include "xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
@@ -51,7 +51,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * Reads a URDF model specified by @p urdf_string and adds an instance of it to
  * @p tree. Let the "base bodies" be the bodies in the model that do not have
  * parent joints. The base bodies are connected to the world via
- * systems::plants::joints::kRollPitchYaw joints. When these joints are at their
+ * multibody::joints::kRollPitchYaw joints. When these joints are at their
  * zero positions, the base body's frames are coincident with the world's
  * coordinate frame.
  *
@@ -150,7 +150,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const std::string& root_dir,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
 
 /**
@@ -191,7 +191,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PackageMap& ros_package_map,
     const std::string& root_dir,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
 
 #ifndef SWIG
@@ -203,14 +203,14 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PackageMap& ros_package_map,
     const std::string& root_dir,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame, RigidBodyTree<double>* tree);
 
 /**
  * Reads a URDF model specified by @p urdf_filename and adds an instance of it
  * to @p tree. Let the "base bodies" be the bodies in the model that do not have
  * parent joints. This method connects the model instance's base bodies to the
- * world via systems::plants::joints::kRollPitchYaw joints. When
+ * world via multibody::joints::kRollPitchYaw joints. When
  * this joint is at its zero position, the base bodies' frames are coincident
  * with the world's coordinate frame.
  *
@@ -258,7 +258,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const std::string& urdf_filename,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
 #ifndef SWIG
@@ -267,7 +267,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
 
 /**
@@ -298,7 +298,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
 DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree);
 
@@ -334,7 +334,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const std::string& urdf_filename,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
-    const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     RigidBodyTree<double>* tree);
 
@@ -346,7 +346,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename,
      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
      std::map<std::string, std::string>& ros_package_map,
-     const drake::systems::plants::joints::FloatingBaseType floating_base_type,
+     const drake::multibody::joints::FloatingBaseType floating_base_type,
      std::shared_ptr<RigidBodyFrame> weld_to_frame,
      RigidBodyTree<double>* tree);
 }  // namespace urdf

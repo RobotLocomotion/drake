@@ -38,7 +38,7 @@ const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 int main(int argc, const char* argv[]) {
   RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).

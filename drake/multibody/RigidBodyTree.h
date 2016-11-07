@@ -19,12 +19,12 @@
 #include "KinematicsCache.h"
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
-#include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "pose_map.h"
 #include "rigid_body_actuator.h"
 #include "rigid_body_loop.h"
-#include "drake/systems/plants/shapes/DrakeShapes.h"
+#include "drake/multibody/shapes/DrakeShapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
@@ -87,8 +87,8 @@ class DRAKE_EXPORT RigidBodyTree {
 
   RigidBodyTree(
       const std::string& urdf_filename,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw);
+      const drake::multibody::joints::FloatingBaseType
+          floating_base_type = drake::multibody::joints::kRollPitchYaw);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
@@ -97,8 +97,8 @@ class DRAKE_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
+      const drake::multibody::joints::FloatingBaseType
+          floating_base_type = drake::multibody::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -109,8 +109,8 @@ class DRAKE_EXPORT RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::map<std::string, std::string>& ros_package_map,
       const std::string& root_dir = ".",
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
+      const drake::multibody::joints::FloatingBaseType
+          floating_base_type = drake::multibody::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -118,8 +118,8 @@ class DRAKE_EXPORT RigidBodyTree {
 #endif
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
+      const drake::multibody::joints::FloatingBaseType
+          floating_base_type = drake::multibody::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
@@ -129,17 +129,17 @@ class DRAKE_EXPORT RigidBodyTree {
       const std::string& urdf_filename,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::map<std::string, std::string>& ros_package_map,
-      const drake::systems::plants::joints::FloatingBaseType
-          floating_base_type = drake::systems::plants::joints::kRollPitchYaw,
+      const drake::multibody::joints::FloatingBaseType
+          floating_base_type = drake::multibody::joints::kRollPitchYaw,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstancesFromSdfFile.")
 #endif
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const drake::systems::plants::joints::FloatingBaseType
+                       const drake::multibody::joints::FloatingBaseType
                            floating_base_type =
-                               drake::systems::plants::joints::kQuaternion,
+                               drake::multibody::joints::kQuaternion,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   /**

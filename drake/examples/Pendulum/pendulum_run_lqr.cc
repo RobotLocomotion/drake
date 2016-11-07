@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
   auto c = MakeTimeInvariantLqrSystem(*p, xG, uG, Q, R);
   auto v = std::make_shared<BotVisualizer<PendulumState> >(
       lcm, GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   auto sys = cascade(feedback(p, c), v);
 

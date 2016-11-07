@@ -16,8 +16,8 @@ using Eigen::VectorXd;
 
 using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
 
 const char kDurationFlag[] = "--duration";
 

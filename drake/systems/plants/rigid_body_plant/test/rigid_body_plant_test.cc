@@ -7,8 +7,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/plants/joints/PrismaticJoint.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/joints/PrismaticJoint.h"
+#include "drake/multibody/joints/QuaternionFloatingJoint.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
@@ -44,7 +44,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       drake::GetDrakePath() +
       "/systems/plants/rigid_body_plant/test/world.urdf",
-      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
 
   // Instantiates a RigidBodyPlant from an MBD model of the world.
@@ -149,7 +149,7 @@ class KukaArmTest : public ::testing::Test {
     auto tree = make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 
     // Instantiates a RigidBodyPlant from an MBD model of the world.
@@ -349,7 +349,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/systems/plants/rigid_body_plant/test/limited_prismatic.sdf",
-      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
   RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
 

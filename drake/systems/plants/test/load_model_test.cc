@@ -14,8 +14,8 @@ namespace plants {
 namespace test {
 namespace {
 
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
 
 /**
  * Defines a class that extends Google Test's ::testing::TestWithParam

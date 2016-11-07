@@ -19,7 +19,7 @@ namespace {
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::kQuaternion;
+using drake::multibody::joints::kQuaternion;
 
 GTEST_TEST(DrakeJointTests, TestZeroOffset) {
   RigidBodySystem rbs;
@@ -30,7 +30,7 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
               "/systems/plants/test/drake_joint/zero_offset_joint.urdf",
-          joints::kQuaternion);
+          kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the
   // URDF.
@@ -91,7 +91,7 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
               "/systems/plants/test/drake_joint/non_zero_offset_joint.urdf",
-          joints::kQuaternion);
+          kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the
   // URDF.
