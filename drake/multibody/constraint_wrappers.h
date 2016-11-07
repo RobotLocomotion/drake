@@ -11,7 +11,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "KinematicsCache.h"
 #include "RigidBodyTree.h"
 

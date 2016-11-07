@@ -1,4 +1,4 @@
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 
 // TODO(#2274) NOTE This file has so many cpplint errors that we have
 // whitelisted it in its entirety.  When the file is next rewritten or updates,

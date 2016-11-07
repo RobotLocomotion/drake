@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "IKoptions.h"
 #include "RigidBodyTree.h"
 

@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/controllers/controlUtil.h"
 
