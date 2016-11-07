@@ -11,11 +11,10 @@ using std::abs;
 
 template <typename T>
     ContactForce<T>::ContactForce() {
-  T kNan((T)NAN);
-  application_point_ << kNan, kNan, kNan;
-  force_ << kNan, kNan, kNan;
-  normal_ << kNan, kNan, kNan;
-  pure_torque_ << kNan, kNan, kNan;
+  application_point_ = Vector3<T>::Constant(NAN);
+  force_ = Vector3<T>::Constant(NAN);
+  normal_ = Vector3<T>::Constant(NAN);
+  torque_ = Vector3<T>::Constant(NAN);
 }
 
 template <typename T>
