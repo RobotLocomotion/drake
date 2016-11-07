@@ -177,7 +177,7 @@ drake_add_external(swig_matlab PUBLIC
       LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
     ./configure
       --prefix=${CMAKE_INSTALL_PREFIX}
-      --with-matlab
+      --without-alllang
   INSTALL_COMMAND
     # TODO(jamiesnape): Check whether environment variables are actually used
     ${CMAKE_COMMAND} -E env
