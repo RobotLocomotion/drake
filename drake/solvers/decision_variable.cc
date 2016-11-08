@@ -7,12 +7,7 @@ Eigen::MatrixXd DecisionVariableMatrix::value() const {
   for (int i = 0; i < static_cast<int>(rows_); ++i) {
     for (int j = 0; j < static_cast<int>(cols_); ++j) {
       size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-      if (const auto& sp_vars_i = vars_[vector_index].lock()) {
-        mat(i, j) = sp_vars_i->value();
-      }
-      else {
-        throw std::runtime_error("weak pointer has expired.");
-      }
+      mat(i, j) = vars_[vector_index]->value();
     }
   }
   return mat;
@@ -21,12 +16,7 @@ Eigen::MatrixXd DecisionVariableMatrix::value() const {
 Eigen::VectorXd DecisionVariableMatrix::VariableValue() const {
   Eigen::VectorXd vec(NumberOfVariables());
   for (int i = 0; i < vec.size(); ++i) {
-    if (const auto& sp_vars_i = vars_[i].lock()) {
-      vec(i) = sp_vars_i->value();
-    }
-    else {
-      throw std::runtime_error("weak pointer has expired.");
-    }
+    vec(i) = vars_[i]->value();
   }
   return vec;
 }
@@ -36,7 +26,7 @@ DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start,
                                                      size_t rows,
                                                      size_t cols) const {
   DRAKE_ASSERT(row_start + rows <= rows_ && col_start + cols <= cols_);
-  std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
+  std::vector<std::shared_ptr<const DecisionVariableScalar>> vars;
   if (IsBlockSymmetric(row_start, col_start, rows, cols)) {
     vars.reserve(rows * (rows + 1) / 2);
     for (int j = 0; j < static_cast<int>(cols); ++j) {
@@ -60,13 +50,8 @@ DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start,
 
 bool DecisionVariableMatrix::covers(size_t index) const {
   for (int i = 0; i < static_cast<int>(vars_.size()); ++i) {
-    if (const auto& sp_vars_i = vars_[i].lock()) {
-      if (sp_vars_i->index() == index) {
-        return true;
-      }
-    }
-    else {
-      throw std::runtime_error("weak pointer has expired.");
+    if (vars_[i]->index() == index) {
+      return true;
     }
   }
   return false;
