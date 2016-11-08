@@ -115,11 +115,7 @@ class IntegratorBase {
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(double accuracy) {
-<<<<<<< HEAD
-    if (!supports_accuracy_estimation())
-=======
-    if (!this->supports_error_estimation())
->>>>>>> drake-edrumwri/sherm-update-comments
+    if (!supports_error_estimation())
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
           "and user has requested error control");
@@ -366,23 +362,23 @@ class IntegratorBase {
    * A collection of state variables is generally defined in heterogenous units
    * (e.g. length, angles, velocities, energy). Some of the state
    * variables cannot even be expressed in meaningful units, like
-   * quaternions. Some integrators provide an estimate of the absolute error
+   * quaternions. Certain integrators provide an estimate of the absolute error
    * made in each state variable during an integration step. These errors must
    * be properly weighted to obtain an "accuracy" _with respect to each
    * particular variable_. These per-variable accuracy determinations can be
-   * compared against the user's requirements and used to choose an appropriate
+   * compared against the user's requirements and used to select an appropriate
    * size for the next step [Sherman 2011]. The weights are
    * normally determined automatically using the system's characteristic
    * dimensions, so *most users can stop reading now!* Custom weighting is
    * primarily useful for performance improvement; an optimal weighting would
    * allow an error-controlled integrator to provide the desired level of
-   * accuracy across all state variables without wasting computation time
+   * accuracy across all state variables without wasting computation
    * achieving superfluous accuracy for some of those variables.
    *
    * Users interested in more precise control over state variable weighting may
    * use the methods in this group to access and modify weighting factors for
    * individual state variables. Changes to these weights can only be made prior
-   * to integrator initialization, or as a result of an event being triggered
+   * to integrator initialization or as a result of an event being triggered
    * and then followed by re-initialization.
    *
    * <h4>Relative versus absolute accuracy</h4>
@@ -390,8 +386,8 @@ class IntegratorBase {
    * %State variable integration error, as estimated by an integrator, is an
    * absolute quantity with the same
    * units as the variable. At each time step we therefore need to determine
-   * an absolute error that would be deemed "good enough", i.e. just satisfies
-   * the user's accuracy requirement. If we're maintaining a variable to a
+   * an absolute error that would be deemed "good enough", i.e. satisfies
+   * the user's accuracy requirement. If a variable is maintained to a
    * *relative* accuracy then that "good enough" value is defined to be the
    * required accuracy `a` (a fraction like 0.001) times the current value of
    * the variable, as long as that value
@@ -407,24 +403,24 @@ class IntegratorBase {
    * chosen so that the product `wᵢ * dxᵢ` is unitless, and in particular is 1
    * when `dxᵢ` represents a "unit effect" of state variable `xᵢ`; that is, the
    * change in `xᵢ` that produces a unit change in some quantity of interest in
-   * the system being simulated. The user-specified integration accuracy will
-   * then operate upon this weighted error. This can be done individually for
-   * each state variable, but typically it is done approximately by combining
-   * the known type of the variable (e.g. length, angle) with a "characteristic
-   * scale" for that quantity. For example, if a "characteristic
-   * length" for the system being simulated is 0.1 meters, and `x₀` is a
-   * length variable measured in meters, then `w₀` should be 10 so that
-   * `w₀*dx₀=1` when `dx₀=0.1`. For angles representing pointing accuracy (say
-   * a camera direction) we typically assume a "characteristic angle" is one
-   * radian (about 60 degrees), so if x₁ is a pointing direction then w₁=1 is an
-   * appropriate weight. We can now scale an error vector `e=[dx₀ dx₁]` to a
-   * unitless fractional error vector `f=[w₀*dx₀ w₁*dx₁]`. Now to achieve a
-   * given
-   * accuracy `a`, say `a=.0001`, we need only check that `|fᵢ|<=a` for each
-   * element `i` of `f`. Further, this gives us a quantitative measure of
-   * "worst accuracy" that we can use to increase or reduce size of the next
-   * attempted step, so that we will just achieve the required accuracy but not
-   * much more. We'll be more precise about this below.
+   * the system being simulated. Why unity (1)? Aside from normalizing the
+   * values, unity "grounds" the weighted error to the user-specified accuracy.
+   * A weighting can be applied individually to each state variable, but
+   * typically it is done approximately by combining the known type of the
+   * variable (e.g. length, angle) with a "characteristic scale" for that
+   * quantity. For example, if a "characteristic length" for the system being
+   * simulated is 0.1 meters, and `x₀` is a length variable measured in meters,
+   * then `w₀` should be 10 so that `w₀*dx₀=1` when `dx₀=0.1`. For angles
+   * representing pointing accuracy (say a camera direction) we typically assume
+   * a "characteristic angle" is one radian (about 60 degrees), so if x₁ is a
+   * pointing direction then w₁=1 is an appropriate weight. We can now scale an
+   * error vector `e=[dx₀ dx₁]` to a unitless fractional error vector
+   * `f=[w₀*dx₀ w₁*dx₁]`. Now to achieve a given accuracy `a`, say `a=.0001`,
+   * we need only check that `|fᵢ|<=a` for each element `i` of `f`. Further,
+   * this gives us a quantitative measure of "worst accuracy" that we can use
+   * to increase or reduce size of the next attempted step, so that we will just
+   * achieve the required accuracy but not much more. We'll be more precise
+   * about this below.
    *
    * <h4>Some subtleties for second-order dynamic systems</h4>
    *
