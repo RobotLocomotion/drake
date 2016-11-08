@@ -22,8 +22,9 @@
       <!-- TODO(shensquared): Refine the weight distribution when the model is
       of higher fidelity. -->
         <mass>1360</mass>
-        <!-- The inertia is calculated by assuming the chassis_floor link is a
-        cuboid, and then using the formula from
+        <!-- The inertia is calculated by assuming that the chassis_floor link
+        is a cuboid, with its size as specified in the geometry/box/size tag below,
+        and then using the formula from
         https://en.wikipedia.org/wiki/List_of_moments_of_inertia.-->
         <inertia>
           <ixx>63.858358934</ixx>
