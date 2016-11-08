@@ -143,7 +143,26 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
         AreEquivalent(resultant.get_application_point(), expected_point));
   }
 
-  // Case 3: Three forces of unequal magnitude.
+  // Case 3: Three forces of equal magnitude.  This example came from Paul
+  // Mitiguy.
+  // Given equal forces applied in parallel directions at three points: O, P, &
+  // Q, the center of pressure should be: O + 1/3 * (rP + rQ)
+  //  where, rP = P - O, and rQ = Q - O
+  {
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(pos1, norm, force, zero);
+    calc.AddForce(pos2, norm, force, zero);
+    calc.AddForce(pos3, norm, force, zero);
+    ContactForce<double> resultant = calc.ComputeResultant();
+
+    ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), force * 3));
+    expected_point = pos1 + ((pos2 - pos1) + (pos3 - pos1)) / 3.0;
+    ASSERT_TRUE(
+        AreEquivalent(resultant.get_application_point(), expected_point));
+  }
+
+  // Case 4: Three forces of unequal magnitude.
   {
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(pos1, norm, force, zero);

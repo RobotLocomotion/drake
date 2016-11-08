@@ -22,10 +22,10 @@ namespace systems {
   normal is typically defined by the contact normal.
 
   A ContactForce makes no assumptions about the frame in which it is defined
-  except that the vectors representing application point location, contact
+  except that the vectors representing application point locatileson, contact
   normal, force, and torque are all expressed in a common frame, with the
-  application point measured from the origin of that frame. Every use of
-  ContactForce must make clear which frame is being used.
+  application point measured from the origin of that frame. Every external
+  instantiation of ContactForce must make it clear which frame is being used.
 
   @tparam T The scalar type. Must be a valid Eigen scalar.
  */
@@ -39,7 +39,7 @@ class DRAKE_EXPORT ContactForce {
    @param normal                    The translational force's unit-length normal
                                     direction.
    @param force                     The translational force.
-   @param torque                    The torque component
+   @param torque                    The torque component.
    */
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
                const Vector3<T>& force, const Vector3<T>& torque);

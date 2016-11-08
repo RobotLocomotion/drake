@@ -10,33 +10,27 @@ namespace drake {
 namespace systems {
 
 /**
- This is a utility class for taking a set of contact forces and defining
- the resultant contact force (where a contact force is defined by the
- ContactForce class). @sa ContactForce
+ This is a utility class for replacing a set of force/torques by an equivalent
+ force/torque (defined by the ContactForce class). @sa ContactForce
 
- The resultant contact force defines a single translational force, with a
- possibly non-zero torque component, applied at a single application point.
- The application point for the force will be a minimum moment magnitude point.
- That is, if the resultant force is applied at this point, it will induce the
- minimum possible moment (relative to any other application point). This is a
- general solution that is well defined and can be applied to arbitrary sets of
- contact forces. It must be emphasized, that this calculation considers only the
- *normal* components of the input contact forces in computing the minimum moment
- point.  The remaining tangential components will be included in the final
- resultant, but will not affect the calculation of the point.
+ The equivalent ContactForce consists of the set's resultant force applied at a
+ point `P`, together with a torque equal to the moment of the set about `P`
+ summed with any torques defined in the set members.  Point `P` is chosen to
+ minimize the magnitude of the moment of the *normal* forces (i.e., `P` lies
+ along the "central axis" of the normal forces).  Note: only the *normal*
+ components of the input contact forces affect the location of point `P`.
+ Tangential components of the input contact forces affect the set's resultant,
+ but not the calculation of point `P`.
 
- Center of Pressure
- ==================
- For a set of contact forces with particular properties, this minimum moment
- point can be interpreted as the center of pressure. For this to be the case,
- the following conditions must be met:
-    - The normal components of all forces must lie in the same direction.
-    - The force application points must all lie on a plane.
-    - The plane the application points lie on must be perpendicular to the
-      common normal direction of the contact forces.
- If these conditions are met, the application point will also lie on the plane
- and will be the center of pressure.  And the minimum moment due to the normal
- forces will be zero.
+ Center of Pressure (more precisely center of normal forces for planar contact)
+ ==============================================================================
+ For point `P` to be a center of pressure (as returned by this class):
+    - The normal components of all forces must lie in the same direction, `n`.
+    - The points, where each force is applied, must lie on one plane, `F`.
+    - Plane `F` must be perpendicular to `n`.
+ If these conditions are met, `P` will be the center of pressure and lie on
+ plane `F`, and the minimum moment due to the normal forces will be zero.
+ Note: this class does not rely on a center of pressure *existing*.
 
  Usage
  =====
@@ -46,17 +40,15 @@ namespace systems {
  is processed and a contact force is computed, the details of the contact force
  are provided to the calculator (via calls to AddForce).
  Currently, the contact force is defined by four values (see ContactForce):
-    - the application point,
-    - the component of the contact force in the *normal* direction,
-    - the component of the contact force in the *tangential* direction (e.g.,
-      friction force), and
-    - an optional pure torque term (e.g., torsional friction).
- The application points and force directions are assumed to be measured and
- expressed in a common frame (the resultant force and application point will
- likewise be measured and expressed in that same frame.)
+    - position of the force's point of application from a common origin O,
+    - normal component of the contact force (i.e., in the *normal* direction),
+    - tangential component of the contact force (e.g., friction force), and
+    - Optional torque term (e.g., torsional friction).
+ All input vectors must be expressed in a common frame and the position vector
+ must be measured from that frame's origin.
 
- After all of the forces have been added to the calculator, a resultant contact
- force can be requested using the appropriate method.
+ After all of the forces have been added to the calculator, an equivalent
+ ContactForce (force/torque) can be requested using the appropriate method.
 
  The *order* in which the forces are added has no impact on the final result.
 
