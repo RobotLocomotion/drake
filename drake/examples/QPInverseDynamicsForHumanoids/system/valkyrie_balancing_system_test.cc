@@ -12,7 +12,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_value_source.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 

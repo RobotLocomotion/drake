@@ -13,7 +13,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::solvers::SolutionResult;

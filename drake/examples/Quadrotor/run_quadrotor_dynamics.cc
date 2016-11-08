@@ -9,8 +9,8 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 namespace drake {
 namespace examples {

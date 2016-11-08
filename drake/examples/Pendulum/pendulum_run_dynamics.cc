@@ -6,7 +6,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {

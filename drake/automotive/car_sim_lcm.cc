@@ -15,8 +15,8 @@
 #include "drake/systems/framework/primitives/matrix_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/multibody/parser_sdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
