@@ -331,10 +331,8 @@ class UnaryExpressionCell : public ExpressionCell {
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
-  /** Returns the first expression. */
-  const Expression& get_1st_expression() const { return e1_; }
-  /** Returns the second expression. */
-  const Expression& get_2nd_expression() const { return e2_; }
+  /** Returns the nested expression. */
+  const Expression& get_expression() const { return e_; }
 
  protected:
   /** Default constructor (DELETED). */
