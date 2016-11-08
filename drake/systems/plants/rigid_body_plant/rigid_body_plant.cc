@@ -409,7 +409,7 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint,
 
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT RigidBodyPlant<double>;
+template class RigidBodyPlant<double>;
 
 }  // namespace systems
 }  // namespace drake

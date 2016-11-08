@@ -6,8 +6,8 @@
 namespace drake {
 namespace systems {
 
-template class DRAKE_EXPORT Gain<double>;
-template class DRAKE_EXPORT Gain<AutoDiffXd>;
+template class Gain<double>;
+template class Gain<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

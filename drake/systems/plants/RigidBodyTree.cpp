@@ -3015,4 +3015,4 @@ template DRAKE_EXPORT int RigidBodyTree<double>::parseBodyOrFrameID(
     Eigen::Transform<double, 3, Eigen::Isometry>* Tframe) const;
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT RigidBodyTree<double>;
+template class RigidBodyTree<double>;

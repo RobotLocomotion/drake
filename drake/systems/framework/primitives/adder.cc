@@ -46,8 +46,8 @@ void Adder<T>::EvalOutput(const Context<T>& context,
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT Adder<double>;
-template class DRAKE_EXPORT Adder<AutoDiffXd>;
+template class Adder<double>;
+template class Adder<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

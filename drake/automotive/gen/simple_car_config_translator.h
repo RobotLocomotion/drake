@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/automotive/gen/simple_car_config.h"
-#include "drake/common/drake_export.h"
 #include "drake/lcmt_simple_car_config_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
@@ -17,7 +16,7 @@ namespace automotive {
  * Translates between LCM message objects and VectorBase objects for the
  * SimpleCarConfig type.
  */
-class DRAKE_EXPORT SimpleCarConfigTranslator
+class SimpleCarConfigTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   SimpleCarConfigTranslator()
