@@ -58,4 +58,11 @@ pods_install_pkg_config_file(drake-lcm
     LIBS -ldrakeLcm
     VERSION 0.0.1)
 
+if(Matlab_FOUND AND lcm_FOUND)
+  drake_add_mex(lcm_matlab_feval_client lcm_matlab_feval_client.cc)
+  target_link_libraries(lcm_matlab_feval_client
+      drake_lcmtypes
+      lcm)
+endif()
+
 add_subdirectory(test)
