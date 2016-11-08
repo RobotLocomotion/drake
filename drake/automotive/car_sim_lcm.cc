@@ -103,14 +103,14 @@ int main(int argc, char* argv[]) {
 
   // Instantiates a RigidBodyPlant to simulate the model.
   auto plant = make_unique<RigidBodyPlant<double>>(move(rigid_body_tree));
-  plant->set_contact_parameters(5000.0 /* penetration_stiffness */,
-      500 /* penetration_damping */, 10 /* friction_coefficient */);
+  plant->set_contact_parameters(1000000.0 /* penetration_stiffness */,
+      2000.0 /* penetration_damping */, 10.0 /* friction_coefficient */);
 
   // Instantiates a PID controller for controlling the actuators in the
   // RigidBodyPlant. The vector order is [steering, left wheel, right wheel].
-  const Vector3<double> Kp(400,   0,   0);  // Units: Nm / radians
+  const Vector3<double> Kp(100,   0,   0);  // Units: Nm / radians
   const Vector3<double> Ki(0,     0,   0);  // Units: Nm / radians
-  const Vector3<double> Kd(80,  700, 700);  // Units: Nm / (radians / sec).
+  const Vector3<double> Kd(100,  250, 250);  // Units: Nm / (radians / sec).
 
   // TODO(liang.fok) Automatically initialize `feedback_selector_matrix` based
   // on the simulation model, actuators, etc.

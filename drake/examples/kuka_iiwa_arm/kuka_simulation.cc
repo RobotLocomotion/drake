@@ -1,9 +1,9 @@
 /// @file
 ///
-/// Implements a simulation of the KUKA iiwa arm.  Like the driver for
-/// the physical arm, this simulation communicates over LCM using the
-/// lcmt_iiwa_status and lcmt_iiwa_command messages, It is intended to
-/// be a direct replacement for the iiwa driver.
+/// Implements a simulation of the KUKA iiwa arm.  Like the driver for the
+/// physical arm, this simulation communicates over LCM using lcmt_iiwa_status
+/// and lcmt_iiwa_command messages. It is intended to be a be a direct
+/// replacement for the KUKA iiwa driver and the actual robot hardware.
 
 #include <memory>
 

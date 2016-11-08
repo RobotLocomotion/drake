@@ -1,8 +1,7 @@
 #include "drake/examples/schunk_gripper/simulated_schunk_system.h"
 
-#include "drake/common/drake_export.h"
-#include "drake/multibody/parser_sdf.h"
 #include "drake/common/drake_path.h"
+#include "drake/multibody/parser_sdf.h"
 
 namespace drake {
 namespace examples {
@@ -22,7 +21,7 @@ CreateSimulatedSchunkSystem() {
       std::move(rigid_body_tree));
 }
 
-template DRAKE_EXPORT std::unique_ptr<drake::systems::RigidBodyPlant<double>>
+template std::unique_ptr<drake::systems::RigidBodyPlant<double>>
 CreateSimulatedSchunkSystem();
 
 }  // namespace schunk_gripper
