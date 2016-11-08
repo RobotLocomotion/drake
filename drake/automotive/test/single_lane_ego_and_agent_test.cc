@@ -37,9 +37,8 @@ class SingleLaneEgoAndAgentTest : public ::testing::Test {
 
   const systems::VectorBase<double>* state_derivatives(
       const systems::System<double>* system) {
-    const systems::ContinuousState<double>* p = derivatives_.get();
     const systems::ContinuousState<double>* subderivatives =
-        dut_.GetSubsystemDerivatives(*p, system);
+        dut_.GetSubsystemDerivatives(*derivatives_, system);
     return &subderivatives->get_vector();
   }
 
@@ -119,8 +118,8 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
-  // Obtain pointers to the (continuous) state vector, output
-  // vector, and vector of state derivatives for each car.
+  // Obtain pointers to the (continuous) state vector and state
+  // derivative vector for each car.
   auto state_vec_ego = continuous_state(dut_.get_ego_car_system());
   auto state_vec_agent = continuous_state(dut_.get_agent_car_system());
 

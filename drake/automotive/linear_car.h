@@ -1,9 +1,6 @@
 #pragma once
 
-//#include "drake/automotive/gen/linear_car_input.h"
-//#include "drake/automotive/gen/linear_car_state.h"
 #include "drake/systems/framework/leaf_system.h"
-//#include "drake/systems/framework/system_output.h"
 
 namespace drake {
 namespace automotive {

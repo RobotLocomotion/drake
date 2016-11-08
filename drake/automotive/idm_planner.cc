@@ -15,7 +15,6 @@ namespace automotive {
 
 template <typename T>
 IdmPlanner<T>::IdmPlanner(const T& v_0) : v_0_(v_0) {
-
   // The reference velocity must be strictly positive.
   DRAKE_ASSERT(v_0 > 0);
 
@@ -49,7 +48,7 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
 
-  // TODO: bake in David's parameters definition stuff.
+  // TODO(jadecastro): Bake in David's new parameter definition API.
   IdmPlannerParameters<T> params;
   params.set_a(T(1.0));             // max acceleration.
   params.set_b(T(3.0));             // comfortable braking deceleration.
@@ -66,10 +65,11 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   const T& l_a = params.l_a();
 
   // @p a and @p b must be positive.
-  // TODO: the below assertion forbids symbolic::Expressions with this
-  // construction.
-  DRAKE_ASSERT( a > 0.0 );
-  DRAKE_ASSERT( b > 0.0 );
+
+  // TODO(jadecastro): the below assertion forbids
+  // symbolic::Expressions with this construction.
+  DRAKE_ASSERT(a > 0.0);
+  DRAKE_ASSERT(b > 0.0);
 
   output_vector->SetAtIndex(
       0, a * (1.0 - pow(input_ego->GetAtIndex(1) / v_0_, delta) -
