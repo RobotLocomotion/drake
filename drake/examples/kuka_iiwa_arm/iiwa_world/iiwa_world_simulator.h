@@ -1,4 +1,7 @@
-# pragma once
+#pragma once
+
+#include <map>
+#include <string>
 
 //#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm.h"
@@ -22,14 +25,13 @@ namespace kuka_iiwa_arm {
 
 template <typename T>
 class IiwaWorldSimulator {
-  public :
+ public:
   /// A constructor configuring this object to use DrakeLcm, which encapsulates
   /// a _real_ LCM instance
   IiwaWorldSimulator();
-//  explicit IiwaWorldSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
+  //  explicit IiwaWorldSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
 
   ~IiwaWorldSimulator();
-
 
   /// Returns the LCM object used by this AutomotiveSimulator.
   lcm::DrakeLcmInterface* get_lcm();
@@ -41,21 +43,32 @@ class IiwaWorldSimulator {
   /// Returns the RigidBodyTree.  Beware that the AutomotiveSimulator::Start()
   /// method invokes RigidBodyTree::compile, which may substantially update the
   /// tree representation.
-  const RigidBodyTree& get_rigid_body_tree();
+  const RigidBodyTree<T>& get_rigid_body_tree();
 
   /// Adds a Iiwa arm system to this simulation.
   /// @pre Start() has NOT been called.
-  int AddIiwaArm();
+  //int AddIiwaArmOnGround();
 
-//  void AddObject(std::string object_name);
-//
-//  /// Adds an LCM publisher for the given @p system.
-//  /// @pre Start() has NOT been called.
-//  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
-//                    int vehicle_number);
-//
+  int AddObjectFixedToTable(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+                            std::string object_name);
 
-  int AddObject();
+//  int AddObjectFloatingOnTable(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+//                            std::string object_name);
+
+  //  void AddObject(std::string object_name);
+  //
+  //  /// Adds an LCM publisher for the given @p system.
+  //  /// @pre Start() has NOT been called.
+  //  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
+  //                    int vehicle_number);
+  //
+
+  int AddObjectFixedToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+                std::string object_name);
+
+  int AddObjectToFrame(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+                       std::string object_name,
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame);
 
   int allocate_object_number();
 
@@ -82,23 +95,35 @@ class IiwaWorldSimulator {
 
  private:
   // For both building and simulation.
-  std::unique_ptr<RigidBodyTree> rigid_body_tree_{
-      std::make_unique<RigidBodyTree>()};
+  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
+      std::make_unique<RigidBodyTree<T>>()};
   lcm::DrakeLcm lcm_;
 
   // For building.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
-//  std::vector<std::pair<const RigidBody*, const systems::System<T>*>>
-//      drake_visualizer_inputs_;
+  std::map<std::string, std::string> object_urdf_map_;
   int next_object_number_{0};
   bool started_{false};
+  bool table_loaded_{false};
+
+  RigidBody *GetTableBody(void);
+
+  //  std::string ExtractExtension(std::string filename);
+  // A simple list of objects to be added to the world. This map links their
+  // name to the URDF / SDF location.
+  std::map<std::string, std::string> object_name_map_{
+      {"iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf"},
+      {"table",
+       "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf"},
+      {"cylinder",
+       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf"},
+      {"cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"}};
 
   // For simulation.
   std::unique_ptr<systems::Diagram<T>> diagram_;
   std::unique_ptr<systems::Simulator<T>> simulator_;
 };
-
 }
 }
 }
