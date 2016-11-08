@@ -202,7 +202,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
               T_model_to_world.matrix());
 }
 
-GTEST_TEST(LoadSDFTest, TestDualOffset1) {
+GTEST_TEST(LoadSDFTest, TestDualOffsetSdf1) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. An X = 2 offset between the model's world and Drake's world
@@ -211,8 +211,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
     xyz(0) = 2;
-    T_model_world_to_drake_world.matrix()
-        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
+        0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -234,8 +234,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
     Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
     Eigen::Vector3d xyz;
     xyz << 2, 0, 1;
-    T_model_to_world.matrix()
-        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
   auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
@@ -244,7 +243,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
               T_model_to_world.matrix());
 }
 
-GTEST_TEST(LoadSDFTest, TestDualOffset2) {
+GTEST_TEST(LoadSDFTest, TestDualOffsetSdf2) {
   // Loads a one-DOF SDF model with:
   //   1. A Z = 1 and Roll = 90 degree offset between the model's root link's
   //      frame and the model's world frame.
@@ -257,8 +256,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
     Eigen::Vector3d xyz, rpy;
     xyz << 0, -1, 0;
     rpy << -1.570796326794896557998982, 0, 0;
-    T_model_world_to_drake_world.matrix()
-        << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
+        0, 0, 0, 1;
   }
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
@@ -268,9 +267,9 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
 
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                           "/multibody/rigid_body_system1/test/models/"
-                           "cylindrical_1dof_robot_offset_z1_r90.sdf",
-                       kQuaternion, weld_to_frame);
+                                   "/multibody/rigid_body_system1/test/" +
+                                   "models/cylindrical_1dof_robot_offset_z1_r90.sdf",
+                               kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
@@ -280,10 +279,93 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
       link1_body->getJoint().get_transform_to_parent_body().matrix().isApprox(
           Eigen::Isometry3d::Identity().matrix(), 1e-10))
       << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n" << link1_body->getJoint().get_transform_to_parent_body()
-                                           .matrix()
-      << "\n"
-      << "Expected:\n" << Eigen::Isometry3d::Identity().matrix();
+      << "Got:\n"
+      << link1_body->getJoint().get_transform_to_parent_body().matrix() << "\n"
+      << "Expected:\n"
+      << Eigen::Isometry3d::Identity().matrix();
+}
+
+GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf1) {
+  // Loads a one-DOF URDF model with:
+  //   1. A Z = 1 offset between the model's root and the model's world
+  //   2. An X = 2 offset between the model's world and Drake's world
+  Eigen::Isometry3d T_model_world_to_drake_world;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+    xyz(0) = 2;
+    T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
+        0, 0, 0, 1;
+  }
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+      nullptr,  // not used since the robot is attached to the world
+      T_model_world_to_drake_world);
+
+  RigidBodySystem rbs;
+  rbs.AddModelInstanceFromFile(
+      drake::GetDrakePath() +
+          "/multibody/rigid_body_system1/test/" +
+              "models/cylindrical_1dof_robot_offset_z1.urdf",
+      kQuaternion, weld_to_frame);
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to X = 2, Z = 1.
+  Eigen::Isometry3d T_model_to_world;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz;
+    xyz << 2, 0, 1;
+    T_model_to_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_TRUE(link1_body->getJoint().get_transform_to_parent_body().matrix() ==
+              T_model_to_world.matrix());
+}
+
+GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf2) {
+  // Loads a one-DOF URDF model with:
+  //   1. A Z = 1 and Roll = 90 degree offset between the model's root link's
+  //      frame and the model's world frame.
+  //   2. A Y = -1 and Roll = -90 degree offset between the model's world frame
+  //      and Drake's world frame.
+  // They should cancel out resulting in zero offset between the model's world
+  // frame and Drake's world frame.
+  Eigen::Isometry3d T_model_world_to_drake_world;
+  {
+    Eigen::Vector3d xyz, rpy;
+    xyz << 0, -1, 0;
+    rpy << -1.570796326794896557998982, 0, 0;
+    T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz,
+        0, 0, 0, 1;
+  }
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+      nullptr,  // not used since the robot is attached to the world
+      T_model_world_to_drake_world);
+
+  RigidBodySystem rbs;
+  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
+                                   "/multibody/rigid_body_system1/test/models/" +
+                                       "cylindrical_1dof_robot_offset_z1_r90.urdf",
+                               kQuaternion, weld_to_frame);
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to identity.
+  auto link1_body = rbs.getRigidBodyTree()->FindBody("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_TRUE(
+      link1_body->getJoint().get_transform_to_parent_body().matrix().isApprox(
+          Eigen::Isometry3d::Identity().matrix(), 1e-10))
+      << "Incorrect transform from the link1's frame to Drake's world frame."
+      << "Got:\n"
+      << link1_body->getJoint().get_transform_to_parent_body().matrix() << "\n"
+      << "Expected:\n"
+      << Eigen::Isometry3d::Identity().matrix();
 }
 
 GTEST_TEST(LoadSDFTest, TestJointLimitParams) {
@@ -291,8 +373,7 @@ GTEST_TEST(LoadSDFTest, TestJointLimitParams) {
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
                                "/multibody/rigid_body_system1/test/models/"
-                               "cylindrical_1dof_robot.sdf",
-                               kFixed);
+                               "cylindrical_1dof_robot.sdf", kFixed);
   const DrakeJoint& joint =
       rbs.getRigidBodyTree()->FindChildBodyOfJoint("joint1")->getJoint();
   EXPECT_NEAR(joint.getJointLimitMin()(0), -1.5708, 1e-6);
@@ -363,8 +444,10 @@ TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
   EXPECT_TRUE(actual_matrix.isApprox(expected_matrix, 1e-10))
       << "ERROR: "
       << "Incorrect transform from link1's frame to Drake's world frame.\n"
-      << "Got:\n" << actual_matrix << "\n"
-      << "Expected:\n" << expected_matrix;
+      << "Got:\n"
+      << actual_matrix << "\n"
+      << "Expected:\n"
+      << expected_matrix;
 }
 
 INSTANTIATE_TEST_CASE_P(
