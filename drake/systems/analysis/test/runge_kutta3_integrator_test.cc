@@ -132,12 +132,12 @@ GTEST_TEST(IntegratorTest, Scaling) {
   integrator.Initialize();
 
   // Test scaling
-  EXPECT_EQ(integrator.get_mutable_generalized_state_scaling_vector().size(),
+  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector().size(),
             1);
-  EXPECT_EQ(integrator.get_mutable_generalized_state_scaling_vector().
+  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector().
       lpNorm<Eigen::Infinity>(), 1);
-  EXPECT_EQ(integrator.get_misc_state_scaling_vector().size(), 1);
-  EXPECT_EQ(integrator.get_mutable_misc_state_scaling_vector().
+  EXPECT_EQ(integrator.get_misc_state_weight_vector().size(), 1);
+  EXPECT_EQ(integrator.get_mutable_misc_state_weight_vector().
       lpNorm<Eigen::Infinity>(), 1);
 }
 
