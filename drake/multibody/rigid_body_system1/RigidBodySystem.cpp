@@ -349,10 +349,7 @@ DRAKE_EXPORT RigidBodySystem::StateVector<double> getInitialState(
 
     VectorXd q_guess = x0.topRows(nq);
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
-    // If the optimization is a nonlinear non-covex program, then use 0 vector
-    // as the initial guess. This choice is arbitrary, but it is necessary to
-    // offer an initial guess for a nonlinear non-convex optimization program.
-    prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Zero(prog.num_vars()));
+    
     prog.Solve();
 
     x0 << qvar.value(), VectorXd::Zero(sys.tree->get_num_velocities());
