@@ -48,7 +48,7 @@ ContactForce<T> ContactResultantForceCalculator<T>::ComputeResultant() const {
   // See Paul Mitiguy's book for more details.
   //
   // This method implements this equation with the caveat that only the
-  // *normal* components of the set of contact forces is used in the
+  // *normal* components of the set of contact forces are used in the
   // calculation.
 
   // Compute resultant spatial force -- as the sum of the torques, and the

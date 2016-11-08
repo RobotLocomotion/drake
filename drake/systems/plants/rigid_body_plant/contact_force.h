@@ -22,7 +22,7 @@ namespace systems {
   normal is typically defined by the contact normal.
 
   A ContactForce makes no assumptions about the frame in which it is defined
-  except that the vectors representing application point locatileson, contact
+  except that the vectors representing application point location, contact
   normal, force, and torque are all expressed in a common frame, with the
   application point measured from the origin of that frame. Every external
   instantiation of ContactForce must make it clear which frame is being used.
