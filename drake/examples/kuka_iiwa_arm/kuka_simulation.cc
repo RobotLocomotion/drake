@@ -57,7 +57,7 @@ using systems::SystemOutput;
 // could be a good wrapper/template for LCM controlled robots.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
-  IiwaCommandReceiver(int num_joints) {
+  explicit IiwaCommandReceiver(int num_joints) {
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
     this->DeclareOutputPort(systems::kVectorValued, num_joints,
                             systems::kContinuousSampling);
@@ -90,7 +90,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 // received command.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
-  IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
+  // TODO(liang.fok): Replace these with semantically meaningful accessor
+  // methods like get_state_input_port() and get_command_input_port().
+  static const int kStateInputPort = 0;
+  static const int kCommandInputPort = 1;
+
+  explicit IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
     this->DeclareInputPort(systems::kVectorValued, num_joints * 2,
                            systems::kContinuousSampling);
     this->DeclareInputPort(systems::kVectorValued, num_joints,
@@ -282,9 +287,11 @@ int DoMain() {
   builder.Connect(model->get_output_port(0),
                   visualizer->get_input_port(0));
   builder.Connect(model->get_output_port(0),
-                  status_sender->get_input_port(0));
+                  status_sender->get_input_port(
+                      IiwaStatusSender::kStateInputPort));
   builder.Connect(command_receiver->get_output_port(0),
-                  status_sender->get_input_port(1));
+                  status_sender->get_input_port(
+                      IiwaStatusSender::kCommandInputPort));
   builder.Connect(status_sender->get_output_port(0),
                   status_pub->get_input_port(0));
   auto sys = builder.Build();
