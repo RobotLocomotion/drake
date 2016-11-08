@@ -523,11 +523,25 @@ class ExpressionAddFactory {
   Expression GetExpression() const;
 
  private:
-  /* Adds constant_term to this factory. */
+  /* Adds constant_term to this factory.
+     Adding constant constant_term into an add factory representing
+
+         c0 + c1 * t1 + ... + cn * tn
+
+     results in (c0 + constant_term) + c1 * t1 + ... + cn * tn.  */
   void AddConstant(double constant_term);
-  /* Adds coeff * @p term to this factory. */
+  /* Adds coeff * term to this factory.
+
+     Adding (coeff * term) into an add factory representing
+
+         c0 + c1 * t1 + ... + cn * tn
+
+     results in c0 + c1 * t1 + ... + (coeff * term) + ... + cn * tn. Note that
+     it also performs simplifications to merge the coefficients of common terms.
+  */
   void AddTerm(double coeff, const Expression& term);
-  /* Adds term_to_coeff_map to this factory. */
+  /* Adds term_to_coeff_map to this factory. It calls AddConstant and AddTerm
+   * methods. */
   void AddMap(const std::map<Expression, double> term_to_coeff_map);
 
   double constant_term_{0.0};
@@ -619,11 +633,24 @@ class ExpressionMulFactory {
   Expression GetExpression() const;
 
  private:
-  /* Adds constant_term to this factory. */
+  /* Adds constant_factor to this factory.
+     Adding constant_factor into an mul factory representing
+
+         c * b1 ^ e1 * ... * bn ^ en
+
+     results in (constant_factor * c) * b1 ^ e1 * ... * bn ^ en. */
   void AddConstant(double constant_factor);
-  /* Adds pow(base, exponent) to this factory. */
+  /* Adds pow(base, exponent) to this factory.
+     Adding pow(base, exponent) into an mul factory representing
+
+         c * b1 ^ e1 * ... * bn ^ en
+
+     results in c * b1 ^ e1 * ... * base^exponent * ... * bn ^ en. Note that
+     it also performs simplifications to merge the exponents of common bases.
+  */
   void AddTerm(const Expression& base, const Expression& exponent);
-  /* Adds term_to_exp_map to this factory. */
+  /* Adds term_to_exp_map to this factory. It calls AddConstant and AddTerm
+   * methods. */
   void AddMap(const std::map<Expression, Expression> term_to_exp_map);
 
   double constant_factor_{1.0};
