@@ -167,18 +167,14 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
   // simplifications internally.
   ExpressionAddFactory add_factory{};
   if (lhs.get_kind() == ExpressionKind::Add) {
+    // 1. (e_1 + ... + e_n) + rhs
     add_factory = static_pointer_cast<ExpressionAdd>(lhs.ptr_);
-    if (rhs.get_kind() == ExpressionKind::Add) {
-      // 1. (e_1 + ... + e_n) + (e_{n+1} + ... + e_{m})
-      // => (e_1 + ... + e_n + e_{n+1} + ... + e_{m})
-      add_factory.Add(static_pointer_cast<ExpressionAdd>(rhs.ptr_));
-    } else {
-      // 2. (e_1 + ... + e_n) + rhs
-      add_factory.AddExpression(rhs);
-    }
+    // Note: AddExpression method takes care of the special case where `rhs` is
+    // of ExpressionAdd.
+    add_factory.AddExpression(rhs);
   } else {
     if (rhs.get_kind() == ExpressionKind::Add) {
-      // 3. lhs + (e_1 + ... + e_n)
+      // 2. lhs + (e_1 + ... + e_n)
       add_factory = static_pointer_cast<ExpressionAdd>(rhs.ptr_);
       add_factory.AddExpression(lhs);
     } else {
@@ -305,32 +301,32 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // Pow-related simplifications.
   if (lhs.get_kind() == ExpressionKind::Pow) {
     const auto lhs_ptr(static_pointer_cast<ExpressionPow>(lhs.ptr_));
-    const Expression& e1{lhs_ptr->get_1st_expression()};
+    const Expression& e1{lhs_ptr->get_first_expression()};
     if (rhs.get_kind() == ExpressionKind::Pow) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
-      const Expression& e3{rhs_ptr->get_1st_expression()};
+      const Expression& e3{rhs_ptr->get_first_expression()};
       if (e1.EqualTo(e3)) {
         // Simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
         //                 => pow(e1, e2 + e4)
-        const Expression& e2{lhs_ptr->get_2nd_expression()};
-        const Expression& e4{rhs_ptr->get_2nd_expression()};
+        const Expression& e2{lhs_ptr->get_second_expression()};
+        const Expression& e4{rhs_ptr->get_second_expression()};
         lhs = pow(e1, e2 + e4);
         return lhs;
       }
     }
     if (e1.EqualTo(rhs)) {
       // Simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
-      const Expression& e2{lhs_ptr->get_2nd_expression()};
+      const Expression& e2{lhs_ptr->get_second_expression()};
       lhs = pow(e1, e2 + 1);
       return lhs;
     }
   } else {
     if (rhs.get_kind() == ExpressionKind::Pow) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
-      const Expression& e1{rhs_ptr->get_1st_expression()};
+      const Expression& e1{rhs_ptr->get_first_expression()};
       if (e1.EqualTo(lhs)) {
         // Simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
-        const Expression& e2{rhs_ptr->get_2nd_expression()};
+        const Expression& e2{rhs_ptr->get_second_expression()};
         lhs = pow(e1, 1 + e2);
         return lhs;
       }
@@ -349,15 +345,11 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
   // Simplification: flattening
   ExpressionMulFactory mul_factory{};
   if (lhs.get_kind() == ExpressionKind::Mul) {
+    // (e_1 * ... * e_n) * rhs
     mul_factory = static_pointer_cast<ExpressionMul>(lhs.ptr_);
-    if (rhs.get_kind() == ExpressionKind::Mul) {
-      //    (e_1 * ... * e_n) * (e_{n+1} * ... * e_{m})
-      // => (e_1 * ... * e_n * e_{n*1} * ... * e_{m})
-      mul_factory.Add(static_pointer_cast<ExpressionMul>(rhs.ptr_));
-    } else {
-      // (e_1 * ... * e_n) * e_{n*1} -> (e_1 * ... * e_n * e_{n*1})
-      mul_factory.AddExpression(rhs);
-    }
+    // Note: AddExpression method takes care of the special case where `rhs` is
+    // of ExpressionMul.
+    mul_factory.AddExpression(rhs);
   } else {
     if (rhs.get_kind() == ExpressionKind::Mul) {
       // e_1 * (e_2 * ... * e_n) -> (e_2 * ... * e_n * e_1)
@@ -745,6 +737,10 @@ void ExpressionAddFactory::AddExpression(const Expression& e) {
         static_pointer_cast<ExpressionConstant>(e.ptr_)->get_value()};
     return AddConstant(v);
   }
+  if (e.get_kind() == ExpressionKind::Add) {
+    // Flattening
+    return Add(static_pointer_cast<ExpressionAdd>(e.ptr_));
+  }
   if (e.get_kind() == ExpressionKind::Mul) {
     const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
     const double constant_factor{ptr->get_constant_factor()};
@@ -961,9 +957,8 @@ void ExpressionMulFactory::AddExpression(const Expression& e) {
     return AddConstant(v);
   }
   if (e.get_kind() == ExpressionKind::Mul) {
-    // (c * b^t) => c * (1.0 * b^t)
-    const auto ptr(static_pointer_cast<ExpressionMul>(e.ptr_));
-    Add(ptr);
+    // Flattening
+    return Add(static_pointer_cast<ExpressionMul>(e.ptr_));
   }
   // Add e^1
   return AddTerm(e, Expression{1.0});
@@ -1026,10 +1021,10 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
       // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
       // exponent)
       // Example: (x^2)^3 => x^(2 * 3)
-      const Expression& e1{
-          static_pointer_cast<ExpressionPow>(base.ptr_)->get_1st_expression()};
-      const Expression& e2{
-          static_pointer_cast<ExpressionPow>(base.ptr_)->get_2nd_expression()};
+      const Expression& e1{static_pointer_cast<ExpressionPow>(base.ptr_)
+                               ->get_first_expression()};
+      const Expression& e2{static_pointer_cast<ExpressionPow>(base.ptr_)
+                               ->get_second_expression()};
       term_to_exp_map_.emplace(e1, e2 * exponent);
     } else {
       term_to_exp_map_.emplace(base, exponent);
@@ -1048,7 +1043,8 @@ ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2} {}
 
 ostream& ExpressionDiv::Display(ostream& os) const {
-  os << "(" << get_1st_expression() << " / " << get_2nd_expression() << ")";
+  os << "(" << get_first_expression() << " / " << get_second_expression()
+     << ")";
   return os;
 }
 
@@ -1146,7 +1142,8 @@ void ExpressionPow::check_domain(const double v1, const double v2) {
 }
 
 ostream& ExpressionPow::Display(ostream& os) const {
-  os << "pow(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  os << "pow(" << get_first_expression() << ", " << get_second_expression()
+     << ")";
   return os;
 }
 
@@ -1243,7 +1240,8 @@ ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2} {}
 
 ostream& ExpressionAtan2::Display(ostream& os) const {
-  os << "atan2(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  os << "atan2(" << get_first_expression() << ", " << get_second_expression()
+     << ")";
   return os;
 }
 
@@ -1289,7 +1287,8 @@ ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Min, e1, e2} {}
 
 ostream& ExpressionMin::Display(ostream& os) const {
-  os << "min(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  os << "min(" << get_first_expression() << ", " << get_second_expression()
+     << ")";
   return os;
 }
 
@@ -1301,7 +1300,8 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Max, e1, e2} {}
 
 ostream& ExpressionMax::Display(ostream& os) const {
-  os << "max(" << get_1st_expression() << ", " << get_2nd_expression() << ")";
+  os << "max(" << get_first_expression() << ", " << get_second_expression()
+     << ")";
   return os;
 }
 
@@ -1356,8 +1356,8 @@ Expression sqrt(const Expression& e) {
   // Simplification: sqrt(pow(x, 2)) => abs(x)
   if (e.get_kind() == ExpressionKind::Pow) {
     const auto e_pow(static_pointer_cast<ExpressionPow>(e.ptr_));
-    if (e_pow->get_2nd_expression().EqualTo(Expression{2.0})) {
-      return abs(e_pow->get_1st_expression());
+    if (e_pow->get_second_expression().EqualTo(Expression{2.0})) {
+      return abs(e_pow->get_first_expression());
     }
   }
   return Expression{make_shared<ExpressionSqrt>(e)};
@@ -1375,10 +1375,6 @@ Expression pow(const Expression& e1, const Expression& e2) {
       ExpressionPow::check_domain(v1, v2);
       return Expression{std::pow(v1, v2)};
     }
-    if (v2 == 2.0 && e1.get_kind() == ExpressionKind::Sqrt) {
-      // pow(sqrt(x), 2) => x
-      return static_pointer_cast<ExpressionSqrt>(e1.ptr_)->get_expression();
-    }
     // pow(x, 0) => 1
     if (v2 == 0.0) {
       return Expression::One();
@@ -1391,9 +1387,9 @@ Expression pow(const Expression& e1, const Expression& e2) {
   if (e1.get_kind() == ExpressionKind::Pow) {
     // pow(base, exponent) ^ e2 => pow(base, exponent * e2)
     const Expression& base{
-        static_pointer_cast<ExpressionPow>(e1.ptr_)->get_1st_expression()};
+        static_pointer_cast<ExpressionPow>(e1.ptr_)->get_first_expression()};
     const Expression& exponent{
-        static_pointer_cast<ExpressionPow>(e1.ptr_)->get_2nd_expression()};
+        static_pointer_cast<ExpressionPow>(e1.ptr_)->get_second_expression()};
     return Expression{make_shared<ExpressionPow>(base, exponent * e2)};
   }
   return Expression{make_shared<ExpressionPow>(e1, e2)};

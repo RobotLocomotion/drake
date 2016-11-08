@@ -420,6 +420,7 @@ TEST_F(SymbolicExpressionTest, Add2) {
   Expression e1{x_ + y_};
   Expression e2{e1 + e1};
   const auto str_rep_e2(e2.to_string());
+  EXPECT_EQ(str_rep_e2, "(2 * x + 2 * y)");
   EXPECT_PRED2(ExpEqual, e2, 2 * x_ + 2 * y_);
   e1 += z_;
   EXPECT_PRED2(ExpEqual, e1, x_ + y_ + z_);
@@ -484,6 +485,7 @@ TEST_F(SymbolicExpressionTest, Sub2) {
   const Expression e2{x_ - z_};
   const Expression e3{e1 - e2};
   const auto str_rep_e3(e3.to_string());
+  EXPECT_EQ(str_rep_e3, "( - y + z)");
   e1 -= z_;
   EXPECT_PRED2(ExpEqual, e1, x_ - y_ - z_);
   EXPECT_EQ(e3.to_string(), str_rep_e3);  // e3 doesn't change.
@@ -615,6 +617,7 @@ TEST_F(SymbolicExpressionTest, AddMul1) {
 
   const Expression e4{(x_ * 2 * x_) + (x_ * x_ * 3)};
   EXPECT_PRED2(ExpEqual, e4, 5 * x_ * x_);
+  EXPECT_PRED2(ExpEqual, e4, 5 * pow(x_, 2));
 }
 
 TEST_F(SymbolicExpressionTest, Div1) {
@@ -756,8 +759,6 @@ TEST_F(SymbolicExpressionTest, Pow1) {
   EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::Zero()), Expression::One());
   // pow(x, 1.0) => x
   EXPECT_PRED2(ExpEqual, pow(x_plus_y_, Expression::One()), x_plus_y_);
-  // sqrt(x) * sqrt(x) => pow(sqrt(x), 2) => x
-  EXPECT_PRED2(ExpEqual, (sqrt(x_plus_y_) * sqrt(x_plus_y_)), x_plus_y_);
   // (x^2)^3 => x^(2*3)
   EXPECT_PRED2(ExpEqual, pow(pow(x_, 2), 3), pow(x_, 2 * 3));
   // (x^y)^z => x^(y*z)

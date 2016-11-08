@@ -124,16 +124,16 @@ class DRAKE_EXPORT Expression {
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
 
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs an Expression from an rvalue. */
   Expression(Expression&& e) = default;
 
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs an Expression from an lvalue. */
   Expression(const Expression& e) = default;
 
-  /** Move-assign a set from an rvalue. */
+  /** Move-assigns an Expression from an rvalue. */
   Expression& operator=(Expression&& e) = default;
 
-  /** Copy-assign a set from an lvalue. */
+  /** Copy-assigns an Expression from an lvalue. */
   Expression& operator=(const Expression& e) = default;
 
   /** Constructs a constant. */
@@ -272,15 +272,15 @@ class ExpressionCell {
  protected:
   /** Default constructor. */
   ExpressionCell() = default;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs an ExpressionCell from an rvalue. */
   ExpressionCell(ExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs an ExpressionCell from an lvalue. */
   ExpressionCell(const ExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   ExpressionCell& operator=(ExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
-  /** Construct ExpressionCell of kind @p k with @p hash. */
+  /** Constructs ExpressionCell of kind @p k with @p hash. */
   ExpressionCell(ExpressionKind k, size_t hash);
 
  private:
@@ -337,13 +337,13 @@ class UnaryExpressionCell : public ExpressionCell {
  protected:
   /** Default constructor (DELETED). */
   UnaryExpressionCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   UnaryExpressionCell(UnaryExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   UnaryExpressionCell(const UnaryExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
   /** Constructs UnaryExpressionCell of kind @p k with @p hash and @p e. */
   UnaryExpressionCell(ExpressionKind k, const Expression& e);
@@ -366,19 +366,21 @@ class BinaryExpressionCell : public ExpressionCell {
   bool Less(const ExpressionCell& c) const override;
   /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
-  /** Returns the nested expression. */
-  const Expression& get_expression() const { return e_; }
+  /** Returns the first expression. */
+  const Expression& get_first_expression() const { return e1_; }
+  /** Returns the second expression. */
+  const Expression& get_second_expression() const { return e2_; }
 
  protected:
   /** Default constructor (DELETED). */
   BinaryExpressionCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   BinaryExpressionCell(BinaryExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   BinaryExpressionCell(const BinaryExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
   /** Constructs BinaryExpressionCell of kind @p k with @p hash, @p e1, @p e2.
    */
@@ -448,8 +450,8 @@ class ExpressionNeg : public UnaryExpressionCell {
 class ExpressionAdd : public ExpressionCell {
  public:
   /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map. */
-  explicit ExpressionAdd(double constant_term,
-                         const std::map<Expression, double>& term_to_coeff_map);
+  ExpressionAdd(double constant_term,
+                const std::map<Expression, double>& term_to_coeff_map);
   /** Collects variables in expression. */
   Variables GetVariables() const override;
   /** Checks structural equality. */
@@ -462,10 +464,6 @@ class ExpressionAdd : public ExpressionCell {
   std::ostream& Display(std::ostream& os) const override;
   /** Returns constant term. */
   double get_constant_term() const { return constant_term_; }
-  /** Returns map from terms to their coefficients. */
-  std::map<Expression, double> get_term_to_coeff_map() {
-    return term_to_coeff_map_;
-  }
   /** Returns map from terms to their coefficients. */
   const std::map<Expression, double>& get_term_to_coeff_map() const {
     return term_to_coeff_map_;
@@ -481,19 +479,19 @@ class ExpressionAdd : public ExpressionCell {
 /** Factory class to help build ExpressionAdd expressions. */
 class ExpressionAddFactory {
  public:
-  /** Default constructor. It constructs. */
+  /** Default constructor. */
   ExpressionAddFactory() = default;
 
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   ExpressionAddFactory(ExpressionAddFactory&& f) = default;
 
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   ExpressionAddFactory(const ExpressionAddFactory& f) = default;
 
-  /** Move-assign a set from an rvalue. */
+  /** Move-assigns from an rvalue. */
   ExpressionAddFactory& operator=(ExpressionAddFactory&& f) = default;
 
-  /** Copy-assign a set from an lvalue. */
+  /** Copy-assigns from an lvalue. */
   ExpressionAddFactory& operator=(const ExpressionAddFactory& f) = default;
 
   /** Constructs ExpressionAddFactory with @p constant_term and @p
@@ -563,9 +561,8 @@ class ExpressionAddFactory {
 class ExpressionMul : public ExpressionCell {
  public:
   /** Constructs ExpressionMul from @p constant_factor and @term_to_exp_map. */
-  explicit ExpressionMul(
-      double constant_factor,
-      const std::map<Expression, Expression>& term_to_exp_map);
+  ExpressionMul(double constant_factor,
+                const std::map<Expression, Expression>& term_to_exp_map);
   /** Collects variables in expression. */
   Variables GetVariables() const override;
   /** Checks structural equality. */
@@ -578,10 +575,6 @@ class ExpressionMul : public ExpressionCell {
   std::ostream& Display(std::ostream& os) const override;
   /** Returns constant term. */
   double get_constant_factor() const { return constant_factor_; }
-  /** Returns map from terms to their exponentiations. */
-  std::map<Expression, Expression> get_term_to_exp_map() {
-    return term_to_exp_map_;
-  }
   /** Returns map from a term to its coefficient. */
   const std::map<Expression, Expression>& get_term_to_exp_map() const {
     return term_to_exp_map_;
@@ -601,16 +594,16 @@ class ExpressionMulFactory {
   /** Default constructor. It constructs. */
   ExpressionMulFactory() = default;
 
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   ExpressionMulFactory(ExpressionMulFactory&& f) = default;
 
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   ExpressionMulFactory(const ExpressionMulFactory& f) = default;
 
-  /** Move-assign a set from an rvalue. */
+  /** Move-assigns from an rvalue. */
   ExpressionMulFactory& operator=(ExpressionMulFactory&& f) = default;
 
-  /** Copy-assign a set from an lvalue. */
+  /** Copy-assigns from an lvalue. */
   ExpressionMulFactory& operator=(const ExpressionMulFactory& f) = default;
 
   /** Constructs ExpressionMulFactory with @p constant_term and @p
@@ -719,7 +712,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
 /** Symbolic expression representing power function. */
 class ExpressionPow : public BinaryExpressionCell {
  public:
-  explicit ExpressionPow(const Expression& e1, const Expression& e2);
+  ExpressionPow(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
@@ -804,7 +797,7 @@ class ExpressionAtan : public UnaryExpressionCell {
  * two arguments). atan2(y, x) is defined as atan(y/x). */
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
-  explicit ExpressionAtan2(const Expression& e1, const Expression& e2);
+  ExpressionAtan2(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -845,7 +838,7 @@ class ExpressionTanh : public UnaryExpressionCell {
 /** Symbolic expression representing min function. */
 class ExpressionMin : public BinaryExpressionCell {
  public:
-  explicit ExpressionMin(const Expression& e1, const Expression& e2);
+  ExpressionMin(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -855,7 +848,7 @@ class ExpressionMin : public BinaryExpressionCell {
 /** Symbolic expression representing max function. */
 class ExpressionMax : public BinaryExpressionCell {
  public:
-  explicit ExpressionMax(const Expression& e1, const Expression& e2);
+  ExpressionMax(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:

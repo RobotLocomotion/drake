@@ -145,7 +145,7 @@ Formula operator&&(const Formula& f1, const Formula& f2) {
       return Formula{make_shared<FormulaAnd>(formulas2)};
     } else {
       // Nothing to flatten.
-      return Formula{make_shared<FormulaAnd>(set<Formula>{f1, f2})};
+      return Formula{make_shared<FormulaAnd>(f1, f2)};
     }
   }
 }
@@ -189,7 +189,7 @@ Formula operator||(const Formula& f1, const Formula& f2) {
       return Formula{make_shared<FormulaOr>(formulas)};
     } else {
       // Nothing to flatten.
-      return Formula{make_shared<FormulaOr>(set<Formula>{f1, f2})};
+      return Formula{make_shared<FormulaOr>(f1, f2)};
     }
   }
 }
@@ -550,6 +550,9 @@ FormulaAnd::FormulaAnd(const set<Formula>& formulas)
   DRAKE_ASSERT(get_formulas().size() > 1u);
 }
 
+FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
+    : NaryFormulaCell{FormulaKind::And, set<Formula>{f1, f2}} {}
+
 bool FormulaAnd::Evaluate(const Environment& env) const {
   for (const auto& f : get_formulas()) {
     if (!f.Evaluate(env)) {
@@ -567,6 +570,9 @@ FormulaOr::FormulaOr(const set<Formula>& formulas)
     : NaryFormulaCell{FormulaKind::Or, formulas} {
   DRAKE_ASSERT(get_formulas().size() > 1u);
 }
+
+FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
+    : NaryFormulaCell{FormulaKind::Or, set<Formula>{f1, f2}} {}
 
 bool FormulaOr::Evaluate(const Environment& env) const {
   for (const auto& f : get_formulas()) {
