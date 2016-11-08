@@ -999,38 +999,40 @@ void ExpressionMulFactory::AddConstant(const double constant_factor) {
 }
 
 void ExpressionMulFactory::AddTerm(const Expression& base,
-                                   const Expression& exp) {
-  // Case: both of base and exp are constant, multiply this by pow(base, exp).
+                                   const Expression& exponent) {
+  // Case: both of base and exponent are constant, multiply this by pow(base,
+  // exponent).
   // Example: (4 * x^2) * (3^2) => (4 * (3^2)) * x^2
   if (base.get_kind() == ExpressionKind::Constant &&
-      exp.get_kind() == ExpressionKind::Constant) {
-    constant_factor_ *= pow(base, exp).Evaluate();
+      exponent.get_kind() == ExpressionKind::Constant) {
+    constant_factor_ *= pow(base, exponent).Evaluate();
     return;
   }
   const auto it(term_to_exp_map_.find(base));
   if (it != term_to_exp_map_.end()) {
-    // base is already in map (= b1^e1 * ... * (base^this_exp) * ... * en^bn).
-    // Update it to be (... * (base^(this_exp + exp)) * ...)
+    // base is already in map.
+    // (= b1^e1 * ... * (base^this_exponent) * ... * en^bn).
+    // Update it to be (... * (base^(this_exponent + exponent)) * ...)
     // Example: x^3 * x^2 => x^5
-    Expression& this_exp{it->second};
-    this_exp += exp;
-    if (this_exp.EqualTo(Expression::Zero())) {
-      // If it ends up with base^0 (= 1.0) then remove this entry from the
-      // map.
+    Expression& this_exponent{it->second};
+    this_exponent += exponent;
+    if (this_exponent.EqualTo(Expression::Zero())) {
+      // If it ends up with base^0 (= 1.0) then remove this entry from the map.
       term_to_exp_map_.erase(it);
     }
   } else {
-    // product is not found in term_to_exp_map_. Add the entry (base, exp).
+    // Product is not found in term_to_exp_map_. Add the entry (base, exponent).
     if (base.get_kind() == ExpressionKind::Pow) {
-      // If (base, exp) = (pow(e1, e2), exp)), then add (e1, e2 * exp)
+      // If (base, exponent) = (pow(e1, e2), exponent)), then add (e1, e2 *
+      // exponent)
       // Example: (x^2)^3 => x^(2 * 3)
       const Expression& e1{
           static_pointer_cast<ExpressionPow>(base.ptr_)->get_1st_expression()};
       const Expression& e2{
           static_pointer_cast<ExpressionPow>(base.ptr_)->get_2nd_expression()};
-      term_to_exp_map_.emplace(e1, e2 * exp);
+      term_to_exp_map_.emplace(e1, e2 * exponent);
     } else {
-      term_to_exp_map_.emplace(base, exp);
+      term_to_exp_map_.emplace(base, exponent);
     }
   }
 }
