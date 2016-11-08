@@ -6,10 +6,10 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/IKoptions.h"
 #include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;

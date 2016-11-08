@@ -1,9 +1,9 @@
 #include <memory>
 
 #include "drake/common/drake_path.h"
+#include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parser_sdf.h"
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"

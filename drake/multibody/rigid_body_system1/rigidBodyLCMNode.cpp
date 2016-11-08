@@ -5,11 +5,11 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/system1/LCMSystem.h"
-#include "drake/system1/cascade_system.h"
 #include "drake/multibody/rigid_body_system1/BotVisualizer.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/system1/LCMSystem.h"
+#include "drake/system1/cascade_system.h"
 
 using std::make_shared;
 using std::shared_ptr;

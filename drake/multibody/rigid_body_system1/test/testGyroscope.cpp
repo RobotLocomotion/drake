@@ -2,8 +2,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
 namespace drake {
 namespace systems {

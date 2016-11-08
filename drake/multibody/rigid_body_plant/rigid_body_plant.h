@@ -6,9 +6,9 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
