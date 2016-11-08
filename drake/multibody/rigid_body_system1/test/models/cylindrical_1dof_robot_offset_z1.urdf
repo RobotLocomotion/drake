@@ -63,4 +63,8 @@
     <limit effort="30" velocity="1.0" lower="-1.5708" upper="1.5708" />
   </joint>
 
+<<<<<<< 0c23a1e73759a5399d8be9213be0c81e005b7744
 </robot>
+=======
+</robot>
+>>>>>>> fix and test added
