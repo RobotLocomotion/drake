@@ -621,8 +621,8 @@ class ExpressionMulFactory {
  private:
   /* Adds constant_term to this factory. */
   void AddConstant(double constant_factor);
-  /* Adds pow(base, exp) to this factory. */
-  void AddTerm(const Expression& base, const Expression& exp);
+  /* Adds pow(base, exponent) to this factory. */
+  void AddTerm(const Expression& base, const Expression& exponent);
   /* Adds term_to_exp_map to this factory. */
   void AddMap(const std::map<Expression, Expression> term_to_exp_map);
 

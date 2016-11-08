@@ -163,7 +163,7 @@ Expression& operator+=(Expression& lhs, const Expression& rhs) {
     return lhs;
   }
   // Simplification: flattening. To build a new expression, we use
-  // ExprefssionAddFactory which holds intermediate terms and does
+  // ExpressionAddFactory which holds intermediate terms and does
   // simplifications internally.
   ExpressionAddFactory add_factory{};
   if (lhs.get_kind() == ExpressionKind::Add) {
@@ -934,17 +934,17 @@ ostream& ExpressionMul::Display(ostream& os) const {
 
 ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
                                     const Expression& base,
-                                    const Expression& exp) const {
-  // Print " * pow(base, exp)" if print_mul is true
-  // Print "pow(base, exp)" if print_mul is false
-  // Print "base" instead of "pow(base, exp)" if exp == 1.0
+                                    const Expression& exponent) const {
+  // Print " * pow(base, exponent)" if print_mul is true
+  // Print "pow(base, exponent)" if print_mul is false
+  // Print "base" instead of "pow(base, exponent)" if exponent == 1.0
   if (print_mul) {
     os << " * ";
   }
-  if (exp.EqualTo(Expression::One())) {
+  if (exponent.EqualTo(Expression::One())) {
     os << base;
   } else {
-    os << "pow(" << base << ", " << exp << ")";
+    os << "pow(" << base << ", " << exponent << ")";
   }
   return os;
 }
@@ -1389,12 +1389,12 @@ Expression pow(const Expression& e1, const Expression& e2) {
     }
   }
   if (e1.get_kind() == ExpressionKind::Pow) {
-    // pow(base, exp) ^ e2 => pow(base, exp * e2)
+    // pow(base, exponent) ^ e2 => pow(base, exponent * e2)
     const Expression& base{
         static_pointer_cast<ExpressionPow>(e1.ptr_)->get_1st_expression()};
-    const Expression& exp{
+    const Expression& exponent{
         static_pointer_cast<ExpressionPow>(e1.ptr_)->get_2nd_expression()};
-    return Expression{make_shared<ExpressionPow>(base, exp * e2)};
+    return Expression{make_shared<ExpressionPow>(base, exponent * e2)};
   }
   return Expression{make_shared<ExpressionPow>(e1, e2)};
 }
