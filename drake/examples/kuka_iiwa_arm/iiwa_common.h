@@ -8,15 +8,6 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 /**
- * Adds a ground plane to @p tree. The ground is represented as a box-shaped
- * visual and collision element.
- *
- * @param[in] tree The RigidBodyTree to which to add the ground plane.
- */
-DRAKE_EXPORT
-void AddGround(RigidBodyTree<double>* tree);
-
-/**
  * Verify that @p tree matches assumptions about joint indices.
  * Aborts if the tree isn't as expected.
  */

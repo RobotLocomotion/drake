@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -16,7 +15,7 @@ namespace systems {
 /// and diagrams.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
-class DRAKE_EXPORT ModalState {
+class ModalState {
  public:
   // Constructs an empty modal state.
   ModalState();

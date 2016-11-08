@@ -3,10 +3,8 @@
 #include <Eigen/Core>
 #include <vector>
 #include "drake/systems/trajectories/PiecewiseFunction.h"
-#include "drake/common/drake_export.h"
 
-class DRAKE_EXPORT PiecewisePolynomialBase
-    : public PiecewiseFunction {
+class PiecewisePolynomialBase : public PiecewiseFunction {
  public:
   explicit PiecewisePolynomialBase(std::vector<double> const& segment_times);
 

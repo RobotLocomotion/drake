@@ -1,7 +1,7 @@
-#include "drake/automotive/automotive_common.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 namespace drake {
-namespace automotive {
+namespace multibody {
 
 void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
                            double box_depth) {
@@ -23,5 +23,5 @@ void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
   tree->updateStaticCollisionElements();
 }
 
-}  // namespace automotive
+}  // namespace multibody
 }  // namespace drake

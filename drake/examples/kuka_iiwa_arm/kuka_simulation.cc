@@ -13,6 +13,9 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -24,9 +27,7 @@
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -153,7 +154,7 @@ class SimulatedKuka : public systems::Diagram<T> {
         drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    AddGround(rigid_body_tree.get());
+    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
 
     DiagramBuilder<T> builder;
 

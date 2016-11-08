@@ -18,6 +18,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
         rigid_body_actuator.cc
         rigid_body_frame.cc
         rigid_body_loop.cc
+        rigid_body_tree_construction.cc
   $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
         drakeCollision drakeCommon drakeJoints drakeXMLUtil)
@@ -37,7 +38,8 @@ drake_install_headers(
         parser_common.h
         parser_sdf.h
         parser_urdf.h
-        rigid_body_loop.h)
+        rigid_body_loop.h
+        rigid_body_tree_construction.h)
 
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeXMLUtil

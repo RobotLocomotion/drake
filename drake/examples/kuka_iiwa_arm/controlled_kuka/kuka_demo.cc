@@ -8,6 +8,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -15,9 +18,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
@@ -197,7 +198,7 @@ class KukaDemo : public systems::Diagram<T> {
         drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    AddGround(rigid_body_tree.get());
+    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
     VerifyIiwaTree(*rigid_body_tree);
 
     DiagramBuilder<T> builder;

@@ -2,7 +2,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/trajectory.h"
 
@@ -12,7 +11,7 @@ namespace drake {
  * A PiecewisePolynomialTrajectory is a Trajectory that is represented by
  * (implemented in terms of) a PiecewisePolynomial.
  */
-class DRAKE_EXPORT PiecewisePolynomialTrajectory : public Trajectory {
+class PiecewisePolynomialTrajectory : public Trajectory {
  public:
   explicit PiecewisePolynomialTrajectory(
       const PiecewisePolynomial<double>& pp)
