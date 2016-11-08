@@ -415,7 +415,8 @@ class MathematicalProgram {
 
   /**
    * Add continuous variables to this MathematicalProgram, with default name
-   * "x".
+   * "x". The new variables are returned and viewed as a matrix, with size
+   * @p rows x @p cols.
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
@@ -440,7 +441,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto b = prog.AddContinuousVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
+   * auto b = prog.AddBinaryVariables(2, 3, {"b1", "b2", "b3", "b4", "b5",
    * "b6");
    * @endcode
    * This adds a 2 x 3 matrix decision variables into the program.
@@ -457,6 +458,8 @@ class MathematicalProgram {
 
   /**
    * Add binary variables to this MathematicalProgram, with default name "b".
+   * The new variables are returned and viewed as a matrix, with size
+   * \param rows x \param cols.
    * @see AddBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
@@ -466,7 +469,8 @@ class MathematicalProgram {
   }
 
   /**
-   * Add binary variables to this MathematicalProgram, with default name "b".
+   * Add binary variables to this MathematicalProgram. The new variables are
+   * viewed as a column vector, with size @p rows x 1.
    * @see AddBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
@@ -488,7 +492,7 @@ class MathematicalProgram {
   }
 
   /**
-   * Add a symmetrix matrix as decision variables to this MathematicalProgram.
+   * Add a symmetric matrix as decision variables to this MathematicalProgram.
    * The optimization will only use the stacked columns of the
    * lower triangular part of the symmetric matrix as decision variables.
    * @param names A std::vector containing the names of each entry in the lower
