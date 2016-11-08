@@ -1,7 +1,7 @@
 function testMassSpringDamperDynamicsGradients()
 % Tests user gradients vs numerical gradients for consistency
 
-p = RigidBodyManipulator('../../../../systems/plants/test/MassSpringDamper.urdf');
+p = RigidBodyManipulator('../../../../multibody/rigid_body_system1/test/MassSpringDamper.urdf');
 
 for pi=1:2
   if pi==2, 
