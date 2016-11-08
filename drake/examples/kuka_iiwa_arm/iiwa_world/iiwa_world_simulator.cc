@@ -82,7 +82,7 @@ int IiwaWorldSimulator<T>::AddObjectFixedToWorld(Eigen::Vector3d xyz,
 
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), "world",
-      &rigid_body_tree_->world(), xyz, rpy);
+      nullptr, xyz, rpy);
 
   return AddObjectToFrame(xyz, rpy, object_name, weld_to_frame);
 }
