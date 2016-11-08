@@ -51,7 +51,23 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.Step(DT, DT), std::logic_error);
+  EXPECT_THROW(integrator.StepOnceAtMost(DT, DT), std::logic_error);
+}
+
+/// Verifies error estimation is unsupported.
+GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
+  // Spring-mass system is necessary only to setup the problem.
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  const double DT = 1e-3;
+  auto context = spring_mass.CreateDefaultContext();
+  ExplicitEulerIntegrator<double> integrator(
+      spring_mass, DT, context.get());
+
+  EXPECT_EQ(integrator.get_error_estimate_order(), 0);
+  EXPECT_EQ(integrator.supports_error_estimation(), false);
+  EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
+  EXPECT_THROW(integrator.request_initial_step_size_target(DT),
+               std::logic_error);
 }
 
 // Try a purely continuous system with no sampling.
@@ -96,19 +112,25 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Integrate for 1 second.
   const double T_FINAL = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT) integrator.Step(INF, INF);
+  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
+    integrator.StepOnceAtMost(INF, INF);
 
   EXPECT_NEAR(context->get_time(), t, DT);  // Should be exact.
 
   // Get the final position.
   const double kXFinal =
-      context->get_continuous_state_vector().GetAtIndex(0);
+      context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,
               1e-5);
-}
 
+  // Verify that integrator statistics are valid
+  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator.get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake
