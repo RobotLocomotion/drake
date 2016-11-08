@@ -5,16 +5,14 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
-
-DRAKE_EXPORT int fastQPThatTakesQinv(
+int fastQPThatTakesQinv(
   std::vector<Eigen::MatrixXd*> QinvblkDiag, const Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   std::set<int>& active, Eigen::VectorXd& x);
 
-DRAKE_EXPORT int fastQP(
+int fastQP(
   std::vector<Eigen::MatrixXd*> QblkDiag, const Eigen::VectorXd& f,
   const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq,
   const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin,
