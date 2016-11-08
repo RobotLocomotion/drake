@@ -31,7 +31,7 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 // model of the same Kuka arm.
 // "RBS1" is an abbreviation referring to version 1.0 of RigidBodySystem as
 // implemented in:
-// drake/systems/plants/RigidBodySystem.h.
+// drake/multibody/rigid_body_system1/RigidBodySystem.h.
 // Within this test we will refer to the implementation under test as RBS2
 // (Rigid Body System 2.0). The naming conventions for the variables in this
 // test are lower case versions of these acronyms.
