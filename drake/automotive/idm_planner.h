@@ -5,15 +5,14 @@
 namespace drake {
 namespace automotive {
 
-/// IdmPlanner -- an IDM (Intelligent Driver Modal)[1].
+/// IdmPlanner -- an IDM (Intelligent Driver Modal) planner.
 ///
-/// [1] IDM: Intelligent Driver Model:
+/// IDM: Intelligent Driver Model:
 ///    https://en.wikipedia.org/wiki/Intelligent_driver_model
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - drake::TaylorVarXd
-/// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.
 ///
@@ -21,7 +20,7 @@ namespace automotive {
 template <typename T>
 class IdmPlanner : public systems::LeafSystem<T> {
  public:
-  IdmPlanner(const T& v_0);
+  explicit IdmPlanner(const T& v_0);
   ~IdmPlanner() override;
 
   /// The output of this system is an algbraic relation of its inputs.
@@ -32,6 +31,7 @@ class IdmPlanner : public systems::LeafSystem<T> {
                   systems::SystemOutput<T>* output) const override;
 
  protected:
+  // LeafSystem<T> overrides
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
 
