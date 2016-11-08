@@ -289,10 +289,10 @@ void Mesh::LoadObjFile(PointsVector* vertices,
   }
 
   // Store the vertices
-  for (size_t idx = 0; idx < attrib.vertices.size(); idx += 3) {
-    vertices->push_back(Vector3d(attrib.vertices[idx],
-                                 attrib.vertices[idx + 1],
-                                 attrib.vertices[idx + 2]));
+  for (size_t index = 0; index < attrib.vertices.size(); index += 3) {
+    vertices->push_back(Vector3d(attrib.vertices[index],
+                                 attrib.vertices[index + 1],
+                                 attrib.vertices[index + 2]));
   }
 
   // Iterate over the shapes.
