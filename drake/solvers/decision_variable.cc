@@ -7,8 +7,12 @@ Eigen::MatrixXd DecisionVariableMatrix::value() const {
   for (int i = 0; i < static_cast<int>(rows_); ++i) {
     for (int j = 0; j < static_cast<int>(cols_); ++j) {
       size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-      DRAKE_ASSERT(!vars_[vector_index].expired());
-      mat(i, j) = vars_[vector_index].lock()->value();
+      if (const auto& sp_vars_i = vars_[vector_index].lock()) {
+        mat(i, j) = sp_vars_i->value();
+      }
+      else {
+        throw std::runtime_error("weak pointer has expired.");
+      }
     }
   }
   return mat;
@@ -17,8 +21,12 @@ Eigen::MatrixXd DecisionVariableMatrix::value() const {
 Eigen::VectorXd DecisionVariableMatrix::VariableValue() const {
   Eigen::VectorXd vec(NumberOfVariables());
   for (int i = 0; i < vec.size(); ++i) {
-    DRAKE_ASSERT(!vars_[i].expired());
-    vec(i) = vars_[i].lock()->value();
+    if (const auto& sp_vars_i = vars_[i].lock()) {
+      vec(i) = sp_vars_i->value();
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired.");
+    }
   }
   return vec;
 }
@@ -52,9 +60,13 @@ DecisionVariableMatrix DecisionVariableMatrix::block(size_t row_start,
 
 bool DecisionVariableMatrix::covers(size_t index) const {
   for (int i = 0; i < static_cast<int>(vars_.size()); ++i) {
-    DRAKE_ASSERT(!vars_[i].expired());
-    if (vars_[i].lock()->index() == index) {
-      return true;
+    if (const auto& sp_vars_i = vars_[i].lock()) {
+      if (sp_vars_i->index() == index) {
+        return true;
+      }
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired.");
     }
   }
   return false;
