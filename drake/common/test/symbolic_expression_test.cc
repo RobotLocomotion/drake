@@ -48,7 +48,7 @@ static bool ExpNotLess(const Expression& e1, const Expression& e2) {
 }
 
 // Checks if a given 'expressions' is ordered by Expression::Less.
-static void checkOrdering(const vector<Expression>& expressions) {
+static void CheckOrdering(const vector<Expression>& expressions) {
   for (size_t i{0}; i < expressions.size(); ++i) {
     for (size_t j{0}; j < expressions.size(); ++j) {
       if (i < j) {
@@ -94,16 +94,46 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression c4_{-2.718};
 };
 
-TEST_F(SymbolicExpressionTest, LessConstant) { checkOrdering({c1_, c2_, c3_}); }
+TEST_F(SymbolicExpressionTest, LessKind) {
+  const Expression e_constant{1.0};
+  const Expression e_var{var_x_};
+  const Expression e_neg{-x_};
+  const Expression e_add{x_ + y_};
+  const Expression e_mul{x_ * y_};
+  const Expression e_div{x_ / y_};
+  const Expression e_log{log(x_)};
+  const Expression e_abs{abs(x_)};
+  const Expression e_exp{exp(x_)};
+  const Expression e_sqrt{sqrt(x_)};
+  const Expression e_pow{pow(x_, y_)};
+  const Expression e_sin{sin(x_)};
+  const Expression e_cos{cos(x_)};
+  const Expression e_tan{tan(x_)};
+  const Expression e_asin{asin(x_)};
+  const Expression e_acos{acos(x_)};
+  const Expression e_atan{atan(x_)};
+  const Expression e_atan2{atan2(x_, y_)};
+  const Expression e_sinh{sinh(x_)};
+  const Expression e_cosh{cosh(x_)};
+  const Expression e_tanh{tanh(x_)};
+  const Expression e_min{min(x_, y_)};
+  const Expression e_max{max(x_, y_)};
+  CheckOrdering({e_constant, e_var,  e_neg,  e_add,  e_mul,  e_div,
+                 e_log,      e_abs,  e_exp,  e_sqrt, e_pow,  e_sin,
+                 e_cos,      e_tan,  e_asin, e_acos, e_atan, e_atan2,
+                 e_sinh,     e_cosh, e_tanh, e_min,  e_max});
+}
 
-TEST_F(SymbolicExpressionTest, LessVariable) { checkOrdering({x_, y_, z_}); }
+TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
+
+TEST_F(SymbolicExpressionTest, LessVariable) { CheckOrdering({x_, y_, z_}); }
 
 TEST_F(SymbolicExpressionTest, LessNeg) {
   // Defined in the ascending order.
   const Expression neg1{-c3_};
   const Expression neg2{-c1_};
   const Expression neg3{-x_};  // note: Constant kind < Variable kind
-  checkOrdering({neg1, neg2, neg3});
+  CheckOrdering({neg1, neg2, neg3});
 }
 
 TEST_F(SymbolicExpressionTest, LessAdd) {
@@ -111,7 +141,7 @@ TEST_F(SymbolicExpressionTest, LessAdd) {
   const Expression add2{c1_ + y_ + z_};
   const Expression add3{c3_ + x_ + y_};
   const Expression add4{c3_ + y_ + z_};
-  checkOrdering({add1, add2, add3, add4});
+  CheckOrdering({add1, add2, add3, add4});
 }
 
 TEST_F(SymbolicExpressionTest, LessSub) {
@@ -119,7 +149,7 @@ TEST_F(SymbolicExpressionTest, LessSub) {
   const Expression sub2{c1_ - y_ - z_};
   const Expression sub3{c3_ - x_ - y_};
   const Expression sub4{c3_ - y_ - z_};
-  checkOrdering({sub1, sub2, sub3, sub4});
+  CheckOrdering({sub1, sub2, sub3, sub4});
 }
 
 TEST_F(SymbolicExpressionTest, LessMul) {
@@ -127,14 +157,14 @@ TEST_F(SymbolicExpressionTest, LessMul) {
   const Expression mul2{c1_ * y_ * z_};
   const Expression mul3{c3_ * x_ * y_};
   const Expression mul4{c3_ * y_ * z_};
-  checkOrdering({mul1, mul2, mul3, mul4});
+  CheckOrdering({mul1, mul2, mul3, mul4});
 }
 
 TEST_F(SymbolicExpressionTest, LessDiv) {
   const Expression div1{x_ / y_};
   const Expression div2{x_ / z_};
   const Expression div3{y_ / z_};
-  checkOrdering({div1, div2, div3});
+  CheckOrdering({div1, div2, div3});
 }
 
 TEST_F(SymbolicExpressionTest, LessLog) {
@@ -142,7 +172,7 @@ TEST_F(SymbolicExpressionTest, LessLog) {
   const Expression log2{log(y_)};
   const Expression log3{log(x_plus_y_)};
   const Expression log4{log(x_plus_z_)};
-  checkOrdering({log1, log2, log3, log4});
+  CheckOrdering({log1, log2, log3, log4});
 }
 
 TEST_F(SymbolicExpressionTest, LessAbs) {
@@ -150,7 +180,7 @@ TEST_F(SymbolicExpressionTest, LessAbs) {
   const Expression abs2{abs(y_)};
   const Expression abs3{abs(x_plus_y_)};
   const Expression abs4{abs(x_plus_z_)};
-  checkOrdering({abs1, abs2, abs3, abs4});
+  CheckOrdering({abs1, abs2, abs3, abs4});
 }
 
 TEST_F(SymbolicExpressionTest, LessExp) {
@@ -158,7 +188,7 @@ TEST_F(SymbolicExpressionTest, LessExp) {
   const Expression exp2{exp(y_)};
   const Expression exp3{exp(x_plus_y_)};
   const Expression exp4{exp(x_plus_z_)};
-  checkOrdering({exp1, exp2, exp3, exp4});
+  CheckOrdering({exp1, exp2, exp3, exp4});
 }
 
 TEST_F(SymbolicExpressionTest, LessSqrt) {
@@ -166,7 +196,7 @@ TEST_F(SymbolicExpressionTest, LessSqrt) {
   const Expression sqrt2{sqrt(y_)};
   const Expression sqrt3{sqrt(x_plus_y_)};
   const Expression sqrt4{sqrt(x_plus_z_)};
-  checkOrdering({sqrt1, sqrt2, sqrt3, sqrt4});
+  CheckOrdering({sqrt1, sqrt2, sqrt3, sqrt4});
 }
 
 TEST_F(SymbolicExpressionTest, LessSin) {
@@ -174,7 +204,7 @@ TEST_F(SymbolicExpressionTest, LessSin) {
   const Expression sin2{sin(y_)};
   const Expression sin3{sin(x_plus_y_)};
   const Expression sin4{sin(x_plus_z_)};
-  checkOrdering({sin1, sin2, sin3, sin4});
+  CheckOrdering({sin1, sin2, sin3, sin4});
 }
 
 TEST_F(SymbolicExpressionTest, LessCos) {
@@ -182,7 +212,7 @@ TEST_F(SymbolicExpressionTest, LessCos) {
   const Expression cos2{cos(y_)};
   const Expression cos3{cos(x_plus_y_)};
   const Expression cos4{cos(x_plus_z_)};
-  checkOrdering({cos1, cos2, cos3, cos4});
+  CheckOrdering({cos1, cos2, cos3, cos4});
 }
 
 TEST_F(SymbolicExpressionTest, LessTan) {
@@ -190,7 +220,7 @@ TEST_F(SymbolicExpressionTest, LessTan) {
   const Expression tan2{tan(y_)};
   const Expression tan3{tan(x_plus_y_)};
   const Expression tan4{tan(x_plus_z_)};
-  checkOrdering({tan1, tan2, tan3, tan4});
+  CheckOrdering({tan1, tan2, tan3, tan4});
 }
 
 TEST_F(SymbolicExpressionTest, LessAsin) {
@@ -198,7 +228,7 @@ TEST_F(SymbolicExpressionTest, LessAsin) {
   const Expression asin2{asin(y_)};
   const Expression asin3{asin(x_plus_y_)};
   const Expression asin4{asin(x_plus_z_)};
-  checkOrdering({asin1, asin2, asin3, asin4});
+  CheckOrdering({asin1, asin2, asin3, asin4});
 }
 
 TEST_F(SymbolicExpressionTest, LessAcos) {
@@ -206,7 +236,7 @@ TEST_F(SymbolicExpressionTest, LessAcos) {
   const Expression acos2{acos(y_)};
   const Expression acos3{acos(x_plus_y_)};
   const Expression acos4{acos(x_plus_z_)};
-  checkOrdering({acos1, acos2, acos3, acos4});
+  CheckOrdering({acos1, acos2, acos3, acos4});
 }
 
 TEST_F(SymbolicExpressionTest, LessAtan) {
@@ -214,7 +244,7 @@ TEST_F(SymbolicExpressionTest, LessAtan) {
   const Expression atan2{atan(y_)};
   const Expression atan3{atan(x_plus_y_)};
   const Expression atan4{atan(x_plus_z_)};
-  checkOrdering({atan1, atan2, atan3, atan4});
+  CheckOrdering({atan1, atan2, atan3, atan4});
 }
 
 TEST_F(SymbolicExpressionTest, LessSinh) {
@@ -222,7 +252,7 @@ TEST_F(SymbolicExpressionTest, LessSinh) {
   const Expression sinh2{sinh(y_)};
   const Expression sinh3{sinh(x_plus_y_)};
   const Expression sinh4{sinh(x_plus_z_)};
-  checkOrdering({sinh1, sinh2, sinh3, sinh4});
+  CheckOrdering({sinh1, sinh2, sinh3, sinh4});
 }
 
 TEST_F(SymbolicExpressionTest, LessCosh) {
@@ -230,7 +260,7 @@ TEST_F(SymbolicExpressionTest, LessCosh) {
   const Expression cosh2{cosh(y_)};
   const Expression cosh3{cosh(x_plus_y_)};
   const Expression cosh4{cosh(x_plus_z_)};
-  checkOrdering({cosh1, cosh2, cosh3, cosh4});
+  CheckOrdering({cosh1, cosh2, cosh3, cosh4});
 }
 
 TEST_F(SymbolicExpressionTest, LessTanh) {
@@ -238,35 +268,35 @@ TEST_F(SymbolicExpressionTest, LessTanh) {
   const Expression tanh2{tanh(y_)};
   const Expression tanh3{tanh(x_plus_y_)};
   const Expression tanh4{tanh(x_plus_z_)};
-  checkOrdering({tanh1, tanh2, tanh3, tanh4});
+  CheckOrdering({tanh1, tanh2, tanh3, tanh4});
 }
 
 TEST_F(SymbolicExpressionTest, LessPow) {
   const Expression pow1{pow(x_, y_)};
   const Expression pow2{pow(x_, z_)};
   const Expression pow3{pow(y_, z_)};
-  checkOrdering({pow1, pow2, pow3});
+  CheckOrdering({pow1, pow2, pow3});
 }
 
 TEST_F(SymbolicExpressionTest, LessAtan2) {
   const Expression atan2_1{atan2(x_, y_)};
   const Expression atan2_2{atan2(x_, z_)};
   const Expression atan2_3{atan2(y_, z_)};
-  checkOrdering({atan2_1, atan2_2, atan2_3});
+  CheckOrdering({atan2_1, atan2_2, atan2_3});
 }
 
 TEST_F(SymbolicExpressionTest, LessMin) {
   const Expression min1{min(x_, y_)};
   const Expression min2{min(x_, z_)};
   const Expression min3{min(y_, z_)};
-  checkOrdering({min1, min2, min3});
+  CheckOrdering({min1, min2, min3});
 }
 
 TEST_F(SymbolicExpressionTest, LessMax) {
   const Expression max1{max(x_, y_)};
   const Expression max2{max(x_, z_)};
   const Expression max3{max(y_, z_)};
-  checkOrdering({max1, max2, max3});
+  CheckOrdering({max1, max2, max3});
 }
 
 TEST_F(SymbolicExpressionTest, Variable) {

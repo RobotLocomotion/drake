@@ -42,7 +42,7 @@ static bool FormulaNotLess(const Formula& f1, const Formula& f2) {
 }
 
 // Checks if a given 'formulas' is ordered by Formula::Less.
-static void checkOrdering(const vector<Formula>& formulas) {
+static void CheckOrdering(const vector<Formula>& formulas) {
   for (size_t i{0}; i < formulas.size(); ++i) {
     for (size_t j{0}; j < formulas.size(); ++j) {
       if (i < j) {
@@ -92,78 +92,95 @@ class SymbolicFormulaTest : public ::testing::Test {
   const Environment env4_{{var_x_, -1}, {var_y_, -1}};
 };
 
+TEST_F(SymbolicFormulaTest, LessKind) {
+  // clang-format off
+  CheckOrdering({
+        Formula::False(),
+        Formula::True(),
+        x_ == y_,
+        x_ != y_,
+        x_> y_,
+        x_ >= y_,
+        x_ < y_,
+        x_ <= y_,
+        f1_ && f2_,
+        f1_ || f2_,
+        !f1_, f_forall_});
+  // clang-format on
+}
+
 TEST_F(SymbolicFormulaTest, LessTrueFalse) {
-  checkOrdering({Formula::False(), Formula::True()});
+  CheckOrdering({Formula::False(), Formula::True()});
 }
 
 TEST_F(SymbolicFormulaTest, LessEq) {
   const Formula f1{x_ == y_};
   const Formula f2{x_ == z_};
   const Formula f3{y_ == z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessNeq) {
   const Formula f1{x_ != y_};
   const Formula f2{x_ != z_};
   const Formula f3{y_ != z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessGt) {
   const Formula f1{x_ > y_};
   const Formula f2{x_ > z_};
   const Formula f3{y_ > z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessGeq) {
   const Formula f1{x_ >= y_};
   const Formula f2{x_ >= z_};
   const Formula f3{y_ >= z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessLt) {
   const Formula f1{x_ < y_};
   const Formula f2{x_ < z_};
   const Formula f3{y_ < z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessLeq) {
   const Formula f1{x_ <= y_};
   const Formula f2{x_ <= z_};
   const Formula f3{y_ <= z_};
-  checkOrdering({f1, f2, f3});
+  CheckOrdering({f1, f2, f3});
 }
 
 TEST_F(SymbolicFormulaTest, LessAnd) {
   const Formula and1{f1_ && f2_ && f3_};
   const Formula and2{f1_ && f3_};
   const Formula and3{f2_ && f3_};
-  checkOrdering({and1, and2, and3});
+  CheckOrdering({and1, and2, and3});
 }
 
 TEST_F(SymbolicFormulaTest, LessOr) {
   const Formula or1{f1_ || f2_ || f3_};
   const Formula or2{f1_ || f3_};
   const Formula or3{f2_ || f3_};
-  checkOrdering({or1, or2, or3});
+  CheckOrdering({or1, or2, or3});
 }
 
 TEST_F(SymbolicFormulaTest, LessNot) {
   const Formula not1{!f1_};
   const Formula not2{!f2_};
   const Formula not3{!f3_};
-  checkOrdering({not1, not2, not3});
+  CheckOrdering({not1, not2, not3});
 }
 
 TEST_F(SymbolicFormulaTest, LessForall) {
   const Formula forall1{forall({var_x_, var_y_}, f1_)};
   const Formula forall2{forall({var_x_, var_y_, var_z_}, f1_)};
   const Formula forall3{forall({var_x_, var_y_, var_z_}, f2_)};
-  checkOrdering({forall1, forall2, forall3});
+  CheckOrdering({forall1, forall2, forall3});
 }
 
 TEST_F(SymbolicFormulaTest, True) { EXPECT_TRUE(Formula::True().Evaluate()); }
