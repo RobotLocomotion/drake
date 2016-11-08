@@ -145,37 +145,50 @@ class SimulatedKuka : public systems::Diagram<T> {
  public:
   SimulatedKuka() {
     this->set_name("SimulatedKuka");
-
-    // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-        "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
-        drake::systems::plants::joints::kFixed,
-        nullptr /* weld to frame */, rigid_body_tree.get());
-
-    drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
-
     DiagramBuilder<T> builder;
 
-    // Instantiates a RigidBodyPlant from an MBD model of the world.
-    std::unique_ptr<RigidBodyPlant<T>> plant =
-        std::make_unique<RigidBodyPlant<T>>(std::move(rigid_body_tree));
-    plant_ = plant.get();
+    // The following curly brace defines a scope that quarantines variables
+    // `tree` and `plant`, which are of type `std::unique_ptr`. Ownership of
+    // `tree` is passed to `plant` and ownership of `plant` is passed to
+    // `controller`. We quarantine these variables to prevent downstream code
+    // from seg faulting by trying to access `tree` or `plant` after ownership
+    // is transferred.
+    {
+      // Instantiates a model of the world.
+      auto tree = std::make_unique<RigidBodyTree<double>>();
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          drake::GetDrakePath() +
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+          drake::systems::plants::joints::kFixed,
+          nullptr /* weld to frame */, tree.get());
 
-    DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
-                 plant_->get_num_positions());
+      drake::systems::plants::AddFlatTerrainToWorld(tree.get());
 
-    // Constants are chosen by trial and error to qualitatively match
-    // an experimental run with the same initial conditions and
-    // planner.  Quantitative comparisons would require torque control
-    // and a more careful estimation of the model constants such as
-    // friction in the joints.
-    const double kp = 2.0;  // proportional constant.
-    const double ki = 0.0;  // integral constant.
-    const double kd = 1.0;  // derivative constant.  See below!
-    controller_ = builder.template AddSystem<PidControlledSystem<T>>(
-        std::move(plant), kp, ki, kd);
+      // Instantiates a RigidBodyPlant from an MBD model of the world.
+      auto plant = std::make_unique<RigidBodyPlant<T>>(std::move(tree));
+      plant_ = plant.get();
+
+      DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
+                   plant_->get_num_positions());
+
+      // Constants are chosen by trial and error to qualitatively match
+      // an experimental run with the same initial conditions and
+      // planner.  Quantitative comparisons would require torque control
+      // and a more careful estimation of the model constants such as
+      // friction in the joints.
+      const double kp = 2.0;  // proportional constant.
+      const double ki = 0.0;  // integral constant.
+      const double kd = 1.0;  // derivative constant.  See below!
+      controller_ = builder.template AddSystem<PidControlledSystem<T>>(
+          std::move(plant), kp, ki, kd);
+    }
+    DRAKE_DEMAND(controller_ != nullptr);
+    const RigidBodyTreed& tree = plant_->get_rigid_body_tree();
+
+    // TODO(liang.fok): Modify controller to provide named accessors to these
+    // ports.
+    const int kControllerFeedforwardInputPort = 0;
+    const int kControllerFeedbackInputPort = 1;
 
     // The iiwa's control protocol doesn't have any way to express the
     // desired velocity for the arm, so this simulation doesn't take
@@ -185,32 +198,33 @@ class SimulatedKuka : public systems::Diagram<T> {
     // set the D term (to stabilize the arm near the commanded
     // position) and feed a desired velocity vector of zero.
     auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(kNumJoints));
+        Eigen::VectorXd::Zero(tree.get_num_velocities()));
     auto input_mux = builder.template AddSystem<Multiplexer<T>>(
-        std::vector<int>{kNumJoints, kNumJoints});
+        std::vector<int>{tree.get_num_positions(), tree.get_num_velocities()});
     builder.Connect(zero_source->get_output_port(),
                     input_mux->get_input_port(1));
     builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_input_port(1));
+                    controller_->get_input_port(kControllerFeedbackInputPort));
 
-    gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
-        plant_->get_rigid_body_tree());
+    auto gravity_compensator =
+        builder.template AddSystem<GravityCompensator<T>>(tree);
 
     // Split the input state into two signals one with the positions and one
     // with the velocities.
     // For Kuka:
     // -  get_num_states() = 14
     // -  get_num_positions() = 7
-    rbp_state_demux_ = builder.template AddSystem<Demultiplexer<T>>(
+    auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
         plant_->get_num_states(), plant_->get_num_positions());
     builder.Connect(controller_->get_output_port(0),
-                    rbp_state_demux_->get_input_port(0));
+                    rbp_state_demux->get_input_port(0));
 
     // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux_->get_output_port(0),
-                    gravity_compensator_->get_input_port(0));
-    builder.Connect(gravity_compensator_->get_output_port(0),
-                    controller_->get_input_port(0));
+    builder.Connect(rbp_state_demux->get_output_port(0),
+                    gravity_compensator->get_input_port(0));
+    builder.Connect(gravity_compensator->get_output_port(0),
+                    controller_->get_input_port(
+                        kControllerFeedforwardInputPort));
 
     builder.ExportInput(input_mux->get_input_port(0));
     builder.ExportOutput(controller_->get_output_port(0));
@@ -232,8 +246,6 @@ class SimulatedKuka : public systems::Diagram<T> {
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
-  Demultiplexer<T>* rbp_state_demux_{nullptr};
-  GravityCompensator<T>* gravity_compensator_{nullptr};
 };
 
 int DoMain() {
