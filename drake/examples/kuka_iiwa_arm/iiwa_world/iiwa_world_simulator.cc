@@ -56,18 +56,11 @@ int IiwaWorldSimulator<T>::AddObjectFixedToTable(Eigen::Vector3d xyz,
                                                  std::string object_name) {
   DRAKE_DEMAND(!started_);
 
-  Eigen::Vector3d position_of_robot_base(-0.2, -0.2, 0.736);
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(),
       "tabletop",
-      GetTableBody(),
-      position_of_robot_base,
-      Eigen::Vector3d::Zero() /* rpy */);
-//    parsers::ModelInstanceIdTable table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-//      drake::GetDrakePath() + object_name_map_["iiwa"],
-//      kFixed, weld_to_frame, rigid_body_tree_.get());
+      GetTableBody(), xyz, rpy);
 
-//  return 0;//table.begin()->second;
   return AddObjectToFrame(xyz, rpy, object_name, weld_to_frame);
 }
 
@@ -87,14 +80,9 @@ int IiwaWorldSimulator<T>::AddObjectFixedToWorld(Eigen::Vector3d xyz,
   DRAKE_DEMAND(!started_);
 
 
-  Eigen::Isometry3d T_model_world_to_drake_world;
-  T_model_world_to_drake_world.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0,
-      0, 0, 1;
-
   auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
       Eigen::aligned_allocator<RigidBodyFrame>(), "world",
-      nullptr,  // not used since the robot is attached to the world
-      T_model_world_to_drake_world);
+      &rigid_body_tree_->world(), xyz, rpy);
 
   return AddObjectToFrame(xyz, rpy, object_name, weld_to_frame);
 }
