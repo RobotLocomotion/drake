@@ -207,6 +207,8 @@ Expression operator-(Expression lhs, const Expression& rhs) {
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs) {
   // Simplification: E - E => 0
+  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
+  // which might cause 0/0 during evaluation.
   if (lhs.EqualTo(rhs)) {
     lhs = Expression::Zero();
     return lhs;
@@ -289,11 +291,15 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     lhs = -lhs;
     return lhs;
   }
-  // Simplification: 0 * x => 0
+  // Simplification: 0 * E => 0
+  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
+  // which might cause 0/0 during evaluation.
   if (lhs.EqualTo(Expression::Zero())) {
     return lhs;
   }
-  // Simplification: x * 0 => 0
+  // Simplification: E * 0 => 0
+  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
+  // which might cause 0/0 during evaluation.
   if (rhs.EqualTo(Expression::Zero())) {
     lhs = Expression::Zero();
     return lhs;
@@ -306,8 +312,11 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const auto rhs_ptr(static_pointer_cast<ExpressionPow>(rhs.ptr_));
       const Expression& e3{rhs_ptr->get_first_expression()};
       if (e1.EqualTo(e3)) {
-        // Simplification: (lhs * rhs == pow(e1, e2) * pow(e3, e4)) && e1 == e3
-        //                 => pow(e1, e2 + e4)
+        // Simplification: pow(e1, e2) * pow(e1, e4) => pow(e1, e2 + e4)
+        // TODO(soonho-tri): This simplification is not sound. For example, x^4
+        // * x^(-3) => x. The original expression `x^4 * x^(-3)` is evaluated to
+        // `nan` when x = 0 while the simplified expression `x` is evaluated to
+        // 0.
         const Expression& e2{lhs_ptr->get_second_expression()};
         const Expression& e4{rhs_ptr->get_second_expression()};
         lhs = pow(e1, e2 + e4);
@@ -316,6 +325,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
     }
     if (e1.EqualTo(rhs)) {
       // Simplification: pow(e1, e2) * e1 => pow(e1, e2 + 1)
+      // TODO(soonho-tri): This simplification is not sound.
       const Expression& e2{lhs_ptr->get_second_expression()};
       lhs = pow(e1, e2 + 1);
       return lhs;
@@ -326,6 +336,7 @@ Expression& operator*=(Expression& lhs, const Expression& rhs) {
       const Expression& e1{rhs_ptr->get_first_expression()};
       if (e1.EqualTo(lhs)) {
         // Simplification: (lhs * rhs == e1 * pow(e1, e2)) => pow(e1, 1 + e2)
+        // TODO(soonho-tri): This simplification is not sound.
         const Expression& e2{rhs_ptr->get_second_expression()};
         lhs = pow(e1, 1 + e2);
         return lhs;
@@ -401,6 +412,8 @@ Expression& operator/=(Expression& lhs, const Expression& rhs) {
     return lhs;
   }
   // Simplification: E / E => 1
+  // TODO(soonho-tri): This simplification is not sound since it cancels `E`
+  // which might contain 0/0 problems.
   if (lhs.EqualTo(rhs)) {
     lhs = Expression::One();
     return lhs;
@@ -809,6 +822,8 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
     this_coeff += coeff;
     if (this_coeff == 0.0) {
       // If the coefficient becomes zero, remove the entry.
+      // TODO(soonho-tri): The following operation is not sound since it cancels
+      // `term` which might contain 0/0 problems.
       term_to_coeff_map_.erase(it);
     }
   } else {
@@ -1013,6 +1028,8 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
     this_exponent += exponent;
     if (this_exponent.EqualTo(Expression::Zero())) {
       // If it ends up with base^0 (= 1.0) then remove this entry from the map.
+      // TODO(soonho-tri): The following operation is not sound since it can
+      // cancels `base` which might include 0/0 problems.
       term_to_exp_map_.erase(it);
     }
   } else {
@@ -1375,11 +1392,13 @@ Expression pow(const Expression& e1, const Expression& e2) {
       ExpressionPow::check_domain(v1, v2);
       return Expression{std::pow(v1, v2)};
     }
-    // pow(x, 0) => 1
+    // pow(E, 0) => 1
+    // TODO(soonho-tri): This simplification is not sound since it cancels `E`
+    // which might contain 0/0 problems.
     if (v2 == 0.0) {
       return Expression::One();
     }
-    // pow(x, 1) => x
+    // pow(E, 1) => E
     if (v2 == 1.0) {
       return e1;
     }
