@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -14,13 +13,13 @@ namespace util {
 
 namespace internal {
 /// Returns a 3D rotation matrix by @p theta about the z axis.
-DRAKE_EXPORT Eigen::Matrix3d rotz(double theta);
+Eigen::Matrix3d rotz(double theta);
 
 /// Computes a 3D rotation matrix by @p theta about the z axis.
 /// Writes that matrix into @p M, its derivative into @p dM, and its second
 /// derivative into @p ddM.
-DRAKE_EXPORT void rotz(double theta, Eigen::Matrix3d* M,
-                           Eigen::Matrix3d* dM, Eigen::Matrix3d* ddM);
+void rotz(double theta, Eigen::Matrix3d* M, Eigen::Matrix3d* dM,
+          Eigen::Matrix3d* ddM);
 }  // namespace internal
 
 template <typename Scalar>
