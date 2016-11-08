@@ -5,8 +5,8 @@
 namespace drake {
 namespace systems {
 template class DRAKE_EXPORT RungeKutta3Integrator<double>;
-} // namespace drake
-} // namespace systems
+}  // namespace systems
+}  // namespace drake
 
 // TODO(edrumwri): correct compile bug from uncommenting line below.
 // template class DRAKE_EXPORT
