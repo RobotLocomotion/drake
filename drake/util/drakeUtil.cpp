@@ -71,8 +71,7 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
-template DRAKE_EXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>,
-                                    double>
+template std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double>
 resolveCenterOfPressure<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const,
                                    0, Eigen::Stride<0, 0> >,
                         Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const,
@@ -89,7 +88,7 @@ resolveCenterOfPressure<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const,
                                  Eigen::Stride<0, 0> > > const&,
     Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0,
                                  Eigen::Stride<0, 0> > > const&);
-template DRAKE_EXPORT
+template
     std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double>
     resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>,
                             Eigen::Matrix<double, 3, 1, 0, 3, 1>,
@@ -99,7 +98,7 @@ template DRAKE_EXPORT
         Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&,
         Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&,
         Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);
-template DRAKE_EXPORT
+template
     std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double>
     resolveCenterOfPressure<
         Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>,

@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port_listener_interface.h"
@@ -18,8 +17,7 @@ namespace systems {
 /// The InputPort describes a single input to a System. Users should not
 /// subclass InputPort: all InputPorts are either DependentInputPorts or
 /// FreestandingInputPorts.
-class DRAKE_EXPORT InputPort
-    : public detail::OutputPortListenerInterface {
+class InputPort : public detail::OutputPortListenerInterface {
  public:
   ~InputPort() override;
 
@@ -70,7 +68,7 @@ class DRAKE_EXPORT InputPort
 /// The DependentInputPort wraps a pointer to the OutputPort of a System for use
 /// as an input to another System. Many DependentInputPorts may wrap a single
 /// OutputPort.
-class DRAKE_EXPORT DependentInputPort : public InputPort {
+class DependentInputPort : public InputPort {
  public:
   /// Creates an input port connected to the given @p output_port, which
   /// must not be nullptr. The output port must outlive this input port.
@@ -104,7 +102,7 @@ class DRAKE_EXPORT DependentInputPort : public InputPort {
 
 /// The FreestandingInputPort encapsulates a vector of data for use as an input
 /// to a System.
-class DRAKE_EXPORT FreestandingInputPort : public InputPort {
+class FreestandingInputPort : public InputPort {
  public:
   /// Constructs a vector-valued FreestandingInputPort.
   /// Takes ownership of @p vec.

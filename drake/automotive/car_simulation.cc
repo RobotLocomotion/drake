@@ -115,9 +115,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(
 }
 
 void SetRigidBodySystemParameters(RigidBodySystem* rigid_body_sys) {
-  rigid_body_sys->penetration_stiffness = 5000.0;
-  rigid_body_sys->penetration_damping =
-    rigid_body_sys->penetration_stiffness / 10.0;
+  rigid_body_sys->penetration_stiffness = 1000000.0;
+  rigid_body_sys->penetration_damping = 2000.0;
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
 }
 
@@ -150,7 +149,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
 
   // Sets up PD controllers for throttle and steering.
-  const double kpSteering = 400, kdSteering = 80, kThrottle = 100;
+  const double kpSteering = 100, kdSteering = 100, kThrottle = 250;
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->get_num_positions());
   Kp.setZero();
@@ -193,12 +192,12 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
       // Saves the mapping between the driving command and the throttle command.
       map_driving_cmd_to_x_d(
           tree->get_num_positions() + rigid_body->get_velocity_start_index(),
-          DrivingCommandIndices::kThrottle) = 20;
+          DrivingCommandIndices::kThrottle) = 1. / 0.323342;
 
       // Saves the mapping between the driving command and the braking command.
       map_driving_cmd_to_x_d(
           tree->get_num_positions() + rigid_body->get_velocity_start_index(),
-          DrivingCommandIndices::kBrake) = -20;
+          DrivingCommandIndices::kBrake) = -1. / 0.323342;
     }
   }
 
@@ -220,7 +219,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result;
-  result.initial_step_size = 5e-3;
+  result.initial_step_size = 2e-3;
   result.timeout_seconds = std::numeric_limits<double>::infinity();
   return result;
 }
