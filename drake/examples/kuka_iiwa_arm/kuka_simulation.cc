@@ -231,7 +231,7 @@ class SimulatedKuka : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
-  const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
+  const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
@@ -253,7 +253,7 @@ int DoMain() {
   auto model = builder.AddSystem<SimulatedKuka<double>>();
 
   const RigidBodyTree<double>& tree =
-      model->get_kuka_plant().get_rigid_body_tree();
+      model->get_plant().get_rigid_body_tree();
   VerifyIiwaTree(tree);
 
   // Creates and adds LCM publisher for visualization.
