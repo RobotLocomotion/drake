@@ -11,12 +11,14 @@
 namespace drake {
 namespace automotive {
 
-/// System with cars arranged in a diagram:
+/// System consisting of two cars: an ego and an agent, where the ego
+/// is governed by an IDM (intelligent driver model) planner, and
+/// where the agent is fed a constant acceleration input.
 ///
 ///   +--------------+         +-------------+
-///   |   Constant   | v_dot_a |  Agent Car  |  x_a, v_a
-///   | Acceleration |-------->|             |----+
-///   |    Input     |         | (LinearCar) |    |
+///   | Acceleration | v_dot_a |  Agent Car  |  x_a, v_a
+///   |    Input     |-------->|             |----+
+///   |  (Constant)  |         | (LinearCar) |    |
 ///   +--------------+         +-------------+    |
 ///                                               |
 ///       +---------------------------------------+
