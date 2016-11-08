@@ -1,17 +1,17 @@
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/mathematical_program.h"
 
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 template <typename Derived>
 void CheckValue(const DecisionVariableMatrix& mat,
                 const Eigen::MatrixBase<Derived>& mat_value) {
-  EXPECT_EQ(mat.rows(), mat_value.rows());
-  EXPECT_EQ(mat.cols(), mat_value.cols());
+  ASSERT_EQ(mat.rows(), mat_value.rows());
+  ASSERT_EQ(mat.cols(), mat_value.cols());
   EXPECT_TRUE(CompareMatrices(mat.value(), mat_value, 1E-10,
                               MatrixCompareType::absolute));
   // Check value(i, j).
