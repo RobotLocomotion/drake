@@ -9,6 +9,6 @@ namespace Atlas {
  * ankleCloseToLimits will return true if any row of
  * A*[akx;aky]-b is greater than -tol
  */
-DRAKE_EXPORT bool ankleCloseToLimits(double akx, double aky,
-                                              double tol);
-}
+bool ankleCloseToLimits(double akx, double aky, double tol);
+
+}  // namespace Atlas

@@ -17,7 +17,7 @@ namespace pendulum {
  * the DircolTrajectoryOptimization (and is the number of samples
  * between @p x0 and @p xG).
  */
-void DRAKE_EXPORT AddSwingUpTrajectoryParams(
+void AddSwingUpTrajectoryParams(
     int num_time_samples,
     const Eigen::Vector2d& x0, const Eigen::Vector2d& xG,
     solvers::DircolTrajectoryOptimization*);

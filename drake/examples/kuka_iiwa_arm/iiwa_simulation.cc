@@ -64,7 +64,6 @@ std::shared_ptr<BotVisualizer<RigidBodySystem::StateVector>>
   return visualizer;
 }
 
-DRAKE_EXPORT
 Eigen::VectorXd GenerateArbitraryIiwaInitialState() {
   const int kStateDimension = 14;  // Fixed for the IIWA Arm.
   const int kNumDof = 7;  // Fixed for the IIWA Arm.

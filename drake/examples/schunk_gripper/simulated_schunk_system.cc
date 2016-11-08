@@ -22,7 +22,7 @@ CreateSimulatedSchunkSystem() {
       std::move(rigid_body_tree));
 }
 
-template DRAKE_EXPORT std::unique_ptr<drake::systems::RigidBodyPlant<double>>
+template std::unique_ptr<drake::systems::RigidBodyPlant<double>>
 CreateSimulatedSchunkSystem();
 
 }  // namespace schunk_gripper
