@@ -16,7 +16,7 @@ GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->AddModelInstanceFromFile(
       GetDrakePath() +
-      "/multibody/rigid_body_system1/testMassSpringDamper.urdf",
+      "/multibody/rigid_body_system1/test/MassSpringDamper.urdf",
       drake::multibody::joints::kFixed);
 
   double mass = 1.0, k = 10.0, b = 1.0;

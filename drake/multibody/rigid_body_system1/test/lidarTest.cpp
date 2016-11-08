@@ -21,7 +21,7 @@ using Eigen::VectorXd;
 GTEST_TEST(LidarTest, BasicTest) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->AddModelInstanceFromFile(
-      GetDrakePath() + "/multibody/rigid_body_system1/testlidarTest.sdf",
+      GetDrakePath() + "/multibody/rigid_body_system1/test/lidarTest.sdf",
       drake::multibody::joints::kFixed);
 
   // Verifies that the RigidBodyDepthSensor accessors return the correct values.
