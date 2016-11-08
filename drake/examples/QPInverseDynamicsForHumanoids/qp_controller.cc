@@ -155,21 +155,29 @@ void QPController::ResizeQP(const RigidBodyTree<double>& robot,
   // Allocate inequality constraints.
   // Contact force scalar (Beta), which is constant and does not depend on the
   // robot configuration.
-  ineq_contact_wrench_ =
-      prog_.AddLinearConstraint(
-                MatrixX<double>::Identity(num_basis_, num_basis_),
-                VectorX<double>::Zero(num_basis_),
-                VectorX<double>::Constant(num_basis_,
-                                          kUpperBoundForContactBasis),
-                {basis}).get();
-  ineq_contact_wrench_->set_description("contact force basis ineq");
+  if (num_basis_) {
+    ineq_contact_wrench_ =
+        prog_.AddLinearConstraint(
+                  MatrixX<double>::Identity(num_basis_, num_basis_),
+                  VectorX<double>::Zero(num_basis_),
+                  VectorX<double>::Constant(num_basis_,
+                                            kUpperBoundForContactBasis),
+                  {basis}).get();
+    ineq_contact_wrench_->set_description("contact force basis ineq");
+  } else {
+    ineq_contact_wrench_ = nullptr;
+  }
   // Torque limit
-  ineq_torque_limit_ =
-      prog_.AddLinearConstraint(
-                MatrixX<double>::Zero(num_torque_, num_variable_),
-                VectorX<double>::Zero(num_torque_),
-                VectorX<double>::Zero(num_torque_), {vd, basis}).get();
-  ineq_torque_limit_->set_description("torque limit ineq");
+  if (num_torque_) {
+    ineq_torque_limit_ =
+        prog_.AddLinearConstraint(
+                  MatrixX<double>::Zero(num_torque_, num_variable_),
+                  VectorX<double>::Zero(num_torque_),
+                  VectorX<double>::Zero(num_torque_), {vd, basis}).get();
+    ineq_torque_limit_->set_description("torque limit ineq");
+  } else {
+    ineq_torque_limit_ = nullptr;
+  }
 
   // Set up cost / eq constraints for centroidal momentum change.
   if (num_cen_mom_dot_as_cost_) {

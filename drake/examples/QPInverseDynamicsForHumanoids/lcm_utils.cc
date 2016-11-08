@@ -348,7 +348,7 @@ void EncodeRobotStateLcmMsg(const std::vector<std::string>& act_joint_names,
 
   msg->utime = static_cast<int64_t>(time * 1e6);
   msg->joint_name = act_joint_names;
-  msg->num_joints = static_cast<char>(msg->joint_name.size());
+  msg->num_joints = static_cast<int16_t>(msg->joint_name.size());
   msg->joint_position.resize(msg->num_joints);
   msg->joint_velocity.resize(msg->num_joints);
   msg->joint_effort.resize(msg->num_joints);
@@ -415,6 +415,12 @@ void DecodeRobotStateLcmMsg(
   *time = static_cast<double>(msg.utime) / 1e6;
 
   std::unordered_map<std::string, int>::const_iterator it;
+
+  q->setZero();
+  qd->setZero();
+  joint_torque->setZero();
+  l_foot_wrench->setZero();
+  r_foot_wrench->setZero();
 
   // Set joint state.
   for (int i = 0; i < msg.num_joints; ++i) {

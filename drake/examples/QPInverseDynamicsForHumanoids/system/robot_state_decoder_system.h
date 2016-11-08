@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
@@ -17,15 +17,13 @@ using systems::Value;
 
 /**
  * A translator from bot_core::robot_state_t to HumanoidStatus
- * TODO(siyuan): Hook this to lcm when switching to the real simulator.
  *
  * Input: lcm message bot_core::robot_state_t
  * Output: HumanoidStatus
  */
-class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
+class RobotStateDecoderSystem : public systems::LeafSystem<double> {
  public:
-  explicit RobotStateMsgToHumanoidStatusSystem(
-      const RigidBodyTree<double>& robot)
+  explicit RobotStateDecoderSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
     input_port_index_lcm_msg_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
@@ -54,6 +52,7 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
     DecodeRobotStateLcmMsg(*msg, hum_status.name_to_position_index(), &time,
                            &pos, &vel, &joint_torque, &l_foot_wrench,
                            &r_foot_wrench);
+
     hum_status.Update(time, pos, vel, joint_torque, l_foot_wrench,
                       r_foot_wrench);
   }

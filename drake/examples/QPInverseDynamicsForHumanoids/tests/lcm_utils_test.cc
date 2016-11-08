@@ -14,10 +14,10 @@ namespace {
 
 static std::string get_urdf_name() {
   std::string urdf =
-    drake::GetDrakePath() +
-    std::string(
-        "/examples/Valkyrie/urdf/urdf/"
-        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+      drake::GetDrakePath() +
+      std::string(
+          "/examples/Valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   return urdf;
 }
 static RigidBodyTree<double> robot(

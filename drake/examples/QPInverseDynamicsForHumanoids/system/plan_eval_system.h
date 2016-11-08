@@ -23,8 +23,7 @@ namespace qp_inverse_dynamics {
  */
 class PlanEvalSystem : public systems::LeafSystem<double> {
  public:
-  explicit PlanEvalSystem(const RigidBodyTree<double>& robot)
-      : robot_(robot) {
+  explicit PlanEvalSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
     input_port_index_humanoid_status_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
     output_port_index_qp_input_ =

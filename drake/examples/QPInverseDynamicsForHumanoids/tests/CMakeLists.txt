@@ -20,13 +20,22 @@ if(gurobi_FOUND)
 endif()
 
 if(gurobi_FOUND AND lcm_FOUND)
-  drake_add_cc_test(NAME valkyrie_balancing_system_test SIZE medium)
-  target_link_libraries(valkyrie_balancing_system_test
+  add_executable(val_sim val_sim.cc)
+  set_source_files_properties(val_sim.cc
+    PROPERTIES COMPILE_FLAGS -g)
+  target_link_libraries(val_sim
     drakeLCMSystem2
     drakeQPController
     drakeQPControllerLcmTranslator
     drakeRigidBodyPlant
-    drakeSystemAnalysis
-    GTest::GTest GTest::Main)
+    drakeSystemAnalysis)
+
+  add_executable(val_con val_con.cc)
+  target_link_libraries(val_con
+    drakeLCMSystem2
+    drakeQPController
+    drakeQPControllerLcmTranslator
+    drakeRigidBodyPlant
+    drakeSystemAnalysis)
 endif()
 

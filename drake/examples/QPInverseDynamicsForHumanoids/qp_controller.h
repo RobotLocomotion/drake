@@ -997,6 +997,9 @@ class QPOutput {
   }
 
   // Getters
+  inline const std::vector<std::string>& dof_names() const {
+    return dof_names_;
+  }
   inline const std::string& dof_name(int idx) const {
     return dof_names_.at(idx);
   }

@@ -26,6 +26,7 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
+ * This will be replaced by #4004.
  * A dummy simulator for Valkyrie. This does not perform forward dynamics
  * computation. Instead, it uses the computed acceleration from the qp
  * controller.
@@ -38,10 +39,8 @@ class ValkyrieSystem : public LeafSystem<double> {
  public:
   explicit ValkyrieSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
     input_port_index_vd_ =
-        DeclareInputPort(
-            systems::kVectorValued,
-            robot_.get_num_velocities(),
-            systems::kInheritedSampling).get_index();
+        DeclareInputPort(systems::kVectorValued, robot_.get_num_velocities(),
+                         systems::kInheritedSampling).get_index();
 
     output_port_index_robot_state_msg_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
@@ -58,9 +57,11 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     set_name("Dummy Valkyrie System");
 
-    joint_names_.resize(robot_.get_num_positions() - kTwistSize);
+    // This is assuming that the RBT's first 6 dof belong to the floating base,
+    // and all the other dof are actuated.
+    actuated_joint_names_.resize(robot_.get_num_positions() - kTwistSize);
     for (int i = kTwistSize; i < robot_.get_num_positions(); ++i) {
-      joint_names_[i - kTwistSize] = robot_.get_position_name(i);
+      actuated_joint_names_[i - kTwistSize] = robot_.get_position_name(i);
     }
   }
 
@@ -101,9 +102,9 @@ class ValkyrieSystem : public LeafSystem<double> {
     bot_core::robot_state_t& msg =
         output->GetMutableData(output_port_index_robot_state_msg_)
             ->GetMutableValue<bot_core::robot_state_t>();
-    EncodeRobotStateLcmMsg(joint_names_, context.get_time(), q, v, zero_torque_,
-                           Vector6<double>::Zero(), Vector6<double>::Zero(),
-                           &msg);
+    EncodeRobotStateLcmMsg(actuated_joint_names_, context.get_time(), q, v,
+                           zero_torque_, Vector6<double>::Zero(),
+                           Vector6<double>::Zero(), &msg);
 
     // Set raw state output.
     BasicVector<double>* output_x =
@@ -254,7 +255,7 @@ class ValkyrieSystem : public LeafSystem<double> {
  private:
   const RigidBodyTree<double>& robot_;
   // only used for publishing.
-  std::vector<std::string> joint_names_;
+  std::vector<std::string> actuated_joint_names_;
 
   int input_port_index_vd_;
   int output_port_index_robot_state_msg_;

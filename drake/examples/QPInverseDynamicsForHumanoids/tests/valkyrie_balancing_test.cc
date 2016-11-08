@@ -10,6 +10,7 @@
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
 // In this test, the Valkyrie robot is initialized to a nominal configuration
 // with zero velocities, and the qp controller is set up to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.

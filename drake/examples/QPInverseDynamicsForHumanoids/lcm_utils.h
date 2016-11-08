@@ -38,8 +38,6 @@ void DecodeQPInput(const RigidBodyTree<double>& robot, const lcmt_qp_input& msg,
                    QPInput* qp_input);
 void EncodeQPInput(const QPInput& qp_input, lcmt_qp_input* msg);
 
-// TODO(siyuan.feng): Add encode / decode for QPOutput.
-
 void DecodeConstrainedValues(const lcmt_constrained_values& msg,
                              ConstrainedValues* val);
 void EncodeConstrainedValues(const ConstrainedValues& val,
