@@ -115,7 +115,7 @@ class IntegratorBase {
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
   void set_target_accuracy(double accuracy) {
-    if (!supports_accuracy_estimation())
+    if (!this->supports_error_estimation())
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
           "and user has requested error control");
@@ -182,17 +182,17 @@ class IntegratorBase {
     if (supports_error_estimation())
       err_est_ = system_.AllocateTimeDerivatives();
 
-    // TODO(edrumwri): Compute v_scal_, z_scal_ automatically.
+    // TODO(edrumwri): Compute v_weight_, z_weight_ automatically.
     // Set error scaling vectors if not already done.
     if (supports_error_estimation()) {
       const auto& contstate = context_->get_state().get_continuous_state();
       const int gv_size = contstate->get_generalized_velocity().size();
       const int misc_size = contstate->get_misc_continuous_state().size();
-      if (v_scal_.size() != gv_size) v_scal_.setOnes(gv_size);
-      if (z_scal_.size() != misc_size) z_scal_.setOnes(misc_size);
+      if (v_weight_.size() != gv_size) v_weight_.setOnes(gv_size);
+      if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
       // Verify that minimum values of the scaling matrices are non-negative.
-      if (v_scal_.minCoeff() < 0 || z_scal_.minCoeff() < 0)
+      if (v_weight_.minCoeff() < 0 || z_weight_.minCoeff() < 0)
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
@@ -352,28 +352,48 @@ class IntegratorBase {
   }
 
   /**
-   * @name Scaling vector functions.
+   * @name         Methods for weighting state variables
    *
-   * This group of functions describes how errors for state variables with
-   * heterogeneous units are scaled in the context of error-controlled
-   * integration.
+   * This group of methods describes how errors for state variables with
+   * heterogeneous units are weighted in the context of error-controlled
+   * integration. This is an advanced topic and most users can simply specify
+   * desired accuracy and accept the default state variable weights.
    *
    * A collection of state variables is generally defined in heterogenous units
-   * (e.g. centimeters, angles, velocities, energy). Some of the state
+   * (e.g. length, angles, velocities, energy). Some of the state
    * variables cannot even be expressed in meaningful units, like
-   * quaternions. We must be able to scale errors in these
-   * heterogeneous variables to determine whether the error across all state
-   * variables is acceptable given the user-specified accuracy
-   * requirement for the simulation being performed (see
-   * [Sherman 2011] for elaboration on that topic). The scaling factors are
-   * normally determined automatically using the system's unit
-   * dimensions, so *most users can stop reading now!*
+   * quaternions. An integration step provides an estimate of the absolute error
+   * made in each state variable during that step. These must be properly
+   * weighted to obtain an "accuracy" for each variable, that can be compared
+   * against the user's requirements and used to choose an appropriate size for
+   * the next step [Sherman 2011]. The weights are
+   * normally determined automatically using the system's characteristic
+   * dimensions, so *most users can stop reading now!* Custom weighting is
+   * primarily useful for performance improvement; optimal weighting provides
+   * the same accuracy for all state variables without wasting computation time
+   * achieving more accuracy than needed for some of those variables.
    *
-   * Users interested in more precise control over scaling may
+   * Users interested in more precise control over state variable weighting may
    * use the methods in this group to access and modify weighting factors for
    * individual state variables. Changes to these weights can only be made prior
    * to integrator initialization, or as a result of an event which is followed
    * by re-initialization.
+   *
+   * <h4>Relative versus absolute accuracy</h4>
+   *
+   * %State variable integration error as estimated by our integrators is an
+   * absolute quantity with the same
+   * units as the variable. At each time step we therefore need to determine
+   * an absolute error that would be deemed "good enough", i.e. just satisfies
+   * the user's accuracy requirement. If we're maintaining a variable to a
+   * *relative* accuracy then that "good enough" value is defined to be the
+   * required accuracy `a` (a fraction like 0.001) times the current value of
+   * the variable, as long as that value
+   * is far from zero. For variables maintained to an *absolute* accuracy, or
+   * relative variables that are near zero (where relative accuracy would be
+   * too strict), we need a different way to determine
+   * the "good enough" absolute error. The methods in this section are used to
+   * control how that absolute error value is calculated.
    *
    * <h4>How to choose weights</h4>
    *
@@ -382,60 +402,88 @@ class IntegratorBase {
    * when `dxᵢ` represents a "unit effect" of state variable `xᵢ`; that is, the
    * change in `xᵢ` that produces a unit change in some quantity of interest in
    * the system being simulated. The user-specified integration accuracy will
-   * then operate upon this weighted error. For example, if a "characteristic
+   * then operate upon this weighted error. You can do this individually for
+   * each state variable, but typically it is done approximately by combining
+   * the known type of the variable (e.g. length, angle) with a "characteristic
+   * scale" for that quantity. For example, if a "characteristic
    * length" for the system being simulated is 0.1 meters, and `x₀` is a
    * length variable measured in meters, then `w₀` should be 10 so that
-   * `w₀*dx₀=1` when `dx₀=0.1`. For angles representing pointing accuracy we
-   * typically assume a "unit angle" is one radian (about 60 degrees), so if x₁
-   * is a pointing angle then w₁=1 is an appropriate weight. We can scale
-   * an error vector `e=[dx₀ dx₁]` to a unitless fractional error
-   * `f=[w₀*dx₀ w₁*dx₁]`. Now to achieve a given accuracy `a`, say `a=.0001`, we
-   * need only check that `|fᵢ|<=a` for each element `i` of `f`. We'll be more
-   * precise about this below.
+   * `w₀*dx₀=1` when `dx₀=0.1`. For angles representing pointing accuracy (say
+   * a camera direction) we typically assume a "characteristic angle" is one
+   * radian (about 60 degrees), so if x₁ is a pointing direction then w₁=1 is an
+   * appropriate weight. We can now scale an error vector `e=[dx₀ dx₁]` to a
+   * unitless fractional error vector `f=[w₀*dx₀ w₁*dx₁]`. Now to achieve a
+   * given
+   * accuracy `a`, say `a=.0001`, we need only check that `|fᵢ|<=a` for each
+   * element `i` of `f`. Further, this gives us a quantitative measure of
+   * "worst accuracy" that we can use to increase or reduce size of the next
+   * attempted step, so that we will just achieve the required accuracy but not
+   * much more. We'll be more precise about this below.
    *
-   * <h4>How the weights are used</h4>
+   * <h4>Some subtleties for second-order dynamic systems</h4>
    *
-   * Separate weights are determined for each of
-   * - `n` generalized quasi-coordinates `ꝗ`  (position variables in the
+   * Systems governed by 2nd-order differential equations are typically split
+   * into second order (configuration) variables q, and rate (velocity)
+   * variables v, where the time derivatives qdot of q are linearly related to
+   * v by the kinematic differential equation `qdot = dq/dt = N(q)*v`.
+   * Velocity variables are
+   * chosen to be physically significant, but configuration variables
+   * may be chosen for convenience and do not necessarily have direct physical
+   * interpretation. For examples, quaternions are chosen as a numerically
+   * stable orientation representation. This is problematic for choosing weights
+   * which must be done by physical reasoning
+   * as sketched above. We resolve this by introducing
+   * the notion of "quasi-coordinates" ꝗ (pronounced "qbar") which are defined
+   * by the equation `ꝗdot = dꝗ/dt = v`. Other than time scaling,
+   * quasi-coordinates have the same units as their corresponding velocity
+   * variables. That is, for scaling we need to think
+   * of the configuration coordinates in the same physical space as the velocity
+   * variables; weight those by their physical significance; and then map back
+   * to an instantaneous weighting
+   * on the actual configuration variables q. This mapping is performed
+   * automatically; you need only to think about physical weightings.
+   *
+   * Note that generalized quasi-coordinates `ꝗ` can only be defined locally for
+   * a particular configuration `q`. There is in general no meaningful set of
+   * `n` generalized
+   * coordinates which can be differentiated with respect to time to yield `v`.
+   * For example, the Hairy Ball Theorem implies that it is not possible for
+   * three orientation variables to represent all 3D rotations without
+   * singularities, yet three velocity variables can represent angular velocity
+   * in 3D without singularities.
+   *
+   * To summarize, separate weights can be provided for each of
+   * - `n` generalized quasi-coordinates `ꝗ`  (configuration variables in the
    *   velocity variable space), and
    * - `nz` miscellaneous state variables `z`.
    *
    * Weights on the generalized velocity variables `v (= dꝗ/dt)` are derived
-   * directly from the weights on `ꝗ`, scaled by a unit time. Weights on the
-   * actual `nq` generalized coordinates (which are generally not equal to the
-   * `n` quasi-coordinates and can include unit quaternions) can
-   * be calculated efficiently from weights on the quasi-coordinates, using the
-   * relationship <pre>
-   *        dq/dt = N(q) v
-   *   =>      dq = N(q) dꝗ
-   * </pre>
+   * directly from the weights on `ꝗ`, scaled by a characteristic time. Weights
+   * on the actual `nq` generalized coordinates can
+   * be calculated efficiently from weights on the quasi-coordinates (details
+   * below).
+   *
+   * <h4>How the weights are used</h4>
    *
    * The errors in the `ꝗ` and `z` variables are scaled by the diagonal elements
-   * of diagonal weighting matrices Wꝗ and Wz, respectively. In the absence of
+   * of diagonal weighting matrices Wꝗ and Wz, respectively. (The block-diagonal
+   * weighting matrix `Wq` on the original generalized coordinates `q` is
+   * calculated from `N` and `Wꝗ`; see below.) In the absence of
    * other information, the default for all scaling values is one, so `Wꝗ` and
-   * `Wz` are `n × n` and `nz × nz` identity matrices. The weighting matrix Wv
-   * for the velocity variables is just `Wv=τ*Wꝗ` where τ is a "characteristic
-   * time" for the system, that is, the quantity in time units that represents a
-   * significant evolution of the trajectory. This does *not* mean the fastest
-   * oscillation in the system but rather the time over which velocity errors
-   * may propagate before their position error effects are noticed. Typically
-   * `τ=1.0` or `0.1` seconds for human-scale mechanical systems. Note that
-   * larger values of `τ` are more conservative since they increase the velocity
-   * weights.
-   *
-   * The block-diagonal weighting matrix `Wq` on generalized coordinates
-   * `q` is calculated from `N` and `Wꝗ` (see below).
-   *
-   * In addition to these weights, accuracy for some of the state variables is
-   * maintained to a *relative* error (e.g. 0.01%) while others are maintained
-   * to an absolute tolerance. Even relative-error variables must be evaluated
-   * against absolute tolerances when they are near zero where relative errors
-   * can be undefined or unreasonably strict.
+   * `Wz` are `n × n` and `nz × nz` identity matrices. The weighting matrix `Wv`
+   * for the velocity variables is just `Wv = τ*Wꝗ` where `τ` is a
+   * "characteristic time" for the system, that is, a quantity in time units
+   * that represents a significant evolution of the trajectory. This serves to
+   * control the accuracy with which velocity is determined relative to
+   * configuration. Note that larger values of `τ` are more conservative since
+   * they increase the velocity weights. Typically we use `τ=1.0` or `0.1`
+   * seconds for human-scale mechanical systems.
+   * <!-- TODO(sherm1): provide more guidance for velocity scaling. -->
    *
    * The weighting matrices `Wq`, `Wv`, and `Wz` are used to compute a weighted
    * infinity norm as follows. Although `Wv` and `Wz` are constant, the actual
-   * weightings may be state dependent for relative-error calculations. First
-   * define adjusted block diagonal matrix `E=diag(Eq,Ev,Ez)` as follows:
+   * weightings may be state dependent for relative-error calculations.
+   * Define block diagonal error weighting matrix `E=diag(Eq,Ev,Ez)` as follows:
    * <pre>
    *   Eq = Wq
    *   Ev: Ev(i,i) = { min(Wv(i,i), 1/|vᵢ|)     if vᵢ is relative
@@ -444,15 +492,17 @@ class IntegratorBase {
    *                 { Wz(i,i)                  if zᵢ is absolute
    * </pre>
    * (`Ev` and `Ez` are diagonal.) A `v` or `z` will be maintained to relative
-   * accuracy unless (a) it is "close" to zero, or (b) the variable has been
-   * defined as requiring absolute accuracy. Position variables `q` are always
-   * maintained to absolute accuracy (see [Sherman 2011] for rationale).
+   * accuracy unless (a) it is "close" to zero (less than 1), or (b) the
+   * variable has been defined as requiring absolute accuracy. Position
+   * variables `q` are always maintained to absolute accuracy (see
+   * [Sherman 2011] for rationale).
    *
    * Now given an error estimate vector `e=[eq ev ez]`, the vector `f=E*e`
    * can be considered to provide a unitless fractional error for each of the
    * state variables. To achieve a given user-specified accuracy `a`, we require
-   * that norm_inf(`f`) <= `a`. (That is, no element of `f` can have absolute
-   * value larger than `a`.)
+   * that norm_inf(`f`) <= `a`. That is, no element of `f` can have absolute
+   * value larger than `a`. We also use `f` to determine an ideal next step
+   * size using an appropriate integrator-specific computation.
    *
    * <h4>Determining weights for q</h4>
    *
@@ -470,19 +520,12 @@ class IntegratorBase {
    *        Wꝗ dꝗ = Wꝗ N⁺ dq        Pre-multiply both sides by Wꝗ
    *      N Wꝗ dꝗ = N Wꝗ N⁺ dq      Pre-multiply both sides by N
    *      N Wꝗ dꝗ = Wq dq           Define Wq := N Wꝗ N⁺
+   *       N Wꝗ v = Wq qdot         Back to time derivatives.
    * </pre>
-   * The last equation shows that `Wq` as defined above provides the expected
-   * relationship between the weighted `ꝗ` variables in velocity space and the
-   * weighted `q` variables in configuration space.
-   *
-   * Note that generalized quasi-coordinates `ꝗ` can only be defined locally for
-   * a particular configuration `q`, such that the generalized velocities
-   * `v=dꝗ/dt`. There is in general no meaningful set of `n` generalized
-   * coordinates which can be differentiated with respect to time to yield `v`.
-   * For example, the Hairy Ball Theorem implies that it is not possible for
-   * three orientation variables to represent all 3D rotations without
-   * singularities, yet three velocity variables can repesent angular velocity
-   * in 3D without singularities.
+   * The last two equations shows that `Wq` as defined above provides the
+   * expected relationship between the weighted `ꝗ` or `v` variables in velocity
+   * space and the weighted `q` or `qdot` (resp.) variables in configuration
+   * space.
    *
    * Finally, note that a diagonal entry of one of the scaling matrices can
    * be set to zero to disable error estimation for that state variable
@@ -498,54 +541,54 @@ class IntegratorBase {
    *  @sa CalcErrorNorm()
    */
   /**
-   *  Gets the scaling vector (equivalent to a diagonal matrix) for generalized
-   *  coordinate and velocity state variables. Only used for integrators that
-   *  support accuracy estimation.
+   * Gets the weighting vector (equivalent to a diagonal matrix) for generalized
+   * coordinate and velocity state variables. Only used for integrators that
+   * support accuracy estimation.
    */
-  const Eigen::VectorXd& get_generalized_state_scaling_vector() const {
-    return v_scal_;
+  const Eigen::VectorXd& get_generalized_state_weight_vector() const {
+    return v_weight_;
   }
 
   /**
-   *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
-   *  generalized coordinate and velocity state variables. Only used for
-   *  integrators that support accuracy estimation. Returns a VectorBlock
-   *  to make the values mutable without permitting changing the size of
-   *  the vector. Requires re-initializing the integrator after calling
-   *  this method; if Initialize() is not called afterward, an exception will be
-   *  thrown when attempting to call StepOnceAtMost(). If the caller sets
-   *  one of the entries to a negative value, an exception will be thrown
-   *  when the integrator is initialized.
+   * Gets a mutable weighting vector (equivalent to a diagonal matrix) for
+   * generalized coordinate and velocity state variables. Only used for
+   * integrators that support accuracy estimation. Returns a VectorBlock
+   * to make the values mutable without permitting changing the size of
+   * the vector. Requires re-initializing the integrator after calling
+   * this method; if Initialize() is not called afterward, an exception will be
+   * thrown when attempting to call StepOnceAtMost(). If the caller sets
+   * one of the entries to a negative value, an exception will be thrown
+   * when the integrator is initialized.
    */
   Eigen::VectorBlock<Eigen::VectorXd>
-    get_mutable_generalized_state_scaling_vector() {
-      initialization_done_ = false;
-      return v_scal_.head(v_scal_.rows());
-  }
-
-  /**
-   *  Gets the scaling vector (equivalent to a diagonal matrix) for
-   *  miscellaneous continuous state variables. Only used for integrators that
-   *  support accuracy estimation.
-   */
-  const Eigen::VectorXd& get_misc_state_scaling_vector() const {
-    return z_scal_;
-  }
-
-  /**
-   *  Gets a mutable scaling vector (equivalent to a diagonal matrix) for
-   *  miscellaneous continuous state variables. Only used for integrators that
-   *  support accuracy estimation. Returns a VectorBlock
-   *  to make the values mutable without permitting changing the size of
-   *  the vector. Requires re-initializing the integrator after calling this
-   *  method. If Initialize() is not called afterward, an exception will be
-   *  thrown when attempting to call StepOnceAtMost(). If the caller sets
-   *  one of the entries to a negative value, an exception will be thrown
-   *  when the integrator is initialized.
-   */
-  Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_scaling_vector() {
+  get_mutable_generalized_state_weight_vector() {
     initialization_done_ = false;
-    return z_scal_.head(z_scal_.rows());
+    return v_weight_.head(v_weight_.rows());
+  }
+
+  /**
+   * Gets the weighting vector (equivalent to a diagonal matrix) for
+   * miscellaneous continuous state variables. Only used for integrators that
+   * support accuracy estimation.
+   */
+  const Eigen::VectorXd& get_misc_state_weight_vector() const {
+    return z_weight_;
+  }
+
+  /**
+   * Gets a mutable weighting vector (equivalent to a diagonal matrix) for
+   * miscellaneous continuous state variables. Only used for integrators that
+   * support accuracy estimation. Returns a VectorBlock
+   * to make the values mutable without permitting changing the size of
+   * the vector. Requires re-initializing the integrator after calling this
+   * method. If Initialize() is not called afterward, an exception will be
+   * thrown when attempting to call StepOnceAtMost(). If the caller sets
+   * one of the entries to a negative value, an exception will be thrown
+   * when the integrator is initialized.
+   */
+  Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_weight_vector() {
+    initialization_done_ = false;
+    return z_weight_.head(z_weight_.rows());
   }
 
   /**
@@ -731,8 +774,8 @@ class IntegratorBase {
   int64_t num_steps_taken_{0};
   int64_t error_test_failures_{0};
 
-  // Vectors that will be applied as diagonal matrices to scale error estimates.
-  Eigen::VectorXd v_scal_, z_scal_;
+  // Applied as diagonal matrices to weight error estimates.
+  Eigen::VectorXd v_weight_, z_weight_;
 
   // State and time derivative copies for reversion during error-controlled
   // integration.
@@ -853,8 +896,8 @@ T IntegratorBase<T>::CalcErrorNorm() {
   auto& scaled_q_err = scaled_q_err_;
 
   // Get scaling matrices.
-  const auto& v_scal = get_generalized_state_scaling_vector();
-  const auto& z_scal = get_misc_state_scaling_vector();
+  const auto& v_scal = this->get_generalized_state_weight_vector();
+  const auto& z_scal = this->get_misc_state_weight_vector();
 
   // Get the generalized position, velocity, and miscellaneous continuous
   // state vectors.
