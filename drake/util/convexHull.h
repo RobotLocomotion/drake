@@ -2,12 +2,11 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "drake/common/drake_export.h"
 
 typedef double coord_t;   // coordinate type
 typedef double coord2_t;  // must be big enough to hold 2*max(|coordinate|)^2
 
-struct DRAKE_EXPORT Point {
+struct Point {
   coord_t x, y;
 
   bool operator<(const Point &p) const {
@@ -15,8 +14,8 @@ struct DRAKE_EXPORT Point {
   }
 };
 
-DRAKE_EXPORT std::vector<Point> convexHull(std::vector<Point> P);
-DRAKE_EXPORT bool inConvexHull(
+std::vector<Point> convexHull(std::vector<Point> P);
+bool inConvexHull(
     const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic>> &P,
     const Eigen::Ref<const Eigen::Vector2d> &q, double tolerance = 1e-16);
 
@@ -29,6 +28,6 @@ DRAKE_EXPORT bool inConvexHull(
 //
 // If q is inside the convex hull of pts, then d* will be positive, else it will
 // be negative.
-DRAKE_EXPORT double signedDistanceInsideConvexHull(
+double signedDistanceInsideConvexHull(
     const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic>> &pts,
     const Eigen::Ref<const Eigen::Vector2d> &q);
