@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <limits>
 
-#include "drake/automotive/automotive_common.h"
 #include "drake/systems/plants/joints/floating_base_types.h"
 #include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/systems/plants/rigid_body_tree_construction.h"
 
 namespace drake {
 namespace automotive {
@@ -18,6 +18,7 @@ using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
 using drake::systems::plants::joints::kFixed;
 using drake::systems::plants::joints::kQuaternion;
+using drake::systems::plants::AddFlatTerrainToWorld;
 
 const char kDurationFlag[] = "--duration";
 
@@ -141,8 +142,6 @@ void AddFlatTerrainToWorld(
     double box_size, double box_depth) {
   AddFlatTerrainToWorld(rigid_body_tree.get(), box_size, box_depth);
 }
-
-
 
 std::shared_ptr<CascadeSystem<
     Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,

@@ -18,6 +18,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/plants/rigid_body_tree_construction.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
@@ -197,7 +198,7 @@ class KukaDemo : public systems::Diagram<T> {
         drake::systems::plants::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    AddGround(rigid_body_tree.get());
+    drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
     VerifyIiwaTree(*rigid_body_tree);
 
     DiagramBuilder<T> builder;

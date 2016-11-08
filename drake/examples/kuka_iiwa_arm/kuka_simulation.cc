@@ -27,6 +27,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/systems/plants/rigid_body_tree_construction.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -153,7 +154,7 @@ class SimulatedKuka : public systems::Diagram<T> {
         drake::systems::plants::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    AddGround(rigid_body_tree.get());
+    drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
 
     DiagramBuilder<T> builder;
 
