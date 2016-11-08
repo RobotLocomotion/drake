@@ -11,8 +11,7 @@ namespace {
 class AffineSystemTest : public AffineLinearSystemTest {
  public:
   // Setup an arbitrary AffineSystem.
-  AffineSystemTest()
-      : AffineLinearSystemTest(-4.5, 6.5, 3.5, -7.6) {}
+  AffineSystemTest() : AffineLinearSystemTest(-4.5, 6.5, 3.5, -7.6) {}
 
   void Initialize() override {
     // Construct the system I/O objects.
@@ -24,6 +23,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     state_ = context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
+
  protected:
   // The Device Under Test is an AffineSystem<double>.
   unique_ptr<AffineSystem<double>> dut_;
@@ -76,9 +76,7 @@ TEST_F(AffineSystemTest, Output) {
 
   expected_output = C_ * x + D_ * u + y0_;
 
-  EXPECT_EQ(
-      expected_output,
-      system_output_->get_vector_data(0)->get_value());
+  EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
 }
 
 }  // namespace
