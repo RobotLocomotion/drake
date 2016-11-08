@@ -18,7 +18,8 @@ if(lcm_FOUND)
     lcm_subscriber_system.h
     lcm_translator_dictionary.h
     lcm_and_vector_base_translator.h
-    lcmt_drake_signal_translator.h)
+    lcmt_drake_signal_translator.h
+    serializer.h)
   pods_install_pkg_config_file(drake-lcm-system2
     LIBS -ldrakeLCMSystem2
     REQUIRES lcm
