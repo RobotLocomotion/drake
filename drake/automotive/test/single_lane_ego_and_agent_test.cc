@@ -37,9 +37,8 @@ class SingleLaneEgoAndAgentTest : public ::testing::Test {
 
   const systems::VectorBase<double>* state_derivatives(
       const systems::System<double>* system) {
-    const systems::ContinuousState<double>* p = derivatives_.get();
     const systems::ContinuousState<double>* subderivatives =
-        dut_.GetSubsystemDerivatives(*p, system);
+        dut_.GetSubsystemDerivatives(*derivatives_, system);
     return &subderivatives->get_vector();
   }
 

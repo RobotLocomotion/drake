@@ -59,7 +59,7 @@ TEST_F(IdmPlannerTest, Topology) {
 }
 
 TEST_F(IdmPlannerTest, Input) {
-  // Define a pointer to where the EvalOutput results end up.
+  // Define a pointer to where the EvalOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
@@ -87,7 +87,7 @@ TEST_F(IdmPlannerTest, Input) {
                (x_a - x_e - l_a),
            2.0));
 
-  // Verify that the starting input is zero.
+  // The output values should match the expected values.
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(expected_output, result->GetAtIndex(0));
 }
