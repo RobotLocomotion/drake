@@ -153,25 +153,26 @@ class SimulatedKuka : public systems::Diagram<T> {
     this->set_name("SimulatedKuka");
     DiagramBuilder<T> builder;
 
-    // The following curly brace defines a scope that quarantines variables
-    // `tree` and `plant`, which are of type `std::unique_ptr`. Ownership of
-    // `tree` is passed to `plant` and ownership of `plant` is passed to
-    // `controller`. We quarantine these variables to prevent downstream code
-    // from seg faulting by trying to access `tree` or `plant` after ownership
-    // is transferred.
+    // The following curly brace defines a scope that quarantines local
+    // variables `rigid_body_tree` and `plant`, which are of type
+    // `std::unique_ptr`. Ownership of `rigid_body_tree` is passed to `plant`
+    // and ownership of `plant` is passed to `controller`. We quarantine these
+    // local variables to prevent downstream code from seg faulting by trying to
+    // access `rigid_body_tree` or `plant` after ownership is transferred.
     {
       // Instantiates a model of the world.
-      auto tree = std::make_unique<RigidBodyTree<double>>();
+      auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
           drake::GetDrakePath() +
           "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
           drake::systems::plants::joints::kFixed,
-          nullptr /* weld to frame */, tree.get());
+          nullptr /* weld to frame */, rigid_body_tree.get());
 
-      drake::systems::plants::AddFlatTerrainToWorld(tree.get());
+      drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
 
       // Instantiates a RigidBodyPlant from an MBD model of the world.
-      auto plant = std::make_unique<RigidBodyPlant<T>>(std::move(tree));
+      auto plant = std::make_unique<RigidBodyPlant<T>>(
+          std::move(rigid_body_tree));
       plant_ = plant.get();
 
       DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
