@@ -5,18 +5,21 @@
 
 #include "lcm/lcm-cpp.hpp"
 
-#include "drake/lcmt_matlab_feval.hpp"
+#include "drake/lcmt_call_matlab.hpp"
 
 
 /// Mex client for matlab feval
 
 class Handler {
- public:
+  // TODO(russt): Implement a destructor message (or string) for the local vars which calls mxDestroyArray
+
+
+public:
   ~Handler() {}
 
   void handleMessage(const lcm::ReceiveBuffer* rbuf,
                    const std::string& chan,
-                   const drake::lcmt_matlab_feval* msg) {
+                   const drake::lcmt_call_matlab* msg) {
     int i;
     std::vector<mxArray*> lhs(msg->nlhs), rhs(msg->nrhs);
 
@@ -27,11 +30,11 @@ class Handler {
         {
           int64_t id;
           memcpy(&id,msg->rhs[i].data.data(),sizeof(int64_t));
-          if (client_vars.find(id) == client_vars.end()) {
+          if (client_vars_.find(id) == client_vars_.end()) {
             mexWarnMsgTxt("rhs referenced unknown local variable.  dropping message.");
             return;
           }
-          rhs[i] = client_vars[id];
+          rhs[i] = client_vars_[id];
           break;
         }
         case drake::lcmt_matlab_array::DOUBLE:
@@ -63,13 +66,11 @@ class Handler {
 
     // Find (or create) any local variables that will be returned by this call.
     for (i=0; i<msg->nlhs; i++) {
-      if (client_vars.find(msg->lhs[i]) == client_vars.end()) { // then construct a new local variable
-        client_vars[msg->lhs[i]] = nullptr;
+      if (client_vars_.find(msg->lhs[i]) == client_vars_.end()) { // then construct a new local variable
+        client_vars_[msg->lhs[i]] = nullptr;
       }
-      lhs[i] = client_vars[msg->lhs[i]];
+      lhs[i] = client_vars_[msg->lhs[i]];
     }
-
-    // TODO(russt): Implement a destructor for the local vars which calls mxDestroyArray
 
     // Make the actual call to MATLAB.
     mexCallMATLAB(static_cast<int>(lhs.size()), lhs.data(),
@@ -80,8 +81,8 @@ class Handler {
     for (i=0; i<rhs.size(); i++) { mxDestroyArray(rhs[i]); }
   }
 
- private:
-  std::map<int64_t,mxArray*> client_vars;
+private:
+  std::map<int64_t,mxArray*> client_vars_;
 };
 
 
@@ -91,11 +92,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   // TODO(russt): take channel name as an optional input
   Handler handler_object;
-  lcm.subscribe("LCM_MATLAB_FEVAL", &Handler::handleMessage, &handler_object);
+  std::string channel = "LCM_CALL_MATLAB";
+  lcm.subscribe(channel, &Handler::handleMessage, &handler_object);
 
+  mexPrintf("Listening for messages on LCM_CALL_MATLAB...\n");
   while (1) {
-    if (lcm.handle() != 0) {
+    if (lcm.handleTimeout(100) < 0) {
       mexErrMsgTxt("Something went wrong in lcm.handle.");
     }
   }
+
+  mexPrintf("Cleaning up.\n");
 }

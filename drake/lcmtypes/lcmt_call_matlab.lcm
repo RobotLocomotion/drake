@@ -7,7 +7,7 @@ package drake;
  * due to the asynchronous nature of the protocol
  */
 
-struct lcmt_matlab_feval
+struct lcmt_call_matlab
 {
   int32_t nlhs;                           // the number of output arguments
   int64_t lhs[nlhs];                      // unique id for variables held in the MATLAB client's workspace
