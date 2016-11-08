@@ -93,9 +93,28 @@ class DRAKE_EXPORT Formula {
   Variables GetFreeVariables() const;
   /** Checks structural equality*/
   bool EqualTo(const Formula& f) const;
-  /** Checks lexicographical ordering between this and @p e. This function is
-   * used as a compare function in std::map<symbolic::Formula> and
-   * std::set<symbolic::Formula> via std::less<symbolic::Formula>. */
+  /** Checks lexicographical ordering between this and @p e.
+   *
+   * If the two formulas f1 and f2 have different kinds k1 and k2 respectively,
+   * f1.Less(f2) is equal to k1 < k2. If f1 and f2 are expressions of the same
+   * kind, we check the ordering between f1 and f2 by comparing their elements
+   * lexicographically.
+   *
+   * For example, in case of And, let f1 and f2 be
+   *
+   *     f1 = f_1,1 ∧ ... ∧ f_1,n
+   *     f2 = f_2,1 ∧ ... ∧ f_2,m
+   *
+   * f1.Less(f2) is true if there exists an index i (<= n, m) such that
+   * for all j < i, we have
+   *
+   *     ¬(f_1_j.Less(f_2_j)) ∧ ¬(f_2_j.Less(f_1_j))
+   *
+   * and f_1_i.Less(f_2_i) holds.
+   *
+   * This function is used as a compare function in
+   * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
+   * std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
   /** Evaluates under a given environment (by default, an empty environment)*/
   bool Evaluate(const Environment& env = Environment{}) const;
