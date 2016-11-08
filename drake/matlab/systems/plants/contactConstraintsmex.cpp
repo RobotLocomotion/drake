@@ -1,4 +1,4 @@
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/eigen_types.h"
 #include "drake/matlab/util/mexify.h"
