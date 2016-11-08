@@ -8,7 +8,7 @@
 #include "drake/system1/Simulation.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/gravity_compensated_system.h"
-#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/multibody/rigid_body_system1/BotVisualizer.h"
 
 using drake::AffineSystem;
 using drake::BotVisualizer;

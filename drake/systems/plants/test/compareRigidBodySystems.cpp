@@ -1,4 +1,4 @@
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
 #include <iostream>
 #include <string>

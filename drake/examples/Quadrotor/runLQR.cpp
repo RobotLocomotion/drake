@@ -4,7 +4,7 @@
 #include "drake/examples/Quadrotor/Quadrotor.h"
 #include "drake/system1/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
-#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/multibody/rigid_body_system1/BotVisualizer.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/feedback_system.h"
 #include "drake/multibody/joints/floating_base_types.h"

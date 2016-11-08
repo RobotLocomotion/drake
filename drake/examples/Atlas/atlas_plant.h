@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/multibody/RigidBodyTree.h"
 
 using Eigen::VectorXd;
