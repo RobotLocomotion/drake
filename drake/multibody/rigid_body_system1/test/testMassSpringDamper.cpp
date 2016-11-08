@@ -15,7 +15,7 @@ using Eigen::Matrix;
 GTEST_TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->AddModelInstanceFromFile(
-      GetDrakePath() + "/systems/plants/test/MassSpringDamper.urdf",
+      GetDrakePath() + "/multibody/rigid_body_system1/testMassSpringDamper.urdf",
       drake::multibody::joints::kFixed);
 
   double mass = 1.0, k = 10.0, b = 1.0;

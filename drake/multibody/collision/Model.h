@@ -174,7 +174,7 @@ class DRAKE_EXPORT Model {
   @return A vector with indexes in input_points of all those points that do
   collide with the model within the specified threshold.
 
-  @see systems/plants/test/collidingPointsTest.m for a Matlab test. **/
+  @see multibody/rigid_body_system1/testcollidingPointsTest.m for a Matlab test. **/
   virtual std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) = 0;

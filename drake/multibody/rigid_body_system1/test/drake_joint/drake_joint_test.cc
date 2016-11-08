@@ -29,7 +29,8 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
   ModelInstanceIdTable model_instance_id_table =
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
-              "/systems/plants/test/drake_joint/zero_offset_joint.urdf",
+              "/multibody/rigid_body_system1/test/drake_joint/"
+              "zero_offset_joint.urdf",
           kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the
@@ -90,7 +91,8 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
   ModelInstanceIdTable model_instance_id_table =
       rbs.AddModelInstanceFromFile(
           drake::GetDrakePath() +
-              "/systems/plants/test/drake_joint/non_zero_offset_joint.urdf",
+              "/multibody/rigid_body_system1/test/drake_joint/"
+              "non_zero_offset_joint.urdf",
           kQuaternion);
 
   // Defines the name of the model. This must match the name of the model in the

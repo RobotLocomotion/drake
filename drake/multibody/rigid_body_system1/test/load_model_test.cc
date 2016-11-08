@@ -34,7 +34,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   // the world frame.
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+          "/drake/multibody/rigid_body_system1/models/cylindrical_1dof_robot." + GetParam(),
       kQuaternion);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
@@ -97,7 +97,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
 
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+          "/drake/multibody/rigid_body_system1/models/cylindrical_1dof_robot." + GetParam(),
       kQuaternion, weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
@@ -137,7 +137,7 @@ TEST_P(LoadModelTest, TestWeld) {
   // root frame and the world frame.
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_1dof_robot." + GetParam(),
+          "/drake/multibody/rigid_body_system1/models/cylindrical_1dof_robot." + GetParam(),
       kQuaternion);
 
   // Loads a zero-DOF SDF robot model and weld it to the end of the
@@ -158,7 +158,7 @@ TEST_P(LoadModelTest, TestWeld) {
       T_model2_to_link2);
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_0dof_robot." + GetParam(),
+          "/drake/multibody/rigid_body_system1/models/cylindrical_0dof_robot." + GetParam(),
       kFixed, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
@@ -178,7 +178,7 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
+          "/drake/multibody/rigid_body_system1/models/cylindrical_1dof_robot_offset_z1.sdf",
       kQuaternion);
 
   // Verifies that the transform between the robot's root node
@@ -218,7 +218,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset1) {
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/models/cylindrical_1dof_robot_offset_z1.sdf",
+          "/drake/multibody/rigid_body_system1/models/cylindrical_1dof_robot_offset_z1.sdf",
       kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
@@ -262,7 +262,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffset2) {
 
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                           "/systems/plants/test/models/"
+                           "/drake/multibody/rigid_body_system1/models/"
                            "cylindrical_1dof_robot_offset_z1_r90.sdf",
                        kQuaternion, weld_to_frame);
 
@@ -284,7 +284,7 @@ GTEST_TEST(LoadSDFTest, TestJointLimitParams) {
   // Test that joint limit parameters are correctly loaded from an SDF file.
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                               "/systems/plants/test/models/"
+                               "/drake/multibody/rigid_body_system1/models/"
                                "cylindrical_1dof_robot.sdf",
                                kFixed);
   const DrakeJoint& joint =
@@ -369,7 +369,7 @@ INSTANTIATE_TEST_CASE_P(
         // world via a fixed joint.
         ModelToWorldTransformTestParams(
             drake::GetDrakePath() +
-                std::string("/systems/plants/test/models/"
+                std::string("/drake/multibody/rigid_body_system1/models/"
                             "cylindrical_1dof_robot_fixed_to_world.urdf"),
             std::string("link1"), 1, 2, 3, 0.1, 0.5, 1.8),
 
@@ -377,7 +377,7 @@ INSTANTIATE_TEST_CASE_P(
         // world via a floating joint.
         ModelToWorldTransformTestParams(
             drake::GetDrakePath() +
-                std::string("/systems/plants/test/models/"
+                std::string("/drake/multibody/rigid_body_system1/models/"
                             "cylindrical_1dof_robot_floating_in_world.urdf"),
             std::string("link1"), 3, 2, 1, 0.2, 0.9, -1.57)));
 

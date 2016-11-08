@@ -22,7 +22,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // URDF becomes part of the world.
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/rigid_body_system/world.urdf",
+          "/multibody/rigid_body_system1/test/rigid_body_system/world.urdf",
       drake::multibody::joints::kFixed);
 
   // Verifies that the number of states, inputs, and outputs are all zero.
@@ -57,7 +57,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
   // the world's coordinate frame by X = 1, Y = 1, and Z = 1.
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
-      "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf");
+      "/multibody/rigid_body_system1/test/rigid_body_system/"
+      "dual_model_with_sensors.sdf");
 
   Eigen::Isometry3d T_second_model_to_world;
   {
@@ -74,7 +75,8 @@ GTEST_TEST(RigidBodySystemTest, TestLoadSDFMultipleTimes) {
 
   rigid_body_sys->AddModelInstanceFromFile(
       drake::GetDrakePath() +
-          "/systems/plants/test/rigid_body_system/dual_model_with_sensors.sdf",
+          "/multibody/rigid_body_system1/test/rigid_body_system/"
+          "dual_model_with_sensors.sdf",
       drake::multibody::joints::kQuaternion, weld_to_frame);
 
   // Checks that the rigid body system has the correct number of states. The
@@ -193,14 +195,14 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWithBadTransmission) {
   // exception is the correct one.
   EXPECT_THROW(
       rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
-                                       "/systems/plants/test/rigid_body_system/"
-                                       "bad_transmission_no_joint.urdf"),
+          "/multibody/rigid_body_system1/test/rigid_body_system/"
+          "bad_transmission_no_joint.urdf"),
       std::runtime_error);
 
   try {
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
-                                     "/systems/plants/test/rigid_body_system/"
-                                     "bad_transmission_no_joint.urdf");
+        "/multibody/rigid_body_system1/test/rigid_body_system/"
+        "bad_transmission_no_joint.urdf");
   } catch (std::runtime_error& error) {
     // Asserts that the exception is thrown when FindBodyOfJoint() fails to find
     // find a non-existing joint.
