@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_export.h"
-
 namespace drake {
 namespace systems {
 namespace detail {
@@ -9,7 +7,7 @@ namespace detail {
 /// OutputPortListenerInterface is an interface that consumers of an output
 /// port must satisfy to receive notifications when the value on that output
 /// port's version number is incremented.
-class DRAKE_EXPORT OutputPortListenerInterface {
+class OutputPortListenerInterface {
  public:
   virtual ~OutputPortListenerInterface();
 
