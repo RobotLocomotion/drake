@@ -349,7 +349,6 @@ DRAKE_EXPORT RigidBodySystem::StateVector<double> getInitialState(
 
     VectorXd q_guess = x0.topRows(nq);
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
-    
     prog.Solve();
 
     x0 << qvar.value(), VectorXd::Zero(sys.tree->get_num_velocities());
