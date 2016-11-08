@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
@@ -57,7 +56,7 @@ namespace systems {
 ///
 /// @ingroup control_systems
 template <typename T>
-class DRAKE_EXPORT PidControlledSystem : public Diagram<T> {
+class PidControlledSystem : public Diagram<T> {
  public:
   /// A constructor where the gains are scalar values and all of the plant's
   /// output port zero is part of the feedback signal.

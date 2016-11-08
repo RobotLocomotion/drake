@@ -518,15 +518,15 @@ void getRobotJointIndexMap(JointNames* joint_names,
   return;
 }
 
-template DRAKE_EXPORT void getRows(std::set<int>&,
-                                              const MatrixBase<MatrixXd>&,
-                                              MatrixBase<MatrixXd>&);
-template DRAKE_EXPORT void getCols(std::set<int>&,
-                                              const MatrixBase<MatrixXd>&,
-                                              MatrixBase<MatrixXd>&);
-template DRAKE_EXPORT void angleDiff(const MatrixBase<MatrixXd>&,
-                                                const MatrixBase<MatrixXd>&,
-                                                MatrixBase<MatrixXd>&);
-template DRAKE_EXPORT void angleDiff(const MatrixBase<Vector3d>&,
-                                                const MatrixBase<Vector3d>&,
-                                                MatrixBase<Vector3d>&);
+void getRows(std::set<int>&,
+             const MatrixBase<MatrixXd>&,
+             MatrixBase<MatrixXd>&);
+template void getCols(std::set<int>&,
+                      const MatrixBase<MatrixXd>&,
+                      MatrixBase<MatrixXd>&);
+template void angleDiff(const MatrixBase<MatrixXd>&,
+                        const MatrixBase<MatrixXd>&,
+                        MatrixBase<MatrixXd>&);
+template void angleDiff(const MatrixBase<Vector3d>&,
+                        const MatrixBase<Vector3d>&,
+                        MatrixBase<Vector3d>&);
