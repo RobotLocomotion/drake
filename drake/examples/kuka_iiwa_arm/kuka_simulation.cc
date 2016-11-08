@@ -53,15 +53,13 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::SystemOutput;
 
-const int kNumJoints = 7;
-
 // TODO(sam.creasey) If this could be made slightly more generic, it
 // could be a good wrapper/template for LCM controlled robots.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
-  IiwaCommandReceiver() {
+  IiwaCommandReceiver(int num_joints) {
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, kNumJoints,
+    this->DeclareOutputPort(systems::kVectorValued, num_joints,
                             systems::kContinuousSampling);
   }
 
@@ -92,10 +90,10 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 // received command.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
-  IiwaStatusSender() {
-    this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2,
+  IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
+    this->DeclareInputPort(systems::kVectorValued, num_joints * 2,
                            systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, kNumJoints,
+    this->DeclareInputPort(systems::kVectorValued, num_joints,
                            systems::kContinuousSampling);
     this->DeclareAbstractOutputPort(systems::kContinuousSampling);
   }
@@ -104,7 +102,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     auto output = std::make_unique<systems::LeafSystemOutput<double>>();
     lcmt_iiwa_status msg{};
-    msg.num_joints = kNumJoints;
+    msg.num_joints = num_joints_;
     msg.joint_position_measured.resize(msg.num_joints, 0);
     msg.joint_position_commanded.resize(msg.num_joints, 0);
     msg.joint_position_ipo.resize(msg.num_joints, 0);
@@ -129,11 +127,14 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
         this->EvalVectorInput(context, 0);
     const systems::BasicVector<double>* command =
         this->EvalVectorInput(context, 1);
-    for (int i = 0; i < kNumJoints; i++) {
+    for (int i = 0; i < num_joints_; i++) {
       status.joint_position_measured[i] = state->GetAtIndex(i);
       status.joint_position_commanded[i] = command->GetAtIndex(i);
     }
   }
+
+ private:
+  int num_joints_{0};
 };
 
 // TODO(sam.creasey) We should de-duplicate this with kuka_demo.cc.
@@ -265,12 +266,14 @@ int DoMain() {
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
-  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>();
+  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>(
+      tree.get_num_positions());
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
-  auto status_sender = builder.AddSystem<IiwaStatusSender>();
+  auto status_sender = builder.AddSystem<IiwaStatusSender>(
+      tree.get_num_positions());
 
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
