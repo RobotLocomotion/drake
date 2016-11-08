@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DrakeJoint.h"
+#include "drake/multibody/joints/DrakeJoint.h"
 #include "QuaternionFloatingJoint.h"
 #include "RollPitchYawFloatingJoint.h"
 #include "HelicalJoint.h"

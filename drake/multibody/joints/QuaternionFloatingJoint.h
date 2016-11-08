@@ -7,7 +7,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/rotation_conversion_gradient.h"
-#include "DrakeJointImpl.h"
+#include "drake/multibody/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 #pragma GCC diagnostic push

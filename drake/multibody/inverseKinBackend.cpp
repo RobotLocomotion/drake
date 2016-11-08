@@ -11,11 +11,11 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/IKoptions.h"
 #include "drake/multibody/RigidBodyTree.h"
+#include "drake/solvers/mathematical_program.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;

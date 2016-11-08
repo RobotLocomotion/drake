@@ -12,7 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/gradient.h"
-#include "DrakeJointImpl.h"
+#include "drake/multibody/joints/DrakeJointImpl.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"

@@ -6,7 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "DrakeJointImpl.h"
+#include "drake/multibody/joints/DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 #pragma GCC diagnostic push
