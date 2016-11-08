@@ -119,8 +119,8 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   ASSERT_NE(nullptr, context_);
   ASSERT_NE(nullptr, derivatives_);
 
-  // Obtain pointers to the (continuous) state vector, output
-  // vector, and vector of state derivatives for each car.
+  // Obtain pointers to the (continuous) state vector and state
+  // derivative vector for each car.
   auto state_vec_ego = continuous_state(dut_.get_ego_car_system());
   auto state_vec_agent = continuous_state(dut_.get_agent_car_system());
 
