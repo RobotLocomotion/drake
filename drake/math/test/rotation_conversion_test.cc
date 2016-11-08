@@ -84,9 +84,9 @@ bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
   Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
   Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
   // Note: When pitch is close to PI/2 or -PI/2, derivative calculations for
-  // Euler angle can encounter numerical problems.  However, although the values
-  // of the angles may "jump around" (hence, difficult derivatives), the
-  // angles' values can accurately reproduce orientation (with good algorithms).
+  // Euler angle can encounter numerical problems.  However, although values
+  // of angles may "jump around" (hence, difficult derivatives), the angles'
+  // values should be accurately reproduced.
   const double precision = 1E-13;
   return AreEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
                                           precision);
