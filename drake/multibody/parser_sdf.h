@@ -6,8 +6,8 @@
 #include "drake/common/drake_export.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "RigidBodyFrame.h"
-#include "RigidBodyTree.h"
+#include "drake/multibody/RigidBodyFrame.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace parsers {

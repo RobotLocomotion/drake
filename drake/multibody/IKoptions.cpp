@@ -2,8 +2,7 @@
 
 #include <set>
 
-#include "RigidBodyTree.h"
-#include "IKoptions.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using Eigen::MatrixXd;
 using Eigen::RowVectorXd;

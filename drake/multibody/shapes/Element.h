@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "Geometry.h"
+#include "drake/multibody/shapes/Geometry.h"
 
 namespace DrakeShapes {
 class DRAKE_EXPORT Element {

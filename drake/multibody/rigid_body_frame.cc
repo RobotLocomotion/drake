@@ -1,4 +1,4 @@
-#include "RigidBodyFrame.h"
+#include "drake/multibody/RigidBodyFrame.h"
 
 #include "drake/math/roll_pitch_yaw.h"
 

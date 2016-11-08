@@ -1,5 +1,5 @@
 #pragma once
 
-#include "Geometry.h"
-#include "Element.h"
-#include "VisualElement.h"
+#include "drake/multibody/shapes/Geometry.h"
+#include "drake/multibody/shapes/Element.h"
+#include "drake/multibody/shapes/VisualElement.h"

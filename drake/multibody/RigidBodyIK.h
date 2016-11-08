@@ -6,9 +6,9 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include "RigidBodyTree.h"
 
 /**
  * inverseKin solves the inverse kinematics problem

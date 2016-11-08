@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "Element.h"
+#include "drake/multibody/collision/Element.h"
 
 namespace DrakeCollision {
 

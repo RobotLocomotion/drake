@@ -1,9 +1,9 @@
 #include <string>
 #include <vector>
 
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
-#include "inverseKinBackend.h"
+#include "drake/multibody/inverseKinBackend.h"
+#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;

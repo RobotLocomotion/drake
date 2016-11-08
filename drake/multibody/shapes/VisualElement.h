@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "Element.h"
+#include "drake/multibody/shapes/Element.h"
 
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"

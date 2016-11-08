@@ -1,4 +1,4 @@
-#include "RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 #include <algorithm>
 #include <iostream>

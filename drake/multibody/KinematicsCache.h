@@ -15,7 +15,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "RigidBody.h"
+#include "drake/multibody/RigidBody.h"
 #include "drake/multibody/joints/DrakeJoint.h"
 
 template <typename Scalar>
