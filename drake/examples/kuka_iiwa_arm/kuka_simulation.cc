@@ -75,7 +75,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
     if (command.num_joints == 0) {
       output_vec.fill(0);
     } else {
-      for (int i = 0; i < command.num_joints; i++) {
+      for (int i = 0; i < command.num_joints; ++i) {
         output_vec(i) = command.joint_position[i];
       }
     }
@@ -127,7 +127,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
         this->EvalVectorInput(context, 0);
     const systems::BasicVector<double>* command =
         this->EvalVectorInput(context, 1);
-    for (int i = 0; i < num_joints_; i++) {
+    for (int i = 0; i < num_joints_; ++i) {
       status.joint_position_measured[i] = state->GetAtIndex(i);
       status.joint_position_commanded[i] = command->GetAtIndex(i);
     }
