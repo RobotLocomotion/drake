@@ -49,6 +49,7 @@ set(installed_headers
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
+  text_logging_gflags.h
   trig_poly.h
   )
 

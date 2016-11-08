@@ -6,7 +6,7 @@ endif()
 if(Bullet_FOUND AND Matlab_FOUND)
   find_package(BLAS MODULE)
 
-  if(BLAS_FOUND AND snopt_c_FOUND)
+  if(BLAS_FOUND AND snopt_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
     target_link_libraries(replanFunnels_mex drakeMexUtil snopt_c

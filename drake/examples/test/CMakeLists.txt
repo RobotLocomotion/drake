@@ -2,4 +2,3 @@ drake_add_matlab_test(NAME examples/test/simpleCTParticleDemo COMMAND simpleCTPa
 drake_add_matlab_test(NAME examples/test/simpleCTtest COMMAND simpleCTtest)
 drake_add_matlab_test(NAME examples/test/simpleDTtest COMMAND simpleDTtest)
 drake_add_matlab_test(NAME examples/test/simpleMixedCTDTtest COMMAND simpleMixedCTDTtest)
-drake_add_matlab_test(NAME examples/test/testVDPCpp REQUIRES spotless COMMAND testVDPCpp)

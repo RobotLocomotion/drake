@@ -606,7 +606,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
   }
 }
 
-template class DRAKE_EXPORT Polynomial<double>;
+template class Polynomial<double>;
 
-// template class DRAKE_EXPORT Polynomial<std::complex<double>>;
+// template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it

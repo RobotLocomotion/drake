@@ -10,7 +10,7 @@ typedef Matrix<double, 6, 1> Vector6d;
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
-// TODO(siyuan.feng@tri): These should go in RigidBodyTree eventually.
+// TODO(siyuan.feng): These should go in RigidBodyTree eventually.
 
 /**
  * This function computes the task space velocity of a frame attached
