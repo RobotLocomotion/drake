@@ -352,7 +352,7 @@ class IntegratorBase {
   }
 
   /**
-   * @name         Methods for weighting state variables
+   * @name         Methods for weighting state variable errors
    *
    * This group of methods describes how errors for state variables with
    * heterogeneous units are weighted in the context of error-controlled
@@ -362,26 +362,28 @@ class IntegratorBase {
    * A collection of state variables is generally defined in heterogenous units
    * (e.g. length, angles, velocities, energy). Some of the state
    * variables cannot even be expressed in meaningful units, like
-   * quaternions. An integration step provides an estimate of the absolute error
-   * made in each state variable during that step. These must be properly
-   * weighted to obtain an "accuracy" for each variable, that can be compared
-   * against the user's requirements and used to choose an appropriate size for
-   * the next step [Sherman 2011]. The weights are
+   * quaternions. Some integrators provide an estimate of the absolute error
+   * made in each state variable during an integration step. These errors must
+   * be properly weighted to obtain an "accuracy" _with respect to each
+   * particular variable_. These per-variable accuracy determinations can be
+   * compared against the user's requirements and used to choose an appropriate
+   * size for the next step [Sherman 2011]. The weights are
    * normally determined automatically using the system's characteristic
    * dimensions, so *most users can stop reading now!* Custom weighting is
-   * primarily useful for performance improvement; optimal weighting provides
-   * the same accuracy for all state variables without wasting computation time
-   * achieving more accuracy than needed for some of those variables.
+   * primarily useful for performance improvement; an optimal weighting would
+   * allow an error-controlled integrator to provide the desired level of
+   * accuracy across all state variables without wasting computation time
+   * achieving superfluous accuracy for some of those variables.
    *
    * Users interested in more precise control over state variable weighting may
    * use the methods in this group to access and modify weighting factors for
    * individual state variables. Changes to these weights can only be made prior
-   * to integrator initialization, or as a result of an event which is followed
-   * by re-initialization.
+   * to integrator initialization, or as a result of an event being triggered
+   * and then followed by re-initialization.
    *
    * <h4>Relative versus absolute accuracy</h4>
    *
-   * %State variable integration error as estimated by our integrators is an
+   * %State variable integration error, as estimated by an integrator, is an
    * absolute quantity with the same
    * units as the variable. At each time step we therefore need to determine
    * an absolute error that would be deemed "good enough", i.e. just satisfies
@@ -390,9 +392,9 @@ class IntegratorBase {
    * required accuracy `a` (a fraction like 0.001) times the current value of
    * the variable, as long as that value
    * is far from zero. For variables maintained to an *absolute* accuracy, or
-   * relative variables that are near zero (where relative accuracy would be
-   * too strict), we need a different way to determine
-   * the "good enough" absolute error. The methods in this section are used to
+   * relative variables that are at or near zero (where relative accuracy would
+   * be undefined or too strict, respectively), we need a different way to
+   * determine the "good enough" absolute error. The methods in this section
    * control how that absolute error value is calculated.
    *
    * <h4>How to choose weights</h4>
@@ -402,7 +404,7 @@ class IntegratorBase {
    * when `dxᵢ` represents a "unit effect" of state variable `xᵢ`; that is, the
    * change in `xᵢ` that produces a unit change in some quantity of interest in
    * the system being simulated. The user-specified integration accuracy will
-   * then operate upon this weighted error. You can do this individually for
+   * then operate upon this weighted error. This can be done individually for
    * each state variable, but typically it is done approximately by combining
    * the known type of the variable (e.g. length, angle) with a "characteristic
    * scale" for that quantity. For example, if a "characteristic
@@ -441,7 +443,7 @@ class IntegratorBase {
    * variables; weight those by their physical significance; and then map back
    * to an instantaneous weighting
    * on the actual configuration variables q. This mapping is performed
-   * automatically; you need only to think about physical weightings.
+   * automatically; you need only to be concerned about physical weightings.
    *
    * Note that generalized quasi-coordinates `ꝗ` can only be defined locally for
    * a particular configuration `q`. There is in general no meaningful set of
@@ -522,7 +524,7 @@ class IntegratorBase {
    *      N Wꝗ dꝗ = Wq dq           Define Wq := N Wꝗ N⁺
    *       N Wꝗ v = Wq qdot         Back to time derivatives.
    * </pre>
-   * The last two equations shows that `Wq` as defined above provides the
+   * The last two equations show that `Wq` as defined above provides the
    * expected relationship between the weighted `ꝗ` or `v` variables in velocity
    * space and the weighted `q` or `qdot` (resp.) variables in configuration
    * space.
