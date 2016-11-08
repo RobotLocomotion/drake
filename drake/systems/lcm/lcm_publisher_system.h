@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -17,7 +16,7 @@ namespace lcm {
 /**
  * Publishes an LCM message containing information from its input port.
  */
-class DRAKE_EXPORT LcmPublisherSystem : public LeafSystem<double> {
+class LcmPublisherSystem : public LeafSystem<double> {
  public:
   /**
    * Factory method that returns a publisher System that takes
