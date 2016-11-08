@@ -141,8 +141,12 @@ class DecisionVariableMatrix {
    */
   double value(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-    DRAKE_ASSERT(!vars_[vector_index].expired());
-    return vars_[vector_index].lock()->value();
+    if (const auto& sp_var_i = vars_[vector_index].lock()) {
+      return sp_var_i->value();
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired");
+    }
   }
 
   /**
@@ -169,8 +173,12 @@ class DecisionVariableMatrix {
    */
   DecisionVariableScalar::VarType type(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-    DRAKE_ASSERT(!vars_[vector_index].expired());
-    return vars_[vector_index].lock()->type();
+    if (const auto& sp_var_i = vars_[vector_index].lock()) {
+      return sp_var_i->type();
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired");
+    }
   }
 
   /**
@@ -188,8 +196,12 @@ class DecisionVariableMatrix {
    */
   DecisionVariableScalar::VarType type(size_t i) const {
     DRAKE_ASSERT(static_cast<int>(i) < NumberOfVariables());
-    DRAKE_ASSERT(!vars_[i].expired());
-    return vars_[i].lock()->type();
+    if (const auto& sp_var_i = vars_[i].lock()) {
+      return sp_var_i->type();
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired");
+    }
   }
 
   /**
@@ -197,8 +209,12 @@ class DecisionVariableMatrix {
    */
   std::string name(size_t i, size_t j) const {
     size_t vector_index = MatrixIndicesToVectorIndex(i, j);
-    DRAKE_ASSERT(!vars_[vector_index].expired());
-    return vars_[vector_index].lock()->name();
+    if (const auto& sp_var_i = vars_[vector_index].lock()) {
+      return sp_var_i->name();
+    }
+    else {
+      throw std::runtime_error("weak pointer has expired");
+    }
   }
 
   /**
