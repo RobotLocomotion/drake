@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace systems {
-template class DRAKE_EXPORT RungeKutta3Integrator<double>;
+template class RungeKutta3Integrator<double>;
 }  // namespace systems
 }  // namespace drake
 
