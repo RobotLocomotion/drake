@@ -8,7 +8,7 @@ package drake;
 struct lcmt_matlab_array
 {
   // type enumeration
-  const int8_t VARIABLE_NAME=0;    // encoded as a char string (cols must be set to 1)
+  const int8_t REMOTE_VARIABLE_REFERENCE=0;    // encoded as a int64_t used in the lhs argument of lcmt_matlab_feval; rows and cols must be set to 1.
   const int8_t DOUBLE=1;
   const int8_t CHAR=2;
   const int8_t LOGICAL=3;
@@ -19,7 +19,7 @@ struct lcmt_matlab_array
   int32_t cols;
 
   // data
-  int32_t num_bytes;
+  int32_t num_bytes;               // must be consistent with type, rows, and cols
   byte data[num_bytes];
 
   /* TODO: Consider adding support for the remainder of the mxArray type:

@@ -7,14 +7,14 @@ package drake;
  * due to the asynchronous nature of the protocol
  */
 
-struct lcmt_matlab_feval_data
+struct lcmt_matlab_feval
 {
-  string function_name;                   // any input allowed by matlab's feval command
-                                          // (http://www.mathworks.com/help/matlab/ref/feval.html)
-
   int32_t nlhs;                           // the number of output arguments
-  string lhs_remote_variable_name[nlhs];  // output variable names.  outputs will be added to the remote client's local workspace
+  int64_t lhs[nlhs];                      // unique id for variables held in the MATLAB client's workspace
 
   int32_t nrhs;                           // the number of input arguments
   lcmt_matlab_array rhs[nrhs];            // the input argument data
+
+  string function_name;                   // any input allowed by matlab's mexcallmatlab command
+                                          // (http://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html)
 }
