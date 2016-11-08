@@ -115,10 +115,10 @@ SolutionResult MathematicalProgram::Solve() {
 
 DecisionVariableMatrix MathematicalProgram::GetVariable(
     const std::string& name) const {
-  std::vector<std::weak_ptr<const DecisionVariableScalar>> vars;
+  std::vector<std::shared_ptr<const DecisionVariableScalar>> vars;
   for (auto& var : variables_) {
     if (name.compare(var->name()) == 0) {
-      vars.push_back(std::weak_ptr<const DecisionVariableScalar>(var));
+      vars.push_back(var);
     }
   }
   if (vars.empty()) {
@@ -138,18 +138,17 @@ DecisionVariableMatrix MathematicalProgram::AddVariables(
   }
   DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
   variables_.reserve(num_vars_ + num_new_vars);
-  std::vector<std::weak_ptr<const DecisionVariableScalar>> variables_weak_ptr;
-  variables_weak_ptr.reserve(num_new_vars);
+  std::vector<std::shared_ptr<const DecisionVariableScalar>> variables_new;
+  variables_new.reserve(num_new_vars);
   variables_.reserve(num_vars_ + num_new_vars);
   for (int i = 0; i < num_new_vars; ++i) {
     std::shared_ptr<DecisionVariableScalar> vi(
         new DecisionVariableScalar(type, names[i], num_vars_ + i));
     variables_.push_back(vi);
-    variables_weak_ptr.push_back(
-        std::weak_ptr<const DecisionVariableScalar>(vi));
+    variables_new.push_back(vi);
   }
 
-  DecisionVariableMatrix v_matrix(rows, cols, variables_weak_ptr, is_symmetric);
+  DecisionVariableMatrix v_matrix(rows, cols, variables_new, is_symmetric);
   num_vars_ += num_new_vars;
   x_initial_guess_.conservativeResize(num_vars_);
   variable_views_.push_back(v_matrix);
