@@ -151,7 +151,7 @@ DecisionVariableMatrix MathematicalProgram::AddVariables(
   DecisionVariableMatrix v_matrix(rows, cols, variables_new, is_symmetric);
   num_vars_ += num_new_vars;
   x_initial_guess_.conservativeResize(num_vars_);
-  x_initial_guess_.tail(num_vars_) = Eigen::VectorXd::Zero(num_vars_);
+  x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
   variable_views_.push_back(v_matrix);
 
   return variable_views_.back();
