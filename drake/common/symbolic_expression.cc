@@ -525,7 +525,12 @@ bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionVar::Less(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Var) {
+  const ExpressionKind k1{get_kind()};
+  const ExpressionKind k2{e.get_kind()};
+  if (k1 < k2) {
+    return true;
+  }
+  if (k2 < k1) {
     return false;
   }
   // Note the below is using the overloaded operator< between ExpressionVar
@@ -568,7 +573,12 @@ bool ExpressionConstant::EqualTo(const ExpressionCell& e) const {
 }
 
 bool ExpressionConstant::Less(const ExpressionCell& e) const {
-  if (e.get_kind() != ExpressionKind::Constant) {
+  const ExpressionKind k1{get_kind()};
+  const ExpressionKind k2{e.get_kind()};
+  if (k1 < k2) {
+    return true;
+  }
+  if (k2 < k1) {
     return false;
   }
   return v_ < static_cast<const ExpressionConstant&>(e).v_;
