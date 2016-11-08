@@ -11,6 +11,7 @@
 #include "drake/systems/plants/parser_urdf.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/plants/rigid_body_tree_construction.h"
 
 namespace drake {
 namespace examples {
@@ -35,7 +36,7 @@ class Quadrotor : public systems::Diagram<T> {
         drake::GetDrakePath() + "/examples/Quadrotor/warehouse.sdf",
         systems::plants::joints::kFixed, nullptr, tree.get());
 
-    AddGround(tree.get());
+    drake::systems::plants::AddFlatTerrainToWorld(tree.get());
 
     systems::DiagramBuilder<T> builder;
 
@@ -56,26 +57,6 @@ class Quadrotor : public systems::Diagram<T> {
     builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
 
     builder.BuildInto(this);
-  }
-
-  // TODO(foehnph): duplicated, refactor into single location.
-  void AddGround(RigidBodyTree<T>* tree) {
-    double kBoxWidth = 1000;
-    double kBoxDepth = 10;
-    DrakeShapes::Box geom(Eigen::Vector3d(kBoxWidth, kBoxWidth, kBoxDepth));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -kBoxDepth / 2.0;  // Top of the box is at z = 0.
-
-    RigidBody& world = tree->world();
-    Eigen::Vector4d color;
-    color << 0.9297, 0.7930, 0.6758, 1;
-    world.AddVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    tree->addCollisionElement(
-        DrakeCollision::Element(geom, T_element_to_link, &world), world,
-        "terrain");
-    tree->updateStaticCollisionElements();
   }
 
   void SetDefaultState(systems::Context<T>* context) const {

@@ -47,6 +47,10 @@ class AffineSystem : public LeafSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& C,
                const Eigen::Ref<const Eigen::MatrixXd>& D,
                const Eigen::Ref<const Eigen::VectorXd>& y0);
+
+  // System<T> override.
+  AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const override;
+
   /// The input to this system is direct feedthrough only if the coefficient
   /// matrix `D` is non-zero.
   bool has_any_direct_feedthrough() const override { return !D_.isZero(); }

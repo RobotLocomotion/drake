@@ -120,7 +120,7 @@ This section is a quick-reference manual for the on-call build cop.
 
 Monitor the Build
 ^^^^^^^^^^^^^^^^^
-Check the `Continuous <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
+Check the `Continuous Production <https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/>`_
 build dashboard in Jenkins at least once an hour during on-call hours. These
 builds run after every merge to Drake. Also check the
 `Nightly Production <https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/>`_

@@ -5,7 +5,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
@@ -30,7 +29,7 @@ namespace solvers {
  * implementation assumes that all constraints and costs are
  * time-invariant.
  */
-class DRAKE_EXPORT DirectTrajectoryOptimization {
+class DirectTrajectoryOptimization {
  public:
   /**
    * Adds a dynamic constraint to be applied to each pair of

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_export.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
 
@@ -15,8 +14,7 @@ namespace solvers {
  * DirectTrajectoryOptimization are the addition of running costs and
  * dynamic constraints.
  */
-class DRAKE_EXPORT DircolTrajectoryOptimization
-    : public DirectTrajectoryOptimization {
+class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
  public:
   DircolTrajectoryOptimization(int num_inputs, int num_states,
                                int num_time_samples,

@@ -3,18 +3,19 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
-namespace automotive {
+namespace systems {
+namespace plants {
 
 /**
- * Adds a box-shaped terrain to the specified rigid body tree. This directly
- * modifies the existing world rigid body within @p rigid_body_tree and thus
- * does not need to return a model name or model_instance_id value.
+ * Adds a box-shaped terrain to @p tree. This directly modifies the existing
+ * world rigid body within @p tree and thus does not need to return a
+ * `model_instance_id` value.
  *
- * Two opposite corners of the resulting axis aligned box are:
+ * Two opposite corners of the resulting axis-aligned box are:
  * `(box_size / 2, box_size / 2, 0)` and
  * `(-box_size / 2, -box_size / 2, -box_depth)`.
  *
- * @param[in] tree The RigidBodyTree to which to add the terrain.
+ * @param[in] tree The RigidBodyTreed to which to add the terrain.
  *
  * @param[in] box_size The length and width of the terrain aligned with the
  * world's X and Y axes.
@@ -26,5 +27,6 @@ namespace automotive {
 void AddFlatTerrainToWorld(RigidBodyTreed* tree,
                            double box_size = 1000, double box_depth = 10);
 
-}  // namespace automotive
+}  // namespace plants
+}  // namespace systems
 }  // namespace drake

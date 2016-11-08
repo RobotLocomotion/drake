@@ -5,7 +5,6 @@
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_state.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

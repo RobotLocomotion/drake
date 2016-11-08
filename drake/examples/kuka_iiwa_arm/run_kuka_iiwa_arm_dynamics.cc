@@ -14,6 +14,7 @@
 #include "drake/systems/plants/parser_model_instance_id_table.h"
 #include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/plants/rigid_body_tree_construction.h"
 
 using std::make_unique;
 using std::move;
@@ -56,7 +57,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
             drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
             kFixed, nullptr /* weld to frame */, tree.get());
 
-    AddGround(tree.get());
+    drake::systems::plants::AddFlatTerrainToWorld(tree.get());
 
     DiagramBuilder<T> builder;
 

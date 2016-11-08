@@ -121,8 +121,8 @@ void PidController<T>::set_integral_value(
   integrator_->set_integral_value(integrator_context, value);
 }
 
-template class DRAKE_EXPORT PidController<double>;
-template class DRAKE_EXPORT PidController<AutoDiffXd>;
+template class PidController<double>;
+template class PidController<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

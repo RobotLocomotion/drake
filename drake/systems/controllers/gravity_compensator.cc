@@ -34,9 +34,9 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   System<T>::GetMutableOutputVector(output, 0) = g;
 }
 
-template class DRAKE_EXPORT GravityCompensator<double>;
+template class GravityCompensator<double>;
 // TODO(naveenoid): Get the AutoDiff working as in the line below.
-// template class DRAKE_EXPORT GravityCompensator<AutoDiffXd>;
+// template class GravityCompensator<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
