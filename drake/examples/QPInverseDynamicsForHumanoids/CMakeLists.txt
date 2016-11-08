@@ -12,15 +12,9 @@ target_link_libraries(drakeQPController
   drakeRBSystem
   drakeSide)
 
-drake_find_package(gurobi PKG_CONFIG)
-if(gurobi_FOUND)
-  drake_add_cc_test(NAME valkyrie_balancing_test SIZE medium)
-  target_link_libraries(valkyrie_balancing_test
-    drakeQPController
-    GTest::GTest GTest::Main)
-endif()
-
 if(lcm_FOUND)
+  set_source_files_properties(lcm_utils.cc
+  PROPERTIES COMPILE_FLAGS -g)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
   target_link_libraries(drakeQPControllerLcmTranslator
     drakeLCMTypes
@@ -28,9 +22,4 @@ if(lcm_FOUND)
     lcmtypes_bot2-core-cpp)
 endif()
 
-drake_add_cc_test(NAME setpoint_test)
-target_link_libraries(setpoint_test
-  drakeQPController
-  GTest::GTest GTest::Main)
-
-add_subdirectory(system)
+add_subdirectory(tests)

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
@@ -17,15 +17,13 @@ using systems::Value;
 
 /**
  * A translator from bot_core::robot_state_t to HumanoidStatus
- * TODO(siyuan): Hook this to lcm when switching to the real simulator.
  *
  * Input: lcm message bot_core::robot_state_t
  * Output: HumanoidStatus
  */
-class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
+class RobotStateDecoderSystem : public systems::LeafSystem<double> {
  public:
-  explicit RobotStateMsgToHumanoidStatusSystem(
-      const RigidBodyTree<double>& robot)
+  explicit RobotStateDecoderSystem(const RigidBodyTree<double>& robot)
       : robot_(robot) {
     input_port_index_lcm_msg_ =
         DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
@@ -45,15 +43,16 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
         output->GetMutableData(output_port_index_humanoid_status_)
             ->GetMutableValue<HumanoidStatus>();
 
-    Eigen::VectorXd pos(hum_status.position().size());
-    Eigen::VectorXd vel(hum_status.velocity().size());
-    Eigen::VectorXd joint_torque(hum_status.joint_torque().size());
-    Eigen::Vector6d l_foot_wrench, r_foot_wrench;
+    VectorX<double> pos(hum_status.position().size());
+    VectorX<double> vel(hum_status.velocity().size());
+    VectorX<double> joint_torque(hum_status.joint_torque().size());
+    Vector6<double> l_foot_wrench, r_foot_wrench;
     double time;
 
     DecodeRobotStateLcmMsg(*msg, hum_status.name_to_position_index(), &time,
                            &pos, &vel, &joint_torque, &l_foot_wrench,
                            &r_foot_wrench);
+
     hum_status.Update(time, pos, vel, joint_torque, l_foot_wrench,
                       r_foot_wrench);
   }

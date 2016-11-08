@@ -12,24 +12,24 @@ namespace qp_inverse_dynamics {
 // in the angle of rotation.
 GTEST_TEST(testQPInverseDynamicsController, testPoseSetpoint) {
   // Desired values are specified with suffix "_d"
-  Eigen::Isometry3d pose_d = Eigen::Isometry3d::Identity();
+  Isometry3<double> pose_d = Isometry3<double>::Identity();
   double ang_d = 0.3;
-  Eigen::Vector3d vec_d(-0.3, 0.6, 0.9);
+  Vector3<double> vec_d(-0.3, 0.6, 0.9);
   vec_d.normalize();
   // Desired orientation
-  pose_d.linear() = Eigen::Matrix3d(Eigen::AngleAxisd(ang_d, vec_d));
+  pose_d.linear() = Matrix3<double>(AngleAxis<double>(ang_d, vec_d));
 
   // Set Kp to 1, and everything else to zeros, so the computed acceleration
   // is the rotation difference.
   CartesianSetpoint<double> setpoint(
       pose_d, Vector6<double>::Zero(), Vector6<double>::Zero(),
       Vector6<double>::Constant(1), Vector6<double>::Zero());
-  Eigen::Isometry3d pose = pose_d;
+  Isometry3<double> pose = pose_d;
   Vector6<double> acc, expected;
   expected.setZero();
 
   for (double ang = ang_d; ang < ang_d + 2 * M_PI + 0.1; ang += 0.1) {
-    pose.linear() = Eigen::Matrix3d(Eigen::AngleAxisd(ang, vec_d));
+    pose.linear() = Matrix3<double>(AngleAxis<double>(ang, vec_d));
     acc = setpoint.ComputeTargetAcceleration(pose, Vector6<double>::Zero());
 
     double err = ang_d - ang;
