@@ -388,8 +388,11 @@ class MathematicalProgram {
   /**
    * Add continuous variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
@@ -430,8 +433,11 @@ class MathematicalProgram {
   /**
    * Add binary variables, appending them to an internal vector of any
    * existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
@@ -1439,8 +1445,11 @@ class MathematicalProgram {
   /**
    * Add variables to MathematicalProgram.
    * Appending new variables to an internal vector of any existing vars.
-   * The new variables are uninitialized: callers are expected to add costs
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
    * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @param rows, number of rows in the variables.
    * @param cols, number of cols in the variables.
    * @param name A vector containing the name of each variable.
