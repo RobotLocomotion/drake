@@ -6,17 +6,15 @@ PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
   const MatrixXd& traj, const std::vector<double>& times)
 {
   typedef PiecewisePolynomial<double> PPType;
-  typedef PPType::PolynomialType PolynomialOfDouble;
-  typedef PPType::PolynomialMatrix PolyMatrixOfDouble;
 
-  std::vector<PolyMatrixOfDouble> polys;
+  std::vector<PPType::PolynomialMatrix> polys;
   std::vector<double> segment_times;
   int num_time_steps = times.size();
   // For each timestep, creates a PolynomialMatrix for each joint position.
   // Each column of traj represents a particular time, and the rows of that
   // column contain values for each joint coordinate.
   for (int i = 0; i < num_time_steps; ++i) {
-    PolyMatrixOfDouble poly_matrix(traj.rows(), 1);
+    PPType::PolynomialMatrix poly_matrix(traj.rows(), 1);
     const auto traj_now = traj.col(i);
 
     // Produces interpolating polynomials for each joint coordinate.
@@ -30,7 +28,7 @@ PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
         // trajectory, this will be left 0.
         coeffs[1] = (traj(row, i + 1) - coeffs[0]) /
             (times.at(i+1) - times.at(i));
-        poly_matrix(row) = PolynomialOfDouble(coeffs);
+        poly_matrix(row) = PPType::PolynomialType(coeffs);
       }
       polys.push_back(poly_matrix);
     }
