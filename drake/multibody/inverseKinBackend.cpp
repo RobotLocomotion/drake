@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"

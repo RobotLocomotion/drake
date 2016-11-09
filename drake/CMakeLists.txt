@@ -39,6 +39,11 @@ else()
   find_package(PythonInterp MODULE REQUIRED)
 endif()
 
+find_package(BLAS MODULE)
+find_package(Doxygen MODULE)
+find_package(Perl MODULE)
+find_package(Threads MODULE REQUIRED)
+
 # set up pods
 include(../cmake/pods.cmake)
 
@@ -113,9 +118,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_DONT_DEFINE_TEST=1")
 set(drake_jar_javafiles matlab/util/Transform.java)
 set(drake_jar_requires)
 
-include(../cmake/procman.cmake)  # helper script for writing procman files
-
-find_package(Threads MODULE REQUIRED)
 
 # set up and build lcm types
 if(lcm_FOUND)

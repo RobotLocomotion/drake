@@ -44,6 +44,16 @@ class TestSystem : public LeafSystem<double> {
   void EvalTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
+
+  std::unique_ptr<Parameters<double>> AllocateParameters() const override {
+    return std::make_unique<Parameters<double>>(
+        BasicVector<double>::Make({13.0, 7.0}));
+  }
+
+  const BasicVector<double>& GetVanillaNumericParameters(
+      const Context<double>& context) const {
+    return this->GetNumericParameter(context, 0 /* index */);
+  }
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -63,7 +73,7 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
 
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
-TEST_F(LeafSystemTest, OFfsetHasNotArrivedYet) {
+TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   context_.set_time(2.0);
   UpdateActions<double> actions;
   system_.AddPeriodicUpdate();
@@ -111,6 +121,16 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, actions.time);
   ASSERT_EQ(1u, actions.events.size());
   EXPECT_EQ(DiscreteEvent<double>::kUpdateAction, actions.events[0].action);
+}
+
+// Tests that the leaf system reserved the declared Parameters with default
+// values.
+TEST_F(LeafSystemTest, Parameters) {
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const BasicVector<double>& vec =
+      system_.GetVanillaNumericParameters(*context);
+  EXPECT_EQ(13.0, vec[0]);
+  EXPECT_EQ(7.0, vec[1]);
 }
 
 // Tests that the leaf system reserved the declared continuous state, of
