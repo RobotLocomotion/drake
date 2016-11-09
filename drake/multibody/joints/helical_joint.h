@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/joints/FixedAxisOneDoFJoint.h"
+#include "drake/multibody/joints/fixed_axis_one_dof_joint.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"

@@ -8,8 +8,8 @@
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/QuaternionFloatingJoint.h"
-#include "drake/multibody/joints/RevoluteJoint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {

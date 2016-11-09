@@ -1,4 +1,4 @@
-#include "drake/multibody/joints/RevoluteJoint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 
 using Eigen::Vector3d;
 

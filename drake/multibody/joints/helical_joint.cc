@@ -1,4 +1,4 @@
-#include "drake/multibody/joints/HelicalJoint.h"
+#include "drake/multibody/joints/helical_joint.h"
 
 using Eigen::Vector3d;
 

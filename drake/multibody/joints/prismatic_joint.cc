@@ -1,4 +1,4 @@
-#include "drake/multibody/joints/PrismaticJoint.h"
+#include "drake/multibody/joints/prismatic_joint.h"
 
 using Eigen::Vector3d;
 

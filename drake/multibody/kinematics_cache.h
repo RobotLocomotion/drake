@@ -16,7 +16,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body.h"
-#include "drake/multibody/joints/DrakeJoint.h"
+#include "drake/multibody/joints/drake_joint.h"
 
 template <typename Scalar>
 class KinematicsCacheElement {

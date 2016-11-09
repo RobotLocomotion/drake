@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/math/gradient.h"
-#include "drake/multibody/joints/DrakeJoint.h"
+#include "drake/multibody/joints/drake_joint.h"
 
 /// @cond
 

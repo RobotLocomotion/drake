@@ -9,7 +9,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/shapes/geometry.h"
 
 namespace drake {

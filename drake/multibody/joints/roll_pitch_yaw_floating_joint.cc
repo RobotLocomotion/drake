@@ -1,4 +1,4 @@
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 #include <random>
 

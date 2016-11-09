@@ -1,4 +1,4 @@
-#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/fixed_joint.h"
 
 std::string FixedJoint::get_position_name(int index) const {
   throw std::runtime_error("bad index");

@@ -14,7 +14,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/drake_export.h"
 #include "drake/multibody/collision/drake_collision.h"
-#include "drake/multibody/joints/DrakeJoint.h"
+#include "drake/multibody/joints/drake_joint.h"
 
 class DRAKE_EXPORT RigidBody {
  public:

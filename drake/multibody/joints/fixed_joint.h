@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/joints/DrakeJointImpl.h"
+#include "drake/multibody/joints/drake_joint_impl.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
