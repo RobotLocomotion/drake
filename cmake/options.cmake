@@ -200,6 +200,10 @@ macro(drake_setup_options)
     DEPENDS "HAVE_BOT_CORE_LCMTYPES"
     "robotlocomotion LCM types")
 
+  drake_system_dependency(VTK REQUIRES VTK VERSION 5.8
+    DEPENDS "WITH_DIRECTOR"
+    "Visualization ToolKit")
+
   drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
     "C++ library for reading and writing YAML configuration files")
 
