@@ -10,7 +10,7 @@
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
 #include <Eigen/Dense>
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include <cstdio>
 
