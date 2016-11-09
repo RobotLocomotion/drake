@@ -351,6 +351,38 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
+void RigidBodyPlant<T>::DoMapConfigurationDerivativesToVelocity(
+    const Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    VectorBase<T>* generalized_velocity) const {
+  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
+  // LeafSystems.
+  auto x = dynamic_cast<const BasicVector<T>&>(
+      context.get_continuous_state_vector()).get_value();
+
+  const int nq = get_num_positions();
+  const int nv = get_num_velocities();
+  const int nstates = get_num_states();
+
+  DRAKE_ASSERT(configuration_dot.size() == nq);
+  DRAKE_ASSERT(generalized_velocity->size() == nv);
+  DRAKE_ASSERT(x.size() == nstates);
+
+  // TODO(amcastro-tri): we would like to compile here with `auto` instead of
+  // `VectorX<T>`. However it seems we get some sort of block from a block which
+  // is not instantiated in drakeRBM.
+  VectorX<T> q = x.topRows(nq);
+  VectorX<T> v = generalized_velocity;
+
+  // TODO(amcastro-tri): place kinematics cache in the context so it can be
+  // reused.
+  auto kinsol = tree_->doKinematics(q);
+
+  generalized_velocity->SetFromVector(
+      kinsol.transformPositionDotMappingToVelocityMapping(configuration_dot));
+}
+
+template <typename T>
 void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
     const Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,

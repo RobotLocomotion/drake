@@ -190,6 +190,12 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* positions_derivative) const override;
 
+// System<T> override.
+void DoMapConfigurationDerivativesToVelocity(
+    const Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    VectorBase<T>* generalized_velocity) const override;
+
  private:
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
