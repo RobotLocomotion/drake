@@ -61,7 +61,7 @@
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
-%include "drake/multibody/RigidBody.h"
+%include "drake/multibody/rigid_body.h"
 
 %include "drake/multibody/RigidBodyFrame.h"
 

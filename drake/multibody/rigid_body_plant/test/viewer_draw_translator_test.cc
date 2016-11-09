@@ -8,7 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/RigidBody.h"
+#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
 

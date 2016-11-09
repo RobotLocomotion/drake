@@ -17,7 +17,7 @@
 #include "drake/multibody/ForceTorqueMeasurement.h"
 #include "drake/multibody/KinematicPath.h"
 #include "drake/multibody/KinematicsCache.h"
-#include "drake/multibody/RigidBody.h"
+#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/RigidBodyFrame.h"
 #include "drake/multibody/collision/DrakeCollision.h"
 #include "drake/multibody/joints/floating_base_types.h"

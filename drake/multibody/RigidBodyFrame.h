@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/RigidBody.h"
+#include "drake/multibody/rigid_body.h"
 
 namespace tinyxml2 {
 class XMLElement;

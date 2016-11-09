@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/RigidBody.h"
+#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/FixedJoint.h"
 #include "drake/multibody/joints/QuaternionFloatingJoint.h"
 
