@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "constructPtrrigid_body_constraint.h"
+#include "constructPtrRigidBodyConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
