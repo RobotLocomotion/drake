@@ -12,7 +12,7 @@ using std::endl;
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    cerr << "Usage: urdfManipulatorDynamicsTest urdf_filename" << endl;
+    cerr << "Usage: urdf_manipulator_dynamics_test urdf_filename" << endl;
     exit(-1);
   }
   auto model =

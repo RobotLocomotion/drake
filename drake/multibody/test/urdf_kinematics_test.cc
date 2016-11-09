@@ -9,7 +9,7 @@ using std::endl;
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    cerr << "Usage: urdfKinTest urdf_filename" << endl;
+    cerr << "Usage: urdf_kinematics_test urdf_filename" << endl;
     exit(-1);
   }
   RigidBodyTree<double>* model = new RigidBodyTree<double>(argv[1]);
