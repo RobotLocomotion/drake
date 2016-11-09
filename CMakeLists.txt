@@ -326,8 +326,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
     yaml_cpp
 )
 
-option(USE_SYSTEM_VTK "Whether to use the system's VTK." ON)
-
 # director
 drake_add_external(director PUBLIC CMAKE TEST
   SOURCE_SUBDIR distro/superbuild
