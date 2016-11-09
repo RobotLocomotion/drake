@@ -13,7 +13,6 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/kinematic_path.h"
