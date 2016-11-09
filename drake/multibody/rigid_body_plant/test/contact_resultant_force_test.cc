@@ -1,5 +1,5 @@
-#include "drake/systems/plants/rigid_body_plant/contact_force.h"
-#include "drake/systems/plants/rigid_body_plant/contact_resultant_force_calculator.h"
+#include "drake/multibody/rigid_body_plant/contact_force.h"
+#include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 
 #include <gtest/gtest.h>
 

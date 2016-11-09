@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/contact_force.h"
+#include "drake/multibody/rigid_body_plant/contact_force.h"
 #include <drake/common/drake_assert.h>
 
 namespace drake {
