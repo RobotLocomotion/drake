@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/eigen_stl_types.h"
 
 template <typename Key, typename T>
 using eigen_aligned_unordered_map
@@ -198,4 +198,6 @@ void lqr(Eigen::MatrixBase<DerivedA> const& A,
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   care(A, B, Q, R, S);
   K = R_cholesky.solve(B.transpose() * S);
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R matrix must be positive-definite");
 }

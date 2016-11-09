@@ -25,8 +25,7 @@ std::unique_ptr<systems::AffineSystem<double>> TimeInvariantLqr(
       CompareMatrices(Q, Q.transpose(), 1e-10, MatrixCompareType::absolute));
   DRAKE_ASSERT(
       CompareMatrices(R, R.transpose(), 1e-10, MatrixCompareType::absolute));
-  // Note: the lqr method will throw an exception of Q is not PSD or R is not
-  // PD.
+  // TODO(russt): Confirm behavior if Q is not PSD.
 
   auto linear_system = Linearize(system, context);
 

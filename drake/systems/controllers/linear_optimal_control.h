@@ -23,6 +23,8 @@ namespace systems {
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
+/// @throws std::runtime_error if R is not positive definite.
+///
 
 std::unique_ptr<systems::AffineSystem<double>> TimeInvariantLqr(
     const System<double>& system, const Context<double>& context,

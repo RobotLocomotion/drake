@@ -11,7 +11,7 @@ namespace examples {
 namespace pendulum {
 namespace {
 
-GTEST_TEST(urdfDynamicsTest, AllTests) {
+GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto tree = std::make_unique<RigidBodyTree<double>>(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
       systems::plants::joints::kFixed);
@@ -29,7 +29,7 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto xdot_rbp = rbp.AllocateTimeDerivatives();
   auto xdot_p = p.AllocateTimeDerivatives();
 
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 100; ++i) {
     x = Eigen::Vector2d::Random();
     u = Vector1d::Random();
 
