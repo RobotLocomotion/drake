@@ -12,7 +12,7 @@
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace DrakeRigidBodyConstraint {

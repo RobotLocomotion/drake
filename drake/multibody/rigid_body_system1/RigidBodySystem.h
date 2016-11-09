@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"

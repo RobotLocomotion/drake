@@ -1,6 +1,6 @@
 #include "drake/systems/controllers/gravity_compensator.h"
 
-#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {

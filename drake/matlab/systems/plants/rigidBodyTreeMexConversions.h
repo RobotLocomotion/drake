@@ -2,8 +2,8 @@
 
 #include "drake/matlab/util/mexify.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/KinematicsCache.h"
-#include "drake/multibody/KinematicPath.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematic_path.h"
 
 template <typename T>
 struct DrakeMexPointerTypeId {

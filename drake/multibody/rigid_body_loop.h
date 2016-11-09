@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/RigidBodyFrame.h"
+#include "drake/multibody/rigid_body_frame.h"
 
 /**
  * Defines a "loop joint" that models a kinematic loop formed by a chain

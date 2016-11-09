@@ -14,7 +14,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_urdf.cc
   rigid_body_tree.cc
   rigid_body.cc
-  RigidBodyTreeContact.cpp
+  rigid_body_tree_contact.cc
   rigid_body_actuator.cc
   rigid_body_frame.cc
   rigid_body_loop.cc
@@ -26,12 +26,12 @@ pods_install_libraries(drakeRBM)
 drake_install_headers(
   constraint_wrappers.h
   force_torque_measurement.h
-  KinematicPath.h
-  KinematicsCache.h
+  kinematic_path.h
+  kinematics_cache.h
   material_map.h
   pose_map.h
   rigid_body_actuator.h
-  RigidBodyFrame.h
+  rigid_body_frame.h
   rigid_body.h
   rigid_body_tree.h
   parser_model_instance_id_table.h
