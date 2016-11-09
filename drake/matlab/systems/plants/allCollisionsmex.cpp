@@ -4,7 +4,7 @@
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/multibody/RigidBodyTree.h"
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;

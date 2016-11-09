@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <utility>
 
-#include "spruce.hh"
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/constraint_wrappers.h"
@@ -18,6 +17,8 @@
 #include "drake/multibody/pose_map.h"
 #include "drake/multibody/xmlUtil.h"
 #include "drake/solvers/mathematical_program.h"
+
+#include "spruce.hh"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix;

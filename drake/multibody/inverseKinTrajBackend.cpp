@@ -6,18 +6,17 @@
 
 #include <Eigen/Core>
 
-#include <drake/common/drake_assert.h>
-#include <drake/math/autodiff.h>
-#include <drake/math/autodiff_gradient.h>
-#include <drake/math/gradient.h>
-#include <drake/solvers/constraint.h>
-#include <drake/solvers/mathematical_program.h>
-#include <drake/multibody/constraint/RigidBodyConstraint.h>
-#include <drake/multibody/constraint_wrappers.h>
-#include <drake/multibody/IKoptions.h>
-#include <drake/multibody/RigidBodyTree.h>
-
+#include "drake/common/drake_assert.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/gradient.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/ik_trajectory_helper.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

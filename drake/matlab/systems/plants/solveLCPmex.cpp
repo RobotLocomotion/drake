@@ -7,7 +7,7 @@
 #include "drake/multibody/RigidBodyTree.h"
 #include "drake/solvers/fast_qp.h"
 #include <sstream>
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;

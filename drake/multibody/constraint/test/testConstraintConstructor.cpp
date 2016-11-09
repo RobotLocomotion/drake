@@ -3,7 +3,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/multibody/RigidBodyTree.h"
 
-#include "../RigidBodyConstraint.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 
 using std::cerr;
 using std::endl;
