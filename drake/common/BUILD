@@ -35,18 +35,21 @@ cc_library(
     name = "autodiff",
     hdrs = ["eigen_autodiff_types.h"],
     deps = DEPS, linkstatic = 1)
+
 cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = ["polynomial.h", "trig_poly.h"],
     deps = DEPS + [":autodiff"],
     linkstatic = 1)
+
 cc_library(
     name = "symbolic",
     srcs = [
@@ -74,18 +77,21 @@ cc_library(
     testonly = 1,
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "eigen_matrix_compare",
     hdrs = ["eigen_matrix_compare.h"],
     testonly = 1,
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],

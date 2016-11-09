@@ -31,6 +31,8 @@ set(installed_headers
   quaternion.h
   random_rotation.h
   roll_pitch_yaw.h
+  roll_pitch_yaw_using_quaternion.h
+  roll_pitch_yaw_not_using_quaternion.h
   rotation_conversion_gradient.h
   rotation_matrix.h)
 

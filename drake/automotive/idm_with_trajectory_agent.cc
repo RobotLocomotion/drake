@@ -64,16 +64,11 @@ void IdmWithTrajectoryAgent<T>::EvalTimeDerivatives(
       dynamic_cast<IdmWithTrajectoryAgentState<T>*>(derivatives_state);
   DRAKE_ASSERT(new_derivatives != nullptr);
 
-  // Taken from https://en.wikipedia.org/wiki/Intelligent_driver_model.
-  IdmWithTrajectoryAgentParameters<T> params;
-  params.set_a(T(1.0));  // max acceleration.
-  params.set_b(T(3.0));  // comfortable braking deceleration.
-  params.set_v_0(T(50.0));  // desired velocity in free traffic.
-  params.set_s_0(T(1.0));  // minimum desired net distance.
-  params.set_time_headway(T(0.1));  // desired time headway to vehicle in front.
-  params.set_delta(T(4.0));  // recommended choice of free-road exponent.
-  params.set_l_a(T(4.5));  // length of leading car.
-
+  // Obtain the parameters.
+  const int kParamsIndex = 0;
+  const IdmWithTrajectoryAgentParameters<T>& params =
+      this->template GetNumericParameter<IdmWithTrajectoryAgentParameters>(
+          context, kParamsIndex);
   const T& a = params.a();
   const T& b = params.b();
   const T& v_0 = params.v_0();
@@ -110,6 +105,21 @@ std::unique_ptr<systems::BasicVector<T>>
 IdmWithTrajectoryAgent<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
   return std::make_unique<IdmWithTrajectoryAgentState<T>>();
+}
+
+template <typename T>
+std::unique_ptr<systems::Parameters<T>>
+IdmWithTrajectoryAgent<T>::AllocateParameters() const {
+  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
+  auto params = std::make_unique<IdmWithTrajectoryAgentParameters<T>>();
+  params->set_a(T(1.0));  // max acceleration.
+  params->set_b(T(3.0));  // comfortable braking deceleration.
+  params->set_v_0(T(50.0));  // desired velocity in free traffic.
+  params->set_s_0(T(1.0));  // minimum desired net distance.
+  params->set_time_headway(T(0.1));  // desired time headway to lead vehicle.
+  params->set_delta(T(4.0));  // recommended choice of free-road exponent.
+  params->set_l_a(T(4.5));  // length of leading car.
+  return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
 // These instantiations must match the API documentation in

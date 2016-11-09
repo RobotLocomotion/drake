@@ -3,9 +3,9 @@
 #include <iostream>
 #include <cmath>
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/multibody/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;
