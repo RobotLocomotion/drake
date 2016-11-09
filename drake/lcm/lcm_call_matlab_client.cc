@@ -7,12 +7,13 @@
 
 #include "drake/lcmt_call_matlab.hpp"
 
-/// Mex client for matlab feval
+// Mex client for matlab feval
 
 void flushMatlabEventBuffer(void) {
   // an ugly hack.  drawnow used to work, but the internet confirms that it
   // stopped working around R2015.
-  mexEvalString("pause(.001);");
+  static mxArray* time = mxCreateDoubleScalar(0.001);
+  mexCallMATLAB(0, nullptr, 1, &time, "pause");
 }
 
 class Handler {
@@ -20,7 +21,8 @@ class Handler {
   // which calls mxDestroyArray
 
  public:
-  ~Handler() {}
+  ~Handler() {}  // Note: could mxDestroyArray the client_vars_, but this method
+                 // will never actually be called.
 
   void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan,
                      const drake::lcmt_call_matlab* msg) {
@@ -72,6 +74,10 @@ class Handler {
       }
     }
 
+    // TODO(russt): zap any old variables that will be overwritten by this call
+    // (should only happen w/ probability -> 0, but my initial attempts
+    // generated segfaults)
+
     // Make the actual call to MATLAB.
     mexCallMATLAB(static_cast<int>(lhs.size()), lhs.data(),
                   static_cast<int>(rhs.size()), rhs.data(),
@@ -79,10 +85,6 @@ class Handler {
 
     // Assign any local variables that were returned by this call.
     for (i = 0; i < msg->nlhs; i++) {
-      // Note: feels like I'm leaking memory here if msg->lhs[i] exists, but
-      // https://www.mathworks.com/help/matlab/apiref/mxdestroyarray.html
-      // clearly states that you should not call it on left-side arguments
-      // (and in practice I get a segfault when I do).
       client_vars_[msg->lhs[i]] = lhs[i];
     }
 
