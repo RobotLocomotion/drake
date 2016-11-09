@@ -85,17 +85,17 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   // There is interpolation between points in the input matrix (traj_matrix),
   // but in this test we test just at the knot points (times).
   // The output from value() is a vector of length = kNumJoints.
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(0), traj_matrix(0,0));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(1), traj_matrix(1,0));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(2), traj_matrix(2,0));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(0), traj_matrix(0, 0));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(1), traj_matrix(1, 0));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[0])(2), traj_matrix(2, 0));
 
   // Don't bother testing every knot point; just boundaries.
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[1])(2), traj_matrix(2,1));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[2])(2), traj_matrix(2,2));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[1])(2), traj_matrix(2, 1));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[2])(2), traj_matrix(2, 2));
 
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(0), traj_matrix(0,3));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(1), traj_matrix(1,3));
-  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(2), traj_matrix(2,3));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(0), traj_matrix(0, 3));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(1), traj_matrix(1, 3));
+  EXPECT_EQ(kPpTrajFromMatrix.value(times[3])(2), traj_matrix(2, 3));
 }
 
 }  // namespace

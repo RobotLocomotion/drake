@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <vector>
 
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/trajectory.h"

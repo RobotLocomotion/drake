@@ -1,12 +1,13 @@
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
+#include <vector>
+
 using Eigen::MatrixXd;
 
 namespace drake {
 
 PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
-  const MatrixXd& trajectory_matrix, const std::vector<double>& times)
-{
+  const MatrixXd& trajectory_matrix, const std::vector<double>& times) {
   typedef PiecewisePolynomial<double> PPType;
 
   std::vector<PPType::PolynomialMatrix> polys;
