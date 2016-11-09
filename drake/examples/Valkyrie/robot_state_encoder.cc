@@ -169,9 +169,6 @@ void RobotStateEncoder::SetStateAndEfforts(const Context<double>& context,
 void RobotStateEncoder::SetForceTorque(const Context<double>& context,
                                        bot_core::robot_state_t* message) const {
   auto& force_torque = message->force_torque;
-  const int kTorqueXIndex = 0;
-  const int kTorqueYIndex = 1;
-  const int kForceZIndex = 5;
   {
     auto left_foot_wrench =
         EvalVectorInput(context, foot_wrench_port_indices_.at(Side::LEFT))

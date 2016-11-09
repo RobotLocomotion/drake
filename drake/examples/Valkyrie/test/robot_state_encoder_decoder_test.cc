@@ -148,10 +148,12 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   // Check left foot wrench.
   const auto& left_foot_wrench = foot_wrenches.at(Side::LEFT);
-  EXPECT_NEAR(force_torque.l_foot_torque_x, left_foot_wrench[0], tolerance);
-  EXPECT_NEAR(force_torque.l_foot_torque_y, left_foot_wrench[1], tolerance);
+  EXPECT_NEAR(force_torque.l_foot_torque_x,
+              left_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
+  EXPECT_NEAR(force_torque.l_foot_torque_y,
+              left_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
   EXPECT_NEAR(force_torque.l_foot_force_z,
-              left_foot_wrench[kSpaceDimension + 2], tolerance);
+              left_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
 
   // Check left hand wrench.
   const auto& left_hand_wrench = hand_wrenches.at(Side::LEFT);
@@ -163,10 +165,12 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   // Check right foot wrench.
   const auto& right_foot_wrench = foot_wrenches.at(Side::RIGHT);
-  EXPECT_NEAR(force_torque.r_foot_torque_x, right_foot_wrench[0], tolerance);
-  EXPECT_NEAR(force_torque.r_foot_torque_y, right_foot_wrench[1], tolerance);
+  EXPECT_NEAR(force_torque.r_foot_torque_x,
+              right_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
+  EXPECT_NEAR(force_torque.r_foot_torque_y,
+              right_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
   EXPECT_NEAR(force_torque.r_foot_force_z,
-              right_foot_wrench[kSpaceDimension + 2], tolerance);
+              right_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
 
   // Check right hand wrench.
   const auto& right_hand_wrench = hand_wrenches.at(Side::RIGHT);

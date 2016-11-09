@@ -17,6 +17,10 @@ namespace systems {
 /// message, presented on an output port.
 class DRAKE_EXPORT RobotStateEncoder final : public LeafSystem<double> {
  public:
+  static const size_t kTorqueXIndex = 0;
+  static const size_t kTorqueYIndex = 1;
+  static const size_t kForceZIndex = 5;
+
   explicit RobotStateEncoder(const RigidBodyTree<double>& tree);
 
   ~RobotStateEncoder() override;
