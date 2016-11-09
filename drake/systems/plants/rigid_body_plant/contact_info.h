@@ -23,7 +23,7 @@ namespace systems {
 
  Some forms of ContactDetail are more expensive than others. A contact response
  model may chose *not* to cache all of the details to save copying time and
- memory.  This beahvior is subjec to user configuration; the user *can*
+ memory.  This beahvior is subject to user configuration; the user *can*
  specify copying, even for expensive ContactDetail types.
 
  The resultant force and contact details, if they are included, are all defined

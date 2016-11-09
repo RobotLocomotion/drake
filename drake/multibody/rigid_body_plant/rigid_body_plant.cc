@@ -495,9 +495,9 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
               &contactInfo.get_mutable_contact_details());
 
           // This contact model produces responses that only have a force
-          //  component (i.e., the torque portion of the wrench is zero.)
-          //  In contrast, other models (e.g., torsional friction model) can
-          //  also introduce a "pure torque" component to the wrench.
+          // component (i.e., the torque portion of the wrench is zero.)
+          // In contrast, other models (e.g., torsional friction model) can
+          // also introduce a "pure torque" component to the wrench.
           Vector3<T> force = R.transpose() * fA;
           Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
 
