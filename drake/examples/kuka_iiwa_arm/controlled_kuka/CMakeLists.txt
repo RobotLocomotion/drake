@@ -13,6 +13,6 @@ if(lcm_FOUND)
   # find a solution.  See
   # https://github.com/RobotLocomotion/drake/issues/3710
   if(snopt_FOUND OR ipopt_FOUND)
-    add_test(NAME kuka_demo COMMAND kuka_demo)
+    drake_add_test(NAME kuka_demo COMMAND kuka_demo)
   endif()
 endif()
