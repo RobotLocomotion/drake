@@ -7,9 +7,9 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/plants/rigid_body_plant/contact_results.h"
 
 namespace drake {
 namespace systems {
