@@ -118,12 +118,14 @@ void RobotStateDecoder::EvalOutput(const Context<double>& context,
   // Non-floating joints.
   for (size_t i = 0; i < message.joint_name.size(); i++) {
     const auto& name = message.joint_name[i];
-    const RigidBody& body = *joint_name_to_body_.at(name);
-    double position = message.joint_position[i];
-    double velocity = message.joint_velocity[i];
-
-    q[body.get_position_start_index()] = position;
-    v[body.get_velocity_start_index()] = velocity;
+    const auto& it = joint_name_to_body_.find(name);
+    if (it != joint_name_to_body_.end()) {
+      const RigidBody& body = *(it->second);
+      double position = message.joint_position[i];
+      double velocity = message.joint_velocity[i];
+      q[body.get_position_start_index()] = position;
+      v[body.get_velocity_start_index()] = velocity;
+    }
   }
 
   kinematics_cache.initialize(q, v);

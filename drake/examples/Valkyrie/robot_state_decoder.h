@@ -13,7 +13,12 @@ namespace systems {
 // TODO(tkoolen): currently doesn't do anything with the efforts or wrenches in
 // the robot_state_t message.
 
-/// Converts a robot_state_t LCM message into a KinematicsCache object.
+/**
+ * Converts a robot_state_t LCM message into a KinematicsCache object.
+ *
+ * Note that a RobotStateDecoder simply ignores state information for joints
+ * that it doesn't know about.
+ */
 class DRAKE_EXPORT RobotStateDecoder : public LeafSystem<double> {
  public:
   explicit RobotStateDecoder(const RigidBodyTree<double>& tree);
