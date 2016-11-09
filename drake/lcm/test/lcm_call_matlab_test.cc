@@ -8,15 +8,18 @@
 // runs... the actual output must currently be verified by human inspection in
 // the matlab window.
 
+namespace drake {
+namespace lcm {
+
 GTEST_TEST(TestLcmCallMatlab, DispEigenMatrix) {
   Eigen::Matrix2d m;
   m << 1, 2, 3, 4;
-  lcm_call_matlab("disp", 0, m);
+  LcmCallMatlab("disp", 0, m);
 }
 
 GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
-  auto m = lcm_call_matlab("eye", 1, 2);
-  lcm_call_matlab("disp", 0, m[0]);  // should display eye(2)
+  auto m = LcmCallMatlab("eye", 1, 2);
+  LcmCallMatlab("disp", 0, m[0]);  // should display eye(2)
 }
 
 GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
@@ -28,9 +31,9 @@ GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
     val[i] = sin(2 * M_PI * time[i]);
   }
 
-  lcm_call_matlab("figure", 0, 1);
-  auto h = lcm_call_matlab("plot", 1, time, val);
-  lcm_call_matlab("set", 0, h[0], "Color", "r");
+  LcmCallMatlab("figure", 0, 1);
+  auto h = LcmCallMatlab("plot", 1, time, val);
+  LcmCallMatlab("set", 0, h[0], "Color", "r");
 }
 
 GTEST_TEST(TestLcmCallMatlab, MeshTest) {
@@ -51,6 +54,9 @@ GTEST_TEST(TestLcmCallMatlab, MeshTest) {
                 1.0 / 3.0 * exp(-pow(x(i) + 1, 2) - pow(y(j), 2));
     }
   }
-  lcm_call_matlab("figure", 0, 2);
-  lcm_call_matlab("surf", 0, x, y, Z);
+  LcmCallMatlab("figure", 0, 2);
+  LcmCallMatlab("surf", 0, x, y, Z);
 }
+
+}  // namespace lcm
+}  // namespace drake
