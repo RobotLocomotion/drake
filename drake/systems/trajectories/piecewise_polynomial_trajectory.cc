@@ -9,7 +9,7 @@ PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
 
   std::vector<PPType::PolynomialMatrix> polys;
   std::vector<double> segment_times;
-  int num_time_steps = times.size();
+  const int num_time_steps = times.size();
   // For each timestep, creates a PolynomialMatrix for each joint position.
   // Each column of traj represents a particular time, and the rows of that
   // column contain values for each joint coordinate.
@@ -27,7 +27,7 @@ PiecewisePolynomialTrajectory::PiecewisePolynomialTrajectory(
         // piece.  In the event that we're at the end of the
         // trajectory, this will be left 0.
         coeffs[1] = (traj(row, i + 1) - coeffs[0]) /
-            (times.at(i+1) - times.at(i));
+                    (times.at(i + 1) - times.at(i));
         poly_matrix(row) = PPType::PolynomialType(coeffs);
       }
       polys.push_back(poly_matrix);
