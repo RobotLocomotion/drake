@@ -7,6 +7,6 @@ pods_install_pkg_config_file(drake-rigid-body-constraint
   REQUIRES
   VERSION 0.0.1)
 
-add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
-target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint)
-drake_add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
