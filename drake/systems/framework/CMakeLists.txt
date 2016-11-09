@@ -91,4 +91,7 @@ pods_install_pkg_config_file(drake-system-framework
 
 #add_subdirectory(examples)
 add_subdirectory(primitives)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

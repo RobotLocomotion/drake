@@ -13,4 +13,6 @@ if(lcm_FOUND)
           VERSION 0.0.1)
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

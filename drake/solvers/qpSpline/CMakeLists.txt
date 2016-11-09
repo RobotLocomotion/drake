@@ -7,4 +7,6 @@ pods_install_pkg_config_file(drake-spline-generation
   REQUIRES
   VERSION 0.0.2)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

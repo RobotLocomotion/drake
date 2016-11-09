@@ -10,4 +10,7 @@ pods_install_pkg_config_file(drake-trajectories
   LIBS -ldrakeTrajectories
   REQUIRES
   VERSION 0.0.3)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

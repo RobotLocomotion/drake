@@ -3,4 +3,6 @@ drake_add_matlab_test(NAME examples/Glider/runLQR REQUIRES snopt spotless COMMAN
 drake_add_matlab_test(NAME examples/Glider/runPSM REQUIRES snopt COMMAND runPSM)
 drake_add_matlab_test(NAME examples/Glider/runPassive COMMAND runPassive)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

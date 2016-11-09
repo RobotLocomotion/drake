@@ -21,4 +21,6 @@ if(Matlab_FOUND)
   add_constraint_mex(updatePtrRigidBodyConstraintmex)
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

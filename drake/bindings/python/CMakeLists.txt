@@ -5,15 +5,17 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VE
   "def getDrakePath():\n"
   "    return os.path.realpath(os.path.join(os.path.dirname(__file__), '${path_from_python_install_to_drake}'))\n")
 
-function(drake_add_python_test module_name)
-  drake_add_test(NAME test_python_${module_name}
-    COMMAND ${PYTHON_EXECUTABLE} -m unittest ${module_name}
-    WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
-endfunction()
+if(BUILD_TESTING)
+  function(drake_add_python_test module_name)
+    drake_add_test(NAME test_python_${module_name}
+      COMMAND ${PYTHON_EXECUTABLE} -m unittest ${module_name}
+      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+  endfunction()
 
-if(snopt_FOUND)
-  drake_add_python_test(pydrake.test.testRBTIK)
-  drake_add_python_test(pydrake.test.testPR2IK)
+  if(snopt_FOUND)
+    drake_add_python_test(pydrake.test.testRBTIK)
+    drake_add_python_test(pydrake.test.testPR2IK)
+  endif()
+  drake_add_python_test(pydrake.test.testRBTTransformPoints)
+  drake_add_python_test(pydrake.test.testRBTCoM)
 endif()
-drake_add_python_test(pydrake.test.testRBTTransformPoints)
-drake_add_python_test(pydrake.test.testRBTCoM)

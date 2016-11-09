@@ -6,4 +6,6 @@ drake_add_matlab_test(NAME examples/CartPole/runPassive COMMAND runPassive)
 drake_add_matlab_test(NAME examples/CartPole/runSwingUp OPTIONAL snopt COMMAND runSwingUp)
 drake_add_matlab_test(NAME examples/CartPole/runTrajectorySwingUpAndBalance REQUIRES spotless OPTIONAL mosek sedumi snopt COMMAND runTrajectorySwingUpAndBalance)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

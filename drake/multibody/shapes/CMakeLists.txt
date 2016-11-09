@@ -1,8 +1,9 @@
 add_library_with_exports(LIB_NAME drakeShapes SOURCE_FILES Geometry.cpp Element.cpp VisualElement.cpp)
 target_link_libraries(drakeShapes spruce)
 
-#enable_testing()
-#add_subdirectory(test)
+# if(BUILD_TESTING)
+#   add_subdirectory(test)
+# endif()
 
 pods_install_libraries(drakeShapes)
 drake_install_headers(DrakeShapes.h Geometry.h Element.h VisualElement.h)

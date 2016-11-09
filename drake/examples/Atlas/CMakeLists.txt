@@ -48,4 +48,6 @@ drake_add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTe
 
 # drake_add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain REQUIRES iris mosek COMMAND runDRCPracticeTerrain SIZE large)  # FIXME: see #3149
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

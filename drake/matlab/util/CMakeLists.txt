@@ -102,4 +102,6 @@ endif()  # NOT WIN32
 
 add_subdirectory(geometry/test)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

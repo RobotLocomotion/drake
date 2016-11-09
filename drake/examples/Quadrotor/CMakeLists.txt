@@ -16,5 +16,8 @@ drake_add_matlab_test(NAME examples/Quadrotor/runDircolWObs REQUIRES bullet lcm 
 drake_add_matlab_test(NAME examples/Quadrotor/runLQR OPTIONAL bullet COMMAND runLQR)
 drake_add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest REQUIRES iris lcm libbot mosek yalmip OPTIONAL bullet snopt COMMAND runMixedIntegerSimpleForest SIZE large)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
 add_subdirectory(crazyflie)

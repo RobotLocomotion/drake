@@ -4,4 +4,6 @@ drake_add_matlab_test(NAME examples/UnderwaterAcrobot/runPassiveURDF OPTIONAL bu
 drake_add_matlab_test(NAME examples/UnderwaterAcrobot/runSwingUp OPTIONAL snopt COMMAND runSwingUp)
 drake_add_matlab_test(NAME examples/UnderwaterAcrobot/runURDFandAnalyticSoln OPTIONAL bullet COMMAND runURDFandAnalyticSoln)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

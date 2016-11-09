@@ -1,4 +1,6 @@
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 add_library_with_exports(LIB_NAME drakeBouncingBall SOURCE_FILES
   ball.cc

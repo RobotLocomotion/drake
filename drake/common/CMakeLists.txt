@@ -78,4 +78,6 @@ pods_install_pkg_config_file(drake-common
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
