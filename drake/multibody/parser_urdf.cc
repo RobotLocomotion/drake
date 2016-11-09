@@ -1009,11 +1009,12 @@ ModelInstanceIdTable ParseModel(RigidBodyTree<double>* tree, XMLElement* node,
 
       if (string(name_attr) == string(RigidBodyTree<double>::kWorldName)) {
         // Since a world link was specified within the URDF, there must be
-        // joint that connects the world to the robot's root node. The
+        // a  joint that connects the world to the robot's root node. The
         // following method parses the information contained within this
         // joint. The weld_to_frame transform, if not a nullptr, is updated
         // with the transform specified by this joint. If it is a nullptr,
-        // a shared_ptr is created initialized to this transform.
+        // a shared_ptr<RigidBodyFrame> is created and initialized to this
+        // transform.
         ParseWorldJoint(node, actual_floating_base_type, weld_to_frame);
       }
     }
