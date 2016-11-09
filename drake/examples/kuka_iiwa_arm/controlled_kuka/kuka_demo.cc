@@ -59,7 +59,7 @@ namespace kuka_iiwa_arm {
 namespace controlled_kuka {
 namespace {
 
-const string kUrdfPath {
+const char kUrdfPath[] {
     "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf" };
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
@@ -123,7 +123,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&tree);
-  int info[t.size()];
+  int info[kNumTimesteps];
   MatrixXd q_sol(tree.get_num_positions(), t.size());
   std::vector<std::string> infeasible_constraint;
 
