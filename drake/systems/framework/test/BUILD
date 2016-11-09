@@ -19,7 +19,6 @@ cc_test(
     linkstatic=1,
     testonly=1)
 
-
 cc_test(
     name = "modal_state_test",
     srcs = ["modal_state_test.cc"],
@@ -32,7 +31,6 @@ cc_test(
     size = "small",
     linkstatic=1,
     testonly=1)
-
 
 cc_test(
     name = "cache_test",
