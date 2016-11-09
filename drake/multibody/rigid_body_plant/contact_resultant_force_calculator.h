@@ -136,10 +136,22 @@ namespace systems {
 template <typename T>
 class DRAKE_EXPORT ContactResultantForceCalculator {
  public:
-  /** Default constructor. */
+  /** Default constructor -- no accumulation.  As contact forces are added to
+   the calculator, the force will be added to the set of forces for calculation,
+   but they will be destroyed when the calculator is destroyed.
+   */
   ContactResultantForceCalculator();
 
-  /** Accumulator constructor. */
+  /** Accumulator constructor.
+
+   This allows the caller to provide a structure in which the contact
+   forces/details can be persisted beyond the life span of the
+   ContactResultantForceCalculator instance.  See the various AddForce methods
+   for details on what is placed in the @p detail_accumulator.
+
+   @param detail_accumulator If non-null, ContactDetail instances will be stored
+   in the vector as they are assigned to the calculator.
+   */
   ContactResultantForceCalculator(
       std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
