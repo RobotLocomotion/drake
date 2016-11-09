@@ -11,7 +11,6 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -110,10 +109,9 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
-  // TODO(naveenoid): Explain here in a comment why kNumTimesteps = 5.
-  const int kNumTimesteps = 5;
   const std::vector<double> t { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  MatrixXd q0(tree.get_num_positions(), kNumTimesteps);
+  const int kNumTimesteps = t.size();
+  MatrixXd q0(tree.get_num_positions(), t.size());
   for (int i = 0; i < kNumTimesteps; ++i) {
     q0.col(i) = zero_conf;
   }
@@ -125,11 +123,11 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&tree);
-  int info[kNumTimesteps];
-  MatrixXd q_sol(tree.get_num_positions(), kNumTimesteps);
+  int info[t.size()];
+  MatrixXd q_sol(tree.get_num_positions(), t.size());
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, kNumTimesteps, &t[0], q0, q0,
+  inverseKinPointwise(&tree, t.size(), &t[0], q0, q0,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info, &infeasible_constraint);
   bool info_good = true;
@@ -146,8 +144,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  auto pp_traj = make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
-  return pp_traj;
+  return make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
 }
 
 // A model of a Kuka iiwa arm with position control using gravity compensation
