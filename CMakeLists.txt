@@ -326,6 +326,8 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
     yaml_cpp
 )
 
+option(USE_SYSTEM_VTK "Whether to use the system's VTK." ON)
+
 # director
 drake_add_external(director PUBLIC CMAKE TEST
   SOURCE_SUBDIR distro/superbuild
@@ -334,6 +336,7 @@ drake_add_external(director PUBLIC CMAKE TEST
     -DUSE_LCM=${HAVE_LCM}
     -DUSE_LCMGL=${HAVE_LIBBOT}
     -DUSE_SYSTEM_LCM=ON
+    -DUSE_SYSTEM_VTK=${USE_SYSTEM_VTK}
     -DUSE_EXTERNAL_INSTALL=ON
   INSTALL_COMMAND :
   DEPENDS bot_core_lcmtypes drake lcm libbot)
