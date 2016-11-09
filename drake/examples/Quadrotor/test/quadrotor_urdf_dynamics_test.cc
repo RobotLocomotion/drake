@@ -4,8 +4,8 @@
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
@@ -16,7 +16,7 @@ GTEST_TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
   rbsys.AddModelInstanceFromFile(
       GetDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-      drake::systems::plants::joints::kRollPitchYaw);
+      drake::multibody::joints::kRollPitchYaw);
 
   auto p = Quadrotor();
 

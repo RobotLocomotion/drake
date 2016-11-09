@@ -10,8 +10,7 @@
 namespace drake {
 namespace solvers {
 
-class DRAKE_EXPORT MosekSolver :
-    public MathematicalProgramSolverInterface {
+class MosekSolver : public MathematicalProgramSolverInterface {
  public:
   /** available()
   * Defined true if Mosek was included during compilation, false otherwise.

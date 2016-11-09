@@ -48,6 +48,12 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   this->DeclareContinuousState(num_states_);
 }
 
+// Setup equivalent system with a different scalar type.
+template <typename T>
+AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
+  return new AffineSystem<AutoDiffXd>(A_, B_, xDot0_, C_, D_, y0_);
+}
+
 template <typename T>
 const SystemPortDescriptor<T>& AffineSystem<T>::get_input_port() const {
   return System<T>::get_input_port(0);
@@ -94,8 +100,8 @@ void AffineSystem<T>::EvalTimeDerivatives(
   derivatives->SetFromVector(A_ * x + B_ * u + xDot0_);
 }
 
-template class DRAKE_EXPORT AffineSystem<double>;
-template class DRAKE_EXPORT AffineSystem<AutoDiffXd>;
+template class AffineSystem<double>;
+template class AffineSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

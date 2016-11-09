@@ -877,14 +877,14 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul2) {
   Eigen::Matrix<Expression, 2, 2> M_expected;
   // clang-format off
   M_expected <<
-    (x_ * x_ + (y_ * y_ + z_ * z_)),      (x_ + (-y_ + z_ * pi_)),
+    (x_ * x_ + (y_ * y_ + z_ * z_)),    (x_ + (-y_ + z_ * pi_)),
     (e_ * x_ + (pi_ * y_ + two_ * z_)), (e_ * one_ + pi_ * - one_ + two_ * pi_);
   // clang-format on
   EXPECT_EQ(M, M_expected);
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
-  auto const M = 2 * A_;
+  auto const M = 2.0 * A_;
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (2 * x_), (2 * one_),
@@ -895,7 +895,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul3) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
-  auto const M = A_ * 2;
+  auto const M = A_ * 2.0;
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ * 2), (one_ * 2),
@@ -906,7 +906,7 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
-  auto const M = A_ / 2;
+  auto const M = A_ / 2.0;
   Eigen::Matrix<Expression, 3, 2> M_expected;
   // clang-format off
   M_expected << (x_ / 2), (one_ / 2),

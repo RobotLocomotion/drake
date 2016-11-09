@@ -8,14 +8,31 @@
       <pose>0 0 0.378326 0 0 0</pose>
       <inertial>
        <pose>0 0 0 0 0 0</pose>
-        <mass>57.833</mass>
+      <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg)
+      based on the PDF linked below:
+      https://pressroom.toyota.com/releases/
+      toyota+2015+prius+product+specs.download -->
+
+      <!-- Our simplified model as of now assumes that only six links have
+      non-zero weight: the chassis_floor, the body, and the four wheels. The
+      chassis_floor's share of the curb weight is set to 1,360 kg, and the only
+      justification for this otherwise arbitrary value is to bring the center of
+      mass reasonably low.  -->
+
+      <!-- TODO(shensquared): Refine the weight distribution when the model is
+      of higher fidelity. -->
+        <mass>1360</mass>
+        <!-- The inertia is calculated by assuming that the chassis_floor link
+        is a cuboid, with its size as specified in the geometry/box/size tag below,
+        and then using the formula from
+        https://en.wikipedia.org/wiki/List_of_moments_of_inertia.-->
         <inertia>
-          <ixx>2.71553</ixx>
+          <ixx>63.858358934</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>68.9</iyy>
+          <iyy>940.662671467</iyy>
           <iyz>0</iyz>
-          <izz>71.6063</izz>
+          <izz>1004.304312533</izz>
         </inertia>
       </inertial>
       <visual name='main'>
@@ -104,7 +121,8 @@
     </link>
 
     <link name='left_wheel'>
-      <pose>1.40948 0.801993 0.3164819999999999855511135 1.570796326794896557998982 0 0</pose>
+      <pose>1.40948 0.801993 0.3164819999999999855511135
+        1.570796326794896557998982 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -117,7 +135,8 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 -.1075 0 1.570796326794896557998982 3.141592653589793115997963</pose>
+        <pose>0 0 -.1075 0 1.570796326794896557998982
+          3.141592653589793115997963</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -140,7 +159,8 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 -.1075 0 1.570796326794896557998982 1.570796326794896557998982</pose>
+        <pose>0 0 -.1075 0 1.570796326794896557998982
+          1.570796326794896557998982</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -151,8 +171,6 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -206,7 +224,8 @@
     </link>
 
     <link name='right_wheel'>
-      <pose>1.40948 -0.80198 0.3164819999999999855511135 1.570796326794896557998982 0 0</pose>
+      <pose>1.40948 -0.80198 0.3164819999999999855511135
+        1.570796326794896557998982 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -219,7 +238,8 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 .1075 0 1.570796326794896557998982 3.141592653589793115997963</pose>
+        <pose>0 0 .1075 0 1.570796326794896557998982
+          3.141592653589793115997963</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -242,7 +262,8 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 0.1075 0 1.570796326794896557998982 1.570796326794896557998982</pose>
+        <pose>0 0 0.1075 0 1.570796326794896557998982
+          1.570796326794896557998982</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -253,8 +274,6 @@
         </geometry>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -281,7 +300,8 @@
     </link>
 
     <link name='left_wheel_rear'>
-      <pose>-1.40948 0.8019899999999999806732376 0.323342 1.570796326794896557998982 0 0</pose>
+      <pose>-1.40948 0.8019899999999999806732376 0.323342
+        1.570796326794896557998982 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -294,7 +314,8 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 -.1075 0 1.570796326794896557998982 3.141592653589793115997963</pose>
+        <pose>0 0 -.1075 0 1.570796326794896557998982
+          3.141592653589793115997963</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -305,7 +326,8 @@
         </geometry>
       </visual>
       <visual name='m1'>
-        <pose>0 0 -.1075 0 1.570796326794896557998982 1.570796326794896557998982</pose>
+        <pose>0 0 -.1075 0 1.570796326794896557998982
+          1.570796326794896557998982</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -328,8 +350,6 @@
         </material>
       </visual>
       <collision name='wheel'>
-        <laser_retro>0</laser_retro>
-        <max_contacts>10</max_contacts>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -341,7 +361,8 @@
     </link>
 
     <link name='right_wheel_rear'>
-      <pose>-1.40948 -0.8019899999999999806732376 0.323342 1.570796326794896557998982 0 0</pose>
+      <pose>-1.40948 -0.8019899999999999806732376 0.323342
+        1.570796326794896557998982 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -354,7 +375,8 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 .1075 0 1.570796326794896557998982 3.141592653589793115997963</pose>
+        <pose>0 0 .1075 0 1.570796326794896557998982
+          3.141592653589793115997963</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -377,7 +399,8 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 .1075 0 1.570796326794896557998982 1.570796326794896557998982</pose>
+        <pose>0 0 .1075 0 1.570796326794896557998982
+          1.570796326794896557998982</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -402,21 +425,22 @@
       <pose>0 0 0.385184 0 0 0</pose>
       <inertial>
         <pose>0 0 0 0 0 0</pose>
-        <mass>5.42794</mass>
+        <mass>54.2794</mass>
+        <!-- TODO(shensquared): Work with Steve to verify the inertia values
+        below are reasonable. -->
         <inertia>
-          <ixx>0.00216238</ixx>
+          <ixx>0.0216238</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.500375</iyy>
+          <iyy>5.00375</iyy>
           <iyz>0</iyz>
-          <izz>0.501672</izz>
+          <izz>5.01672</izz>
         </inertia>
       </inertial>
       <visual name='visual'>
         <pose>-2.27 -0.91139 -0.21858 0 0 0</pose>
         <geometry>
           <mesh>
-            <!-- <uri>prius.dae</uri> -->
             <uri>prius.dae</uri>
           </mesh>
         </geometry>

@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 #include "gtest/gtest.h"

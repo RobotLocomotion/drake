@@ -3,7 +3,7 @@
 
 #include "drake/examples/Atlas/atlas_plant.h"
 #include "drake/system1/LCMSystem.h"
-#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/multibody/rigid_body_system1/BotVisualizer.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::SimulationOptions;

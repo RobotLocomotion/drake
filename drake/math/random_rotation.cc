@@ -22,17 +22,17 @@ Vector4d UniformlyRandomAxisAngle(std::default_random_engine& generator) {
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Vector4d UniformlyRandomQuat(std::default_random_engine& generator) {
-  return drake::math::axis2quat(UniformlyRandomAxisAngle(generator));
+  return axis2quat(UniformlyRandomAxisAngle(generator));
 }
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Matrix3d UniformlyRandomRotmat(std::default_random_engine& generator) {
-  return drake::math::axis2rotmat(UniformlyRandomAxisAngle(generator));
+  return axis2rotmat(UniformlyRandomAxisAngle(generator));
 }
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector3d UniformlyRandomRPY(std::default_random_engine& generator) {
-  return drake::math::axis2rpy(UniformlyRandomAxisAngle(generator));
+  return axis2rpy(UniformlyRandomAxisAngle(generator));
 }
 }  // namespace math
 }  // namespace drake
