@@ -9,7 +9,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/drake_export.h"
 #include "drake/systems/plants/KinematicsCache.h"

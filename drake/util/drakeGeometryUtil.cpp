@@ -1,6 +1,5 @@
 #include "drake/util/drakeGeometryUtil.h"
 
-#include <Eigen/Sparse>
 #include <stdexcept>
 
 #include "drake/math/axis_angle.h"
