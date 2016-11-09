@@ -1,4 +1,4 @@
-#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/ik_options.h"

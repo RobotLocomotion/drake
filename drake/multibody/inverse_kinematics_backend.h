@@ -28,7 +28,7 @@ namespace plants {
 // for determining which constraints were infeasible.  Once this is
 // fixed, we should restore functionality here.
 
-/// This function is primarily documented through RigidBodyIK.h.  All
+/// This function is primarily documented through rigid_body_ik.h.  All
 /// parameters are passthroughs from there.  The infeasible_constraint
 /// parameter is currently always empty untitl MathematicalProgram
 /// supports determining which constraints were infeasible.
@@ -43,7 +43,7 @@ void inverseKinBackend(RigidBodyTree<double> *model, const int nT,
                        Eigen::MatrixBase<DerivedC>* q_sol, int *info,
                        std::vector<std::string>* infeasible_constraint);
 
-/// This function is primarily documented through RigidBodyIK.h.  All
+/// This function is primarily documented through rigid_body_ik.h.  All
 /// parameters are passthroughs from inverseKinTraj().  The
 /// infeasible_constraint parameter is currently always empty untitl
 /// MathematicalProgram supports determining which constraints were

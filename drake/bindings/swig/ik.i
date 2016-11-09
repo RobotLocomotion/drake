@@ -14,7 +14,7 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/rigid_body_ik.h"
 %}
 
 %include <typemaps.i>
@@ -28,5 +28,5 @@
 %eigen_typemaps(Eigen::Matrix<double, 7, 1>)
 
 %include "drake/multibody/ik_options.h"
-%include "drake/multibody/RigidBodyIK.h"
+%include "drake/multibody/rigid_body_ik.h"
 %include "drake/multibody/constraint/RigidBodyConstraint.h"

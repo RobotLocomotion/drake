@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "drake/multibody/inverse_kinematics_backend.h"
-#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::Map;
