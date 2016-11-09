@@ -91,9 +91,8 @@ class IntegratorBase {
   /** Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
    * chosen for you. This may be ignored for fixed-step integration since
-   * accuracy control requires variable step sizes. Additionally, the integrator
-   * may support estimating accuracy but not provide the ability to control
-   * it. You should call supports_accuracy_estimation() to ensure that the
+   * accuracy control requires variable step sizes. You should call
+   * supports_error_estimation() to ensure that the
    * integrator supports this capability before calling this function; if
    * the integrator does not support it, this method will throw an exception.
    *
@@ -185,9 +184,9 @@ class IntegratorBase {
     // TODO(edrumwri): Compute v_weight_, z_weight_ automatically.
     // Set error scaling vectors if not already done.
     if (supports_error_estimation()) {
-      const auto& contstate = context_->get_state().get_continuous_state();
-      const int gv_size = contstate->get_generalized_velocity().size();
-      const int misc_size = contstate->get_misc_continuous_state().size();
+      const auto& xc = context_->get_state().get_continuous_state();
+      const int gv_size = xc->get_generalized_velocity().size();
+      const int misc_size = xc->get_misc_continuous_state().size();
       if (v_weight_.size() != gv_size) v_weight_.setOnes(gv_size);
       if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
@@ -291,7 +290,7 @@ class IntegratorBase {
 
   /** Return the step size the integrator would like to take next, based
    * primarily on the integrator's accuracy prediction. This value will not
-   * be computed for integrators that do not support accuracy estimation and
+   * be computed for integrators that do not support error estimation and
    * NaN will be returned.
    */
   const T& get_ideal_next_step_size() const { return ideal_next_step_size_; }
@@ -319,32 +318,29 @@ class IntegratorBase {
     initialization_done_ = false;
   }
 
-  /**
-   *  Gets a constant reference to the system that is being integrated (and
-   *  was provided to the constructor of the integrator).
+  /** Gets a constant reference to the system that is being integrated (and
+   * was provided to the constructor of the integrator).
    */
   const System<T>& get_system() const { return system_; }
 
   /// Indicates whether the integrator has been initialized.
   bool is_initialized() const { return initialization_done_; }
 
-  /**
-   *  Derived classes must override this function to return the integrator's
-   *  error estimate. If the integrator does not provide an error estimate,
-   *  the derived class implementation should return 0.
+  /** Derived classes must override this function to return the order of
+   * the integrator's error estimate. If the integrator does not provide an
+   * error estimate, the derived class implementation should return 0.
    */
   virtual int get_error_estimate_order() const = 0;
 
-  /**
-   * Gets the size of the last (previous) integration step. If no integration
+  /** Gets the size of the last (previous) integration step. If no integration
    * steps have been taken, value will be NaN.
    */
   const T& get_previous_integration_step_size() const {
     return prev_step_size_;
   }
 
-  /** Gets the error estimate (used only for integrators that support accuracy
-   * estimation). If the error estimate has not been computed, nullptr
+  /** Gets the error estimate (used only for integrators that support error
+   * estimation). If the integrator does not support error estimation, nullptr
    * is returned.
    */
   const ContinuousState<T>* get_error_estimate() const {
@@ -353,7 +349,7 @@ class IntegratorBase {
 
   /**
    * @name         Methods for weighting state variable errors
-   *
+   * @{
    * This group of methods describes how errors for state variables with
    * heterogeneous units are weighted in the context of error-controlled
    * integration. This is an advanced topic and most users can simply specify
@@ -457,7 +453,7 @@ class IntegratorBase {
    * To summarize, separate weights can be provided for each of
    * - `n` generalized quasi-coordinates `ꝗ`  (configuration variables in the
    *   velocity variable space), and
-   * - `nz` miscellaneous state variables `z`.
+   * - `nz` miscellaneous continuous state variables `z`.
    *
    * Weights on the generalized velocity variables `v (= dꝗ/dt)` are derived
    * directly from the weights on `ꝗ`, scaled by a characteristic time. Weights
@@ -543,18 +539,20 @@ class IntegratorBase {
    *  @sa CalcErrorNorm()
    */
   /**
-   * Gets the weighting vector (equivalent to a diagonal matrix) for generalized
-   * coordinate and velocity state variables. Only used for integrators that
-   * support accuracy estimation.
+   * Gets the weighting vector (equivalent to a diagonal matrix) applied to
+   * weighting both generalized coordinate and velocity state variable errors,
+   * as described in the group documentation. Only used for integrators that
+   * support error estimation.
    */
   const Eigen::VectorXd& get_generalized_state_weight_vector() const {
     return v_weight_;
   }
 
   /**
-   * Gets a mutable weighting vector (equivalent to a diagonal matrix) for
-   * generalized coordinate and velocity state variables. Only used for
-   * integrators that support accuracy estimation. Returns a VectorBlock
+   * Gets a mutable weighting vector (equivalent to a diagonal matrix) applied
+   * to weighting both generalized coordinate and velocity state variable
+   * errors, as described in the group documentation. Only used for
+   * integrators that support error estimation. Returns a VectorBlock
    * to make the values mutable without permitting changing the size of
    * the vector. Requires re-initializing the integrator after calling
    * this method; if Initialize() is not called afterward, an exception will be
@@ -570,8 +568,8 @@ class IntegratorBase {
 
   /**
    * Gets the weighting vector (equivalent to a diagonal matrix) for
-   * miscellaneous continuous state variables. Only used for integrators that
-   * support accuracy estimation.
+   * weighting errors in miscellaneous continuous state variables `z`. Only used
+   * for integrators that support error estimation.
    */
   const Eigen::VectorXd& get_misc_state_weight_vector() const {
     return z_weight_;
@@ -579,8 +577,8 @@ class IntegratorBase {
 
   /**
    * Gets a mutable weighting vector (equivalent to a diagonal matrix) for
-   * miscellaneous continuous state variables. Only used for integrators that
-   * support accuracy estimation. Returns a VectorBlock
+   * weighting errors in miscellaneous continuous state variables `z`. Only used
+   * for integrators that support error estimation. Returns a VectorBlock
    * to make the values mutable without permitting changing the size of
    * the vector. Requires re-initializing the integrator after calling this
    * method. If Initialize() is not called afterward, an exception will be
@@ -598,21 +596,18 @@ class IntegratorBase {
    */
 
  protected:
-  /**
-   * Returns the number of failures to accept an integration step due to
+  /** Returns the number of failures to accept an integration step due to
    * not meeting error tolerances since the last call to ResetStatistics()
    * or Initialize().
   */
   int64_t get_error_test_failures() const { return error_test_failures_; }
 
-  /**
-   * Increments the number of integration step failures due to error tolerance
+  /** Increments the count of integration step failures due to error tolerance
    * failure.
    */
   void report_error_test_failure() { ++error_test_failures_; }
 
-  /**
-   * Default code for taking a single error controlled step of @p dt_max
+  /** Default code for taking a single error controlled step of @p dt_max
    * or smaller. This particular function can be called directly by
    * an error estimating integrator's DoStepAtMost() method to effect
    * error-controlled integration. The integrator can effect error controlled
@@ -624,25 +619,23 @@ class IntegratorBase {
    * @param[in,out] derivs0 A pointer to the state derivatives at the system's
    *                current time (t0), *which must have already been evaluated
    *                at t0*. These values may be modified on return.
-   * @throws std::logic_error if integrator does not support accuracy
+   * @throws std::logic_error if integrator does not support error
    *                          estimation.
    */
   void StepErrorControlled(const T& dt_max,
                                   ContinuousState<T>* derivs0);
 
-  /**
-   * Computes the infinity norm of the error estimate. We use the infinity norm
+  /** Computes the infinity norm of the error estimate. We use the infinity norm
    * to capture the idea that, by providing accuracy requirements, the user
    * indirectly specifies error tolerances that act to  limit the largest error
    * in any state vector component.
-   * @throws std::logic_error If the integrator does not support accuracy
+   * @throws std::logic_error If the integrator does not support error
    *                          estimation.
    * @returns the norm (a non-negative value)
  */
   T CalcErrorNorm();
 
-  /**
-   * Calculates the adjusted integrator step size toward keeping state variables
+  /** Calculates the adjusted integrator step size toward keeping state variables
    * within error bounds on the next integration step. Note that it is not
    * guaranteed that the (possibly) reduced step size will keep state variables
    * within error bounds; however, the process of (1) taking a trial
@@ -818,7 +811,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation())
     throw std::logic_error(
-        "StepErrorControlled() requires accuracy "
+        "StepErrorControlled() requires error "
         "estimation.");
 
   // Save time, continuous variables, and time derivative because we'll possibly
@@ -887,9 +880,9 @@ T IntegratorBase<T>::CalcErrorNorm() {
   const auto& context = get_context();
   const auto& system = get_system();
 
-  // Verify that the integrator supports accuracy estimation.
+  // Verify that the integrator supports error estimation.
   if (!supports_error_estimation())
-    throw std::logic_error("Integrator does not support accuracy estimation.");
+    throw std::logic_error("Integrator does not support error estimation.");
 
   // Get the error estimate and necessary vectors.
   const auto& err_est = get_error_estimate();
