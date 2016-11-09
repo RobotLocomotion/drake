@@ -37,7 +37,6 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   // KinematicsResults source.
   auto kinematics_results = make_unique<Value<KinematicsResults<double>>>(
       KinematicsResults<double>(&tree));
-  //  auto kinematics_results = make_unique<KinematicsResults>(&tree);
   std::default_random_engine generator;  // Same seed every time, but that's OK.
   std::normal_distribution<double> distribution;
   auto q = tree.getRandomConfiguration(generator);
