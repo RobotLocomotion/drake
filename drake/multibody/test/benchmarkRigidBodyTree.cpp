@@ -8,7 +8,7 @@
 #include "drake/common/test/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Dynamic;

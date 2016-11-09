@@ -10,7 +10,7 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 %}
 
 %include <typemaps.i>
@@ -75,7 +75,7 @@
 // These cause problems since bodies is a vector of unique_ptr's and
 // SWIG doesn't support them.
 %ignore RigidBodyTree::bodies;
-%include "drake/multibody/RigidBodyTree.h"
+%include "drake/multibody/rigid_body_tree.h"
 %include "drake/multibody/joints/floating_base_types.h"
 %extend RigidBodyTree {
   RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {

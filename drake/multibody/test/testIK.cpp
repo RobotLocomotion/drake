@@ -9,7 +9,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/IKoptions.h"
 #include "drake/multibody/RigidBodyIK.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 
 using Eigen::Vector2d;

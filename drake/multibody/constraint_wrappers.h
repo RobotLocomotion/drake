@@ -13,7 +13,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/KinematicsCache.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {

@@ -4,7 +4,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/inverseKinBackend.h"
 #include "drake/multibody/RigidBodyIK.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;

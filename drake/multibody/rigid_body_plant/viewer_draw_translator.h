@@ -5,7 +5,7 @@
 
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/common/drake_export.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 

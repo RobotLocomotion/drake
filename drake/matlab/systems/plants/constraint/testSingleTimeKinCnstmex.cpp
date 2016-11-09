@@ -2,7 +2,7 @@
 
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <cstring>
 /*
  * [type, num_constraint, constraint_val, dconstraint_val, constraint_name, lower_bound, upper_bound]

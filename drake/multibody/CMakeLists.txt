@@ -12,7 +12,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_common.cc
   parser_sdf.cc
   parser_urdf.cc
-  RigidBodyTree.cpp
+  rigid_body_tree.cc
   RigidBody.cpp
   RigidBodyTreeContact.cpp
   rigid_body_actuator.cc
@@ -33,7 +33,7 @@ drake_install_headers(
   rigid_body_actuator.h
   RigidBodyFrame.h
   RigidBody.h
-  RigidBodyTree.h
+  rigid_body_tree.h
   parser_model_instance_id_table.h
   parser_common.h
   parser_sdf.h

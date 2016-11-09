@@ -3,7 +3,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_status.h"
 #include "drake/system1/LCMSystem.h"
 #include "drake/multibody/rigid_body_system1/BotVisualizer.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 #include "drake/lcmt_iiwa_status.hpp"
 

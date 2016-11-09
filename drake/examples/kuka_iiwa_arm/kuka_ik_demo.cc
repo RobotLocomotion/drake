@@ -15,7 +15,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/multibody/IKoptions.h"
 #include "drake/multibody/RigidBodyIK.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"

@@ -11,7 +11,7 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/multibody/ForceTorqueMeasurement.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/util/drakeUtil.h"

@@ -11,7 +11,7 @@
 #include "drake/matlab/util/drakeMexUtil.h"
 #include <Eigen/Dense>
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <cstdio>
 
 using namespace Eigen;

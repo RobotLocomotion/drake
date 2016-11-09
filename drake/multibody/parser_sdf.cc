@@ -17,7 +17,7 @@
 #include "drake/multibody/joints/DrakeJoints.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/xmlUtil.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
