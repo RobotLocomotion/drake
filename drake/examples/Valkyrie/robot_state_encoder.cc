@@ -43,8 +43,8 @@ void RobotStateEncoder::EvalOutput(const Context<double>& context,
   auto& message = output->GetMutableData(lcm_message_port_index_)
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
-  SetStateAndEfforts(&message, context);
-  SetForceTorque(&message, context);
+  SetStateAndEfforts(context, &message);
+  SetForceTorque(context, &message);
 }
 
 std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
@@ -105,8 +105,8 @@ std::map<Side, int> RobotStateEncoder::DeclareWrenchInputPorts() {
   return ret;
 }
 
-void RobotStateEncoder::SetStateAndEfforts(
-    robot_state_t* message, const Context<double>& context) const {
+void RobotStateEncoder::SetStateAndEfforts(const Context<double>& context,
+                                           robot_state_t* message) const {
   const auto& kinematics_results =
       EvalAbstractInput(context, kinematics_results_port_index_)
           ->GetValue<KinematicsResults<double>>();
@@ -166,8 +166,8 @@ void RobotStateEncoder::SetStateAndEfforts(
   message->utime = static_cast<int64_t>(1e6 * context.get_time());
 }
 
-void RobotStateEncoder::SetForceTorque(robot_state_t* message,
-                                       const Context<double>& context) const {
+void RobotStateEncoder::SetForceTorque(const Context<double>& context,
+                                       bot_core::robot_state_t* message) const {
   auto& force_torque = message->force_torque;
   const int kTorqueXIndex = 0;
   const int kTorqueYIndex = 1;

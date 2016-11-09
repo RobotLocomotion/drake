@@ -55,11 +55,11 @@ class DRAKE_EXPORT RobotStateEncoder final : public LeafSystem<double> {
 
   std::map<Side, int> DeclareWrenchInputPorts();
 
-  void SetStateAndEfforts(bot_core::robot_state_t* message,
-                          const Context<double>& context) const;
+  void SetStateAndEfforts(const Context<double>& context,
+                          bot_core::robot_state_t* message) const;
 
-  void SetForceTorque(bot_core::robot_state_t* message,
-                      const Context<double>& context) const;
+  void SetForceTorque(const Context<double>& context,
+                      bot_core::robot_state_t* message) const;
 
   // Tree to which message corresponds.
   const RigidBodyTree<double>& tree_;
