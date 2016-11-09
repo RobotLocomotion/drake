@@ -7,7 +7,28 @@ namespace systems {
  * Abstract class for representing event functions used to compute solutions
  * to piecewise DAEs.
  *
- * (equation for a DAE)
+ * A simulator could conceivably integrate over a large interval of time in
+ * a single leap. Event functions can be used to cause the simulator to
+ * identify, and even pause at, designated times or states. For example,
+ * an event function can be used to determine when a flight simulator should
+ * swap terrain maps as an aircraft crosses between the U.S. and Canada.
+ *
+ * Alternatively, a common use of event functions is to determine when
+ * a differential algebraic equation (DAE) solver should change its set of
+ * active constraints. Formally, a differential algebraic equation (DAE) takes
+ * the form:
+ * <pre>
+ * dx/dt = f(x, t)
+ *  g(x) = 0
+ * </pre>
+ * Accurately solving multi-rigid body systems with unilateral constraints
+ * (e.g., joint limits, contact constraints) requires determining when these
+ * constraints change. For example, a rigid, light wing resting on planar
+ * ground will be subject to contact forces up to the point that a wind
+ * lifts the wing into the air. In the "resting on ground" case, `g(x) = 0`
+ * could represent the acceleration normal to the ground. An event function
+ * can help the DAE solver determine the time at which `g(x) = 0` should no
+ * longer be active and the wing can undergo ballistic movement.
  *
  * A classical example of a DAE is the bouncing ball system, which uses
  * one set of equations when the ball is in a ballistic phase (g() is empty)
@@ -87,30 +108,23 @@ class EventFunction {
    * of interest can indicate that the event should trigger only on positive to
    * negative transitions (kFalling), only on negative to positive transitions
    * (kRising), or any time zero is crossed (kRisingAndFalling).
-   * @param index an index in the half-open interval
-   *     [0, num_event_function_outputs)
    */
-  DirectionType get_event_function_direction(int index) const = 0;
+  DirectionType get_event_function_direction() const = 0;
 
   /**
    *  Returns whether this event function returns a continuous output or
    *  a discontinuous output. A greater collection of methods for determining
    *  zero crossings is applicable for event functions with continuous outputs.
-   * @param index an index in the half-open interval
-   *     [0, num_event_function_outputs)
    */
-  virtual EventFunctionType get_event_function_output_type(int index) const = 0;
-
-  /**
-   * Returns the number of outputs for the event function.
-   */
-  virtual int num_event_function_outputs() const = 0;
+  virtual EventFunctionType get_event_function_output_type() const = 0;
 
   /**
    * Evaluates the event function under the given context.
-   * @returns a VectorX of dimension num_event_function_outputs().
+   * @param context the context at which to evaluate the event function
+   * @returns a scalar that indicates the status of the witness function.
    */
-  virtual VectorX<T> EvalEventFunction(const Context<T>& context) = 0;
+  // TODO(edrumwri): Ping edrumwri if it is desired to return a vector
+  virtual T EvalEventFunction(const Context<T>& context) = 0;
 
   /**
    * Returns `true` if the derivative for the event function with respect to
@@ -122,13 +136,15 @@ class EventFunction {
   /**
    * Evaluates the derivative for the event function, at the given context,
    * with respect to time. This function only need be implemented if
-   * is_deriv_available() returns `true`. This default implementation does
-   * nothing.
-   * @param[in,out] df a pointer to a VectorX of dimension
-   *            num_event_function_outputs().
+   * is_deriv_available() returns `true`. This default implementation returns
+   * NaN.
+   * @param context the context at which to evaluate the event function
+   *    time derivative.
+   * @returns a scalar corresponding to the time derivative of the event
+   *    function at the given context
    * @sa is_deriv_available()
    */
-  virtual void EvalEventDeriv(const Context<T>& context, VectorX<T>* df) {}
+  virtual T EvalEventDeriv(const Context<T>& context) { return nan(); }
 
   /**
    * Determines whether this event function should be treated as active for
