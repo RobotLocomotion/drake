@@ -85,8 +85,18 @@ using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
 template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
-/// A column vector consisting of one wrench.
+/// A column vector consisting of one wrench (spatial force) = `[r X f; f]`,
+/// where f is a force (translational force) applied at a point `P` and `r` is
+/// the position vector from a point `O` (called the "moment center") to point
+/// `P`.
 template <typename Scalar>
 using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
+
+/// A column vector consisting of a concatenated rotational and translational
+/// force.  The wrench is a special case of a SpatialForce.  For a general
+/// SpatialForce the rotational force can be a pure torque or the accumulation
+/// of moments and need not necessarily be a function of the force term.
+template <typename Scalar>
+using SpatialForce = Eigen::Matrix<Scalar, 6, 1>;
 
 }  // namespace drake
