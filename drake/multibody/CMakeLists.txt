@@ -46,7 +46,7 @@ pods_install_pkg_config_file(drake-rbm
   REQUIRES
   VERSION 0.0.1)
 
-add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
+add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES ik_options.cc)
 target_link_libraries(drakeIKoptions drakeRBM)
 
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
@@ -63,7 +63,7 @@ add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
 pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
-drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h IKoptions.h
+drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
   inverseKinBackend.h RigidBodyIK.h)
 pods_install_pkg_config_file(drake-ik
   LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions

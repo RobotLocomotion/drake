@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 

@@ -13,7 +13,7 @@
 #include "drake/math/gradient.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
 #include "drake/multibody/constraint_wrappers.h"
-#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 

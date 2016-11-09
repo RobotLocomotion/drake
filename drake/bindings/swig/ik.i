@@ -27,6 +27,6 @@
 
 %eigen_typemaps(Eigen::Matrix<double, 7, 1>)
 
-%include "drake/multibody/IKoptions.h"
+%include "drake/multibody/ik_options.h"
 %include "drake/multibody/RigidBodyIK.h"
 %include "drake/multibody/constraint/RigidBodyConstraint.h"

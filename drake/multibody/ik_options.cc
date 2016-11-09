@@ -1,4 +1,4 @@
-#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/ik_options.h"
 
 #include <set>
 

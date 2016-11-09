@@ -13,7 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
-#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/constraint/RigidBodyConstraint.h"
