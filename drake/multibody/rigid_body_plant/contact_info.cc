@@ -1,4 +1,4 @@
-#include "drake/systems/plants/rigid_body_plant/contact_info.h"
+#include "drake/multibody/rigid_body_plant/contact_info.h"
 
 using std::move;
 

@@ -4,10 +4,10 @@
 #include <vector>
 
 #include "drake/common/drake_export.h"
-#include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/collision/Element.h"
-#include "drake/systems/plants/rigid_body_plant/contact_detail.h"
-#include "drake/systems/plants/rigid_body_plant/contact_force.h"
+#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/rigid_body_plant/contact_detail.h"
+#include "drake/multibody/rigid_body_plant/contact_force.h"
 
 namespace drake {
 namespace systems {

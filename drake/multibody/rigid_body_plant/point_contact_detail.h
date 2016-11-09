@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/systems/plants/rigid_body_plant/contact_detail.h"
+#include "drake/multibody/rigid_body_plant/contact_detail.h"
 
 namespace drake {
 namespace systems {
