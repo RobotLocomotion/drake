@@ -165,10 +165,10 @@ class SimulatedKuka : public systems::Diagram<T> {
       drake::parsers::urdf::AddModelInstanceFromUrdfFile(
           drake::GetDrakePath() +
           "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
-          drake::systems::plants::joints::kFixed,
+          drake::multibody::joints::kFixed,
           nullptr /* weld to frame */, rigid_body_tree.get());
 
-      drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
+      drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
 
       // Instantiates a RigidBodyPlant from an MBD model of the world.
       auto plant = std::make_unique<RigidBodyPlant<T>>(
