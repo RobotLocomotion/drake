@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <limits>
 
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/rigid_body_tree_construction.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 namespace drake {
 namespace automotive {
@@ -16,9 +16,9 @@ using Eigen::VectorXd;
 
 using drake::NullVector;
 using drake::parsers::ModelInstanceIdTable;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
-using drake::systems::plants::AddFlatTerrainToWorld;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
+using drake::multibody::AddFlatTerrainToWorld;
 
 const char kDurationFlag[] = "--duration";
 

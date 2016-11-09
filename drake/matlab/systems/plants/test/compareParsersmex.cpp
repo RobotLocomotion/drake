@@ -5,8 +5,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -14,10 +14,10 @@ using namespace std;
 
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
+using drake::multibody::joints::kRollPitchYaw;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same

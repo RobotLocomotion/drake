@@ -9,13 +9,13 @@
 
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/lcmt_qp_controller_input.hpp"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/systems/controllers/zmpUtil.h"
+#include "drake/systems/robotInterfaces/BodyMotionData.h"
+#include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/lcmt_qp_controller_input.hpp"
-#include "BodyMotionData.h"
-#include "drake/systems/robotInterfaces/Side.h"
-#include "drake/systems/controllers/zmpUtil.h"
 
 class QuadraticLyapunovFunction {
   // TODO(tkoolen): move into its own file

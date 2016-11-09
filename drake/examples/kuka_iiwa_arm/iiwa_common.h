@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/RigidBodyTree.h"
 
 namespace drake {
 namespace examples {
