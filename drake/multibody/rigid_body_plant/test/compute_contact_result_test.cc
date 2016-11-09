@@ -1,4 +1,4 @@
-#include <drake/systems/plants/rigid_body_plant/rigid_body_plant.h>
+#include <drake/multibody/rigid_body_plant/rigid_body_plant.h>
 
 #include <memory>
 
@@ -6,9 +6,9 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/RigidBody.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/joints/QuaternionFloatingJoint.h"
 
 // The ContactResult class is largely a container for the data that is computed
 //  by the RigidBodyPlant while determining contact forces.  This test confirms
