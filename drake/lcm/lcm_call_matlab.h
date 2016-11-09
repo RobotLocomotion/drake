@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_call_matlab.hpp"
 
@@ -23,6 +26,9 @@
 ///
 /// See lcm_call_matlab_test.cc for some simple examples.
 
+namespace drake {
+namespace lcm {
+
 /// Holds a reference to a return variable stored on the matlab client, which
 /// can be passed back into a future lcm_call_matlab call.
 struct LcmMatlabRemoteVariable {
@@ -38,37 +44,39 @@ struct LcmMatlabRemoteVariable {
 /// To support a calling lcm_call_matlab a new type of input, simply implement
 //  another one of these methods.
 
-extern void to_lcm_matlab_array(const LcmMatlabRemoteVariable& var,
-                                drake::lcmt_matlab_array& matlab_array);
+extern void ToLcmMatlabArray(const LcmMatlabRemoteVariable &var,
+                             drake::lcmt_matlab_array *matlab_array);
 
-extern void to_lcm_matlab_array(double scalar,
-                                drake::lcmt_matlab_array& matlab_array);
+extern void ToLcmMatlabArray(double scalar,
+                             drake::lcmt_matlab_array *matlab_array);
 
-extern void to_lcm_matlab_array(const Eigen::Ref<Eigen::MatrixXd>& mat,
-                                drake::lcmt_matlab_array& matlab_array);
+extern void ToLcmMatlabArray(const Eigen::Ref<Eigen::MatrixXd> &mat,
+                             drake::lcmt_matlab_array *matlab_array);
 
-extern void to_lcm_matlab_array(const std::string& str,
-                                drake::lcmt_matlab_array& matlab_array);
+extern void ToLcmMatlabArray(const std::string& str,
+                                drake::lcmt_matlab_array* matlab_array);
 
-// Helper methods for variadic template call in lcm_call_matlab.
+// Helper methods for variadic template call in CallMatlab.
 namespace internal {
-void assemble_lcm_call_matlab_msg(drake::lcmt_call_matlab& msg,
-                                  unsigned int& index) {
+void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
+                                  unsigned int* index) {
   // Intentionally left blank.  Base case for template recursion.
 }
 
 template <typename T, typename... Types>
-void assemble_lcm_call_matlab_msg(drake::lcmt_call_matlab& msg,
-                                  unsigned int& index, T first, Types... args) {
-  to_lcm_matlab_array(first, msg.rhs[index++]);
-  assemble_lcm_call_matlab_msg(msg, index, args...);
-};
+void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
+                                  unsigned int* index, T first, Types... args) {
+  ToLcmMatlabArray(first, &(msg->rhs[*index++]));
+  AssembleLcmCallMatlabMsg(msg, index, args...);
+}
 
 // Simple wrapper to prevent the outside world from needing to worry about
 // creating an lcm::LCM object.
-void publish_lcm_call_matlab(const std::string& channel,
-                             const drake::lcmt_call_matlab& msg);
-}
+void PublishLcmCallMatlab(const std::string &channel,
+                          const drake::lcmt_call_matlab &msg);
+
+}  // namespace internal
+
 
 /// Invokes a mexCallMATLAB call on the remote client.
 ///
@@ -79,15 +87,15 @@ void publish_lcm_call_matlab(const std::string& channel,
 /// @param num_outputs Number of return variables (left-side arguments) to
 ///     request from matlab.  As in matlab, you need not request all of the
 ///     outputs for any given method.
-/// @option argument1 Any data type which has a to_lcm_matlab_array method
+/// @option argument1 Any data type which has a ToLcmMatlabArray method
 /// implemented.
 /// @option argument2 Same as above
 /// ...
 ///
 /// See lcm_call_matlab_test.cc for some simple examples.
 template <typename... Types>
-std::vector<LcmMatlabRemoteVariable> lcm_call_matlab(
-    const std::string& channel, const std::string& function_name,
+std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
+    const std::string &channel, const std::string &function_name,
     const unsigned int num_outputs, Types... args) {
   const int num_inputs = sizeof...(args);
   std::vector<LcmMatlabRemoteVariable> remote_vars(num_outputs);
@@ -102,18 +110,21 @@ std::vector<LcmMatlabRemoteVariable> lcm_call_matlab(
   unsigned int index = 0;
   msg.nrhs = num_inputs;
   msg.rhs.resize(num_inputs);
-  internal::assemble_lcm_call_matlab_msg(msg, index, args...);
+  internal::AssembleLcmCallMatlabMsg(&msg, &index, args...);
 
   msg.function_name = function_name;
-  internal::publish_lcm_call_matlab(channel, msg);
+  internal::PublishLcmCallMatlab(channel, msg);
   return remote_vars;
 }
 
 /// Provides a default channel name for the lcm_call_matlab method above.
 template <typename... Types>
-std::vector<LcmMatlabRemoteVariable> lcm_call_matlab(
-    const std::string& function_name, const unsigned int num_outputs,
+std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
+    const std::string &function_name, const unsigned int num_outputs,
     Types... args) {
-  return lcm_call_matlab("LCM_CALL_MATLAB", function_name, num_outputs,
-                         args...);
+  return LcmCallMatlab("LCM_CALL_MATLAB", function_name, num_outputs,
+                       args...);
 }
+
+}  // namespace lcm
+}  // namespace drake
