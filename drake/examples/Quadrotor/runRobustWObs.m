@@ -115,13 +115,16 @@ prog2 = prog2.addStateConstraint(collision_constraint,2:N-1,1:2);
 
 prog2 = prog2.addRunningCost(@cost);
 
-prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-2);
+prog2 = prog2.setSolverOptions('snopt','majoroptimalitytolerance',1e-4);
 prog2 = prog2.setSolverOptions('snopt','majorfeasibilitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','minorfeasibilitytolerance',1e-3);
 prog2 = prog2.setSolverOptions('snopt','iterationslimit',100000);
 
+traj_init2.x = xtraj1;
+traj_init2.u = utraj1;
+
 tic
-[xtraj2,utraj2,z2,F2,info2] = prog2.solveTraj(tf0,traj_init);
+[xtraj2,utraj2,z2,F2,info2] = prog2.solveTraj(tf0,traj_init2);
 toc
 
 v.playback(xtraj2); %, struct('slider',true));
@@ -166,7 +169,29 @@ plot(tsamp1, usamp1(4,:));
 hold on;
 plot(tsamp2, usamp2(4,:));
 
-%Simulate
+%Closed-loop simulation
+c1 = tvlqr(p,xtraj1,utraj1,Q,R,Q);
+c2 = tvlqr(p,xtraj2,utraj2,Q,R,Q);
+
+p.wind_on = 1;
+
+clsys1 = feedback(p,c1);
+xcl1 = clsys1.simulate([utraj1.tspan(1) utraj1.tspan(2)], xtraj1.eval(0));
+v.playback(xcl1,struct('slider',true));
+
+clsys2 = feedback(p,c2);
+xcl2 = clsys2.simulate([utraj2.tspan(1) utraj2.tspan(2)], xtraj2.eval(0));
+v.playback(xcl2,struct('slider',true));
+
+% %Write movie files
+% %v.playbackAVI(xcl1, 'quad1.avi');
+% %v.playbackAVI(xcl2, 'quad2.avi');
+% % setenv('PATH', [getenv('PATH') ':/usr/local/bin']);
+% % setenv('PATH', [getenv('PATH') ':/Library/TeX/texbin']);
+% % v.playbackSWF(xcl1, 'swing1.swf');
+% % v.playbackSWF(xcl2, 'swing2.swf');
+%
+
 
 end
 

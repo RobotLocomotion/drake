@@ -66,7 +66,8 @@ if(nargout>2)
   yp_idx = 8;
   yy_idx = 9;
   
-  ddrotmat = sparse(9,9);
+  %ddrotmat = sparse(9,9);
+  ddrotmat = zeros(9,9);
   
   ddrotmat(1,yy_idx) = -cos_y*cos_p;
   
