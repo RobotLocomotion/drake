@@ -52,25 +52,21 @@ class IiwaWorldSimulator {
   int AddObjectFixedToTable(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
                             std::string object_name);
 
-//  int AddObjectFloatingOnTable(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-//                            std::string object_name);
-
-  //  void AddObject(std::string object_name);
-  //
-  //  /// Adds an LCM publisher for the given @p system.
-  //  /// @pre Start() has NOT been called.
-  //  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
-  //                    int vehicle_number);
-  //
-
   int AddObjectFixedToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
                 std::string object_name);
 
+  int AddObjectFloatingToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+                            std::string object_name);
+
   int AddObjectToFrame(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
                        std::string object_name,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame);
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame,
+                       const drake::systems::plants::joints::FloatingBaseType
+                       floating_base_type = systems::plants::joints::kFixed);
 
   int allocate_object_number();
+
+  void AddGroundToTree();
 
   /// Returns the System whose name matches @p name.  Throws an exception if no
   /// such system has been added, or multiple such systems have been added.
