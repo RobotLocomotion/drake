@@ -88,11 +88,27 @@ int IiwaWorldSimulator<T>::AddObjectFixedToWorld(Eigen::Vector3d xyz,
 }
 
 template <typename T>
-int IiwaWorldSimulator<T>::AddObjectToFrame(Eigen::Vector3d xyz,
-                                            Eigen::Vector3d rpy,
-                                            std::string object_name,
-                                            std::shared_ptr<RigidBodyFrame>
-                                            weld_to_frame) {
+int IiwaWorldSimulator<T>::AddObjectFloatingToWorld(Eigen::Vector3d xyz,
+                                                 Eigen::Vector3d rpy,
+                                                 std::string object_name) {
+  DRAKE_DEMAND(!started_);
+
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+      nullptr, xyz, rpy);
+
+  return AddObjectToFrame(xyz, rpy, object_name,
+                          weld_to_frame,
+                          systems::plants::joints::kQuaternion);
+}
+
+template <typename T>
+int IiwaWorldSimulator<T>::AddObjectToFrame(
+    Eigen::Vector3d xyz, Eigen::Vector3d rpy, std::string object_name,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    const drake::systems::plants::joints::FloatingBaseType
+    floating_base_type) {
   DRAKE_DEMAND(!started_);
   std::size_t extension_location =
       object_name_map_[object_name].find_last_of(".");
@@ -107,13 +123,13 @@ int IiwaWorldSimulator<T>::AddObjectToFrame(Eigen::Vector3d xyz,
     std::cout << "\n" << object_name << " is a URDF\n";
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + object_name_map_[object_name],
-        systems::plants::joints::kFixed, weld_to_frame, rigid_body_tree_.get());
+        floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
   } else if (extension.compare("sdf") == 0) {
     std::cout << "\n" << object_name << " is a SDF\n";
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + object_name_map_[object_name],
-        systems::plants::joints::kFixed, weld_to_frame, rigid_body_tree_.get());
+        floating_base_type, weld_to_frame, rigid_body_tree_.get());
   } else {
     return -1;
   }
@@ -122,6 +138,11 @@ int IiwaWorldSimulator<T>::AddObjectToFrame(Eigen::Vector3d xyz,
   return model_instance_id;
 
 
+}
+
+template <typename T>
+void IiwaWorldSimulator<T>::AddGroundToTree() {
+  AddGround(rigid_body_tree_.get());
 }
 
 template <typename T>
