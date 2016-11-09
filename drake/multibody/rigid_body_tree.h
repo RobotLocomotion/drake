@@ -19,12 +19,12 @@
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_frame.h"
-#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/pose_map.h"
 #include "drake/multibody/rigid_body_actuator.h"
 #include "drake/multibody/rigid_body_loop.h"
-#include "drake/multibody/shapes/DrakeShapes.h"
+#include "drake/multibody/shapes/drake_shapes.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \

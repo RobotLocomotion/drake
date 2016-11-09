@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/shapes/DrakeShapes.h"
+#include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
 // This forward declaration is made in order to be able to add a reference

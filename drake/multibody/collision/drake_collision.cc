@@ -1,4 +1,4 @@
-#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/collision/drake_collision.h"
 
 #ifdef BULLET_COLLISION
 #include "drake/multibody/collision/bullet_model.h"

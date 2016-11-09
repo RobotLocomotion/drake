@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/point_pair.h"
 
 namespace DrakeCollision {

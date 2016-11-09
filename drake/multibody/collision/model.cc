@@ -1,4 +1,4 @@
-#include "drake/multibody/collision/Model.h"
+#include "drake/multibody/collision/model.h"
 
 #include <iostream>
 
