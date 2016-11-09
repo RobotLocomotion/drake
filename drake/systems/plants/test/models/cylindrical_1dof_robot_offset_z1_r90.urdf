@@ -50,13 +50,13 @@
     </collision>
   </link>
 
-    <!--joint between {parent} and link_1-->
-    <!-- Offset the model's world frame by Z = 1m, and Roll = 90 degrees-->
-    <joint name="world_1dof_robot_joint" type="fixed">
-      <origin rpy="1.570796326794896557998982 0 0" xyz="0 0 1.0"/>
-      <parent link="world"/>
-      <child link="link_1"/>
-    </joint>
+  <!--joint between {parent} and link_1-->
+  <!-- Offset the model's world frame by Z = 1m, and Roll = 90 degrees-->
+  <joint name="world_1dof_robot_joint" type="fixed">
+    <origin rpy="1.570796326794896557998982 0 0" xyz="0 0 1.0"/>
+    <parent link="world"/>
+    <child link="link_1"/>
+  </joint>
 
   <joint name="joint1" type="revolute">
     <parent link="link1"/>
