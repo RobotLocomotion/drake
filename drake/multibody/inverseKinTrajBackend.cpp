@@ -1,4 +1,4 @@
-#include "drake/multibody/inverseKinBackend.h"
+#include "drake/multibody/inverse_kinematics_backend.h"
 
 #include <memory>
 #include <string>

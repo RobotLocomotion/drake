@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/inverseKinBackend.h"
+#include "drake/multibody/inverse_kinematics_backend.h"
 #include "drake/multibody/RigidBodyIK.h"
 #include "drake/multibody/rigid_body_tree.h"
 

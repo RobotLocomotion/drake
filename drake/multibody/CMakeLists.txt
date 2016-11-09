@@ -54,7 +54,7 @@ target_link_libraries(drakeIKoptions drakeRBM)
 # because the C++ IK will remain in this directory.  Only MATLAB code that will
 # be evicted from this directory is moved to the lower section of this file.
 set(drakeIK_SRC_FILES constraint_wrappers.cc ik_trajectory_helper.cc
-  inverse_kinematics.cc inverseKinBackend.cpp inverseKinPointwise.cpp
+  inverse_kinematics.cc inverse_kinematics_backend.cc inverseKinPointwise.cpp
   inverseKinTraj.cpp inverseKinTrajBackend.cpp)
 if (gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
@@ -64,7 +64,7 @@ target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstrain
 pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
 drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
-  inverseKinBackend.h RigidBodyIK.h)
+  inverse_kinematics_backend.h RigidBodyIK.h)
 pods_install_pkg_config_file(drake-ik
   LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
   REQUIRES drake-rbm
