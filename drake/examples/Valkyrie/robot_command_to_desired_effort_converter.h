@@ -22,6 +22,9 @@ namespace systems {
 /**
  * Converts an atlas_command_t message into desired efforts, presented on one
  * output port per actuator.
+ *
+ * Note that a RobotCommandToDesiredEffortConverter simply ignores commands for
+ * actuators that it doesn't know about.
  */
 class DRAKE_EXPORT RobotCommandToDesiredEffortConverter
     : public LeafSystem<double> {
