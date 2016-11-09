@@ -14,7 +14,7 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/drake_export.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/ForceTorqueMeasurement.h"
+#include "drake/multibody/force_torque_measurement.h"
 #include "drake/multibody/KinematicPath.h"
 #include "drake/multibody/KinematicsCache.h"
 #include "drake/multibody/rigid_body.h"

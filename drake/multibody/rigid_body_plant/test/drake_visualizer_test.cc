@@ -10,7 +10,7 @@
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
-#include "drake/multibody/shapes/Geometry.h"
+#include "drake/multibody/shapes/geometry.h"
 
 namespace drake {
 namespace systems {

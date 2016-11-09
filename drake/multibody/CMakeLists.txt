@@ -25,7 +25,7 @@ target_link_libraries(drakeRBM
 pods_install_libraries(drakeRBM)
 drake_install_headers(
   constraint_wrappers.h
-  ForceTorqueMeasurement.h
+  force_torque_measurement.h
   KinematicPath.h
   KinematicsCache.h
   material_map.h
