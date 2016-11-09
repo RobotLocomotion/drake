@@ -118,17 +118,13 @@ void RobotStateEncoder::SetStateAndEfforts(const Context<double>& context,
     EncodePose(floating_body_to_world, message->pose);
 
     // Twist of floating body with respect to world.
-    TwistVector<double> floating_body_twist_in_world =
-        kinematics_results.get_twist_with_respect_to_world(*floating_body_);
-    // To match usage of robot_state_t throughout OpenHumanoids code, transform
-    // twist in body frame to a frame that has the same orientation as world
+    // To match usage of robot_state_t throughout OpenHumanoids code, use
+    // twist frame that has the same orientation as world
     // frame, but the same origin as the floating body frame.
-    Isometry3d world_to_world_aligned_body(
-        Translation3d(-floating_body_to_world.translation()));
-    TwistVector<double> floating_body_twist_in_in_world_aligned_body =
-        transformSpatialMotion(world_to_world_aligned_body,
-                               floating_body_twist_in_world);
-    EncodeTwist(floating_body_twist_in_in_world_aligned_body, message->twist);
+    TwistVector<double> floating_body_twist =
+        kinematics_results.get_twist_in_world_aligned_body_frame(
+            *floating_body_);
+    EncodeTwist(floating_body_twist, message->twist);
   } else {
     EncodePose(Isometry3d::Identity(), message->pose);
     EncodeTwist(Vector6<double>::Zero(), message->twist);

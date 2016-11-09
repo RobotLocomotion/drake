@@ -60,11 +60,21 @@ Isometry3<T> KinematicsResults<T>::get_pose_in_world(
 }
 
 template <typename T>
-TwistVector<T> KinematicsResults<T>::get_twist_with_respect_to_world(
-    const RigidBody& body) const {
+TwistVector<T> KinematicsResults<T>::get_twist_in_world_frame(
+    const RigidBody &body) const {
   const auto& world = tree_->world();
   return tree_->relativeTwist(kinematics_cache_, world.get_body_index(),
                              body.get_body_index(), 0);
+}
+
+template <typename T>
+TwistVector<T> KinematicsResults<T>::get_twist_in_world_aligned_body_frame(
+    const RigidBody &body) const {
+  auto twist_in_world = get_twist_in_world_frame(body);
+  auto body_to_world = get_pose_in_world(body);
+  Eigen::Isometry3d world_to_world_aligned_body(
+      Eigen::Translation3d(-body_to_world.translation()));
+  return transformSpatialMotion(world_to_world_aligned_body, twist_in_world);
 }
 
 template <typename T>

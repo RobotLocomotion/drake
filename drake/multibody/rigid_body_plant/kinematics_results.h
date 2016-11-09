@@ -50,7 +50,12 @@ class DRAKE_EXPORT KinematicsResults {
 
   /// Returns the twist of @p body with respect to the world, expressed in world
   /// frame.
-  TwistVector<T> get_twist_with_respect_to_world(const RigidBody& body) const;
+  TwistVector<T> get_twist_in_world_frame(const RigidBody& body) const;
+
+  /// Returns the twist of @p body with respect to the world, expressed in world
+  /// frame.
+  TwistVector<T> get_twist_in_world_aligned_body_frame(
+      const RigidBody& body) const;
 
   /// Returns the joint position vector associated with the joint between
   /// @p body and @p body's parent.
