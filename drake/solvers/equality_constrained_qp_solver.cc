@@ -20,6 +20,7 @@ bool EqualityConstrainedQPSolver::available() const { return true; }
  * is positive definite. Constraints that make A nearly non-full rank should
  * be eliminated through the somewhat touchy Cholesky factorization.
  */
+/*
 void EqualityConstrainedQPSolver::ComputeNonRedundantEqualityConstraints(
     MathematicalProgram& prog) const){
   // Get the number of program variables.
@@ -44,7 +45,7 @@ void EqualityConstrainedQPSolver::ComputeNonRedundantEqualityConstraints(
   MatrixXd AAT(1,1) = binding.constraint()->A().row(i).transpose() *
                 binding.constraint()->A().row(i);
 
-  
+
   // Compute the Cholesky factorization of this row of A.
   LLT<MatrixXd> llt(AAT);
   DRAKE_DEMAND(llt.info() == Eigen::Success);
@@ -59,6 +60,7 @@ void EqualityConstrainedQPSolver::ComputeNonRedundantEqualityConstraints(
   
   // Get all selected rows of A/b.
 }
+*/
 
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
@@ -93,19 +95,26 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Approach 1: compute a LDL' factorization
   // Approach 2: use the Schur complement ("range space" approach)
   // Approach 3: use the nullspace of A ("null space" approach)
-  // All of these approaches assume that A has full row rank (i.e., there are
-  // no redundant constraints).
 
-  // Determine non-redundant set of constraints
-  
   // Check for positive definite Hessian matrix.
-  
-    // Matrix is positive definite. Solve A*inv(Q)*A'y = A*inv(Q)*c - b for `y`.
+  LLT<MatrixXd> llt(prog.Q);
+  if (llt.info() == Eigen::Success) {
+
+    // Matrix is positive definite. (inv(Q)*A')' = A*inv(Q)
+    MatrixXd AiQ_T = llt.solve(A.transpose());
+
+    // Solve using least-squares A*inv(Q)*A'y = A*inv(Q)*c - b for `y`.
+    VectorXd lambda = (A * AiQ_T).fullPivHouseholderQr.
+        solve(AiQ_T.transpose() * c - b);
 
     // Solve Q*x = A'y - c 
-  
+    prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
+    prog.SetSolverResult("Equality Constrained QP Solver", 0);
+    return SolutionResult::kSolutionFound;
+  }
+
   // The following code assumes that the Hessian is not positive definite.
-  // It uses the LDL' factorization.
+  // It uses the singular value decomposition, which is generally overkill.
 
   // The expanded problem introduces a Lagrangian multiplier for each
   // linear equality constraint.
