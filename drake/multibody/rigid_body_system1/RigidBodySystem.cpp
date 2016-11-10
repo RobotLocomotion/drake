@@ -9,7 +9,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/math/quaternion.h"
 #include "drake/multibody/constraint_wrappers.h"
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"

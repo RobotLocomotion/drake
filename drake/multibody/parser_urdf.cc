@@ -10,7 +10,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/joints/DrakeJoints.h"
+#include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/material_map.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"

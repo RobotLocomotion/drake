@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
-#include "drake/multibody/collision/DrakeCollision.h"
+#include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;

@@ -3,7 +3,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_export.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

@@ -60,7 +60,7 @@ cc_library(
         "symbolic_variables.cc",
     ],
     hdrs = [
-        "hash_combine.h",
+        "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
         "symbolic_formula.h",

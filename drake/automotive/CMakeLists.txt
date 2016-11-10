@@ -1,11 +1,15 @@
 add_subdirectory(gen)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   create_trajectory_params.cc
   curve2.cc
   gen/driving_command.cc
   gen/euler_floating_joint_state.cc
+  gen/idm_with_trajectory_agent_parameters.cc
   gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
@@ -24,9 +28,11 @@ pods_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
+  idm_with_trajectory_agent.h
   simple_car.h
-  trajectory_car.h
+  simple_car_to_euler_floating_joint.h
   system1_vector.h
+  trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
 pods_install_pkg_config_file(drake-automotive

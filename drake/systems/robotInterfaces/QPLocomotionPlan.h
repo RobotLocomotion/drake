@@ -10,7 +10,7 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/lcmt_qp_controller_input.hpp"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/zmpUtil.h"
 #include "drake/systems/robotInterfaces/BodyMotionData.h"
 #include "drake/systems/robotInterfaces/Side.h"
