@@ -348,7 +348,7 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf2) {
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(
       drake::GetDrakePath() + "/multibody/rigid_body_system1/test/models/" +
-          "cylindrical1dof_robot_offset_z1_r90.urdf",
+          "cylindrical_1dof_robot_offset_z1_r90.urdf",
       kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
