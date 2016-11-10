@@ -182,9 +182,9 @@ class KinematicsCache {
    * transforming that Jacobian so that all partial derivatives would be
    * computed with respect to the time derivative of the generalized
    * coordinates.
-   * @param A, a `n x nv` sized matrix, where `nv` is the dimension of the
+   * @param B, a `n x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
-   * @returns B a `n x nq` sized matrix, where `nq` is the dimension of the
+   * @returns A a `n x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
    */
   template <typename Derived>
