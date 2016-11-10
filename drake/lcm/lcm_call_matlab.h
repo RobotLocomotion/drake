@@ -72,11 +72,10 @@ void AssembleLcmCallMatlabMsg(drake::lcmt_call_matlab* msg,
 
 // Simple wrapper to prevent the outside world from needing to worry about
 // creating an lcm::LCM object.
-void PublishLcmCallMatlab(const std::string &channel,
-                          const drake::lcmt_call_matlab &msg);
+// TODO(russt): support setting the channel name (via a LcmCallMatlabChannelPush/Pop)
+void PublishLcmCallMatlab(const drake::lcmt_call_matlab &msg);
 
 }  // namespace internal
-
 
 /// Invokes a mexCallMATLAB call on the remote client.
 ///
@@ -95,8 +94,8 @@ void PublishLcmCallMatlab(const std::string &channel,
 /// See lcm_call_matlab_test.cc for some simple examples.
 template <typename... Types>
 std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
-    const std::string &channel, const std::string &function_name,
-    const unsigned int num_outputs, Types... args) {
+    const unsigned int num_outputs, const std::string &function_name,
+    Types... args) {
   const int num_inputs = sizeof...(args);
   std::vector<LcmMatlabRemoteVariable> remote_vars(num_outputs);
 
@@ -113,17 +112,14 @@ std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
   internal::AssembleLcmCallMatlabMsg(&msg, &index, args...);
 
   msg.function_name = function_name;
-  internal::PublishLcmCallMatlab(channel, msg);
+  internal::PublishLcmCallMatlab(msg);
   return remote_vars;
 }
 
-/// Provides a default channel name for the lcm_call_matlab method above.
+/// Special case the call with zero outputs, since it's so common.
 template <typename... Types>
-std::vector<LcmMatlabRemoteVariable> LcmCallMatlab(
-    const std::string &function_name, const unsigned int num_outputs,
-    Types... args) {
-  return LcmCallMatlab("LCM_CALL_MATLAB", function_name, num_outputs,
-                       args...);
+void LcmCallMatlab(const std::string &function_name, Types... args) {
+  LcmCallMatlab(0, function_name, args...);
 }
 
 }  // namespace lcm

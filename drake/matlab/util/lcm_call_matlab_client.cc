@@ -47,7 +47,7 @@ class Handler {
           rhs[i] =
               mxCreateDoubleMatrix(msg->rhs[i].rows, msg->rhs[i].cols, mxREAL);
           memcpy(mxGetPr(rhs[i]), msg->rhs[i].data.data(),
-                 sizeof(double) * msg->rhs[i].rows * msg->rhs[i].cols);
+                 msg->rhs[i].num_bytes);
           break;
         }
         case drake::lcmt_matlab_array::CHAR: {
@@ -55,9 +55,8 @@ class Handler {
           dims[0] = msg->rhs[i].rows;
           dims[1] = msg->rhs[i].cols;
           rhs[i] = mxCreateCharArray(2, dims);
-          // note: sizeof(mxChar) == 2.  doh!
           mxChar* char_data = static_cast<mxChar*>(mxGetData(rhs[i]));
-          for (int j = 0; j < dims[0] * dims[1]; j++) {
+          for (int j = 0; j < dims[0] * dims[1]; j++) { // Note: sizeof(mxChar) == 2.
             char_data[j] = static_cast<mxChar>(msg->rhs[i].data[j]);
           }
           break;

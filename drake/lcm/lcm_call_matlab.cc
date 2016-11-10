@@ -62,12 +62,11 @@ void ToLcmMatlabArray(const std::string& str,
   memcpy(matlab_array->data.data(), str.data(), matlab_array->num_bytes);
 }
 
-void internal::PublishLcmCallMatlab(const std::string& channel,
-                                    const drake::lcmt_call_matlab& msg) {
+void internal::PublishLcmCallMatlab(const drake::lcmt_call_matlab& msg) {
   static ::lcm::LCM lcm;  // just keep a local copy here for publishing
   if (!lcm.good()) return;
 
-  lcm.publish(channel, &msg);
+  lcm.publish("LCM_CALL_MATLAB", &msg);
 }
 
 }  // namespace lcm

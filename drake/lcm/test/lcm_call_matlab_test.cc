@@ -14,12 +14,12 @@ namespace lcm {
 GTEST_TEST(TestLcmCallMatlab, DispEigenMatrix) {
   Eigen::Matrix2d m;
   m << 1, 2, 3, 4;
-  LcmCallMatlab("disp", 0, m);
+  LcmCallMatlab("disp", m);
 }
 
 GTEST_TEST(TestLcmCallMatlab, RemoteVarTest) {
-  auto m = LcmCallMatlab("eye", 1, 2);
-  LcmCallMatlab("disp", 0, m[0]);  // should display eye(2)
+  auto m = LcmCallMatlab(1, "eye", 2);
+  LcmCallMatlab("disp", m[0]);  // should display eye(2)
 }
 
 GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
@@ -31,9 +31,10 @@ GTEST_TEST(TestLcmCallMatlab, SimplePlot) {
     val[i] = sin(2 * M_PI * time[i]);
   }
 
-  LcmCallMatlab("figure", 0, 1);
-  auto h = LcmCallMatlab("plot", 1, time, val);
-  LcmCallMatlab("set", 0, h[0], "Color", "r");
+  LcmCallMatlab("disp","Plotting a (red) sine wave.");
+  LcmCallMatlab("figure", 1);
+  auto h = LcmCallMatlab(1, "plot", time, val);
+  LcmCallMatlab("set", h[0], "Color", "r");
 }
 
 GTEST_TEST(TestLcmCallMatlab, MeshTest) {
@@ -54,8 +55,9 @@ GTEST_TEST(TestLcmCallMatlab, MeshTest) {
                 1.0 / 3.0 * exp(-pow(x(i) + 1, 2) - pow(y(j), 2));
     }
   }
-  LcmCallMatlab("figure", 0, 2);
-  LcmCallMatlab("surf", 0, x, y, Z);
+  LcmCallMatlab("disp","Plotting a simple 3D surface");
+  LcmCallMatlab("figure", 2);
+  LcmCallMatlab("surf", x, y, Z);
 }
 
 }  // namespace lcm
