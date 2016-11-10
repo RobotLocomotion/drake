@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "drake/multibody/collision/Element.h"
-#include "drake/multibody/collision/Model.h"
+#include "drake/multibody/collision/element.h"
+#include "drake/multibody/collision/model.h"
 
 namespace DrakeCollision {
 

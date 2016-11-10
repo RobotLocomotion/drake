@@ -6,13 +6,13 @@ checkDependency('bullet');
   old_ros_package_path = getenv('ROS_PACKAGE_PATH');
   setenv('ROS_PACKAGE_PATH', [old_ros_package_path, ':', ....
                               fullfile(getDrakePath(), 'examples')]);
-  urdf_collision_test = fullfile(get_drake_binary_dir(), 'bin/urdfCollisionTest');
+  urdf_collision_test = fullfile(get_drake_binary_dir(), 'bin/urdf_collision_test');
   if ispc
     urdf_collision_test = [urdf_collision_test,'.exe'];
   end
 
   if (~exist(urdf_collision_test,'file'))
-    error('Drake:MissingDependency','testURDFmex requires that urdfCollisionTest is built (from the command line).  skipping this test');
+    error('Drake:MissingDependency','testURDFmex requires that urdf_collision_test is built (from the command line).  skipping this test');
   end
 
   tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal

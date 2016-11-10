@@ -5,7 +5,7 @@
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "drake/multibody/joints/DrakeJoints.h"
+#include "drake/multibody/joints/drake_joints.h"
 
 using namespace Eigen;
 using namespace std;

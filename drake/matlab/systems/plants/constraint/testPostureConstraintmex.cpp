@@ -1,8 +1,8 @@
 #include <mex.h>
 
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <cstring>
 /*
  * [lower_bound, upper_bound] = testPostureConstraintmex(postureConstraint_ptr, t)
