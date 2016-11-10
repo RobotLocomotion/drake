@@ -53,15 +53,13 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::SystemOutput;
 
-const int kNumJoints = 7;
-
 // TODO(sam.creasey) If this could be made slightly more generic, it
 // could be a good wrapper/template for LCM controlled robots.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
-  IiwaCommandReceiver() {
+  explicit IiwaCommandReceiver(int num_joints) {
     this->DeclareAbstractInputPort(systems::kContinuousSampling);
-    this->DeclareOutputPort(systems::kVectorValued, kNumJoints,
+    this->DeclareOutputPort(systems::kVectorValued, num_joints,
                             systems::kContinuousSampling);
   }
 
@@ -77,7 +75,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
     if (command.num_joints == 0) {
       output_vec.fill(0);
     } else {
-      for (int i = 0; i < command.num_joints; i++) {
+      for (int i = 0; i < command.num_joints; ++i) {
         output_vec(i) = command.joint_position[i];
       }
     }
@@ -92,10 +90,15 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 // received command.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
-  IiwaStatusSender() {
-    this->DeclareInputPort(systems::kVectorValued, kNumJoints * 2,
+  // TODO(liang.fok): Replace these with semantically meaningful accessor
+  // methods like get_state_input_port() and get_command_input_port().
+  static const int kStateInputPort = 0;
+  static const int kCommandInputPort = 1;
+
+  explicit IiwaStatusSender(int num_joints) : num_joints_(num_joints) {
+    this->DeclareInputPort(systems::kVectorValued, num_joints * 2,
                            systems::kContinuousSampling);
-    this->DeclareInputPort(systems::kVectorValued, kNumJoints,
+    this->DeclareInputPort(systems::kVectorValued, num_joints,
                            systems::kContinuousSampling);
     this->DeclareAbstractOutputPort(systems::kContinuousSampling);
   }
@@ -104,7 +107,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
       const Context<double>& context) const override {
     auto output = std::make_unique<systems::LeafSystemOutput<double>>();
     lcmt_iiwa_status msg{};
-    msg.num_joints = kNumJoints;
+    msg.num_joints = num_joints_;
     msg.joint_position_measured.resize(msg.num_joints, 0);
     msg.joint_position_commanded.resize(msg.num_joints, 0);
     msg.joint_position_ipo.resize(msg.num_joints, 0);
@@ -129,11 +132,14 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
         this->EvalVectorInput(context, 0);
     const systems::BasicVector<double>* command =
         this->EvalVectorInput(context, 1);
-    for (int i = 0; i < kNumJoints; i++) {
+    for (int i = 0; i < num_joints_; ++i) {
       status.joint_position_measured[i] = state->GetAtIndex(i);
       status.joint_position_commanded[i] = command->GetAtIndex(i);
     }
   }
+
+ private:
+  int num_joints_{0};
 };
 
 // TODO(sam.creasey) We should de-duplicate this with kuka_demo.cc.
@@ -145,37 +151,51 @@ class SimulatedKuka : public systems::Diagram<T> {
  public:
   SimulatedKuka() {
     this->set_name("SimulatedKuka");
-
-    // Instantiates an Multibody Dynamics (MBD) model of the world.
-    auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() +
-        "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
-        drake::multibody::joints::kFixed,
-        nullptr /* weld to frame */, rigid_body_tree.get());
-
-    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
-
     DiagramBuilder<T> builder;
 
-    // Instantiates a RigidBodyPlant from an MBD model of the world.
-    std::unique_ptr<RigidBodyPlant<T>> plant =
-        std::make_unique<RigidBodyPlant<T>>(std::move(rigid_body_tree));
-    plant_ = plant.get();
+    // The following curly brace defines a scope that quarantines local
+    // variables `rigid_body_tree` and `plant`, which are of type
+    // `std::unique_ptr`. Ownership of `rigid_body_tree` is passed to `plant`
+    // and ownership of `plant` is passed to `controller`. We quarantine these
+    // local variables to prevent downstream code from seg faulting by trying to
+    // access `rigid_body_tree` or `plant` after ownership is transferred.
+    {
+      // Instantiates a model of the world.
+      auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
+      drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+          drake::GetDrakePath() +
+          "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
+          drake::multibody::joints::kFixed,
+          nullptr /* weld to frame */, rigid_body_tree.get());
 
-    DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
-                 plant_->get_num_positions());
+      drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
 
-    // Constants are chosen by trial and error to qualitatively match
-    // an experimental run with the same initial conditions and
-    // planner.  Quantitative comparisons would require torque control
-    // and a more careful estimation of the model constants such as
-    // friction in the joints.
-    const double kp = 2.0;  // proportional constant.
-    const double ki = 0.0;  // integral constant.
-    const double kd = 1.0;  // derivative constant.  See below!
-    controller_ = builder.template AddSystem<PidControlledSystem<T>>(
-        std::move(plant), kp, ki, kd);
+      // Instantiates a RigidBodyPlant from an MBD model of the world.
+      auto plant = std::make_unique<RigidBodyPlant<T>>(
+          std::move(rigid_body_tree));
+      plant_ = plant.get();
+
+      DRAKE_ASSERT(plant_->get_input_port(0).get_size() ==
+                   plant_->get_num_positions());
+
+      // Constants are chosen by trial and error to qualitatively match
+      // an experimental run with the same initial conditions and
+      // planner.  Quantitative comparisons would require torque control
+      // and a more careful estimation of the model constants such as
+      // friction in the joints.
+      const double kp = 2.0;  // proportional constant.
+      const double ki = 0.0;  // integral constant.
+      const double kd = 1.0;  // derivative constant.  See below!
+      controller_ = builder.template AddSystem<PidControlledSystem<T>>(
+          std::move(plant), kp, ki, kd);
+    }
+    DRAKE_DEMAND(controller_ != nullptr);
+    const RigidBodyTreed& tree = plant_->get_rigid_body_tree();
+
+    // TODO(liang.fok): Modify controller to provide named accessors to these
+    // ports.
+    const int kControllerFeedforwardInputPort = 0;
+    const int kControllerFeedbackInputPort = 1;
 
     // The iiwa's control protocol doesn't have any way to express the
     // desired velocity for the arm, so this simulation doesn't take
@@ -185,39 +205,40 @@ class SimulatedKuka : public systems::Diagram<T> {
     // set the D term (to stabilize the arm near the commanded
     // position) and feed a desired velocity vector of zero.
     auto zero_source = builder.template AddSystem<ConstantVectorSource<T>>(
-        Eigen::VectorXd::Zero(kNumJoints));
+        Eigen::VectorXd::Zero(tree.get_num_velocities()));
     auto input_mux = builder.template AddSystem<Multiplexer<T>>(
-        std::vector<int>{kNumJoints, kNumJoints});
+        std::vector<int>{tree.get_num_positions(), tree.get_num_velocities()});
     builder.Connect(zero_source->get_output_port(),
                     input_mux->get_input_port(1));
     builder.Connect(input_mux->get_output_port(0),
-                    controller_->get_input_port(1));
+                    controller_->get_input_port(kControllerFeedbackInputPort));
 
-    gravity_compensator_ = builder.template AddSystem<GravityCompensator<T>>(
-        plant_->get_rigid_body_tree());
+    auto gravity_compensator =
+        builder.template AddSystem<GravityCompensator<T>>(tree);
 
     // Split the input state into two signals one with the positions and one
     // with the velocities.
     // For Kuka:
     // -  get_num_states() = 14
     // -  get_num_positions() = 7
-    rbp_state_demux_ = builder.template AddSystem<Demultiplexer<T>>(
+    auto rbp_state_demux = builder.template AddSystem<Demultiplexer<T>>(
         plant_->get_num_states(), plant_->get_num_positions());
     builder.Connect(controller_->get_output_port(0),
-                    rbp_state_demux_->get_input_port(0));
+                    rbp_state_demux->get_input_port(0));
 
     // Connects the gravity compensator to the output generalized positions.
-    builder.Connect(rbp_state_demux_->get_output_port(0),
-                    gravity_compensator_->get_input_port(0));
-    builder.Connect(gravity_compensator_->get_output_port(0),
-                    controller_->get_input_port(0));
+    builder.Connect(rbp_state_demux->get_output_port(0),
+                    gravity_compensator->get_input_port(0));
+    builder.Connect(gravity_compensator->get_output_port(0),
+                    controller_->get_input_port(
+                        kControllerFeedforwardInputPort));
 
     builder.ExportInput(input_mux->get_input_port(0));
     builder.ExportOutput(controller_->get_output_port(0));
     builder.BuildInto(this);
   }
 
-  const RigidBodyPlant<T>& get_kuka_plant() const { return *plant_; }
+  const RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
   void SetDefaultState(Context<T>* context) const {
     Context<T>* controller_context =
@@ -232,8 +253,6 @@ class SimulatedKuka : public systems::Diagram<T> {
  private:
   RigidBodyPlant<T>* plant_{nullptr};
   PidControlledSystem<T>* controller_{nullptr};
-  Demultiplexer<T>* rbp_state_demux_{nullptr};
-  GravityCompensator<T>* gravity_compensator_{nullptr};
 };
 
 int DoMain() {
@@ -241,7 +260,7 @@ int DoMain() {
   auto model = builder.AddSystem<SimulatedKuka<double>>();
 
   const RigidBodyTree<double>& tree =
-      model->get_kuka_plant().get_rigid_body_tree();
+      model->get_plant().get_rigid_body_tree();
   VerifyIiwaTree(tree);
 
   // Creates and adds LCM publisher for visualization.
@@ -253,12 +272,14 @@ int DoMain() {
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
           "IIWA_COMMAND", &lcm));
-  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>();
+  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>(
+      tree.get_num_positions());
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm));
-  auto status_sender = builder.AddSystem<IiwaStatusSender>();
+  auto status_sender = builder.AddSystem<IiwaStatusSender>(
+      tree.get_num_positions());
 
   builder.Connect(command_sub->get_output_port(0),
                   command_receiver->get_input_port(0));
@@ -267,9 +288,11 @@ int DoMain() {
   builder.Connect(model->get_output_port(0),
                   visualizer->get_input_port(0));
   builder.Connect(model->get_output_port(0),
-                  status_sender->get_input_port(0));
+                  status_sender->get_input_port(
+                      IiwaStatusSender::kStateInputPort));
   builder.Connect(command_receiver->get_output_port(0),
-                  status_sender->get_input_port(1));
+                  status_sender->get_input_port(
+                      IiwaStatusSender::kCommandInputPort));
   builder.Connect(status_sender->get_output_port(0),
                   status_pub->get_input_port(0));
   auto sys = builder.Build();

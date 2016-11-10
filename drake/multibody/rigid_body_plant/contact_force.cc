@@ -1,8 +1,13 @@
 #include "drake/multibody/rigid_body_plant/contact_force.h"
-#include <drake/common/drake_assert.h>
+
+#include <cmath>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
+
+using std::abs;
 
 template <typename T>
 ContactForce<T>::ContactForce(const Vector3<T>& application_point,

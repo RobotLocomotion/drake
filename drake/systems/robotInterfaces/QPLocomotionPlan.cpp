@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/constants.h"
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/autodiff_overloads.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"

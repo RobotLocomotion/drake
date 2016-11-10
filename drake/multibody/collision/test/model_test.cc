@@ -3,8 +3,8 @@
 #include <unordered_map>
 
 #include "drake/common/drake_path.h"
-#include "drake/multibody/collision/DrakeCollision.h"
-#include "drake/multibody/collision/Model.h"
+#include "drake/multibody/collision/drake_collision.h"
+#include "drake/multibody/collision/model.h"
 #include "gtest/gtest.h"
 
 using Eigen::Isometry3d;

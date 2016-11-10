@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/fixed_joint.h"
 
 namespace drake {
 namespace systems {

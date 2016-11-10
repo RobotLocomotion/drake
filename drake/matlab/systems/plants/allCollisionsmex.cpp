@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;

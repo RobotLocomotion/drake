@@ -10,7 +10,7 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 %}
 
 %include <typemaps.i>
@@ -52,7 +52,7 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-%include "drake/multibody/KinematicsCache.h"
+%include "drake/multibody/kinematics_cache.h"
 %template(KinematicsCache_d) KinematicsCache<double>;
 %template(KinematicsCache_adVectorDynamic) KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> >;
 %template(KinematicsCache_adVectorMax73) KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > >;
@@ -61,9 +61,9 @@
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
 %ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
-%include "drake/multibody/RigidBody.h"
+%include "drake/multibody/rigid_body.h"
 
-%include "drake/multibody/RigidBodyFrame.h"
+%include "drake/multibody/rigid_body_frame.h"
 
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
@@ -75,7 +75,7 @@
 // These cause problems since bodies is a vector of unique_ptr's and
 // SWIG doesn't support them.
 %ignore RigidBodyTree::bodies;
-%include "drake/multibody/RigidBodyTree.h"
+%include "drake/multibody/rigid_body_tree.h"
 %include "drake/multibody/joints/floating_base_types.h"
 %extend RigidBodyTree {
   RigidBodyTree(const std::string& urdf_filename, const std::string& joint_type) {

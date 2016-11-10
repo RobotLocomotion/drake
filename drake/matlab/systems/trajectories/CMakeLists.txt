@@ -33,4 +33,6 @@ if(Bullet_FOUND AND Matlab_FOUND)
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil ${BULLET_LIBRARIES})
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

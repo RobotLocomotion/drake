@@ -1,7 +1,7 @@
 <robot name="breadtruck">
   <link name="box_shape">
     <!-- Inertia data is arbitrary. Its purpose here is to evade the
-         joint-welding checks in RigidBodyTree.cpp. The resulting world-object
+         joint-welding checks in rigid_body_tree.cc. The resulting world-object
          joint should be a full 6DF floating joint.
     -->
     <inertial>
