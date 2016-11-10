@@ -73,17 +73,17 @@ template <typename T>
 class KinematicsCache {
  private:
   typedef KinematicsCacheElement<T> KinematicsCacheElementT;
-  typedef std::pair<RigidBody const* const, KinematicsCacheElementT>
+  typedef std::pair<RigidBody<T> const* const, KinematicsCacheElementT>
       RigidBodyKCacheElementPair;
   typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
       RigidBodyKCacheElementPairAllocator;
   typedef std::unordered_map<
-      RigidBody const*, KinematicsCacheElementT,
-      std::hash<RigidBody const*>, std::equal_to<RigidBody const*>,
+      RigidBody<T> const*, KinematicsCacheElementT,
+      std::hash<RigidBody<T> const*>, std::equal_to<RigidBody<T> const*>,
       RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
 
   RigidBodyToKCacheElementMap elements;
-  std::vector<RigidBody const*> bodies;
+  std::vector<RigidBody<T> const*> bodies;
   int num_positions;
   int num_velocities;
   Eigen::Matrix<T, Eigen::Dynamic, 1> q;
@@ -95,14 +95,14 @@ class KinematicsCache {
 
  public:
   explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies_in)
+      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies_in)
       : num_positions(get_num_positions(bodies_in)),
         num_velocities(get_num_velocities(bodies_in)),
         q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
     for (const auto& body_unique_ptr : bodies_in) {
-      const RigidBody& body = *body_unique_ptr;
+      const RigidBody<T>& body = *body_unique_ptr;
       int num_positions_joint =
           body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
@@ -114,12 +114,12 @@ class KinematicsCache {
     invalidate();
   }
 
-  KinematicsCacheElement<T>& getElement(const RigidBody& body) {
+  KinematicsCacheElement<T>& getElement(const RigidBody<T>& body) {
     return elements.at(&body);
   }
 
   const KinematicsCacheElement<T>& getElement(
-      const RigidBody& body) const {
+      const RigidBody<T>& body) const {
     return elements.at(&body);
   }
 
@@ -178,7 +178,7 @@ class KinematicsCache {
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      const RigidBody& body = **it;
+      const RigidBody<T>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
@@ -202,7 +202,7 @@ class KinematicsCache {
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      const RigidBody& body = **it;
+      const RigidBody<T>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
@@ -276,9 +276,9 @@ class KinematicsCache {
   // constructor where this request is made.
   // See TODO for get_num_velocities.
   static int get_num_positions(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies) {
     auto add_num_positions = [](
-        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+        int result, const std::unique_ptr<RigidBody<T>>& body_ptr) -> int {
       return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_positions()
                  : result;
@@ -288,9 +288,9 @@ class KinematicsCache {
 
   // TODO(amcastro-tri): See TODO for get_num_positions.
   static int get_num_velocities(
-      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies) {
     auto add_num_velocities = [](
-        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+        int result, const std::unique_ptr<RigidBody<T>>& body_ptr) -> int {
       return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_velocities()
                  : result;
