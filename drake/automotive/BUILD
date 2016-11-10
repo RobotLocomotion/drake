@@ -57,18 +57,21 @@ cc_library(
     hdrs = ["curve2.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "idm_with_trajectory_agent",
     srcs = ["idm_with_trajectory_agent.cc"],
     hdrs = ["idm_with_trajectory_agent.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = ["simple_car.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],

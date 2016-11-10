@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
@@ -11,7 +10,7 @@ namespace lcm {
 /**
  * A pure virtual interface that enables LCM to be mocked.
  */
-class DRAKE_EXPORT DrakeLcmInterface {
+class DrakeLcmInterface {
  public:
   virtual ~DrakeLcmInterface() {}
 

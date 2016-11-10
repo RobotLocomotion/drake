@@ -6,7 +6,6 @@
 
 #include "lcm/lcm-cpp.hpp"
 
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcm/lcm_receive_thread.h"
@@ -17,7 +16,7 @@ namespace lcm {
 /**
  * A wrapper around a *real* LCM instance.
  */
-class DRAKE_EXPORT DrakeLcm : public DrakeLcmInterface {
+class DrakeLcm : public DrakeLcmInterface {
  public:
   DrakeLcm();
 
