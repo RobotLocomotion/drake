@@ -54,7 +54,8 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
  public:
   virtual ~RungeKutta3Integrator() {}
 
-  RungeKutta3Integrator(const System<T>& system, Context<T>* context = nullptr)
+  explicit RungeKutta3Integrator(const System<T>& system,
+                                 Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     derivs0_ = system.AllocateTimeDerivatives();
     derivs1_ = system.AllocateTimeDerivatives();
