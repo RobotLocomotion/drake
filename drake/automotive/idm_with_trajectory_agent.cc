@@ -125,7 +125,7 @@ IdmWithTrajectoryAgent<T>::AllocateParameters() const {
 // These instantiations must match the API documentation in
 // idm_with_trajectory_agent.h.
 template class IdmWithTrajectoryAgent<double>;
-template class IdmWithTrajectoryAgent<drake::TaylorVarXd>;
+template class IdmWithTrajectoryAgent<drake::AutoDiffXd>;
 template class IdmWithTrajectoryAgent<drake::symbolic::Expression>;
 
 }  // namespace automotive

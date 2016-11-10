@@ -1,5 +1,6 @@
 #include "drake/systems/controllers/pid_controller.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 
