@@ -13,6 +13,53 @@ namespace solvers {
 
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
+/**
+ * Determines non-redundant set of linear equality constraints using Cholesky 
+ * factorization and rank-1 updates. The idea is to determine whether the 
+ * linear equality constraints have full row rank by determining whether `A*A'`
+ * is positive definite. Constraints that make A nearly non-full rank should
+ * be eliminated through the somewhat touchy Cholesky factorization.
+ */
+void EqualityConstrainedQPSolver::ComputeNonRedundantEqualityConstraints(
+    MathematicalProgram& prog) const){
+  // Get the number of program variables.
+
+  // Setup the indices to collect.
+  std::vector<int> to_use;
+  
+  // Find the first non-zero row of A
+  int row_index = -1;
+  for (auto const& binding : prog.linear_equality_constraints())
+    for (int i=0; i < binding.constraint()->A().rows(); ++i)
+      if (binding.constraint()->A().row(i).normInf() > kZeroTol) {
+        row_index = i;
+        break;
+      }
+
+  // If the row index is not set, remove all A/b constraints.
+
+  // Store the reference to the row.
+
+  // setup AA' and compute the Cholesky factorization
+  MatrixXd AAT(1,1) = binding.constraint()->A().row(i).transpose() *
+                binding.constraint()->A().row(i);
+
+  
+  // Compute the Cholesky factorization of this row of A.
+  LLT<MatrixXd> llt(AAT);
+  DRAKE_DEMAND(llt.info() == Eigen::Success);
+
+  // Loop until have gone all of the way through A.
+  
+    // Attempt to compute a rank-1 update to the Cholesky factorization.
+  
+    // Attempt was not successful, revert the Cholesky factorization.
+  
+    // Attempt was successful; set the corresponding index in to_use to "true"
+  
+  // Get all selected rows of A/b.
+}
+
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // Given a QP with equality constraints, we can use the KKT conditions
@@ -38,7 +85,29 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     num_constraints += binding.constraint()->A().rows();
   }
 
-  // The expanded problem introduces a lagragian multiplier for each
+  // There are three ways to solve the KKT subproblem for convex QPs.
+  // Formally, we want to solve:
+  // | Q  -A' | | x | = | -c  |
+  // | A   0  | | y | = |  b |
+  // for problem variables x and Lagrange multiplier variables y. 
+  // Approach 1: compute a LDL' factorization
+  // Approach 2: use the Schur complement ("range space" approach)
+  // Approach 3: use the nullspace of A ("null space" approach)
+  // All of these approaches assume that A has full row rank (i.e., there are
+  // no redundant constraints).
+
+  // Determine non-redundant set of constraints
+  
+  // Check for positive definite Hessian matrix.
+  
+    // Matrix is positive definite. Solve A*inv(Q)*A'y = A*inv(Q)*c - b for `y`.
+
+    // Solve Q*x = A'y - c 
+  
+  // The following code assumes that the Hessian is not positive definite.
+  // It uses the LDL' factorization.
+
+  // The expanded problem introduces a Lagrangian multiplier for each
   // linear equality constraint.
   size_t num_full_vars = prog.num_vars() + num_constraints;
   Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(num_full_vars, num_full_vars);
@@ -57,7 +126,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
 
-  // ... and then the lagrangian multiplier penalty entries:
+  // ... and then the Lagrangian multiplier penalty entries:
   size_t constraint_index = prog.num_vars();
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.constraint();
