@@ -37,6 +37,7 @@ enum class FormulaKind {
 bool operator<(FormulaKind k1, FormulaKind k2);
 
 class FormulaCell;
+class Expression;
 
 /** Represents a symbolic form of a first-order logic formula.
 
