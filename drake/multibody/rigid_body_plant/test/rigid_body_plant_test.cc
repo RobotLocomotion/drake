@@ -142,7 +142,6 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
   for (double roll=0; roll <= M_PI_2; roll += kAngleInc) {
     for (double pitch=0; pitch <= M_PI_2; pitch += kAngleInc) {
       for (double yaw=0; yaw <= M_PI_2; yaw += kAngleInc) {
-
         // Update the orientation.
         Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
                         Eigen::AngleAxisd(pitch, Vector3d::UnitX()) *
@@ -152,8 +151,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
         xc->SetAtIndex(5, q.y());
         xc->SetAtIndex(6, q.z());
 
-        // Transform the generalized velocities to time derivative of generalized
-        // coordinates.
+        // Transform the generalized velocities to time derivative of
+        // generalized coordinates.
         plant.MapVelocityToConfigurationDerivatives(
             *context, generalized_velocities, &positions_derivatives);
 
