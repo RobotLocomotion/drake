@@ -71,6 +71,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
 GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
+  const double kTol = 1e-8;
   const int kNumPositions = 7;  // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
@@ -113,7 +114,7 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(plant.get_output_size(), kNumStates);
 
   Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
-  Vector3d w0(-1, 2, -3);  // Angular velocity in body's frame.
+  Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());
   generalized_velocities.get_mutable_value() << w0, v0;
   BasicVector<double> positions_derivatives(plant.get_num_positions());
@@ -121,6 +122,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   ASSERT_EQ(positions_derivatives.size(), kNumPositions);
   ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
 
+  // Transform the generalized velocities to time derivative of generalized
+  // coordinates.
   plant.MapVelocityToConfigurationDerivatives(
       *context, generalized_velocities, &positions_derivatives);
 
@@ -130,28 +133,44 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
   EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
-  // Computes the expected value of the time derivative of the quaternion
-  // component.
-  Quaterniond quaternion = Quaterniond::Identity();
-  Quaterniond dqdt =
-      Quaterniond(0, w0[0] / 2, w0[1] / 2, w0[2] / 2) * quaternion;
+  // Get the mutable context.
+  VectorBase<double>* xc = context->get_mutable_state()->
+      get_mutable_continuous_state()->get_mutable_generalized_position();
 
-  EXPECT_EQ(dqdt.w(), positions_derivatives.GetAtIndex(3));
-  EXPECT_EQ(dqdt.x(), positions_derivatives.GetAtIndex(4));
-  EXPECT_EQ(dqdt.y(), positions_derivatives.GetAtIndex(5));
-  EXPECT_EQ(dqdt.z(), positions_derivatives.GetAtIndex(6));
+  // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
+  const double kAngleInc = 10.0*M_PI/180.0;  // 5 degree increments
+  for (double roll=0; roll <= M_PI_2; roll += kAngleInc) {
+    for (double pitch=0; pitch <= M_PI_2; pitch += kAngleInc) {
+      for (double yaw=0; yaw <= M_PI_2; yaw += kAngleInc) {
 
-  // Map time derivative of generalized configuration back to generalized
-  // velocity.
-  plant.MapConfigurationDerivativesToVelocity(
-      *context, positions_derivatives, &generalized_velocities);
+        // Update the orientation.
+        Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
+                        Eigen::AngleAxisd(pitch, Vector3d::UnitX()) *
+                        Eigen::AngleAxisd(yaw, Vector3d::UnitY());
+        xc->SetAtIndex(3, q.w());
+        xc->SetAtIndex(4, q.x());
+        xc->SetAtIndex(5, q.y());
+        xc->SetAtIndex(6, q.z());
 
-  EXPECT_EQ(w0[0], generalized_velocities.GetAtIndex(0));
-  EXPECT_EQ(w0[1], generalized_velocities.GetAtIndex(1));
-  EXPECT_EQ(w0[2], generalized_velocities.GetAtIndex(2));
-  EXPECT_EQ(v0[0], generalized_velocities.GetAtIndex(3));
-  EXPECT_EQ(v0[1], generalized_velocities.GetAtIndex(4));
-  EXPECT_EQ(v0[2], generalized_velocities.GetAtIndex(5));
+        // Transform the generalized velocities to time derivative of generalized
+        // coordinates.
+        plant.MapVelocityToConfigurationDerivatives(
+            *context, generalized_velocities, &positions_derivatives);
+
+        // Map time derivative of generalized configuration back to generalized
+        // velocity.
+        plant.MapConfigurationDerivativesToVelocity(
+            *context, positions_derivatives, &generalized_velocities);
+
+        EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
+        EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
+        EXPECT_NEAR(w0[2], generalized_velocities.GetAtIndex(2), kTol);
+        EXPECT_NEAR(v0[0], generalized_velocities.GetAtIndex(3), kTol);
+        EXPECT_NEAR(v0[1], generalized_velocities.GetAtIndex(4), kTol);
+        EXPECT_NEAR(v0[2], generalized_velocities.GetAtIndex(5), kTol);
+      }
+    }
+  }
 }
 
 class KukaArmTest : public ::testing::Test {
