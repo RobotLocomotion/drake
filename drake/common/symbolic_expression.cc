@@ -665,5 +665,7 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
   return Expression{make_shared<ExpressionIfThenElse>(f_cond, e_then, e_else)};
 }
 
+Expression cond(const Expression& e) { return e; }
+
 }  // namespace symbolic
 }  // namespace drake
