@@ -8,7 +8,7 @@ namespace qp_inverse_dynamics {
 
 Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree<double>& r,
                                 const KinematicsCache<double>& cache,
-                                const RigidBody& body,
+                                const RigidBody<double>& body,
                                 const Eigen::Vector3d& local_offset) {
   const auto& element = cache.getElement(body);
   Eigen::Vector3d pt = element.transform_to_world.translation();
@@ -34,7 +34,7 @@ Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree<double>& r,
 
 Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
                                      const KinematicsCache<double>& cache,
-                                     const RigidBody& body,
+                                     const RigidBody<double>& body,
                                      const Eigen::Vector3d& local_offset) {
   std::vector<int> v_or_q_indices;
   Eigen::MatrixXd Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0,
@@ -64,7 +64,7 @@ Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
 
 Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
-    const RigidBody& body, const Eigen::Vector3d& local_offset) {
+    const RigidBody<double>& body, const Eigen::Vector3d& local_offset) {
   // position of point in world
   Eigen::Vector3d p =
       r.transformPoints(cache, local_offset, body.get_body_index(), 0);

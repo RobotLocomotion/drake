@@ -24,7 +24,7 @@ class BodyOfInterest {
    * lifespan of this obejct.
    * @param off Offset expressed in the body frame.
    */
-  BodyOfInterest(const std::string& name, const RigidBody& body,
+  BodyOfInterest(const std::string& name, const RigidBody<double>& body,
                  const Eigen::Vector3d& off)
       : name_(name), body_(&body), offset_(off) {}
 
@@ -47,7 +47,7 @@ class BodyOfInterest {
   }
 
   inline const std::string& name() const { return name_; }
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const Eigen::Isometry3d& pose() const { return pose_; }
   inline const Eigen::Vector6d& velocity() const { return vel_; }
   inline const Eigen::MatrixXd& J() const { return J_; }
@@ -59,7 +59,7 @@ class BodyOfInterest {
   // Name of the BodyOfInterest
   std::string name_;
   // The link which this BOI is attached to
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   // Offset is specified in the body frame.
   Eigen::Vector3d offset_;
 

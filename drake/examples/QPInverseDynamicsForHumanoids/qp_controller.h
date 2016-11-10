@@ -162,7 +162,7 @@ class ContactInformation {
    * lifespan of this obejct.
    * @param num_basis_per_contact_point number of basis per contact point
    */
-  ContactInformation(const RigidBody& body,
+  ContactInformation(const RigidBody<double>& body,
                      int num_basis = kDefaultNumBasisPerContactPoint)
       : body_(&body),
         num_basis_per_contact_point_(num_basis),
@@ -373,7 +373,7 @@ class ContactInformation {
     return contact_points_;
   }
   inline const Eigen::Vector3d& normal() const { return normal_; }
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline int num_basis_per_contact_point() const {
     return num_basis_per_contact_point_;
   }
@@ -396,7 +396,7 @@ class ContactInformation {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   // Offsets of the contact point specified in the body frame.
   std::vector<Eigen::Vector3d> contact_points_;
 
@@ -457,7 +457,7 @@ class DesiredBodyMotion : public ConstrainedValues {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit DesiredBodyMotion(const RigidBody& body)
+  explicit DesiredBodyMotion(const RigidBody<double>& body)
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
@@ -473,7 +473,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& name() const { return body_->get_name(); }
   inline bool control_during_contact() const { return control_during_contact_; }
 
@@ -483,7 +483,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   }
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
 
   // TODO(siyuan.feng) Actually implement this in the qp controller.
   bool control_during_contact_;
@@ -681,7 +681,7 @@ class ResolvedContact {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit ResolvedContact(const RigidBody& body) : body_(&body) {}
+  explicit ResolvedContact(const RigidBody<double>& body) : body_(&body) {}
 
   bool is_valid() const {
     bool ret = basis_.allFinite() && basis_.minCoeff() >= 0;
@@ -693,7 +693,7 @@ class ResolvedContact {
   }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& name() const { return body_->get_name(); }
   inline const Eigen::VectorXd& basis() const { return basis_; }
   inline const std::vector<Eigen::Vector3d>& point_forces() const {
@@ -737,7 +737,7 @@ class ResolvedContact {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   // Stacked scalars for all the basis vectors.
   Eigen::VectorXd basis_;
 
@@ -765,13 +765,13 @@ class BodyAcceleration {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit BodyAcceleration(const RigidBody& body)
+  explicit BodyAcceleration(const RigidBody<double>& body)
       : body_(&body), acceleration_(Eigen::Vector6d::Zero()) {}
 
   inline bool is_valid() const { return acceleration_.allFinite(); }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& name() const { return body_->get_name(); }
   inline const Eigen::Vector6d& acceleration() const { return acceleration_; }
 
@@ -781,7 +781,7 @@ class BodyAcceleration {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   Eigen::Vector6d acceleration_;
 };
 

@@ -17,6 +17,7 @@
 // This is particularly useful when the physics engine (at the RigidBody or
 // RigidBodyTree scope) needs to retrieve the parent body (for instance to
 // query its world transform).
+template <typename T>
 class RigidBody;
 
 namespace DrakeCollision {
@@ -59,7 +60,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
    * @param[in] body                    The associated rigid body.
    */
   Element(const Eigen::Isometry3d& T_element_to_local,
-          const RigidBody* body);
+          const RigidBody<double>* body);
 
   /**
    * Full constructor.
@@ -68,7 +69,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
    * @param[in] body                The associated rigid body.
    */
   Element(const DrakeShapes::Geometry& geometry,
-          const Eigen::Isometry3d& T_element_to_local, const RigidBody* body);
+          const Eigen::Isometry3d& T_element_to_local, const RigidBody<double>* body);
 
   virtual ~Element() {}
 
@@ -121,10 +122,10 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
 
   /** Returns a pointer to the `RigidBody` to which this `Element`
   is attached. **/
-  const RigidBody* get_body() const;
+  const RigidBody<double>* get_body() const;
 
   /** Sets the `RigidBody` this collision element is attached to. **/
-  void set_body(const RigidBody *body);
+  void set_body(const RigidBody<double> *body);
 
   /**
    * A toString method for this class.
@@ -138,7 +139,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
  private:
   ElementId id;
   bool is_static_{false};
-  const RigidBody* body_{};
+  const RigidBody<double>* body_{};
 
   // Collision cliques are defined as a set of collision elements that do not
   // collide.

@@ -24,7 +24,7 @@ namespace qp_inverse_dynamics {
  */
 Eigen::Vector6d GetTaskSpaceVel(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
-    const RigidBody& body,
+    const RigidBody<double>& body,
     const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
 /**
@@ -40,7 +40,7 @@ Eigen::Vector6d GetTaskSpaceVel(
  */
 Eigen::MatrixXd GetTaskSpaceJacobian(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
-    const RigidBody& body,
+    const RigidBody<double>& body,
     const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
 /**
@@ -57,7 +57,7 @@ Eigen::MatrixXd GetTaskSpaceJacobian(
  */
 Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
-    const RigidBody& body,
+    const RigidBody<double>& body,
     const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
 
 }  // namespace qp_inverse_dynamics

@@ -30,7 +30,7 @@ VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
       drake::multibody::joints::kFixed);
 
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
-  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
+  eigen_aligned_std_unordered_map<RigidBody<double> const*, drake::TwistVector<double>>
       f_ext;
   f_ext.clear();
 
