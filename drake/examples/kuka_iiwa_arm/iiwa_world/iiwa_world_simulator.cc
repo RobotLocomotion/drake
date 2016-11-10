@@ -160,6 +160,12 @@ void IiwaWorldSimulator<T>::StepBy(const T& time_step) {
 }
 
 template <typename T>
+void IiwaWorldSimulator<T>::StepTo(const T& final_time) {
+  simulator_->StepTo(final_time);
+}
+
+
+template <typename T>
 void IiwaWorldSimulator<T>::SetPenetrationContactParameters(
     double penetration_stiffness, double penetration_damping,
     double contact_friction) {
