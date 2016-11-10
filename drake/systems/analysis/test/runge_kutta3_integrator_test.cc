@@ -21,13 +21,12 @@ class RK3IntegratorTest : public ::testing::Test {
 
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass_;
   std::unique_ptr<Context<double>> context_;
-  const double DT = 1e-3;         // Integration step size.
-  const double kSpring = 300.0;   // N/m
-  const double kMass = 2.0;       // kg
+  const double DT = 1e-3;        // Integration step size.
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
 };
 
 TEST_F(RK3IntegratorTest, MiscAPI) {
-
   // Create the integrator.
   RungeKutta3Integrator<double> integrator(*spring_mass_, context_.get());
 
@@ -83,7 +82,8 @@ TEST_F(RK3IntegratorTest, SpringMassStep) {
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
-  spring_mass_->set_position(integrator.get_mutable_context(), kInitialPosition);
+  spring_mass_->set_position(integrator.get_mutable_context(),
+                             kInitialPosition);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -148,7 +148,8 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   const double kOmega = std::sqrt(kSpring / kMass);
 
   // Set initial condition using the Simulator's internal Context.
-  spring_mass_->set_position(integrator.get_mutable_context(), kInitialPosition);
+  spring_mass_->set_position(integrator.get_mutable_context(),
+                             kInitialPosition);
 
   // Take all the defaults.
   integrator.Initialize();
