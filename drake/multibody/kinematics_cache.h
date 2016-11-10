@@ -178,13 +178,13 @@ class KinematicsCache {
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
    * output space X, to a matrix A, which transforms the time
-   * derivative of generalized coordinates (q) to the same output X. For
+   * derivative of generalized coordinates (qdot) to the same output X. For
    * example, B could be a Jacobian matrix that transforms generalized
    * velocities to spatial velocities at the end-effector. Formally, this would
    * be the matrix of partial derivatives of end-effector configuration computed
    * with respect to quasi-coordinates (ꝗ). This function would allow
    * transforming that Jacobian so that all partial derivatives would be
-   * computed with respect to the time derivative of q.
+   * computed with respect to qdot.
    * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
    * @returns A a `m x nq` sized matrix, where `nq` is the dimension of the
@@ -193,8 +193,8 @@ class KinematicsCache {
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-  transformVelocityMappingToPositionDotMapping(
-      const Eigen::MatrixBase<Derived>& B) const {
+  transformVelocityMappingToQDotMapping(
+      const Eigen::MatrixBase<Derived> &B) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         A(B.rows(), get_num_positions());
@@ -217,12 +217,12 @@ class KinematicsCache {
 
   /**
    * Converts a matrix A, which transforms the time derivative of generalized
-   * coordinates (q) to an output space X, to a matrix B, which transforms
+   * coordinates (qdot) to an output space X, to a matrix B, which transforms
    * generalized velocities (v) to the same space X. For example, A could be a
-   * Jacobian matrix that transforms the time derivatives of generalized
-   * coordinates to spatial velocities at the end effector. Formally, this
-   * would be the matrix of partial derivatives of end-effector configuration
-   * computed with respect to q. This function would allow the user to
+   * Jacobian matrix that transforms qdot to spatial velocities at the end
+   * effector. Formally, this would be the matrix of partial derivatives of
+   * end-effector configuration computed with respect to the generalized
+   * coordinates (q). This function would allow the user to
    * transform this Jacobian matrix to the more commonly used one: the matrix of
    * partial derivatives of end-effector configuration computed with respect to
    * quasi-coordinates (ꝗ).
@@ -235,8 +235,8 @@ class KinematicsCache {
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-  transformPositionDotMappingToVelocityMapping(
-      const Eigen::MatrixBase<Derived>& A) const {
+  transformQDotMappingToVelocityMapping(
+      const Eigen::MatrixBase<Derived> &A) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         B(A.rows(), get_num_velocities());

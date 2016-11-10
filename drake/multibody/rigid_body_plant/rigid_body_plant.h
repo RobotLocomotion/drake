@@ -185,16 +185,16 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 
   // System<T> override.
-  void DoMapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      VectorBase<T>* positions_derivative) const override;
+  void DoMapVelocityToQDot(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      VectorBase<T> *positions_derivative) const override;
 
 // System<T> override.
-void DoMapConfigurationDerivativesToVelocity(
-    const Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& configuration_dot,
-    VectorBase<T>* generalized_velocity) const override;
+void DoMapQDotToVelocity(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &configuration_dot,
+      VectorBase<T> *generalized_velocity) const override;
 
  private:
   // Some parameters defining the contact.

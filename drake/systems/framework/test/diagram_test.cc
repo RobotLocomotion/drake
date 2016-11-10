@@ -557,11 +557,11 @@ class SecondOrderStateSystem : public LeafSystem<double> {
   }
 
   // qdot = 2 * v.
-  void DoMapVelocityToConfigurationDerivatives(
+  void DoMapVelocityToQDot(
       const Context<double>& context,
       const Eigen::Ref<const VectorX<double>>& generalized_velocity,
-      VectorBase<double>* configuration_derivatives) const override {
-    configuration_derivatives->SetAtIndex(
+      VectorBase<double>* qdot) const override {
+    qdot->SetAtIndex(
         0, 2 * generalized_velocity[0]);
   }
 };
@@ -594,26 +594,26 @@ class SecondOrderStateDiagram : public Diagram<double> {
   SecondOrderStateSystem* sys2_ = nullptr;
 };
 
-// Tests that MapVelocityToConfigurationDerivatives recursively invokes
-// MapVelocityToConfigurationDerivatives on the constituent systems,
+// Tests that MapVelocityToQDot recursively invokes
+// MapVelocityToQDot on the constituent systems,
 // and preserves placewise correspondence.
-GTEST_TEST(SecondOrderStateTest, MapVelocityToConfigurationDerivatives) {
+GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
   SecondOrderStateDiagram diagram;
   std::unique_ptr<Context<double>> context = diagram.CreateDefaultContext();
   diagram.x(context.get(), diagram.sys1())->set_v(13);
   diagram.x(context.get(), diagram.sys2())->set_v(17);
 
-  BasicVector<double> configuration_derivatives(2);
+  BasicVector<double> qdot(2);
   const VectorBase<double>& v =
       context->get_continuous_state()->get_generalized_velocity();
-  diagram.MapVelocityToConfigurationDerivatives(*context, v,
-                                                &configuration_derivatives);
+  diagram.MapVelocityToQDot(*context, v,
+                            &qdot);
 
   // The order of these derivatives is arbitrary, so this test is brittle.
   // TODO(david-german-tri): Use UnorderedElementsAre once gmock is available
   // in the superbuild. https://github.com/RobotLocomotion/drake/issues/3133
-  EXPECT_EQ(configuration_derivatives.GetAtIndex(0), 34);
-  EXPECT_EQ(configuration_derivatives.GetAtIndex(1), 26);
+  EXPECT_EQ(qdot.GetAtIndex(0), 34);
+  EXPECT_EQ(qdot.GetAtIndex(1), 26);
 }
 
 // Test for GetSystems.

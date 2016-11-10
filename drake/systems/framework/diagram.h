@@ -329,10 +329,10 @@ class Diagram : public System<T>,
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
   /// in its context.
-  void DoMapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const override {
+  void DoMapVelocityToQDot(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      VectorBase<T>* qdot) const override {
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
@@ -340,7 +340,7 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(xc != nullptr);
     const int nq = xc->get_generalized_position().size();
     const int nv = xc->get_generalized_velocity().size();
-    DRAKE_DEMAND(nq == configuration_derivatives->size());
+    DRAKE_DEMAND(nq == qdot->size());
     DRAKE_DEMAND(nv == generalized_velocity.size());
 
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -351,7 +351,7 @@ class Diagram : public System<T>,
     // is valid because the DiagramContinuousState guarantees that the subsystem
     // states are concatenated in sorted order.
     int v_index = 0;  // The next index to read in generalized_velocity.
-    int q_index = 0;  // The next index to write in configuration_derivatives.
+    int q_index = 0;  // The next index to write in qdot.
     for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
@@ -365,12 +365,12 @@ class Diagram : public System<T>,
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
-      // Select the chunk of configuration_derivatives belonging to subsystem i.
+      // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc->get_generalized_position().size();
-      Subvector<T> dq_slice(configuration_derivatives, q_index, num_q);
+      Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapVelocityToConfigurationDerivatives(
+      sorted_systems_[i]->MapVelocityToQDot(
           *subcontext, v_slice, &dq_slice);
 
       // Advance the indices.

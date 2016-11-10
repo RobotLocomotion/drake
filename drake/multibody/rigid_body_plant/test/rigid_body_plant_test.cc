@@ -123,8 +123,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
 
   // Transform the generalized velocities to time derivative of generalized
   // coordinates.
-  plant.MapVelocityToConfigurationDerivatives(*context, generalized_velocities,
-                                              &positions_derivatives);
+  plant.MapVelocityToQDot(*context, generalized_velocities,
+                          &positions_derivatives);
 
   // For zero rotation the velocity vector in the body's frame and in the
   // world's frame is the same.
@@ -153,12 +153,12 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
 
         // Transform the generalized velocities to time derivative of
         // generalized coordinates.
-        plant.MapVelocityToConfigurationDerivatives(
+        plant.MapVelocityToQDot(
             *context, generalized_velocities, &positions_derivatives);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.
-        plant.MapConfigurationDerivativesToVelocity(
+        plant.MapQDotToVelocity(
             *context, positions_derivatives, &generalized_velocities);
 
         EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
