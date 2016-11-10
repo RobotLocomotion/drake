@@ -777,9 +777,23 @@ class Diagram : public System<T>,
   void HandlePublish(
       const Context<T>& context,
       const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
-    DRAKE_ABORT_MSG("Diagram<T>::HandlePublish is not implemented yet.");
-    // TODO(david-german-tri): Implement, along the lines of
-    // https://gist.github.com/david-german-tri/c9093c9be532fcd70f1dbb82c6431148
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kPublishAction) {
+          sorted_systems_[index]->Publish(*subcontext, event);
+        }
+      }
+    }
   }
 
   /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.

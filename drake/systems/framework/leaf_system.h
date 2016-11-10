@@ -191,6 +191,20 @@ class LeafSystem : public System<T> {
     periodic_events_ = {event};
   }
 
+  /// Declares that this System has a simple, fixed-period publish.
+  /// The first tick will be at t = period_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may update
+  /// the discrete state. Clobbers any other periodic behaviors previously
+  /// declared.
+  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
+  /// periodic behaviors.
+  void DeclarePublishPeriodSec(const T& period_sec) {
+    PeriodicEvent<T> event;
+    event.period_sec = period_sec;
+    event.event.action = DiscreteEvent<T>::kPublishAction;
+    periodic_events_ = {event};
+  }
+
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
   /// structure. Has no effect if AllocateContinuousState is overridden.
