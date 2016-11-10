@@ -793,7 +793,7 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            data expressed in the world frame.  There will
    *                            be one entry per pair of tested collision
    *                            elements.
-   * @returns                   True if the method ran successfully.
+   * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
                              std::vector<DrakeCollision::PointPair>* pairs,
@@ -813,7 +813,7 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            data expressed in the world frame.  There will
    *                            be one entry per pair of tested collision
    *                            elements.
-   * @returns                   True if the method ran successfully.
+   * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPointsInSet(
       const KinematicsCache<double>& cache,
@@ -870,7 +870,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * @return A pointer to the owning RigidBody.
    * @throws std::logic_error if no body can be mapped to the element id.
    */
-  const RigidBody* FindBody(DrakeCollision::ElementId element_id);
+  const RigidBody* FindBody(DrakeCollision::ElementId element_id) const;
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong

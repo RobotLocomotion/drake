@@ -19,10 +19,16 @@ namespace systems {
       effect of applying all individual ContactDetails to element e1.
     - An optional list of ContactDetail instances.
 
- Some forms of ContactDetail are more expensive than others. A contact response
- model may chose *not* to cache all of the details to save copying time and
- memory.  This beahvior will eventually be subject to user configuration; the
- user will specify copying, even for expensive ContactDetail types.
+ Some forms of ContactDetail are more expensive than others. However,
+ ContactInfo instances will need to be copied. The contact model can defines a
+ default behavior of whether the ContactDetails are stored in the corresponding
+ ContactInfo instance or not. If this happens, the ContactInfo instance will
+ contain a valid resultant force, but no contact details.
+
+ Eventually, this beahvior will be subject to user configuration; the
+ user will specify whether they want the details to be included in the
+ ContactInfo, overriding the contact model's default behavior, and paying the
+ corresponding copying cost.
 
  The resultant force and contact details, if they are included, are all defined
  such that they act on the first element in the pair (e1).

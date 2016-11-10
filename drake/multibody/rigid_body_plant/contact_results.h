@@ -53,7 +53,7 @@ class ContactResults {
   // Reports a contact between two elements and prepares a ContactInfo. The
   // caller should populate the ContactInfo with the appropriate details.
   ContactInfo<T>& AddContact(DrakeCollision::ElementId element_a,
-                  DrakeCollision::ElementId element_b);
+                             DrakeCollision::ElementId element_b);
 
   std::vector<ContactInfo<T>> contacts_;
 };

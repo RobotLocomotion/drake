@@ -2124,7 +2124,7 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
 
 template <typename T>
 const RigidBody* RigidBodyTree<T>::FindBody(
-    DrakeCollision::ElementId element_id) {
+    DrakeCollision::ElementId element_id) const {
   auto element = collision_model_->FindElement(element_id);
   if (element != nullptr) {
     return element->get_body();

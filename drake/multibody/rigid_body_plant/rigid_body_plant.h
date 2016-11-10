@@ -202,7 +202,7 @@ void DoMapQDotToVelocity(
  private:
   // Computes the contact results for feeding the corresponding output port.
   void ComputeContactResults(const Context<T>& context,
-                             ContactResults<T> * contacts) const;
+                             ContactResults<T>* contacts) const;
 
   // Computes the generalized forces on all bodies due to contact.
   //
