@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/simulator.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/math/autodiff_overloads.h"
 
 namespace drake {
 namespace systems {

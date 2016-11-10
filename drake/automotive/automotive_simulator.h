@@ -12,7 +12,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace automotive {
@@ -54,7 +54,7 @@ class AutomotiveSimulator {
   /// @param[in] sdf_filename The name of the SDF file to load as the
   /// visualization for the simple car. This file must contain one free-floating
   /// model of a vehicle (i.e., a model that's not connected to the world). A
-  /// floating joint of type systems::plants::joints::kRollPitchYaw is added to
+  /// floating joint of type multibody::joints::kRollPitchYaw is added to
   /// connect the vehicle model to the world.
   ///
   /// @return The model instance ID of the SimpleCar that was just added to

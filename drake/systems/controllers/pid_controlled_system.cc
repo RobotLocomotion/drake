@@ -1,5 +1,6 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -132,8 +133,8 @@ void PidControlledSystem<T>::SetDefaultState(
       VectorX<T>::Zero(plant_->get_input_port(0).get_size()));
 }
 
-template class DRAKE_EXPORT PidControlledSystem<double>;
-template class DRAKE_EXPORT PidControlledSystem<AutoDiffXd>;
+template class PidControlledSystem<double>;
+template class PidControlledSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
@@ -18,8 +17,7 @@ namespace lcm {
  * Assumes the number and order of values in the LCM message and the
  * drake::systems::VectorBase are identical.
  */
-class DRAKE_EXPORT LcmtDrakeSignalTranslator
-    : public LcmAndVectorBaseTranslator {
+class LcmtDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
  public:
   /**
    * A constructor that sets the expected sizes of the LCM message and the

@@ -4,7 +4,7 @@
 
 #include <vector>
 #include <Eigen/Core>
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 #include "drake/common/trig_poly.h"
 /*
  * NOTE: include AutoDiff AFTER trig_poly.h.

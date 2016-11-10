@@ -3,22 +3,14 @@
 package(default_visibility = ["//visibility:public"])
 DEPS = ["//drake/common:common"]
 
-# TODO(jwnimmer-tri) Seems like this should live in common, with the other
-# scalartype stuff?
-cc_library(
-    name = "autodiff_overloads",
-    hdrs = ["autodiff_overloads.h"],
-    deps = DEPS + ["//drake/common:autodiff"],
-    linkstatic = 1)
-
 cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
-    deps = DEPS + [":autodiff_overloads"],
+    deps = DEPS + ["//drake/common:autodiff"],
     linkstatic = 1)
 
-# TODO(jwnimmer-tri) Imrprove name for this library, "pose_representations"?
+# TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
 cc_library(
     name = "geometric_transform",
     srcs = [
@@ -33,6 +25,8 @@ cc_library(
         "quaternion.h",
         "random_rotation.h",
         "roll_pitch_yaw.h",
+        "roll_pitch_yaw_not_using_quaternion.h",
+        "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
     ],
     deps = DEPS,
@@ -64,11 +58,13 @@ cc_library(
     hdrs = ["eigen_sparse_triplet.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "expmap",
     hdrs = ["expmap.h"],
     deps = DEPS + [":gradient"],
     linkstatic = 1)
+
 cc_library(
     name = "jacobian",
     hdrs = ["jacobian.h"],

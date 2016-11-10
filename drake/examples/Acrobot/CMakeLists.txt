@@ -1,5 +1,6 @@
-add_subdirectory(@AcrobotPlantCpp)
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 drake_add_matlab_test(NAME examples/Acrobot/runLQR COMMAND runLQR)
 drake_add_matlab_test(NAME examples/Acrobot/runMaxROA REQUIRES sedumi spotless OPTIONAL mosek COMMAND runMaxROA)

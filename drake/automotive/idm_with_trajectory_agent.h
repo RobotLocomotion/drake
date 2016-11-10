@@ -15,7 +15,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.
@@ -40,6 +40,7 @@ class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 };
 
 }  // namespace automotive

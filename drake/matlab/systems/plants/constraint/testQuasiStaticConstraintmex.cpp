@@ -1,8 +1,8 @@
 #include <mex.h>
 
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <cstring>
 /*
  * [active_flag, num_weights, constraint, dconstraint, lower_bound, upper_bound] =

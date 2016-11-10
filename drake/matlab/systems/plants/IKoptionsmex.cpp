@@ -1,8 +1,8 @@
 #include <mex.h>
 
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using namespace std;
 using namespace Eigen;

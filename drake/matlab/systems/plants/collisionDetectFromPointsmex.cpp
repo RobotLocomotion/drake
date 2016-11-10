@@ -6,7 +6,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using namespace Eigen;

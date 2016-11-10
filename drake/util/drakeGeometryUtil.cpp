@@ -1,6 +1,5 @@
 #include "drake/util/drakeGeometryUtil.h"
 
-#include <Eigen/Sparse>
 #include <stdexcept>
 
 #include "drake/math/axis_angle.h"
@@ -18,7 +17,7 @@ double angleDiff(double phi1, double phi2) {
   return d;
 }
 
-DRAKE_EXPORT int rotationRepresentationSize(int rotation_type) {
+int rotationRepresentationSize(int rotation_type) {
   switch (rotation_type) {
     case 0:
       return 0;

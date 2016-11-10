@@ -2,11 +2,10 @@
 
 #include <array>
 #include <string>
-#include "drake/common/drake_export.h"
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
 // TODO(tkoolen): replace with enum class
-class DRAKE_EXPORT Side {
+class Side {
  public:
   enum SideEnum { LEFT, RIGHT };
 

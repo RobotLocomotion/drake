@@ -19,4 +19,6 @@ drake_install_headers(
   trajectory_source.h
   zero_order_hold.h)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

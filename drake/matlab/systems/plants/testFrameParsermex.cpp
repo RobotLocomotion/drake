@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <Eigen/Dense>
 
 using namespace std;

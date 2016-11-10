@@ -27,6 +27,7 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
+  autodiff_overloads.h
   constants.h
   drake_assert.h
   drake_deprecated.h
@@ -78,4 +79,6 @@ pods_install_pkg_config_file(drake-common
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

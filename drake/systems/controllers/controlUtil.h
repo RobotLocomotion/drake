@@ -8,8 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_stl_types.h"
-#include "drake/common/drake_export.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 const int m_surface_tangents =
@@ -36,11 +35,11 @@ struct DrakeRobotState {
   Eigen::VectorXd qd;
 };
 
-DRAKE_EXPORT bool isSupportElementActive(
+bool isSupportElementActive(
     SupportStateElement* se, bool contact_force_detected,
     bool kinematic_contact_detected);
 
-DRAKE_EXPORT Eigen::Matrix<bool, Eigen::Dynamic, 1>
+Eigen::Matrix<bool, Eigen::Dynamic, 1>
 getActiveSupportMask(
     RigidBodyTree<double>* r, Eigen::VectorXd q, Eigen::VectorXd qd,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -49,7 +48,7 @@ getActiveSupportMask(
         contact_force_detected,
     double contact_threshold);
 
-DRAKE_EXPORT drake::eigen_aligned_std_vector<SupportStateElement>
+drake::eigen_aligned_std_vector<SupportStateElement>
 getActiveSupports(
     const RigidBodyTree<double>& r,
     const Eigen::VectorXd& q, const Eigen::VectorXd& qd,
@@ -61,40 +60,40 @@ getActiveSupports(
 
 template <typename DerivedA, typename DerivedB>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-DRAKE_EXPORT void getRows(std::set<int>& rows,
-                          Eigen::MatrixBase<DerivedA> const& M,
-                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                          Eigen::MatrixBase<DerivedB>& Msub);
+void getRows(std::set<int>& rows,
+             Eigen::MatrixBase<DerivedA> const& M,
+             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+             Eigen::MatrixBase<DerivedB>& Msub);
 
 template <typename DerivedA, typename DerivedB>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-DRAKE_EXPORT void getCols(std::set<int>& cols,
-                          Eigen::MatrixBase<DerivedA> const& M,
-                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                          Eigen::MatrixBase<DerivedB>& Msub);
+void getCols(std::set<int>& cols,
+             Eigen::MatrixBase<DerivedA> const& M,
+             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+             Eigen::MatrixBase<DerivedB>& Msub);
 
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
-DRAKE_EXPORT void angleDiff(
+void angleDiff(
     Eigen::MatrixBase<DerivedPhi1> const& phi1,
     Eigen::MatrixBase<DerivedPhi2> const& phi2,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedD>& d);
 
-DRAKE_EXPORT bool inSupport(
+bool inSupport(
     const drake::eigen_aligned_std_vector<SupportStateElement>& supports,
     int body_idx);
-DRAKE_EXPORT void surfaceTangents(
+void surfaceTangents(
     const Eigen::Vector3d& normal,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Matrix<double, 3, m_surface_tangents>& d);
-DRAKE_EXPORT int contactPhi(
+int contactPhi(
     const RigidBodyTree<double>& r,
     const KinematicsCache<double>& cache,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     SupportStateElement& supp,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::VectorXd& phi);
-DRAKE_EXPORT int contactConstraintsBV(
+int contactConstraintsBV(
     const RigidBodyTree<double>& r,
     const KinematicsCache<double>& cache, int nc,
     std::vector<double> support_mus,
@@ -104,12 +103,12 @@ DRAKE_EXPORT int contactConstraintsBV(
     Eigen::MatrixXd& B, Eigen::MatrixXd& JB, Eigen::MatrixXd& Jp,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::VectorXd& Jpdotv, Eigen::MatrixXd& normals);
-DRAKE_EXPORT Eigen::MatrixXd individualSupportCOPs(
+Eigen::MatrixXd individualSupportCOPs(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const drake::eigen_aligned_std_vector<SupportStateElement>& active_supports,
     const Eigen::MatrixXd& normals, const Eigen::MatrixXd& B,
     const Eigen::VectorXd& beta);
-DRAKE_EXPORT Vector6d bodySpatialMotionPD(
+Vector6d bodySpatialMotionPD(
     const RigidBodyTree<double>& r, const DrakeRobotState& robot_state,
     const int body_index, const Eigen::Isometry3d& body_pose_des,
     const Eigen::Ref<const Vector6d>& body_v_des,
@@ -117,7 +116,7 @@ DRAKE_EXPORT Vector6d bodySpatialMotionPD(
     const Eigen::Ref<const Vector6d>& Kp, const Eigen::Ref<const Vector6d>& Kd,
     const Eigen::Isometry3d& T_task_to_world = Eigen::Isometry3d::Identity());
 
-DRAKE_EXPORT void evaluateXYZExpmapCubicSpline(
+void evaluateXYZExpmapCubicSpline(
     double t, const PiecewisePolynomial<double>& spline,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Isometry3d& body_pose_des, Vector6d& xyzdot_angular_vel,
@@ -135,5 +134,5 @@ struct JointNames {
   std::vector<std::string> drake;
 };
 
-DRAKE_EXPORT void getRobotJointIndexMap(
+void getRobotJointIndexMap(
     JointNames* joint_names, RobotJointIndexMap* joint_map);

@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -57,25 +58,42 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
 /**
  * Computes the angle axis representation from a rotation matrix.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param R  the 3 x 3 rotation matrix.
- * @return the angle-axis representation, a 4 x 1 vector as [x;y;z;angle]. The
- * axis [x;y;z] has unit length, the angle satisfies -PI <= angle <= PI.
+ * @return angle-axis representation, 4 x 1 vector as [x, y, z, angle].
+ * [x, y, z] is a unit vector and 0 <= angle <= PI.
  */
 template <typename Derived>
 Vector4<typename Derived::Scalar> rotmat2axis(
     const Eigen::MatrixBase<Derived>& R) {
-  Eigen::AngleAxis<typename Derived::Scalar> a_eigen(R);
-  Eigen::Vector4d a;
-  a.head<3>() = a_eigen.axis();
-  a(3) = a_eigen.angle();
-  return a;
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+  Eigen::AngleAxis<typename Derived::Scalar> angle_axis(R);
+
+  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
+  // After  October 2016, Eigen calculates  0 <= angle <= PI.
+  // Ensure consistency between pre/post October 2016 Eigen versions.
+  using Scalar = typename Derived::Scalar;
+  Scalar& angle = angle_axis.angle();
+  Vector3<Scalar>& axis = angle_axis.axis();
+  if (angle >= M_PI) {
+    angle = 2 * M_PI - angle;
+    axis = -axis;
+  }
+
+  Eigen::Vector4d aa;
+  aa.head<3>() = axis;
+  aa(3) = angle_axis.angle();
+  DRAKE_ASSERT(0 <= aa(3) && aa(3) <= M_PI);
+  return aa;
 }
 
 /**
- * Computes the Euler angles from rotation matrix.
- * @param R A 3 x 3 rotation matrix
- * @return A 3 x 1 Euler angles about Body-fixed z-y'-x'' axes by [rpy(2),
- * rpy(1), rpy(0)]
+ * Computes SpaceXYZ Euler angles from rotation matrix.
+ * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+ * @param R 3x3 rotation matrix.
+ * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
+ * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
+ * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
  * @see rpy2rotmat
  */
 template <typename Derived>
@@ -95,7 +113,6 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   return drake::Vector3<typename Derived::Scalar>(
       euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
 */
-
   // This implementation is adapted from simbody
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
   using std::atan2;
@@ -146,8 +163,8 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   // -pi/2 <= theta2 <= pi/2
   // -pi   <= theta3 <= pi
 
-  // Switch order on return due to Drake's convention of SpaceXYZ theta123
-  // (which is equivalent to BodyZYX theta321).
+  // Return in Drake/ROS conventional SpaceXYZ (roll-pitch-yaw) order
+  // (which is equivalent to BodyZYX theta1, theta2, theta3 order).
   return drake::Vector3<Scalar>(theta3, theta2, theta1);
 }
 

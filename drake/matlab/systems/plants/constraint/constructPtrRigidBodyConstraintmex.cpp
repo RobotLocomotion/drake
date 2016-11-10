@@ -1,8 +1,8 @@
 #include "drake/matlab/systems/plants/constraint/constructPtrRigidBodyConstraint.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/systems/controllers/controlUtil.h"
 

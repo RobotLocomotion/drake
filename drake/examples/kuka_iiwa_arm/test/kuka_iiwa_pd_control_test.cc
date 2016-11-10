@@ -8,7 +8,7 @@
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/pd_control_system.h"
 #include "drake/system1/robot_state_tap.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 
 using drake::AffineSystem;
 using Eigen::MatrixXd;
