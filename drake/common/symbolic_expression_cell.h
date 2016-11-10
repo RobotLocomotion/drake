@@ -14,11 +14,15 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
 namespace drake {
 namespace symbolic {
+
+class Expression;
+class Formula;
 
 /** Represents an abstract class which is the base of concrete
  * symbolic-expression classes.
@@ -596,5 +600,37 @@ class ExpressionMax : public BinaryExpressionCell {
  private:
   double DoEvaluate(double v1, double v2) const override;
 };
+
+/** Symbolic expression representing if-then-else expression.  */
+class ExpressionIfThenElse : public ExpressionCell {
+ public:
+  /** Constructs if-then-else expression from @p f_cond, @p e_then, and @p
+   * e_else. */
+  ExpressionIfThenElse(const Formula& f_cond, const Expression& e_then,
+                       const Expression& e_else);
+  /** Collects variables in expression. */
+  Variables GetVariables() const override;
+  /** Checks structural equality. */
+  bool EqualTo(const ExpressionCell& e) const override;
+  /** Provides lexicographical ordering between expressions. */
+  bool Less(const ExpressionCell& e) const override;
+  /** Evaluates expression under a given environment @p env. */
+  double Evaluate(const Environment& env) const override;
+  /** Outputs string representation of expression into output stream @p os. */
+  std::ostream& Display(std::ostream& os) const override;
+
+  /** Returns the conditional formula. */
+  const Formula& get_conditional_formula() const { return f_cond_; }
+  /** Returns the 'then' expression. */
+  const Expression& get_then_expression() const { return e_then_; }
+  /** Returns the 'else' expression. */
+  const Expression& get_else_expression() const { return e_else_; }
+
+ private:
+  const Formula f_cond_;
+  const Expression e_then_;
+  const Expression e_else_;
+};
+
 }  // namespace symbolic
 }  // namespace drake
