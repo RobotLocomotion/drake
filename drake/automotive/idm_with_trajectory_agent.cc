@@ -6,10 +6,10 @@
 #include <Eigen/Geometry>
 
 #include "drake/automotive/gen/idm_with_trajectory_agent_parameters.h"
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/math/autodiff_overloads.h"
 
 namespace drake {
 namespace automotive {
@@ -125,7 +125,7 @@ IdmWithTrajectoryAgent<T>::AllocateParameters() const {
 // These instantiations must match the API documentation in
 // idm_with_trajectory_agent.h.
 template class IdmWithTrajectoryAgent<double>;
-template class IdmWithTrajectoryAgent<drake::TaylorVarXd>;
+template class IdmWithTrajectoryAgent<drake::AutoDiffXd>;
 template class IdmWithTrajectoryAgent<drake::symbolic::Expression>;
 
 }  // namespace automotive

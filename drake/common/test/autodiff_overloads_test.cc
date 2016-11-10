@@ -1,4 +1,4 @@
-#include "drake/math/autodiff_overloads.h"
+#include "drake/common/autodiff_overloads.h"
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
