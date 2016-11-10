@@ -109,6 +109,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
+  const int kNumTimesteps = 5;  // Number of elements in t.
   const std::vector<double> t { 0.0, 2.0, 5.0, 7.0, 9.0 };
   MatrixXd q0(tree.get_num_positions(), t.size());
   for (size_t i = 0; i < t.size(); ++i) {
@@ -122,7 +123,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&tree);
-  int info[t.size()];
+  int info[kNumTimesteps];
   MatrixXd q_sol(tree.get_num_positions(), t.size());
   std::vector<std::string> infeasible_constraint;
 
