@@ -284,6 +284,27 @@ DRAKE_EXPORT Expression max(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
                                      const Expression& e_then,
                                      const Expression& e_else);
+
+/** Constructs conditional expression (similar to Lisp's cond).
+
+  @verbatim
+    cond(cond_1, exp_1,
+         cond_2, exp_2,
+            ...,   ...,
+         cond_n, exp_n,
+         exp_{n+1})
+  @endverbatim
+
+  The value returned by the above cond expression is @c exp_1 if @c cond_1 is
+  true; else if @c cond_2 is true then @c exp_2; ... ; else if @c cond_n is true
+  then @c exp_n. If none of the conditions are true, it returns @c exp_{n+1}.
+ */
+Expression cond(const Expression& e);
+template <typename... Rest>
+Expression cond(const Formula& f_cond, const Expression& e_then, Rest... rest) {
+  return if_then_else(f_cond, e_then, cond(rest...));
+}
+
 DRAKE_EXPORT void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
