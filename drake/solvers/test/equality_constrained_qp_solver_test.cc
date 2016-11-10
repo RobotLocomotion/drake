@@ -1,3 +1,4 @@
+#include "gtest/gtest.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 
 namespace drake {
@@ -27,8 +28,12 @@ GTEST_TEST(TestEQP, Example) {
   // Setup the QP
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(3);
+/*
   auto objective = prog.AddQuadraticErrorCost(G, c);
-  auto constraint = prog.AddLinearConstraint(A, b);
+  auto constraint = prog.AddLinearEqualityConstraint(A, b);
+  */
+  prog.AddQuadraticErrorCost(G, c);
+  prog.AddLinearEqualityConstraint(A, b);
 
   // Solve the QP
   SolutionResult result = SolutionResult::kUnknownError;
@@ -42,6 +47,7 @@ GTEST_TEST(TestEQP, Example) {
       return;  // missing externals... the test should abort and report
   }
 
+  std::cout << x.value() << std::endl;
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 
