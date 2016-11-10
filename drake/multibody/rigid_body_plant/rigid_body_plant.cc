@@ -430,12 +430,12 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      int bodyA_idx = pair.elementA->get_body()->get_body_index();
-      int bodyB_idx = pair.elementB->get_body()->get_body_index();
-      auto JA =
-          tree_->transformPointsJacobian(kinsol, pair.ptA, bodyA_idx, 0, false);
-      auto JB =
-          tree_->transformPointsJacobian(kinsol, pair.ptB, bodyB_idx, 0, false);
+      int body_a_index = pair.elementA->get_body()->get_body_index();
+      int body_b_index = pair.elementB->get_body()->get_body_index();
+      auto JA = tree_->transformPointsJacobian(kinsol, pair.ptA, body_a_index,
+                                               0, false);
+      auto JB = tree_->transformPointsJacobian(kinsol, pair.ptB, body_b_index,
+                                               0, false);
       Vector3<T> this_normal = pair.normal;
 
       // Computes a local surface coordinate frame with the local z axis
@@ -487,10 +487,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         if (contacts != nullptr) {
           Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
 
-          ContactInfo<T>& contactInfo = contacts->AddContact(
+          ContactInfo<T>& contact_info = contacts->AddContact(
               pair.elementA->getId(), pair.elementB->getId());
           ContactResultantForceCalculator<T> calculator(
-              &contactInfo.get_mutable_contact_details());
+              &contact_info.get_mutable_contact_details());
 
           // This contact model produces responses that only have a force
           // component (i.e., the torque portion of the wrench is zero.)
@@ -499,10 +499,9 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           Vector3<T> force = R.transpose() * fA;
           Vector3<T> normal = R.transpose().template block<3, 1>(0, 2);
 
-          // TODO(SeanCurtis-TRI): Add interface for supplying a contact detail.
           calculator.AddForce(point, normal, force);
 
-          contactInfo.set_resultant_force(calculator.ComputeResultant());
+          contact_info.set_resultant_force(calculator.ComputeResultant());
         }
       }
     }

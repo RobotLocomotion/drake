@@ -1,4 +1,4 @@
-#include <drake/multibody/rigid_body_plant/rigid_body_plant.h>
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
 #include <memory>
 
@@ -71,8 +71,7 @@ class ContactResultTest : public ::testing::Test {
   //  each other such there is 2 * `distance` units gap between them.  Negative
   //  numbers imply collision.
   const ContactResults<double>& RunTest(double distance) {
-    auto unique_tree =
-        unique_ptr<RigidBodyTree<double>>(new RigidBodyTree<double>());
+    auto unique_tree = make_unique<RigidBodyTree<double>>();
     tree_ = unique_tree.get();
 
     Vector3d pos;
@@ -85,7 +84,7 @@ class ContactResultTest : public ::testing::Test {
 
     // Populate the plant.
     // Note: This is done here instead of the SetUp method because it appears
-    //  the plan requires a *compiled* tree at constructor time.
+    //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
@@ -164,10 +163,11 @@ TEST_F(ContactResultTest, SingleCollision) {
 
   const auto& details = info.get_contact_details();
   ASSERT_EQ(details.size(), 1);
-  auto detail = details[0].get();
-  auto detail_force = detail->ComputeContactForce();
+  auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));
+  ASSERT_TRUE(CompareMatrices(detail_force.get_application_point(),
+                              Vector3<double>::Zero()));
 }
 }  // namespace
 }  // namespace test

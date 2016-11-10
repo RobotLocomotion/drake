@@ -200,24 +200,21 @@ void DoMapQDotToVelocity(
       VectorBase<T> *generalized_velocity) const override;
 
  private:
-  /// Computes the contact results for feeding the corresponding output port.
-  ///
-  /// @param[in]     context     The system context.
-  /// @param[in,out] contacts    The contact result port data
+  // Computes the contact results for feeding the corresponding output port.
   void ComputeContactResults(const Context<T>& context,
                              ContactResults<T> * contacts) const;
 
-  /// Computes the generalized forces on all bodies due to contact.
-  ///
-  /// @param kinsol         The kinematics of the rigid body system at the time
-  ///                       of contact evaluation.
-  /// @param[out] contacts  The optional contact results.  If non-null, stores
-  ///                       the contact information for consuming on the output
-  ///                       port.
-  /// @return            The generalized forces across all the bodies due to
-  ///                    contact response.
+  // Computes the generalized forces on all bodies due to contact.
+  //
+  // @param kinsol         The kinematics of the rigid body system at the time
+  //                       of contact evaluation.
+  // @param[out] contacts  The optional contact results.  If non-null, stores
+  //                       the contact information for consuming on the output
+  //                       port.
+  // @return               The generalized forces across all the bodies due to
+  //                       contact response.
   VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
-                                 ContactResults<T> * contacts = nullptr) const;
+                                 ContactResults<T>* contacts = nullptr) const;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
@@ -226,9 +223,9 @@ void DoMapQDotToVelocity(
   T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
-  int state_output_port_id_;
-  int kinematics_output_port_id_;
-  int contact_output_port_id_;
+  int state_output_port_id_{};
+  int kinematics_output_port_id_{};
+  int contact_output_port_id_{};
 };
 
 }  // namespace systems

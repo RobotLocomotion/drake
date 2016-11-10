@@ -17,11 +17,10 @@ template <typename T>
 ContactInfo<T>::ContactInfo(const ContactInfo<T>& other)
     : element1_(other.element1_),
       element2_(other.element2_),
-      resultant_force_(move(other.resultant_force_)) {
+      resultant_force_(other.resultant_force_) {
   contact_details_.reserve(other.contact_details_.size());
   for (const auto& detail : other.contact_details_) {
-    std::unique_ptr<ContactDetail<T>> detail_copy(detail->Clone());
-    contact_details_.push_back(std::move(detail_copy));
+    contact_details_.emplace_back(detail->Clone());
   }
 }
 
@@ -34,8 +33,7 @@ ContactInfo<T>& ContactInfo<T>::operator=(const ContactInfo<T>& other) {
   contact_details_.clear();
   contact_details_.reserve(other.contact_details_.size());
   for (const auto& detail : other.contact_details_) {
-    std::unique_ptr<ContactDetail<T>> detail_copy(detail->Clone());
-    contact_details_.push_back(std::move(detail_copy));
+    contact_details_.emplace_back(detail->Clone());
   }
   return *this;
 }

@@ -10,7 +10,7 @@ namespace systems {
 using std::abs;
 
 template <typename T>
-    ContactForce<T>::ContactForce() {
+ContactForce<T>::ContactForce() {
   application_point_ = Vector3<T>::Constant(NAN);
   force_ = Vector3<T>::Constant(NAN);
   normal_ = Vector3<T>::Constant(NAN);

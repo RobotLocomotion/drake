@@ -1,11 +1,6 @@
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
-#include "drake/common/eigen_types.h"
-
-using std::make_unique;
-using std::move;
 
 namespace drake {
 namespace systems {
@@ -31,9 +26,10 @@ void ContactResults<T>::Clear() {
 
 template <typename T>
 ContactInfo<T>& ContactResults<T>::AddContact(
-    DrakeCollision::ElementId elementA, DrakeCollision::ElementId elementB) {
-  contacts_.emplace_back(elementA, elementB);
-  return contacts_[contacts_.size() - 1];
+    DrakeCollision::ElementId element_a,
+    DrakeCollision::ElementId element_b) {
+  contacts_.emplace_back(element_a, element_b);
+  return contacts_.back();
 }
 
 // Explicitly instantiates on the most common scalar types.
