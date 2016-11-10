@@ -180,11 +180,10 @@ GTEST_TEST(LoadSDFTest, TestInternalOffset) {
   //   1. A Z = 1 offset between the model's root and the model's world
   //   2. Zero offset between the model's world and Drake's world
   RigidBodySystem rbs;
-  rbs.AddModelInstanceFromFile(
-      drake::GetDrakePath() +
-          "/multibody/rigid_body_system1/test/models/"
-          "cylindrical_1dof_robot_offset_z1.sdf",
-      kQuaternion);
+  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
+                                   "/multibody/rigid_body_system1/test/models/"
+                                   "cylindrical_1dof_robot_offset_z1.sdf",
+                               kQuaternion);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to Z = 1.
@@ -221,11 +220,10 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf1) {
       T_model_world_to_drake_world);
 
   RigidBodySystem rbs;
-  rbs.AddModelInstanceFromFile(
-      drake::GetDrakePath() +
-          "/multibody/rigid_body_system1/test/models/"
-          "cylindrical_1dof_robot_offset_z1.sdf",
-      kQuaternion, weld_to_frame);
+  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
+                                   "/multibody/rigid_body_system1/test/models/"
+                                   "cylindrical_1dof_robot_offset_z1.sdf",
+                               kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to X = 2, Z = 1.
@@ -266,10 +264,10 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetSdf2) {
       T_model_world_to_drake_world);
 
   RigidBodySystem rbs;
-  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                                   "/multibody/rigid_body_system1/test/" +
-                                   "models/cylindrical_1dof_robot_offset_z1_r90.sdf",
-                               kQuaternion, weld_to_frame);
+  rbs.AddModelInstanceFromFile(
+      drake::GetDrakePath() + "/multibody/rigid_body_system1/test/" +
+          "models/cylindrical_1dof_robot_offset_z1_r90.sdf",
+      kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
@@ -305,9 +303,8 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf1) {
 
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(
-      drake::GetDrakePath() +
-          "/multibody/rigid_body_system1/test/" +
-              "models/cylindrical_1dof_robot_offset_z1.urdf",
+      drake::GetDrakePath() + "/multibody/rigid_body_system1/test/" +
+          "models/cylindrical_1dof_robot_offset_z1.urdf",
       kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
@@ -349,10 +346,10 @@ GTEST_TEST(LoadSDFTest, TestDualOffsetUrdf2) {
       T_model_world_to_drake_world);
 
   RigidBodySystem rbs;
-  rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                                   "/multibody/rigid_body_system1/test/models/" +
-                                       "cylindrical_1dof_robot_offset_z1_r90.urdf",
-                               kQuaternion, weld_to_frame);
+  rbs.AddModelInstanceFromFile(
+      drake::GetDrakePath() + "/multibody/rigid_body_system1/test/models/" +
+          "cylindrical1dof_robot_offset_z1_r90.urdf",
+      kQuaternion, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.
@@ -372,8 +369,9 @@ GTEST_TEST(LoadSDFTest, TestJointLimitParams) {
   // Test that joint limit parameters are correctly loaded from an SDF file.
   RigidBodySystem rbs;
   rbs.AddModelInstanceFromFile(drake::GetDrakePath() +
-                               "/multibody/rigid_body_system1/test/models/"
-                               "cylindrical_1dof_robot.sdf", kFixed);
+                                   "/multibody/rigid_body_system1/test/models/"
+                                   "cylindrical_1dof_robot.sdf",
+                               kFixed);
   const DrakeJoint& joint =
       rbs.getRigidBodyTree()->FindChildBodyOfJoint("joint1")->getJoint();
   EXPECT_NEAR(joint.getJointLimitMin()(0), -1.5708, 1e-6);
