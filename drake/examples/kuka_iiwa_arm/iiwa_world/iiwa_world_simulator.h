@@ -3,12 +3,11 @@
 #include <map>
 #include <string>
 
-//#include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/RigidBodyTree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 namespace drake {
 namespace examples {
@@ -22,60 +21,39 @@ namespace kuka_iiwa_arm {
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
 ///
-
 template <typename T>
 class IiwaWorldSimulator {
  public:
   /// A constructor configuring this object to use DrakeLcm, which encapsulates
   /// a _real_ LCM instance
   IiwaWorldSimulator();
-  //  explicit IiwaWorldSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
 
   ~IiwaWorldSimulator();
 
-  /// Returns the LCM object used by this AutomotiveSimulator.
-  lcm::DrakeLcmInterface* get_lcm();
-
-  /// Returns the DiagramBuilder.
-  /// @pre Start() has NOT been called.
-  systems::DiagramBuilder<T>* get_builder();
-
-  /// Returns the RigidBodyTree.  Beware that the AutomotiveSimulator::Start()
-  /// method invokes RigidBodyTree::compile, which may substantially update the
-  /// tree representation.
-  const RigidBodyTree<T>& get_rigid_body_tree();
-
-  /// Adds a Iiwa arm system to this simulation.
-  /// @pre Start() has NOT been called.
-  //int AddIiwaArmOnGround();
-
-  int AddObjectFixedToTable(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-                            std::string object_name);
-
+  /// Adds a fixed object specified by its name `object_name` to the
+  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
+  /// orientation specified by `rpy`. Wraps AddObjectToFrame.
   int AddObjectFixedToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-                std::string object_name);
-
-  int AddObjectFloatingToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
                             std::string object_name);
 
-  int AddObjectToFrame(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
-                       std::string object_name,
-                       std::shared_ptr<RigidBodyFrame> weld_to_frame,
-                       const drake::systems::plants::joints::FloatingBaseType
-                       floating_base_type = systems::plants::joints::kFixed);
+  /// Adds a floating object specified by its name `object_name` to the
+  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
+  /// orientation specified by `rpy`. Wraps AddObjectToFrame.
+  int AddObjectFloatingToWorld(Eigen::Vector3d xyz, Eigen::Vector3d rpy,
+                               std::string object_name);
 
-  int allocate_object_number();
+  /// Adds an object specified by its name `object_name` to the
+  /// `RigidBodyTree^` at a pose specified by the position `xyz` and
+  /// orientation specified by `rpy`
+  int AddObjectToFrame(
+      Eigen::Vector3d xyz, Eigen::Vector3d rpy, std::string object_name,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame,
+      const drake::multibody::joints::FloatingBaseType floating_base_type =
+          drake::multibody::joints::kFixed);
 
+  ///  Adds a flat terrain to the ground.
+  ///  Wraps drake::multibody::AddFlatTerrainToWorld
   void AddGroundToTree();
-
-  /// Returns the System whose name matches @p name.  Throws an exception if no
-  /// such system has been added, or multiple such systems have been added.
-  ///
-  /// This is the diagram variant of the method, which can only be used after
-  /// Start().
-  ///
-  /// @pre Start() has been called.
-  const systems::System<T>& GetDiagramSystemByName(std::string name) const;
 
   /// Build the Diagram and initialize the Simulator.  No further changes to
   /// the diagram may occur after this has been called.
@@ -88,6 +66,10 @@ class IiwaWorldSimulator {
   // We are neither copyable nor moveable.
   IiwaWorldSimulator(const IiwaWorldSimulator<T>& other) = delete;
   IiwaWorldSimulator& operator=(const IiwaWorldSimulator<T>& other) = delete;
+
+  void SetPenetrationContactParameters(double penetration_stiffness,
+                                       double penetration_damping,
+                                       double contact_friction);
 
  private:
   // For both building and simulation.
@@ -103,11 +85,8 @@ class IiwaWorldSimulator {
   bool started_{false};
   bool table_loaded_{false};
 
-  RigidBody *GetTableBody(void);
-
-  //  std::string ExtractExtension(std::string filename);
-  // A simple list of objects to be added to the world. This map links their
-  // name to the URDF / SDF location.
+  // Map between objects loadable in the simulation and a convinient string
+  // name.
   std::map<std::string, std::string> object_name_map_{
       {"iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf"},
       {"table",
@@ -119,7 +98,12 @@ class IiwaWorldSimulator {
   // For simulation.
   std::unique_ptr<systems::Diagram<T>> diagram_;
   std::unique_ptr<systems::Simulator<T>> simulator_;
+
+  double penetration_stiffness_{3000.0};
+  double penetration_damping_{1.0};
+  double contact_friction_{1.0};
 };
-}
-}
-}
+
+}  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
