@@ -1154,6 +1154,37 @@ TEST_F(SymbolicExpressionTest, IfThenElse3) {
   EXPECT_EQ(vars.size(), 3u);
 }
 
+TEST_F(SymbolicExpressionTest, Cond1) {
+  const Expression e{cond(x_ >= 10, 10, 0.0)};
+  EXPECT_PRED2(ExpEqual, e, if_then_else(x_ >= 10, 10, 0.0));
+
+  EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 0}}), 0.0);
+}
+
+TEST_F(SymbolicExpressionTest, Cond2) {
+  // clang-format off
+  const Expression e{cond(x_ >= 10, 10.0,
+                          x_ >= 5,  Expression{5.0},
+                          x_ >= 2,  Expression{2.0},
+                          0.0)};
+  EXPECT_PRED2(ExpEqual, e,
+               if_then_else(x_ >= 10, 10,
+               if_then_else(x_ >= 5, 5,
+               if_then_else(x_ >= 2, 2,
+                                   0.0))));
+  // clang-format on
+
+  EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 9}}), 5.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 5}}), 5.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 3}}), 2.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 2}}), 2.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
+}
+
 TEST_F(SymbolicExpressionTest, GetVariables) {
   const Variables vars1{(x_ + y_ * log(x_ + y_)).GetVariables()};
   EXPECT_TRUE(vars1.include(var_x_));
