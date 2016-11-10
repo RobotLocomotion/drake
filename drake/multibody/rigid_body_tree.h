@@ -790,8 +790,9 @@ class DRAKE_EXPORT RigidBodyTree {
    *
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[out] pairs          A vector that will be populated with the query
-   *                            data.  There will be one entry per pair of
-   *                            tested collision elements.
+   *                            data expressed in the world frame.  There will
+   *                            be one entry per pair of tested collision
+   *                            elements.
    * @returns                   True if the method ran successfully.
    */
   bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
@@ -807,16 +808,17 @@ class DRAKE_EXPORT RigidBodyTree {
    * of their corresponding rigid body identifiers.
    *
    * @param[in]  cache          The dynamic pose data for the tree.
-   * @param[in]  ids_to_check   Pairs of collision element ids to test.
+   * @param[in]  ids_to_check   The set of collision element ids to test.
    * @param[out] pairs          A vector that will be populated with the query
-   *                            data.  There will be one entry per pair of
-   *                            tested collision elements.
+   *                            data expressed in the world frame.  There will
+   *                            be one entry per pair of tested collision
+   *                            elements.
    * @returns                   True if the method ran successfully.
    */
   bool AllPairsClosestPointsInSet(
-      const KinematicsCache<double> &cache,
-      const std::vector<DrakeCollision::ElementId> &ids_to_check,
-      std::vector<DrakeCollision::PointPair> *pairs, bool use_margins);
+      const KinematicsCache<double>& cache,
+      const std::vector<DrakeCollision::ElementId>& ids_to_check,
+      std::vector<DrakeCollision::PointPair>* pairs, bool use_margins);
 
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
