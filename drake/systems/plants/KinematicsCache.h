@@ -168,52 +168,75 @@ class KinematicsCache {
     }
   }
 
+  /**
+   * Converts a matrix B, which transforms generalized velocities to an
+   * output space X, to a matrix A, which transforms the time
+   * derivative of generalized coordinates to the same output X. For example,
+   * B could be a Jacobian that transforms generalized velocities to twists at
+   * the end-effector. This function would allow transforming that Jacobian
+   * so that all partial derivatives would be computed with respect to the
+   * time derivative of the generalized coordinates.
+   * @param A, a `n x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @returns B a `n x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformVelocityMappingToPositionDotMapping(
-      const Eigen::MatrixBase<Derived>& mat) const {
+      const Eigen::MatrixBase<Derived>& B) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), get_num_positions());
-    int ret_col_start = 0;
-    int mat_col_start = 0;
+                  Eigen::Dynamic> A(B.rows(), get_num_positions());
+    int A_col_start = 0;
+    int B_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.get_num_positions()).noalias() =
-            mat.middleCols(mat_col_start, joint.get_num_velocities()) *
+        A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
+            B.middleCols(B_col_start, joint.get_num_velocities()) *
             element.qdot_to_v;
-        ret_col_start += joint.get_num_positions();
-        mat_col_start += joint.get_num_velocities();
+        A_col_start += joint.get_num_positions();
+        B_col_start += joint.get_num_velocities();
       }
     }
-    return ret;
+    return A;
   }
 
+  /**
+   * Converts a matrix A, which transforms the time derivative of generalized
+   * coordinates to an output space X, to a matrix B, which transforms
+   * generalized velocities to the same space X.
+   * @param A a `n x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @returns B, a `n x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityMappingToPositionDotMapping()
+   */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformPositionDotMappingToVelocityMapping(
-      const Eigen::MatrixBase<Derived>& mat) const {
+      const Eigen::MatrixBase<Derived>& A) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), get_num_velocities());
-    int ret_col_start = 0;
-    int mat_col_start = 0;
+                  Eigen::Dynamic> B(A.rows(), get_num_velocities());
+    int B_col_start = 0;
+    int A_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.get_num_velocities()).noalias() =
-            mat.middleCols(mat_col_start, joint.get_num_positions()) *
+        B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
+            A.middleCols(A_col_start, joint.get_num_positions()) *
             element.v_to_qdot;
-        ret_col_start += joint.get_num_velocities();
-        mat_col_start += joint.get_num_positions();
+        B_col_start += joint.get_num_velocities();
+        A_col_start += joint.get_num_positions();
       }
     }
-    return ret;
+    return B;
   }
 
   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getQ() const { return q; }

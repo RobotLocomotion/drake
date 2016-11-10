@@ -141,14 +141,17 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(dqdt.y(), positions_derivatives.GetAtIndex(5));
   EXPECT_EQ(dqdt.z(), positions_derivatives.GetAtIndex(6));
 
+  // Map time derivative of generalized configuration back to generalized
+  // velocity.
   plant.MapConfigurationDerivativesToVelocity(
-    *context, positions_derivatives, &generalized_velocities);
+      *context, positions_derivatives, &generalized_velocities);
 
-  // For zero rotation the velocity vector in the body's frame and in the
-  // world's frame is the same.
-  EXPECT_EQ(v0[0], generalized_velocities.GetAtIndex(0));
-  EXPECT_EQ(v0[1], generalized_velocities.GetAtIndex(1));
-  EXPECT_EQ(v0[2], generalized_velocities.GetAtIndex(2));
+  EXPECT_EQ(w0[0], generalized_velocities.GetAtIndex(0));
+  EXPECT_EQ(w0[1], generalized_velocities.GetAtIndex(1));
+  EXPECT_EQ(w0[2], generalized_velocities.GetAtIndex(2));
+  EXPECT_EQ(v0[0], generalized_velocities.GetAtIndex(3));
+  EXPECT_EQ(v0[1], generalized_velocities.GetAtIndex(4));
+  EXPECT_EQ(v0[2], generalized_velocities.GetAtIndex(5));
 }
 
 class KukaArmTest : public ::testing::Test {

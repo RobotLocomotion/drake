@@ -372,14 +372,14 @@ void RigidBodyPlant<T>::DoMapConfigurationDerivativesToVelocity(
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
   VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = generalized_velocity;
 
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
   auto kinsol = tree_->doKinematics(q);
 
   generalized_velocity->SetFromVector(
-      kinsol.transformPositionDotMappingToVelocityMapping(configuration_dot));
+      kinsol.transformPositionDotMappingToVelocityMapping(
+          configuration_dot.transpose()));
 }
 
 template <typename T>
@@ -411,8 +411,8 @@ void RigidBodyPlant<T>::DoMapVelocityToConfigurationDerivatives(
   auto kinsol = tree_->doKinematics(q, v);
 
   positions_derivative->SetFromVector(
-      kinsol.transformPositionDotMappingToVelocityMapping(
-          MatrixX<T>::Identity(nq, nq)) * v);
+      kinsol.transformVelocityMappingToPositionDotMapping(
+          v.transpose()));
 }
 
 template <typename T>
