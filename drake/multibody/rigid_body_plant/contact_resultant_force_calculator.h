@@ -2,8 +2,6 @@
 
 #include <vector>
 
-#include "drake/common/drake_export.h"
-#include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 
@@ -132,9 +130,12 @@ namespace systems {
  Do not expect `F` to be equal to `F_ab`.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
+
+ Instantiated templates for the following ScalarTypes are provided:
+   - double
  */
 template <typename T>
-class DRAKE_EXPORT ContactResultantForceCalculator {
+class ContactResultantForceCalculator {
  public:
   /** Default constructor -- no accumulation.  As contact forces are added to
    the calculator, the force will be added to the set of forces for calculation,
@@ -164,17 +165,22 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
   /**
    Adds a new force to the calculator from a contact detail.  The result of
-   ContactDetail::ComputeContactForce will be used in the calculation. This
-   detail will be assigned to the accumulator if it exists, otherwise it
-   will be immediately destroyed.
+   ContactDetail::ComputeContactForce will be used in the calculation.
+
+   If the calculator was initialized with a detail accumulator, the detail will
+   be assigned to that accumulator. Otherwise, the detail will be destroyed
+   at the conclusion of this method invocation.
    @param contact_detail        The contact detail which will provide a
                                 ContactForce for computation.
    */
   void AddForce(std::unique_ptr<ContactDetail<T>> contact_detail);
 
   /**
-   Adds a new force to the calculator.   f the accumulator is defined, adds an
-   instance of PointContactDetail with this contact information.
+   Adds a new force to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact information, will be assigned to that
+   accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal
                                 direction.
@@ -184,9 +190,11 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
                 const Vector3<T>& force);
 
   /**
-   Adds a new force with an arbitrary pure torque to the calculator. If the
-   accumulator is defined, adds an instance of PointContactDetail with this
-   contact information.
+   Adds a new force with an arbitrary pure torque to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact information, will be assigned to that
+   accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal
                                 direction.
@@ -230,7 +238,7 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
   std::vector<ContactForce<T>> forces_{};
 
   // The optional accumulator into which contact details will be added.
-  std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator_;
+  std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
 
   // Given a ContactForce, adds a PointContactDetail to the accumulator if
   // one is provided.

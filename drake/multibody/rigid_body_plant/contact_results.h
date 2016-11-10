@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/collision/Element.h"
 #include "drake/multibody/rigid_body_plant/contact_info.h"
 
@@ -18,9 +17,12 @@ class RigidBodyPlant;
  each colliding pair of collision elements) produced by a RigidBodyPlant system.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
+
+ Instantiated templates for the following ScalarTypes are provided:
+   - double
  */
 template <typename T>
-class DRAKE_EXPORT ContactResults {
+class ContactResults {
  public:
   ContactResults(const ContactResults<T>& other) = default;
   ContactResults<T>& operator=(const ContactResults<T>& other) = default;
@@ -50,8 +52,8 @@ class DRAKE_EXPORT ContactResults {
 
   // Reports a contact between two elements and prepares a ContactInfo. The
   // caller should populate the ContactInfo with the appropriate details.
-  ContactInfo<T>& AddContact(DrakeCollision::ElementId elementA,
-                  DrakeCollision::ElementId elementB);
+  ContactInfo<T>& AddContact(DrakeCollision::ElementId element_a,
+                  DrakeCollision::ElementId element_b);
 
   std::vector<ContactInfo<T>> contacts_;
 };
