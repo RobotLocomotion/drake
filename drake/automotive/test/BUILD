@@ -20,15 +20,33 @@ cc_test(
     size = "small")
 
 cc_test(
+    name = "idm_planner_test",
+    srcs = ["idm_planner_test.cc"],
+    deps = DEPS + ["//drake/automotive:idm_planner"],
+    size = "small")
+
+cc_test(
     name = "idm_with_trajectory_agent_test",
     srcs = ["idm_with_trajectory_agent_test.cc"],
     deps = DEPS + ["//drake/automotive:idm_with_trajectory_agent"],
     size = "small")
 
 cc_test(
+    name = "linear_car_test",
+    srcs = ["linear_car_test.cc"],
+    deps = DEPS + ["//drake/automotive:linear_car"],
+    size = "small")
+
+cc_test(
     name = "simple_car_to_euler_floating_joint_test",
     srcs = ["simple_car_to_euler_floating_joint_test.cc"],
     deps = DEPS + ["//drake/automotive:simple_car"],
+    size = "small")
+
+cc_test(
+    name = "single_lane_ego_and_agent_test",
+    srcs = ["single_lane_ego_and_agent_test.cc"],
+    deps = DEPS + ["//drake/automotive:single_lane_ego_and_agent"],
     size = "small")
 
 cc_test(

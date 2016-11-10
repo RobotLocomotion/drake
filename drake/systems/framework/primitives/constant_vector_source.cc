@@ -4,6 +4,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -41,6 +42,7 @@ void ConstantVectorSource<T>::EvalOutput(const Context<T>& context,
 // Explicitly instantiates on the most common scalar types.
 template class ConstantVectorSource<double>;
 template class ConstantVectorSource<AutoDiffXd>;
+template class ConstantVectorSource<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake

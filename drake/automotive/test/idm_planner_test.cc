@@ -17,23 +17,28 @@ class IdmPlannerTest : public ::testing::Test {
     output_ = dut_->AllocateOutput(*context_);
   }
 
-  double get_v_0_() const { return v_0_; }
+  double get_v_0() const { return v_0_; }
 
-  void SetInputValue(double x_ego, double v_ego, double x_agent,
-                     double v_agent) {
-    auto input_ego = std::make_unique<systems::BasicVector<double>>(2);
-    auto input_agent = std::make_unique<systems::BasicVector<double>>(2);
-    input_ego->SetAtIndex(0, x_ego);      // x_ego
-    input_ego->SetAtIndex(1, v_ego);      // v_ego
-    input_agent->SetAtIndex(0, x_agent);  // x_agent
-    input_agent->SetAtIndex(1, v_agent);  // v_agent
-    context_->SetInputPort(0, std::make_unique<systems::FreestandingInputPort>(
-                                  std::move(input_ego)));
-    context_->SetInputPort(1, std::make_unique<systems::FreestandingInputPort>(
-                                  std::move(input_agent)));
+  void SetInputValue(const std::vector<double>& state) {
+    int state_size =
+        dut_->get_ego_port().get_size() + dut_->get_ego_port().get_size();
+    DRAKE_DEMAND(state_size == (int) state.size());
+    // Get the state values.
+    const double x_ego = state[0];
+    const double v_ego = state[1];
+    const double x_agent = state[2];
+    const double v_agent = state[3];
+
+    auto input_ego = systems::BasicVector<double>::Make({x_ego, v_ego});
+    auto input_agent = systems::BasicVector<double>::Make({x_agent, v_agent});
+
+    context_->FixInputPort(dut_->get_ego_port().get_index(),
+                           std::move(input_ego));
+    context_->FixInputPort(dut_->get_agent_port().get_index(),
+                           std::move(input_agent));
   }
 
-  std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
+  std::unique_ptr<IdmPlanner<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
 
@@ -43,12 +48,14 @@ class IdmPlannerTest : public ::testing::Test {
 
 TEST_F(IdmPlannerTest, Topology) {
   ASSERT_EQ(2, dut_->get_num_input_ports());
-  const auto& input_descriptor = dut_->get_input_ports().at(0);
-  EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(systems::kInputPort, input_descriptor.get_face());
-  // EXPECT_EQ(IdmPlannerInputIndices::kNumCoordinates,
-  //          input_descriptor.get_size());
-  EXPECT_EQ(systems::kContinuousSampling, input_descriptor.get_sampling());
+  const auto& input_ego = dut_->get_ego_port();
+  const auto& input_agent = dut_->get_agent_port();
+  EXPECT_EQ(systems::kVectorValued, input_ego.get_data_type());
+  EXPECT_EQ(systems::kVectorValued, input_agent.get_data_type());
+  EXPECT_EQ(systems::kInputPort, input_ego.get_face());
+  EXPECT_EQ(systems::kInputPort, input_agent.get_face());
+  EXPECT_EQ(systems::kContinuousSampling, input_ego.get_sampling());
+  EXPECT_EQ(systems::kContinuousSampling, input_agent.get_sampling());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_descriptor = dut_->get_output_ports().at(0);
@@ -58,38 +65,84 @@ TEST_F(IdmPlannerTest, Topology) {
   EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
 }
 
-TEST_F(IdmPlannerTest, Input) {
+// Set the initial states such that the agent and ego start at the
+// headway distance, both at the desired speed.
+TEST_F(IdmPlannerTest, SameSpeedAtHeadwayDistance) {
   // Define a pointer to where the EvalOutput results are stored.
   const auto result = output_->get_vector_data(0);
   ASSERT_NE(nullptr, result);
 
-  // Model parameters.
-  const double a = 1.0;
-  const double b = 3.0;
-  const double s_0 = 1.0;
-  const double time_headway = 0.1;
-  const double delta = 4.0;
-  const double l_a = 4.5;
-
-  // Some trial input values.
-  const double x_e = 6.3;
-  const double v_e = 4.2;
-  const double x_a = 9.7;
-  const double v_a = 13.1;
-
-  // Set the inputs to some arbitrary values.
-  SetInputValue(x_e, v_e, x_a, v_a);
-
-  const double expected_output =
-      a *
-      (1.0 - pow(v_e / IdmPlannerTest::get_v_0_(), delta) -
-       pow((s_0 + v_e * time_headway + v_e * (v_e - v_a) / (2 * sqrt(a * b))) /
-               (x_a - x_e - l_a),
-           2.0));
-
-  // The output values should match the expected values.
+  // TODO(jadecastro): Add unit testing for parametric variations.
+  const std::vector<double> param = {1.0, 3.0, 1.0, 0.1, 4.0, 4.5};
+  std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(),
+                               IdmPlannerTest::get_v_0() * param[4],
+                               IdmPlannerTest::get_v_0()};
+  // Set the inputs to IdmPlanner.
+  SetInputValue(state);
   dut_->EvalOutput(*context_, output_.get());
-  EXPECT_EQ(expected_output, result->GetAtIndex(0));
+  // Expect there to be no acceleration or deceleration.
+  EXPECT_NEAR(result->GetAtIndex(0), 0.0, 1e-2);
+}
+
+// Set the initial states such that the agent and ego start within the
+// headway distance, both at the desired speed.
+TEST_F(IdmPlannerTest, SameSpeedBelowHeadwayDistance) {
+  // Define a pointer to where the EvalOutput results are stored.
+  const auto result = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, result);
+
+  std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(), 6.0,
+                               IdmPlannerTest::get_v_0()};
+  // Set the inputs to IdmPlanner.
+  SetInputValue(state);
+  dut_->EvalOutput(*context_, output_.get());
+  // Expect the car to decelerate.
+  EXPECT_LE(result->GetAtIndex(0), -1e-2);
+}
+
+// Set the initial states such that the agent and ego start close
+// together at different speeds.
+TEST_F(IdmPlannerTest, DifferentSpeedsBelowHeadwayDistance) {
+  // Define a pointer to where the EvalOutput results are stored.
+  const auto result = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, result);
+
+  std::vector<double> state = {0.0, 7.0, 6.0, 4.0};
+  // Set the inputs to IdmPlanner.
+  SetInputValue(state);
+  dut_->EvalOutput(*context_, output_.get());
+  // Expect the car to decelerate.
+  EXPECT_LE(result->GetAtIndex(0), -1e-2);
+}
+
+// Set the agent and ego sufficiently far apart from one another, with
+// the ego car initially at the desired speed.  set-point.
+TEST_F(IdmPlannerTest, EgoAtDesiredSpeed) {
+  // Define a pointer to where the EvalOutput results are stored.
+  const auto result = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, result);
+
+  std::vector<double> state = {0.0, IdmPlannerTest::get_v_0(), 1e6, 0.0};
+  // Set the inputs to IdmPlanner.
+  SetInputValue(state);
+  dut_->EvalOutput(*context_, output_.get());
+  // Expect there to be no acceleration or deceleration.
+  EXPECT_NEAR(result->GetAtIndex(0), 0.0, 1e-2);
+}
+
+// Set the agent and ego sufficiently far apart from one another, with
+// the ego car speed initially zero.  set-point.
+TEST_F(IdmPlannerTest, EgoStartFromRest) {
+  // Define a pointer to where the EvalOutput results are stored.
+  const auto result = output_->get_vector_data(0);
+  ASSERT_NE(nullptr, result);
+
+  std::vector<double> state = {0.0, 0.0, 1e6, 0.0};
+  // Set the inputs to IdmPlanner.
+  SetInputValue(state);
+  dut_->EvalOutput(*context_, output_.get());
+  // Expect the car to accelerate.
+  EXPECT_GE(result->GetAtIndex(0), 1e-2);
 }
 
 }  // namespace
