@@ -110,9 +110,8 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
   const std::vector<double> t { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  const int kNumTimesteps = t.size();
   MatrixXd q0(tree.get_num_positions(), t.size());
-  for (int i = 0; i < kNumTimesteps; ++i) {
+  for (size_t i = 0; i < t.size(); ++i) {
     q0.col(i) = zero_conf;
   }
 
@@ -123,7 +122,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&tree);
-  int info[kNumTimesteps];
+  int info[t.size()];
   MatrixXd q_sol(tree.get_num_positions(), t.size());
   std::vector<std::string> infeasible_constraint;
 
@@ -131,7 +130,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info, &infeasible_constraint);
   bool info_good = true;
-  for (int i = 0; i < kNumTimesteps; ++i) {
+  for (size_t i = 0; i < t.size(); ++i) {
     drake::log()->info("INFO[{}] = {} ", i, info[i]);
     if (info[i] != 1) {
       info_good = false;
