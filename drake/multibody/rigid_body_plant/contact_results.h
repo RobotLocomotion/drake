@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/contact_info.h"
 
 namespace drake {

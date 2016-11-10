@@ -10,7 +10,7 @@
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/collision/element.h"
 
 using std::make_unique;
 using std::move;
