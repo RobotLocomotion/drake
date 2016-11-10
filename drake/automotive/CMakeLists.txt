@@ -13,12 +13,12 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
-  idm_with_trajectory_agent.cc
-  simple_car.cc
-  trajectory_car.cc
-  linear_car.cc
   idm_planner.cc
+  idm_with_trajectory_agent.cc
+  linear_car.cc
+  simple_car.cc
   single_lane_ego_and_agent.cc
+  trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
   drakeCommon
