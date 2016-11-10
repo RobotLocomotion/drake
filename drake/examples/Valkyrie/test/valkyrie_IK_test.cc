@@ -2,13 +2,14 @@
 // visualizer.
 
 #include <iostream>
+#include <numeric>
 
 #include "gtest/gtest.h"
 
 // Includes for IK solver.
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -16,8 +17,8 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -45,7 +46,8 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
   // the rigid body tree's state vector, fill the return vector with
   // sequentially increasing indices starting at
   // `joint_child_body->get_position_start_index()`.
-  iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index());
+  std::iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index
+  ());
   return ret;
 }
 
@@ -61,12 +63,12 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
                         position_indices.end());
 }
 
-GTEST_TEST(ValkyrieIK__Test, ValkyrieIK__Test_StandingPose_Test) {
+GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
-      systems::plants::joints::kRollPitchYaw);
+      drake::multibody::joints::kRollPitchYaw);
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
