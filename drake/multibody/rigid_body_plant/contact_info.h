@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/multibody/collision/Element.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 
