@@ -111,19 +111,19 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   // Setup the linear constraints.
-  size_t constraint_index = prog.num_vars();
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
+  int constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     auto const& c = binding.constraint();
-    size_t n = c->A().rows();
-    size_t var_index = 0;
+    int var_index = 0;
+    const int n = c->A().rows();
     for (const DecisionVariableView& v : binding.variable_list()) {
-      A_full.block(constraint_index, v.index(), n, v.size()) =
+      A.block(constraint_index, v.index(), n, v.size()) =
           c->A().middleCols(var_index, v.size());
-      A_full.block(v.index(), constraint_index, v.size(), n) =
-          (c->A().middleCols(var_index, v.size())).transpose();
       var_index += v.size();
     }
-    b_full.segment(constraint_index, n) =
+    b.segment(constraint_index, n) =
         c->lower_bound().segment(0, n);  // = c->upper_bound() since it's
     //  an equality constraint
     constraint_index += n;
@@ -136,9 +136,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     // Matrix is positive definite. (inv(Q)*A')' = A*inv(Q)
     Eigen::MatrixXd AiQ_T = llt.solve(A.transpose());
 
+    // Compute a full pivoting, QR factorization.
+    Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiQ_T);
+
     // Solve using least-squares A*inv(Q)*A'y = A*inv(Q)*c - b for `y`.
-    Eigen::VectorXd lambda = (A * AiQ_T).fullPivHouseholderQr.
-        solve(AiQ_T.transpose() * c - b);
+    Eigen::VectorXd lambda = qr.solve(AiQ_T.transpose() * c - b);
 
     // Solve Q*x = A'y - c 
     prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
@@ -152,9 +154,20 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // The expanded problem introduces a Lagrangian multiplier for each
   // linear equality constraint.
   size_t num_full_vars = prog.num_vars() + num_constraints;
-  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(num_full_vars, num_full_vars);
-  Eigen::VectorXd b_full = Eigen::VectorXd::Zero(num_full_vars);
+  Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
+  Eigen::VectorXd b_full(num_full_vars);
 
+  // Set up the big matrix.
+  A_full.block(0,0,G.rows(),G.cols()) = G;
+  A_full.block(0,G.cols(),A.cols(),A.rows()) = -A.transpose();
+  A_full.block(G.rows(),0,A.rows(),A.cols()) = A;
+  A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
+
+  // Set up the right hand side vector.
+  b_full.segment(0,G.rows()) = -c;
+  b_full.segment(G.rows(),A.rows()) = b;
+
+  /*
   // Assemble the A and b matrices -- first by summing over
   // quadratic costs ...
   for (auto const& binding : prog.quadratic_costs()) {
@@ -186,7 +199,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
                                          //  an equality constraint
     constraint_index += n;
   }
-
+*/
   // Compute the least-squares solution.
   Eigen::VectorXd sol =
       A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
