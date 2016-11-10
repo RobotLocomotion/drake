@@ -69,7 +69,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom_additional_contact_pts"
               ".urdf",
-      systems::plants::joints::kRollPitchYaw);
+      drake::multibody::joints::kRollPitchYaw);
 
   for(int i=0;i<tree->get_num_bodies();i++)
     std::cout << i << " " << tree->getBodyOrFrameName(i) << std::endl;
