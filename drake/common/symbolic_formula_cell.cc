@@ -32,9 +32,7 @@ FormulaCell::FormulaCell(const FormulaKind k, const size_t hash)
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
                                              const Expression& e1,
                                              const Expression& e2)
-    : FormulaCell{k, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
+    : FormulaCell{k, hash_combine(e1.get_hash(), e2)}, e1_{e1}, e2_{e2} {}
 
 Variables RelationalFormulaCell::GetFreeVariables() const {
   Variables ret{e1_.GetVariables()};
@@ -348,8 +346,7 @@ ostream& FormulaNot::Display(ostream& os) const {
 }
 
 FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
-    : FormulaCell{FormulaKind::Forall,
-                  hash_combine(vars.get_hash(), f.get_hash())},
+    : FormulaCell{FormulaKind::Forall, hash_combine(vars.get_hash(), f)},
       vars_{vars},
       f_{f} {}
 
