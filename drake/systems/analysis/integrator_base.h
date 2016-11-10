@@ -849,7 +849,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
                                             ContinuousState<T>* derivs0) {
   using std::isnan;
 
-  // Constants for integration growth and shrinkage.
+  // Constants for step size growth and shrinkage.
   const double kDTShrink = 0.95;
   const double kDTGrow = 1.001;
 
