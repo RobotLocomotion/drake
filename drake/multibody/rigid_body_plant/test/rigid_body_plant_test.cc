@@ -70,7 +70,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
-GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
+GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
   const double kTol = 1e-8;
   const int kNumPositions = 7;  // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
