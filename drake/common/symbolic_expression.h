@@ -14,6 +14,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -23,29 +24,30 @@ namespace symbolic {
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
-  Constant,  ///< constant (double)
-  Var,       ///< variable
-  Neg,       ///< unary minus
-  Add,       ///< addition (+)
-  Mul,       ///< multiplication (*)
-  Div,       ///< division (/)
-  Log,       ///< logarithms
-  Abs,       ///< absolute value function
-  Exp,       ///< exponentiation
-  Sqrt,      ///< square root
-  Pow,       ///< power function
-  Sin,       ///< sine
-  Cos,       ///< cosine
-  Tan,       ///< tangent
-  Asin,      ///< arcsine
-  Acos,      ///< arccosine
-  Atan,      ///< arctangent
-  Atan2,     ///< arctangent2 (atan2(y,x) = atan(y/x))
-  Sinh,      ///< hyperbolic sine
-  Cosh,      ///< hyperbolic cosine
-  Tanh,      ///< hyperbolic tangent
-  Min,       ///< min
-  Max,       ///< max
+  Constant,    ///< constant (double)
+  Var,         ///< variable
+  Neg,         ///< unary minus
+  Add,         ///< addition (+)
+  Mul,         ///< multiplication (*)
+  Div,         ///< division (/)
+  Log,         ///< logarithms
+  Abs,         ///< absolute value function
+  Exp,         ///< exponentiation
+  Sqrt,        ///< square root
+  Pow,         ///< power function
+  Sin,         ///< sine
+  Cos,         ///< cosine
+  Tan,         ///< tangent
+  Asin,        ///< arcsine
+  Acos,        ///< arccosine
+  Atan,        ///< arctangent
+  Atan2,       ///< arctangent2 (atan2(y,x) = atan(y/x))
+  Sinh,        ///< hyperbolic sine
+  Cosh,        ///< hyperbolic cosine
+  Tanh,        ///< hyperbolic tangent
+  Min,         ///< min
+  Max,         ///< max
+  IfThenElse,  ///< if then else
   // TODO(soonho): add Integral
 };
 
@@ -53,6 +55,7 @@ enum class ExpressionKind {
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
 class ExpressionCell;
+class Formula;
 
 /** Represents a symbolic form of an expression.
 
@@ -62,7 +65,7 @@ Its syntax tree is as follows:
     E := Var | Constant | - E | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
-       | min(E, E) | max(E, E)
+       | min(E, E) | max(E, E) | if_then_else(F, E, E)
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -226,6 +229,9 @@ class DRAKE_EXPORT Expression {
                                      const Expression& e2);
   friend DRAKE_EXPORT Expression max(const Expression& e1,
                                      const Expression& e2);
+  friend DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
+                                              const Expression& e_then,
+                                              const Expression& e_else);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                const Expression& e);
@@ -275,6 +281,11 @@ DRAKE_EXPORT Expression cosh(const Expression& e);
 DRAKE_EXPORT Expression tanh(const Expression& e);
 DRAKE_EXPORT Expression min(const Expression& e1, const Expression& e2);
 DRAKE_EXPORT Expression max(const Expression& e1, const Expression& e2);
+DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
+                                     const Expression& e_then,
+                                     const Expression& e_else);
+DRAKE_EXPORT void swap(Expression& a, Expression& b);
+
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
 /** @relates Expression
