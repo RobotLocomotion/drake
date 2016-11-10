@@ -29,17 +29,9 @@ int main(int argc, char* argv[]) {
                                    Eigen::Vector3d::Zero() /* rpy */,
                                    "iiwa");
 
-//  simulator->AddObjectFixedToTable(robot_base,
-//                                  Eigen::Vector3d::Zero() /* rpy */,
-//                                  "iiwa");
-
   Eigen::Vector3d box_base(-0.45, -0.4, table_top_z_in_world + 0.15);
   Eigen::Vector3d cylinder_1_base(-0.5, -0.60, table_top_z_in_world + 0.1);
   Eigen::Vector3d cylinder_2_base(-0.05, -0.75, table_top_z_in_world + 0.1);
-//
-//    simulator->AddObjectFixedToWorld(cylinder_1_base,
-//                                  Eigen::Vector3d::Zero() /* rpy */,
-//                                  "cylinder");
 
   simulator->AddObjectFloatingToWorld(cylinder_1_base,
                                   Eigen::Vector3d::Zero() /* rpy */,
