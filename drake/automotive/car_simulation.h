@@ -11,8 +11,8 @@
 #include "drake/system1/Simulation.h"
 #include "drake/system1/cascade_system.h"
 #include "drake/system1/pd_control_system.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/lcmt_driving_command_t.hpp"
 
 namespace drake {

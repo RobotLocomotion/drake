@@ -78,6 +78,7 @@ macro(drake_find_packages)
   # BEGIN required packages
 
   drake_find_package(Eigen3 CONFIG REQUIRED)
+  add_definitions(-DEIGEN_MPL2_ONLY)  # Per #4065.
   drake_find_package(gflags CONFIG REQUIRED)
   drake_find_package(GTest MODULE REQUIRED)
 

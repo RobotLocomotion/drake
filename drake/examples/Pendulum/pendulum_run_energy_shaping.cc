@@ -9,8 +9,8 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -61,7 +61,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   RigidBodyTree<double> tree(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      systems::plants::joints::kFixed);
+      multibody::joints::kFixed);
 
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();

@@ -7,6 +7,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
@@ -14,10 +17,7 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/matrix_gain.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
-#include "drake/systems/plants/rigid_body_tree_construction.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
@@ -96,9 +96,9 @@ int main(int argc, char* argv[]) {
   auto rigid_body_tree = make_unique<RigidBodyTreed>();
   AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf",
-      systems::plants::joints::kQuaternion, nullptr /* weld to frame */,
+      multibody::joints::kQuaternion, nullptr /* weld to frame */,
       rigid_body_tree.get());
-  systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
+  multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
   VerifyCarSimLcmTree(*rigid_body_tree);
 
   // Instantiates a RigidBodyPlant to simulate the model.

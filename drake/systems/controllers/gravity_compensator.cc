@@ -1,7 +1,7 @@
 #include "drake/systems/controllers/gravity_compensator.h"
 
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {

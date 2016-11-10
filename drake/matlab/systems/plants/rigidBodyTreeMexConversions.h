@@ -1,9 +1,9 @@
 #pragma once
 
 #include "drake/matlab/util/mexify.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/KinematicPath.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematic_path.h"
 
 template <typename T>
 struct DrakeMexPointerTypeId {

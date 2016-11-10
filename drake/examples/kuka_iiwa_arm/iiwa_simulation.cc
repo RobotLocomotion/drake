@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_path.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
@@ -18,7 +18,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
 
   rigid_body_system->AddModelInstanceFromFile(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Sets some simulation parameters.
   rigid_body_system->penetration_stiffness = 3000.0;

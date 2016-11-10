@@ -5,9 +5,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {
@@ -18,7 +18,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   RigidBodyTree<double> tree(
       GetDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      systems::plants::joints::kFixed);
+      multibody::joints::kFixed);
   Eigen::VectorXd tau = Eigen::VectorXd::Zero(1);
 
   systems::DiagramBuilder<double> builder;

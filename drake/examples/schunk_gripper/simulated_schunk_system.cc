@@ -1,7 +1,7 @@
 #include "drake/examples/schunk_gripper/simulated_schunk_system.h"
 
-#include "drake/systems/plants/parser_sdf.h"
 #include "drake/common/drake_path.h"
+#include "drake/multibody/parser_sdf.h"
 
 namespace drake {
 namespace examples {
@@ -14,7 +14,7 @@ CreateSimulatedSchunkSystem() {
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
       "/examples/schunk_gripper/models/schunk_gripper.sdf",
-      drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
 
   return std::make_unique<drake::systems::RigidBodyPlant<T>>(

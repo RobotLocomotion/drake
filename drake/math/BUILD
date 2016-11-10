@@ -18,7 +18,7 @@ cc_library(
     deps = DEPS + [":autodiff_overloads"],
     linkstatic = 1)
 
-# TODO(jwnimmer-tri) Imrprove name for this library, "pose_representations"?
+# TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
 cc_library(
     name = "geometric_transform",
     srcs = [
@@ -33,6 +33,8 @@ cc_library(
         "quaternion.h",
         "random_rotation.h",
         "roll_pitch_yaw.h",
+        "roll_pitch_yaw_not_using_quaternion.h",
+        "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
     ],
     deps = DEPS,
@@ -64,11 +66,13 @@ cc_library(
     hdrs = ["eigen_sparse_triplet.h"],
     deps = DEPS,
     linkstatic = 1)
+
 cc_library(
     name = "expmap",
     hdrs = ["expmap.h"],
     deps = DEPS + [":gradient"],
     linkstatic = 1)
+
 cc_library(
     name = "jacobian",
     hdrs = ["jacobian.h"],

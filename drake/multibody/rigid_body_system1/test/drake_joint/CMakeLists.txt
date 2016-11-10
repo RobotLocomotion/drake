@@ -1,0 +1,2 @@
+drake_add_cc_test(drake_joint_test)
+target_link_libraries(drake_joint_test drakeRBSystem)
