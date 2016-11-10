@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/drake_export.h"
-#include "drake/multibody/collision/DrakeCollision.h"
 #include "drake/multibody/collision/Element.h"
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
@@ -23,16 +21,19 @@ namespace systems {
 
  Some forms of ContactDetail are more expensive than others. A contact response
  model may chose *not* to cache all of the details to save copying time and
- memory.  This beahvior is subject to user configuration; the user *can*
- specify copying, even for expensive ContactDetail types.
+ memory.  This beahvior will eventually be subject to user configuration; the
+ user will specify copying, even for expensive ContactDetail types.
 
  The resultant force and contact details, if they are included, are all defined
  such that they act on the first element in the pair (e1).
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
+
+ Instantiated templates for the following ScalarTypes are provided:
+    - double
  */
 template <typename T>
-class DRAKE_EXPORT ContactInfo {
+class ContactInfo {
  public:
   /**
    Initialize the contact response for two colliding collision elements.

@@ -6,6 +6,7 @@ namespace systems {
 
 using std::unique_ptr;
 using std::vector;
+using std::move;
 
 template <typename T>
 ContactResultantForceCalculator<T>::ContactResultantForceCalculator()
@@ -28,7 +29,7 @@ void ContactResultantForceCalculator<T>::AddForce(
     std::unique_ptr<ContactDetail<T>> contact_detail) {
   forces_.push_back(contact_detail->ComputeContactForce());
   if (detail_accumulator_ != nullptr) {
-    detail_accumulator_->emplace_back(contact_detail.release());
+    detail_accumulator_->emplace_back(move(contact_detail));
   }
   // No accumulator means the contact detail can be destroyed; it has served its
   // purpose.
@@ -39,7 +40,7 @@ void ContactResultantForceCalculator<T>::AddForce(
     const Vector3<T>& application_point, const Vector3<T>& normal,
     const Vector3<T>& force) {
   forces_.emplace_back(application_point, normal, force);
-  AccumulateForce(forces_[forces_.size() - 1]);
+  AccumulateForce(forces_.back());
 }
 
 template <typename T>
@@ -47,7 +48,7 @@ void ContactResultantForceCalculator<T>::AddForce(
     const Vector3<T>& application_point, const Vector3<T>& normal,
     const Vector3<T>& force, const Vector3<T>& pure_torque) {
   forces_.emplace_back(application_point, normal, force, pure_torque);
-  AccumulateForce(forces_[forces_.size() - 1]);
+  AccumulateForce(forces_.back());
 }
 
 template <typename T>
