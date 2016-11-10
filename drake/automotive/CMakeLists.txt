@@ -1,5 +1,8 @@
 add_subdirectory(gen)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   create_trajectory_params.cc
