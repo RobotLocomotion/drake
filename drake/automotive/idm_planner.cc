@@ -7,16 +7,15 @@
 
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 
 namespace drake {
 namespace automotive {
 
 template <typename T>
-IdmPlanner<T>::IdmPlanner(const T& v_0) : v_0_(v_0) {
+IdmPlanner<T>::IdmPlanner(const T& v_ref) : v_ref_(v_ref) {
   // The reference velocity must be strictly positive.
-  DRAKE_ASSERT(v_0 > 0);
+  DRAKE_ASSERT(v_ref > 0);
 
   // Declare the ego car input port.
   this->DeclareInputPort(systems::kVectorValued,
@@ -42,8 +41,8 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
   // Obtain the input/output structures we need to read from and write into.
-  const auto input_ego = this->EvalVectorInput(context, 0);
-  const auto input_agent = this->EvalVectorInput(context, 1);
+  const systems::BasicVector<T>* input_ego = this->EvalVectorInput(context, 0);
+  const systems::BasicVector<T>* input_agent = this->EvalVectorInput(context, 1);
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
@@ -64,34 +63,30 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   const T& delta = params.delta();
   const T& l_a = params.l_a();
 
-  // @p a and @p b must be positive.
+  const auto x_ego = input_ego->GetAtIndex(0);
+  const auto v_ego = input_ego->GetAtIndex(1);
+  const auto x_agent = input_agent->GetAtIndex(0);
+  const auto v_agent = input_agent->GetAtIndex(1);
 
-  // TODO(jadecastro): the below assertion forbids
-  // symbolic::Expressions with this construction.
-  DRAKE_ASSERT(a > 0.0);
-  DRAKE_ASSERT(b > 0.0);
+  // Ensure that we are supplying the planner with sane parameters and
+  // input values.
+  DRAKE_DEMAND(a > 0.0);
+  DRAKE_DEMAND(b > 0.0);
+  DRAKE_DEMAND(x_agent > (l_a + x_ego));
 
   output_vector->SetAtIndex(
-      0, a * (1.0 - pow(input_ego->GetAtIndex(1) / v_0_, delta) -
-              pow((s_0 + input_ego->GetAtIndex(1) * time_headway +
-                   input_ego->GetAtIndex(1) *
-                       (input_ego->GetAtIndex(1) - input_agent->GetAtIndex(1)) /
-                       (2 * sqrt(a * b))) /
-                      (input_agent->GetAtIndex(0) - input_ego->GetAtIndex(0) -
-                       l_a),
+      0, a * (1.0 - pow(v_ego / v_ref_, delta) -
+              pow((s_0 + v_ego * time_headway +
+                   v_ego * (v_ego - v_agent) / (2 * sqrt(a * b))) /
+                      (x_agent - x_ego - l_a),
                   2.0)));
-}
-
-template <typename T>
-std::unique_ptr<systems::BasicVector<T>> IdmPlanner<T>::AllocateOutputVector(
-    const systems::SystemPortDescriptor<T>& descriptor) const {
-  return std::make_unique<systems::BasicVector<T>>(1 /* output vector size */);
 }
 
 // These instantiations must match the API documentation in
 // idm_planner.h.
-template class DRAKE_EXPORT IdmPlanner<double>;
-template class DRAKE_EXPORT IdmPlanner<drake::TaylorVarXd>;
+template class IdmPlanner<double>;
+template class IdmPlanner<drake::TaylorVarXd>;
+template class IdmPlanner<drake::symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake
