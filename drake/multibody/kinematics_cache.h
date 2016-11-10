@@ -18,29 +18,29 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/drake_joint.h"
 
-template <typename Scalar>
+template <typename T>
 class KinematicsCacheElement {
  public:
   /*
    * Configuration dependent
    */
 
-  Eigen::Transform<Scalar, drake::kSpaceDimension, Eigen::Isometry>
+  Eigen::Transform<T, drake::kSpaceDimension, Eigen::Isometry>
       transform_to_world;
-  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
+  Eigen::Matrix<T, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_body;  // gradient w.r.t. q_i only
-  Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
+  Eigen::Matrix<T, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_world;  // gradient w.r.t. q
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_VELOCITIES,
                 DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;  // gradient w.r.t. q
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_POSITIONS,
                 DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;  // gradient w.r.t. q
-  drake::SquareTwistMatrix<Scalar> inertia_in_world;
-  drake::SquareTwistMatrix<Scalar> crb_in_world;
+  drake::SquareTwistMatrix<T> inertia_in_world;
+  drake::SquareTwistMatrix<T> crb_in_world;
 
   /*
    * Configuration and velocity dependent
@@ -48,11 +48,11 @@ class KinematicsCacheElement {
 
   // Gradient with respect to q only.  The gradient with respect to v is
   // motion_subspace_in_world.
-  drake::TwistVector<Scalar> twist_in_world;
+  drake::TwistVector<T> twist_in_world;
   // Gradient with respect to q_i and v_i only.
-  drake::TwistVector<Scalar> motion_subspace_in_body_dot_times_v;
+  drake::TwistVector<T> motion_subspace_in_body_dot_times_v;
   // Gradient with respect to q and v.
-  drake::TwistVector<Scalar> motion_subspace_in_world_dot_times_v;
+  drake::TwistVector<T> motion_subspace_in_world_dot_times_v;
 
  public:
   KinematicsCacheElement(int num_positions_joint, int num_velocities_joint)
@@ -69,16 +69,16 @@ class KinematicsCacheElement {
 #endif
 };
 
-template <typename Scalar>
+template <typename T>
 class KinematicsCache {
  private:
-  typedef KinematicsCacheElement<Scalar> KinematicsCacheElementScalar;
-  typedef std::pair<RigidBody const* const, KinematicsCacheElementScalar>
+  typedef KinematicsCacheElement<T> KinematicsCacheElementT;
+  typedef std::pair<RigidBody const* const, KinematicsCacheElementT>
       RigidBodyKCacheElementPair;
   typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
       RigidBodyKCacheElementPairAllocator;
   typedef std::unordered_map<
-      RigidBody const*, KinematicsCacheElementScalar,
+      RigidBody const*, KinematicsCacheElementT,
       std::hash<RigidBody const*>, std::equal_to<RigidBody const*>,
       RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
 
@@ -86,8 +86,8 @@ class KinematicsCache {
   std::vector<RigidBody const*> bodies;
   int num_positions;
   int num_velocities;
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
+  Eigen::Matrix<T, Eigen::Dynamic, 1> q;
+  Eigen::Matrix<T, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
   bool position_kinematics_cached;
   bool jdotV_cached;
@@ -98,8 +98,8 @@ class KinematicsCache {
       const std::vector<std::unique_ptr<RigidBody> >& bodies_in)
       : num_positions(get_num_positions(bodies_in)),
         num_velocities(get_num_velocities(bodies_in)),
-        q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
-        v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
+        q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions)),
+        v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
     for (const auto& body_unique_ptr : bodies_in) {
       const RigidBody& body = *body_unique_ptr;
@@ -107,18 +107,18 @@ class KinematicsCache {
           body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
           body.has_parent_body() ? body.getJoint().get_num_velocities() : 0;
-      elements.insert({&body, KinematicsCacheElement<Scalar>(
+      elements.insert({&body, KinematicsCacheElement<T>(
                                   num_positions_joint, num_velocities_joint)});
       bodies.push_back(&body);
     }
     invalidate();
   }
 
-  KinematicsCacheElement<Scalar>& getElement(const RigidBody& body) {
+  KinematicsCacheElement<T>& getElement(const RigidBody& body) {
     return elements.at(&body);
   }
 
-  const KinematicsCacheElement<Scalar>& getElement(
+  const KinematicsCacheElement<T>& getElement(
       const RigidBody& body) const {
     return elements.at(&body);
   }
@@ -126,8 +126,8 @@ class KinematicsCache {
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in) {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
-    static_assert(std::is_same<typename Derived::Scalar, Scalar>::value,
-                  "scalar type of q must match scalar type of KinematicsCache");
+    static_assert(std::is_same<typename Derived::T, T>::value,
+                  "T type of q must match T type of KinematicsCache");
     DRAKE_ASSERT(q.rows() == q_in.rows());
     q = q_in;
     invalidate();
@@ -139,8 +139,8 @@ class KinematicsCache {
                   const Eigen::MatrixBase<DerivedV>& v_in) {
     initialize(q_in);  // also invalidates
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
-    static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value,
-                  "scalar type of v must match scalar type of KinematicsCache");
+    static_assert(std::is_same<typename DerivedV::T, T>::value,
+                  "T type of v must match T type of KinematicsCache");
     DRAKE_ASSERT(v.rows() == v_in.rows());
     v = v_in;
     velocity_vector_valid = true;
@@ -169,11 +169,11 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+  Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformVelocityMappingToPositionDotMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
-    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+    Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
                   Eigen::Dynamic> ret(mat.rows(), get_num_positions());
     int ret_col_start = 0;
     int mat_col_start = 0;
@@ -193,11 +193,11 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+  Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformPositionDotMappingToVelocityMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
-    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
+    Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
                   Eigen::Dynamic> ret(mat.rows(), get_num_velocities());
     int ret_col_start = 0;
     int mat_col_start = 0;
@@ -216,9 +216,9 @@ class KinematicsCache {
     return ret;
   }
 
-  const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getQ() const { return q; }
+  const Eigen::Matrix<T, Eigen::Dynamic, 1>& getQ() const { return q; }
 
-  const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getV() const {
+  const Eigen::Matrix<T, Eigen::Dynamic, 1>& getV() const {
     if (hasV())
       return v;
     else
@@ -226,9 +226,9 @@ class KinematicsCache {
           "Kinematics cache has no valid velocity vector.");
   }
 
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
+  Eigen::Matrix<T, Eigen::Dynamic, 1> getX() const {
     if (hasV()) {
-      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(get_num_positions() +
+      Eigen::Matrix<T, Eigen::Dynamic, 1> x(get_num_positions() +
                                                  get_num_velocities());
       x << q, v;
       return x;
