@@ -790,9 +790,11 @@ class DRAKE_EXPORT RigidBodyTree {
    *
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[out] pairs          A vector that will be populated with the query
-   *                            data expressed in the world frame.  There will
-   *                            be one entry per pair of tested collision
-   *                            elements.
+   *                            data.  There will be one entry per pair of
+   *                            tested collision elements. The the contact
+   *                            points are each expressed in their corresponding
+   *                            body's frame and the normal is expressed in the
+   *                            world frame.
    * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
@@ -810,9 +812,11 @@ class DRAKE_EXPORT RigidBodyTree {
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[in]  ids_to_check   The set of collision element ids to test.
    * @param[out] pairs          A vector that will be populated with the query
-   *                            data expressed in the world frame.  There will
-   *                            be one entry per pair of tested collision
-   *                            elements.
+   *                            data.  There will be one entry per pair of
+   *                            tested collision elements. The the contact
+   *                            points are each expressed in their corresponding
+   *                            body's frame and the normal is expressed in the
+   *                            world frame.
    * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPointsInSet(

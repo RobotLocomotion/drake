@@ -485,7 +485,13 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
         // this term needs to be subtracted.
         contact_force += J.transpose() * fA;
         if (contacts != nullptr) {
-          Vector3<T> point = (pair.ptA + pair.ptB) * 0.5;
+          Vector3<T> pt_a_world =
+              kinsol.getElement(*pair.elementA->get_body()).transform_to_world *
+              pair.ptA;
+          Vector3<T> pt_b_world =
+              kinsol.getElement(*pair.elementB->get_body()).transform_to_world *
+              pair.ptB;
+          Vector3<T> point = (pt_a_world + pt_b_world) * 0.5;
 
           ContactInfo<T>& contact_info = contacts->AddContact(
               pair.elementA->getId(), pair.elementB->getId());
