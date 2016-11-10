@@ -33,14 +33,18 @@ class KinematicsCacheElement {
   Eigen::Matrix<Scalar, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_world;  // gradient w.r.t. q
+
+  // Jacobian matrix of quasi-coordinate variables computed with respect
+  // to generalized coordinate variables.
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
-                DrakeJoint::MAX_NUM_VELOCITIES,
-                DrakeJoint::MAX_NUM_POSITIONS>
-      qdot_to_v;  // gradient w.r.t. q
+                DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS>
+      qdot_to_v;
+
+  // Jacobian matrix of generalized coordinate variables computed with respect
+  // to quasi-coordinate variables.
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
-                DrakeJoint::MAX_NUM_POSITIONS,
-                DrakeJoint::MAX_NUM_VELOCITIES>
-      v_to_qdot;  // gradient w.r.t. q
+                DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES>
+      v_to_qdot;
   drake::SquareTwistMatrix<Scalar> inertia_in_world;
   drake::SquareTwistMatrix<Scalar> crb_in_world;
 
@@ -172,19 +176,18 @@ class KinematicsCache {
   }
 
   /**
-   * Converts a matrix B, which transforms generalized velocities to an
+   * Converts a matrix B, which transforms generalized velocities (v) to an
    * output space X, to a matrix A, which transforms the time
-   * derivative of generalized coordinates to the same output X. For example,
-   * B could be a Jacobian matrix that transforms generalized velocities to
-   * spatial velocities at the end-effector. Formally, this would be the
-   * matrix of partial derivatives of end-effector configuration computed with
-   * respect to quasi-coordinates. This function would allow
+   * derivative of generalized coordinates (q) to the same output X. For
+   * example, B could be a Jacobian matrix that transforms generalized
+   * velocities to spatial velocities at the end-effector. Formally, this would
+   * be the matrix of partial derivatives of end-effector configuration computed
+   * with respect to quasi-coordinates (ꝗ). This function would allow
    * transforming that Jacobian so that all partial derivatives would be
-   * computed with respect to the time derivative of the generalized
-   * coordinates.
-   * @param B, a `n x nv` sized matrix, where `nv` is the dimension of the
+   * computed with respect to the time derivative of q.
+   * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
-   * @returns A a `n x nq` sized matrix, where `nq` is the dimension of the
+   * @returns A a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
    */
   template <typename Derived>
@@ -214,18 +217,18 @@ class KinematicsCache {
 
   /**
    * Converts a matrix A, which transforms the time derivative of generalized
-   * coordinates to an output space X, to a matrix B, which transforms
-   * generalized velocities to the same space X. For example, A could be a
+   * coordinates (q) to an output space X, to a matrix B, which transforms
+   * generalized velocities (v) to the same space X. For example, A could be a
    * Jacobian matrix that transforms the time derivatives of generalized
-   * coordiantes to spatial velocities at the end effector. Formally, this
+   * coordinates to spatial velocities at the end effector. Formally, this
    * would be the matrix of partial derivatives of end-effector configuration
-   * computed with respect to generalized coordinates. This function would
-   * allow the user to transform this Jacobian matrix to the more commonly
-   * used one: the matrix of partial derivatives of end-effector configuration
-   * computed with respect to quasi-coordinates.
-   * @param A a `n x nq` sized matrix, where `nq` is the dimension of the
+   * computed with respect to q. This function would allow the user to
+   * transform this Jacobian matrix to the more commonly used one: the matrix of
+   * partial derivatives of end-effector configuration computed with respect to
+   * quasi-coordinates (ꝗ).
+   * @param A a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
-   * @returns B, a `n x nv` sized matrix, where `nv` is the dimension of the
+   * @returns B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
    * @sa transformVelocityMappingToPositionDotMapping()
    */
