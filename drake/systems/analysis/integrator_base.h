@@ -118,7 +118,7 @@ class IntegratorBase {
    */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
-  void set_target_accuracy(const T& accuracy) {
+  void set_target_accuracy(double accuracy) {
     if (!supports_accuracy_estimation())
       throw std::logic_error(
           "Integrator does not support accuracy estimation "
@@ -131,14 +131,14 @@ class IntegratorBase {
    *   Gets the target accuracy.
    *   @sa get_accuracy_in_use()
    */
-  const T& get_target_accuracy() const { return target_accuracy_; }
+  double get_target_accuracy() const { return target_accuracy_; }
 
   /**
    * Gets the accuracy in use by the integrator. This number may differ from
    * the target accuracy if, for example, the user has requested an accuracy
    * not attainable or not recommended for the particular integrator.
    */
-  const T& get_accuracy_in_use() const { return accuracy_in_use_; }
+  double get_accuracy_in_use() const { return accuracy_in_use_; }
 
   /**
    * Sets the maximum step size for this integrator. For fixed step integrators
@@ -355,7 +355,7 @@ class IntegratorBase {
   T ideal_next_step_size_{nan()};  // Indicates that the value is uninitialized.
 
   // The accuracy being used.
-  T accuracy_in_use_{nan()};
+  double accuracy_in_use_{nan()};
 
   // The maximum step size.
   T max_step_size_{nan()};
@@ -380,8 +380,8 @@ class IntegratorBase {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  T target_accuracy_{nan()};        // means "unspecified, use default"
-  T req_initial_step_size_{nan()};  // means "unspecified, use default"
+  double target_accuracy_{nan()};        // means "unspecified, use default"
+  T req_initial_step_size_{nan()};       // means "unspecified, use default"
 };
 
 template <class T>

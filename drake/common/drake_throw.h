@@ -3,7 +3,6 @@
 #include <type_traits>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 
 /// @file
 /// Provides a convenient wrapper to throw an exception when a condition is
@@ -13,7 +12,6 @@
 namespace drake {
 namespace detail {
 // Throw an error message.
-DRAKE_EXPORT
 void Throw(const char* condition, const char* func, const char* file, int line);
 }  // namespace detail
 }  // namespace drake

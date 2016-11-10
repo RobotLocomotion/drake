@@ -36,7 +36,7 @@ void Multiplexer<T>::EvalOutput(const Context<T>& context,
   }
 }
 
-template class DRAKE_EXPORT Multiplexer<double>;
+template class Multiplexer<double>;
 
 }  // namespace systems
 }  // namespace drake

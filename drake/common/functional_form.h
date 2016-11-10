@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_export.h"
-
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <initializer_list>
@@ -102,7 +100,7 @@ namespace drake {
  * FunctionalForm may also be used as the scalar type of an @c Eigen::Matrix<>.
  * Basic matrix and vector expressions are supported.
  */
-class DRAKE_EXPORT FunctionalForm {
+class FunctionalForm {
  public:
   class Variable;
   class Variables;
@@ -185,198 +183,146 @@ class DRAKE_EXPORT FunctionalForm {
    * where "x,..." represents a comma-separated list of the variables
    * combined by the form.
    */
-  friend DRAKE_EXPORT
-      std::ostream&
-      operator<<(std::ostream& os, FunctionalForm const& f);
+  friend std::ostream& operator<<(std::ostream& os, FunctionalForm const& f);
 
   /** Return a copy of @p lhs updated to record addition of form @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator+(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator+(FunctionalForm const& lhs,
+                                  FunctionalForm const& rhs);
 
   /** Return a copy of @p lhs updated to record addition of a @ref constant
       or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator+(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm operator+(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of @p rhs updated to record its addition to a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator+(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator+(double lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record addition of form @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator+=(FunctionalForm& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator+=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record addition of a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator+=(FunctionalForm& lhs, double rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator+=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record subtraction of form @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator-(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator-(FunctionalForm const& lhs,
+                                  FunctionalForm const& rhs);
 
   /** Return a copy of @p lhs updated to record subtraction of a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator-(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm operator-(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of @p rhs updated to record its subtraction from a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator-(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator-(double lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record subtraction of form @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator-=(FunctionalForm& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator-=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record subtraction of a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator-=(FunctionalForm& lhs, double rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator-=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record multiplication by @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator*(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator*(FunctionalForm const& lhs,
+                                  FunctionalForm const& rhs);
 
   /** Return a copy of @p lhs updated to record multiplication by a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator*(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm operator*(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of @p rhs updated to record its multiplication of a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator*(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator*(double lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record multiplication by @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator*=(FunctionalForm& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator*=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record multiplication by a @ref constant
       or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator*=(FunctionalForm& lhs, double rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator*=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p lhs updated to record division by @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator/(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator/(FunctionalForm const& lhs,
+                                  FunctionalForm const& rhs);
 
   /** Return a copy of @p lhs updated to record division by a @ref constant
       or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator/(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm operator/(FunctionalForm const& lhs, double rhs);
 
   /** Return a copy of @p rhs updated to record its division of a
       @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      operator/(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm operator/(double lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record division by @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator/=(FunctionalForm& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator/=(FunctionalForm& lhs, FunctionalForm const& rhs);
 
   /** Update @p lhs to record division by a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm&
-      // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-      operator/=(FunctionalForm& lhs, double rhs);
+  friend FunctionalForm&
+  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
+  operator/=(FunctionalForm& lhs, double rhs);
 
   /** Return a copy of @p x updated to record application of an
       @c abs function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      abs(FunctionalForm const& x);
+  friend FunctionalForm abs(FunctionalForm const& x);
 
   /** Return a copy of @p x updated to record application of a
       @c cos function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      cos(FunctionalForm const& x);
+  friend FunctionalForm cos(FunctionalForm const& x);
 
   /** Return a copy of @p x updated to record application of a
       @c exp function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      exp(FunctionalForm const& x);
+  friend FunctionalForm exp(FunctionalForm const& x);
 
   /** Return a copy of @p x updated to record application of a
       @c log function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      log(FunctionalForm const& x);
+  friend FunctionalForm log(FunctionalForm const& x);
 
   /** Return the form of the @c max function applied to forms
       @p lhs and @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      max(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm max(FunctionalForm const& lhs,
+                            FunctionalForm const& rhs);
 
   /** Return the form of the @c max function applied to form
       @p lhs and a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      max(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm max(FunctionalForm const& lhs, double rhs);
 
   /** Return the form of the @c max function applied to form
       @p rhs and a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      max(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm max(double lhs, FunctionalForm const& rhs);
 
   /** Return the form of the @c min function applied to forms
       @p lhs and @p rhs.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      min(FunctionalForm const& lhs, FunctionalForm const& rhs);
+  friend FunctionalForm min(FunctionalForm const& lhs,
+                            FunctionalForm const& rhs);
 
   /** Return the form of the @c min function applied to form
       @p lhs and a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      min(FunctionalForm const& lhs, double rhs);
+  friend FunctionalForm min(FunctionalForm const& lhs, double rhs);
 
   /** Return the form of the @c min function applied to form
       @p rhs and a @ref constant or @ref zero.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      min(double lhs, FunctionalForm const& rhs);
+  friend FunctionalForm min(double lhs, FunctionalForm const& rhs);
 
   /** Return a copy of @p x updated to record application of a
       @c sin function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      sin(FunctionalForm const& x);
+  friend FunctionalForm sin(FunctionalForm const& x);
 
   /** Return a copy of @p x updated to record application of a
       @c sqrt function.  */
-  friend DRAKE_EXPORT
-      FunctionalForm
-      sqrt(FunctionalForm const& x);
+  friend FunctionalForm sqrt(FunctionalForm const& x);
 
   /** Represent a set of Variable instances.
    *
@@ -384,7 +330,7 @@ class DRAKE_EXPORT FunctionalForm {
    * to the @ref VariableOrdering "Variable Ordering" without duplicates.
    * The contained set is immutable.
    */
-  class DRAKE_EXPORT Variables {
+  class Variables {
    public:
     /** Construct an empty set.  */
     Variables() = default;
@@ -429,14 +375,10 @@ class DRAKE_EXPORT FunctionalForm {
     size_t size() const;
 
     /** Return @c true if @c lhs and @c rhs represent the same set.  */
-    friend DRAKE_EXPORT
-        bool
-        operator==(const Variables& lhs, const Variables& rhs);
+    friend bool operator==(const Variables& lhs, const Variables& rhs);
 
     /** Return @c false if @c lhs and @c rhs represent the same set.  */
-    friend DRAKE_EXPORT
-        bool
-        operator!=(const Variables& lhs, const Variables& rhs);
+    friend bool operator!=(const Variables& lhs, const Variables& rhs);
 
    private:
     explicit Variables(std::vector<Variable>&& vars);
@@ -489,7 +431,7 @@ bool operator>=(FunctionalForm const&, FunctionalForm const&) = delete;
  * We define a Variable Ordering first by type (in the above order) and then by
  * the natural order of values within each type.
  */
-class DRAKE_EXPORT FunctionalForm::Variable {
+class FunctionalForm::Variable {
  public:
   /** Construct the nil variable.  */
   Variable();
@@ -541,43 +483,29 @@ class DRAKE_EXPORT FunctionalForm::Variable {
   std::string const& name() const;
 
   /** Print the variable's identifier, if any, to the given stream.  */
-  friend DRAKE_EXPORT
-      std::ostream&
-      operator<<(std::ostream& os, Variable const& v);
+  friend std::ostream& operator<<(std::ostream& os, Variable const& v);
 
   /** Return true if both variables have the same identifier type and value.  */
-  friend DRAKE_EXPORT
-      bool
-      operator==(Variable const& lhs, Variable const& rhs);
+  friend bool operator==(Variable const& lhs, Variable const& rhs);
 
   /** Return false if both variables have the same identifier type and value. */
-  friend DRAKE_EXPORT
-      bool
-      operator!=(Variable const& lhs, Variable const& rhs);
+  friend bool operator!=(Variable const& lhs, Variable const& rhs);
 
   /** Return true if @p lhs comes before @p rhs in the @ref VariableOrdering
    * "Variable Ordering".  */
-  friend DRAKE_EXPORT
-      bool
-      operator<(Variable const& lhs, Variable const& rhs);
+  friend bool operator<(Variable const& lhs, Variable const& rhs);
 
   /** Return true if @p lhs does not come after @p rhs in the @ref
    * VariableOrdering "Variable Ordering".  */
-  friend DRAKE_EXPORT
-      bool
-      operator<=(Variable const& lhs, Variable const& rhs);
+  friend bool operator<=(Variable const& lhs, Variable const& rhs);
 
   /** Return true if @p lhs comes after @p rhs in the @ref VariableOrdering
    * "Variable Ordering".  */
-  friend DRAKE_EXPORT
-      bool
-      operator>(Variable const& lhs, Variable const& rhs);
+  friend bool operator>(Variable const& lhs, Variable const& rhs);
 
   /** Return true if @p lhs does not come before @p rhs in the @ref
    * VariableOrdering "Variable Ordering".  */
-  friend DRAKE_EXPORT
-      bool
-      operator>=(Variable const& lhs, Variable const& rhs);
+  friend bool operator>=(Variable const& lhs, Variable const& rhs);
 
  private:
   void Destruct() noexcept;

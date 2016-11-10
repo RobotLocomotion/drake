@@ -21,8 +21,8 @@ MatrixGain<T>::MatrixGain(const Eigen::MatrixXd& D)
                       Eigen::MatrixXd::Zero(D.rows(), kNumStates),    // C
                       D) {}
 
-template class DRAKE_EXPORT MatrixGain<double>;
-template class DRAKE_EXPORT MatrixGain<AutoDiffXd>;
+template class MatrixGain<double>;
+template class MatrixGain<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

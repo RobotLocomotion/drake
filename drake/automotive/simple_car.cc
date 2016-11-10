@@ -157,11 +157,11 @@ std::unique_ptr<systems::BasicVector<T>> SimpleCar<T>::AllocateOutputVector(
 }
 
 // These instantiations must match the API documentation in simple_car.h.
-template class DRAKE_EXPORT SimpleCar<double>;
+template class SimpleCar<double>;
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
-template class DRAKE_EXPORT SimpleCar<drake::TaylorVarXd>;
+template class SimpleCar<drake::TaylorVarXd>;
 #endif
-template class DRAKE_EXPORT SimpleCar<drake::symbolic::Expression>;
+template class SimpleCar<drake::symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake

@@ -136,12 +136,8 @@ const {
   return *plant_;
 }
 
-template class
-DRAKE_EXPORT
-PidControlledSpringMassSystem<double>;
-template class
-DRAKE_EXPORT
-PidControlledSpringMassSystem<AutoDiffXd>;
+template class PidControlledSpringMassSystem<double>;
+template class PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

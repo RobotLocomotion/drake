@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 
@@ -17,7 +16,7 @@ namespace lcm {
  * messages. It contains additional methods for accessing the most recent
  * message that was "published," and faking a callback.
  */
-class DRAKE_EXPORT DrakeMockLcm : public DrakeLcmInterface {
+class DrakeMockLcm : public DrakeLcmInterface {
  public:
   DrakeMockLcm();
 

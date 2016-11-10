@@ -12,9 +12,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_urdf.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
@@ -27,7 +27,7 @@ namespace {
 VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
   RigidBodyTree<double> rigid_body_tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
@@ -49,7 +49,7 @@ class GravityCompensatorTest : public ::testing::Test {
     tree_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree_.get());
   }
 

@@ -132,8 +132,8 @@ void PidControlledSystem<T>::SetDefaultState(
       VectorX<T>::Zero(plant_->get_input_port(0).get_size()));
 }
 
-template class DRAKE_EXPORT PidControlledSystem<double>;
-template class DRAKE_EXPORT PidControlledSystem<AutoDiffXd>;
+template class PidControlledSystem<double>;
+template class PidControlledSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
