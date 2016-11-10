@@ -654,8 +654,7 @@ class IntegratorBase {
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
    */
-  void StepErrorControlled(const T& dt_max,
-                                  ContinuousState<T>* derivs0);
+  void StepErrorControlled(const T& dt_max, ContinuousState<T>* derivs0);
 
   /**
    * Computes the infinity norm of the error estimate. We use the infinity norm
@@ -841,8 +840,8 @@ class IntegratorBase {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double target_accuracy_{nan()};        // means "unspecified, use default"
-  T req_initial_step_size_{nan()};       // means "unspecified, use default"
+  double target_accuracy_{nan()};   // means "unspecified, use default"
+  T req_initial_step_size_{nan()};  // means "unspecified, use default"
 };
 
 template <class T>
@@ -897,9 +896,8 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
 
     //--------------------------------------------------------------------
     T err_norm = CalcErrorNorm();
-    std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(err_norm,
-                                                    dt_was_artificially_limited,
-                                                    current_step_size);
+    std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(
+        err_norm, dt_was_artificially_limited, current_step_size);
 
     if (step_succeeded) {
       ideal_next_step_size_ = current_step_size;
@@ -968,8 +966,7 @@ T IntegratorBase<T>::CalcErrorNorm() {
                                                pinvN_dq_err_.get());
   system.MapVelocityToConfigurationDerivatives(
       context, v_scal * pinvN_dq_err_->CopyToVector(), scaled_q_err_.get());
-  T q_nrm =
-      scaled_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
+  T q_nrm = scaled_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
 
   // TODO(edrumwri): Record the worst offender (which if the norms resulted
   // in the largest value).
@@ -979,9 +976,9 @@ T IntegratorBase<T>::CalcErrorNorm() {
 }
 
 template <class T>
-std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
-                                             bool dt_was_artificially_limited,
-                                             const T& current_step_size) const {
+std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
+    const T& err, bool dt_was_artificially_limited,
+    const T& current_step_size) const {
   using std::pow;
   using std::min;
   using std::max;
@@ -1047,8 +1044,9 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(const T& err,
     new_step_size = min(new_step_size, get_maximum_step_size());
   if (get_minimum_step_size() > 0) {
     if (new_step_size < get_minimum_step_size())
-      throw std::runtime_error("Error control wants to select step smaller "
-                                   "than minimum allowed for this integrator.");
+      throw std::runtime_error(
+          "Error control wants to select step smaller "
+          "than minimum allowed for this integrator.");
     new_step_size = max(new_step_size, get_minimum_step_size());
   }
 
