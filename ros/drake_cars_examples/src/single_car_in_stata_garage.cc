@@ -10,8 +10,8 @@
 #include "drake/system1/LCMSystem.h"
 #include "drake/system1/LinearSystem.h"
 #include "drake/system1/pd_control_system.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_system1/BotVisualizer.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 
 using drake::BotVisualizer;

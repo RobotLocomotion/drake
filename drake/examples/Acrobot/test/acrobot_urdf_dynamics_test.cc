@@ -3,8 +3,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/Acrobot.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
+#include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
 namespace examples {
@@ -22,11 +22,11 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.urdf", systems::plants::joints::kFixed);
+      "/examples/Acrobot/Acrobot.urdf", multibody::joints::kFixed);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.AddModelInstanceFromFile(GetDrakePath() +
-      "/examples/Acrobot/Acrobot.sdf", systems::plants::joints::kFixed);
+      "/examples/Acrobot/Acrobot.sdf", multibody::joints::kFixed);
 
   // for debugging:
   /*

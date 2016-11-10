@@ -16,16 +16,16 @@
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace automotive {
 
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::kRollPitchYaw;
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()

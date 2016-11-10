@@ -13,11 +13,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 namespace drake {
@@ -38,7 +38,7 @@ const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 int main(int argc, const char* argv[]) {
   RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Create a basic pointwise IK trajectory for moving the iiwa arm.
   // We start in the zero configuration (straight up).

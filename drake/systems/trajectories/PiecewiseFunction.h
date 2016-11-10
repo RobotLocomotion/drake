@@ -3,9 +3,8 @@
 #include <Eigen/Core>
 #include <vector>
 #include <random>
-#include "drake/common/drake_export.h"
 
-class DRAKE_EXPORT PiecewiseFunction {
+class PiecewiseFunction {
  protected:
   std::vector<double> segment_times;
 

@@ -8,6 +8,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -15,15 +18,12 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_tree_construction.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
-#include "drake/systems/plants/IKoptions.h"
-#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/multibody/IKoptions.h"
+#include "drake/multibody/RigidBodyIK.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -57,7 +57,7 @@ namespace {
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
@@ -195,10 +195,10 @@ class KukaDemo : public systems::Diagram<T> {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() +
         "/examples/kuka_iiwa_arm/urdf/iiwa14_no_collision.urdf",
-        drake::systems::plants::joints::kFixed,
+        drake::multibody::joints::kFixed,
         nullptr /* weld to frame */, rigid_body_tree.get());
 
-    drake::systems::plants::AddFlatTerrainToWorld(rigid_body_tree.get());
+    drake::multibody::AddFlatTerrainToWorld(rigid_body_tree.get());
     VerifyIiwaTree(*rigid_body_tree);
 
     DiagramBuilder<T> builder;
