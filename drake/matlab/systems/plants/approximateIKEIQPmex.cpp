@@ -7,7 +7,7 @@
 #include <math.h>
 #include <set>
 #include <Eigen/Dense>
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>

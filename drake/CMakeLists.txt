@@ -188,7 +188,10 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
-add_subdirectory(regtests)
+
+if(BUILD_TESTING)
+  add_subdirectory(regtests)
+endif()
 
 # setup MATLAB pods-compliance
 include(../cmake/matlab_pods.cmake)

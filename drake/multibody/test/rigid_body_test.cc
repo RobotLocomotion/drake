@@ -2,9 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/RigidBody.h"
-#include "drake/multibody/joints/FixedJoint.h"
-#include "drake/multibody/joints/QuaternionFloatingJoint.h"
+#include "drake/multibody/rigid_body.h"
+#include "drake/multibody/joints/fixed_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
 
 namespace drake {
 namespace systems {

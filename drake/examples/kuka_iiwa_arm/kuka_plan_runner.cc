@@ -19,7 +19,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "drake/lcmt_iiwa_command.hpp"

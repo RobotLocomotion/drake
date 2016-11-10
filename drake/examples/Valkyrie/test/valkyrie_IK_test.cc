@@ -7,9 +7,9 @@
 #include "gtest/gtest.h"
 
 // Includes for IK solver.
-#include "drake/multibody/IKoptions.h"
-#include "drake/multibody/RigidBodyIK.h"
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -17,7 +17,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 using Eigen::Vector2d;

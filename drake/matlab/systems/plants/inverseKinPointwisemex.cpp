@@ -1,9 +1,9 @@
 #include <mex.h>
 
-#include "drake/multibody/RigidBodyTree.h"
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "drake/multibody/IKoptions.h"
-#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
 #include <Eigen/Dense>
 #include "drake/matlab/util/drakeMexUtil.h"
 

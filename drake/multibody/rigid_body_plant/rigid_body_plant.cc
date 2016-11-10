@@ -8,7 +8,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/kinematics_cache.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
