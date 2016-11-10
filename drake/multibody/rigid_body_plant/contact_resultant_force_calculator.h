@@ -145,7 +145,7 @@ class ContactResultantForceCalculator {
 
   /** Accumulator constructor.
 
-   This allows the caller to provide a structure in which the contact
+   This allows the caller to provide a vector into which the contact
    forces/details can be persisted beyond the life span of the
    ContactResultantForceCalculator instance.  See the various AddForce methods
    for details on what is placed in the @p detail_accumulator.
