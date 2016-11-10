@@ -511,7 +511,7 @@ class Diagram : public System<T>,
                           const PortIdentifier& id) const {
     const System<T>* const system = id.first;
     const int i = GetSystemIndexOrAbort(system);
-    log()->trace("Evaluating output for subsystem {}, port {}",
+    SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
                  system->GetPath(), id.second);
     const Context<T>* subsystem_context = context.GetSubsystemContext(i);
     SystemOutput<T>* subsystem_output = context.GetSubsystemOutput(i);
