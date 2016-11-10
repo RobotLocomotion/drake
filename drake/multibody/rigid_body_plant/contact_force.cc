@@ -1,5 +1,8 @@
 #include "drake/multibody/rigid_body_plant/contact_force.h"
-#include <drake/common/drake_assert.h>
+
+#include <cmath>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
@@ -12,6 +15,7 @@ ContactForce<T>::ContactForce(const Vector3<T>& application_point,
       normal_(normal),
       force_(force),
       torque_(torque) {
+  using std::abs;
   DRAKE_ASSERT(abs(normal.norm() - 1.0) <
                Eigen::NumTraits<T>::dummy_precision());
 }
@@ -23,6 +27,7 @@ ContactForce<T>::ContactForce(const Vector3<T>& application_point,
       normal_(normal),
       force_(force),
       torque_(Vector3<T>::Zero()) {
+  using std::abs;
   DRAKE_ASSERT(abs(normal.norm() - 1.0) <
                Eigen::NumTraits<T>::dummy_precision());
 }
