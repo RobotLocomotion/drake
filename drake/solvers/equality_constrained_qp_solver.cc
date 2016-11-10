@@ -89,22 +89,55 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
-  // | Q  -A' | | x | = | -c  |
+  // | G  -A' | | x | = | -c  |
   // | A   0  | | y | = |  b |
   // for problem variables x and Lagrange multiplier variables y. 
   // Approach 1: compute a LDL' factorization
   // Approach 2: use the Schur complement ("range space" approach)
   // Approach 3: use the nullspace of A ("null space" approach)
 
+  // Setup the quadratic cost matrix and linear cost vector.
+  Eigen::MatrixXd G(prog.num_vars(), prog.num_vars());
+  Eigen::VectorXd c(prog.num_vars());
+  for (auto const& binding : prog.quadratic_costs()) {
+    size_t index = 0;
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      G.block(v.index(), v.index(), v.size(), v.size()) +=
+          binding.constraint()->Q().block(index, index, v.size(), v.size());
+      c.segment(v.index(), v.size()) -=
+          binding.constraint()->b().segment(index, v.size());
+      index += v.size();
+    }
+  }
+
+  // Setup the linear constraints.
+  size_t constraint_index = prog.num_vars();
+  for (auto const& binding : prog.linear_equality_constraints()) {
+    auto const& c = binding.constraint();
+    size_t n = c->A().rows();
+    size_t var_index = 0;
+    for (const DecisionVariableView& v : binding.variable_list()) {
+      A_full.block(constraint_index, v.index(), n, v.size()) =
+          c->A().middleCols(var_index, v.size());
+      A_full.block(v.index(), constraint_index, v.size(), n) =
+          (c->A().middleCols(var_index, v.size())).transpose();
+      var_index += v.size();
+    }
+    b_full.segment(constraint_index, n) =
+        c->lower_bound().segment(0, n);  // = c->upper_bound() since it's
+    //  an equality constraint
+    constraint_index += n;
+  }
+
   // Check for positive definite Hessian matrix.
-  LLT<MatrixXd> llt(prog.Q);
+  Eigen::LLT<Eigen::MatrixXd> llt(G);
   if (llt.info() == Eigen::Success) {
 
     // Matrix is positive definite. (inv(Q)*A')' = A*inv(Q)
-    MatrixXd AiQ_T = llt.solve(A.transpose());
+    Eigen::MatrixXd AiQ_T = llt.solve(A.transpose());
 
     // Solve using least-squares A*inv(Q)*A'y = A*inv(Q)*c - b for `y`.
-    VectorXd lambda = (A * AiQ_T).fullPivHouseholderQr.
+    Eigen::VectorXd lambda = (A * AiQ_T).fullPivHouseholderQr.
         solve(AiQ_T.transpose() * c - b);
 
     // Solve Q*x = A'y - c 
