@@ -3,6 +3,7 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -11,6 +12,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_export.h"
+#include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_variable.h"
@@ -22,11 +24,10 @@ namespace symbolic {
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
-  Var,       ///< variable
   Constant,  ///< constant (double)
+  Var,       ///< variable
   Neg,       ///< unary minus
   Add,       ///< addition (+)
-  Sub,       ///< subtraction (-)
   Mul,       ///< multiplication (*)
   Div,       ///< division (/)
   Log,       ///< logarithms
@@ -49,51 +50,62 @@ enum class ExpressionKind {
   // TODO(soonho): add Integral
 };
 
+/** Total ordering between ExpressionKinds. */
+bool operator<(ExpressionKind k1, ExpressionKind k2);
+
 class ExpressionCell;
 
 /** Represents a symbolic form of an expression.
 
 Its syntax tree is as follows:
 
-\verbatim
-    E := Var | Constant | - E | E + E | E - E | E * E | E / E | log(E) | abs(E)
-       | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E) | asin(E)
-       | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
+@verbatim
+    E := Var | Constant | - E | E + ... + E | E * ... * E | E / E | log(E)
+       | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
+       | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
        | min(E, E) | max(E, E)
-\endverbatim
+@endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
 to ExpressionCell class which is a super-class of different kinds of symbolic
-expressions (i.e. ExpressionAdd, ExpressionSub, ExpressionLog,
+expressions (i.e. ExpressionAdd, ExpressionMul, ExpressionLog,
 ExpressionSin). Note that it includes a shared pointer, not a unique pointer, to
 allow sharing sub-expressions.
 
-\note The sharing of sub-expressions is not yet implemented.
+@note The sharing of sub-expressions is not yet implemented.
 
-The following simple simplifications using identity and unity are implemented:
-\verbatim
-    E + 0          ->  E
-    0 + E          ->  E
-    E - 0          ->  E
-    E - E          ->  0
-    E * 1          ->  E
-    1 * E          ->  E
-    E * -1         -> -E
-   -1 * E          -> -E
-    E * 0          ->  0
-    0 * E          ->  0
-    E / 1          ->  E
-    E / E          ->  1
-\endverbatim
+@note A subtraction E1 - E2 is represented with an addition and unary minus,
+that is, E1 + (-E2).
+
+The following simple simplifications are implemented:
+@verbatim
+    E + 0             ->  E
+    0 + E             ->  E
+    E - 0             ->  E
+    E - E             ->  0
+    E * 1             ->  E
+    1 * E             ->  E
+    E * -1            -> -E
+   -1 * E             -> -E
+    E * 0             ->  0
+    0 * E             ->  0
+    E / 1             ->  E
+    E / E             ->  1
+    pow(E, 0)         ->  1
+    pow(E, 1)         ->  E
+    E * E             ->  E^2 (= pow(E, 2))
+    sqrt(E * E)       ->  |E| (= abs(E))
+    sqrt(E) * sqrt(E) -> E
+@endverbatim
 
 Constant folding is implemented:
-\verbatim
+@verbatim
     E(c1) + E(c2)  ->  E(c1 + c2)    // c1, c2 are constants
     E(c1) - E(c2)  ->  E(c1 - c2)
     E(c1) * E(c2)  ->  E(c1 * c2)
     E(c1) / E(c2)  ->  E(c1 / c2)
     f(E(c))        ->  E(f(c))       // c is a constant, f is a math function
-\endverbatim
+@endverbatim
 
 For the math functions which are only defined over a restricted domain (namely,
 log, sqrt, pow, asin, acos), we check the domain of argument(s), and throw
@@ -112,16 +124,16 @@ class DRAKE_EXPORT Expression {
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
 
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs an Expression from an rvalue. */
   Expression(Expression&& e) = default;
 
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs an Expression from an lvalue. */
   Expression(const Expression& e) = default;
 
-  /** Move-assign a set from an rvalue. */
+  /** Move-assigns an Expression from an rvalue. */
   Expression& operator=(Expression&& e) = default;
 
-  /** Copy-assign a set from an lvalue. */
+  /** Copy-assigns an Expression from an lvalue. */
   Expression& operator=(const Expression& e) = default;
 
   /** Constructs a constant. */
@@ -129,13 +141,20 @@ class DRAKE_EXPORT Expression {
   Expression(double d);
   /** Constructs a variable. */
   explicit Expression(const Variable& name);
+  /** Returns expression kind. */
   ExpressionKind get_kind() const;
+  /** Returns hash value. */
   size_t get_hash() const;
   /** Collects variables in expression. */
   Variables GetVariables() const;
 
   /** Checks structural equality. */
   bool EqualTo(const Expression& e) const;
+  /** Provides lexicographical ordering between expressions.
+      This function is used as a compare function in map<Expression> and
+      set<Expression> via std::less<drake::symbolic::Expression>. */
+  bool Less(const Expression& e) const;
+
   /** Evaluates under a given environment (by default, an empty environment). */
   double Evaluate(const Environment& env = Environment{}) const;
 
@@ -214,54 +233,93 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT void swap(Expression& a, Expression& b) {
     std::swap(a.ptr_, b.ptr_);
   }
+  friend class ExpressionAddFactory;
+  friend class ExpressionMulFactory;
 
-  /** Checks whether \p v is NaN or not. If \p is NaN, it throws a std::runtime
+  /** Checks whether @p v is NaN or not. If @p is NaN, it throws a std::runtime
    * exception. */
   static void check_nan(double v);
 
  private:
   explicit Expression(const std::shared_ptr<ExpressionCell> ptr);
+
   std::shared_ptr<ExpressionCell> ptr_;
 };
 
 /** Represents an abstract class which is the base of concrete
  * symbolic-expression classes.
  *
- * \note It provides virtual function, ExpressionCell::Display,
+ * @note It provides virtual function, ExpressionCell::Display,
  * because operator<< is not allowed to be a virtual function.
  */
 class ExpressionCell {
  public:
+  /** Returns expression kind. */
   ExpressionKind get_kind() const { return kind_; }
+  /** Returns hash value. */
   size_t get_hash() const { return hash_; }
   /** Collects variables in expression. */
   virtual Variables GetVariables() const = 0;
   /** Checks structural equality. */
   virtual bool EqualTo(const ExpressionCell& c) const = 0;
+  /** Provides lexicographical ordering between expressions. */
+  virtual bool Less(const ExpressionCell& c) const = 0;
   /** Evaluates under a given environment. */
   virtual double Evaluate(const Environment& env) const = 0;
-  /** Output string representation of expression into output stream \p os. */
+  /** Outputs string representation of expression into output stream @p os. */
   virtual std::ostream& Display(std::ostream& os) const = 0;
 
  protected:
   /** Default constructor. */
   ExpressionCell() = default;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs an ExpressionCell from an rvalue. */
   ExpressionCell(ExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs an ExpressionCell from an lvalue. */
   ExpressionCell(const ExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   ExpressionCell& operator=(ExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
-  /** Construct ExpressionCell of kind \p k with \p hash. */
+  /** Constructs ExpressionCell of kind @p k with @p hash. */
   ExpressionCell(ExpressionKind k, size_t hash);
 
  private:
   const ExpressionKind kind_{};
   const size_t hash_{};
 };
+}  // namespace symbolic
 
+/** Computes the hash value of a symbolic expression. */
+template <>
+struct hash_value<symbolic::Expression> {
+  size_t operator()(const symbolic::Expression& e) const {
+    return e.get_hash();
+  }
+};
+}  // namespace drake
+
+namespace std {
+/* Provides std::less<drake::symbolic::Expression>. */
+template <>
+struct less<drake::symbolic::Expression> {
+  bool operator()(const drake::symbolic::Expression& lhs,
+                  const drake::symbolic::Expression& rhs) const {
+    return lhs.Less(rhs);
+  }
+};
+
+/* Provides std::equal_to<drake::symbolic::Expression>. */
+template <>
+struct equal_to<drake::symbolic::Expression> {
+  bool operator()(const drake::symbolic::Expression& lhs,
+                  const drake::symbolic::Expression& rhs) const {
+    return lhs.EqualTo(rhs);
+  }
+};
+}  // namespace std
+
+namespace drake {
+namespace symbolic {
 /** Represents the base class for unary expressions.  */
 class UnaryExpressionCell : public ExpressionCell {
  public:
@@ -269,61 +327,66 @@ class UnaryExpressionCell : public ExpressionCell {
   Variables GetVariables() const override;
   /** Checks structural equality. */
   bool EqualTo(const ExpressionCell& c) const override;
-  /** Evaluate expression under a given environment \p env. */
+  /** Provides lexicographical ordering between expressions. */
+  bool Less(const ExpressionCell& c) const override;
+  /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
+  /** Returns the nested expression. */
+  const Expression& get_expression() const { return e_; }
 
  protected:
   /** Default constructor (DELETED). */
   UnaryExpressionCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   UnaryExpressionCell(UnaryExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   UnaryExpressionCell(const UnaryExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-  /** Constructs UnaryExpressionCell of kind \p k with \p hash and \p e. */
+  /** Constructs UnaryExpressionCell of kind @p k with @p hash and @p e. */
   UnaryExpressionCell(ExpressionKind k, const Expression& e);
-  /** Returns the nested expression. */
-  const Expression& get_expression() const { return e_; }
-  /** Returns the evaluation result f(\p v ). */
+  /** Returns the evaluation result f(@p v ). */
   virtual double DoEvaluate(double v) const = 0;
 
  private:
   const Expression e_;
 };
 
-/** Represents the base class for binary expressions.  */
+/** Represents the base class for binary expressions.
+ */
 class BinaryExpressionCell : public ExpressionCell {
  public:
   /** Collects variables in expression. */
   Variables GetVariables() const override;
   /** Checks structural equality. */
   bool EqualTo(const ExpressionCell& c) const override;
-  /** Evaluate expression under a given environment \p env. */
+  /** Provides lexicographical ordering between expressions. */
+  bool Less(const ExpressionCell& c) const override;
+  /** Evaluates expression under a given environment @p env. */
   double Evaluate(const Environment& env) const override;
+  /** Returns the first expression. */
+  const Expression& get_first_expression() const { return e1_; }
+  /** Returns the second expression. */
+  const Expression& get_second_expression() const { return e2_; }
 
  protected:
   /** Default constructor (DELETED). */
   BinaryExpressionCell() = delete;
-  /** Move-construct a set from an rvalue. */
+  /** Move-constructs from an rvalue. */
   BinaryExpressionCell(BinaryExpressionCell&& e) = default;
-  /** Copy-construct a set from an lvalue. */
+  /** Copy-constructs from an lvalue. */
   BinaryExpressionCell(const BinaryExpressionCell& e) = default;
-  /** Move-assign (DELETED). */
+  /** Move-assigns (DELETED). */
   BinaryExpressionCell& operator=(BinaryExpressionCell&& e) = delete;
-  /** Copy-assign (DELETED). */
+  /** Copy-assigns (DELETED). */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
-  /** Constructs BinaryExpressionCell of kind \p k with \p hash, \p e1, \p e2.
+  /** Constructs BinaryExpressionCell of kind @p k with @p hash, @p e1, @p e2.
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
                        const Expression& e2);
-  /** Returns the first expression. */
-  const Expression& get_1st_expression() const { return e1_; }
-  /** Returns the second expression. */
-  const Expression& get_2nd_expression() const { return e2_; }
-  /** Returns the evaluation result f(\p v1, \p v2 ). */
+  /** Returns the evaluation result f(@p v1, @p v2 ). */
   virtual double DoEvaluate(double v1, double v2) const = 0;
 
  private:
@@ -338,6 +401,7 @@ class ExpressionVar : public ExpressionCell {
   Variable get_variable() const { return var_; }
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
+  bool Less(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -352,6 +416,7 @@ class ExpressionConstant : public ExpressionCell {
   double get_value() const { return v_; }
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
+  bool Less(const ExpressionCell& e) const override;
   double Evaluate(const Environment& env) const override;
   std::ostream& Display(std::ostream& os) const override;
 
@@ -369,34 +434,218 @@ class ExpressionNeg : public UnaryExpressionCell {
   double DoEvaluate(double v) const override;
 };
 
-/** Symbolic expression representing addition. */
-class ExpressionAdd : public BinaryExpressionCell {
+/** Symbolic expression representing addition (sum of products).
+ *
+ * It represents a summation of terms:
+ * @f[
+ *     c_0 + \sum c_i t_i
+ * @f]
+ *  where @f$ c_i @f$ is a constant and @f$ t_i @f$ is a symbolic expression.
+ *
+ * Internally this class maintains a member variable @c constant_term_ to
+ * represent @f$ c_0 @f$ and another member variable @c term_to_coeff_map_ to
+ * represent a mapping from a term (whose type is symbolic::Expression) to its
+ * corresponding coefficient (whose type is double).
+ */
+class ExpressionAdd : public ExpressionCell {
  public:
-  ExpressionAdd(const Expression& e1, const Expression& e2);
+  /** Constructs ExpressionAdd from @p constant_term and @term_to_coeff_map. */
+  ExpressionAdd(double constant_term,
+                const std::map<Expression, double>& term_to_coeff_map);
+  /** Collects variables in expression. */
+  Variables GetVariables() const override;
+  /** Checks structural equality. */
+  bool EqualTo(const ExpressionCell& e) const override;
+  /** Checks ordering between this and @p e. */
+  bool Less(const ExpressionCell& e) const override;
+  /** Evaluates expression under a given environment @p env. */
+  double Evaluate(const Environment& env) const override;
+  /** Outputs string representation of expression into output stream @p os. */
   std::ostream& Display(std::ostream& os) const override;
+  /** Returns constant term. */
+  double get_constant_term() const { return constant_term_; }
+  /** Returns map from terms to their coefficients. */
+  const std::map<Expression, double>& get_term_to_coeff_map() const {
+    return term_to_coeff_map_;
+  }
 
  private:
-  double DoEvaluate(double v1, double v2) const override;
+  std::ostream& DisplayTerm(std::ostream& os, bool print_plus, double coeff,
+                            const Expression& term) const;
+  const double constant_term_{};
+  const std::map<Expression, double> term_to_coeff_map_;
 };
 
-/** Symbolic expression representing subtraction. */
-class ExpressionSub : public BinaryExpressionCell {
+/** Factory class to help build ExpressionAdd expressions. */
+class ExpressionAddFactory {
  public:
-  ExpressionSub(const Expression& e1, const Expression& e2);
-  std::ostream& Display(std::ostream& os) const override;
+  /** Default constructor. */
+  ExpressionAddFactory() = default;
+
+  /** Move-constructs from an rvalue. */
+  ExpressionAddFactory(ExpressionAddFactory&& f) = default;
+
+  /** Copy-constructs from an lvalue. */
+  ExpressionAddFactory(const ExpressionAddFactory& f) = default;
+
+  /** Move-assigns from an rvalue. */
+  ExpressionAddFactory& operator=(ExpressionAddFactory&& f) = default;
+
+  /** Copy-assigns from an lvalue. */
+  ExpressionAddFactory& operator=(const ExpressionAddFactory& f) = default;
+
+  /** Constructs ExpressionAddFactory with @p constant_term and @p
+   * term_to_coeff_map. */
+  ExpressionAddFactory(double constant_term,
+                       const std::map<Expression, double>& term_to_coeff_map);
+
+  /** Constructs ExpressionAddFactory from @p ptr. */
+  explicit ExpressionAddFactory(std::shared_ptr<const ExpressionAdd> ptr);
+
+  /** Adds @p e to this factory. */
+  void AddExpression(const Expression& e);
+  /** Adds ExpressionAdd pointed by @ptr to this factory. */
+  void Add(std::shared_ptr<const ExpressionAdd> ptr);
+  /** Assigns a factory from a shared pointer to ExpressionAdd.  */
+  ExpressionAddFactory& operator=(std::shared_ptr<ExpressionAdd> ptr);
+
+  /** Negates the expressions in factory.
+   * If it represents c0 + c1 * t1 + ... + * cn * tn,
+   * this method flips it into -c0 - c1 * t1 - ... - cn * tn.
+   * @returns *this.
+   */
+  ExpressionAddFactory& Negate();
+  /** Returns a symbolic expression. */
+  Expression GetExpression() const;
 
  private:
-  double DoEvaluate(double v1, double v2) const override;
+  /* Adds constant_term to this factory.
+     Adding constant constant_term into an add factory representing
+
+         c0 + c1 * t1 + ... + cn * tn
+
+     results in (c0 + constant_term) + c1 * t1 + ... + cn * tn.  */
+  void AddConstant(double constant_term);
+  /* Adds coeff * term to this factory.
+
+     Adding (coeff * term) into an add factory representing
+
+         c0 + c1 * t1 + ... + cn * tn
+
+     results in c0 + c1 * t1 + ... + (coeff * term) + ... + cn * tn. Note that
+     it also performs simplifications to merge the coefficients of common terms.
+  */
+  void AddTerm(double coeff, const Expression& term);
+  /* Adds term_to_coeff_map to this factory. It calls AddConstant and AddTerm
+   * methods. */
+  void AddMap(const std::map<Expression, double> term_to_coeff_map);
+
+  double constant_term_{0.0};
+  std::map<Expression, double> term_to_coeff_map_;
 };
 
-/** Symbolic expression representing multiplication. */
-class ExpressionMul : public BinaryExpressionCell {
+/** Symbolic expression representing multiplication of exponentiations.
+ *
+ * It represents a product of terms:
+ * @f[
+ *     c_0 \cdot \prod b_i^{e_i}
+ * @f]
+ *  where @f$ c_i @f$ is a constant and @f$ b_i @f$ and @f$ e_i @f$ are symbolic
+ * expressions.
+ *
+ * Internally this class maintains a member variable @c constant_factor_ to
+ * represent @f$ c_0 @f$ and another member variable @c term_to_exp_map_ to
+ * refpresent a mapping from a term (whose type is symbolic::Expression) to its
+ * corresponding exponentiation (whose type is symbolic::Expression).
+ */
+class ExpressionMul : public ExpressionCell {
  public:
-  ExpressionMul(const Expression& e1, const Expression& e2);
+  /** Constructs ExpressionMul from @p constant_factor and @term_to_exp_map. */
+  ExpressionMul(double constant_factor,
+                const std::map<Expression, Expression>& term_to_exp_map);
+  /** Collects variables in expression. */
+  Variables GetVariables() const override;
+  /** Checks structural equality. */
+  bool EqualTo(const ExpressionCell& e) const override;
+  /** Checks ordering between this and @p e. */
+  bool Less(const ExpressionCell& e) const override;
+  /** Evaluates expression under a given environment @p env. */
+  double Evaluate(const Environment& env) const override;
+  /** Outputs string representation of expression into output stream @p os. */
   std::ostream& Display(std::ostream& os) const override;
+  /** Returns constant term. */
+  double get_constant_factor() const { return constant_factor_; }
+  /** Returns map from a term to its coefficient. */
+  const std::map<Expression, Expression>& get_term_to_exp_map() const {
+    return term_to_exp_map_;
+  }
 
  private:
-  double DoEvaluate(double v1, double v2) const override;
+  std::ostream& DisplayTerm(std::ostream& os, bool print_mul,
+                            const Expression& base,
+                            const Expression& pow) const;
+  double constant_factor_{};
+  std::map<Expression, Expression> term_to_exp_map_;
+};
+
+/** Factory class to help build ExpressionMul expressions. */
+class ExpressionMulFactory {
+ public:
+  /** Default constructor. It constructs. */
+  ExpressionMulFactory() = default;
+
+  /** Move-constructs from an rvalue. */
+  ExpressionMulFactory(ExpressionMulFactory&& f) = default;
+
+  /** Copy-constructs from an lvalue. */
+  ExpressionMulFactory(const ExpressionMulFactory& f) = default;
+
+  /** Move-assigns from an rvalue. */
+  ExpressionMulFactory& operator=(ExpressionMulFactory&& f) = default;
+
+  /** Copy-assigns from an lvalue. */
+  ExpressionMulFactory& operator=(const ExpressionMulFactory& f) = default;
+
+  /** Constructs ExpressionMulFactory with @p constant_term and @p
+   * term_to_exp_map. */
+  ExpressionMulFactory(double constant_factor,
+                       const std::map<Expression, Expression>& term_to_exp_map);
+
+  /** Constructs ExpressionMulFactory from @p ptr. */
+  explicit ExpressionMulFactory(std::shared_ptr<const ExpressionAdd> ptr);
+
+  /** Adds @p e to this factory. */
+  void AddExpression(const Expression& e);
+  /** Adds ExpressionMul pointed by @ptr to this factory. */
+  void Add(std::shared_ptr<const ExpressionMul> ptr);
+  /** Assigns a factory from a shared pointer to ExpressionMul.  */
+  ExpressionMulFactory& operator=(std::shared_ptr<ExpressionMul> ptr);
+  /** Returns a symbolic expression. */
+  Expression GetExpression() const;
+
+ private:
+  /* Adds constant_factor to this factory.
+     Adding constant_factor into an mul factory representing
+
+         c * b1 ^ e1 * ... * bn ^ en
+
+     results in (constant_factor * c) * b1 ^ e1 * ... * bn ^ en. */
+  void AddConstant(double constant_factor);
+  /* Adds pow(base, exponent) to this factory.
+     Adding pow(base, exponent) into an mul factory representing
+
+         c * b1 ^ e1 * ... * bn ^ en
+
+     results in c * b1 ^ e1 * ... * base^exponent * ... * bn ^ en. Note that
+     it also performs simplifications to merge the exponents of common bases.
+  */
+  void AddTerm(const Expression& base, const Expression& exponent);
+  /* Adds term_to_exp_map to this factory. It calls AddConstant and AddTerm
+   * methods. */
+  void AddMap(const std::map<Expression, Expression> term_to_exp_map);
+
+  double constant_factor_{1.0};
+  std::map<Expression, Expression> term_to_exp_map_;
 };
 
 /** Symbolic expression representing division. */
@@ -463,7 +712,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
 /** Symbolic expression representing power function. */
 class ExpressionPow : public BinaryExpressionCell {
  public:
-  explicit ExpressionPow(const Expression& e1, const Expression& e2);
+  ExpressionPow(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
@@ -548,7 +797,7 @@ class ExpressionAtan : public UnaryExpressionCell {
  * two arguments). atan2(y, x) is defined as atan(y/x). */
 class ExpressionAtan2 : public BinaryExpressionCell {
  public:
-  explicit ExpressionAtan2(const Expression& e1, const Expression& e2);
+  ExpressionAtan2(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -589,7 +838,7 @@ class ExpressionTanh : public UnaryExpressionCell {
 /** Symbolic expression representing min function. */
 class ExpressionMin : public BinaryExpressionCell {
  public:
-  explicit ExpressionMin(const Expression& e1, const Expression& e2);
+  ExpressionMin(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -599,7 +848,7 @@ class ExpressionMin : public BinaryExpressionCell {
 /** Symbolic expression representing max function. */
 class ExpressionMax : public BinaryExpressionCell {
  public:
-  explicit ExpressionMax(const Expression& e1, const Expression& e2);
+  ExpressionMax(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
  private:
@@ -608,8 +857,9 @@ class ExpressionMax : public BinaryExpressionCell {
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
-/** \relates Expression Return a copy of \p lhs updated to record component-wise
- * multiplication by a constant \p rhs.
+/** @relates Expression
+ * Return a copy of @p lhs updated to record component-wise multiplication by a
+ * constant @p rhs.
  */
 template <typename MatrixL>
 typename std::enable_if<
@@ -620,9 +870,9 @@ operator*(const MatrixL& lhs, double rhs) {
   return lhs * Expression{rhs};
 }
 
-/** \relates Expression
- * Return a copy of \p rhs updated to record component-wise multiplication by a
- * constant \p rhs.
+/** @relates Expression
+ * Return a copy of @p rhs updated to record component-wise multiplication by a
+ * constant @p rhs.
  */
 template <typename MatrixR>
 typename std::enable_if<
@@ -633,8 +883,8 @@ operator*(double lhs, const MatrixR& rhs) {
   return (Expression{lhs}) * rhs;
 }
 
-/** \relates Expression
- * Update \p lhs to record component-wise multiplication by a constant \p rhs.
+/** @relates Expression
+ * Update @p lhs to record component-wise multiplication by a constant @p rhs.
  */
 template <typename MatrixL>
 typename std::enable_if<
@@ -646,9 +896,9 @@ operator*=(MatrixL& lhs, double rhs) {
   return lhs *= Expression{rhs};
 }
 
-/** \relates Expression
- * Return a copy of \p lhs updated to record component-wise division by a
- * constant \p rhs.
+/** @relates Expression
+ * Return a copy of @p lhs updated to record component-wise division by a
+ * constant @p rhs.
  */
 template <typename MatrixL>
 typename std::enable_if<
@@ -659,8 +909,8 @@ operator/(const MatrixL& lhs, double rhs) {
   return lhs / Expression{rhs};
 }
 
-/** \relates Expression
- * Update \p lhs to record component-wise division by a constant \p rhs.
+/** @relates Expression
+ * Update @p lhs to record component-wise division by a constant @p rhs.
  */
 template <typename MatrixL>
 typename std::enable_if<
@@ -679,25 +929,6 @@ struct DRAKE_EXPORT is_numeric<symbolic::Expression> {
   static constexpr bool value = false;
 };
 }  // namespace drake
-
-namespace std {
-/* Provides std::hash<drake::symbolic::Expression>. */
-template <>
-struct hash<drake::symbolic::Expression> {
-  size_t operator()(const drake::symbolic::Expression& e) const {
-    return e.get_hash();
-  }
-};
-
-/* Provides std::equal_to<drake::symbolic::Expression>. */
-template <>
-struct equal_to<drake::symbolic::Expression> {
-  bool operator()(const drake::symbolic::Expression& lhs,
-                  const drake::symbolic::Expression& rhs) const {
-    return lhs.EqualTo(rhs);
-  }
-};
-}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 // Define Eigen traits needed for Matrix<drake::symbolic::Expression>.

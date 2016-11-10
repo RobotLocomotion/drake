@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "drake/multibody/joints/DrakeJoint.h"
-#include "drake/multibody/joints/QuaternionFloatingJoint.h"
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
-#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/drake_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {

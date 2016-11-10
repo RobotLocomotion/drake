@@ -37,7 +37,9 @@ class DRAKE_EXPORT Environment {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
-  typedef typename std::unordered_map<key_type, mapped_type> map;
+  typedef
+      typename std::unordered_map<key_type, mapped_type, hash_value<key_type>>
+          map;
   /** std::pair<key_type, mapped_type> */
   typedef typename map::value_type value_type;
   typedef typename map::iterator iterator;
@@ -58,8 +60,13 @@ class DRAKE_EXPORT Environment {
   /** Copy-assign a set from an lvalue. */
   Environment& operator=(const Environment& e) = default;
 
-  /** List constructor. */
+  /** List constructor. Constructs an environment from a list of (Variable *
+   * double). */
   Environment(std::initializer_list<value_type> init);
+
+  /** List constructor. Constructs an environment from a list of
+   * Variable. Initializes the variables with 0.0. */
+  Environment(std::initializer_list<key_type> vars);
 
   /** Returns an iterator to the beginning. */
   iterator begin() { return map_.begin(); }
@@ -74,7 +81,7 @@ class DRAKE_EXPORT Environment {
   /** Returns a const iterator to the end. */
   const_iterator cend() const { return map_.cend(); }
 
-  /** Inserts a pair (\p key, \p elem). */
+  /** Inserts a pair (@p key, @p elem). */
   void insert(const key_type& key, const mapped_type& elem);
   /** Checks whether the container is empty.  */
   bool empty() const { return map_.empty(); }
@@ -88,6 +95,10 @@ class DRAKE_EXPORT Environment {
 
   /** Returns string representation. */
   std::string to_string() const;
+
+  /** Returns a reference to the value that is mapped to a key equivalent to
+   * @p key, performing an insertion if such key does not already exist. */
+  mapped_type& operator[](const key_type& key);
 
   friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                const Environment& env);

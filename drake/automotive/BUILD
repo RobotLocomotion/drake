@@ -68,7 +68,7 @@ cc_library(
 cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
-    hdrs = ["simple_car.h"],
+    hdrs = ["simple_car.h", "simple_car_to_euler_floating_joint.h"],
     deps = DEPS,
     linkstatic = 1)
 

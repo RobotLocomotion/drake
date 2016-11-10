@@ -20,7 +20,6 @@ set(sources
 set(installed_headers
   autodiff.h
   autodiff_gradient.h
-  autodiff_overloads.h
   axis_angle.h
   cross_product.h
   eigen_sparse_triplet.h
@@ -52,4 +51,6 @@ pods_install_pkg_config_file(drake-math
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

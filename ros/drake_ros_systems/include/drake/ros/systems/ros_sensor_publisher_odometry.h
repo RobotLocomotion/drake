@@ -10,8 +10,8 @@
 #include "nav_msgs/Odometry.h"
 
 #include "drake/system1/System.h"
-#include "drake/multibody/KinematicsCache.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 

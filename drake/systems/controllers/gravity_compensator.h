@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {

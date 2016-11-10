@@ -22,8 +22,8 @@
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 // Includes for the planner.
-#include "drake/multibody/IKoptions.h"
-#include "drake/multibody/RigidBodyIK.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 

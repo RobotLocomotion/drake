@@ -39,6 +39,13 @@ TEST_F(SymbolicEnvironmentTest, InitWithNan) {
   EXPECT_THROW((Environment{{var_x_, 10}, {var_y_, NAN}}), runtime_error);
 }
 
+TEST_F(SymbolicEnvironmentTest, InitializerListWithoutValues) {
+  const Environment env{var_x_, var_y_, var_z_};
+  for (const auto& p : env) {
+    EXPECT_EQ(p.second, 0.0);
+  }
+}
+
 TEST_F(SymbolicEnvironmentTest, insert_find) {
   Environment env1{{var_x_, 2}, {var_y_, 3}, {var_z_, 4}};
   const Environment env2{env1};

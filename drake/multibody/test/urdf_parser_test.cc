@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {
