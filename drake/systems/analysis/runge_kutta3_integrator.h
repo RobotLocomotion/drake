@@ -54,8 +54,7 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
  public:
   virtual ~RungeKutta3Integrator() {}
 
-  RungeKutta3Integrator(const System <T>& system,
-                               Context <T>* context = nullptr)
+  RungeKutta3Integrator(const System<T>& system, Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     derivs0_ = system.AllocateTimeDerivatives();
     derivs1_ = system.AllocateTimeDerivatives();
@@ -78,9 +77,10 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
 
-  // These are pre-allocated temporaries for use by integration.
-  std::unique_ptr <ContinuousState<T>> derivs0_, derivs1_, derivs2_;
+  // These are pre-allocated temporaries for use by integration. They store
+  // the derivatives computed at various points within the integration
+  // interval.
+  std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_, derivs2_;
 };
 }  // namespace systems
 }  // namespace drake
-

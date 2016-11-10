@@ -51,8 +51,7 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double DT = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  RungeKutta3Integrator<double> integrator(
-      spring_mass, context.get());
+  RungeKutta3Integrator<double> integrator(spring_mass, context.get());
 
   EXPECT_GE(integrator.get_error_estimate_order(), 1);
   EXPECT_EQ(integrator.supports_error_estimation(), true);
@@ -103,8 +102,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // StepOnceAtFixedSize for 1 second.
   const double T_FINAL = 1.0;
-  for (double t = 0.0; t < T_FINAL; t += DT)
-    integrator.StepOnceAtMost(DT, DT);
+  for (double t = 0.0; t < T_FINAL; t += DT) integrator.StepOnceAtMost(DT, DT);
 
   // Get the final position.
   const double kXFinal =
@@ -132,13 +130,14 @@ GTEST_TEST(IntegratorTest, Scaling) {
   integrator.Initialize();
 
   // Test scaling
-  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector().size(),
+  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector().size(), 1);
+  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector()
+                .lpNorm<Eigen::Infinity>(),
             1);
-  EXPECT_EQ(integrator.get_mutable_generalized_state_weight_vector().
-      lpNorm<Eigen::Infinity>(), 1);
   EXPECT_EQ(integrator.get_misc_state_weight_vector().size(), 1);
-  EXPECT_EQ(integrator.get_mutable_misc_state_weight_vector().
-      lpNorm<Eigen::Infinity>(), 1);
+  EXPECT_EQ(integrator.get_mutable_misc_state_weight_vector()
+                .lpNorm<Eigen::Infinity>(),
+            1);
 }
 
 // Integrate a purely continuous system with no sampling using error control.

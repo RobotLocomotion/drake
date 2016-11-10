@@ -14,7 +14,7 @@ template <class T>
 void RungeKutta3Integrator<T>::DoInitialize() {
   // Set an artificial step size target, if not set already.
   if (!(IntegratorBase<T>::get_initial_step_size_target() <
-      IntegratorBase<T>::get_maximum_step_size()))
+        IntegratorBase<T>::get_maximum_step_size()))
     IntegratorBase<T>::request_initial_step_size_target(
         IntegratorBase<T>::get_maximum_step_size());
 }
@@ -40,7 +40,7 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
 
   // Find the continuous state xc within the Context, just once.
   VectorBase<T>* xc = IntegratorBase<T>::get_mutable_context()
-      ->get_mutable_continuous_state_vector();
+                          ->get_mutable_continuous_state_vector();
 
   // Setup ta and tb.
   T ta = IntegratorBase<T>::get_context().get_time();
@@ -67,9 +67,10 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   const auto& xcdot2 = derivs2_->get_vector();
 
   // calculate the state at dt.
-  const double kOneSixth = 1.0/6.0;
+  const double kOneSixth = 1.0 / 6.0;
   xc->SetFromVector(IntegratorBase<T>::get_interval_start_state());
-  xc->PlusEqScaled({{dt * kOneSixth, xcdot0}, {4.0 * dt * kOneSixth, xcdot1},
+  xc->PlusEqScaled({{dt * kOneSixth, xcdot0},
+                    {4.0 * dt * kOneSixth, xcdot1},
                     {dt * kOneSixth, xcdot2}});
 
   // If the state of the system has changed, the error estimate will no
@@ -84,8 +85,8 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
   const int count = err_est_vec_.size();
-  for (int i=0; i< count; ++i)                       // Eigen does not currently
-    err_est_vec_[i] = abs(err_est_vec_[i]);          // support iterators.
+  for (int i = 0; i < count; ++i)            // Eigen does not currently
+    err_est_vec_[i] = abs(err_est_vec_[i]);  // support iterators.
   IntegratorBase<T>::get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 }
 
