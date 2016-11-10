@@ -45,3 +45,6 @@ target_link_libraries(cache_test drakeSystemFramework)
 
 drake_add_cc_test(leaf_system_test)
 target_link_libraries(leaf_system_test drakeSystemFramework)
+
+drake_add_cc_test(parameters_test)
+target_link_libraries(parameters_test drakeSystemFramework)

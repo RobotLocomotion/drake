@@ -4,17 +4,17 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
-#include "drake/systems/plants/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/plants/rigid_body_tree_construction.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 
 using std::make_unique;
 using std::move;
@@ -35,7 +35,7 @@ using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using systems::VectorBase;
-using systems::plants::joints::kFixed;
+using multibody::joints::kFixed;
 
 namespace examples {
 namespace kuka_iiwa_arm {
@@ -57,7 +57,7 @@ class KukaIiwaArmDynamicsSim : public systems::Diagram<T> {
             drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
             kFixed, nullptr /* weld to frame */, tree.get());
 
-    drake::systems::plants::AddFlatTerrainToWorld(tree.get());
+    drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     DiagramBuilder<T> builder;
 

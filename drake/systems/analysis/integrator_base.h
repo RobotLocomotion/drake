@@ -177,7 +177,7 @@ class IntegratorBase {
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
 
-    // TODO(edrumwri): Compute v_weight_, z_weight_ automatically.
+    // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
     // Set error scaling vectors if not already done.
     if (supports_error_estimation()) {
       // Allocate space for the error estimate.
@@ -186,11 +186,11 @@ class IntegratorBase {
       const auto& xc = context_->get_state().get_continuous_state();
       const int gv_size = xc->get_generalized_velocity().size();
       const int misc_size = xc->get_misc_continuous_state().size();
-      if (v_weight_.size() != gv_size) v_weight_.setOnes(gv_size);
+      if (qbar_weight_.size() != gv_size) qbar_weight_.setOnes(gv_size);
       if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
       // Verify that minimum values of the scaling matrices are non-negative.
-      if (v_weight_.minCoeff() < 0 || z_weight_.minCoeff() < 0)
+      if (qbar_weight_.minCoeff() < 0 || z_weight_.minCoeff() < 0)
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
@@ -581,7 +581,7 @@ class IntegratorBase {
    * support error estimation.
    */
   const Eigen::VectorXd& get_generalized_state_weight_vector() const {
-    return v_weight_;
+    return qbar_weight_;
   }
 
   /**
@@ -599,7 +599,7 @@ class IntegratorBase {
   Eigen::VectorBlock<Eigen::VectorXd>
   get_mutable_generalized_state_weight_vector() {
     initialization_done_ = false;
-    return v_weight_.head(v_weight_.rows());
+    return qbar_weight_.head(qbar_weight_.rows());
   }
 
   /**
@@ -811,7 +811,7 @@ class IntegratorBase {
   int64_t error_check_failures_{0};
 
   // Applied as diagonal matrices to weight error estimates.
-  Eigen::VectorXd v_weight_, z_weight_;
+  Eigen::VectorXd qbar_weight_, z_weight_;
 
   // State and time derivative copies for reversion during error-controlled
   // integration.
@@ -849,7 +849,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
                                             ContinuousState<T>* derivs0) {
   using std::isnan;
 
-  // Constants for integration growth and shrinkage.
+  // Constants for step size growth and shrinkage.
   const double kDTShrink = 0.95;
   const double kDTGrow = 1.001;
 

@@ -1,12 +1,12 @@
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/eigen_types.h"
 #include "drake/matlab/util/mexify.h"
 #include "drake/matlab/util/standardMexConversions.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/KinematicsCache.h"
 
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace std;
 using namespace Eigen;

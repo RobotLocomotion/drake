@@ -6,4 +6,5 @@ cc_library(
                  "unsupported/Eigen/*", "unsupported/Eigen/**/*.h"]),
     visibility = ["//visibility:public"],
     includes = ["."],
+    defines = ["EIGEN_MPL2_ONLY"],
 )

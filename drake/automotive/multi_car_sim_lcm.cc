@@ -5,8 +5,8 @@
 #include "drake/system1/LCMSystem.h"
 #include "drake/system1/LinearSystem.h"
 #include "drake/system1/pd_control_system.h"
-#include "drake/systems/plants/BotVisualizer.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_system1/BotVisualizer.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 
 namespace drake {
@@ -51,7 +51,7 @@ int main(int argc, const char* argv[]) {
 
     rigid_body_sys->AddModelInstanceFromFile(drake::GetDrakePath() +
       "/automotive/models/prius/prius.sdf",
-      drake::systems::plants::joints::kQuaternion, car_offset);
+      drake::multibody::joints::kQuaternion, car_offset);
   }
 
   SetRigidBodySystemParameters(rigid_body_sys.get());
