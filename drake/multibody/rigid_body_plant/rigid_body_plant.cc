@@ -489,8 +489,12 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
 
           ContactInfo<T>& contact_info = contacts->AddContact(
               pair.elementA->getId(), pair.elementB->getId());
-          ContactResultantForceCalculator<T> calculator(
-              &contact_info.get_mutable_contact_details());
+
+          // TODO(SeanCurtis-TRI): Future feature: test against user-set flag
+          // for whether the details should generally be captured or not and
+          // make this function dependent.
+          std::vector<unique_ptr<ContactDetail<T>>> details;
+          ContactResultantForceCalculator<T> calculator(&details);
 
           // This contact model produces responses that only have a force
           // component (i.e., the torque portion of the wrench is zero.)
@@ -502,6 +506,10 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
           calculator.AddForce(point, normal, force);
 
           contact_info.set_resultant_force(calculator.ComputeResultant());
+          // TODO(SeanCurtis-TRI): As with previous note, this line depends
+          // on the eventual instantiation of the user-set flag for accumulating
+          // contact details.
+          contact_info.set_contact_details(move(details));
         }
       }
     }

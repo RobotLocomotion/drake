@@ -65,9 +65,9 @@ class ContactInfo {
     return contact_details_;
   }
 
-  std::vector<std::unique_ptr<ContactDetail<T>>>&
-  get_mutable_contact_details() {
-    return contact_details_;
+  void set_contact_details(
+      std::vector<std::unique_ptr<ContactDetail<T>>>&& details) {
+    contact_details_ = std::move(details);
   }
 
  private:
