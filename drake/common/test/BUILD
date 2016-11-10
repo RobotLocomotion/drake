@@ -8,6 +8,11 @@ package(default_visibility = ["//visibility:public"])
 DEPS = ["//drake/common:common", "@gtest//:main"]
 
 cc_test(
+    name = "autodiff_overloads_test",
+    srcs = ["autodiff_overloads_test.cc"],
+    size = "small", deps = DEPS + ["//drake/common:autodiff"])
+
+cc_test(
     name = "drake_assert_test",
     srcs = ["drake_assert_test.cc"],
     size = "small", deps = DEPS)

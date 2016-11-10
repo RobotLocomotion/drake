@@ -12,11 +12,6 @@ cc_test(
     size = "small", deps = DEPS + ["//drake/math:autodiff", "//drake/math:gradient"])
 
 cc_test(
-    name = "autodiff_overloads_test",
-    srcs = ["autodiff_overloads_test.cc"],
-    size = "small", deps = DEPS + ["//drake/math:autodiff_overloads"])
-
-cc_test(
     name = "cross_product_test",
     srcs = ["cross_product_test.cc"],
     size = "small", deps = DEPS + ["//drake/math:gradient"])

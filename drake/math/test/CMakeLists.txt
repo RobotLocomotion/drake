@@ -1,16 +1,19 @@
 drake_add_cc_test(autodiff_test)
 target_link_libraries(autodiff_test drakeCommon)
 
-drake_add_cc_test(autodiff_overloads_test)
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
 drake_add_cc_test(eigen_sparse_triplet_test)
+
 drake_add_cc_test(expmap_test)
 target_link_libraries(expmap_test drakeCommon)
+
 drake_add_cc_test(NAME rotation_conversion_test SIZE medium)
 target_link_libraries(rotation_conversion_test drakeCommon)
+
 drake_add_cc_test(normalize_vector_test)
 target_link_libraries(normalize_vector_test drakeCommon)
+
 drake_add_cc_test(jacobian_test)
 target_link_libraries(jacobian_test drakeCommon)

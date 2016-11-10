@@ -3,19 +3,11 @@
 package(default_visibility = ["//visibility:public"])
 DEPS = ["//drake/common:common"]
 
-# TODO(jwnimmer-tri) Seems like this should live in common, with the other
-# scalartype stuff?
-cc_library(
-    name = "autodiff_overloads",
-    hdrs = ["autodiff_overloads.h"],
-    deps = DEPS + ["//drake/common:autodiff"],
-    linkstatic = 1)
-
 cc_library(
     name = "autodiff",
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
-    deps = DEPS + [":autodiff_overloads"],
+    deps = DEPS + ["//drake/common:autodiff"],
     linkstatic = 1)
 
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
