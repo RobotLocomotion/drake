@@ -936,5 +936,76 @@ double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
   return std::max(v1, v2);
 }
 
+// ExpressionIfThenElse
+// --------------------
+ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
+                                           const Expression& e_then,
+                                           const Expression& e_else)
+    : ExpressionCell{ExpressionKind::IfThenElse,
+                     hash_combine(
+                         hash_combine(hash_value<Formula>{}(f_cond), e_then),
+                         e_else)},
+      f_cond_{f_cond},
+      e_then_{e_then},
+      e_else_{e_else} {}
+
+Variables ExpressionIfThenElse::GetVariables() const {
+  Variables ret{f_cond_.GetFreeVariables()};
+  const Variables& vars_in_then = e_then_.GetVariables();
+  ret.insert(vars_in_then.begin(), vars_in_then.end());
+  const Variables& vars_in_else = e_else_.GetVariables();
+  ret.insert(vars_in_else.begin(), vars_in_else.end());
+  return ret;
+}
+
+bool ExpressionIfThenElse::EqualTo(const ExpressionCell& e) const {
+  if (get_kind() != e.get_kind()) {
+    return false;
+  }
+  const ExpressionIfThenElse& ite_e{
+      static_cast<const ExpressionIfThenElse&>(e)};
+  return f_cond_.EqualTo(ite_e.f_cond_) && e_then_.EqualTo(ite_e.e_then_) &&
+         e_else_.EqualTo(ite_e.e_else_);
+}
+
+bool ExpressionIfThenElse::Less(const ExpressionCell& e) const {
+  const ExpressionKind k1{get_kind()};
+  const ExpressionKind k2{e.get_kind()};
+  if (k1 < k2) {
+    return true;
+  }
+  if (k2 < k1) {
+    return false;
+  }
+  const ExpressionIfThenElse& ite_e{
+      static_cast<const ExpressionIfThenElse&>(e)};
+  if (f_cond_.Less(ite_e.f_cond_)) {
+    return true;
+  }
+  if (ite_e.f_cond_.Less(f_cond_)) {
+    return false;
+  }
+  if (e_then_.Less(ite_e.e_then_)) {
+    return true;
+  }
+  if (ite_e.e_then_.Less(e_then_)) {
+    return false;
+  }
+  return e_else_.Less(ite_e.e_else_);
+}
+
+double ExpressionIfThenElse::Evaluate(const Environment& env) const {
+  if (f_cond_.Evaluate(env)) {
+    return e_then_.Evaluate(env);
+  } else {
+    return e_else_.Evaluate(env);
+  }
+}
+
+ostream& ExpressionIfThenElse::Display(ostream& os) const {
+  os << "(if " << f_cond_ << " then " << e_then_ << " else " << e_else_ << ")";
+  return os;
+}
+
 }  // namespace symbolic
 }  // namespace drake

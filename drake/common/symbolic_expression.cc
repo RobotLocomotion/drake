@@ -652,5 +652,18 @@ Expression max(const Expression& e1, const Expression& e2) {
   return Expression{make_shared<ExpressionMax>(e1, e2)};
 }
 
+Expression if_then_else(const Formula& f_cond, const Expression& e_then,
+                        const Expression& e_else) {
+  // simplification:: if(true, e1, e2) => e1
+  if (f_cond.EqualTo(Formula::True())) {
+    return e_then;
+  }
+  // simplification:: if(false, e1, e2) => e2
+  if (f_cond.EqualTo(Formula::False())) {
+    return e_else;
+  }
+  return Expression{make_shared<ExpressionIfThenElse>(f_cond, e_then, e_else)};
+}
+
 }  // namespace symbolic
 }  // namespace drake
