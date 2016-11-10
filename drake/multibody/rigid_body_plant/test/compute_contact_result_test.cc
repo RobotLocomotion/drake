@@ -47,7 +47,7 @@ unique_ptr<FreestandingInputPort> MakeInput(
 template <typename DerivedA, typename DerivedB>
 bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                      const Eigen::MatrixBase<DerivedB>& m2) {
-  return CompareMatrices(m1, m2, 1e-14 /*threshold*/,
+  return CompareMatrices(m1, m2, Eigen::NumTraits<double>::dummy_precision(),
                          MatrixCompareType::absolute);
 }
 
@@ -60,6 +60,10 @@ class ContactResultTest : public ::testing::Test {
   RigidBody* body1_{};
   RigidBody* body2_{};
   RigidBodyTree<double>* tree_{};
+
+  // The point around which the test is run. Each sphere is offset along the
+  //  x-axis from this point.
+  double x_anchor_{};
 
   // instances owned by the test class
   unique_ptr<RigidBodyPlant<double>> plant_{};
@@ -74,10 +78,11 @@ class ContactResultTest : public ::testing::Test {
     auto unique_tree = make_unique<RigidBodyTree<double>>();
     tree_ = unique_tree.get();
 
+    x_anchor_ = 1.5;
     Vector3d pos;
-    pos << -(kRadius + distance), 0, 0;
+    pos << x_anchor_ - (kRadius + distance), 0, 0;
     body1_ = AddSphere(pos, "sphere1");
-    pos << (kRadius + distance), 0, 0;
+    pos << x_anchor_ + (kRadius + distance), 0, 0;
     body2_ = AddSphere(pos, "sphere2");
 
     tree_->compile();
@@ -166,8 +171,10 @@ TEST_F(ContactResultTest, SingleCollision) {
   auto detail_force = details[0]->ComputeContactForce();
   ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
                               expected_spatial_force));
+  Vector3<double> expected_point;
+  expected_point << x_anchor_, 0, 0;
   ASSERT_TRUE(CompareMatrices(detail_force.get_application_point(),
-                              Vector3<double>::Zero()));
+                              expected_point));
 }
 }  // namespace
 }  // namespace test
