@@ -12,7 +12,8 @@ namespace {
 class LinearCarTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    dut_.reset(new LinearCar<double>);
+    // Initialize LinearCar with x, v = 0.
+    dut_.reset(new LinearCar<double>(0.0, 0.0));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -21,7 +22,7 @@ class LinearCarTest : public ::testing::Test {
     // Set the state to zero initially.
     systems::ContinuousState<double>* xc = continuous_state();
     EXPECT_EQ(2, xc->size());
-    EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+    EXPECT_EQ(0, xc->get_misc_continuous_state().size());
     xc->SetFromVector(Eigen::VectorXd::Zero(2));
   }
 
@@ -31,6 +32,8 @@ class LinearCarTest : public ::testing::Test {
 
   static std::unique_ptr<systems::FreestandingInputPort> MakeInput(
       std::unique_ptr<systems::BasicVector<double>> data) {
+    // TODO(jadecastro): Take advantage of
+    // `SetInputPortToConstantValue` in #4041.
     return std::unique_ptr<systems::FreestandingInputPort>(
         new systems::FreestandingInputPort(std::move(data)));
   }
@@ -56,20 +59,6 @@ TEST_F(LinearCarTest, Topology) {
   EXPECT_EQ(systems::kOutputPort, output_descriptor.get_face());
   EXPECT_EQ(2 /* two outputs: x, v */, output_descriptor.get_size());
   EXPECT_EQ(systems::kContinuousSampling, output_descriptor.get_sampling());
-}
-
-TEST_F(LinearCarTest, Input) {
-  // Set the input to some arbitrary value.
-  input_->get_mutable_value() << 6.3;
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
-
-  // Define a pointer to where the EvalOutput results end up.
-  auto result = output_->get_vector_data(0);
-
-  // Verify that the starting input is zero.
-  dut_->EvalOutput(*context_, output_.get());
-  EXPECT_EQ(0.0, result->GetAtIndex(0));
-  EXPECT_EQ(0.0, result->GetAtIndex(1));
 }
 
 TEST_F(LinearCarTest, Output) {

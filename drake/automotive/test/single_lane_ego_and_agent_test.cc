@@ -14,12 +14,6 @@ namespace drake {
 namespace automotive {
 namespace {
 
-template <class T>
-std::unique_ptr<systems::FreestandingInputPort> MakeInput(
-    std::unique_ptr<systems::BasicVector<T>> data) {
-  return make_unique<systems::FreestandingInputPort>(std::move(data));
-}
-
 class SingleLaneEgoAndAgentTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -42,11 +36,16 @@ class SingleLaneEgoAndAgentTest : public ::testing::Test {
     return &subderivatives->get_vector();
   }
 
-  // intialize the diagram with v_0_ego = 50, vdot_agent = 2.7
-  SingleLaneEgoAndAgent<double> dut_{50.0, 2.7};
+  // intialize the diagram with the agent 5 meters ahead of the ego
+  // at zero velocity with the settings v_ref_ego = 50, vdot_agent = 2.7.
+  SingleLaneEgoAndAgent<double> dut_{0.0, 0.0, 5.0, 0.0, 50.0, 2.7};
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
+
+  // Define the output ports of the diagram.
+  const int outport_ego_ = 0;
+  const int outport_agent_ = 1;
 };
 
 TEST_F(SingleLaneEgoAndAgentTest, Topology) {
@@ -54,8 +53,8 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
   ASSERT_EQ(2 /* one port each for the ego and agent */,
             dut_.get_num_output_ports());
 
-  const auto& output_ego_car_pos = dut_.get_output_ports().at(0);
-  const auto& output_agent_car_pos = dut_.get_output_ports().at(0);
+  const auto& output_ego_car_pos = dut_.get_output_ports().at(outport_ego_);
+  const auto& output_agent_car_pos = dut_.get_output_ports().at(outport_agent_);
 
   EXPECT_EQ(systems::kVectorValued, output_ego_car_pos.get_data_type());
   EXPECT_EQ(systems::kVectorValued, output_agent_car_pos.get_data_type());
@@ -76,9 +75,10 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   auto state_vec_ego = continuous_state(dut_.get_ego_car_system());
   auto state_vec_agent = continuous_state(dut_.get_agent_car_system());
 
-  const systems::BasicVector<double>* output_ego = output_->get_vector_data(0);
+  const systems::BasicVector<double>* output_ego =
+      output_->get_vector_data(outport_ego_);
   const systems::BasicVector<double>* output_agent =
-      output_->get_vector_data(1);
+      output_->get_vector_data(outport_agent_);
 
   dut_.SetDefaultState(context_.get());
   dut_.EvalOutput(*context_, output_.get());
@@ -86,18 +86,18 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   // Default state vector is all zeros; outputs are one-to-one wrt. states.
   EXPECT_EQ(0.0, state_vec_ego->GetAtIndex(0));
   EXPECT_EQ(0.0, state_vec_ego->GetAtIndex(1));
-  EXPECT_EQ(0.0, state_vec_agent->GetAtIndex(0));
+  EXPECT_EQ(5.0, state_vec_agent->GetAtIndex(0));
   EXPECT_EQ(0.0, state_vec_agent->GetAtIndex(1));
 
   EXPECT_EQ(0.0, output_ego->GetAtIndex(0));
   EXPECT_EQ(0.0, output_ego->GetAtIndex(1));
-  EXPECT_EQ(0.0, output_agent->GetAtIndex(0));
+  EXPECT_EQ(5.0, output_agent->GetAtIndex(0));
   EXPECT_EQ(0.0, output_agent->GetAtIndex(1));
 
   // Define a new set of assignments to the states.
   state_vec_ego->SetAtIndex(0, 1.0);
   state_vec_ego->SetAtIndex(1, 2.0);
-  state_vec_agent->SetAtIndex(0, 3.0);
+  state_vec_agent->SetAtIndex(0, 6.0);
   state_vec_agent->SetAtIndex(1, 4.0);
 
   dut_.EvalOutput(*context_, output_.get());
@@ -105,12 +105,12 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   // Default state vector is all zeros; outputs are one-to-one wrt. states.
   EXPECT_EQ(1.0, state_vec_ego->GetAtIndex(0));
   EXPECT_EQ(2.0, state_vec_ego->GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec_agent->GetAtIndex(0));
+  EXPECT_EQ(6.0, state_vec_agent->GetAtIndex(0));
   EXPECT_EQ(4.0, state_vec_agent->GetAtIndex(1));
 
   EXPECT_EQ(1.0, output_ego->GetAtIndex(0));
   EXPECT_EQ(2.0, output_ego->GetAtIndex(1));
-  EXPECT_EQ(3.0, output_agent->GetAtIndex(0));
+  EXPECT_EQ(6.0, output_agent->GetAtIndex(0));
   EXPECT_EQ(4.0, output_agent->GetAtIndex(1));
 }
 
@@ -129,7 +129,7 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   // Verify behavior at a new set of state assignments.
   state_vec_ego->SetAtIndex(0, 0.0);
   state_vec_ego->SetAtIndex(1, 0.0);
-  state_vec_agent->SetAtIndex(0, 0.0);
+  state_vec_agent->SetAtIndex(0, 6.0);
   state_vec_agent->SetAtIndex(1, 0.0);
 
   dut_.EvalTimeDerivatives(*context_, derivatives_.get());
@@ -137,11 +137,11 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
 
   // Expected state derivatives wrt. the given states.
   EXPECT_EQ(0.0, derivatives_ego->GetAtIndex(0));
-  EXPECT_NEAR(0.950617, derivatives_ego->GetAtIndex(1), 1e-6);
+  EXPECT_NEAR(0.555556, derivatives_ego->GetAtIndex(1), 1e-6);
   EXPECT_EQ(0.0, derivatives_agent->GetAtIndex(0));
   EXPECT_EQ(2.7, derivatives_agent->GetAtIndex(1));
 
-  // Now verify behavior at a new set of parameters.
+  // Verify behavior at yet another set of state assignments.
   state_vec_ego->SetAtIndex(0, 0.0);
   state_vec_ego->SetAtIndex(1, 25.0);
   state_vec_agent->SetAtIndex(0, 10.0);
