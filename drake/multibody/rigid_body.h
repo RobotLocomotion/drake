@@ -16,6 +16,7 @@
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
+template <typename T>
 class DRAKE_EXPORT RigidBody {
  public:
   RigidBody();
