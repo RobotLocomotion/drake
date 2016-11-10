@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/constraint.h"

@@ -34,7 +34,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.
