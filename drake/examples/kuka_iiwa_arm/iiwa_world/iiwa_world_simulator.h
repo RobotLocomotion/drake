@@ -62,6 +62,9 @@ class IiwaWorldSimulator {
 
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
+  
+  /// Simulate until the time given by @p final_time
+  void StepTo(const T& final_time);
 
   // We are neither copyable nor moveable.
   IiwaWorldSimulator(const IiwaWorldSimulator<T>& other) = delete;

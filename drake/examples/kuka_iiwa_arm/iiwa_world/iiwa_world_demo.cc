@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   simulator->Build();
 
   while (true) {
-    simulator->StepBy(0.01);
+    simulator->StepTo(3.0 /* final time */);
   }
   return 0;
 }
