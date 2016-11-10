@@ -127,6 +127,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
 
   Vector4d lb(-1, -0.5, -3, -2);
   Vector4d ub(2, -0.2, -0.1, -1);
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
     for (int i = 0; i < 4; ++i) {
       EXPECT_GE(x.value().coeff(i), lb(i) - 1E-10);
@@ -148,6 +149,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   Vector4d b = Vector4d::Random();
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
 
+  prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
@@ -181,7 +183,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
-      MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
+      Vector2d::Constant(-1000.0), Vector2d::Constant(1000.0)));
   prog.AddConstraint(bbcon, {x.head(2)});
 
   // Now solve as a nonlinear program.
@@ -207,6 +209,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars.value()(1), 1);
   });
 }
+
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
@@ -291,9 +294,8 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
 
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
-  prog.AddLinearConstraint(
-      constraint.transpose(),
-      -std::numeric_limits<double>::infinity(), 40);
+  prog.AddLinearConstraint(constraint.transpose(),
+                           -std::numeric_limits<double>::infinity(), 40);
   EXPECT_EQ(prog.linear_constraints().size(), 1u);
   EXPECT_EQ(prog.generic_constraints().size(), 0u);
 
@@ -375,13 +377,11 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
 
   VectorXd constraint1(6), constraint2(6);
   constraint1 << 6, 3, 3, 2, 1, 0;
-  prog.AddLinearConstraint(
-      constraint1.transpose(),
-      -std::numeric_limits<double>::infinity(), 6.5);
+  prog.AddLinearConstraint(constraint1.transpose(),
+                           -std::numeric_limits<double>::infinity(), 6.5);
   constraint2 << 10, 0, 10, 0, 0, 1;
-  prog.AddLinearConstraint(
-      constraint2.transpose(),
-      -std::numeric_limits<double>::infinity(), 20);
+  prog.AddLinearConstraint(constraint2.transpose(),
+                           -std::numeric_limits<double>::infinity(), 20);
 
   Eigen::VectorXd lower(6);
   lower << 0, 0, 0, 0, 0, 0;
@@ -528,6 +528,7 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
   auto x = prog.AddContinuousVariables(2);
   auto cost = prog.AddCost(SixHumpCamelCost());
 
+  prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
@@ -584,12 +585,11 @@ class GloptipolyConstrainedExampleConstraint
   }
 };
 
-/** gloptiPolyConstrainedMinimization
- * @brief from section 5.8.2 of the gloptipoly3 documentation
- *
- * Which is from section 3.5 in
- *   Handbook of Test Problems in Local and Global Optimization
- */
+// gloptiPolyConstrainedMinimization
+// @brief from section 5.8.2 of the gloptipoly3 documentation
+//
+// Which is from section 3.5 in
+//   Handbook of Test Problems in Local and Global Optimization
 GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   MathematicalProgram prog;
 
@@ -604,22 +604,14 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
       new GloptipolyConstrainedExampleConstraint());
   prog.AddConstraint(qp_con, {x});
   prog.AddConstraint(qp_con, {y});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {x});
-  prog.AddLinearConstraint(
-      Vector3d(1, 1, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4), {y});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {x});
-  prog.AddLinearConstraint(
-      Vector3d(0, 3, 1).transpose(),
-      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6), {y});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {x});
+  prog.AddLinearConstraint(Vector3d(1, 1, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 4, {y});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {x});
+  prog.AddLinearConstraint(Vector3d(0, 3, 1).transpose(),
+                           -std::numeric_limits<double>::infinity(), 6, {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
@@ -640,10 +632,9 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   });
 }
 
-/**
- * Test that the Eval() method of LinearComplementarityConstraint correctly
- * returns the slack.
- */
+//
+// Test that the Eval() method of LinearComplementarityConstraint correctly
+// returns the slack.
 GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -667,13 +658,12 @@ GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
       CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
 }
 
-/** Simple linear complementarity problem example.
- * @brief a hand-created LCP easily solved.
- *
- * Note: This test is meant to test that MathematicalProgram.Solve() works in
- * this case; tests of the correctness of the Moby LCP solver itself live in
- * testMobyLCP.
- */
+// Simple linear complementarity problem example.
+// @brief a hand-created LCP easily solved.
+//
+// Note: This test is meant to test that MathematicalProgram.Solve() works in
+// this case; tests of the correctness of the Moby LCP solver itself live in
+// testMobyLCP.
 GTEST_TEST(testMathematicalProgram, simpleLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -693,10 +683,9 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
                               MatrixCompareType::absolute));
 }
 
-/** Multiple LC constraints in a single optimization problem
- * @brief Just two copies of the simpleLCP example, to make sure that the
- * write-through of LCP results to the solution vector works correctly.
- */
+// Multiple LC constraints in a single optimization problem
+// @brief Just two copies of the simpleLCP example, to make sure that the
+// write-through of LCP results to the solution vector works correctly.
 GTEST_TEST(testMathematicalProgram, multiLCP) {
   MathematicalProgram prog;
   Eigen::Matrix<double, 2, 2> M;
@@ -722,9 +711,8 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
                               MatrixCompareType::absolute));
 }
 
-/**
- * Test that linear polynomial constraints get turned into linear constraints.
- */
+//
+// Test that linear polynomial constraints get turned into linear constraints.
 GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   const Polynomiald x("x");
   MathematicalProgram problem;
@@ -739,8 +727,9 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   EXPECT_NE(dynamic_cast<LinearConstraint*>(resulting_constraint.get()),
             nullptr);
   // Check that it gives the correct answer as well.
+  problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(x_var.value()[0], 2, kEpsilon); });
+                      [&]() { EXPECT_NEAR(x_var.value(0), 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -752,7 +741,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
 #define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
 #endif
 
-/** Simple test of polynomial constraints. */
+// Simple test of polynomial constraints.
 GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
@@ -768,8 +757,9 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                     Vector1d::Constant(2),
                                     Vector1d::Constant(2));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+      EXPECT_NEAR(x_var.value(0), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
       // the nlopt wrapper supports those.
     });
@@ -786,9 +776,10 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var.value(0), 1, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
     });
   }
 
@@ -804,12 +795,13 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     problem.AddPolynomialConstraint(VectorXPoly::Constant(1, poly), var_mapping,
                                     Eigen::VectorXd::Zero(1),
                                     Eigen::VectorXd::Zero(1));
+    problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
-      EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+      EXPECT_NEAR(xy_var.value(0), 1, 0.2);
+      EXPECT_NEAR(xy_var.value(1), -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
-          {x.GetSimpleVariable(), xy_var.value()[0]},
-          {y.GetSimpleVariable(), xy_var.value()[1]}};
+          {x.GetSimpleVariable(), xy_var.value(0)},
+          {y.GetSimpleVariable(), xy_var.value(1)}};
       EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
     });
   }
@@ -831,24 +823,23 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value()[0]), kEpsilon);
+      EXPECT_NEAR(x_var.value(0), -0.7, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
     });
   }
 }
 
-/*
- * Test how an unconstrained QP is dispatched and solved:
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1).
- *   - on the same problem plus the additional problem
- *     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
- *     with the first problem, has min at (x1=1, x2=2, x3=1)
- * The first case tests a single quadratic cost, and the
- * second case tests multiple quadratic costs affecting
- * different variable views. All fall under the
- * umbrella of the Equality Constrained QP Solver.
- */
+//
+// Test how an unconstrained QP is dispatched and solved:
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1).
+//   - on the same problem plus the additional problem
+//     (2*x2 - 5)^2 + (2*x3 - 2)^2, which, when combined
+//     with the first problem, has min at (x1=1, x2=2, x3=1)
+// The first case tests a single quadratic cost, and the
+// second case tests multiple quadratic costs affecting
+// different variable views. All fall under the
+// umbrella of the Equality Constrained QP Solver.
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -862,6 +853,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   prog.AddQuadraticCost(Q, c);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -876,11 +868,12 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto y = prog.AddContinuousVariables(1);
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableList vars;
+  VariableVector vars;
   vars.push_back(x.segment(1, 1));
   vars.push_back(y);
 
   prog.AddQuadraticCost(Q, c, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 1.0;
@@ -895,15 +888,13 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
 
-/*
- * Test how an equality-constrained QP is dispatched
- *   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
- *     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
- *     The resulting constrained min is at (x1=0.5, x2=0.5).
- *   - on the same problem with an additional variable x3,
- *     with (2*x1 - x3 = 0). Resulting solution should be
- *     (x1=0.5, x2=0.5, x3=1.0)
- */
+// Test how an equality-constrained QP is dispatched
+//   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
+//     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
+//     The resulting constrained min is at (x1=0.5, x2=0.5).
+//   - on the same problem with an additional variable x3,
+//     with (2*x1 - x3 = 0). Resulting solution should be
+//     (x1=0.5, x2=0.5, x3=1.0)
 GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   MathematicalProgram prog;
   auto x = prog.AddContinuousVariables(2);
@@ -919,6 +910,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   constraint1 << 1, 1;
   prog.AddLinearEqualityConstraint(constraint1.transpose(), 1.0);
 
+  prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   prog.Solve();
 
   VectorXd expected_answer(2);
@@ -935,11 +927,12 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableList vars;
+  VariableVector vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
   prog.AddLinearEqualityConstraint(constraint2.transpose(), 0.0, vars);
+  prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   prog.Solve();
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
@@ -951,27 +944,25 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tActual: " << actual_answer.transpose();
 }
 
-/*
- * Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
- * nonlinear optimization problem.
- * The objective is to find the smallest distance from a hyperplane
- * A * x = b to the origin.
- * We can solve the following SOCP with Lorentz cone constraint
- * min  t
- *  s.t t >= sqrt(x'*x)
- *      A * x = b.
- * Alternatively, we can solve the following SOCP with rotated Lorentz cone
- * constraint
- * min t
- * s.t t >= x'*x
- *     A * x = b.
- *
- * The optimal solution of this equality constrained QP can be found using
- * Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
- * satisfy
- * A_hat * [x*; z*] = [b; 0]
- * where A_hat = [A 0; 2*I A'].
- */
+// Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
+// nonlinear optimization problem.
+// The objective is to find the smallest distance from a hyperplane
+// A * x = b to the origin.
+// We can solve the following SOCP with Lorentz cone constraint
+// min  t
+//  s.t t >= sqrt(x'*x)
+//      A * x = b.
+// Alternatively, we can solve the following SOCP with rotated Lorentz cone
+// constraint
+// min t
+// s.t t >= x'*x
+//     A * x = b.
+//
+// The optimal solution of this equality constrained QP can be found using
+// Lagrangian method. The optimal solution x* and Lagrangiam multiplier z*
+// satisfy
+// A_hat * [x*; z*] = [b; 0]
+// where A_hat = [A 0; 2*I A'].
 void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   DRAKE_ASSERT(A.rows() == b.rows());
   const int xDim = A.cols();
@@ -1016,8 +1007,8 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
-  prog_rotated_lorentz.AddBoundingBoxConstraint(
-      1.0, 1.0, slack_rotated_lorentz);
+  prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
+                                                slack_rotated_lorentz);
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();
@@ -1073,6 +1064,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
 }
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

@@ -81,7 +81,7 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
-  VariableList h_list;
+  VariableVector h_list;
   for (const auto& idx : interval_indices) {
     h_list.push_back(h_vars_(idx));
   }
@@ -147,7 +147,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   VectorXd timespan_init{VectorXd::LinSpaced(N_, 0, timespan_init_in)};
   opt_problem_.SetInitialGuess(h_vars_, VectorDiff(timespan_init));
 
-  VectorXd guess_u(u_vars_.size());
+  VectorXd guess_u(u_vars_.NumberOfVariables());
   if (traj_init_u.empty()) {
     guess_u.fill(0.003);  // Start with some small number <= 0.01.
   } else {
@@ -159,7 +159,7 @@ void DirectTrajectoryOptimization::GetInitialVars(
   opt_problem_.SetInitialGuess(u_vars_, guess_u);
 
   DRAKE_ASSERT(!traj_init_x.empty());  // TODO(Lucy-tri) see below.
-  VectorXd guess_x(x_vars_.size());
+  VectorXd guess_x(x_vars_.NumberOfVariables());
   if (traj_init_x.empty()) {
     guess_x.fill(0.003);  // Start with some small number <= 0.01.
     // TODO(Lucy-tri) Do what DirectTrajectoryOptimization.m does.
@@ -201,10 +201,10 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
   std::vector<Eigen::MatrixXd> inputs;
   inputs.reserve(N_);
 
-  const auto u_values = u_vars_.value();
+  const auto& u_values = u_vars_.value();
 
   for (int i = 0; i < N_; i++) {
-    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
+    inputs.push_back(u_values.block(i * num_inputs_, 0, num_inputs_, 1));
   }
   return inputs;
 }
@@ -214,10 +214,10 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   std::vector<Eigen::MatrixXd> states;
   states.reserve(N_);
 
-  const auto x_values = x_vars_.value();
+  const auto& x_values = x_vars_.value();
 
   for (int i = 0; i < N_; i++) {
-    states.push_back(x_values.segment(i * num_states_, num_states_));
+    states.push_back(x_values.block(i * num_states_, 0, num_states_, 1));
   }
   return states;
 }
@@ -233,12 +233,12 @@ void DirectTrajectoryOptimization::GetResultSamples(
   states->resize(num_states_, N_);
   states->fill(0);
 
-  const auto u_values = u_vars_.value();
-  const auto x_values = x_vars_.value();
+  const auto& u_values = u_vars_.value();
+  const auto& x_values = x_vars_.value();
 
   for (int i = 0; i < N_; i++) {
-    inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
-    states->col(i) = x_values.segment(i * num_states_, num_states_);
+    inputs->col(i) = u_values.block(i * num_inputs_, 0, num_inputs_, 1);
+    states->col(i) = x_values.block(i * num_states_, 0, num_states_, 1);
   }
 }
 
