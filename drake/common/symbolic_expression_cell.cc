@@ -80,9 +80,7 @@ double UnaryExpressionCell::Evaluate(const Environment& env) const {
 BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
                                            const Expression& e1,
                                            const Expression& e2)
-    : ExpressionCell{k, hash_combine(e1.get_hash(), e2.get_hash())},
-      e1_{e1},
-      e2_{e2} {}
+    : ExpressionCell{k, hash_combine(e1.get_hash(), e2)}, e1_{e1}, e2_{e2} {}
 
 Variables BinaryExpressionCell::GetVariables() const {
   Variables ret{e1_.GetVariables()};
@@ -224,9 +222,8 @@ double ExpressionNeg::DoEvaluate(const double v) const { return -v; }
 ExpressionAdd::ExpressionAdd(const double constant_term,
                              const map<Expression, double>& term_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
-                     hash_combine(constant_term,
-                                  hash_value<map<Expression, double>>{}(
-                                      term_to_coeff_map))},
+                     hash_combine(hash<double>{}(constant_term),
+                                  term_to_coeff_map)},
       constant_term_(constant_term),
       term_to_coeff_map_(term_to_coeff_map) {
   DRAKE_ASSERT(!term_to_coeff_map_.empty());
@@ -453,9 +450,8 @@ void ExpressionAddFactory::AddMap(
 ExpressionMul::ExpressionMul(const double constant_factor,
                              const map<Expression, Expression>& term_to_exp_map)
     : ExpressionCell{ExpressionKind::Mul,
-                     hash_combine(constant_factor,
-                                  hash_value<map<Expression, Expression>>{}(
-                                      term_to_exp_map))},
+                     hash_combine(hash<double>{}(constant_factor),
+                                  term_to_exp_map)},
       constant_factor_(constant_factor),
       term_to_exp_map_(term_to_exp_map) {
   DRAKE_ASSERT(!term_to_exp_map_.empty());
@@ -942,9 +938,8 @@ ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
                                            const Expression& e_then,
                                            const Expression& e_else)
     : ExpressionCell{ExpressionKind::IfThenElse,
-                     hash_combine(
-                         hash_combine(hash_value<Formula>{}(f_cond), e_then),
-                         e_else)},
+                     hash_combine(hash_value<Formula>{}(f_cond), e_then,
+                                  e_else)},
       f_cond_{f_cond},
       e_then_{e_then},
       e_else_{e_else} {}
