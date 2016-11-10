@@ -6,7 +6,6 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
@@ -17,16 +16,16 @@
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_sdf.h"
-#include "drake/systems/plants/parser_urdf.h"
-#include "drake/systems/plants/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
+#include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace automotive {
 
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::kRollPitchYaw;
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()
@@ -333,7 +332,7 @@ int AutomotiveSimulator<T>::allocate_vehicle_number() {
   return next_vehicle_number_++;
 }
 
-template class DRAKE_EXPORT AutomotiveSimulator<double>;
+template class AutomotiveSimulator<double>;
 
 }  // namespace automotive
 }  // namespace drake

@@ -200,6 +200,10 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
+  # Set default lib directory name suffix.
+  set(LIB_SUFFIX "" CACHE STRING "lib directory name suffix")
+  mark_as_advanced(LIB_SUFFIX)
+
   drake_setup_compiler()
   drake_setup_matlab()
   drake_setup_java()
@@ -219,6 +223,11 @@ endmacro()
 # Set up properties for the Drake superbuild.
 #------------------------------------------------------------------------------
 macro(drake_setup_superbuild)
+  enable_testing()
+  set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE
+    ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
+  file(REMOVE ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
+
   # Set default install prefix
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING

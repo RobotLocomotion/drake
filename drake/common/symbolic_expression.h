@@ -125,7 +125,8 @@ class DRAKE_EXPORT Expression {
   Expression& operator=(const Expression& e) = default;
 
   /** Constructs a constant. */
-  explicit Expression(double d);
+  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
+  Expression(double d);
   /** Constructs a variable. */
   explicit Expression(const Variable& name);
   ExpressionKind get_kind() const;
@@ -152,13 +153,9 @@ class DRAKE_EXPORT Expression {
 
   friend DRAKE_EXPORT Expression operator+(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator+(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator+(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
                                              const Expression& rhs);
-  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs, double rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
@@ -167,13 +164,9 @@ class DRAKE_EXPORT Expression {
 
   friend DRAKE_EXPORT Expression operator-(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator-(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator-(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
                                              const Expression& rhs);
-  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs, double rhs);
 
   /** Provides unary minus operator. */
   friend DRAKE_EXPORT Expression operator-(Expression e);
@@ -184,23 +177,15 @@ class DRAKE_EXPORT Expression {
 
   friend DRAKE_EXPORT Expression operator*(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator*(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator*(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
                                              const Expression& rhs);
-  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs, double rhs);
 
   friend DRAKE_EXPORT Expression operator/(Expression lhs,
                                            const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator/(double lhs, const Expression& rhs);
-  friend DRAKE_EXPORT Expression operator/(Expression lhs, double rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
   friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
                                              const Expression& rhs);
-  // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs, double rhs);
 
   friend DRAKE_EXPORT Expression log(const Expression& e);
   friend DRAKE_EXPORT Expression abs(const Expression& e);
@@ -208,8 +193,6 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT Expression sqrt(const Expression& e);
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1, double v2);
   friend DRAKE_EXPORT Expression sin(const Expression& e);
   friend DRAKE_EXPORT Expression cos(const Expression& e);
   friend DRAKE_EXPORT Expression tan(const Expression& e);
@@ -218,17 +201,11 @@ class DRAKE_EXPORT Expression {
   friend DRAKE_EXPORT Expression atan(const Expression& e);
   friend DRAKE_EXPORT Expression atan2(const Expression& e1,
                                        const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression atan2(const Expression& e1, double v2);
   friend DRAKE_EXPORT Expression sinh(const Expression& e);
   friend DRAKE_EXPORT Expression cosh(const Expression& e);
   friend DRAKE_EXPORT Expression tanh(const Expression& e);
-  friend DRAKE_EXPORT Expression min(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression min(const Expression& e1, double v2);
   friend DRAKE_EXPORT Expression min(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression max(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1, double v2);
   friend DRAKE_EXPORT Expression max(const Expression& e1,
                                      const Expression& e2);
 
@@ -491,8 +468,6 @@ class ExpressionPow : public BinaryExpressionCell {
 
   friend DRAKE_EXPORT Expression pow(const Expression& e1,
                                      const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(double v1, const Expression& e2);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1, double v2);
 
  private:
   /* Throws std::domain_error if v1 is finite negative and v2 is finite

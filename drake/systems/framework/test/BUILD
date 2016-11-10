@@ -19,7 +19,6 @@ cc_test(
     linkstatic=1,
     testonly=1)
 
-
 cc_test(
     name = "modal_state_test",
     srcs = ["modal_state_test.cc"],
@@ -33,12 +32,24 @@ cc_test(
     linkstatic=1,
     testonly=1)
 
-
 cc_test(
     name = "cache_test",
     srcs = ["cache_test.cc"],
     deps = [
         "//drake/common",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
+        "@gtest//:main",
+    ],
+    size = "small",
+    linkstatic=1,
+    testonly=1)
+
+cc_test(
+    name = "parameters_test",
+    srcs = ["parameters_test.cc"],
+    deps = [
+        "//drake/common", 
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
         "@gtest//:main",

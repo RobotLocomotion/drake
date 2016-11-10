@@ -8,14 +8,13 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a IdmWithTrajectoryAgentState.
-struct DRAKE_EXPORT IdmWithTrajectoryAgentStateIndices {
+struct IdmWithTrajectoryAgentStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 5;
 

@@ -8,14 +8,13 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a EulerFloatingJointState.
-struct DRAKE_EXPORT EulerFloatingJointStateIndices {
+struct EulerFloatingJointStateIndices {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = 6;
 
