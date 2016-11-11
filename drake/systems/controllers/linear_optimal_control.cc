@@ -13,15 +13,14 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  auto S = ContinuousAlgebraicRiccatiEquation(system.A(),
-                                              system.B(), Q, R);
+  auto S = ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   auto K = R_cholesky.solve(system.B().transpose() * S);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
-      Eigen::MatrixXd::Zero(0, 0),           // A
+      Eigen::Matrix<double, 0, 0>::Zero(),   // A
       Eigen::MatrixXd::Zero(0, num_states),  // B
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
       -K);                                   // D
@@ -54,9 +53,9 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   // Return the affine controller: u = u0 - K(x-x0).
   return std::make_unique<systems::AffineSystem<double>>(
-      Eigen::MatrixXd::Zero(0, 0),           // A
+      Eigen::Matrix<double, 0, 0>::Zero(),   // A
       Eigen::MatrixXd::Zero(0, num_states),  // B
-      Eigen::VectorXd::Zero(0),              // xDot0
+      Eigen::Matrix<double, 0, 1>::Zero(),   // xDot0
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
       -K,                                    // D
       u0 + K * x0);                          // y0

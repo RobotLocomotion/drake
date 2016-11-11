@@ -9,5 +9,9 @@ drake_add_cc_test(pid_controlled_system_test pid_controlled_system_test.cc)
 target_link_libraries(pid_controlled_system_test
     drakeSystemControllers
     drakeSystemFramework)
+
 drake_add_cc_test(pid_controller_test)
 target_link_libraries(pid_controller_test drakeSystemControllers drakeSystemFramework)
+
+drake_add_cc_test(linear_optimal_control_test linear_optimal_control_test.cc)
+target_link_libraries(linear_optimal_control_test drakeLinearControl)
