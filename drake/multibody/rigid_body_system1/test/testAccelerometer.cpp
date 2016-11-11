@@ -48,16 +48,18 @@ GTEST_TEST(testAccelerometer, AllTests) {
   const double tol = 1e-6;
   const Vector4d hoverThrust = 1.226250 * Vector4d::Ones();
 
+  std::string error_message;
   EXPECT_TRUE(
       CompareMatrices(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(),
                                              Vector4d::Zero()),
-                      Vector3d(0, 0, -g), tol, MatrixCompareType::absolute));
+                      Vector3d(0, 0, -g), tol, MatrixCompareType::absolute,
+                      &error_message)) << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0),
                              Vector4d::Zero()),  // inverted
       Vector3d(0, 0, g),
-      tol, MatrixCompareType::absolute));
+      tol, MatrixCompareType::absolute, &error_message)) << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
@@ -67,27 +69,31 @@ GTEST_TEST(testAccelerometer, AllTests) {
       getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0),
                              hoverThrust),  // inverted with thrust
       Vector3d(0, 0, 2 * g),
-      tol, MatrixCompareType::absolute));
+      tol, MatrixCompareType::absolute, &error_message)) << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI / 2, 0, 0),
                              Vector4d::Zero()),
-      Vector3d(0, -g, 0), tol, MatrixCompareType::absolute));
+      Vector3d(0, -g, 0), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(-M_PI / 2, 0, 0),
                              Vector4d::Zero()),
-      Vector3d(0, g, 0), tol, MatrixCompareType::absolute));
+      Vector3d(0, g, 0), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(0, M_PI / 2, 0),
                              Vector4d::Zero()),
-      Vector3d(g, 0, 0), tol, MatrixCompareType::absolute));
+      Vector3d(g, 0, 0), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(0, -M_PI / 2, 0),
                              Vector4d::Zero()),
-      Vector3d(-g, 0, 0), tol, MatrixCompareType::absolute));
+      Vector3d(-g, 0, 0), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 
   // real accelerometers can't measure gravity during freefall
   // but will measure gravity while hovering
@@ -95,16 +101,19 @@ GTEST_TEST(testAccelerometer, AllTests) {
   EXPECT_TRUE(
       CompareMatrices(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(),
                                              Vector4d::Zero()),
-                      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute));
+                      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute,
+                      &error_message)) << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0),
                              Vector4d::Zero()),
-      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute));
+      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 
   EXPECT_TRUE(CompareMatrices(
       getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
-      Vector3d(0, 0, g), tol, MatrixCompareType::absolute));
+      Vector3d(0, 0, g), tol, MatrixCompareType::absolute, &error_message))
+          << error_message;
 }
 
 }  // namespace

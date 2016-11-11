@@ -65,7 +65,9 @@ GTEST_TEST(TestLcmUtil, testVector3d) {
   bot_core::vector_3d_t msg;
   EncodeVector3d(vec, msg);
   Eigen::Vector3d vec_back = DecodeVector3d(msg);
-  EXPECT_TRUE(CompareMatrices(vec, vec_back, 0.0, MatrixCompareType::absolute));
+  std::string error_message;
+  EXPECT_TRUE(CompareMatrices(vec, vec_back, 0.0, MatrixCompareType::absolute,
+      &error_message)) << error_message;
 }
 
 GTEST_TEST(TestLcmUtil, testQuaternion) {
@@ -75,8 +77,10 @@ GTEST_TEST(TestLcmUtil, testQuaternion) {
   bot_core::quaternion_t msg;
   EncodeQuaternion(quaternion, msg);
   auto quat_back = DecodeQuaternion(msg);
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(quaternion, quat_back, 0.0, MatrixCompareType::absolute));
+      CompareMatrices(quaternion, quat_back, 0.0, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 GTEST_TEST(TestLcmUtil, testPose) {
@@ -90,8 +94,10 @@ GTEST_TEST(TestLcmUtil, testPose) {
   bot_core::position_3d_t msg;
   EncodePose(const_pose, msg);
   Eigen::Isometry3d pose_back = DecodePose(msg);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(pose.matrix(), pose_back.matrix(), 1e-12,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 GTEST_TEST(TestLcmUtil, testTwist) {
@@ -100,6 +106,8 @@ GTEST_TEST(TestLcmUtil, testTwist) {
   bot_core::twist_t msg;
   EncodeTwist(twist, msg);
   auto twist_back = DecodeTwist(msg);
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(twist, twist_back, 0.0, MatrixCompareType::absolute));
+      CompareMatrices(twist, twist_back, 0.0, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }

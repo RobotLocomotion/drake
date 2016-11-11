@@ -64,14 +64,16 @@ GTEST_TEST(AcrobotDynamicsTest, ValueAssignment) {
     */
 
     auto xdot = toEigen(r.dynamics(0.0, x0, u0));
-
     auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
+    std::string error_message;
     EXPECT_TRUE(
-        CompareMatrices(xdot_urdf, xdot, 1e-8, MatrixCompareType::absolute));
+        CompareMatrices(xdot_urdf, xdot, 1e-8, MatrixCompareType::absolute,
+            &error_message)) << error_message;
 
     auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
     EXPECT_TRUE(
-        CompareMatrices(xdot_sdf, xdot, 1e-8, MatrixCompareType::absolute));
+        CompareMatrices(xdot_sdf, xdot, 1e-8, MatrixCompareType::absolute,
+            &error_message)) << error_message;
   }
 }
 

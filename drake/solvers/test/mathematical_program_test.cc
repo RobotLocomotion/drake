@@ -149,12 +149,15 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
 
   prog.Solve();
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute,
+            &error_message)) << error_message;
 
   EXPECT_NEAR(b(2), x2.value()(0), 1e-10);
   EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   EXPECT_NEAR(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment.
 
@@ -166,18 +169,22 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(
-      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute,
+                      &error_message)) << error_message;
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
   con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(
-      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute,
+                      &error_message)) << error_message;
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
@@ -187,9 +194,11 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
     EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_TRUE(
-        CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+        CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute,
+                        &error_message)) << error_message;
   });
 }
 
@@ -228,8 +237,10 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   Vector4d expected = -Q_symmetric.ldlt().solve(b);
   prog.SetInitialGuess({x}, Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -272,8 +283,10 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
   std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -304,8 +317,10 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   std::srand(0);
   prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -356,8 +371,10 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -398,8 +415,10 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -495,15 +514,19 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 
   // Try again with the offsets in the opposite direction.
   prog.SetInitialGuess({x}, expected - delta);
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -633,10 +656,13 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   prog.SetInitialGuess({x}, initial_guess);
   prog.SetInitialGuess({y}, initial_guess);
   RunNonlinearProgram(prog, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
   });
 }
 
@@ -659,12 +685,15 @@ GTEST_TEST(testMathematicalProgram, simpleLCPConstraintEval) {
   Eigen::VectorXd x;
   c.Eval(Eigen::Vector2d(1, 1), x);
 
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute,
+          &error_message)) << error_message;
   c.Eval(Eigen::Vector2d(1, 2), x);
 
   EXPECT_TRUE(
-      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 }
 
 /** Simple linear complementarity problem example.
@@ -689,8 +718,10 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   EXPECT_NO_THROW(prog.Solve());
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /** Multiple LC constraints in a single optimization problem
@@ -715,11 +746,14 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   prog.AddLinearComplementarityConstraint(M, q, {y});
   EXPECT_NO_THROW(prog.Solve());
 
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /**
@@ -866,8 +900,10 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   // There are no inequality constraints, and only quadratic costs,
   // so this should hold:
   CheckSolverType(prog, "Equality Constrained QP Solver");
@@ -887,9 +923,10 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
+                              MatrixCompareType::absolute, &error_message))
+      << " - Expected:\n" << expected_answer.transpose() << "\n"
+      << " - Actual:\n" << actual_answer.transpose() << "\n"
+      << error_message;
 
   // Problem still has only quadratic costs, so solver should be the same.
   CheckSolverType(prog, "Equality Constrained QP Solver");
@@ -923,8 +960,10 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(expected_answer, x.value(), 1e-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
@@ -946,9 +985,10 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   VectorXd actual_answer(3);
   actual_answer << x.value(), y.value();
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
+                              MatrixCompareType::absolute, &error_message))
+      << " - Expected:\n" << expected_answer.transpose() << "\n"
+      << " - Actual:\n" << actual_answer.transpose() << "\n"
+      << error_message;
 }
 
 /*
@@ -1002,8 +1042,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
   prog_lorentz.SetInitialGuess({x_lorentz}, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
   });
 
@@ -1032,8 +1074,10 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   prog_rotated_lorentz.SetInitialGuess({x_rotated_lorentz},
                                        x_rotated_lorentz_guess);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_NEAR(cost_expected_rotated_lorentz,
                 t_rotated_lorentz.value().coeff(0), 1E-3);
   });
@@ -1049,15 +1093,19 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
 
   prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
   RunNonlinearProgram(prog_lorentz, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x_lorentz.value(), x_expected, 1E-5,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz.value().coeff(0), 1E-3);
   });
 
   prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
+    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz.value(), x_expected, 1E-5,
-                                MatrixCompareType::absolute));
+                                MatrixCompareType::absolute, &error_message))
+        << error_message;
     EXPECT_NEAR(cost_expected_rotated_lorentz,
                 t_rotated_lorentz.value().coeff(0), 1E-3);
   });
