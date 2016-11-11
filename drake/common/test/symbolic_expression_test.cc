@@ -1155,8 +1155,9 @@ TEST_F(SymbolicExpressionTest, IfThenElse3) {
 }
 
 TEST_F(SymbolicExpressionTest, Cond1) {
-  const Expression e{cond(x_ >= 10, 10, 0.0)};
-  EXPECT_PRED2(ExpEqual, e, if_then_else(x_ >= 10, 10, 0.0));
+  const Expression e{cond(x_ >= 10.0, Expression{10.0}, Expression{0.0})};
+  EXPECT_PRED2(ExpEqual, e,
+               if_then_else(x_ >= 10.0, Expression{10.0}, Expression{0.0}));
 
   EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
   EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
@@ -1165,10 +1166,10 @@ TEST_F(SymbolicExpressionTest, Cond1) {
 
 TEST_F(SymbolicExpressionTest, Cond2) {
   // clang-format off
-  const Expression e{cond(x_ >= 10, 10.0,
-                          x_ >= 5,  5.0,
-                          x_ >= 2,  2.0,
-                                    0.0)};
+  const Expression e{cond(x_ >= 10.0, Expression{10.0},
+                          x_ >= 5.0,  Expression{5.0},
+                          x_ >= 2.0,  Expression{2.0},
+                                      Expression{0.0})};
   EXPECT_PRED2(ExpEqual, e,
                if_then_else(x_ >= 10, 10,
                if_then_else(x_ >= 5,   5,
