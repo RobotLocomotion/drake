@@ -39,10 +39,8 @@ GTEST_TEST(testQPInverseDynamicsController, testPoseSetpoint) {
       err += 2 * M_PI;
 
     expected.head<3>() = err * vec_d;
-    std::string error_message;
     EXPECT_TRUE(
-        CompareMatrices(acc, expected, 1e-8, MatrixCompareType::absolute,
-            &error_message)) << error_message;
+        CompareMatrices(acc, expected, 1e-8, MatrixCompareType::absolute));
   }
 }
 

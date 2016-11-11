@@ -10,7 +10,7 @@ namespace drake {
 namespace solvers {
 namespace {
 /*
- * Test a constrained QP, with both equality and inequality constraints
+ * Test a constrained QP, with both equality and inequality constraitns
  * on a subset of decision variables.
  * The parameters of this QP are randomly generated.
  */
@@ -67,10 +67,8 @@ GTEST_TEST(testGurobi, checkGurobiQPAgainstSnopt) {
 
   Eigen::VectorXd gurobi_solution = prog.GetSolutionVectorValues();
 
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(gurobi_solution, snopt_solution, 1e-4,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
 }
 }  // namespace
 }  // namespace solvers

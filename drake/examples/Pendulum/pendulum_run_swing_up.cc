@@ -105,11 +105,8 @@ int do_main(int argc, char* argv[]) {
       controller->GetMutableSubsystemContext(controller_context, pendulum_p);
   auto state_vec =
       pendulum_context->get_continuous_state()->CopyToVector();
-  std::string error_message;
-  if (!CompareMatrices(state_vec, xG, 1e-3, MatrixCompareType::absolute,
-      &error_message)) {
-    throw std::runtime_error("Did not reach trajectory target:\n" +
-        error_message);
+  if (!CompareMatrices(state_vec, xG, 1e-3, MatrixCompareType::absolute)) {
+    throw std::runtime_error("Did not reach trajectory target.");
   }
   return 0;
 }

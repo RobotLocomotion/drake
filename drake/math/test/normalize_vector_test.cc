@@ -26,15 +26,12 @@ void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   auto x_norm = x_autodiff.norm();
   auto x_normalized_autodiff = x_autodiff / x_norm;
 
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x_normalized,
                               autoDiffToValueMatrix(x_normalized_autodiff),
-                              1E-10, MatrixCompareType::absolute,
-                              &error_message)) << error_message;
+                              1E-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(dx_normalized,
                               autoDiffToGradientMatrix(x_normalized_autodiff),
-                              1E-10, MatrixCompareType::absolute,
-                              &error_message)) << error_message;
+                              1E-10, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(NormalizeVectorTest, NormalizeVector) {

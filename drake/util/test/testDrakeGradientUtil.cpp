@@ -29,10 +29,8 @@ GTEST_TEST(DrakeGradientUtilTest, MatGradMult) {
   auto db = MatrixXd::Zero(b.rows(), nq).eval();
   auto dAb_check = matGradMultMat(A, b, dA, db);
 
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(dAb, dAb_check, 1e-10,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(DrakeGradientUtilTest, SetSubMatrixGradient) {
@@ -56,10 +54,8 @@ GTEST_TEST(DrakeGradientUtilTest, SetSubMatrixGradient) {
   auto dA_submatrix_back = getSubMatrixGradient<Eigen::Dynamic>(
       dA, rows, cols, A_rows, q_start, q_subvector_size);
 
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(dA_submatrix_back, dA_submatrix, 1e-10,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace

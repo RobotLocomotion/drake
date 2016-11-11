@@ -44,13 +44,10 @@ GTEST_TEST(PendulumTrajectoryOptimization,
   std::vector<double> times_out;
 
   dircol_traj.GetResultSamples(&inputs, &states, &times_out);
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x0, states.col(0),
-                              1e-10, MatrixCompareType::absolute,
-                              &error_message)) << error_message;
+                              1e-10, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(xG, states.col(kNumTimeSamples - 1),
-                              1e-10, MatrixCompareType::absolute,
-                              &error_message)) << error_message;
+                              1e-10, MatrixCompareType::absolute));
 }
 
 }  // namespace
