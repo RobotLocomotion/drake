@@ -27,17 +27,3 @@ include_directories(
 
 add_executable(golfcart_adapter src/golfcart_adapter.cc)
 target_link_libraries(golfcart_adapter ${catkin_LIBRARIES})
-
-link_directories("${CMAKE_INSTALL_PREFIX}/lib")
-add_executable(single_car_in_stata_garage src/single_car_in_stata_garage.cc)
-target_link_libraries(single_car_in_stata_garage
-  ${catkin_LIBRARIES}
-  drakeAutomotiveLcm
-  drakeCommon
-  drakeRBM
-  drakeRBSystem
-  drakeLCMSystem
-  drakeShapes
-  drakeJoints
-  drakeRigidBodyConstraint
-  lcm)
