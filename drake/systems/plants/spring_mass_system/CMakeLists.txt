@@ -6,7 +6,6 @@ pods_install_libraries(drakeSpringMassSystemPlant)
 drake_install_headers(
     spring_mass_system.h)
 
-pods_install_pkg_config_file(drake-spring-mass-system-plant
-    LIBS -ldrakeSpringMassSystemPlant -ldrakeSystemFramework
-    REQUIRES
-    VERSION 0.0.1)
+drake_install_pkg_config_file(drake-spring-mass-system-plant
+    LIBS -ldrakeSpringMassSystemPlant
+    REQUIRES drake-system-framework)

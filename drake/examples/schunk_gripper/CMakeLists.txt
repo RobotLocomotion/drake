@@ -7,10 +7,9 @@ if(lcm_FOUND)
   pods_install_libraries(drakeSchunkGripper)
   drake_install_headers(
           simulated_schunk_system.h)
-  pods_install_pkg_config_file(drake-schunk-gripper
+  drake_install_pkg_config_file(drake-schunk-gripper
           LIBS -ldrakeSchunkGripper
-          REQUIRES
-          VERSION 0.0.1)
+          REQUIRES drake-rigid-body-plant)
 endif()
 
 if(BUILD_TESTING)

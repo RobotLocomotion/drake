@@ -30,11 +30,13 @@ if (lcm_FOUND)
 endif()
 
 set(lcm_dependent_link_libraries)
+set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
       ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
       lcm)
+  set(lcm_dependent_requires drake-lcm-types lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakeLcm SOURCE_FILES
@@ -53,10 +55,10 @@ drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})
 pods_install_libraries(drakeLcm)
-pods_install_pkg_config_file(drake-lcm
+drake_install_pkg_config_file(drake-lcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
     LIBS -ldrakeLcm
-    VERSION 0.0.1)
+    REQUIRES ${lcm_dependent_requires})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

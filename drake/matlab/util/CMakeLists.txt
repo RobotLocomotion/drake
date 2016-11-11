@@ -4,13 +4,12 @@ if(Matlab_FOUND)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
   pods_install_libraries(drakeMexUtil)
-  pods_install_pkg_config_file(drake-mex-util
+  drake_install_pkg_config_file(drake-mex-util
     LIBS -ldrakeMexUtil
-    REQUIRES
-    VERSION 0.0.1)
+    REQUIRES drake-common)
 
   drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
-  
+
   drake_add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp
     cylindrical.cc)
   target_link_libraries(cylindrical2cartesianmex drakeMath)

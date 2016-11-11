@@ -14,10 +14,11 @@ if(lcm_FOUND)
     lcmtypes_bot2-core-cpp)
   drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
-  pods_install_pkg_config_file(drake-lcm-util
-    LIBS -ldrakeLCMUtil
+  drake_install_pkg_config_file(drake-lcm-util
+    LIBS -ldrakeLCMUtil -llcmtypes_bot2-core-cpp
     REQUIRES
-    VERSION 0.0.1)
+      drake-lcm-types
+      drake-trajectories)
 endif()
 
 drake_install_headers(drakeGradientUtil.h)
@@ -26,18 +27,17 @@ add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUt
 target_link_libraries(drakeGeometryUtil drakeCommon drakeMath)
 pods_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
-pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil -ldrakeCommon
+drake_install_pkg_config_file(drake-geometry-util
+  LIBS -ldrakeGeometryUtil
   REQUIRES
-  VERSION 0.0.1)
+    drake-common
+    drake-math)
 
 add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
 drake_install_headers(convexHull.h)
-pods_install_pkg_config_file(drake-convex-hull
-  LIBS -ldrakeConvexHull
-  REQUIRES
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-convex-hull
+  LIBS -ldrakeConvexHull)
 
 add_subdirectory(yaml)
 

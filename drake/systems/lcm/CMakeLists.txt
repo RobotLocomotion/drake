@@ -20,10 +20,12 @@ if(lcm_FOUND)
     lcm_and_vector_base_translator.h
     lcmt_drake_signal_translator.h
     serializer.h)
-  pods_install_pkg_config_file(drake-lcm-system2
+  drake_install_pkg_config_file(drake-lcm-system2
     LIBS -ldrakeLCMSystem2
-    REQUIRES lcm
-    VERSION 0.0.1)
+    REQUIRES
+      drake-lcm
+      drake-lcm-types
+      drake-system-framework)
 endif()
 
 if(BUILD_TESTING)

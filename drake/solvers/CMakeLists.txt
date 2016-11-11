@@ -5,13 +5,13 @@ if(gurobi_FOUND)
 
   pods_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
-  pods_install_pkg_config_file(drake-qp
+  drake_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
-    REQUIRES gurobi
-    VERSION 0.0.1)
+    REQUIRES gurobi)
 endif()
 
 set(optimization_files)
+set(optimization_requires)
 list(APPEND optimization_files
   mathematical_program.cc moby_lcp_solver.cc
   system_identification.cpp linear_system_solver.cc
@@ -19,31 +19,37 @@ list(APPEND optimization_files
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
+ list(APPEND optimization_requires ipopt)
 else()
   list(APPEND optimization_files no_ipopt.cc)
 endif(ipopt_FOUND)
 if(NLopt_FOUND)
   list(APPEND optimization_files nlopt_solver.cc)
+  list(APPEND optimization_requires nlopt)
 else()
   list(APPEND optimization_files no_nlopt.cc)
 endif()
 if(dreal_FOUND)
   list(APPEND optimization_files dreal_solver.cc)
+  list(APPEND optimization_requires dreal)
 else()
   list(APPEND optimization_files no_dreal.cc)
 endif()
 if(snopt_FOUND)
   list(APPEND optimization_files snopt_solver.cc)
+  list(APPEND optimization_requires snopt_c)
 else()
   list(APPEND optimization_files no_snopt.cc)
 endif()
 if(mosek_FOUND)
   list(APPEND optimization_files mosek_solver.cc)
+  list(APPEND optimization_requires mosek)
 else()
   list(APPEND optimization_files no_mosek.cc)
 endif()
 if(gurobi_FOUND)
   list(APPEND optimization_files gurobi_solver.cc)
+  list(APPEND optimization_requires gurobi)
 else()
   list(APPEND optimization_files no_gurobi.cc)
 endif()
@@ -60,10 +66,9 @@ drake_install_headers(
   system_identification.h
   )
 pods_install_libraries(drakeOptimization)
-pods_install_pkg_config_file(drake-optimization
+drake_install_pkg_config_file(drake-optimization
   LIBS -ldrakeOptimization
-  REQUIRES
-  VERSION 0.0.1)
+  REQUIRES ${optimization_requires})
 
 if(ipopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization ipopt)

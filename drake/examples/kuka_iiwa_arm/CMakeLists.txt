@@ -7,10 +7,9 @@ if(lcm_FOUND)
   pods_install_libraries(drakeKukaIiwaArmCommon)
   drake_install_headers(
       iiwa_common.h)
-  pods_install_pkg_config_file(drake-kuka-iiwa-arm-common
+  drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
       LIBS -ldrakeKukaIiwaArmCommon
-      REQUIRES
-      VERSION 0.0.1)
+      REQUIRES drake-rbm)
 
   # TODO(liang.fok) Remove this library once all System 1.0-based KUKA iiwa
   # demos that are removed.
@@ -25,10 +24,14 @@ if(lcm_FOUND)
   pods_install_libraries(drakeKukaIiwaArm)
   drake_install_headers(
       iiwa_simulation.h)
-  pods_install_pkg_config_file(drake-kuka-iiwa-arm
+  drake_install_pkg_config_file(drake-kuka-iiwa-arm
       LIBS -ldrakeKukaIiwaArm
       REQUIRES
-      VERSION 0.0.1)
+        drake-common
+        drake-lcm-system
+        drake-lcm-types
+        drake-rbsystem
+        drake-shapes)
 
   add_executable(run_kuka_iiwa_arm_dynamics run_kuka_iiwa_arm_dynamics.cc)
   target_link_libraries(run_kuka_iiwa_arm_dynamics

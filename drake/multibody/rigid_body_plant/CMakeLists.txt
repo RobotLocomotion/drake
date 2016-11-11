@@ -19,9 +19,11 @@ if (lcm_FOUND)
 endif ()
 
 set(lcm_dependent_link_libraries)
+set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
     drakeLCMSystem2)
+  set(lcm_dependent_requires drake-lcm-system2)
 endif ()
 
 add_library_with_exports(LIB_NAME drakeRigidBodyPlant SOURCE_FILES
@@ -38,10 +40,15 @@ drake_install_headers(
   ${lcm_dependent_header_files}
   kinematics_results.h rigid_body_plant.h)
 pods_install_libraries(drakeRigidBodyPlant)
-pods_install_pkg_config_file(drake-rigid-body-plant
+drake_install_pkg_config_file(drake-rigid-body-plant
   CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-  LIBS -ldrakeRigidBodyPlant -ldrakeRBM
-  VERSION 0.0.1)
+  LIBS -ldrakeRigidBodyPlant
+  REQUIRES
+    drake-common
+    drake-optimization
+    drake-rbm
+    drake-system-framework
+    ${lcm_dependent_requires})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

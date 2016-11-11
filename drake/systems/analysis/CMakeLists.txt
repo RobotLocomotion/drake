@@ -23,10 +23,11 @@ target_link_libraries(drakeSystemAnalysis drakeSystemFramework drakeCommon)
 drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemAnalysis)
-pods_install_pkg_config_file(drake-system-analysis
-  LIBS -ldrakeSystemAnalysis -ldrakeSystemFramework -ldrakeCommon
+drake_install_pkg_config_file(drake-system-analysis
+  LIBS -ldrakeSystemAnalysis
   REQUIRES
-  VERSION 0.0.1)
+    drake-common
+    drake-system-framework)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

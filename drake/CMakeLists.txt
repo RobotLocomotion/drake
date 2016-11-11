@@ -163,10 +163,9 @@ endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
+drake_install_pkg_config_file(drake-java
   CLASSPATH drake
-  REQUIRES ${drake_jar_requires}
-  VERSION 0.0.1)
+  REQUIRES ${drake_jar_requires})
 
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
