@@ -41,10 +41,8 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 0, 1);
-    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
-                                MatrixCompareType::absolute, &error_message))
-        << error_message;
+                                MatrixCompareType::absolute));
   }
 }
 
@@ -68,10 +66,8 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 1, 1);
-    std::string error_message;
     EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
-                                MatrixCompareType::absolute, &error_message))
-        << error_message;
+                                MatrixCompareType::absolute));
   }
 }
 }  // namespace test

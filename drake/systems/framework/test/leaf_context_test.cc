@@ -169,11 +169,9 @@ TEST_F(LeafContextTest, Clone) {
     const BasicVector<double>* context_port = ReadVectorInputPort(context_, i);
     const BasicVector<double>* clone_port = ReadVectorInputPort(*clone, i);
     EXPECT_NE(context_port, clone_port);
-    std::string error_message;
     EXPECT_TRUE(CompareMatrices(context_port->get_value(),
                                 clone_port->get_value(), 1e-8,
-                                MatrixCompareType::absolute, &error_message))
-        << error_message;
+                                MatrixCompareType::absolute));
   }
 
   // Verify that the state was copied.

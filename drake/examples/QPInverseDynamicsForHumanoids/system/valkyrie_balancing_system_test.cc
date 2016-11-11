@@ -109,13 +109,11 @@ GTEST_TEST(testQPInverseDynamicsController, testValkyrieBalancingSystem) {
   EXPECT_TRUE(rs1->foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(rs1->foot(Side::RIGHT).velocity().norm() < 1e-6);
 
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(rs1->position(), rs1->GetNominalPosition(), 1e-4,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(
       rs1->velocity(), Eigen::VectorXd::Zero(rs1->robot().get_num_velocities()),
-      1e-4, MatrixCompareType::absolute, &error_message)) << error_message;
+      1e-4, MatrixCompareType::absolute));
 }
 
 }  // end namespace qp_inverse_dynamics

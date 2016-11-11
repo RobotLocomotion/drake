@@ -45,29 +45,25 @@ GTEST_TEST(testMagnetometer, AllTests) {
 
   const double tol = 1e-6;
 
-  std::string error_message;
   EXPECT_TRUE(
       CompareMatrices(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
-                      Vector3d(1, 0, 0), tol, MatrixCompareType::absolute,
-                      &error_message)) << error_message;
+                      Vector3d(1, 0, 0), tol, MatrixCompareType::absolute));
 
   EXPECT_TRUE(CompareMatrices(
       getMagnetometerOutput(rigid_body_sys, Vector3d(0, 0, M_PI / 2)),
-      Vector3d(0, -1, 0), tol, MatrixCompareType::absolute, &error_message))
-          << error_message;
+      Vector3d(0, -1, 0), tol, MatrixCompareType::absolute));
 
   magnetometer->setDeclination(M_PI / 4);
 
   EXPECT_TRUE(
       CompareMatrices(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
                       Vector3d(std::sqrt(2) / 2, std::sqrt(2) / 2, 0), tol,
-                      MatrixCompareType::absolute, &error_message))
-          << error_message;
+                      MatrixCompareType::absolute));
 
   EXPECT_TRUE(CompareMatrices(
       getMagnetometerOutput(rigid_body_sys, Vector3d(0, 0, M_PI / 2)),
       Vector3d(std::sqrt(2) / 2, -std::sqrt(2) / 2, 0), tol,
-      MatrixCompareType::absolute, &error_message)) << error_message;
+      MatrixCompareType::absolute));
 }
 
 }  // namespace

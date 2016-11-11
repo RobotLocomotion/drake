@@ -16,14 +16,11 @@ void SkewSymMatTestFun(const Vector3d& x) {
   Matrix3d x_skew_mat_expected;
   x_skew_mat_expected << 0, -x(2), x(1), x(2), 0, -x(0), -x(1), x(0), 0;
   auto x_skew_mat = VectorToSkewSymmetric(x);
-  std::string error_message;
   EXPECT_TRUE(CompareMatrices(x_skew_mat_expected, x_skew_mat, 1E-10,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
   // Checks the skew-symmetric property A' = -A.
   EXPECT_TRUE(CompareMatrices(x_skew_mat, -x_skew_mat.transpose(), 1E-10,
-                              MatrixCompareType::absolute, &error_message))
-      << error_message;
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(CrossProductTest, SkewSymMatTest) {
