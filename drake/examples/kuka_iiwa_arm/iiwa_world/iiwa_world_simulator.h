@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -62,7 +62,7 @@ class IiwaWorldSimulator {
 
   /// Advance simulated time by the given @p time_step increment in seconds.
   void StepBy(const T& time_step);
-  
+
   /// Simulate until the time given by @p final_time
   void StepTo(const T& final_time);
 
