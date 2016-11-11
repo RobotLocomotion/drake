@@ -1,3 +1,4 @@
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "drake/solvers/mathematical_program.h"
 
 #include "drake/solvers/equality_constrained_qp_solver.h"
@@ -61,14 +62,15 @@ MathematicalProgram::MathematicalProgram()
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
       required_capabilities_(kNoCapabilities),
-      ipopt_solver_(new IpoptSolver()),
-      nlopt_solver_(new NloptSolver()),
-      snopt_solver_(new SnoptSolver()),
-      moby_lcp_solver_(new MobyLCPSolver()),
-      linear_system_solver_(new LinearSystemSolver()),
-      equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      gurobi_solver_(new GurobiSolver()),
-      mosek_solver_(new MosekSolver()) {}
+      //ipopt_solver_(new IpoptSolver()),
+      //nlopt_solver_(new NloptSolver()),
+      //snopt_solver_(new SnoptSolver()),
+      //moby_lcp_solver_(new MobyLCPSolver()),
+      linear_system_solver_(new LinearSystemSolver())
+      //equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
+      //gurobi_solver_(new GurobiSolver()),
+      //mosek_solver_(new MosekSolver()) {}
+ {}
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will
@@ -81,7 +83,7 @@ SolutionResult MathematicalProgram::Solve() {
     // Identity: This is the objective function the solver uses anyway when
     // underconstrainted, and is fairly common in real-world problems.
     return linear_system_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_,
+  }/* else if (is_satisfied(required_capabilities_,
                           kEqualityConstrainedQPCapabilities) &&
              equality_constrained_qp_solver_->available()) {
     return equality_constrained_qp_solver_->Solve(*this);
@@ -106,7 +108,7 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
-  } else {
+  }*/ else {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
@@ -130,34 +132,5 @@ DecisionVariableVectorX MathematicalProgram::GetVariable(
   return decision_variable_vec;
 }
 
-DecisionVariableMatrix MathematicalProgram::AddVariables(
-    ScalarDecisionVariable::VarType type, size_t rows, size_t cols,
-    bool is_symmetric, std::vector<std::string> names) {
-  int num_new_vars = 0;
-  if (!is_symmetric) {
-    num_new_vars = rows * cols;
-  } else {
-    num_new_vars = rows * (rows + 1) / 2;
-  }
-  DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-  variables_.reserve(num_vars_ + num_new_vars);
-  std::vector<std::shared_ptr<const ScalarDecisionVariable>> variables_new;
-  variables_new.reserve(num_new_vars);
-  variables_.reserve(num_vars_ + num_new_vars);
-  for (int i = 0; i < num_new_vars; ++i) {
-    std::shared_ptr<ScalarDecisionVariable> vi(
-        new ScalarDecisionVariable(type, names[i], num_vars_ + i));
-    variables_.push_back(vi);
-    variables_new.push_back(vi);
-  }
-
-  DecisionVariableMatrix v_matrix(rows, cols, variables_new, is_symmetric);
-  num_vars_ += num_new_vars;
-  x_initial_guess_.conservativeResize(num_vars_);
-  x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
-  variable_views_.push_back(v_matrix);
-
-  return variable_views_.back();
-}
 }  // namespace solvers
 }  // namespace drake

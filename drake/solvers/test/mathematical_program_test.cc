@@ -209,7 +209,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars.value()(1), 1);
   });
 }
-
+/*
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
@@ -1064,7 +1064,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
 }
-
+*/
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
