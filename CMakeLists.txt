@@ -111,6 +111,7 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DBUILD_OCTAVE=OFF
     -DBUILD_MATLAB=OFF
     -DBUILD_GUILE=OFF
+    -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
 # sedumi

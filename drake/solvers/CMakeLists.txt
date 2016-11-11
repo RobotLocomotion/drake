@@ -85,6 +85,8 @@ if(ipopt_FOUND)
   endif()
 endif()
 if(NLopt_FOUND)
+  # TODO(jamiesnape): Fix imported target upstream.
+  target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
   target_link_libraries(drakeOptimization nlopt)
 endif()
 if(dreal_FOUND)
