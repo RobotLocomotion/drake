@@ -41,9 +41,10 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidOutput(output));
 
   // Obtain the input/output structures we need to read from and write into.
-  const systems::BasicVector<T>* input_ego = this->EvalVectorInput(context, 0);
+  const systems::BasicVector<T>* input_ego =
+      this->EvalVectorInput(context, this->get_ego_port());
   const systems::BasicVector<T>* input_agent =
-      this->EvalVectorInput(context, 1);
+      this->EvalVectorInput(context, this->get_agent_port());
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
@@ -64,10 +65,10 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   const T& delta = params.delta();
   const T& l_a = params.l_a();
 
-  const auto x_ego = input_ego->GetAtIndex(0);
-  const auto v_ego = input_ego->GetAtIndex(1);
-  const auto x_agent = input_agent->GetAtIndex(0);
-  const auto v_agent = input_agent->GetAtIndex(1);
+  const T& x_ego = input_ego->GetAtIndex(0);
+  const T& v_ego = input_ego->GetAtIndex(1);
+  const T& x_agent = input_agent->GetAtIndex(0);
+  const T& v_agent = input_agent->GetAtIndex(1);
 
   // Ensure that we are supplying the planner with sane parameters and
   // input values.

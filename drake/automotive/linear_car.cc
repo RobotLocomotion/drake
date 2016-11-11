@@ -21,6 +21,7 @@ LinearCar<T>::LinearCar(const T& x_init, const T& v_init)
   this->DeclareOutputPort(systems::kVectorValued,
                           2,  // Two outputs: x, v.
                           systems::kContinuousSampling);
+  this->DeclareContinuousState(2);  // Two states: x, v.
 }
 
 template <typename T>
@@ -69,15 +70,17 @@ void LinearCar<T>::EvalTimeDerivatives(
 }
 
 template <typename T>
-std::unique_ptr<systems::ContinuousState<T>>
-LinearCar<T>::AllocateContinuousState() const {
-  const int size = get_output_port().get_size();
-  auto state = std::make_unique<systems::BasicVector<T>>(size);
-  state->get_mutable_value() << x_init_, v_init_;  // initial state values.
-  return std::make_unique<systems::ContinuousState<T>>(std::move(state),
-                                                       1,   // num_q
-                                                       1,   // num_v
-                                                       0);  // num_z
+void LinearCar<T>::SetDefaultState(
+    systems::Context<T>* context) const {
+  // Obtain mutable references to the contexts for each car.
+  DRAKE_DEMAND(context != nullptr);
+  systems::ContinuousState<T>* state =
+      context->get_mutable_continuous_state();
+  DRAKE_DEMAND(state != nullptr);
+
+  // Set the elements of the state vector to pre-defined values.
+  state->get_mutable_vector()->SetAtIndex(0, x_init_);  // initial position
+  state->get_mutable_vector()->SetAtIndex(1, v_init_);  // initial velocity
 }
 
 // These instantiations must match the API documentation in linear_car.h.

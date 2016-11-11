@@ -15,8 +15,8 @@ SingleLaneEgoAndAgent<T>::SingleLaneEgoAndAgent(
   DRAKE_DEMAND(v_ref > 0);
 
   // Define the expected input ports to the planner.
-  const int inport_ego = 0;
-  const int inport_agent = 1;
+  const int& inport_ego = planner_->get_ego_port();
+  const int& inport_agent = planner_->get_agent_port();
 
   systems::DiagramBuilder<T> builder;
 
@@ -30,19 +30,18 @@ SingleLaneEgoAndAgent<T>::SingleLaneEgoAndAgent(
   const systems::ConstantVectorSource<T>* value =
       builder.AddSystem(std::make_unique<systems::ConstantVectorSource<T>>(
           a_agent /* acceleration of the agent */));
-  const IdmPlanner<T>* planner =
-      builder.AddSystem(std::make_unique<IdmPlanner<T>>(
-          v_ref /* desired velocity of the ego car */));
+  planner_ = builder.AddSystem(std::make_unique<IdmPlanner<T>>(
+      v_ref /* desired velocity of the ego car */));
 
-  builder.Connect(*planner, *ego_car_);
+  builder.Connect(*planner_, *ego_car_);
   builder.Connect(*value, *agent_car_);
   builder.Connect(ego_car_->get_output_port(),
-                  planner->get_input_port(inport_ego));
+                  planner_->get_input_port(inport_ego));
   builder.Connect(agent_car_->get_output_port(),
-                  planner->get_input_port(inport_agent));
+                  planner_->get_input_port(inport_agent));
 
-  builder.ExportOutput(ego_car_->get_output_port());    // Output port #1.
-  builder.ExportOutput(agent_car_->get_output_port());  // Output port #2.
+  builder.ExportOutput(ego_car_->get_output_port());    // Output port #0.
+  builder.ExportOutput(agent_car_->get_output_port());  // Output port #1.
 
   builder.BuildInto(this);
 }
@@ -61,22 +60,14 @@ void SingleLaneEgoAndAgent<T>::SetDefaultState(
   DRAKE_DEMAND(context != nullptr);
   systems::Context<T>* context_ego =
       this->GetMutableSubsystemContext(context, ego_car_);
-  systems::ContinuousState<T>* x_ego =
-      context_ego->get_mutable_continuous_state();
-  DRAKE_DEMAND(x_ego != nullptr);
+  DRAKE_DEMAND(context_ego != nullptr);
   systems::Context<T>* context_agent =
       this->GetMutableSubsystemContext(context, agent_car_);
-  systems::ContinuousState<T>* x_agent =
-      context_agent->get_mutable_continuous_state();
-  DRAKE_DEMAND(x_agent != nullptr);
+  DRAKE_DEMAND(context_agent != nullptr);
 
-  // The default state vector contains all zeros, except for the
-  // agent's position (must be positive to satisfy the modeling
-  // condition that the ego initially trails the agent).
-  x_ego->get_mutable_vector()->SetAtIndex(0, 0.0);    // ego position
-  x_ego->get_mutable_vector()->SetAtIndex(1, 0.0);    // ego velocity
-  x_agent->get_mutable_vector()->SetAtIndex(0, 5.0);  // agent position
-  x_agent->get_mutable_vector()->SetAtIndex(1, 0.0);  // agent velocity
+  // Set the default state for both cars.
+  ego_car_->SetDefaultState(context_ego);
+  agent_car_->SetDefaultState(context_agent);
 }
 
 template class SingleLaneEgoAndAgent<double>;

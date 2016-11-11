@@ -46,8 +46,8 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
  public:
   /// Constructs a two-car system.
   ///
-  /// @param v_ref desired velocity of the ego (controlled) car.
-  /// @param a_agent constant acceleration of the agent car.
+  /// @p v_ref desired velocity of the ego (controlled) car.
+  /// @p a_agent constant acceleration of the agent car.
   SingleLaneEgoAndAgent(const T& x_ego_init, const T& v_ego_init,
                         const T& x_agent_init, const T& v_agent_init,
                         const T& v_ref, const T& a_agent);
@@ -56,22 +56,24 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
 
   bool has_any_direct_feedthrough() const override;
 
-  /// Sets @p context to a default state.
+  /// Sets the continuous states in @p context to default values.
   void SetDefaultState(systems::Context<T>* context) const;
 
   /// Getters for the ego and agent car systems.
   const LinearCar<T>* get_ego_car_system() const { return ego_car_; }
   const LinearCar<T>* get_agent_car_system() const { return agent_car_; }
-
- private:
-  const LinearCar<T>* ego_car_ = nullptr;
-  const LinearCar<T>* agent_car_ = nullptr;
+  const IdmPlanner<T>* get_planner_system() const { return planner_; }
 
   // Disable copy and assignment.
   SingleLaneEgoAndAgent(const SingleLaneEgoAndAgent<T>&) = delete;
   SingleLaneEgoAndAgent& operator=(const SingleLaneEgoAndAgent<T>&) = delete;
   SingleLaneEgoAndAgent(SingleLaneEgoAndAgent<T>&&) = delete;
   SingleLaneEgoAndAgent& operator=(SingleLaneEgoAndAgent<T>&&) = delete;
+
+ private:
+  const LinearCar<T>* ego_car_ = nullptr;
+  const LinearCar<T>* agent_car_ = nullptr;
+  const IdmPlanner<T>* planner_ = nullptr;
 };
 
 }  // namespace automotive
