@@ -36,7 +36,10 @@ endfunction()
 #
 # Install a (list) of libraries to lib/
 function(pods_install_libraries)
-    install(TARGETS ${ARGV} RUNTIME DESTINATION lib LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+    install(TARGETS ${ARGV}
+      RUNTIME DESTINATION bin
+      LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+      ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}")
 endfunction()
 
 
@@ -134,7 +137,7 @@ function(pods_install_python_packages py_src_dir)
 
     # where do we install .py files to?
     set(python_install_dir
-        ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
+      "${DRAKE_LIBRARY_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages")
 
     file(GLOB_RECURSE module_files ${py_src_abs_dir}/*)
     foreach(file ${module_files})
@@ -302,10 +305,10 @@ macro(pods_config_search_paths)
       set(PKG_CONFIG_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib/pkgconfig)
 
       # set where files should be installed to
-      set(LIBRARY_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib)
+      set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
       set(EXECUTABLE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
-      set(INCLUDE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/include)
-      set(PKG_CONFIG_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+      set(INCLUDE_INSTALL_PATH "${DRAKE_INCLUDE_DIR}")
+      set(PKG_CONFIG_INSTALL_PATH "${DRAKE_PKGCONFIG_DIR}")
 
       # add build/lib/pkgconfig to the pkg-config search path
       set(ENV{PKG_CONFIG_PATH} "${PKG_CONFIG_OUTPUT_PATH}:${PKG_CONFIG_INSTALL_PATH}:$ENV{PKG_CONFIG_PATH}")

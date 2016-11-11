@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake)
+project(drake VERSION 0.0.0)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
@@ -53,7 +54,7 @@ pods_find_pkg_config(ipopt)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${rel_path}")
 endfunction()
 
 # A compatibility shim function that declares a library, with a built-in
