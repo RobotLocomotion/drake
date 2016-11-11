@@ -129,29 +129,38 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   PiecewisePolynomialTrajectory input_traj =
       direct_traj.ReconstructInputTrajectory();
 
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_input,
                               input_traj.value(times_out[kInputConstraintLo]),
-                              1e-6, MatrixCompareType::absolute));
+                              1e-6, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintHi),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_input,
                               input_traj.value(times_out[kInputConstraintHi]),
-                              1e-6, MatrixCompareType::absolute));
+                              1e-6, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 
   PiecewisePolynomialTrajectory state_traj =
       direct_traj.ReconstructStateTrajectory();
   EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_state,
                               state_traj.value(times_out[kStateConstraintLo]),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintHi),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(constrained_state,
                               state_traj.value(times_out[kStateConstraintHi]),
-                              1e-10, MatrixCompareType::absolute));
+                              1e-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 
   // Add bounds on the inputs and make sure they're enforced.
   Vector1d input_min(1);

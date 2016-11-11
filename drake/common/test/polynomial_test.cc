@@ -28,22 +28,26 @@ void testIntegralAndDerivative() {
   Polynomial<CoefficientType> third_derivative_check =
       poly.Derivative().Derivative().Derivative();
 
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(third_derivative.GetCoefficients(),
                               third_derivative_check.GetCoefficients(), 1e-14,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 
   Polynomial<CoefficientType> tenth_derivative = poly.Derivative(10);
 
   EXPECT_TRUE(CompareMatrices(tenth_derivative.GetCoefficients(),
                               VectorXd::Zero(1), 1e-14,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 
   Polynomial<CoefficientType> integral = poly.Integral(0.0);
   Polynomial<CoefficientType> poly_back = integral.Derivative();
 
   EXPECT_TRUE(CompareMatrices(poly_back.GetCoefficients(),
                               poly.GetCoefficients(), 1e-14,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 template <typename CoefficientType>

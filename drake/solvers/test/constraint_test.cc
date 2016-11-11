@@ -26,8 +26,10 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   y_expected(0) = x_test(0);
   y_expected(1) =
       x_test(0) * x_test(0) - x_test.tail(x_test.size() - 1).squaredNorm();
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
+      CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 
   bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
   EXPECT_TRUE(is_in_cone == is_in_cone_expected);
@@ -48,7 +50,8 @@ void TestLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   }
   EXPECT_TRUE(CompareMatrices(y_grad_expected,
                               drake::math::autoDiffToGradientMatrix(y_taylor),
-                              1E-10, MatrixCompareType::absolute));
+                              1E-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
@@ -60,8 +63,10 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   y_expected(1) = x_test(1);
   y_expected(2) = x_test(0) * x_test(1) -
                   x_test.tail(x_test.size() - 2).squaredNorm();
+  std::string error_message;
   EXPECT_TRUE(
-      CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
+      CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute,
+          &error_message)) << error_message;
 
   bool is_in_cone_expected =
       (x_test(0) >= 0) & (x_test(1) >= 0) &
@@ -86,18 +91,21 @@ void TestRotatedLorentzConeEval(const VectorXd& x_test, bool is_in_cone) {
   }
   EXPECT_TRUE(CompareMatrices(y_grad_expected,
                               drake::math::autoDiffToGradientMatrix(y_taylor),
-                              1E-10, MatrixCompareType::absolute));
+                              1E-10, MatrixCompareType::absolute,
+                              &error_message)) << error_message;
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   auto cnstr = LorentzConeConstraint();
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(Eigen::Vector2d(0.0, 0.0), lb, 1E-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute,
+                              &error_message)) << error_message;
   EXPECT_TRUE(CompareMatrices(
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()), ub,
-      1e-10, MatrixCompareType::absolute));
+      1e-10, MatrixCompareType::absolute, &error_message)) << error_message;
 
   // [3;1;1] is in the interior of the Lorentz cone.
   Eigen::Vector3d x1(3.0, 1.0, 1.0);
@@ -120,11 +128,13 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   auto cnstr = RotatedLorentzConeConstraint();
   auto lb = cnstr.lower_bound();
   auto ub = cnstr.upper_bound();
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), lb, 1E-10,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
   EXPECT_TRUE(CompareMatrices(
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()), ub,
-      1e-10, MatrixCompareType::absolute));
+      1e-10, MatrixCompareType::absolute, &error_message)) << error_message;
 
   // [1;2;1] is in the interior of the rotated lorentz cone.
   TestRotatedLorentzConeEval(Vector3d(1, 2, 1), true);

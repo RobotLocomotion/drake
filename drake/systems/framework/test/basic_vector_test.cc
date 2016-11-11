@@ -28,9 +28,11 @@ GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
   BasicVector<double> vec(3);
   Eigen::Vector3d expected;
   expected << NAN, NAN, NAN;
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(expected, vec.get_value(),
                               Eigen::NumTraits<double>::epsilon(),
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 // Tests that the BasicVector<int> is initialized to zero.

@@ -50,8 +50,10 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
     expected_z = fast_z;
   } else {
     if (expect_fast_pass) {
+      std::string error_message;
       EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
-                                  MatrixCompareType::absolute));
+                                  MatrixCompareType::absolute, &error_message))
+          << error_message;
     } else {
       EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
                                    MatrixCompareType::absolute));
@@ -60,14 +62,17 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
   Eigen::VectorXd lemke_z;
   result = l.SolveLcpLemke(M, q, &lemke_z);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
   lemke_z.setZero();
   result = l.SolveLcpLemke(M_sparse, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
@@ -89,9 +94,12 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
   } else {
     if (expect_fast_pass) {
       ASSERT_TRUE(result);
+      std::string error_message;
       EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
-                                  MatrixCompareType::absolute))
-          << "expected: " << expected_z << " actual " << fast_z << std::endl;
+                                  MatrixCompareType::absolute, &error_message))
+          << " - Expected:\n" << expected_z << "\n"
+          << " - Actual:\n" << fast_z << "\n"
+          << error_message << std::endl;
     } else {
       EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
                                    MatrixCompareType::absolute));
@@ -100,14 +108,17 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
 
   Eigen::VectorXd lemke_z;
   result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
+  std::string error_message;
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
   lemke_z.setZero();
   result = l.SolveLcpLemkeRegularized(M_sparse, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+                              MatrixCompareType::absolute, &error_message))
+      << error_message;
 }
 
 /// Run all solvers.  If @p expected_z is an empty
@@ -228,7 +239,9 @@ GTEST_TEST(testMobyLCP, testProblem4) {
 
   Eigen::VectorXd fast_z;
   bool result = l.SolveLcpFast(M, q, &fast_z);
-  EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute));
+  std::string error_message;
+  EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute,
+      &error_message)) << error_message;
 
   // TODO(sammy-tri) the Lemke solvers find no solution at all, however.
   fast_z.setZero();
