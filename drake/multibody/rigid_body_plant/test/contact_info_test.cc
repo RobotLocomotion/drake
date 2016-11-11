@@ -1,7 +1,8 @@
 #include "drake/multibody/rigid_body_plant/contact_info.h"
 
-#include <gtest/gtest.h>
 #include <memory>
+
+#include <gtest/gtest.h>
 
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
@@ -18,8 +19,8 @@ using std::move;
 // Utility method for confirm that one ContactInfo instance is a copy of
 // another.
 template <typename T>
-void AssertValidCopy(const ContactInfo<T> test_value,
-                     const ContactInfo<T> expected_value) {
+void AssertValidCopy(const ContactInfo<T>& test_value,
+                     const ContactInfo<T>& expected_value) {
   // They must have the same element ids.
   ASSERT_EQ(test_value.get_element_id_1(), expected_value.get_element_id_1());
   ASSERT_EQ(test_value.get_element_id_2(), expected_value.get_element_id_2());
