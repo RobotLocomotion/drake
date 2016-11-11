@@ -21,13 +21,15 @@ Element::Element(const DrakeShapes::Geometry& geometry,
   id = (ElementId) this;
 }
 
-Element::Element(const Isometry3d& T_element_to_link, const RigidBody<double>* body)
+Element::Element(const Isometry3d& T_element_to_link,
+                 const RigidBody<double>* body)
     : DrakeShapes::Element(T_element_to_link), body_(body) {
   id = (ElementId) this;
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry,
-                 const Isometry3d& T_element_to_link, const RigidBody<double>* body)
+                 const Isometry3d& T_element_to_link,
+                 const RigidBody<double>* body)
     : DrakeShapes::Element(geometry, T_element_to_link), body_(body) {
   id = (ElementId) this;
 }

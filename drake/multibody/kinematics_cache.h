@@ -79,7 +79,8 @@ class KinematicsCache {
       RigidBodyKCacheElementPairAllocator;
   typedef std::unordered_map<
       RigidBody<double> const*, KinematicsCacheElementT,
-      std::hash<RigidBody<double> const*>, std::equal_to<RigidBody<double> const*>,
+      std::hash<RigidBody<double> const*>,
+      std::equal_to<RigidBody<double> const*>,
       RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
 
   RigidBodyToKCacheElementMap elements;

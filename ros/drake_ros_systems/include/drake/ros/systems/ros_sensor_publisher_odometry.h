@@ -74,7 +74,8 @@ class SensorPublisherOdometry {
     ::ros::NodeHandle nh;
 
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody<double>& world = rigid_body_system->getRigidBodyTree()->world();
+    const RigidBody<double>& world =
+        rigid_body_system->getRigidBodyTree()->world();
 
     // Creates a ROS topic publisher for each robot in the rigid body system.
     // A robot is defined by any link that's connected to the world via a

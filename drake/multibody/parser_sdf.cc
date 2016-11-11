@@ -409,7 +409,8 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
   }
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody<double>* link = rigid_body_tree->FindBody(body_name, "", model_instance_id);
+  RigidBody<double>* link =
+      rigid_body_tree->FindBody(body_name, "", model_instance_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");

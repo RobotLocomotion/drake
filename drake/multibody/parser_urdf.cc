@@ -308,7 +308,8 @@ bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
 //
 // A warning is printed to std::cerr if a material is not set for the rigid
 // body's visualization.
-void ParseVisual(RigidBody<double>* body, XMLElement* node, RigidBodyTree<double>* tree,
+void ParseVisual(RigidBody<double>* body, XMLElement* node,
+                 RigidBodyTree<double>* tree,
                  MaterialMap* materials, const PackageMap& ros_package_map,
                  const string& root_dir) {
   // Ensures there is a geometry child element. Since this is a required

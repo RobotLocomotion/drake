@@ -19,7 +19,9 @@ int RigidBodyFrame::get_model_instance_id() const {
 
 const std::string& RigidBodyFrame::get_name() const { return name_; }
 
-const RigidBody<double>& RigidBodyFrame::get_rigid_body() const { return *body_; }
+const RigidBody<double>& RigidBodyFrame::get_rigid_body() const {
+  return *body_;
+}
 
 RigidBody<double>* RigidBodyFrame::get_mutable_rigid_body() {
   return body_;

@@ -69,7 +69,8 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
    * @param[in] body                The associated rigid body.
    */
   Element(const DrakeShapes::Geometry& geometry,
-          const Eigen::Isometry3d& T_element_to_local, const RigidBody<double>* body);
+          const Eigen::Isometry3d& T_element_to_local,
+          const RigidBody<double>* body);
 
   virtual ~Element() {}
 

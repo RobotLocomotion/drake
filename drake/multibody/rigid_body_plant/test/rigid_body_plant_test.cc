@@ -79,7 +79,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
 
   // Add a single free body with a quaternion base.
   RigidBody<double>* body;
-  tree->add_rigid_body(unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+  tree->add_rigid_body(
+      unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
   body->set_name("free_body");
   // Sets body to have a non-zero spatial inertia. Otherwise the body gets
   // welded by a fixed joint to the world by RigidBodyTree::compile().

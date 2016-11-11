@@ -923,7 +923,8 @@ class DRAKE_EXPORT RigidBodyTree {
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
-  RigidBody<T>* findJoint(const std::string& joint_name, int model_id = -1) const;
+  RigidBody<T>* findJoint(
+          const std::string& joint_name, int model_id = -1) const;
 
   /**
    * Returns the index within the vector of rigid bodies of the rigid body whose

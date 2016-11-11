@@ -33,7 +33,9 @@ template <typename T>
 const std::string& RigidBody<T>::get_model_name() const { return model_name_; }
 
 template <typename T>
-void RigidBody<T>::set_model_name(const std::string& name) { model_name_ = name; }
+void RigidBody<T>::set_model_name(const std::string& name) {
+    model_name_ = name;
+}
 
 template <typename T>
 int RigidBody<T>::get_model_instance_id() const { return model_instance_id_; }
@@ -53,8 +55,8 @@ const DrakeJoint& RigidBody<T>::getJoint() const {
   if (joint_) {
     return (*joint_);
   } else {
-    throw runtime_error("ERROR: RigidBody<T>::getJoint(): Rigid body \"" + name_ +
-                        "\" in model " + model_name_ +
+    throw runtime_error("ERROR: RigidBody<T>::getJoint(): Rigid body \"" +
+                        name_ + "\" in model " + model_name_ +
                         " does not have a joint!");
   }
 }
@@ -162,7 +164,8 @@ const DrakeCollision::bitmask& RigidBody<T>::getCollisionFilterGroup() const {
 }
 
 template <typename T>
-void RigidBody<T>::setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
+void RigidBody<T>::setCollisionFilterGroup(
+  const DrakeCollision::bitmask& group) {
   collision_filter_group_ = group;
 }
 
@@ -190,7 +193,8 @@ void RigidBody<T>::ignoreCollisionFilterGroup(const DrakeCollision::bitmask&
 }
 
 template <typename T>
-void RigidBody<T>::collideWithCollisionFilterGroup(const DrakeCollision::bitmask&
+void RigidBody<T>::collideWithCollisionFilterGroup(
+  const DrakeCollision::bitmask&
     group) {
   collision_filter_ignores_ &= ~group;
 }
@@ -213,6 +217,7 @@ bool RigidBody<T>::CanCollideWith(const RigidBody& other) const {
 
 template <typename T>
 bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
   auto group_ids_iter = collision_element_groups_.find(group_name);
   if (group_ids_iter != collision_element_groups_.end()) {
@@ -228,6 +233,7 @@ bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
 
 template <typename T>
 bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<DrakeCollision::ElementId>& ids) const {
   ids.reserve(ids.size() + collision_element_ids_.size());
   ids.insert(ids.end(), collision_element_ids_.begin(),
