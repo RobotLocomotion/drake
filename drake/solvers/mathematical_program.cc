@@ -113,22 +113,25 @@ SolutionResult MathematicalProgram::Solve() {
   }
 }
 
-DecisionVariableMatrix MathematicalProgram::GetVariable(
+DecisionVariableVectorX MathematicalProgram::GetVariable(
     const std::string& name) const {
-  std::vector<std::shared_ptr<const DecisionVariableScalar>> vars;
+  DecisionVariableVectorX decision_variable_vec;
+  int var_count = 0;
   for (auto& var : variables_) {
     if (name.compare(var->name()) == 0) {
-      vars.push_back(var);
+      ++var_count;
+      decision_variable_vec.resize(var_count);
+      decision_variable_vec[var_count - 1] = var.get();
     }
   }
-  if (vars.empty()) {
+  if (var_count == 0) {
     throw std::runtime_error("unable to find variable: " + name);
   }
-  return DecisionVariableMatrix(vars.size(), 1, vars);
+  return decision_variable_vec;
 }
 
 DecisionVariableMatrix MathematicalProgram::AddVariables(
-    DecisionVariableScalar::VarType type, size_t rows, size_t cols,
+    ScalarDecisionVariable::VarType type, size_t rows, size_t cols,
     bool is_symmetric, std::vector<std::string> names) {
   int num_new_vars = 0;
   if (!is_symmetric) {
@@ -138,12 +141,12 @@ DecisionVariableMatrix MathematicalProgram::AddVariables(
   }
   DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
   variables_.reserve(num_vars_ + num_new_vars);
-  std::vector<std::shared_ptr<const DecisionVariableScalar>> variables_new;
+  std::vector<std::shared_ptr<const ScalarDecisionVariable>> variables_new;
   variables_new.reserve(num_new_vars);
   variables_.reserve(num_vars_ + num_new_vars);
   for (int i = 0; i < num_new_vars; ++i) {
-    std::shared_ptr<DecisionVariableScalar> vi(
-        new DecisionVariableScalar(type, names[i], num_vars_ + i));
+    std::shared_ptr<ScalarDecisionVariable> vi(
+        new ScalarDecisionVariable(type, names[i], num_vars_ + i));
     variables_.push_back(vi);
     variables_new.push_back(vi);
   }
