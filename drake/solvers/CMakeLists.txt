@@ -17,7 +17,7 @@ list(APPEND optimization_files
   mathematical_program.cc
   #moby_lcp_solver.cc
   #system_identification.cpp
-  #linear_system_solver.cc
+  linear_system_solver.cc
   #equality_constrained_qp_solver.cc)
     )
 #pods_find_pkg_config(ipopt)
