@@ -42,7 +42,8 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
 
   // Obtain the input/output structures we need to read from and write into.
   const systems::BasicVector<T>* input_ego = this->EvalVectorInput(context, 0);
-  const systems::BasicVector<T>* input_agent = this->EvalVectorInput(context, 1);
+  const systems::BasicVector<T>* input_agent =
+      this->EvalVectorInput(context, 1);
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
