@@ -230,20 +230,20 @@ class Expression {
     C++'s conditional expression and our @c if_then_else expression in a way the
     arguments are evaluated during the construction.
 
-     - In case of the C++'s conditional expression, @c cond @c ? @c exp_then @c
-       : @c exp_else, the then expression @c exp_then (respectively, the else
+     - In case of the C++'s conditional expression, <tt> cond ? exp_then :
+       exp_else</tt>, the then expression @c exp_then (respectively, the else
        expression @c exp_else) is \b only evaluated when the conditional
        expression @c cond is evaluated to \b true (respectively, when @c cond is
        evaluated to \b false).
 
-     - In case of the symbolic expression, @c if_then_else(@c cond, @c exp_then,
-       @c exp_else), however, \b both arguments @c exp_then and @c exp_else are
-       evaluated first and then passed to the @c if_then_else function.
+     - In case of the symbolic expression, <tt>if_then_else(cond, exp_then,
+       exp_else)</tt>, however, \b both arguments @c exp_then and @c exp_else
+       are evaluated first and then passed to the @c if_then_else function.
 
      @note This function returns an \b expression and it is different from the
      C++'s if-then-else \b statement.
 
-     @note While it is still possible to define @c min, @c max, and @c abs math
+     @note While it is still possible to define <tt> min, max, abs</tt> math
      functions using @c if_then_else expression, it is highly \b recommended to
      use the provided native definitions for them because it allows solvers to
      detect specific math functions and to have a room for special
