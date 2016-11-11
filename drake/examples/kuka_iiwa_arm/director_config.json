@@ -1,0 +1,66 @@
+{
+  "modelName" : "kuka_iiwa",
+  "urdfConfig": {
+    "default": "urdf/iiwa14_no_collision.urdf",
+    "robotState": "urdf/iiwa14_no_collision.urdf",
+    "ik":         "urdf/iiwa14_no_collision.urdf",
+    "chull":      "urdf/iiwa14_no_collision.urdf",
+    "playback":   "urdf/iiwa14_no_collision.urdf",
+    "teleop":     "urdf/iiwa14_no_collision.urdf"
+  },
+
+  "teleopJointGroups" : [
+    { "name" : "Left Arm",
+      "joints" : [
+        "iiwa_joint_1",
+        "iiwa_joint_2",
+        "iiwa_joint_3",
+        "iiwa_joint_4",
+        "iiwa_joint_5",
+        "iiwa_joint_6",
+        "iiwa_joint_7"
+        ],
+      "labels" : ["1", "2", "3", "4", "5", "6", "7"]
+    }
+  ],
+
+  "drakeJointNames": [
+    "base_x",
+    "base_y",
+    "base_z",
+    "base_roll",
+    "base_pitch",
+    "base_yaw",
+    "iiwa_joint_1",
+    "iiwa_joint_2",
+    "iiwa_joint_3",
+    "iiwa_joint_4",
+    "iiwa_joint_5",
+    "iiwa_joint_6",
+    "iiwa_joint_7"
+  ],
+
+  "robotStateJointNames": [
+    "iiwa_joint_1",
+    "iiwa_joint_2",
+    "iiwa_joint_3",
+    "iiwa_joint_4",
+    "iiwa_joint_5",
+    "iiwa_joint_6",
+    "iiwa_joint_7"
+  ],
+
+  "fixedPointFile" : "kuka_iiwa_fp.csv",
+  "postureDatabaseFile" : "stored_poses.json",
+
+
+  "handCombinations": [],
+  "userConfig" : ["fixedBaseArm"],
+
+   "endEffectorConfig" : {
+    "endEffectorLinkNames": ["iiwa_link_ee"],
+    "graspOffsetFrame" : [[0,0,0], [0,0,0]],
+    "fixedJoints" : ["base_x","base_y","base_z","base_roll","base_pitch","base_yaw"]
+  }
+
+}
