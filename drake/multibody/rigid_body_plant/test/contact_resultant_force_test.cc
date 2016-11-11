@@ -19,7 +19,7 @@ using std::unique_ptr;
 template <typename DerivedA, typename DerivedB>
 bool AreEquivalent(const Eigen::MatrixBase<DerivedA>& m1,
                    const Eigen::MatrixBase<DerivedB>& m2) {
-  const double kTolerance = 1e-14;
+  const double kTolerance = Eigen::NumTraits<double>::dummy_precision();
   return CompareMatrices(m1, m2, kTolerance, MatrixCompareType::absolute);
 }
 
