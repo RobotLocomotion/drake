@@ -14,7 +14,6 @@
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -54,8 +53,8 @@ enum class ExpressionKind {
 /** Total ordering between ExpressionKinds. */
 bool operator<(ExpressionKind k1, ExpressionKind k2);
 
-class ExpressionCell;
-class Formula;
+class ExpressionCell;  // In drake/common/symbolic_expression_cell.h
+class Formula;         // In drake/common/symbolic_formula.h
 
 /** Represents a symbolic form of an expression.
 
@@ -229,6 +228,44 @@ class DRAKE_EXPORT Expression {
                                      const Expression& e2);
   friend DRAKE_EXPORT Expression max(const Expression& e1,
                                      const Expression& e2);
+
+  /** Constructs if-then-else expression.
+
+    @verbatim
+      if_then_else(cond, exp_then, exp_else)
+    @endverbatim
+
+    The value returned by the above if-then-else expression is @p exp_then if @p
+    cond is evaluated to true. Otherwise, it returns @p exp_else.
+
+    The semantics is similar to the C++'s conditional expression constructed by
+    its ternary operator, @c ?:. However, there is a key difference between the
+    C++'s conditional expression and our @c if_then_else expression in a way the
+    arguments are evaluated during the construction.
+
+     - In case of the C++'s conditional expression, @c cond @c ? @c exp_then @c
+       : @c exp_else, the then expression @c exp_then (respectively, the else
+       expression @c exp_else) is \b only evaluated when the conditional
+       expression @c cond is evaluated to \b true (respectively, when @c cond is
+       evaluated to \b false).
+
+     - In case of the symbolic expression, @c if_then_else(@c cond, @c exp_then,
+       @c exp_else), however, \b both arguments @c exp_then and @c exp_else are
+       evaluated first and then passed to the @c if_then_else function.
+
+     @note This function returns an \b expression and it is different from the
+     C++'s if-then-else \b statement.
+
+     @note While it is still possible to define @c min, @c max, and @c abs math
+     functions using @c if_then_else expression, it is highly \b recommended to
+     use the provided native definitions for them because it allows solvers to
+     detect specific math functions and to have a room for special
+     optimizations.
+
+     @note More information about the C++'s conditional expression and ternary
+     operator is available at
+     http://en.cppreference.com/w/cpp/language/operator_other#Conditional_operator.
+   */
   friend DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
                                               const Expression& e_then,
                                               const Expression& e_else);
@@ -285,7 +322,8 @@ DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
                                      const Expression& e_then,
                                      const Expression& e_else);
 
-/** Constructs conditional expression (similar to Lisp's cond).
+/** @name cond
+  Constructs conditional expression (similar to Lisp's cond).
 
   @verbatim
     cond(cond_1, exp_1,
@@ -299,11 +337,13 @@ DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
   true; else if @c cond_2 is true then @c exp_2; ... ; else if @c cond_n is true
   then @c exp_n. If none of the conditions are true, it returns @c exp_{n+1}.
  */
+///@{
 Expression cond(const Expression& e);
 template <typename... Rest>
 Expression cond(const Formula& f_cond, const Expression& e_then, Rest... rest) {
   return if_then_else(f_cond, e_then, cond(rest...));
 }
+///@}
 
 DRAKE_EXPORT void swap(Expression& a, Expression& b);
 
