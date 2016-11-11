@@ -187,14 +187,15 @@ class KinematicsCache {
    * computed with respect to qdot.
    * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
-   * @returns A a `m x nq` sized matrix, where `nq` is the dimension of the
+   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
+   * @sa transformQDotMappingToVelocityMapping()
    */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformVelocityMappingToQDotMapping(
-      const Eigen::MatrixBase<Derived> &B) const {
+      const Eigen::MatrixBase<Derived>& B) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         A(B.rows(), get_num_positions());
@@ -228,15 +229,15 @@ class KinematicsCache {
    * quasi-coordinates (ꝗ).
    * @param A a `m x nq` sized matrix, where `nq` is the dimension of the
    *      generalized coordinates.
-   * @returns B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
    *      generalized velocities.
-   * @sa transformVelocityMappingToPositionDotMapping()
+   * @sa transformVelocityMappingToQDotMapping()
    */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformQDotMappingToVelocityMapping(
-      const Eigen::MatrixBase<Derived> &A) const {
+      const Eigen::MatrixBase<Derived>& A) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         B(A.rows(), get_num_velocities());

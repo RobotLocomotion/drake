@@ -139,8 +139,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
       for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
         // Get the mutable state.
         VectorBase<double>* xc = context->get_mutable_state()
-                               ->get_mutable_continuous_state()
-                               ->get_mutable_generalized_position();
+                                     ->get_mutable_continuous_state()
+                                     ->get_mutable_generalized_position();
 
         // Update the orientation.
         Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
@@ -148,7 +148,7 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
                         Eigen::AngleAxisd(yaw, Vector3d::UnitX());
 
         // Verify normalization.
-        DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15); 
+        DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15);
         xc->SetAtIndex(3, q.w());
         xc->SetAtIndex(4, q.x());
         xc->SetAtIndex(5, q.y());
@@ -156,20 +156,21 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
 
         // Transform the generalized velocities to time derivative of
         // generalized coordinates.
-        plant.MapVelocityToQDot(
-            *context, generalized_velocities, &positions_derivatives);
+        plant.MapVelocityToQDot(*context, generalized_velocities,
+                                &positions_derivatives);
 
         // Test q * qdot near zero
-        Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4), xc->GetAtIndex(5), xc->GetAtIndex(6));
+        Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
+                         xc->GetAtIndex(5), xc->GetAtIndex(6));
 
         // TODO(edrumwri): Uncomment this test when quaternion derivative
         // code is correct.
-//        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
+        //        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.
-        plant.MapQDotToVelocity(
-            *context, positions_derivatives, &generalized_velocities);
+        plant.MapQDotToVelocity(*context, positions_derivatives,
+                                &generalized_velocities);
 
         EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
         EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
