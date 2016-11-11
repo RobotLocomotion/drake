@@ -38,9 +38,8 @@ int main(int argc, char* argv[]) {
       box_base, Eigen::Vector3d::Zero() /* rpy */, "cuboid");
   simulator->Build();
 
-  while (true) {
-    simulator->StepTo(3.0 /* final time */);
-  }
+  simulator->StepTo(3.5 /* final time */);
+
   return 0;
 }
 
