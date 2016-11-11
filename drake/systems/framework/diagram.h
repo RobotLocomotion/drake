@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -12,6 +13,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
+#include "drake/systems/framework/difference_state.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
@@ -25,6 +27,26 @@ template <typename T>
 class DiagramBuilder;
 
 namespace internal {
+
+/// Returns a vector of raw pointers that correspond placewise with the
+/// unique_ptrs in the vector @p in.
+template <typename U>
+std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
+  std::vector<U*> out(in.size());
+  std::transform(in.begin(), in.end(), out.begin(),
+                 [](const std::unique_ptr<U>& p) { return p.get(); });
+  return out;
+}
+
+/// Returns true if any of the events in @p actions has type @p type.
+template <typename T>
+bool HasEvent(const UpdateActions<T> actions,
+              typename DiscreteEvent<T>::ActionType type) {
+  for (const DiscreteEvent<T>& event : actions.events) {
+    if (event.action == type) return true;
+  }
+  return false;
+}
 
 /// DiagramOutput is an implementation of SystemOutput that holds unowned
 /// OutputPort pointers. It is used to expose the outputs of constituent
@@ -67,22 +89,50 @@ template <typename T>
 class DiagramTimeDerivatives : public DiagramContinuousState<T> {
  public:
   explicit DiagramTimeDerivatives(
-      std::vector<std::unique_ptr<ContinuousState<T>>> substates)
+      std::vector<std::unique_ptr<ContinuousState<T>>>&& substates)
       : DiagramContinuousState<T>(Unpack(substates)),
         substates_(std::move(substates)) {}
 
   ~DiagramTimeDerivatives() override {}
 
  private:
-  template <typename U>
-  std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
-    std::vector<U*> out(in.size());
-    std::transform(in.begin(), in.end(), out.begin(),
-                   [](const std::unique_ptr<U>& p) { return p.get(); });
+  std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
+};
+
+/// DiagramDifferenceVariables is a version of DifferenceState that owns
+/// the constituent difference states. As the name implies, it is only useful
+/// for the discrete updates.
+template <typename T>
+class DiagramDifferenceVariables : public DifferenceState<T> {
+ public:
+  explicit DiagramDifferenceVariables(
+      std::vector<std::unique_ptr<DifferenceState<T>>>&& subdifferences)
+      : DifferenceState<T>(Flatten(Unpack(subdifferences))),
+        subdifferences_(std::move(subdifferences)) {}
+
+  ~DiagramDifferenceVariables() override {}
+
+  int num_subdifferences() const {
+    return static_cast<int>(subdifferences_.size());
+  }
+
+  DifferenceState<T>* get_mutable_subdifference(int index) {
+    DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
+    return subdifferences_[index].get();
+  }
+
+ private:
+  std::vector<BasicVector<T>*> Flatten(
+      const std::vector<DifferenceState<T>*>& in) const {
+    std::vector<BasicVector<T>*> out;
+    for (const DifferenceState<T>* xd : in) {
+      const std::vector<BasicVector<T>*>& xd_data = xd->get_data();
+      out.insert(out.end(), xd_data.begin(), xd_data.end());
+    }
     return out;
   }
 
-  std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
+  std::vector<std::unique_ptr<DifferenceState<T>>> subdifferences_;
 };
 
 }  // namespace internal
@@ -126,7 +176,7 @@ class Diagram : public System<T>,
   }
 
   std::unique_ptr<Context<T>> CreateDefaultContext() const override {
-    const int num_systems = static_cast<int>(sorted_systems_.size());
+    const int num_systems = num_subsystems();
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_systems);
 
@@ -189,6 +239,8 @@ class Diagram : public System<T>,
     }
   }
 
+  /// Aggregates the time derivatives from each subsystem into a
+  /// DiagramTimeDerivatives.
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
     for (const System<T>* const system : sorted_systems_) {
@@ -196,6 +248,19 @@ class Diagram : public System<T>,
     }
     return std::unique_ptr<ContinuousState<T>>(
         new internal::DiagramTimeDerivatives<T>(std::move(sub_derivatives)));
+  }
+
+  /// Aggregates the discrete update variables from each subsystem into a
+  /// DiagramDifferenceVariables.
+  std::unique_ptr<DifferenceState<T>> AllocateDifferenceVariables()
+      const override {
+    std::vector<std::unique_ptr<DifferenceState<T>>> sub_differences;
+    for (const System<T>* const system : sorted_systems_) {
+      sub_differences.push_back(system->AllocateDifferenceVariables());
+    }
+    return std::unique_ptr<DifferenceState<T>>(
+        new internal::DiagramDifferenceVariables<T>(
+            std::move(sub_differences)));
   }
 
   void EvalTimeDerivatives(const Context<T>& context,
@@ -207,7 +272,7 @@ class Diagram : public System<T>,
         dynamic_cast<DiagramContinuousState<T>*>(derivatives);
     DRAKE_DEMAND(diagram_derivatives != nullptr);
     const int n = diagram_derivatives->get_num_substates();
-    DRAKE_DEMAND(static_cast<int>(sorted_systems_.size()) == n);
+    DRAKE_DEMAND(num_subsystems() == n);
 
     // Evaluate the derivatives of each constituent system.
     for (int i = 0; i < n; ++i) {
@@ -352,7 +417,7 @@ class Diagram : public System<T>,
     // states are concatenated in sorted order.
     int v_index = 0;  // The next index to read in generalized_velocity.
     int q_index = 0;  // The next index to write in configuration_derivatives.
-    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+    for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
@@ -376,6 +441,69 @@ class Diagram : public System<T>,
       // Advance the indices.
       v_index += num_v;
       q_index += num_q;
+    }
+  }
+
+  void DoCalcNextUpdateTime(const Context<T>& context,
+                            UpdateActions<T>* actions) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    actions->time = std::numeric_limits<T>::infinity();
+
+    // Iterate over the subsystems in sorted order, and harvest the most
+    // imminent updates.
+    std::vector<UpdateActions<T>> sub_actions(num_subsystems());
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      DRAKE_DEMAND(subcontext != nullptr);
+      const T time = sorted_systems_[i]->CalcNextUpdateTime(*subcontext,
+                                                            &sub_actions[i]);
+      if (time < actions->time) {
+        actions->time = time;
+      }
+    }
+
+    // If no discrete actions are needed, bail early.
+    if (actions->time == std::numeric_limits<T>::infinity()) {
+      return;
+    }
+
+    std::vector<std::pair<int, UpdateActions<T>>> publishers;
+    std::vector<std::pair<int, UpdateActions<T>>> updaters;
+    for (int i = 0; i < num_subsystems(); i++) {
+      // Ignore the subsystems that aren't among the most imminent updates.
+      if (sub_actions[i].time > actions->time) continue;
+      if (internal::HasEvent(sub_actions[i],
+                             DiscreteEvent<T>::kPublishAction)) {
+        publishers.emplace_back(i, sub_actions[i]);
+      }
+      if (internal::HasEvent(sub_actions[i],
+                             DiscreteEvent<T>::kUpdateAction)) {
+        updaters.emplace_back(i, sub_actions[i]);
+      }
+    }
+    DRAKE_ASSERT(!publishers.empty() || !updaters.empty());
+
+    // Request a publish event, if our subsystems want it.
+    if (!publishers.empty()) {
+      DiscreteEvent<T> event;
+      event.action = DiscreteEvent<T>::kPublishAction;
+      event.do_publish = std::bind(&Diagram<T>::HandlePublish, this,
+                                   std::placeholders::_1, /* context */
+                                   publishers);
+      actions->events.push_back(event);
+    }
+
+    // Request an update event, if our subsystems want it.
+    if (!updaters.empty()) {
+      DiscreteEvent<T> event;
+      event.action = DiscreteEvent<T>::kUpdateAction;
+      event.do_update = std::bind(&Diagram<T>::HandleUpdate, this,
+                                  std::placeholders::_1, /* context */
+                                  std::placeholders::_2, /* difference state */
+                                  updaters);
+      actions->events.push_back(event);
     }
   }
 
@@ -415,7 +543,7 @@ class Diagram : public System<T>,
     output_port_ids_ = blueprint.output_port_ids;
 
     // Generate a map from the System pointer to its index in the sort order.
-    for (int i = 0; i < static_cast<int>(sorted_systems_.size()); ++i) {
+    for (int i = 0; i < num_subsystems(); ++i) {
       sorted_systems_map_[sorted_systems_[i]] = i;
     }
 
@@ -642,6 +770,77 @@ class Diagram : public System<T>,
     // back to an input of the Diagram, there is no direct-feedthrough to
     // output_port_id.
     return false;
+  }
+
+  /// Handles Publish callbacks that were registered in DoCalcNextUpdateTime.
+  /// Dispatches the Publish events to the subsystems that requested them.
+  void HandlePublish(
+      const Context<T>& context,
+      const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kPublishAction) {
+          sorted_systems_[index]->Publish(*subcontext, event);
+        }
+      }
+    }
+  }
+
+  /// Handles Update calbacks that were registered in DoCalcNextUpdateTime.
+  /// Dispatches the Publish events to the subsystems that requested them.
+  void HandleUpdate(
+      const Context<T>& context, DifferenceState<T>* update,
+      const std::vector<std::pair<int, UpdateActions<T>>>& sub_actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    auto diagram_differences =
+        dynamic_cast<internal::DiagramDifferenceVariables<T>*>(update);
+    DRAKE_DEMAND(diagram_differences != nullptr);
+
+    // As a baseline, initialize all the difference variables to their
+    // current values.
+    for (int i = 0; i < diagram_differences->size(); ++i) {
+      diagram_differences->get_mutable_difference_state(i)->set_value(
+          context.get_difference_state(i)->get_value());
+    }
+
+    // Then, allow the systems that wanted to update a difference variable
+    // to do so.
+    for (const auto& action : sub_actions) {
+      const int index = action.first;
+      const UpdateActions<T>& action_details = action.second;
+      DRAKE_DEMAND(index >= 0 && index < num_subsystems());
+
+      // Get the context and the difference state for the specified system.
+      const Context<T>* subcontext =
+          diagram_context->GetSubsystemContext(index);
+      DRAKE_DEMAND(subcontext != nullptr);
+      DifferenceState<T>* subdifference =
+          diagram_differences->get_mutable_subdifference(index);
+      DRAKE_DEMAND(subdifference != nullptr);
+
+      // Do that system's update actions.
+      for (const DiscreteEvent<T>& event : action_details.events) {
+        if (event.action == DiscreteEvent<T>::kUpdateAction) {
+          sorted_systems_[index]->EvalDifferenceUpdates(
+              *subcontext, event, subdifference);
+        }
+      }
+    }
+  }
+
+  int num_subsystems() const {
+    return static_cast<int>(sorted_systems_.size());
   }
 
   // Diagram objects are neither copyable nor moveable.
