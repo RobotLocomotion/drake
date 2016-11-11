@@ -11,7 +11,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
@@ -407,7 +406,7 @@ class ExpressionLog : public UnaryExpressionCell {
   explicit ExpressionLog(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression log(const Expression& e);
+  friend Expression log(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [0, +oo). */
@@ -421,7 +420,7 @@ class ExpressionAbs : public UnaryExpressionCell {
   explicit ExpressionAbs(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression abs(const Expression& e);
+  friend Expression abs(const Expression& e);
 
  private:
   double DoEvaluate(double v) const override;
@@ -444,7 +443,7 @@ class ExpressionSqrt : public UnaryExpressionCell {
   explicit ExpressionSqrt(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression sqrt(const Expression& e);
+  friend Expression sqrt(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [0, +oo). */
@@ -458,8 +457,7 @@ class ExpressionPow : public BinaryExpressionCell {
   ExpressionPow(const Expression& e1, const Expression& e2);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                     const Expression& e2);
+  friend Expression pow(const Expression& e1, const Expression& e2);
 
  private:
   /* Throws std::domain_error if v1 is finite negative and v2 is finite
@@ -504,7 +502,7 @@ class ExpressionAsin : public UnaryExpressionCell {
   explicit ExpressionAsin(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression asin(const Expression& e);
+  friend Expression asin(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */
@@ -518,7 +516,7 @@ class ExpressionAcos : public UnaryExpressionCell {
   explicit ExpressionAcos(const Expression& e);
   std::ostream& Display(std::ostream& os) const override;
 
-  friend DRAKE_EXPORT Expression acos(const Expression& e);
+  friend Expression acos(const Expression& e);
 
  private:
   /* Throws std::domain_error if v ∉ [-1.0, +1.0]. */

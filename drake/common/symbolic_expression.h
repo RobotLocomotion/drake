@@ -10,7 +10,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
@@ -120,7 +119,7 @@ separate function, Expression::EqualTo, is provided.
 
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
-class DRAKE_EXPORT Expression {
+class Expression {
  public:
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
@@ -171,63 +170,51 @@ class DRAKE_EXPORT Expression {
   /** Return e, the base of natural logarithms. */
   static Expression E();
 
-  friend DRAKE_EXPORT Expression operator+(Expression lhs,
-                                           const Expression& rhs);
+  friend Expression operator+(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator+=(Expression& lhs,
-                                             const Expression& rhs);
+  friend Expression& operator+=(Expression& lhs, const Expression& rhs);
 
   /** Provides prefix increment operator (i.e. ++x). */
   Expression& operator++();
   /** Provides postfix increment operator (i.e. x++). */
   Expression operator++(int);
 
-  friend DRAKE_EXPORT Expression operator-(Expression lhs,
-                                           const Expression& rhs);
+  friend Expression operator-(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator-=(Expression& lhs,
-                                             const Expression& rhs);
+  friend Expression& operator-=(Expression& lhs, const Expression& rhs);
 
   /** Provides unary minus operator. */
-  friend DRAKE_EXPORT Expression operator-(Expression e);
+  friend Expression operator-(Expression e);
   /** Provides prefix decrement operator (i.e. --x). */
   Expression& operator--();
   /** Provides postfix decrement operator (i.e. x--). */
   Expression operator--(int);
 
-  friend DRAKE_EXPORT Expression operator*(Expression lhs,
-                                           const Expression& rhs);
+  friend Expression operator*(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator*=(Expression& lhs,
-                                             const Expression& rhs);
+  friend Expression& operator*=(Expression& lhs, const Expression& rhs);
 
-  friend DRAKE_EXPORT Expression operator/(Expression lhs,
-                                           const Expression& rhs);
+  friend Expression operator/(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-  friend DRAKE_EXPORT Expression& operator/=(Expression& lhs,
-                                             const Expression& rhs);
+  friend Expression& operator/=(Expression& lhs, const Expression& rhs);
 
-  friend DRAKE_EXPORT Expression log(const Expression& e);
-  friend DRAKE_EXPORT Expression abs(const Expression& e);
-  friend DRAKE_EXPORT Expression exp(const Expression& e);
-  friend DRAKE_EXPORT Expression sqrt(const Expression& e);
-  friend DRAKE_EXPORT Expression pow(const Expression& e1,
-                                     const Expression& e2);
-  friend DRAKE_EXPORT Expression sin(const Expression& e);
-  friend DRAKE_EXPORT Expression cos(const Expression& e);
-  friend DRAKE_EXPORT Expression tan(const Expression& e);
-  friend DRAKE_EXPORT Expression asin(const Expression& e);
-  friend DRAKE_EXPORT Expression acos(const Expression& e);
-  friend DRAKE_EXPORT Expression atan(const Expression& e);
-  friend DRAKE_EXPORT Expression atan2(const Expression& e1,
-                                       const Expression& e2);
-  friend DRAKE_EXPORT Expression sinh(const Expression& e);
-  friend DRAKE_EXPORT Expression cosh(const Expression& e);
-  friend DRAKE_EXPORT Expression tanh(const Expression& e);
-  friend DRAKE_EXPORT Expression min(const Expression& e1,
-                                     const Expression& e2);
-  friend DRAKE_EXPORT Expression max(const Expression& e1,
-                                     const Expression& e2);
+  friend Expression log(const Expression& e);
+  friend Expression abs(const Expression& e);
+  friend Expression exp(const Expression& e);
+  friend Expression sqrt(const Expression& e);
+  friend Expression pow(const Expression& e1, const Expression& e2);
+  friend Expression sin(const Expression& e);
+  friend Expression cos(const Expression& e);
+  friend Expression tan(const Expression& e);
+  friend Expression asin(const Expression& e);
+  friend Expression acos(const Expression& e);
+  friend Expression atan(const Expression& e);
+  friend Expression atan2(const Expression& e1, const Expression& e2);
+  friend Expression sinh(const Expression& e);
+  friend Expression cosh(const Expression& e);
+  friend Expression tanh(const Expression& e);
+  friend Expression min(const Expression& e1, const Expression& e2);
+  friend Expression max(const Expression& e1, const Expression& e2);
 
   /** Constructs if-then-else expression.
 
@@ -266,15 +253,12 @@ class DRAKE_EXPORT Expression {
      operator is available at
      http://en.cppreference.com/w/cpp/language/operator_other#Conditional_operator.
    */
-  friend DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
-                                              const Expression& e_then,
-                                              const Expression& e_else);
+  friend Expression if_then_else(const Formula& f_cond,
+                                 const Expression& e_then,
+                                 const Expression& e_else);
 
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
-                                               const Expression& e);
-  friend DRAKE_EXPORT void swap(Expression& a, Expression& b) {
-    std::swap(a.ptr_, b.ptr_);
-  }
+  friend std::ostream& operator<<(std::ostream& os, const Expression& e);
+  friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
@@ -288,39 +272,38 @@ class DRAKE_EXPORT Expression {
   std::shared_ptr<ExpressionCell> ptr_;
 };
 
-DRAKE_EXPORT Expression operator+(Expression lhs, const Expression& rhs);
+Expression operator+(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Expression& operator+=(Expression& lhs, const Expression& rhs);
-DRAKE_EXPORT Expression operator-(Expression lhs, const Expression& rhs);
+Expression& operator+=(Expression& lhs, const Expression& rhs);
+Expression operator-(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Expression& operator-=(Expression& lhs, const Expression& rhs);
-DRAKE_EXPORT Expression operator-(Expression e);
-DRAKE_EXPORT Expression operator*(Expression lhs, const Expression& rhs);
+Expression& operator-=(Expression& lhs, const Expression& rhs);
+Expression operator-(Expression e);
+Expression operator*(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Expression& operator*=(Expression& lhs, const Expression& rhs);
-DRAKE_EXPORT Expression operator/(Expression lhs, const Expression& rhs);
+Expression& operator*=(Expression& lhs, const Expression& rhs);
+Expression operator/(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-DRAKE_EXPORT Expression& operator/=(Expression& lhs, const Expression& rhs);
-DRAKE_EXPORT Expression log(const Expression& e);
-DRAKE_EXPORT Expression abs(const Expression& e);
-DRAKE_EXPORT Expression exp(const Expression& e);
-DRAKE_EXPORT Expression sqrt(const Expression& e);
-DRAKE_EXPORT Expression pow(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Expression sin(const Expression& e);
-DRAKE_EXPORT Expression cos(const Expression& e);
-DRAKE_EXPORT Expression tan(const Expression& e);
-DRAKE_EXPORT Expression asin(const Expression& e);
-DRAKE_EXPORT Expression acos(const Expression& e);
-DRAKE_EXPORT Expression atan(const Expression& e);
-DRAKE_EXPORT Expression atan2(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Expression sinh(const Expression& e);
-DRAKE_EXPORT Expression cosh(const Expression& e);
-DRAKE_EXPORT Expression tanh(const Expression& e);
-DRAKE_EXPORT Expression min(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Expression max(const Expression& e1, const Expression& e2);
-DRAKE_EXPORT Expression if_then_else(const Formula& f_cond,
-                                     const Expression& e_then,
-                                     const Expression& e_else);
+Expression& operator/=(Expression& lhs, const Expression& rhs);
+Expression log(const Expression& e);
+Expression abs(const Expression& e);
+Expression exp(const Expression& e);
+Expression sqrt(const Expression& e);
+Expression pow(const Expression& e1, const Expression& e2);
+Expression sin(const Expression& e);
+Expression cos(const Expression& e);
+Expression tan(const Expression& e);
+Expression asin(const Expression& e);
+Expression acos(const Expression& e);
+Expression atan(const Expression& e);
+Expression atan2(const Expression& e1, const Expression& e2);
+Expression sinh(const Expression& e);
+Expression cosh(const Expression& e);
+Expression tanh(const Expression& e);
+Expression min(const Expression& e1, const Expression& e2);
+Expression max(const Expression& e1, const Expression& e2);
+Expression if_then_else(const Formula& f_cond, const Expression& e_then,
+                        const Expression& e_else);
 
 /** @name cond
   Constructs conditional expression (similar to Lisp's cond).
@@ -345,7 +328,7 @@ Expression cond(const Formula& f_cond, const Expression& e_then, Rest... rest) {
 }
 ///@}
 
-DRAKE_EXPORT void swap(Expression& a, Expression& b);
+void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
 
@@ -425,7 +408,7 @@ struct hash_value<symbolic::Expression> {
 
 /** Specializes is_numeric to be false for symbolic::Expression type. */
 template <>
-struct DRAKE_EXPORT is_numeric<symbolic::Expression> {
+struct is_numeric<symbolic::Expression> {
   static constexpr bool value = false;
 };
 }  // namespace drake
