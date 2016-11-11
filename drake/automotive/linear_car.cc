@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic_expression.h"
-#include "drake/math/autodiff_overloads.h"
+#include "drake/common/autodiff_overloads.h"
 
 namespace drake {
 namespace automotive {
