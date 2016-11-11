@@ -19,7 +19,6 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
 drake_add_external(spdlog PUBLIC CMAKE)
@@ -81,6 +80,23 @@ drake_add_external(googletest PUBLIC CMAKE
 # google_styleguide
 drake_add_external(google_styleguide PUBLIC
   BUILD_COMMAND :)
+
+# gurobi
+if(Matlab_FOUND)
+  set(GUROBI_EXTRA_CMAKE_ARGS
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
+    -DWITH_MATLAB=ON)
+else()
+  set(GUROBI_EXTRA_CMAKE_ARGS
+    -DWITH_MATLAB=OFF)
+endif()
+
+drake_add_external(gurobi CMAKE
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DWITH_CPP=ON
+    -DWITH_PYTHON=OFF
+    ${GUROBI_EXTRA_CMAKE_ARGS})
 
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
