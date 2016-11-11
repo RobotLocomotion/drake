@@ -3,12 +3,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/primitives/linear_system.h"
-#include "drake/util/drakeUtil.h"
 
 namespace drake {
 namespace systems {
 
-std::unique_ptr<systems::AffineSystem<double>> TimeInvariantLqr(
+std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
@@ -19,18 +18,15 @@ std::unique_ptr<systems::AffineSystem<double>> TimeInvariantLqr(
   const int num_inputs = system.get_input_port(0).get_size(),
             num_states = context.get_continuous_state()->size();
   DRAKE_DEMAND(num_states > 0);
-  DRAKE_DEMAND(Q.rows() == num_states && Q.cols() == num_states);
-  DRAKE_DEMAND(R.rows() == num_inputs && R.cols() == num_inputs);
-  DRAKE_ASSERT(
-      CompareMatrices(Q, Q.transpose(), 1e-10, MatrixCompareType::absolute));
-  DRAKE_ASSERT(
-      CompareMatrices(R, R.transpose(), 1e-10, MatrixCompareType::absolute));
   // TODO(russt): Confirm behavior if Q is not PSD.
 
   auto linear_system = Linearize(system, context);
 
-  Eigen::MatrixXd K(num_inputs, num_states), S(num_states, num_states);
-  lqr(linear_system->A(), linear_system->B(), Q, R, K, S);
+  auto S = ContinuousAlgebraicRiccatiEquation(linear_system->A(),
+                                              linear_system->B(), Q, R);
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  auto K = R_cholesky.solve(linear_system->B().transpose() * S);
 
   const Eigen::VectorXd x0 =
       context.get_continuous_state_vector().CopyToVector();
@@ -44,6 +40,92 @@ std::unique_ptr<systems::AffineSystem<double>> TimeInvariantLqr(
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
       -K,                                    // D
       u0 + K * x0);                          // y0
+}
+
+std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
+    const LinearSystem<double>& system,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  const int num_states = system.B().rows(), num_inputs = system.B().cols();
+
+  auto S = ContinuousAlgebraicRiccatiEquation(system.A(),
+                                              system.B(), Q, R);
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  auto K = R_cholesky.solve(system.B().transpose() * S);
+
+  // Return the controller: u = -Kx.
+  return std::make_unique<systems::LinearSystem<double>>(
+      Eigen::MatrixXd::Zero(0, 0),           // A
+      Eigen::MatrixXd::Zero(0, num_states),  // B
+      Eigen::MatrixXd::Zero(num_inputs, 0),  // C
+      -K);                                   // D
+}
+
+const Eigen::Solve<Eigen::JacobiSVD<Eigen::MatrixXd>, Eigen::MatrixXd>
+ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                                   const Eigen::Ref<const Eigen::MatrixXd>& B,
+                                   const Eigen::Ref<const Eigen::MatrixXd>& Q,
+                                   const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  using namespace std;
+  using namespace Eigen;
+
+  const size_t n = B.rows(), m = B.cols();
+
+  DRAKE_DEMAND(A.rows() == n && A.cols() == n);
+  DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
+  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
+  DRAKE_DEMAND(
+      CompareMatrices(Q, Q.transpose(), 1e-10, MatrixCompareType::absolute));
+  DRAKE_DEMAND(
+      CompareMatrices(R, R.transpose(), 1e-10, MatrixCompareType::absolute));
+
+  LLT<MatrixXd> R_cholesky(R);
+
+  MatrixXd H(2 * n, 2 * n);
+  H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
+  if (R_cholesky.info() != Eigen::Success)
+    throw std::runtime_error("R must be positive definite");
+
+  MatrixXd Z = H;
+  MatrixXd Z_old;
+
+  // these could be options
+  const double tolerance = 1e-9;
+  const double max_iterations = 100;
+
+  double relative_norm;
+  size_t iteration = 0;
+
+  const double p = static_cast<double>(Z.rows());
+
+  do {
+    Z_old = Z;
+    // R. Byers. Solving the algebraic Riccati equation with the matrix sign
+    // function. Linear Algebra Appl., 85:267–279, 1987
+    // Added determinant scaling to improve convergence (converges in rough half
+    // the iterations with this)
+    double ck = pow(abs(Z.determinant()), -1.0 / p);
+    Z *= ck;
+    Z = Z - 0.5 * (Z - Z.inverse());
+    relative_norm = (Z - Z_old).norm();
+    iteration++;
+  } while (iteration < max_iterations && relative_norm > tolerance);
+
+  MatrixXd W11 = Z.block(0, 0, n, n);
+  MatrixXd W12 = Z.block(0, n, n, n);
+  MatrixXd W21 = Z.block(n, 0, n, n);
+  MatrixXd W22 = Z.block(n, n, n, n);
+
+  MatrixXd lhs(2 * n, n);
+  MatrixXd rhs(2 * n, n);
+  MatrixXd eye = MatrixXd::Identity(n, n);
+  lhs << W12, W22 + eye;
+  rhs << W11 + eye, W21;
+
+  JacobiSVD<MatrixXd> svd(lhs, ComputeThinU | ComputeThinV);
+
+  return svd.solve(rhs);
 }
 
 }  // namespace systems

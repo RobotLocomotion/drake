@@ -40,7 +40,7 @@ int do_main(int argc, char* argv[]) {
   R << 1;
 
   auto controller =
-      builder.AddSystem(TimeInvariantLqr(*pendulum, *pendulum_context, Q, R));
+      builder.AddSystem(LinearQuadraticRegulator(*pendulum, *pendulum_context, Q, R));
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
   builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
 
