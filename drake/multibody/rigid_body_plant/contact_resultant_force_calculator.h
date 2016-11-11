@@ -150,8 +150,8 @@ class ContactResultantForceCalculator {
    ContactResultantForceCalculator instance.  See the various AddForce methods
    for details on what is placed in the @p detail_accumulator.
 
-   @param detail_accumulator If non-null, ContactDetail instances will be stored
-   in the vector as they are assigned to the calculator.
+   @param detail_accumulator If non-null, ContactDetail instances will be
+   appended to the vector as they are assigned to the calculator.
    */
   ContactResultantForceCalculator(
       std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
@@ -160,7 +160,7 @@ class ContactResultantForceCalculator {
    Adds a new contact force to the calculator.
 
    If the calculator was initialized with a detail accumulator, an instance of
-   PointContactDetail, with this contact force, will be assigned to that
+   PointContactDetail, with this contact force, will be appended to that
    accumulator.
 
    @param force     The contact force.
@@ -172,7 +172,7 @@ class ContactResultantForceCalculator {
    ContactDetail::ComputeContactForce will be used in the calculation.
 
    If the calculator was initialized with a detail accumulator, the detail will
-   be assigned to that accumulator. Otherwise, the detail will be destroyed
+   be appended to that accumulator. Otherwise, the detail will be destroyed
    at the conclusion of this method invocation.
    @param contact_detail        The contact detail which will provide a
                                 ContactForce for computation.
@@ -183,7 +183,7 @@ class ContactResultantForceCalculator {
    Adds a new force to the calculator.
 
    If the calculator was initialized with a detail accumulator, an instance of
-   PointContactDetail, with this contact information, will be assigned to that
+   PointContactDetail, with this contact information, will be appended to that
    accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal
@@ -197,7 +197,7 @@ class ContactResultantForceCalculator {
    Adds a new force with an arbitrary pure torque to the calculator.
 
    If the calculator was initialized with a detail accumulator, an instance of
-   PointContactDetail, with this contact information, will be assigned to that
+   PointContactDetail, with this contact information, will be appended to that
    accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal

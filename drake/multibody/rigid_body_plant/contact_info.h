@@ -31,7 +31,9 @@ namespace systems {
  corresponding copying cost.
 
  The resultant force and contact details, if they are included, are all defined
- such that they act on the first element in the pair (e1).
+ such that they act on the first element in the pair (e1). Newton's third law
+ requires that an equal and opposite force be applied, at exactly the same point
+ in space, to e2.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 

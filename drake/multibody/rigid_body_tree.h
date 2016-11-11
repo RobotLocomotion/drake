@@ -785,13 +785,10 @@ class DRAKE_EXPORT RigidBodyTree {
    * across all of the bodies in the tree.  One result is provided for each
    * tested pair (colliding or not).
    *
-   * This is a special case which returns the actual collision elements instead
-   * of their corresponding rigid body identifiers.
-   *
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[out] pairs          A vector that will be populated with the query
    *                            data.  There will be one entry per pair of
-   *                            tested collision elements. The the contact
+   *                            tested collision elements. The contact
    *                            points are each expressed in their corresponding
    *                            body's frame and the normal is expressed in the
    *                            world frame.
@@ -805,9 +802,6 @@ class DRAKE_EXPORT RigidBodyTree {
    * This performs all-pairs collision detection (excepting those filtered out)
    * across the provided set of collision elements (named by id).  One result is
    * provided for each tested pair (colliding or not).
-   *
-   * This is a special case which returns the actual collision elements instead
-   * of their corresponding rigid body identifiers.
    *
    * @param[in]  cache          The dynamic pose data for the tree.
    * @param[in]  ids_to_check   The set of collision element ids to test.
