@@ -35,7 +35,7 @@ class ContactResults {
 
   /** Retrieves the ith ContactInfo instance.  No bounds checking will be done
    in a release build (but will be done in debug).  It is assumed the caller
-   will only use values in the range [0, get_num_contacts()).
+   will only use values in the range [0, get_num_contacts() -1], inclusive.
    */
   const ContactInfo<T>& get_contact_info(int i) const;
 

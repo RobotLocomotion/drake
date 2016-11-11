@@ -780,6 +780,8 @@ class DRAKE_EXPORT RigidBodyTree {
       std::vector<int>& bodyB_idx,
       bool use_margins = true);
 
+  // TODO(SeanCurtis-TRI): Properly classify the use_margins parameter so it
+  // can be meaningfully documented.
   /**
    * This performs all-pairs collision detection (excepting those filtered out)
    * across all of the bodies in the tree.  One result is provided for each
@@ -792,6 +794,7 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            points are each expressed in their corresponding
    *                            body's frame and the normal is expressed in the
    *                            world frame.
+   * @param use_margins         Unclear purpose; requires investigation.
    * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPoints(const KinematicsCache<double>& cache,
@@ -811,6 +814,7 @@ class DRAKE_EXPORT RigidBodyTree {
    *                            points are each expressed in their corresponding
    *                            body's frame and the normal is expressed in the
    *                            world frame.
+   * @param use_margins         Unclear purpose; requires investigation.
    * @returns                   The same bool as RigidBodyTree::collisionDetect.
    */
   bool AllPairsClosestPointsInSet(
