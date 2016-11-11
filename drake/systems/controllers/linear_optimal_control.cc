@@ -7,6 +7,26 @@
 namespace drake {
 namespace systems {
 
+std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
+    const LinearSystem<double>& system,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  const int num_states = system.B().rows(), num_inputs = system.B().cols();
+
+  auto S = ContinuousAlgebraicRiccatiEquation(system.A(),
+                                              system.B(), Q, R);
+
+  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
+  auto K = R_cholesky.solve(system.B().transpose() * S);
+
+  // Return the controller: u = -Kx.
+  return std::make_unique<systems::LinearSystem<double>>(
+      Eigen::MatrixXd::Zero(0, 0),           // A
+      Eigen::MatrixXd::Zero(0, num_states),  // B
+      Eigen::MatrixXd::Zero(num_inputs, 0),  // C
+      -K);                                   // D
+}
+
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -40,26 +60,6 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
       -K,                                    // D
       u0 + K * x0);                          // y0
-}
-
-std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
-    const LinearSystem<double>& system,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R) {
-  const int num_states = system.B().rows(), num_inputs = system.B().cols();
-
-  auto S = ContinuousAlgebraicRiccatiEquation(system.A(),
-                                              system.B(), Q, R);
-
-  Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  auto K = R_cholesky.solve(system.B().transpose() * S);
-
-  // Return the controller: u = -Kx.
-  return std::make_unique<systems::LinearSystem<double>>(
-      Eigen::MatrixXd::Zero(0, 0),           // A
-      Eigen::MatrixXd::Zero(0, num_states),  // B
-      Eigen::MatrixXd::Zero(num_inputs, 0),  // C
-      -K);                                   // D
 }
 
 const Eigen::Solve<Eigen::JacobiSVD<Eigen::MatrixXd>, Eigen::MatrixXd>

@@ -5,8 +5,28 @@
 namespace drake {
 namespace systems {
 
+/// Creates a system that implements the optimal time-invariant linear quadratic
+/// regulator (LQR):
+///
+///   @f[ \min_u \int_0^T x'Qx + u'Ru dt @f]
+///
+/// @param system The System to be controlled.
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
+/// num_states.
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
+/// num_inputs.
+/// @returns A system implementing the optimal controller in the original system
+/// coordinates.
+///
+/// @throws std::runtime_error if R is not positive definite.
+///
+std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
+    const LinearSystem<double>& system,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
+
 /// Linearizes the System around the specified Context, computes the optimal
-/// time-invariant linear quadratic regulator (LQR), and returns a system which
+/// time-invariant linear quadratic regulator (LQR), and returns a System which
 /// implements that regulator in the original System's coordinates.
 ///
 /// @f[ \min_u \int_0^T (x-x_0)'Q(x-x_0) + (u-u_0)'R(u-u_0) dt @f]
@@ -16,9 +36,9 @@ namespace systems {
 /// @param context Defines the desired state and control input to regulate the
 /// system to.  Note that this state/input must be an equilibrium point of the
 /// system.  See drake::systems::Linearize for more details.
-/// @param Q A symmetric positive semi-definite matrix of size num_states x
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
 /// num_states.
-/// @param R A symmetric positive definite matrix of size num_inputs x
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
 /// num_inputs.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
@@ -30,15 +50,12 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
 
-std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
-    const LinearSystem<double>& system,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::MatrixXd>& R);
-
 /// Computes the unique stabilizing solution X to the continuous-time algebraic
 /// Riccati equation:
 ///
+/// @verbatim
 ///  S'A + A'S + S B inv(R) B' S + Q = 0
+/// @endverbatim
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///
