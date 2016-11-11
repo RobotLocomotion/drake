@@ -7,9 +7,6 @@ target_link_libraries(convex_optimization_test drakeOptimization)
 drake_add_cc_test(moby_lcp_solver_test)
 target_link_libraries(moby_lcp_solver_test drakeOptimization)
 
-drake_add_cc_test(equality_constrained_qp_solver_test)
-target_link_libraries(equality_constrained_qp_solver_test drakeOptimization)
-
 drake_add_cc_test(mixed_integer_optimization_test)
 target_link_libraries(mixed_integer_optimization_test drakeOptimization)
 
