@@ -36,8 +36,7 @@ enum class FormulaKind {
 // Total ordering between FormulaKinds
 bool operator<(FormulaKind k1, FormulaKind k2);
 
-class FormulaCell;
-class Expression;
+class FormulaCell;  // In drake/common/symbolic_formula_cell.h
 
 /** Represents a symbolic form of a first-order logic formula.
 

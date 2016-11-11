@@ -421,7 +421,7 @@ TEST_F(SymbolicExpressionTest, Add1) {
   EXPECT_EQ((0.0 + c3_).to_string(), c3_.to_string());
   EXPECT_PRED2(ExpEqual, c3_ + 0.0, c3_);
   EXPECT_EQ((c3_ + 0.0).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ + c4_, Expression{3.14159 + -2.718});
+  EXPECT_PRED2(ExpEqual, c3_ + c4_, 3.14159 + -2.718);
   EXPECT_EQ((c3_ + c4_).to_string(), Expression{3.14159 + -2.718}.to_string());
   EXPECT_PRED2(ExpEqual, c3_ + x_, 3.14159 + x_);
   EXPECT_EQ((c3_ + x_).to_string(), (3.14159 + x_).to_string());
@@ -558,7 +558,7 @@ TEST_F(SymbolicExpressionTest, Mul1) {
   EXPECT_PRED2(ExpEqual, 1.0 * c3_, c3_);
   EXPECT_PRED2(ExpEqual, c3_ * 1.0, c3_);
 
-  EXPECT_PRED2(ExpEqual, c3_ * c4_, Expression{3.14159 * -2.718});
+  EXPECT_PRED2(ExpEqual, c3_ * c4_, 3.14159 * -2.718);
   EXPECT_PRED2(ExpEqual, c3_ * x_, (3.14159 * x_));
   EXPECT_PRED2(ExpEqual, x_ * c3_, (x_ * 3.14159));
 }
@@ -702,7 +702,7 @@ GTEST_TEST(ExpressionTest, CompatibleWithMap) {
 // std::vector.
 GTEST_TEST(ExpressionTest, CompatibleWithVector) {
   vector<Expression> vec;
-  vec.push_back(Expression{123.0});
+  vec.push_back(123.0);
 }
 
 GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
@@ -1127,7 +1127,7 @@ TEST_F(SymbolicExpressionTest, IfThenElse1) {
 
   // should be simplified to 0.0 since (x > x + 1.0) => false.
   const Expression ite2 = if_then_else(x_ > x_ + 1.0, 1.0, 0.0);
-  EXPECT_PRED2(ExpEqual, ite2, Expression{0.0});
+  EXPECT_PRED2(ExpEqual, ite2, 0.0);
 
   // should not be simplified.
   const Expression ite3 = if_then_else(x_ > y_, 1.0, 0.0);
@@ -1166,14 +1166,14 @@ TEST_F(SymbolicExpressionTest, Cond1) {
 TEST_F(SymbolicExpressionTest, Cond2) {
   // clang-format off
   const Expression e{cond(x_ >= 10, 10.0,
-                          x_ >= 5,  Expression{5.0},
-                          x_ >= 2,  Expression{2.0},
-                          0.0)};
+                          x_ >= 5,  5.0,
+                          x_ >= 2,  2.0,
+                                    0.0)};
   EXPECT_PRED2(ExpEqual, e,
                if_then_else(x_ >= 10, 10,
-               if_then_else(x_ >= 5, 5,
-               if_then_else(x_ >= 2, 2,
-                                   0.0))));
+               if_then_else(x_ >= 5,   5,
+               if_then_else(x_ >= 2,   2,
+                                     0.0))));
   // clang-format on
 
   EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
