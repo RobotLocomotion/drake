@@ -1,11 +1,8 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
-
-namespace Eigen {
-typedef Matrix<double, 6, 1> Vector6d;
-}
 
 namespace drake {
 namespace examples {
@@ -22,10 +19,10 @@ namespace qp_inverse_dynamics {
  * in body frame
  * @return task space velocity
  */
-Eigen::Vector6d GetTaskSpaceVel(
+Vector6<double> GetTaskSpaceVel(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const RigidBody& body,
-    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
+    const Vector3<double>& local_offset = Vector3<double>::Zero());
 
 /**
  * This function computes the task space Jacobian of a frame attached
@@ -38,10 +35,10 @@ Eigen::Vector6d GetTaskSpaceVel(
  * @return task space Jacobian, x_dot = J * v, x_dot is task space vel, v is
  * generalized velocity.
  */
-Eigen::MatrixXd GetTaskSpaceJacobian(
+MatrixX<double> GetTaskSpaceJacobian(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const RigidBody& body,
-    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
+    const Vector3<double>& local_offset = Vector3<double>::Zero());
 
 /**
  * This function computes the task space Jacobian times the generalized
@@ -55,10 +52,10 @@ Eigen::MatrixXd GetTaskSpaceJacobian(
  * @return task space Jacobian dot * v, x_ddot = J * v_dot + Jdv, x_ddot is
  * task space acceleration, v_dot is generalized acceleration.
  */
-Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
+Vector6<double> GetTaskSpaceJacobianDotTimesV(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
     const RigidBody& body,
-    const Eigen::Vector3d& local_offset = Eigen::Vector3d::Zero());
+    const Vector3<double>& local_offset = Vector3<double>::Zero());
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

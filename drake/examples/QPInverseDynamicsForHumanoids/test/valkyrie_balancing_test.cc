@@ -10,6 +10,7 @@
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
 // In this test, the Valkyrie robot is initialized to a nominal configuration
 // with zero velocities, and the qp controller is set up to track this
 // state. The robot is then perturbed in velocity for the Torso Pitch joint.
@@ -27,52 +28,50 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   RigidBodyTree<double> robot(urdf,
-      drake::multibody::joints::kRollPitchYaw);
+                              drake::multibody::joints::kRollPitchYaw);
   HumanoidStatus robot_status(robot);
 
   QPController con;
-  QPInput input(robot);
+  QPInput input = MakeExampleQPInput(robot_status);
   QPOutput output(robot);
 
   // Set up initial condition.
-  Eigen::VectorXd q(robot.get_num_positions());
-  Eigen::VectorXd v(robot.get_num_velocities());
+  VectorX<double> q(robot.get_num_positions());
+  VectorX<double> v(robot.get_num_velocities());
 
   q = robot_status.GetNominalPosition();
   v.setZero();
-  Eigen::VectorXd q_ini = q;
+  VectorX<double> q_ini = q;
 
-  robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
-                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot.actuators.size()),
+                      Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // Set up a tracking problem.
-  Eigen::Vector3d Kp_com = Eigen::Vector3d::Constant(40);
-  Eigen::Vector3d Kd_com = Eigen::Vector3d::Constant(12);
+  Vector3<double> Kp_com = Vector3<double>::Constant(40);
+  Vector3<double> Kd_com = Vector3<double>::Constant(12);
 
-  Eigen::Vector3d desired_com = robot_status.com();
+  Vector3<double> desired_com = robot_status.com();
 
-  // Get an example controller that tracks a fixed point.
-  input = MakeExampleQPInput(robot);
-  Eigen::VectorXd Kp_q(Eigen::VectorXd::Constant(q.size(), 20));
-  Eigen::VectorXd Kd_q(Eigen::VectorXd::Constant(q.size(), 8));
+  VectorX<double> Kp_q(VectorX<double>::Constant(q.size(), 20));
+  VectorX<double> Kd_q(VectorX<double>::Constant(q.size(), 8));
   Kp_q.head<6>().setZero();
   Kd_q.head<6>().setZero();
-  VectorSetpoint<double> joint_PDff(q, Eigen::VectorXd::Zero(q.size()),
-                                    Eigen::VectorXd::Zero(q.size()), Kp_q,
+  VectorSetpoint<double> joint_PDff(q, VectorX<double>::Zero(q.size()),
+                                    VectorX<double>::Zero(q.size()), Kp_q,
                                     Kd_q);
   CartesianSetpoint<double> pelvis_PDff(
-      robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
-      Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
-      Eigen::Vector6d::Constant(8));
+      robot_status.pelvis().pose(), Vector6<double>::Zero(),
+      Vector6<double>::Zero(), Vector6<double>::Constant(20),
+      Vector6<double>::Constant(8));
   CartesianSetpoint<double> torso_PDff(
-      robot_status.torso().pose(), Eigen::Vector6d::Zero(),
-      Eigen::Vector6d::Zero(), Eigen::Vector6d::Constant(20),
-      Eigen::Vector6d::Constant(8));
+      robot_status.torso().pose(), Vector6<double>::Zero(),
+      Vector6<double>::Zero(), Vector6<double>::Constant(20),
+      Vector6<double>::Constant(8));
 
   // Perturb initial condition.
   v[robot_status.name_to_position_index().at("torsoRoll")] += 1;
-  robot_status.Update(0, q, v, Eigen::VectorXd::Zero(robot.actuators.size()),
-                      Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+  robot_status.Update(0, q, v, VectorX<double>::Zero(robot.actuators.size()),
+                      Vector6<double>::Zero(), Vector6<double>::Zero());
 
   // dt = 3e-3 is picked arbitrarily, with Gurobi, this one control call takes
   // roughly 3ms.
@@ -83,20 +82,6 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-10);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-10);
 
-  // Update weights.
-  for (const std::string& joint_name : robot_status.arm_joint_names()) {
-    int idx = robot_status.name_to_position_index().at(joint_name);
-    input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
-    input.mutable_desired_joint_motions().mutable_constraint_type(idx) =
-        ConstraintType::Hard;
-  }
-  for (const std::string& joint_name : robot_status.neck_joint_names()) {
-    int idx = robot_status.name_to_position_index().at(joint_name);
-    input.mutable_desired_joint_motions().mutable_weight(idx) = -1;
-    input.mutable_desired_joint_motions().mutable_constraint_type(idx) =
-        ConstraintType::Hard;
-  }
-
   int tick_ctr = 0;
   while (time < 4) {
     // Update desired accelerations.
@@ -106,7 +91,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     input.mutable_desired_body_motions().at("torso").mutable_values() =
         torso_PDff.ComputeTargetAcceleration(robot_status.torso().pose(),
                                              robot_status.torso().velocity());
-    input.mutable_desired_joint_motions().mutable_values() =
+    input.mutable_desired_dof_motions().mutable_values() =
         joint_PDff.ComputeTargetAcceleration(robot_status.position(),
                                              robot_status.velocity());
     input.mutable_desired_centroidal_momentum_dot().mutable_values().tail<3>() =
@@ -127,8 +112,9 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
     v += output.vd() * dt;
     time += dt;
 
-    robot_status.Update(time, q, v, output.joint_torque(),
-                        Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+    robot_status.Update(time, q, v,
+                        VectorX<double>::Zero(robot.actuators.size()),
+                        Vector6<double>::Zero(), Vector6<double>::Zero());
     tick_ctr++;
   }
 
@@ -142,8 +128,10 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
                                      drake::MatrixCompareType::absolute));
   EXPECT_TRUE(drake::CompareMatrices(
-      v, Eigen::VectorXd::Zero(robot.get_num_velocities()), 1e-4,
+      v, VectorX<double>::Zero(robot.get_num_velocities()), 1e-4,
       drake::MatrixCompareType::absolute));
+
+  std::cout << output;
 }
 
 }  // namespace qp_inverse_dynamics
