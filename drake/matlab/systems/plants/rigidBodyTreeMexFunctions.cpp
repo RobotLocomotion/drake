@@ -358,10 +358,10 @@ void dynamicsBiasTermmex(int nlhs, mxArray* plhs[], int nrhs,
 }
 
 template <typename Scalar>
-Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDotMapping(
+Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDerivativesMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nq = cache.get_num_positions();
-  return cache.transformPositionDotMappingToVelocityMapping(
+  return cache.transformQDotMappingToVelocityMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nq, nq));
 }
 
@@ -369,17 +369,17 @@ template <typename Scalar>
 Matrix<Scalar, Dynamic, Dynamic> positionDotToVelocityMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nv = cache.get_num_velocities();
-  return cache.transformVelocityMappingToPositionDotMapping(
+  return cache.transformVelocityMappingToQDotMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nv, nv));
 }
 
-void velocityToPositionDotMappingmex(int nlhs, mxArray* plhs[], int nrhs,
+void velocityToPositionDerivativesMappingmex(int nlhs, mxArray* plhs[], int nrhs,
                                      const mxArray* prhs[]) {
-  auto func_double = make_function(&velocityToPositionDotMapping<double>);
+  auto func_double = make_function(&velocityToPositionDerivativesMapping<double>);
   auto func_autodiff_fixed_max =
-      make_function(&velocityToPositionDotMapping<AutoDiffFixedMaxSize>);
+      make_function(&velocityToPositionDerivativesMapping<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic =
-      make_function(&velocityToPositionDotMapping<AutoDiffDynamicSize>);
+      make_function(&velocityToPositionDerivativesMapping<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double,
                         func_autodiff_fixed_max, func_autodiff_dynamic);
 }

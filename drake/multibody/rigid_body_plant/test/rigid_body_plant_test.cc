@@ -132,20 +132,23 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
   EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
   EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
-  // Get the mutable context.
-  VectorBase<double>* xc = context->get_mutable_state()
-                               ->get_mutable_continuous_state()
-                               ->get_mutable_generalized_position();
-
   // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
   const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
   for (double roll = 0; roll <= M_PI_2; roll += kAngleInc) {
     for (double pitch = 0; pitch <= M_PI_2; pitch += kAngleInc) {
       for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
+        // Get the mutable state.
+        VectorBase<double>* xc = context->get_mutable_state()
+                               ->get_mutable_continuous_state()
+                               ->get_mutable_generalized_position();
+
         // Update the orientation.
         Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
-                        Eigen::AngleAxisd(pitch, Vector3d::UnitX()) *
-                        Eigen::AngleAxisd(yaw, Vector3d::UnitY());
+                        Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
+                        Eigen::AngleAxisd(yaw, Vector3d::UnitX());
+
+        // Verify normalization.
+        DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15); 
         xc->SetAtIndex(3, q.w());
         xc->SetAtIndex(4, q.x());
         xc->SetAtIndex(5, q.y());
@@ -155,6 +158,13 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
         // generalized coordinates.
         plant.MapVelocityToQDot(
             *context, generalized_velocities, &positions_derivatives);
+
+        // Test q * qdot near zero
+        Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4), xc->GetAtIndex(5), xc->GetAtIndex(6));
+
+        // TODO(edrumwri): Uncomment this test when quaternion derivative
+        // code is correct.
+//        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
 
         // Map time derivative of generalized configuration back to generalized
         // velocity.
