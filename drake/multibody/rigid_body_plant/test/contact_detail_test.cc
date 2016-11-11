@@ -1,8 +1,9 @@
 #include "drake/multibody/rigid_body_plant/contact_detail.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
-#include <gtest/gtest.h>
 #include <memory>
+
+#include <gtest/gtest.h>
 
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 

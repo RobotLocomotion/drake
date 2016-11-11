@@ -20,7 +20,7 @@ namespace systems {
     - An optional list of ContactDetail instances.
 
  Some forms of ContactDetail are more expensive than others. However,
- ContactInfo instances will need to be copied. The contact model can defines a
+ ContactInfo instances will need to be copied. The contact model defines a
  default behavior of whether the ContactDetails are stored in the corresponding
  ContactInfo instance or not. If this happens, the ContactInfo instance will
  contain a valid resultant force, but no contact details.
