@@ -19,7 +19,6 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   )
 target_link_libraries(drakeAutomotive
   drakeCommon
-  drakeShapes
   drakeSystemAnalysis
   drakeSystemFramework
   )
