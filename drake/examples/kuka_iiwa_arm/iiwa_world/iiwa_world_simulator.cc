@@ -4,8 +4,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/RigidBodyFrame.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_frame.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
@@ -163,7 +163,6 @@ template <typename T>
 void IiwaWorldSimulator<T>::StepTo(const T& final_time) {
   simulator_->StepTo(final_time);
 }
-
 
 template <typename T>
 void IiwaWorldSimulator<T>::SetPenetrationContactParameters(
