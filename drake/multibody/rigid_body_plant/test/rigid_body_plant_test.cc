@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
 
-#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+#include <Eigen/Geometry>
 
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
@@ -42,8 +42,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // Instantiates an Multibody Dynamics (MBD) model of the world.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() +
-      "/multibody/rigid_body_plant/test/world.urdf",
+      drake::GetDrakePath() + "/multibody/rigid_body_plant/test/world.urdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree_ptr.get());
 
@@ -70,8 +69,10 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
 
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
-GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
-  const int kNumPositions = 7;  // One quaternion + 3d position.
+GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
+  const double kTol = 1e-10;     // Test succeeds at one order of magnitude
+                                 // greater tolerance on my machine.
+  const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   const int kNumStates = kNumPositions + kNumVelocities;
   // Instantiates a Multibody Dynamics (MBD) model of the world.
@@ -86,9 +87,8 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   body->set_mass(1.0);
   body->set_spatial_inertia(Matrix6<double>::Identity());
 
-  body->add_joint(
-      &tree->world(),
-      make_unique<QuaternionFloatingJoint>("base", Isometry3d::Identity()));
+  body->add_joint(&tree->world(), make_unique<QuaternionFloatingJoint>(
+                                      "base", Isometry3d::Identity()));
 
   tree->compile();
 
@@ -113,7 +113,7 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(plant.get_output_size(), kNumStates);
 
   Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
-  Vector3d w0(-1, 2, -3);  // Angular velocity in body's frame.
+  Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
   BasicVector<double> generalized_velocities(plant.get_num_velocities());
   generalized_velocities.get_mutable_value() << w0, v0;
   BasicVector<double> positions_derivatives(plant.get_num_positions());
@@ -121,8 +121,10 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   ASSERT_EQ(positions_derivatives.size(), kNumPositions);
   ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
 
-  plant.MapVelocityToConfigurationDerivatives(
-      *context, generalized_velocities, &positions_derivatives);
+  // Transform the generalized velocities to time derivative of generalized
+  // coordinates.
+  plant.MapVelocityToQDot(*context, generalized_velocities,
+                          &positions_derivatives);
 
   // For zero rotation the velocity vector in the body's frame and in the
   // world's frame is the same.
@@ -130,16 +132,55 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivatives) {
   EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
   EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
-  // Computes the expected value of the time derivative of the quaternion
-  // component.
-  Quaterniond quaternion = Quaterniond::Identity();
-  Quaterniond dqdt =
-      Quaterniond(0, w0[0] / 2, w0[1] / 2, w0[2] / 2) * quaternion;
+  // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
+  const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
+  for (double roll = 0; roll <= M_PI_2; roll += kAngleInc) {
+    for (double pitch = 0; pitch <= M_PI_2; pitch += kAngleInc) {
+      for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
+        // Get the mutable state.
+        VectorBase<double>* xc = context->get_mutable_state()
+                                     ->get_mutable_continuous_state()
+                                     ->get_mutable_generalized_position();
 
-  EXPECT_EQ(dqdt.w(), positions_derivatives.GetAtIndex(3));
-  EXPECT_EQ(dqdt.x(), positions_derivatives.GetAtIndex(4));
-  EXPECT_EQ(dqdt.y(), positions_derivatives.GetAtIndex(5));
-  EXPECT_EQ(dqdt.z(), positions_derivatives.GetAtIndex(6));
+        // Update the orientation.
+        Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
+                        Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
+                        Eigen::AngleAxisd(yaw, Vector3d::UnitX());
+
+        // Verify normalization.
+        DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15);
+        xc->SetAtIndex(3, q.w());
+        xc->SetAtIndex(4, q.x());
+        xc->SetAtIndex(5, q.y());
+        xc->SetAtIndex(6, q.z());
+
+        // Transform the generalized velocities to time derivative of
+        // generalized coordinates.
+        plant.MapVelocityToQDot(*context, generalized_velocities,
+                                &positions_derivatives);
+
+        // Test q * qdot near zero
+        Quaterniond qdot(xc->GetAtIndex(3), xc->GetAtIndex(4),
+                         xc->GetAtIndex(5), xc->GetAtIndex(6));
+
+        // TODO(edrumwri): Uncomment this test when quaternion derivative
+        // code is correct.
+        //        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-14);
+
+        // Map time derivative of generalized configuration back to generalized
+        // velocity.
+        plant.MapQDotToVelocity(*context, positions_derivatives,
+                                &generalized_velocities);
+
+        EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
+        EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
+        EXPECT_NEAR(w0[2], generalized_velocities.GetAtIndex(2), kTol);
+        EXPECT_NEAR(v0[0], generalized_velocities.GetAtIndex(3), kTol);
+        EXPECT_NEAR(v0[1], generalized_velocities.GetAtIndex(4), kTol);
+        EXPECT_NEAR(v0[2], generalized_velocities.GetAtIndex(5), kTol);
+      }
+    }
+  }
 }
 
 class KukaArmTest : public ::testing::Test {
@@ -194,9 +235,8 @@ TEST_F(KukaArmTest, SetZeroConfiguration) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(
-      make_unique<BasicVector<double>>(
-          kuka_system_->get_num_actuators())));
+  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
+                                kuka_system_->get_num_actuators())));
 
   kuka_system_->SetZeroConfiguration(context_.get());
 
@@ -231,9 +271,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
-  context_->SetInputPort(0, MakeInput(
-      make_unique<BasicVector<double>>(
-          kuka_system_->get_num_actuators())));
+  context_->SetInputPort(0, MakeInput(make_unique<BasicVector<double>>(
+                                kuka_system_->get_num_actuators())));
 
   // Zeroes the state.
   kuka_system_->SetZeroConfiguration(context_.get());
@@ -275,8 +314,8 @@ TEST_F(KukaArmTest, EvalOutput) {
     // same way Drake currently aligns them. See issue #3470.
     // When solved we will not need to instantiate a temporary Quaternion below
     // just to perform a comparison.
-    Quaterniond quat(
-        quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+    Quaterniond quat(quat_vector[0], quat_vector[1], quat_vector[2],
+                     quat_vector[3]);
     Vector3d position = pose.translation();
     EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
     EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
@@ -299,28 +338,20 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
   joint.SetJointLimitDynamics(stiffness, dissipation);
 
   // Force should be continuously near zero at the limit.
-  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit + delta, 0),
-            0);
-  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit, 0),
-            0);
-  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - delta, 0),
-              0, epsilon);
-  EXPECT_GT(RBP::JointLimitForce(joint, lower_limit - delta, 0),
-            0);
-  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + delta, 0),
-              0, epsilon);
-  EXPECT_LT(RBP::JointLimitForce(joint, upper_limit + delta, 0),
-            0);
-  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit, 0),
-            0);
-  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit - delta, 0),
-            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit + delta, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit, 0), 0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - delta, 0), 0, epsilon);
+  EXPECT_GT(RBP::JointLimitForce(joint, lower_limit - delta, 0), 0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + delta, 0), 0, epsilon);
+  EXPECT_LT(RBP::JointLimitForce(joint, upper_limit + delta, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit - delta, 0), 0);
 
   // At zero velocity, expect a spring force law.
-  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 0),
-              stiffness, epsilon);
-  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 0),
-              -stiffness, epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 0), stiffness,
+              epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 0), -stiffness,
+              epsilon);
 
   // At outward velocity, a much stiffer counterforce (ie, not "squishy").
   EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, -1),
@@ -335,10 +366,8 @@ GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
               -stiffness * (1 - dissipation), epsilon);
 
   // At rapid inward velocity, no negative counterforce (ie, not "sticky").
-  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit - 1, 10),
-            0);
-  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit + 1, -10),
-            0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit - 1, 10), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit + 1, -10), 0);
 }
 
 /// Given a starting @p position and @p applied_force, @return the resulting
@@ -348,7 +377,7 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
   auto rigid_body_tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() +
-      "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
+          "/multibody/rigid_body_plant/test/limited_prismatic.sdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       rigid_body_tree.get());
   RigidBodyPlant<double> rigid_body_sys(move(rigid_body_tree));
