@@ -33,7 +33,7 @@ cc_library(
 DEPS = [":common"]
 cc_library(
     name = "autodiff",
-    hdrs = ["eigen_autodiff_types.h"],
+    hdrs = ["autodiff_overloads.h", "eigen_autodiff_types.h"],
     deps = DEPS, linkstatic = 1)
 
 cc_library(

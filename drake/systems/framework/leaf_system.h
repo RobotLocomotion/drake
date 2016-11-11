@@ -8,9 +8,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/number_traits.h"
-#include "drake/math/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/difference_state.h"
@@ -187,8 +187,21 @@ class LeafSystem : public System<T> {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.recipient = this;
     event.event.action = DiscreteEvent<T>::kUpdateAction;
+    periodic_events_ = {event};
+  }
+
+  /// Declares that this System has a simple, fixed-period publish.
+  /// The first tick will be at t = period_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may update
+  /// the discrete state. Clobbers any other periodic behaviors previously
+  /// declared.
+  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
+  /// periodic behaviors.
+  void DeclarePublishPeriodSec(const T& period_sec) {
+    PeriodicEvent<T> event;
+    event.period_sec = period_sec;
+    event.event.action = DiscreteEvent<T>::kPublishAction;
     periodic_events_ = {event};
   }
 

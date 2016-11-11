@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -35,25 +36,26 @@ namespace systems {
 /// to the recipient System's HandleEvent method.
 template <typename T>
 struct DiscreteEvent {
+  typedef std::function<void(const Context<T>&)> PublishCallback;
+  typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
+  UpdateCallback;
+
   enum ActionType {
     kUnknownAction = 0,  // A default value that causes the handler to abort.
     kPublishAction = 1,  // On a publish action, state does not change.
     kUpdateAction = 2,   // On an update action, discrete state may change.
   };
 
-  /// The system that receives the event.
-  const System<T>* recipient{nullptr};
   /// The type of action the system must take in response to the event.
   ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kPublishAction. If nullptr, Publish will be used.
-  std::function<void(const Context<T>&)> do_publish{nullptr};
+  PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
-  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
-      nullptr};
+  UpdateCallback do_update{nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -246,6 +248,7 @@ class System {
                        UpdateActions<T>* actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(actions != nullptr);
+    actions->events.clear();
     DoCalcNextUpdateTime(context, actions);
     return actions->time;
   }
