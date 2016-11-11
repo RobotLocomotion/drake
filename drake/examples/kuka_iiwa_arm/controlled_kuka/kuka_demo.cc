@@ -8,9 +8,12 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/multibody/parser_urdf.h"
+#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/gravity_compensator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -20,12 +23,7 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
-
-// Includes for the planner.
-#include "drake/multibody/ik_options.h"
-#include "drake/multibody/rigid_body_ik.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
@@ -109,9 +107,9 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   PostureConstraint pc3(&tree, Vector2d(6, 8));
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
-  const std::vector<double> t { 0.0, 2.0, 5.0, 7.0, 9.0 };
-  MatrixXd q0(tree.get_num_positions(), t.size());
-  for (size_t i = 0; i < t.size(); ++i) {
+  const std::vector<double> kTimes { 0.0, 2.0, 5.0, 7.0, 9.0 };
+  MatrixXd q0(tree.get_num_positions(), kTimes.size());
+  for (size_t i = 0; i < kTimes.size(); ++i) {
     q0.col(i) = zero_conf;
   }
 
@@ -122,15 +120,15 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   constraint_array.push_back(&pc3);
   constraint_array.push_back(&wpc2);
   IKoptions ikoptions(&tree);
-  std::vector<int> info(t.size(), 0);
-  MatrixXd q_sol(tree.get_num_positions(), t.size());
+  std::vector<int> info(kTimes.size(), 0);
+  MatrixXd q_sol(tree.get_num_positions(), kTimes.size());
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(&tree, t.size(), t.data(), q0, q0,
+  inverseKinPointwise(&tree, kTimes.size(), kTimes.data(), q0, q0,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
-  for (size_t i = 0; i < t.size(); ++i) {
+  for (size_t i = 0; i < kTimes.size(); ++i) {
     drake::log()->info("INFO[{}] = {} ", i, info[i]);
     if (info[i] != 1) {
       info_good = false;
@@ -143,7 +141,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
         "inverseKinPointwise failed to compute a valid solution.");
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
+  return make_unique<PiecewisePolynomialTrajectory>(q_sol, kTimes);
 }
 
 // A model of a Kuka iiwa arm with position control using gravity compensation

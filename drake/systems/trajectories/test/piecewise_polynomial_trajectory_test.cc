@@ -12,6 +12,8 @@ namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
+// Test all constructors. Try using both vector and matrix to construct.
+// Verify that the matrix returned by value() gives the values we expect.
 GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   // Setup testing data
   const Polynomiald a = 3;
@@ -22,9 +24,11 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   const std::vector<Polynomiald> p_vec {a, y, y2};
   const std::vector<double> times {0.0, 3, 7, 9};  // Knot points.
 
-  // Test constructing from a pp vector.
-
-  // Create a PiecewisePolynomial from a vector.
+  // Test the constructor that takes a PiecewisePolynomial (PP).
+  // The PiecewisePolynomial can be either a vector of polynomials or a matrix
+  // of polynomials.
+  // Create a PiecewisePolynomial from a vector of polynomials, and use that
+  // to construct a PiecewisePolynomialTrajectory.
   const PiecewisePolynomialType kPpFromVec(p_vec, times);
 
   // Create a PiecewisePolynomialTrajectory from a PP made from a vector.
@@ -45,7 +49,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromVec.value(8)(0), y2.EvaluateUnivariate(8 - 7));
   EXPECT_EQ(kPpTrajFromVec.value(8.9)(0), y2.EvaluateUnivariate(8.9 - 7));
 
-  // Test constructing from a pp matrix.
+  // Test: construct a PiecewisePolynomialTrajectory from a PP matrix.
 
   // Construct a matrix of polynomials.
   std::vector<PiecewisePolynomialType::PolynomialMatrix> kPpMatrix(1);
@@ -67,7 +71,7 @@ GTEST_TEST(piecewisePolynomialTrajectoryTest, testBasicFunctionality) {
   EXPECT_EQ(kPpTrajFromPpMatrix.value(2)(2), 4);
   EXPECT_EQ(kPpTrajFromPpMatrix.value(3)(2), 6);
 
-  // Test constructing from a matrix.
+  // Test: construct a PiecewisePolynomialTrajectory from a matrix.
 
   const int kNumJoints {3};
   // Each column represents a particular time, and the rows of that
