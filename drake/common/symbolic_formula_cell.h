@@ -18,9 +18,6 @@
 namespace drake {
 namespace symbolic {
 
-class Expression;
-class Formula;
-
 /** Represents an abstract class which is the base of concrete symbolic-formula
  * classes (i.e. symbolic::FormulaAnd, symbolic::FormulaEq).
  *

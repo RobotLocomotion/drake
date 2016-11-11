@@ -36,8 +36,7 @@ RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
 
 Variables RelationalFormulaCell::GetFreeVariables() const {
   Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
+  ret.insert(e2_.GetVariables());
   return ret;
 }
 
@@ -78,8 +77,7 @@ NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
 Variables NaryFormulaCell::GetFreeVariables() const {
   Variables ret{};
   for (const auto& f : formulas_) {
-    const Variables res_from_f{f.GetFreeVariables()};
-    ret.insert(res_from_f.begin(), res_from_f.end());
+    ret.insert(f.GetFreeVariables());
   }
   return ret;
 }

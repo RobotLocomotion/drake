@@ -1,4 +1,4 @@
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_expression_cell.h"
 
 #include <algorithm>
 #include <cmath>
@@ -14,7 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression_cell.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -84,8 +84,7 @@ BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
 
 Variables BinaryExpressionCell::GetVariables() const {
   Variables ret{e1_.GetVariables()};
-  const Variables res_from_e2{e2_.GetVariables()};
-  ret.insert(res_from_e2.begin(), res_from_e2.end());
+  ret.insert(e2_.GetVariables());
   return ret;
 }
 
@@ -232,8 +231,7 @@ ExpressionAdd::ExpressionAdd(const double constant_term,
 Variables ExpressionAdd::GetVariables() const {
   Variables ret{};
   for (const auto& p : term_to_coeff_map_) {
-    const Variables vars_in_term{p.first.GetVariables()};
-    ret.insert(vars_in_term.begin(), vars_in_term.end());
+    ret.insert(p.first.GetVariables());
   }
   return ret;
 }
@@ -460,10 +458,8 @@ ExpressionMul::ExpressionMul(const double constant_factor,
 Variables ExpressionMul::GetVariables() const {
   Variables ret{};
   for (const auto& p : term_to_exp_map_) {
-    const Variables vars_in_base{p.first.GetVariables()};
-    const Variables vars_in_exp{p.second.GetVariables()};
-    ret.insert(vars_in_base.begin(), vars_in_base.end());
-    ret.insert(vars_in_exp.begin(), vars_in_exp.end());
+    ret.insert(p.first.GetVariables());
+    ret.insert(p.second.GetVariables());
   }
   return ret;
 }
@@ -946,10 +942,8 @@ ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
 
 Variables ExpressionIfThenElse::GetVariables() const {
   Variables ret{f_cond_.GetFreeVariables()};
-  const Variables& vars_in_then = e_then_.GetVariables();
-  ret.insert(vars_in_then.begin(), vars_in_then.end());
-  const Variables& vars_in_else = e_else_.GetVariables();
-  ret.insert(vars_in_else.begin(), vars_in_else.end());
+  ret.insert(e_then_.GetVariables());
+  ret.insert(e_else_.GetVariables());
   return ret;
 }
 
