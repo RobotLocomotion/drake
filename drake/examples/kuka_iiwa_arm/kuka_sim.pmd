@@ -24,14 +24,8 @@ group "1.tools" {
   }
 
 
-  cmd "0.director-ik-app" {
+  cmd "1.director-ik-app" {
     exec = "DRC_BASE=/none build/install/bin/directorPython drake/examples/kuka_iiwa_arm/director_ik_app.py --director_config drake/examples/kuka_iiwa_arm/director_config.json";
-    host = "localhost";
-  }
-
-
-  cmd "1.bot-spy" {
-    exec = "./my-bot-spy";
     host = "localhost";
   }
 
