@@ -7,18 +7,18 @@
 #include "gtest/gtest.h"
 
 // Includes for IK solver.
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -46,8 +46,8 @@ std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
   // the rigid body tree's state vector, fill the return vector with
   // sequentially increasing indices starting at
   // `joint_child_body->get_position_start_index()`.
-  std::iota(ret.begin(), ret.end(), joint_child_body->get_position_start_index
-  ());
+  std::iota(ret.begin(), ret.end(),
+            joint_child_body->get_position_start_index());
   return ret;
 }
 
@@ -67,15 +67,13 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom_additional_contact_pts"
-              ".urdf",
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom_additional_contact_"
+          "pts"
+          ".urdf",
       drake::multibody::joints::kRollPitchYaw);
 
-  for(int i=0;i<tree->get_num_bodies();i++)
+  for (int i = 0; i < tree->get_num_bodies(); i++)
     std::cout << i << " " << tree->getBodyOrFrameName(i) << std::endl;
-
-
-
 
   // Setting up constraints, based on testIKMoreConstraints.cpp and
   // director-generated M-file.
@@ -146,10 +144,10 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   Vector3d lfoot_pos_lb(-inf, -inf, lfoot_pos0(2));
   // Position and quaternion constraints are relaxed to make the problem
   // solvable by IPOPT.
-  lfoot_pos_lb -= 0.0001*Vector3d::Ones();
+  lfoot_pos_lb -= 0.0001 * Vector3d::Ones();
   std::cout << "lfoot_pos_lb: " << std::endl << lfoot_pos_lb << std::endl;
   Vector3d lfoot_pos_ub(inf, inf, lfoot_pos0(2));
-  lfoot_pos_ub += 0.0001*Vector3d::Ones();
+  lfoot_pos_ub += 0.0001 * Vector3d::Ones();
   std::cout << "lfoot_pos_ub: " << std::endl << lfoot_pos_ub << std::endl;
   WorldPositionConstraint kc_lfoot_pos(tree.get(), l_foot, origin, lfoot_pos_lb,
                                        lfoot_pos_ub, tspan);
@@ -161,9 +159,9 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto rfoot_pos0 = tree->transformPoints(cache, origin, r_foot, 0);
   Vector4d rfoot_quat(1, 0, 0, 0);
   Vector3d rfoot_pos_lb(-inf, -inf, rfoot_pos0(2));
-  rfoot_pos_lb -= 0.0001*Vector3d::Ones();
+  rfoot_pos_lb -= 0.0001 * Vector3d::Ones();
   Vector3d rfoot_pos_ub(inf, inf, rfoot_pos0(2));
-  rfoot_pos_ub += 0.0001*Vector3d::Ones();
+  rfoot_pos_ub += 0.0001 * Vector3d::Ones();
 
   WorldPositionConstraint kc_rfoot_pos(tree.get(), r_foot, origin, rfoot_pos_lb,
                                        rfoot_pos_ub, tspan);
@@ -175,11 +173,19 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "torsoYaw", &torso_idx);
   FindJointAndInsert(tree.get(), "torsoPitch", &torso_idx);
   FindJointAndInsert(tree.get(), "torsoRoll", &torso_idx);
+  /*
   Vector3d torso_nominal = Vector3d::Zero();
-  Vector3d torso_half_range(15.0 / 180 * M_PI, 25.0 / 180 * M_PI, inf);
-  Vector3d torso_lb = torso_nominal - torso_half_range;
-  Vector3d torso_ub = torso_nominal + torso_half_range;
-  torso_lb(1) = -5.0 / 180 * M_PI;
+  Vector3d torso_half_range(75.0 / 180 * M_PI, 60.0 / 180 * M_PI,
+                            60.0 / 180 * M_PI);
+  Vector3d torso_lb_relaxed = torso_nominal - torso_half_range;
+  Vector3d torso_ub_relaxed = torso_nominal + torso_half_range;
+  torso_lb_relaxed(1) = -5.0 / 180 * M_PI;
+  */
+  //bounds as defined in URDF file
+  Vector3d torso_lb(-75.0 / 180 * M_PI, -7.0 / 180 * M_PI,
+                          -13.0 / 180 * M_PI);
+  Vector3d torso_ub(65.0 / 180 * M_PI, 38.0 / 180 * M_PI,
+                          13.0 / 180 * M_PI);
   kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
 
   // 5 knee posture constraint
@@ -187,8 +193,8 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::vector<int> knee_idx;
   FindJointAndInsert(tree.get(), "leftKneePitch", &knee_idx);
   FindJointAndInsert(tree.get(), "rightKneePitch", &knee_idx);
-  Vector2d knee_lb(-4.0/180*M_PI, -4.0/180*M_PI);
-  Vector2d knee_ub(115.0/180*M_PI, 115.0/180*M_PI);
+  Vector2d knee_lb(-4.0 / 180 * M_PI, -4.0 / 180 * M_PI);
+  Vector2d knee_ub(115.0 / 180 * M_PI, 115.0 / 180 * M_PI);
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
@@ -244,8 +250,8 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
 
   auto leftArmPtr = tree->FindBody("leftForearmLink");
   Matrix3Xd leftArmContactPts = leftArmPtr->get_contact_points();
-  std::cout << "left arm contact pts: " << std::endl << leftArmContactPts <<
-                                                                    std::endl;
+  std::cout << "left arm contact pts: " << std::endl
+            << leftArmContactPts << std::endl;
   int l_forearm = tree->FindBodyIndex("leftForearmLink");
   kc_quasi.addContact(1, &l_forearm, &leftArmContactPts);
 
@@ -255,6 +261,17 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   WorldPositionConstraint kc_lforearm_pos(tree.get(), l_forearm,
                                           leftArmContactPts, lforearm_pos_lb,
                                           lforearm_pos_ub, tspan);
+
+  // 10 no collision constraint
+  std::vector<int> active_body_idx;
+  //active_body_idx.push_back(l_foot);
+  //active_body_idx.push_back(r_foot);
+  std::set<std::string> active_group_names;
+  active_group_names.insert("l_leg");
+  active_group_names.insert("r_leg");
+  active_group_names.insert("l_arm");
+  AllBodiesClosestDistanceConstraint no_collision_feet(
+      tree.get(), 0.0, inf, active_body_idx, active_group_names, tspan);
   // -----------------solve-----------------------------------------------------
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_posture_neck);
@@ -264,12 +281,67 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   constraint_array.push_back(&kc_rfoot_quat);
   constraint_array.push_back(&kc_posture_torso);
   constraint_array.push_back(&kc_posture_knee);
-  //constraint_array.push_back(&kc_posture_larm);
-  //constraint_array.push_back(&kc_posture_rarm);
+  // constraint_array.push_back(&kc_posture_larm);
+  // constraint_array.push_back(&kc_posture_rarm);
   constraint_array.push_back(&kc_quasi);
   constraint_array.push_back(&kc_lforearm_pos);
+  constraint_array.push_back(&no_collision_feet);
+
+
+  // setting Q
+
+  std::cout << "postions and names: " << std::endl;
+  for(int i=0; i<tree->get_num_positions(); i++)
+    std::cout << i << " " << tree->get_position_name(i) << std::endl;
+
+  VectorXd cost(tree->get_num_positions());
+  cost.setOnes();
+  const int left_hip_pitch_idx = 32;
+  const int right_hip_pitch_idx = 26;
+  const int left_knee_pitch_idx = 33;
+  const int right_knee_pitch_idx = 27;
+  const int left_ankle_pitch_idx = 34;
+  const int right_ankle_pitch_idx = 28;
+  const int torso_roll_idx = 8;
+  const int torso_pitch_idx = 7;
+  const int torso_yaw_idx = 6;
+
+  std::vector<int> lower_body_pitch_idx;
+  lower_body_pitch_idx.push_back(left_hip_pitch_idx);
+  lower_body_pitch_idx.push_back(right_hip_pitch_idx);
+  lower_body_pitch_idx.push_back(left_knee_pitch_idx);
+  lower_body_pitch_idx.push_back(right_knee_pitch_idx);
+  lower_body_pitch_idx.push_back(left_ankle_pitch_idx);
+  lower_body_pitch_idx.push_back(right_ankle_pitch_idx);
+
+  std::vector<int> torso_rotation_idx = {torso_yaw_idx, torso_roll_idx,
+                                         torso_pitch_idx};
+
+  std::vector<int> base_idx = {0,1,2,3,4,5};
+  for(const int & i : base_idx)
+    cost(i) = 0;
+
+  for(const int & i : torso_rotation_idx)
+    cost(i) = 0.1;
+
+  for(const int & i : lower_body_pitch_idx)
+    cost(i) = 0;
+
+  //display all costs
+  std::cout << "costs are:" << std::endl;
+  for(int i=0; i<cost.size(); i++) {
+    std::cout << cost(i) << " " << tree->get_position_name(i) << i << std::endl;
+  }
+
+  Eigen::MatrixXd Q = cost.asDiagonal();
+  Eigen::MatrixXd Qv = 0.05*Q;
+  Eigen::MatrixXd Qa = 0.05*Q;
 
   IKoptions ikoptions(tree.get());
+  ikoptions.setQ(Q);
+  ikoptions.setQa(Qa);
+  ikoptions.setQv(Qv);
+
   VectorXd q_sol(tree->get_num_positions());
   VectorXd q_nom = reach_start;
   int info;
