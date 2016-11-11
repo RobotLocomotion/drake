@@ -1,13 +1,19 @@
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 
 namespace drake {
 namespace systems {
 namespace {
+
+using std::make_unique;
+using std::unique_ptr;
 
 // Wrapper on CompareMatricies to simplify calls in the tests.
 template <typename DerivedA, typename DerivedB>
@@ -22,26 +28,26 @@ bool AreEquivalent(const Eigen::MatrixBase<DerivedA>& m1,
 //    1. Constructor logic,
 //    2. Combination of force components into output values.
 GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
-  Vector3<double> norm, force, torque, pos, norm_force, tan_force;
-  norm << 0, 0, 1;
+  Vector3<double> normal, force, torque, pos, normal_force, tangent_force;
+  normal << 0, 0, 1;
   force << 0, 1, 1;
-  norm_force << 0, 0, 1;
-  tan_force << 0, 1, 0;
+  normal_force << 0, 0, 1;
+  tangent_force << 0, 1, 0;
   torque << 1, 0, 0;
   pos << 3, 2, 1;
 
   // Case 1. No pure torque constructor.
-  ContactForce<double> f1(pos, norm, force);
-  ASSERT_EQ(f1.get_normal_force(), norm_force);
-  ASSERT_EQ(f1.get_tangent_force(), tan_force);
+  ContactForce<double> f1(pos, normal, force);
+  ASSERT_EQ(f1.get_normal_force(), normal_force);
+  ASSERT_EQ(f1.get_tangent_force(), tangent_force);
   ASSERT_EQ(f1.get_force(), force);
   ASSERT_EQ(f1.get_torque(), Vector3<double>::Zero());
   ASSERT_EQ(f1.get_application_point(), pos);
 
   // Case 2. Fully-specified constructor.
-  ContactForce<double> f2(pos, norm, force, torque);
-  ASSERT_EQ(f2.get_normal_force(), norm_force);
-  ASSERT_EQ(f2.get_tangent_force(), tan_force);
+  ContactForce<double> f2(pos, normal, force, torque);
+  ASSERT_EQ(f2.get_normal_force(), normal_force);
+  ASSERT_EQ(f2.get_tangent_force(), tangent_force);
   ASSERT_EQ(f1.get_force(), force);
   ASSERT_EQ(f2.get_torque(), torque);
   ASSERT_EQ(f2.get_application_point(), pos);
@@ -52,10 +58,10 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
 // contact force; the contact force *is* the resultant force and its application
 // point is the minimum moment point.
 GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
-  Vector3<double> norm, force, torque, pos, norm_force;
+  Vector3<double> normal, force, torque, pos, normal_force;
   force << 4, 6, 8;
-  norm_force << 1, 2, 3;
-  norm = norm_force.normalized();
+  normal_force << 1, 2, 3;
+  normal = normal_force.normalized();
   torque << 6, 7, 8;
   pos << 10, 11, 12;
   SpatialForce<double> full_wrench, torque_free_wrench;
@@ -66,7 +72,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
 
   // Case 1: The ContactForce interface -- pass an instance of ContactForce.
   {
-    ContactForce<double> cforce(pos, norm, force, torque);
+    ContactForce<double> cforce(pos, normal, force, torque);
     ContactResultantForceCalculator<double> calc;
     calc.AddForce(cforce);
     ContactForce<double> resultant = calc.ComputeResultant();
@@ -77,7 +83,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
   // Case 2: The interface for components without pure torque.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos, norm, force);
+    calc.AddForce(pos, normal, force);
     ContactForce<double> resultant = calc.ComputeResultant();
     ASSERT_EQ(resultant.get_application_point(), pos);
     ASSERT_EQ(resultant.get_spatial_force(), torque_free_wrench);
@@ -86,10 +92,102 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
   // Case 3: The interface for components with all data.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos, norm, force, torque);
+    calc.AddForce(pos, normal, force, torque);
     ContactForce<double> resultant = calc.ComputeResultant();
     ASSERT_EQ(resultant.get_application_point(), pos);
     ASSERT_EQ(resultant.get_spatial_force(), full_wrench);
+  }
+
+  // Case 4: The ContactDetail interface.
+  {
+    ContactForce<double> cforce(pos, normal, force, torque);
+    unique_ptr<ContactDetail<double>> detail(
+        new PointContactDetail<double>(cforce));
+    ContactResultantForceCalculator<double> calc;
+    calc.AddForce(move(detail));
+    ContactForce<double> resultant = calc.ComputeResultant();
+    ASSERT_EQ(resultant.get_application_point(), pos);
+    ASSERT_EQ(resultant.get_spatial_force(), full_wrench);
+  }
+}
+
+// Tests that the accumulation of contact details works as expected.
+// Particularly important for the interface where the ContactDetail type is
+// implied by the parameters passed.
+GTEST_TEST(ContactResultantForceTest, DetailAccumulationTest) {
+  Vector3<double> normal, force, torque, pos, normal_force;
+  force << 4, 6, 8;
+  normal_force << 1, 2, 3;
+  normal = normal_force.normalized();
+  torque << 6, 7, 8;
+  pos << 10, 11, 12;
+
+  // Case 1: The ContactForce interface -- pass an instance of ContactForce.
+  {
+    std::vector<unique_ptr<ContactDetail<double>>> details;
+    ContactResultantForceCalculator<double> calc(&details);
+    ContactForce<double> cforce(pos, normal, force, torque);
+    calc.AddForce(cforce);
+    ASSERT_EQ(details.size(), 1);
+    PointContactDetail<double>* detail =
+        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    ASSERT_NE(detail, nullptr);
+    auto contact_force = detail->ComputeContactForce();
+    ASSERT_EQ(contact_force.get_application_point(), pos);
+    ASSERT_EQ(contact_force.get_normal(), normal);
+    ASSERT_EQ(contact_force.get_force(), force);
+    ASSERT_EQ(contact_force.get_torque(), torque);
+  }
+
+  // Case 2: The interface for components without pure torque.
+  {
+    std::vector<unique_ptr<ContactDetail<double>>> details;
+    ContactResultantForceCalculator<double> calc(&details);
+    calc.AddForce(pos, normal, force);
+    ASSERT_EQ(details.size(), 1);
+    PointContactDetail<double>* detail =
+        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    ASSERT_NE(detail, nullptr);
+    auto contact_force = detail->ComputeContactForce();
+    ASSERT_EQ(contact_force.get_application_point(), pos);
+    ASSERT_EQ(contact_force.get_normal(), normal);
+    ASSERT_EQ(contact_force.get_force(), force);
+    ASSERT_EQ(contact_force.get_torque(), Vector3<double>::Zero());
+  }
+
+  // Case 3: The interface for components with all data.
+  {
+    std::vector<unique_ptr<ContactDetail<double>>> details;
+    ContactResultantForceCalculator<double> calc(&details);
+    calc.AddForce(pos, normal, force, torque);
+    ASSERT_EQ(details.size(), 1);
+    PointContactDetail<double>* detail =
+        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    ASSERT_NE(detail, nullptr);
+    auto contact_force = detail->ComputeContactForce();
+    ASSERT_EQ(contact_force.get_application_point(), pos);
+    ASSERT_EQ(contact_force.get_normal(), normal);
+    ASSERT_EQ(contact_force.get_force(), force);
+    ASSERT_EQ(contact_force.get_torque(), torque);
+  }
+
+  // Case 4: The ContactDetail interface -- no accumulator.
+  {
+    std::vector<unique_ptr<ContactDetail<double>>> details;
+    ContactResultantForceCalculator<double> calc(&details);
+    ContactForce<double> cforce(pos, normal, force, torque);
+    unique_ptr<ContactDetail<double>> input_detail(
+        new PointContactDetail<double>(cforce));
+    calc.AddForce(move(input_detail));
+    ASSERT_EQ(details.size(), 1);
+    PointContactDetail<double>* detail =
+        dynamic_cast<PointContactDetail<double>*>(details[0].get());
+    ASSERT_NE(detail, nullptr);
+    auto contact_force = detail->ComputeContactForce();
+    ASSERT_EQ(contact_force.get_application_point(), pos);
+    ASSERT_EQ(contact_force.get_normal(), normal);
+    ASSERT_EQ(contact_force.get_force(), force);
+    ASSERT_EQ(contact_force.get_torque(), torque);
   }
 }
 
@@ -104,11 +202,11 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
 GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   // Do *not* change these values. The tests below will become invalid.
   Vector3<double> pos1, pos2, pos3;
-  Vector3<double> norm, force, zero;
+  Vector3<double> normal, force, zero;
   pos1 << 1, 0, 0;
   pos2 << 2, 0, 0;
   pos3 << 1, 5, 0;
-  norm << 0, 0, 1;
+  normal << 0, 0, 1;
   force << 0, 0, 1;
   zero = Vector3<double>::Zero();
   Vector3<double> expected_point;
@@ -117,8 +215,8 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   // them.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, force, zero);
-    calc.AddForce(pos2, norm, force, zero);
+    calc.AddForce(pos1, normal, force, zero);
+    calc.AddForce(pos2, normal, force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
@@ -132,8 +230,8 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   // between the two points based on ratio of force magnitudes.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, force, zero);
-    calc.AddForce(pos2, norm, 2.0 * force, zero);
+    calc.AddForce(pos1, normal, force, zero);
+    calc.AddForce(pos2, normal, 2.0 * force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
@@ -150,9 +248,9 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   //  where, rP = P - O, and rQ = Q - O
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, force, zero);
-    calc.AddForce(pos2, norm, force, zero);
-    calc.AddForce(pos3, norm, force, zero);
+    calc.AddForce(pos1, normal, force, zero);
+    calc.AddForce(pos2, normal, force, zero);
+    calc.AddForce(pos3, normal, force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
@@ -165,9 +263,9 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
   // Case 4: Three forces of unequal magnitude.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, force, zero);
-    calc.AddForce(pos2, norm, 2.0 * force, zero);
-    calc.AddForce(pos3, norm, 3.0 * force, zero);
+    calc.AddForce(pos1, normal, force, zero);
+    calc.AddForce(pos2, normal, 2.0 * force, zero);
+    calc.AddForce(pos3, normal, 3.0 * force, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), zero));
@@ -187,9 +285,9 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
     tan2 << -0.2, 0.1, 0.0;
     tan3 << 0.1, -0.2, 0.0;
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, force + tan1, zero);
-    calc.AddForce(pos2, norm, 2.0 * force + tan2, zero);
-    calc.AddForce(pos3, norm, 3.0 * force + tan3, zero);
+    calc.AddForce(pos1, normal, force + tan1, zero);
+    calc.AddForce(pos2, normal, 2.0 * force + tan2, zero);
+    calc.AddForce(pos3, normal, 3.0 * force + tan3, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     Vector3<double> expected_torque;
@@ -209,12 +307,12 @@ GTEST_TEST(ContactResultantForceTest, SimplePlanarContactTest) {
 GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   // Do *not* change these values. The tests below will become invalid.
   Vector3<double> pos1, pos2, expected_torque, expected_point;
-  Vector3<double> norm, tan1, tan2, zero;
+  Vector3<double> normal, tangent1, tangent2, zero;
   pos1 << 1, 0, 0;
   pos2 << 2, 0, 0;
-  norm << 0, 0, 1;
-  tan1 << 1, 1, 0;
-  tan2 << -1, 2, 0;
+  normal << 0, 0, 1;
+  tangent1 << 1, 1, 0;
+  tangent2 << -1, 2, 0;
   zero = Vector3<double>::Zero();
   expected_torque << 0, 0, 0.5;
   expected_point = (pos1 + pos2) * 0.5;
@@ -223,12 +321,12 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   // the centroid and, force is <0, 3, 0> and torque is <0, 0, 0.5>.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos1, norm, tan1, zero);
-    calc.AddForce(pos2, norm, tan2, zero);
+    calc.AddForce(pos1, normal, tangent1, zero);
+    calc.AddForce(pos2, normal, tangent2, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
-    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tangent1 + tangent2));
     ASSERT_TRUE(
         AreEquivalent(resultant.get_application_point(), expected_point));
   }
@@ -237,12 +335,12 @@ GTEST_TEST(ContactResultantForceTest, TangentOnlyPlanarContactTest) {
   // that it is order invariant.
   {
     ContactResultantForceCalculator<double> calc;
-    calc.AddForce(pos2, norm, tan2, zero);
-    calc.AddForce(pos1, norm, tan1, zero);
+    calc.AddForce(pos2, normal, tangent2, zero);
+    calc.AddForce(pos1, normal, tangent1, zero);
     ContactForce<double> resultant = calc.ComputeResultant();
 
     ASSERT_TRUE(AreEquivalent(resultant.get_torque(), expected_torque));
-    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tan1 + tan2));
+    ASSERT_TRUE(AreEquivalent(resultant.get_force(), tangent1 + tangent2));
     ASSERT_TRUE(
         AreEquivalent(resultant.get_application_point(), expected_point));
   }
