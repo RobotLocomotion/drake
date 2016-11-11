@@ -77,6 +77,9 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   tspan << 0, inf;
 
   VectorXd reach_start(tree->get_num_positions());
+  // There are two versions of Valkyrie models. The one in
+  // Drake has two DOFs less (the two commented out) than the other. The
+  // indices in the comment are for reference only and are not hard coded.
   reach_start << 0.0,  // base_x
       0.0,             // base_y
       1.025,           // base_z
