@@ -26,7 +26,7 @@ class BodyOfInterest {
    * @param off Offset expressed in the body frame.
    */
   BodyOfInterest(const std::string& name, const RigidBody<double>& body,
-                 const Eigen::Vector3<double>& off)
+                 const Vector3<double>& off)
       : name_(name), body_(&body), offset_(off) {}
 
   /**

@@ -455,7 +455,7 @@ class ContactInformation {
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
   }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -548,7 +548,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   inline bool& mutable_control_during_contact() {
     return control_during_contact_;
   }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
  private:
   const RigidBody<double>* body_;
@@ -879,7 +879,7 @@ class ResolvedContact {
   }
 
   // Setters
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
   inline VectorX<double>& mutable_basis() { return basis_; }
   inline Matrix3X<double>& mutable_point_forces() { return point_forces_; }
   inline Matrix3X<double>& mutable_contact_points() { return contact_points_; }
@@ -949,7 +949,7 @@ class BodyAcceleration {
 
   // Setter
   inline Vector6<double>& mutable_accelerations() { return accelerations_; }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
