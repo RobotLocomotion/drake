@@ -5,7 +5,8 @@
 
 #include "drake/common/drake_export.h"
 
-class RigidBody<double>;
+template <typename T>
+class RigidBody;
 
 /**
  * Defines a physical actuator (i.e., an electric motor and step-down

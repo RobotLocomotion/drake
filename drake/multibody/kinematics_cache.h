@@ -73,17 +73,17 @@ template <typename T>
 class KinematicsCache {
  private:
   typedef KinematicsCacheElement<T> KinematicsCacheElementT;
-  typedef std::pair<RigidBody<T> const* const, KinematicsCacheElementT>
+  typedef std::pair<RigidBody<double> const* const, KinematicsCacheElementT>
       RigidBodyKCacheElementPair;
   typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
       RigidBodyKCacheElementPairAllocator;
   typedef std::unordered_map<
-      RigidBody<T> const*, KinematicsCacheElementT,
-      std::hash<RigidBody<T> const*>, std::equal_to<RigidBody<T> const*>,
+      RigidBody<double> const*, KinematicsCacheElementT,
+      std::hash<RigidBody<double> const*>, std::equal_to<RigidBody<double> const*>,
       RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
 
   RigidBodyToKCacheElementMap elements;
-  std::vector<RigidBody<T> const*> bodies;
+  std::vector<RigidBody<double> const*> bodies;
   int num_positions;
   int num_velocities;
   Eigen::Matrix<T, Eigen::Dynamic, 1> q;
@@ -95,14 +95,14 @@ class KinematicsCache {
 
  public:
   explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies_in)
+      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies_in)
       : num_positions(get_num_positions(bodies_in)),
         num_velocities(get_num_velocities(bodies_in)),
         q(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
     for (const auto& body_unique_ptr : bodies_in) {
-      const RigidBody<T>& body = *body_unique_ptr;
+      const RigidBody<double>& body = *body_unique_ptr;
       int num_positions_joint =
           body.has_parent_body() ? body.getJoint().get_num_positions() : 0;
       int num_velocities_joint =
@@ -114,19 +114,19 @@ class KinematicsCache {
     invalidate();
   }
 
-  KinematicsCacheElement<T>& getElement(const RigidBody<T>& body) {
+  KinematicsCacheElement<T>& getElement(const RigidBody<double>& body) {
     return elements.at(&body);
   }
 
   const KinematicsCacheElement<T>& getElement(
-      const RigidBody<T>& body) const {
+      const RigidBody<double>& body) const {
     return elements.at(&body);
   }
 
   template <typename Derived>
   void initialize(const Eigen::MatrixBase<Derived>& q_in) {
     static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
-    static_assert(std::is_same<typename Derived::T, T>::value,
+    static_assert(std::is_same<typename Derived::Scalar, T>::value,
                   "T type of q must match T type of KinematicsCache");
     DRAKE_ASSERT(q.rows() == q_in.rows());
     q = q_in;
@@ -139,7 +139,7 @@ class KinematicsCache {
                   const Eigen::MatrixBase<DerivedV>& v_in) {
     initialize(q_in);  // also invalidates
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
-    static_assert(std::is_same<typename DerivedV::T, T>::value,
+    static_assert(std::is_same<typename DerivedV::Scalar, T>::value,
                   "T type of v must match T type of KinematicsCache");
     DRAKE_ASSERT(v.rows() == v_in.rows());
     v = v_in;
@@ -169,16 +169,16 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformVelocityMappingToPositionDotMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
-    Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic> ret(mat.rows(), get_num_positions());
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      const RigidBody<T>& body = **it;
+      const RigidBody<double>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
@@ -193,16 +193,16 @@ class KinematicsCache {
   }
 
   template <typename Derived>
-  Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
   transformPositionDotMappingToVelocityMapping(
       const Eigen::MatrixBase<Derived>& mat) const {
-    Eigen::Matrix<typename Derived::T, Derived::RowsAtCompileTime,
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic> ret(mat.rows(), get_num_velocities());
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      const RigidBody<T>& body = **it;
+      const RigidBody<double>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
@@ -276,9 +276,9 @@ class KinematicsCache {
   // constructor where this request is made.
   // See TODO for get_num_velocities.
   static int get_num_positions(
-      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies) {
     auto add_num_positions = [](
-        int result, const std::unique_ptr<RigidBody<T>>& body_ptr) -> int {
+        int result, const std::unique_ptr<RigidBody<double>>& body_ptr) -> int {
       return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_positions()
                  : result;
@@ -288,9 +288,9 @@ class KinematicsCache {
 
   // TODO(amcastro-tri): See TODO for get_num_positions.
   static int get_num_velocities(
-      const std::vector<std::unique_ptr<RigidBody<T>> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody<double>> >& bodies) {
     auto add_num_velocities = [](
-        int result, const std::unique_ptr<RigidBody<T>>& body_ptr) -> int {
+        int result, const std::unique_ptr<RigidBody<double>>& body_ptr) -> int {
       return body_ptr->has_parent_body()
                  ? result + body_ptr->getJoint().get_num_velocities()
                  : result;

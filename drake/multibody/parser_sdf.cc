@@ -309,7 +309,7 @@ bool ParseSdfLink(RigidBodyTree<double>* model, std::string model_name,
   if (attr && strcmp(attr, "true") == 0) return false;
 
   RigidBody<double>* body{nullptr};
-  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody());
+  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody<double>());
   body->set_model_name(model_name);
   body->set_model_instance_id(model_instance_id);
 

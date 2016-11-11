@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
@@ -62,7 +63,7 @@ template <typename T>
 void RigidBody<T>::set_parent(RigidBody* parent) { parent_ = parent; }
 
 template <typename T>
-const RigidBody* RigidBody<T>::get_parent() const { return parent_; }
+const RigidBody<T>* RigidBody<T>::get_parent() const { return parent_; }
 
 template <typename T>
 bool RigidBody<T>::has_parent_body() const { return parent_ != nullptr; }
@@ -286,7 +287,7 @@ const drake::SquareTwistMatrix<double>& RigidBody<T>::get_spatial_inertia()
   return spatial_inertia_;
 }
 
-ostream& operator<<(ostream& out, const RigidBody& b) {
+ostream& operator<<(ostream& out, const RigidBody<double>& b) {
   std::string parent_joint_name =
       b.has_parent_body() ? b.getJoint().get_name() : "no parent joint";
 
@@ -318,3 +319,5 @@ bool RigidBody<T>::SetSelfCollisionClique(int clique_id) {
 
 // Explicitly instantiates on the most common scalar types.
 template class RigidBody<double>;
+template class RigidBody<drake::AutoDiffUpTo73d>;
+template class RigidBody<drake::AutoDiffXd>;

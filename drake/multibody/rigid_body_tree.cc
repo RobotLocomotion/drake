@@ -114,7 +114,7 @@ RigidBodyTree<T>::RigidBodyTree(void)
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   // Adds the rigid body representing the world. It has model instance ID 0.
-  std::unique_ptr<RigidBody<T>> world_body(new RigidBody());
+  std::unique_ptr<RigidBody<T>> world_body(new RigidBody<T>());
   world_body->set_name(RigidBodyTree<T>::kWorldName);
   world_body->set_model_name(RigidBodyTree<T>::kWorldName);
 
@@ -975,7 +975,7 @@ void RigidBodyTree<T>::updateCompositeRigidBodyInertias(
       auto& element = cache.getElement(body);
       element.inertia_in_world = transformSpatialInertia(
           element.transform_to_world,
-          body.get_spatial_inertia().cast<Scalar>());
+          body.get_spatial_inertia().template cast<Scalar>());
       element.crb_in_world = element.inertia_in_world;
     }
 
@@ -1160,7 +1160,7 @@ const {
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
-                transformPoints(cache, body.get_center_of_mass().cast<Scalar>(),
+                transformPoints(cache, body.get_center_of_mass().template cast<Scalar>(),
                                 i, 0);
       }
       m += body.get_mass();
@@ -2620,25 +2620,25 @@ template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree<double>::dynamicsBiasTerm<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
-        RigidBody<T> const*, WrenchVector<AutoDiffUpTo73d>, hash<RigidBody<T> const*>,
-        equal_to<RigidBody<T> const*>,
-        Eigen::aligned_allocator<pair<RigidBody<T> const* const,
+        RigidBody<double> const*, WrenchVector<AutoDiffUpTo73d>, hash<RigidBody<double> const*>,
+        equal_to<RigidBody<double> const*>,
+        Eigen::aligned_allocator<pair<RigidBody<double> const* const,
                                       WrenchVector<AutoDiffUpTo73d>>>> const&,
     bool) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree<double>::dynamicsBiasTerm<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
     unordered_map<
-        RigidBody<T> const*, WrenchVector<AutoDiffXd>, hash<RigidBody<T> const*>,
-        equal_to<RigidBody<T> const*>,
+        RigidBody<double> const*, WrenchVector<AutoDiffXd>, hash<RigidBody<double> const*>,
+        equal_to<RigidBody<double> const*>,
         Eigen::aligned_allocator<
-            pair<RigidBody<T> const* const, WrenchVector<AutoDiffXd>>>> const&,
+            pair<RigidBody<double> const* const, WrenchVector<AutoDiffXd>>>> const&,
     bool) const;
 template DRAKE_EXPORT VectorXd RigidBodyTree<double>::dynamicsBiasTerm<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody<T> const*, WrenchVector<double>,
-                  hash<RigidBody<T> const*>, equal_to<RigidBody<T> const*>,
-                  Eigen::aligned_allocator<pair<RigidBody<T> const* const,
+    unordered_map<RigidBody<double> const*, WrenchVector<double>,
+                  hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>,
+                  Eigen::aligned_allocator<pair<RigidBody<double> const* const,
                                                 WrenchVector<double>>>> const&,
     bool) const;
 
@@ -2804,25 +2804,25 @@ template DRAKE_EXPORT VectorX<AutoDiffUpTo73d>
 RigidBodyTree<double>::inverseDynamics<AutoDiffUpTo73d>(
     KinematicsCache<AutoDiffUpTo73d>&,
     unordered_map<
-        RigidBody<T> const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody<T> const*>,
-        equal_to<RigidBody<T> const*>,
+        RigidBody<double> const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody<double> const*>,
+        equal_to<RigidBody<double> const*>,
         Eigen::aligned_allocator<
-            pair<RigidBody<T> const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
+            pair<RigidBody<double> const* const, TwistVector<AutoDiffUpTo73d>>>> const&,
     VectorX<AutoDiffUpTo73d> const&, bool) const;
 template DRAKE_EXPORT VectorX<AutoDiffXd>
 RigidBodyTree<double>::inverseDynamics<AutoDiffXd>(
     KinematicsCache<AutoDiffXd>&,
-    unordered_map<RigidBody<T> const*, TwistVector<AutoDiffXd>,
-                  hash<RigidBody<T> const*>, equal_to<RigidBody<T> const*>,
+    unordered_map<RigidBody<double> const*, TwistVector<AutoDiffXd>,
+                  hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>,
                   Eigen::aligned_allocator<pair<
-                      RigidBody<T> const* const, TwistVector<AutoDiffXd>>>> const&,
+                      RigidBody<double> const* const, TwistVector<AutoDiffXd>>>> const&,
     VectorX<AutoDiffXd> const&, bool) const;
 template DRAKE_EXPORT VectorX<double>
 RigidBodyTree<double>::inverseDynamics<double>(
     KinematicsCache<double>&,
-    unordered_map<RigidBody<T> const*, WrenchVector<double>,
-                  hash<RigidBody<T> const*>, equal_to<RigidBody<T> const*>,
-                  Eigen::aligned_allocator<pair<RigidBody<T> const* const,
+    unordered_map<RigidBody<double> const*, WrenchVector<double>,
+                  hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>,
+                  Eigen::aligned_allocator<pair<RigidBody<double> const* const,
                                                 WrenchVector<double>>>> const&,
     VectorX<double> const&, bool) const;
 

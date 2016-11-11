@@ -400,7 +400,7 @@ class DRAKE_EXPORT RigidBodyTree {
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
   using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
-    RigidBody<T> const*, drake::WrenchVector<T>>;
+    RigidBody<double> const*, drake::WrenchVector<T>>;
 #endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator

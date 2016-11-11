@@ -488,7 +488,7 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
   if (attr && (std::strcmp(attr, "true") == 0)) return false;
 
   RigidBody<double>* body{nullptr};
-  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody());
+  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody<double>());
   body->set_model_name(robot_name);
   body->set_model_instance_id(model_instance_id);
 

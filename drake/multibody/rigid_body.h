@@ -365,7 +365,7 @@ class DRAKE_EXPORT RigidBody {
 
  public:
   DRAKE_EXPORT friend std::ostream& operator<<(
-      std::ostream& out, const RigidBody& b);
+      std::ostream& out, const RigidBody<double>& b);
 
  public:
 #ifndef SWIG
