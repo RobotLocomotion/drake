@@ -157,7 +157,11 @@ class ContactResultantForceCalculator {
       std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
   /**
-   Adds a new contact force to the calcualtor.
+   Adds a new contact force to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact force, will be assigned to that
+   accumulator.
 
    @param force     The contact force.
    */
