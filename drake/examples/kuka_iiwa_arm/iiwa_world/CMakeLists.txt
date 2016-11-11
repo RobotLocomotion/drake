@@ -3,7 +3,10 @@ if(lcm_FOUND)
   add_library_with_exports(LIB_NAME drakeKukaIiwaWorld SOURCE_FILES
       iiwa_world_simulator.cc)
   target_link_libraries(drakeKukaIiwaWorld
-      drakeKukaIiwaArmCommon)
+      drakeKukaIiwaArmCommon
+      drakeRigidBodyPlant
+      drakeSystemAnalysis
+      drakeLCMSystem2)
   pods_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       iiwa_world_simulator.h)
@@ -14,11 +17,5 @@ if(lcm_FOUND)
 
   add_executable(iiwa_world_demo iiwa_world_demo.cc)
   target_link_libraries(iiwa_world_demo
-      drakeKukaIiwaWorld
-      drakeSystemAnalysis
-      drakeLCMSystem2
-      gflags)
-#  drake_add_test(
-#      NAME iiwa_world_demo
-#      COMMAND iiwa_world_demo --duration 0.5)
+      drakeKukaIiwaWorld)
 endif()
