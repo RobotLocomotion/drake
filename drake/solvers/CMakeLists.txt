@@ -75,44 +75,42 @@ drake_install_pkg_config_file(drake-optimization
     eigen3
     ${optimization_requires})
 
-if(ipopt_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization ipopt)
-  # IPOPT builds its own version of BLAS during compilation, and links
-  # it into the output library.  On (at least some) ELF systems, you
-  # wind up with a symbol name collision between IPOPT's BLAS and
-  # other BLAS implementations in other dynamic libraries (MATLAB, I'm
-  # looking in your direction...)  Since the actual implementations
-  # are incompatible, this does not end well.  Linking with the
-  # -Bsymbolic flags causes the internal references to these symbols
-  # inside libdrakeOptimization to be handled at compile time, and
-  # prevents the dynamic linker from hijacking IPOPT's calls into
-  # BLAS.
-  #
-  # This should probably be a test for the GNU linker instead of a platform.
-  if (NOT (APPLE OR WIN32))
-    set(CMAKE_SHARED_LINKER_FLAGS
-      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
-  endif()
-endif()
-if(NLopt_FOUND)
-  # TODO(jamiesnape): Fix imported target upstream.
-  target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization nlopt)
-endif()
-if(dreal_FOUND)
-  pods_use_pkg_config_packages(drakeOptimization dreal)
-endif()
-if(snopt_FOUND)
-  target_link_libraries(drakeOptimization snopt_c)
-endif()
-if(gurobi_FOUND)
-  target_include_directories(drakeOptimization PUBLIC ${gurobi_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization gurobi)
-endif()
-if(mosek_FOUND)
-  target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
-endif()
+#if(ipopt_FOUND)
+#  pods_use_pkg_config_packages(drakeOptimization ipopt)
+#  # IPOPT builds its own version of BLAS during compilation, and links
+#  # it into the output library.  On (at least some) ELF systems, you
+#  # wind up with a symbol name collision between IPOPT's BLAS and
+#  # other BLAS implementations in other dynamic libraries (MATLAB, I'm
+#  # looking in your direction...)  Since the actual implementations
+#  # are incompatible, this does not end well.  Linking with the
+#  # -Bsymbolic flags causes the internal references to these symbols
+#  # inside libdrakeOptimization to be handled at compile time, and
+#  # prevents the dynamic linker from hijacking IPOPT's calls into
+#  # BLAS.
+#  #
+#  # This should probably be a test for the GNU linker instead of a platform.
+#  if (NOT (APPLE OR WIN32))
+#    set(CMAKE_SHARED_LINKER_FLAGS
+#      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
+#  endif()
+#endif()
+#if(NLopt_FOUND)
+#  target_link_libraries(drakeOptimization nlopt)
+#endif()
+#if(dreal_FOUND)
+#  pods_use_pkg_config_packages(drakeOptimization dreal)
+#endif()
+#if(snopt_FOUND)
+#  target_link_libraries(drakeOptimization snopt_c)
+#endif()
+#if(gurobi_FOUND)
+#  target_include_directories(drakeOptimization PUBLIC ${gurobi_INCLUDE_DIRS})
+#  target_link_libraries(drakeOptimization ${gurobi_LIBRARIES})
+#endif()
+#if(mosek_FOUND)
+#  target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
+#  target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
+#endif()
 
 add_subdirectory(qpSpline)
 
