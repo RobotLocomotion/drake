@@ -13,8 +13,9 @@ template <typename T>
 class RigidBodyPlant;
 
 /**
- A class containg the contact results (contact points and response wrenches for
- each colliding pair of collision elements) produced by a RigidBodyPlant system.
+ A class containg the contact results (contact points and response spatial
+ forces for each colliding pair of collision elements) produced by a
+ RigidBodyPlant system.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
@@ -32,6 +33,10 @@ class ContactResults {
   /** Returns the number of unique collision element pairs in contact. */
   int get_num_contacts() const;
 
+  /** Retrieves the ith ContactInfo instance.  No bounds checking will be done
+   in a release build (but will be done in debug).  It is assumed the caller
+   will only use values in the range [0, get_num_contacts()).
+   */
   const ContactInfo<T>& get_contact_info(int i) const;
 
   // TODO(SeanCurtis-TRI): Explore additional interfaces for accessing collision
