@@ -8,7 +8,6 @@
 #
 # General
 #   pods_find_pkg_config(...)
-#   pods_install_pkg_config_file(...)
 #
 # C/C++
 #   pods_install_libraries(...)
@@ -40,87 +39,6 @@ function(pods_install_libraries)
       RUNTIME DESTINATION bin
       LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
       ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}")
-endfunction()
-
-
-# pods_install_pkg_config_file(<package-name>
-#                              [VERSION <version>]
-#                              [DESCRIPTION <description>]
-#                              [CFLAGS <cflag> ...]
-#                              [LIBS <lflag> ...]
-#                              [CLASSPATH <target-jar1> <target-jar2> ...]
-#                              [REQUIRES <required-package-name> ...])
-#
-# Create and install a pkg-config .pc file.
-#
-# example:
-#    add_library(mylib mylib.c)
-#    pods_install_pkg_config_file(mylib LIBS -lmylib REQUIRES glib-2.0)
-function(pods_install_pkg_config_file)
-    list(GET ARGV 0 pc_name)
-    # TODO error check
-
-    set(pc_version 0.0.1)
-    set(pc_description ${pc_name})
-    set(pc_requires "")
-    set(pc_libs "")
-    set(pc_cflags "")
-    set(pc_classpath "")
-    set(pc_fname "${PKG_CONFIG_OUTPUT_PATH}/${pc_name}.pc")
-
-    set(modewords LIBS CFLAGS CLASSPATH REQUIRES VERSION DESCRIPTION)
-    set(curmode "")
-
-    # parse function arguments and populate pkg-config parameters
-    list(REMOVE_AT ARGV 0)
-    foreach(word ${ARGV})
-        list(FIND modewords ${word} mode_index)
-        if(${mode_index} GREATER -1)
-            set(curmode ${word})
-        elseif(curmode STREQUAL LIBS)
-            set(pc_libs "${pc_libs} ${word}")
-        elseif(curmode STREQUAL CFLAGS)
-            set(pc_cflags "${pc_cflags} ${word}")
-	elseif(curmode STREQUAL CLASSPATH)
-            if("${pc_classpath}" STREQUAL "")
-	       set(pc_classpath "\${prefix}/share/java/${word}.jar")
-	    else()
-	       set(pc_classpath "${pc_classpath}:\${prefix}/share/java/${word}.jar")
-	    endif()
-        elseif(curmode STREQUAL REQUIRES)
-            set(pc_requires "${pc_requires} ${word}")
-        elseif(curmode STREQUAL VERSION)
-            set(pc_version ${word})
-            set(curmode "")
-        elseif(curmode STREQUAL DESCRIPTION)
-            set(pc_description "${word}")
-            set(curmode "")
-        else()
-            message("WARNING incorrect use of pods_add_pkg_config (${word})")
-            break()
-        endif()
-    endforeach()
-
-    set(prefix ${CMAKE_INSTALL_PREFIX})
-
-    # write the .pc file out
-    file(WRITE ${pc_fname}
-        "prefix=${prefix}\n"
-        "exec_prefix=\${prefix}\n"
-        "libdir=\${exec_prefix}/lib\n"
-        "includedir=\${prefix}/include\n"
-        "\n"
-        "Name: ${pc_name}\n"
-        "Description: ${pc_description}\n"
-        "Requires: ${pc_requires}\n"
-        "Version: ${pc_version}\n"
-        "Libs: -L\${libdir} ${pc_libs}\n"
-        "Cflags: -I\${includedir} ${pc_cflags}\n"
-	"classpath=${pc_classpath}\n"
-	)
-
-    # mark the .pc file for installation to the lib/pkgconfig directory
-    install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
 endfunction()
 
 
@@ -302,16 +220,14 @@ macro(pods_config_search_paths)
         string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIBRARY_OUTPUT_PATH})
       endforeach()
-      set(PKG_CONFIG_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib/pkgconfig)
 
       # set where files should be installed to
       set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
       set(EXECUTABLE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
       set(INCLUDE_INSTALL_PATH "${DRAKE_INCLUDE_DIR}")
-      set(PKG_CONFIG_INSTALL_PATH "${DRAKE_PKGCONFIG_DIR}")
 
       # add build/lib/pkgconfig to the pkg-config search path
-      set(ENV{PKG_CONFIG_PATH} "${PKG_CONFIG_OUTPUT_PATH}:${PKG_CONFIG_INSTALL_PATH}:$ENV{PKG_CONFIG_PATH}")
+      set(ENV{PKG_CONFIG_PATH} "${DRAKE_PKGCONFIG_DIR}:$ENV{PKG_CONFIG_PATH}")
 
       # add build/lib to the link path
       link_directories(${LIBRARY_OUTPUT_PATH})
