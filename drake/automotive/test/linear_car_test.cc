@@ -22,7 +22,7 @@ class LinearCarTest : public ::testing::Test {
     // Set the state to zero initially.
     systems::ContinuousState<double>* xc = continuous_state();
     EXPECT_EQ(2, xc->size());
-    EXPECT_EQ(0, xc->get_misc_continuous_state().size());
+    EXPECT_EQ(2, xc->get_misc_continuous_state().size());
     xc->SetFromVector(Eigen::VectorXd::Zero(2));
   }
 

@@ -30,19 +30,20 @@ class IdmPlannerTest : public ::testing::Test {
 
     // TODO(jadecastro): Take advantage of
     // `SetInputPortToConstantValue` in #4041.
-    context_->SetInputPort(inport_ego_,
+    context_->SetInputPort(
+        inport_ego_,
         std::make_unique<systems::FreestandingInputPort>(std::move(input_ego)));
     context_->SetInputPort(inport_agent_,
                            std::make_unique<systems::FreestandingInputPort>(
                                std::move(input_agent)));
   }
 
-  std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
+  std::unique_ptr<IdmPlanner<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
 
-  const int inport_ego_ = 0;
-  const int inport_agent_ = 1;
+  const int inport_ego_ = dut_->get_ego_port();
+  const int inport_agent_ = dut_->get_agent_port();
 
  private:
   const double v_0_ = 10.0;

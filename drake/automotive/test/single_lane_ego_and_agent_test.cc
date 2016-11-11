@@ -36,16 +36,17 @@ class SingleLaneEgoAndAgentTest : public ::testing::Test {
     return &subderivatives->get_vector();
   }
 
-  // intialize the diagram with the agent 5 meters ahead of the ego
+  // Intialize the diagram with the agent 5 meters ahead of the ego
   // at zero velocity with the settings v_ref_ego = 50, vdot_agent = 2.7.
   SingleLaneEgoAndAgent<double> dut_{0.0, 0.0, 5.0, 0.0, 50.0, 2.7};
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 
-  // Define the output ports of the diagram.
-  const int outport_ego_ = 0;
-  const int outport_agent_ = 1;
+  // Define the output ports of the diagram. This should match the
+  // ordering in which ExportOutput is called.
+  const int diagram_outport_ego_ = 0;
+  const int diagram_outport_agent_ = 1;
 };
 
 TEST_F(SingleLaneEgoAndAgentTest, Topology) {
@@ -53,8 +54,10 @@ TEST_F(SingleLaneEgoAndAgentTest, Topology) {
   ASSERT_EQ(2 /* one port each for the ego and agent */,
             dut_.get_num_output_ports());
 
-  const auto& output_ego_car_pos = dut_.get_output_ports().at(outport_ego_);
-  const auto& output_agent_car_pos = dut_.get_output_ports().at(outport_agent_);
+  const auto& output_ego_car_pos =
+      dut_.get_output_ports().at(diagram_outport_ego_);
+  const auto& output_agent_car_pos =
+      dut_.get_output_ports().at(diagram_outport_agent_);
 
   EXPECT_EQ(systems::kVectorValued, output_ego_car_pos.get_data_type());
   EXPECT_EQ(systems::kVectorValued, output_agent_car_pos.get_data_type());
@@ -76,9 +79,9 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   auto state_vec_agent = continuous_state(dut_.get_agent_car_system());
 
   const systems::BasicVector<double>* output_ego =
-      output_->get_vector_data(outport_ego_);
+      output_->get_vector_data(diagram_outport_ego_);
   const systems::BasicVector<double>* output_agent =
-      output_->get_vector_data(outport_agent_);
+      output_->get_vector_data(diagram_outport_agent_);
 
   dut_.SetDefaultState(context_.get());
   dut_.EvalOutput(*context_, output_.get());
