@@ -16,7 +16,7 @@ namespace solvers {
  * This class stores the type, the name, the value, and the index of a
  * decision variable in an optimization program.
  */
-class ScalarDecisionVariable {
+class DecisionVariableScalar {
  public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
@@ -54,7 +54,7 @@ class ScalarDecisionVariable {
    * @param name The name of the variable.
    * @param index The index of the variable in the optimization program.
    */
-  ScalarDecisionVariable(VarType type, const std::string& name, size_t index)
+  DecisionVariableScalar(VarType type, const std::string& name, size_t index)
       : type_(type), name_(name), value_(0), index_(index) {}
   const VarType type_;
   const std::string name_;
@@ -63,12 +63,11 @@ class ScalarDecisionVariable {
 };
 
 template<Eigen::Index rows, Eigen::Index cols>
-using DecisionVariableMatrix = Eigen::Matrix<const ScalarDecisionVariable*, rows, cols>;
+using DecisionVariableMatrix = Eigen::Matrix<const DecisionVariableScalar*, rows, cols>;
 template<Eigen::Index rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
-using DecisionVariableScalar = DecisionVariableMatrix<1, 1>;
 
 
 
@@ -77,13 +76,14 @@ typedef std::vector<Eigen::Ref<DecisionVariableMatrixX>> VariableVector;
 template<typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToDoubleMatrix(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> double_matrix;
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> double_matrix(decision_variable_matrix.rows(), decision_variable_matrix.cols());
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
       DRAKE_ASSERT(decision_variable_matrix(i,j));
       double_matrix(i, j) = decision_variable_matrix(i,j)->value();
     }
   }
+  return double_matrix;
 }
 
 /**
@@ -118,5 +118,6 @@ int GetVariableVectorSize(const VariableVector& vars);
  * scalar).
  */
 bool VariableVectorContainsColumnVectorsOnly(const VariableVector& vars);
+
 }  // end namespace solvers
 }  // end namespace drake
