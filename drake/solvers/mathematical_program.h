@@ -381,6 +381,16 @@ class MathematicalProgram {
                                        const std::vector<std::string>& names) {
     DecisionVariableMatrixX decision_variable_matrix(rows, cols);
     AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
+    /*for (const auto& vi : variables_) {
+      vi->index();
+    }
+    for (auto v : variable_views_) {
+      for (int i = 0; i < v.rows(); ++i) {
+        for (int j = 0; j < v.cols(); ++j) {
+          v(i, j)->index();
+        }
+      }
+    }*/
     return decision_variable_matrix;
   }
 
@@ -727,6 +737,16 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
+    for (const auto& v : variable_views_) {
+      for (int i = 0; i < v.rows(); ++i) {
+        for (int j = 0; j < v.cols(); ++j) {
+          std::cout<<"v("<<i<<","<<j<<")=";
+          std::cout<<v(i,j)<<" ";
+          v(i, j)->index();
+        }
+      }
+      std::cout<<std::endl;
+    }
     return AddQuadraticCost(Q, b, variable_views_);
   }
 
@@ -934,7 +954,7 @@ class MathematicalProgram {
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, VariableVector& vars) {
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableVector& vars) {
     auto constraint = std::make_shared<BoundingBoxConstraint>(lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
@@ -952,11 +972,21 @@ class MathematicalProgram {
     return AddBoundingBoxConstraint(lb, ub, variable_views_);
   }
 
+  /**
+   * Add bounds for a single variable.
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param var The decision variable.
+   */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const DecisionVariableScalar* var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
+    VariableVector var_vector;
+    var_vector.reserve(1);
+    var_vector.push_back(var_matrix);
+
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
-                                    {var_matrix});
+                                    var_vector);
   }
 
   /**
@@ -1507,20 +1537,18 @@ class MathematicalProgram {
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
           ++row_index;
-        }
-        else {
+        } else {
           ++col_index;
           row_index = 0;
         }
-      }
-      else {
+      } else {
         if (row_index != col_index) {
-          decision_variable_matrix(col_index, row_index) = decision_variable_matrix(row_index, col_index);
+          decision_variable_matrix(col_index, row_index) =
+              decision_variable_matrix(row_index, col_index);
         }
         if (row_index + 1 < rows) {
           ++row_index;
-        }
-        else {
+        } else {
           ++col_index;
           row_index = col_index;
         }
@@ -1531,6 +1559,21 @@ class MathematicalProgram {
     x_initial_guess_.conservativeResize(num_vars_);
     x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
     variable_views_.push_back(decision_variable_matrix);
+    for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
+      for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
+        decision_variable_matrix(i, j)->index();
+      }
+    }
+    for (const auto& v : variable_views_) {
+      for (int i = 0; i < v.rows(); ++i) {
+        for (int j = 0; j < v.cols(); ++j) {
+          std::cout<<"v("<<i<<","<<j<<")="<<v(i,j)<<" ";
+          std::cout<<v(i, j)->name()<<" ";
+          v(i, j)->index();
+        }
+      }
+      std::cout<<std::endl;
+    }
   };
 };
 

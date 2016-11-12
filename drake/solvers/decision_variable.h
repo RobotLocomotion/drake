@@ -71,7 +71,7 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 
 
-typedef std::vector<Eigen::Ref<DecisionVariableMatrixX>> VariableVector;
+typedef std::vector<Eigen::Ref<const DecisionVariableMatrixX>> VariableVector;
 
 template<typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
