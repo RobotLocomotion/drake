@@ -381,16 +381,6 @@ class MathematicalProgram {
                                        const std::vector<std::string>& names) {
     DecisionVariableMatrixX decision_variable_matrix(rows, cols);
     AddVariables_impl(type, names, is_symmetric, decision_variable_matrix);
-    /*for (const auto& vi : variables_) {
-      vi->index();
-    }
-    for (auto v : variable_views_) {
-      for (int i = 0; i < v.rows(); ++i) {
-        for (int j = 0; j < v.cols(); ++j) {
-          v(i, j)->index();
-        }
-      }
-    }*/
     return decision_variable_matrix;
   }
 
@@ -584,7 +574,7 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddCost(std::shared_ptr<ConstraintT> constraint) {
-    AddCost(constraint, variable_views_);
+    AddCost(constraint, {all_variables_vector_});
   }
 
   template <typename F>
@@ -609,7 +599,7 @@ class MathematicalProgram {
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
   AddCost(F&& f) {
-    return AddCost(std::forward<F>(f), variable_views_);
+    return AddCost(std::forward<F>(f), {all_variables_vector_});
   }
 
   // libstdc++ 4.9 evaluates
@@ -627,7 +617,7 @@ class MathematicalProgram {
   }
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f) {
-    return AddCost(std::forward<std::unique_ptr<F>>(f), variable_views_);
+    return AddCost(std::forward<std::unique_ptr<F>>(f), {all_variables_vector_});
   }
 
   /**
@@ -671,7 +661,7 @@ class MathematicalProgram {
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
       const Eigen::MatrixBase<DerivedC>& c) {
-    return AddLinearCost(c, variable_views_);
+    return AddLinearCost(c, {all_variables_vector_});
   }
 
   /**
@@ -711,7 +701,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return AddQuadraticErrorCost(Q, x_desired, variable_views_);
+    return AddQuadraticErrorCost(Q, x_desired, {all_variables_vector_});
   }
 
   /**
@@ -737,17 +727,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& b) {
-    for (const auto& v : variable_views_) {
-      for (int i = 0; i < v.rows(); ++i) {
-        for (int j = 0; j < v.cols(); ++j) {
-          std::cout<<"v("<<i<<","<<j<<")=";
-          std::cout<<v(i,j)<<" ";
-          v(i, j)->index();
-        }
-      }
-      std::cout<<std::endl;
-    }
-    return AddQuadraticCost(Q, b, variable_views_);
+    return AddQuadraticCost(Q, b, {all_variables_vector_});
   }
 
   /**
@@ -756,7 +736,7 @@ class MathematicalProgram {
    */
   template <typename ConstraintT>
   void AddConstraint(std::shared_ptr<ConstraintT> constraint) {
-    AddConstraint(constraint, variable_views_);
+    AddConstraint(constraint, {all_variables_vector_});
   }
 
   /**
@@ -807,7 +787,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddLinearConstraint(A, lb, ub, variable_views_);
+    return AddLinearConstraint(A, lb, ub, {all_variables_vector_});
   }
 
   /**
@@ -842,7 +822,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
-                               variable_views_);
+                               {all_variables_vector_});
   }
 
   /**
@@ -896,7 +876,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
-    return AddLinearEqualityConstraint(Aeq, beq, variable_views_);
+    return AddLinearEqualityConstraint(Aeq, beq, {all_variables_vector_});
   }
 
   /**
@@ -931,7 +911,7 @@ class MathematicalProgram {
       const Eigen::MatrixBase<DerivedA>& a, double beq) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq),
-                                       variable_views_);
+                                       {all_variables_vector_});
   }
   /**
    * @brief Adds bounding box constraints referencing potentially a subset of
@@ -969,7 +949,7 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return AddBoundingBoxConstraint(lb, ub, variable_views_);
+    return AddBoundingBoxConstraint(lb, ub, {all_variables_vector_});
   }
 
   /**
@@ -1035,7 +1015,7 @@ class MathematicalProgram {
    * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint() {
-    return AddLorentzConeConstraint(variable_views_);
+    return AddLorentzConeConstraint({all_variables_vector_});
   }
 
   /**
@@ -1093,7 +1073,7 @@ class MathematicalProgram {
    */
   std::shared_ptr<RotatedLorentzConeConstraint>
   AddRotatedLorentzConeConstraint() {
-    return AddRotatedLorentzConeConstraint(variable_views_);
+    return AddRotatedLorentzConeConstraint({all_variables_vector_});
   }
 
   /** AddLinearComplementarityConstraint
@@ -1138,7 +1118,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q) {
-    return AddLinearComplementarityConstraint(M, q, variable_views_);
+    return AddLinearComplementarityConstraint(M, q, {all_variables_vector_});
   }
 
   /** AddPolynomialConstraint
@@ -1215,7 +1195,7 @@ class MathematicalProgram {
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub) {
     return AddPolynomialConstraint(polynomials, poly_vars, lb, ub,
-                                   variable_views_);
+                                   {all_variables_vector_});
   }
 
   // template <typename FunctionType>
@@ -1473,7 +1453,6 @@ class MathematicalProgram {
 
  private:
   std::vector<std::unique_ptr<DecisionVariableScalar>> variables_;
-  VariableVector variable_views_;
   std::vector<Binding<Constraint>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
@@ -1494,6 +1473,7 @@ class MathematicalProgram {
       linear_complementarity_constraints_;
 
   size_t num_vars_;
+  DecisionVariableVectorX all_variables_vector_; // Stack all decision variables in a vector.
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
   std::string solver_name_;
@@ -1527,6 +1507,7 @@ class MathematicalProgram {
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
     variables_.reserve(num_vars_ + num_new_vars);
+    all_variables_vector_.conservativeResize(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
@@ -1534,6 +1515,7 @@ class MathematicalProgram {
           new DecisionVariableScalar(type, names[i], num_vars_ + i));
       variables_.push_back(std::move(vi));
       decision_variable_matrix(row_index, col_index) = variables_.back().get();
+      all_variables_vector_(num_vars_ + i) = variables_.back().get();
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
           ++row_index;
@@ -1558,22 +1540,6 @@ class MathematicalProgram {
     num_vars_ += num_new_vars;
     x_initial_guess_.conservativeResize(num_vars_);
     x_initial_guess_.tail(num_new_vars) = Eigen::VectorXd::Zero(num_new_vars);
-    variable_views_.push_back(decision_variable_matrix);
-    for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
-      for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-        decision_variable_matrix(i, j)->index();
-      }
-    }
-    for (const auto& v : variable_views_) {
-      for (int i = 0; i < v.rows(); ++i) {
-        for (int j = 0; j < v.cols(); ++j) {
-          std::cout<<"v("<<i<<","<<j<<")="<<v(i,j)<<" ";
-          std::cout<<v(i, j)->name()<<" ";
-          v(i, j)->index();
-        }
-      }
-      std::cout<<std::endl;
-    }
   };
 };
 
