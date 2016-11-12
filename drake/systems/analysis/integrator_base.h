@@ -165,14 +165,48 @@ class IntegratorBase {
   const T& get_minimum_step_size() const { return min_step_size_; }
 
   /**
+   * Resets the integrator to initial values, i.e., default construction
+   * values.
+   */
+  void Reset() {
+    // Kill the error estimate and scaling matrices.
+    err_est_.reset();
+    qbar_weight_.setZero(0);
+    z_weight_.setZero(0);
+    pinvN_dq_err_.reset();
+    unscaled_err_.setZero(0);
+    scaled_q_err_.reset();
+
+    // Statistics no longer valid.
+    ResetStatistics();
+
+    // Wipe out settings.
+    min_step_size_ = nan();
+    max_step_size_ = nan();
+    accuracy_in_use_ = nan();
+
+    // Indicate values used for error controlled integration no longer valid.
+    prev_step_size_ = nan();
+    ideal_next_step_size_ = nan();
+
+    // Call the derived integrator reset routine.
+    DoReset();
+
+    // Indicate that initialization is necessary.
+    initialization_done_ = false;
+  }
+
+  /**
    * An integrator must be initialized before being used. The pointer to the
    * context must be set before Initialize() is called (or an std::logic_error
    * will be thrown). If Initialize() is not called, an exception will be
-   * thrown when attempting to call StepOnceAtMost().
+   * thrown when attempting to call StepOnceAtMost(). To reinitialize the
+   * integrator, Reset() should be called followed by Initialize().
    * @throws std::logic_error If the context has not been set or one of the
    *         scaling matrix coefficients is set to a negative value (this
    *         check is only performed for integrators that support error
    *         estimation).
+   * @sa Reset()
    */
   void Initialize() {
     if (!context_) throw std::logic_error("Context has not been set.");
@@ -194,9 +228,8 @@ class IntegratorBase {
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
-    // Indicate values used for error controlled integration no longer valid.
-    prev_step_size_ = nan();
-    ideal_next_step_size_ = nan();
+    // Statistics no longer valid.
+    ResetStatistics();
 
     // Call the derived integrator initialization routine (if any)
     DoInitialize();
@@ -218,6 +251,7 @@ class IntegratorBase {
    *     estimation.
    */
   void request_initial_step_size_target(const T& step_size) {
+    using std::isnan;
     if (!supports_error_estimation())
       throw std::logic_error(
           "Integrator does not support error estimation and "
@@ -698,6 +732,12 @@ class IntegratorBase {
   virtual void DoInitialize() {}
 
   /**
+   * Derived classes can override this method to perform routines when
+   * Reset() is called. This default method does nothing.
+   */
+  virtual void DoReset() {}
+
+  /**
    * Derived classes may re-implement this method to integrate the continuous
    * portion of this system forward by a single step of no greater size than
    * dt_max. This method is called during the StepOnceAtMost() method. This
@@ -874,6 +914,7 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
     // Integrator has not taken a step. Set the current step size to the
     // initial step size.
     current_step_size = get_initial_step_size_target();
+    DRAKE_DEMAND(!isnan(current_step_size));
   }
 
   bool step_succeeded = false;
@@ -962,10 +1003,9 @@ T IntegratorBase<T>::CalcErrorNorm() {
 
   // Compute Wq * dq = N * Wv * N+ * dq.
   unscaled_err_ = gq_err.CopyToVector();
-  system.MapConfigurationDerivativesToVelocity(context, unscaled_err_,
-                                               pinvN_dq_err_.get());
-  system.MapVelocityToConfigurationDerivatives(
-      context, v_scal * pinvN_dq_err_->CopyToVector(), scaled_q_err_.get());
+  system.MapQDotToVelocity(context, unscaled_err_, pinvN_dq_err_.get());
+  system.MapVelocityToQDot(context, v_scal * pinvN_dq_err_->CopyToVector(),
+                           scaled_q_err_.get());
   T q_nrm = scaled_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
 
   // TODO(edrumwri): Record the worst offender (which of the norms resulted

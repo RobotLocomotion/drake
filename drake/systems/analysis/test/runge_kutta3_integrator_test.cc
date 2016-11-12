@@ -21,13 +21,13 @@ class RK3IntegratorTest : public ::testing::Test {
     // Create and initialize the integrator.
     integrator_ = std::make_unique<RungeKutta3Integrator<double>>(
         *spring_mass_, context_.get());  // Use default Context.
-    integrator_->Initialize();
   }
 
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<RungeKutta3Integrator<double>> integrator_;
   const double DT = 1e-3;        // Integration step size.
+  const double kBigDT = 1e-1;    // Big integration step size.
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 };
@@ -63,10 +63,16 @@ TEST_F(RK3IntegratorTest, ErrorEst) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStep) {
+  // Reset the integrator
+  integrator_->Reset();
+
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(DT);
   integrator_->set_minimum_step_size(DT);
   integrator_->set_target_accuracy(1.0);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
 
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
@@ -98,6 +104,10 @@ TEST_F(RK3IntegratorTest, SpringMassStep) {
 
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
+
+  // Initialize the integrator to set weight vector sizes.
+  integrator_->Initialize();
+
   // Test scaling
   EXPECT_EQ(integrator_->get_mutable_generalized_state_weight_vector().size(),
             1);
@@ -110,6 +120,65 @@ TEST_F(RK3IntegratorTest, Scaling) {
             1);
 }
 
+// Tests the error estimation capabilities.
+TEST_F(RK3IntegratorTest, ErrEst) {
+  // Reset the integrator
+  integrator_->Reset();
+
+  // Create a new context
+  auto context = spring_mass_->CreateDefaultContext();
+
+  // Reset the integrator context
+  integrator_->reset_context(context.get());
+
+  // Setup the initial position and initial velocity
+  const double kInitialPosition = 0.1;
+  const double kInitialVelocity = 0.0;
+  const double kOmega = std::sqrt(kSpring / kMass);
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass_->set_position(integrator_->get_mutable_context(),
+                             kInitialPosition);
+  spring_mass_->set_velocity(integrator_->get_mutable_context(),
+                             kInitialVelocity);
+
+  // Setup c1 and c2 for ODE constants.
+  const double kC1 = kInitialPosition;
+  const double kC2 = kInitialVelocity / kOmega;
+
+  // Set integrator parameters: do no error control.
+  integrator_->set_maximum_step_size(kBigDT);
+  integrator_->set_minimum_step_size(kBigDT);
+  integrator_->set_target_accuracy(10.0);
+
+  // Initialize the integrator.
+  integrator_->Initialize();
+
+  // Take a single step of size DT.
+  integrator_->StepOnceAtMost(kBigDT, kBigDT);
+
+  // Verify that a step of DT was taken.
+  EXPECT_NEAR(context->get_time(), kBigDT,
+              std::numeric_limits<double>::epsilon());
+
+  // Get the true solution
+  const double kXTrue =  kC1 * std::cos(kOmega * kBigDT) +
+      kC2 * std::sin(kOmega * kBigDT);
+
+  // Get the integrator's solution
+  const double kXApprox =
+      context->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
+
+  // Get the error estimate
+  const double err_est = integrator_->get_error_estimate()->
+      get_vector().GetAtIndex(0);
+
+  // Verify that difference between integration result and true result is
+  // captured by the error estimate. The 0.2 below indicates that the error
+  // estimate is quite conservative. 
+  EXPECT_NEAR(kXApprox, kXTrue, err_est*0.2);
+}
+
 // Integrate a purely continuous system with no sampling using error control.
 // d^2x/dt^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
@@ -117,6 +186,9 @@ TEST_F(RK3IntegratorTest, Scaling) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
+  // Reset the integrator
+  integrator_->Reset();
+
   // Create a new context
   auto context = spring_mass_->CreateDefaultContext();
 
@@ -127,6 +199,9 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   integrator_->set_maximum_step_size(0.1);
   integrator_->set_minimum_step_size(1e-6);
   integrator_->set_target_accuracy(1e-5);
+
+  // Re-initialize the integrator.
+  integrator_->Initialize();
 
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
