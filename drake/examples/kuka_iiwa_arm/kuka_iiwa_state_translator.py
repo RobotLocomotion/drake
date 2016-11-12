@@ -9,7 +9,7 @@ from director import robotstate
 def onIiwaStatus(msg):
     q = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] + list(msg.joint_position_measured)
     stateMsg = robotstate.drakePoseToRobotState(q)
-    stateMsg.utime = msg.timestamp
+    stateMsg.utime = msg.utime
     lcmUtils.publish('EST_ROBOT_STATE', stateMsg)
 
 

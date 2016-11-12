@@ -2,8 +2,8 @@ package drake;
 
 // Commands a single set of joint states for the arm.
 struct lcmt_iiwa_command {
-  // The timestamp in milliseconds.
-  int64_t timestamp;
+  // The timestamp in microseconds.
+  int64_t utime;
 
   // The reference joint positions. They should always be sent regardless of
   // whether the arm is in position control mode or torque control mode.

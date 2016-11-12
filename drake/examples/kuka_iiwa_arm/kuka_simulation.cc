@@ -127,7 +127,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     lcmt_iiwa_status& status =
         mutable_data->GetMutableValue<lcmt_iiwa_status>();
 
-    status.timestamp = context.get_time() * 1e6;
+    status.utime = context.get_time() * 1e6;
     const systems::BasicVector<double>* state =
         this->EvalVectorInput(context, 0);
     const systems::BasicVector<double>* command =
