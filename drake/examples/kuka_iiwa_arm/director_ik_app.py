@@ -36,6 +36,7 @@ def makeRobotSystem(view):
 
 # create a default mainwindow app
 app = mainwindowapp.MainWindowAppFactory().construct()
+mainwindowapp.MainWindowPanelFactory().construct(app=app.app, view=app.view)
 
 # load a minimal robot system with ik planning
 robotSystem = makeRobotSystem(app.view)
@@ -51,6 +52,9 @@ infoLabel = KukaSimInfoLabel(app.mainWindow.statusBar())
 ikPlanner = robotSystem.ikPlanner
 ikPlanner.planningMode = 'pydrake'
 ikPlanner.plannerPub._setupLocalServer()
+
+# change the default animation mode of the playback panel
+robotSystem.playbackPanel.animateOnExecute = True
 
 # set the default camera view
 applogic.resetCamera(viewDirection=[-1,0,0], view=app.view)
