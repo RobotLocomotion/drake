@@ -102,10 +102,10 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  }*/ else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              ipopt_solver_->available()) {
     return ipopt_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  }/* else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
   }*/ else {
