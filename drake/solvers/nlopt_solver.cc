@@ -32,10 +32,11 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const DecisionVariableMatrix& v : variable_vector) {
-    int num_v_variables = v.NumberOfVariables();
+  for (const Eigen::Ref<const DecisionVariableMatrixX>& v : variable_vector) {
+    DRAKE_ASSERT(v.cols() == 1);
+    int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(v.index(i));
+      this_x(index + i) = tx(v(i, 0)->index());
     }
     index += num_v_variables;
   }
@@ -66,11 +67,12 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
   for (auto const& binding : prog->GetAllCosts()) {
     size_t index = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
-      int num_v_variables = v.NumberOfVariables();
+    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      DRAKE_ASSERT(v.cols() == 1);
+      int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(v.index(i));
+        this_x(index + i) = tx(v(i, 0)->index());
       }
       index += num_v_variables;
     }
@@ -79,9 +81,10 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
     cost += ty(0).value();
     if (!grad.empty()) {
-      for (const DecisionVariableMatrix& v : binding.variable_vector()) {
-        for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          grad[v.index(j)] += ty(0).derivatives()(v.index(j));
+      for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+        DRAKE_ASSERT(v.cols() == 1);
+        for (int j = 0; j < v.size(); ++j) {
+          grad[v(j, 0)->index()] += ty(0).derivatives()(v(j, 0)->index());
         }
       }
     }
@@ -202,7 +205,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   if (grad) {
-    for (const DecisionVariableMatrix& v : *(wrapped->variable_vector)) {
+    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : *(wrapped->variable_vector)) {
       result_idx = 0;
       for (size_t i = 0; i < num_constraints; i++) {
         if (!wrapped->active_constraints.count(i)) {
@@ -214,9 +217,10 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
         } else if (wrapped->force_bounds && !wrapped->force_upper) {
           grad_sign = -1;
         }
-        for (int j = 0; j < v.NumberOfVariables(); ++j) {
-          grad[(result_idx * n) + v.index(j)] =
-              ty(i).derivatives()(v.index(j)) * grad_sign;
+        DRAKE_ASSERT(v.cols() == 1);
+        for (int j = 0; j < v.size(); ++j) {
+          grad[(result_idx * n) + v(j, 0)->index()] =
+              ty(i).derivatives()(v(j, 0)->index()) * grad_sign;
         }
         result_idx++;
         DRAKE_ASSERT(result_idx <= m);
@@ -314,9 +318,10 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
-      for (int k = 0; k < v.NumberOfVariables(); ++k) {
-        const int idx = v.index(k);
+    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      DRAKE_ASSERT(v.cols() == 1);
+      for (int k = 0; k < v.size(); ++k) {
+        const int idx = v(k, 0)->index();
         xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) {
