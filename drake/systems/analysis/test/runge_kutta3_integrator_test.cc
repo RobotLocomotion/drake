@@ -104,7 +104,6 @@ TEST_F(RK3IntegratorTest, SpringMassStep) {
 
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
-
   // Initialize the integrator to set weight vector sizes.
   integrator_->Initialize();
 
@@ -175,7 +174,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 
   // Verify that difference between integration result and true result is
   // captured by the error estimate. The 0.2 below indicates that the error
-  // estimate is quite conservative. 
+  // estimate is quite conservative.
   EXPECT_NEAR(kXApprox, kXTrue, err_est*0.2);
 }
 
