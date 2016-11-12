@@ -63,9 +63,6 @@ TEST_F(RK3IntegratorTest, ErrorEst) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStep) {
-  // Reset the integrator
-  integrator_->Reset();
-
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(DT);
   integrator_->set_minimum_step_size(DT);
@@ -121,15 +118,6 @@ TEST_F(RK3IntegratorTest, Scaling) {
 
 // Tests the error estimation capabilities.
 TEST_F(RK3IntegratorTest, ErrEst) {
-  // Reset the integrator
-  integrator_->Reset();
-
-  // Create a new context
-  auto context = spring_mass_->CreateDefaultContext();
-
-  // Reset the integrator context
-  integrator_->reset_context(context.get());
-
   // Setup the initial position and initial velocity
   const double kInitialPosition = 0.1;
   const double kInitialVelocity = 0.0;
@@ -157,7 +145,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
   integrator_->StepOnceAtMost(kBigDT, kBigDT);
 
   // Verify that a step of DT was taken.
-  EXPECT_NEAR(context->get_time(), kBigDT,
+  EXPECT_NEAR(context_->get_time(), kBigDT,
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution
@@ -166,7 +154,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 
   // Get the integrator's solution
   const double kXApprox =
-      context->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Get the error estimate
   const double err_est = integrator_->get_error_estimate()->
@@ -185,15 +173,6 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
-  // Reset the integrator
-  integrator_->Reset();
-
-  // Create a new context
-  auto context = spring_mass_->CreateDefaultContext();
-
-  // Reset the integrator context
-  integrator_->reset_context(context_.get());
-
   // Set reasonable integrator parameters.
   integrator_->set_maximum_step_size(0.1);
   integrator_->set_minimum_step_size(1e-6);
@@ -217,15 +196,15 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 
   // StepOnceAtFixedSize for 1 second.
   const double kTFinal = 1.0;
-  double t_remaining = kTFinal - context->get_time();
+  double t_remaining = kTFinal - context_->get_time();
   do {
     integrator_->StepOnceAtMost(t_remaining, t_remaining);
-    t_remaining = kTFinal - context->get_time();
+    t_remaining = kTFinal - context_->get_time();
   } while (t_remaining > 0.0);
 
   // Get the final position.
   const double kXFinal =
-      context->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
+      context_->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(
