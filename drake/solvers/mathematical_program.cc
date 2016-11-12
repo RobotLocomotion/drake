@@ -63,7 +63,7 @@ MathematicalProgram::MathematicalProgram()
       solver_result_(0),
       required_capabilities_(kNoCapabilities),
       //ipopt_solver_(new IpoptSolver()),
-      //nlopt_solver_(new NloptSolver()),
+      nlopt_solver_(new NloptSolver()),
       //snopt_solver_(new SnoptSolver()),
       //moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
@@ -105,10 +105,10 @@ SolutionResult MathematicalProgram::Solve() {
   }*/ else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              ipopt_solver_->available()) {
     return ipopt_solver_->Solve(*this);
-  }/* else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              nlopt_solver_->available()) {
     return nlopt_solver_->Solve(*this);
-  }*/ else {
+  } else {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");

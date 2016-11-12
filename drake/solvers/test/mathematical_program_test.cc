@@ -90,12 +90,12 @@ void CheckSolverType(MathematicalProgram& prog,
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
   IpoptSolver ipopt_solver;
-  //NloptSolver nlopt_solver;
+  NloptSolver nlopt_solver;
   //SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
       //std::make_pair("SNOPT", &snopt_solver),
-      //std::make_pair("NLopt", &nlopt_solver),
+      std::make_pair("NLopt", &nlopt_solver),
       std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
@@ -244,7 +244,7 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
                                 MatrixCompareType::absolute));
   });
 }
-/*
+
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
 class TestProblem1Cost {
@@ -282,9 +282,10 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
 }
@@ -313,9 +314,10 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(5));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-9,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-9,
                                 MatrixCompareType::absolute));
   });
 }
@@ -362,12 +364,13 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
@@ -401,13 +404,14 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   VectorXd expected(6);
   expected << 0, 1, 0, 1, 1, 20;
   std::srand(0);
-  prog.SetInitialGuess({x}, expected + .01 * VectorXd::Random(6));
+  prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(6));
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
@@ -498,20 +502,22 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   expected << 5, 1, 5, 0, 5, 10;
   std::srand(0);
   Eigen::VectorXd delta = .05 * Eigen::VectorXd::Random(6);
-  prog.SetInitialGuess({x}, expected + delta);
+  prog.SetInitialGuess(x, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 
   // Try again with the offsets in the opposite direction.
-  prog.SetInitialGuess({x}, expected - delta);
+  prog.SetInitialGuess(x, expected - delta);
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-3,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
                                 MatrixCompareType::absolute));
   });
 }
@@ -541,9 +547,11 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
   RunNonlinearProgram(prog, [&]() {
     // check (numerically) if it is a local minimum
     VectorXd ystar, y;
-    cost->Eval(x.value(), ystar);
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    cost->Eval(x_value, ystar);
     for (int i = 0; i < 10; i++) {
-      cost->Eval(x.value() + .01 * Matrix<double, 2, 1>::Random(), y);
+      const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+      cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
   });
@@ -631,16 +639,18 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
   // IPOPT has difficulty with this problem depending on the initial
   // conditions, which is why the initial guess varies so little.
   Vector3d initial_guess = Vector3d(.5, 0, 3) + .01 * Vector3d::Random();
-  prog.SetInitialGuess({x}, initial_guess);
-  prog.SetInitialGuess({y}, initial_guess);
+  prog.SetInitialGuess(x, initial_guess);
+  prog.SetInitialGuess(y, initial_guess);
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    const auto& y_value = DecisionVariableMatrixToDoubleMatrix(y);
+    EXPECT_TRUE(CompareMatrices(x_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
+    EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
   });
 }
-
+/*
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
