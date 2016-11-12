@@ -22,7 +22,7 @@ class KukaSimInfoLabel(object):
         self.label.text = '[waiting for sim status]'
 
     def onIiwaStatus(self, msg):
-        simTime = msg.timestamp*1e-6
+        simTime = msg.utime*1e-6
         simFreq = self.sub.getMessageRate()
         self.label.text = 'Sim freq: %d hz  |  Sim time: %.2f' % (simFreq, simTime)
 

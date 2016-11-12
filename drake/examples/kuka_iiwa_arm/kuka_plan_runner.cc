@@ -65,7 +65,7 @@ class RobotPlanRunner {
 
     // Initialize the timestamp to an invalid number so we can detect
     // the first message.
-    iiwa_status_.timestamp = cur_time_ms;
+    iiwa_status_.utime = cur_time_ms;
 
     lcmt_iiwa_command iiwa_command;
     iiwa_command.num_joints = kNumJoints;
@@ -82,8 +82,8 @@ class RobotPlanRunner {
         return;
       }
 
-      DRAKE_ASSERT(iiwa_status_.timestamp != -1);
-      cur_time_ms = iiwa_status_.timestamp;
+      DRAKE_ASSERT(iiwa_status_.utime != -1);
+      cur_time_ms = iiwa_status_.utime;
 
       if (plan_) {
         if (plan_number_ != cur_plan_number) {
@@ -96,7 +96,7 @@ class RobotPlanRunner {
             static_cast<double>(cur_time_ms - start_time_ms) / 1e3;
         const auto desired_next = plan_->value(cur_traj_time_s);
 
-        iiwa_command.timestamp = iiwa_status_.timestamp;
+        iiwa_command.utime = iiwa_status_.utime;
 
         // This is totally arbitrary.  There's no good reason to
         // implement this as a maximum delta to submit per tick.  What
