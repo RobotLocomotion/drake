@@ -138,7 +138,7 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
     }
   });
 }
-/*
+
 GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   MathematicalProgram prog;
 
@@ -217,7 +217,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars_value(0), 2);
     EXPECT_DOUBLE_EQ(vars_value(1), 1);
   });
-}*/
+}
 /*
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
