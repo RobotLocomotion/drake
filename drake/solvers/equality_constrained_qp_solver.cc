@@ -50,13 +50,16 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     size_t index = 0;
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
-    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
-      int num_v_variables = v.NumberOfVariables();
+    for (const auto& v : binding.variable_vector()) {
+      int num_v_variables = v.rows();
+      DRAKE_ASSERT(v.cols() == 1);
       for (int i = 0; i < num_v_variables; ++i) {
+        DRAKE_ASSERT(v(i, 0));
         for (int j = 0; j < num_v_variables; ++j) {
-          A_full(v.index(i), v.index(j)) += Q(index + i, index + j);
+          DRAKE_ASSERT(v(j, 0));
+          A_full(v(i, 0)->index(), v(j, 0)->index()) += Q(index + i, index + j);
         }
-        b_full(v.index(i)) -= b(index + i);
+        b_full(v(i, 0)->index()) -= b(index + i);
       }
       index += num_v_variables;
     }
@@ -68,12 +71,13 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const DecisionVariableMatrix& v : binding.variable_vector()) {
-      int num_v_variables = v.NumberOfVariables();
+    for (const auto& v : binding.variable_vector()) {
+      DRAKE_ASSERT(v.cols() == 1);
+      int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        A_full.block(constraint_index, v.index(i), n, 1) =
+        A_full.block(constraint_index, v(i, 0)->index(), n, 1) =
             c->A().col(var_index + i);
-        A_full.block(v.index(i), constraint_index, 1, n) =
+        A_full.block(v(i, 0)->index(), constraint_index, 1, n) =
             (c->A().col(var_index + i)).transpose();
       }
       var_index += num_v_variables;

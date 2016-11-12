@@ -70,7 +70,6 @@ else()
   list(APPEND optimization_files no_gurobi.cc)
 endif()
 
-
 add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
 target_link_libraries(drakeOptimization drakeCommon)
 drake_install_headers(
