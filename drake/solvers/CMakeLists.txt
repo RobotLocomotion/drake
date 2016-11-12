@@ -20,12 +20,12 @@ list(APPEND optimization_files
   linear_system_solver.cc
   equality_constrained_qp_solver.cc)
 
-#pods_find_pkg_config(ipopt)
-#if (ipopt_FOUND)
-# list(APPEND optimization_files ipopt_solver.cc)
-#else()
-#  list(APPEND optimization_files no_ipopt.cc)
-#endif(ipopt_FOUND)
+pods_find_pkg_config(ipopt)
+if (ipopt_FOUND)
+ list(APPEND optimization_files ipopt_solver.cc)
+else()
+  list(APPEND optimization_files no_ipopt.cc)
+endif(ipopt_FOUND)
 #if(NLopt_FOUND)
 #  list(APPEND optimization_files nlopt_solver.cc)
 #else()
@@ -69,25 +69,25 @@ pods_install_pkg_config_file(drake-optimization
   REQUIRES
   VERSION 0.0.1)
 
-#if(ipopt_FOUND)
-#  pods_use_pkg_config_packages(drakeOptimization ipopt)
-#  # IPOPT builds its own version of BLAS during compilation, and links
-#  # it into the output library.  On (at least some) ELF systems, you
-#  # wind up with a symbol name collision between IPOPT's BLAS and
-#  # other BLAS implementations in other dynamic libraries (MATLAB, I'm
-#  # looking in your direction...)  Since the actual implementations
-#  # are incompatible, this does not end well.  Linking with the
-#  # -Bsymbolic flags causes the internal references to these symbols
-#  # inside libdrakeOptimization to be handled at compile time, and
-#  # prevents the dynamic linker from hijacking IPOPT's calls into
-#  # BLAS.
-#  #
-#  # This should probably be a test for the GNU linker instead of a platform.
-#  if (NOT (APPLE OR WIN32))
-#    set(CMAKE_SHARED_LINKER_FLAGS
-#      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
-#  endif()
-#endif()
+if(ipopt_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization ipopt)
+  # IPOPT builds its own version of BLAS during compilation, and links
+  # it into the output library.  On (at least some) ELF systems, you
+  # wind up with a symbol name collision between IPOPT's BLAS and
+  # other BLAS implementations in other dynamic libraries (MATLAB, I'm
+  # looking in your direction...)  Since the actual implementations
+  # are incompatible, this does not end well.  Linking with the
+  # -Bsymbolic flags causes the internal references to these symbols
+  # inside libdrakeOptimization to be handled at compile time, and
+  # prevents the dynamic linker from hijacking IPOPT's calls into
+  # BLAS.
+  #
+  # This should probably be a test for the GNU linker instead of a platform.
+  if (NOT (APPLE OR WIN32))
+    set(CMAKE_SHARED_LINKER_FLAGS
+      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
+  endif()
+endif()
 #if(NLopt_FOUND)
 #  target_link_libraries(drakeOptimization nlopt)
 #endif()

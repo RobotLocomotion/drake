@@ -89,15 +89,14 @@ void CheckSolverType(MathematicalProgram& prog,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
-  //IpoptSolver ipopt_solver;
+  IpoptSolver ipopt_solver;
   //NloptSolver nlopt_solver;
   //SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
       //std::make_pair("SNOPT", &snopt_solver),
       //std::make_pair("NLopt", &nlopt_solver),
-      //std::make_pair("Ipopt", &ipopt_solver)};
-  };
+      std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
@@ -218,7 +217,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
     EXPECT_DOUBLE_EQ(vars_value(1), 1);
   });
 }
-/*
+
 // Tests a quadratic optimization problem, with only quadratic cost
 // 0.5 *x'*Q*x + b'*x
 // The optimal solution is -inverse(Q)*b
@@ -238,13 +237,14 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   Q_transpose.transposeInPlace();
   Matrix4d Q_symmetric = 0.5 * (Q + Q_transpose);
   Vector4d expected = -Q_symmetric.ldlt().solve(b);
-  prog.SetInitialGuess({x}, Vector4d::Zero());
+  prog.SetInitialGuess(x, Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-6,
                                 MatrixCompareType::absolute));
   });
 }
-
+/*
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization."
 class TestProblem1Cost {
