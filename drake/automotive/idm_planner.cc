@@ -35,6 +35,18 @@ template <typename T>
 IdmPlanner<T>::~IdmPlanner() {}
 
 template <typename T>
+const systems::SystemPortDescriptor<T>&
+IdmPlanner<T>::get_ego_port() const {
+  return systems::System<T>::get_input_port(0);
+}
+
+template <typename T>
+const systems::SystemPortDescriptor<T>&
+IdmPlanner<T>::get_agent_port() const {
+  return systems::System<T>::get_input_port(1);
+}
+
+template <typename T>
 void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
                                systems::SystemOutput<T>* output) const {
   DRAKE_ASSERT_VOID(systems::System<T>::CheckValidContext(context));
@@ -42,14 +54,15 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
 
   // Obtain the input/output structures we need to read from and write into.
   const systems::BasicVector<T>* input_ego =
-      this->EvalVectorInput(context, this->get_ego_port());
+    this->EvalVectorInput(context, this->get_ego_port().get_index());
   const systems::BasicVector<T>* input_agent =
-      this->EvalVectorInput(context, this->get_agent_port());
+    this->EvalVectorInput(context, this->get_agent_port().get_index());
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
 
-  // TODO(jadecastro): Bake in David's new parameter definition API.
+  // TODO(jadecastro): Bake in David's new parameter definition API and
+  // remove `IdmWithTrajectoryAgent`.
   IdmPlannerParameters<T> params;
   params.set_a(T(1.0));             // max acceleration.
   params.set_b(T(3.0));             // comfortable braking deceleration.

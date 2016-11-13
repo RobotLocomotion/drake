@@ -1,6 +1,5 @@
 #include "drake/automotive/single_lane_ego_and_agent.h"
 
-#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -13,10 +12,6 @@ SingleLaneEgoAndAgent<T>::SingleLaneEgoAndAgent(
     : systems::Diagram<T>() {
   // The reference velocity must be strictly positive.
   DRAKE_DEMAND(v_ref > 0);
-
-  // Define the expected input ports to the planner.
-  const int& inport_ego = planner_->get_ego_port();
-  const int& inport_agent = planner_->get_agent_port();
 
   systems::DiagramBuilder<T> builder;
 
@@ -36,12 +31,12 @@ SingleLaneEgoAndAgent<T>::SingleLaneEgoAndAgent(
   builder.Connect(*planner_, *ego_car_);
   builder.Connect(*value, *agent_car_);
   builder.Connect(ego_car_->get_output_port(),
-                  planner_->get_input_port(inport_ego));
+                  planner_->get_ego_port());
   builder.Connect(agent_car_->get_output_port(),
-                  planner_->get_input_port(inport_agent));
+                  planner_->get_agent_port());
 
-  builder.ExportOutput(ego_car_->get_output_port());    // Output port #0.
-  builder.ExportOutput(agent_car_->get_output_port());  // Output port #1.
+  builder.ExportOutput(ego_car_->get_output_port());    // Exports to port 0.
+  builder.ExportOutput(agent_car_->get_output_port());  // Exports to port 1.
 
   builder.BuildInto(this);
 }
@@ -70,9 +65,9 @@ void SingleLaneEgoAndAgent<T>::SetDefaultState(
   agent_car_->SetDefaultState(context_agent);
 }
 
+// TODO(jadecastro): Introduce symbolic::Expression scalar type.
 template class SingleLaneEgoAndAgent<double>;
 template class SingleLaneEgoAndAgent<AutoDiffXd>;
-template class SingleLaneEgoAndAgent<symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake

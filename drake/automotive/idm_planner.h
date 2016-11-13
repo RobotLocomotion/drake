@@ -33,9 +33,11 @@ class IdmPlanner : public systems::LeafSystem<T> {
   explicit IdmPlanner(const T& v_ref);
   ~IdmPlanner() override;
 
-  // Returns the assigned input ports for each car system.
-  int get_ego_port() const { return 0; }
-  int get_agent_port() const { return 1; }
+  /// Returns the port to the ego car input subvector.
+  const systems::SystemPortDescriptor<T>& get_ego_port() const;
+
+  /// Returns the port to the agent car input subvector.
+  const systems::SystemPortDescriptor<T>& get_agent_port() const;
 
   // System<T> overrides.
   // The output of this system is an algbraic relation of its inputs.
