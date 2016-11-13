@@ -41,8 +41,6 @@ class DecisionVariableScalar {
    */
   size_t index() const { return index_; }
 
-  void set_value(double new_value) { value_ = new_value; }
-
   friend class MathematicalProgram;
 
  private:
@@ -56,6 +54,9 @@ class DecisionVariableScalar {
    */
   DecisionVariableScalar(VarType type, const std::string& name, size_t index)
       : type_(type), name_(name), value_(0), index_(index) {}
+
+  void set_value(double new_value) { value_ = new_value; }
+
   const VarType type_;
   const std::string name_;
   double value_;

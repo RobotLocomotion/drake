@@ -17,7 +17,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   auto x1 = prog.AddContinuousVariables(6, "x");
   EXPECT_EQ(prog.num_vars(), 18);
   std::array<std::string, 6> X_name = {"X", "X", "X", "X", "X", "X"};
-  auto X2 = prog.AddVariables<2, 3>(DecisionVariableScalar::VarType::CONTINUOUS, X_name);
+  auto X2 = prog.AddContinuousVariables<2, 3>(X_name);
   EXPECT_EQ(prog.num_vars(), 24);
   Eigen::Matrix<double, 6, 1> x_value;
   x_value << 0, 2, 4, 6, 8, 10;

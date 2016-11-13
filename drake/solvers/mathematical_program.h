@@ -394,7 +394,7 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  const DecisionVariableVectorX AddContinuousVariables(
+  DecisionVariableVectorX AddContinuousVariables(
       std::size_t rows, const std::vector<std::string>& names) {
     return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS,rows, names);
   }
@@ -405,21 +405,9 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  const DecisionVariableVectorX AddContinuousVariables(std::size_t rows) {
-    std::vector<std::string> names(rows, "x");
+  DecisionVariableVectorX AddContinuousVariables(std::size_t rows, const std::string& name = "x") {
+    std::vector<std::string> names(rows, name);
     return AddContinuousVariables(rows, names);
-  }
-
-  /**
-   * Add continuous variables to this MathematicalProgram, all new variables
-   * are assigned @p name.
-   * @see AddContinuousVariables(size_t rows, size_t cols, const
-   * std::vector<std::string>& names);
-   */
-  const DecisionVariableVectorX AddContinuousVariables(std::size_t rows,
-                                                      const std::string& name) {
-    return AddContinuousVariables(rows,
-                                  std::vector<std::string>(rows, name));
   }
 
   /// Add continuous variables to this MathematicalProgram.
@@ -465,6 +453,79 @@ class MathematicalProgram {
                                                       std::size_t cols) {
     std::vector<std::string> names(rows * cols, "x");
     return AddContinuousVariables(rows, cols, names);
+  }
+  /// Add continuous variables to this MathematicalProgram.
+  /**
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam rows  The number of rows in the new variables.
+   * @tparam cols  The number of columns in the new variables.
+   * @param names An array of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 6> names = {"x1", "x2", "x3", "x4", "x5", "x6"};
+   * auto x = prog.AddContinuousVariables(names);
+   * @endcode
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  template<Eigen::Index rows, Eigen::Index cols>
+  DecisionVariableMatrix<rows, cols> AddContinuousVariables(const std::array<std::string, rows * cols>& names) {
+    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::CONTINUOUS, names);
+  }
+
+  /// Add continuous variables to this MathematicalProgram.
+  /**
+   * Add continuous variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam rows  The number of rows in the new variables.
+   * @param names An array of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 2> names = {"x1", "x2"};
+   * auto x = prog.AddContinuousVariables(names);
+   * @endcode
+   * This adds a 2 x 1 vector containing decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  template<Eigen::Index rows>
+  DecisionVariableVector<rows> AddContinuousVariables(const std::array<std::string, rows>& names) {
+    return AddContinuousVariables<rows, 1>(names);
+  }
+
+  /**
+   * Add continuous variables to the program.
+   * The name for all newly added variables are set to "name". The default name
+   * is "x"
+   * @see AddContinuousVariables(const std::array<std::string, rows>& names)
+   */
+  template<Eigen::Index rows>
+  DecisionVariableVector<rows> AddContinuousVariables(const std::string& name = "x") {
+    std::array<std::string, rows> names;
+    for (int i = 0; i < rows; ++i) {
+      names[i] = name;
+    }
+    return AddContinuousVariables<rows>(names);
   }
 
   /// Add binary variables to this MathematicalProgram.
@@ -961,10 +1022,19 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const DecisionVariableScalar* var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
+    return AddBoundingBoxConstraint(lb, ub, var_matrix);
+  }
+
+  /**
+   * Add bounds for a single variable
+   * @param lb Lower bound.
+   * @param ub Upper bound.
+   * @param var The decision variable.
+   */
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(double lb, double ub, const DecisionVariableVector<1>& var) {
     VariableVector var_vector;
     var_vector.reserve(1);
-    var_vector.push_back(var_matrix);
-
+    var_vector.push_back(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
                                     var_vector);
   }
