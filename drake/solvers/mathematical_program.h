@@ -1522,7 +1522,7 @@ class MathematicalProgram {
   }
 
  private:
-  std::vector<std::unique_ptr<DecisionVariableScalar>> variables_;
+  std::vector<DecisionVariableScalar> variables_;
   std::vector<Binding<Constraint>> generic_costs_;
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<QuadraticConstraint>> quadratic_costs_;
@@ -1581,11 +1581,10 @@ class MathematicalProgram {
     int row_index = 0;
     int col_index = 0;
     for (int i = 0; i < num_new_vars; ++i) {
-      std::unique_ptr<DecisionVariableScalar> vi(
-          new DecisionVariableScalar(type, names[i], num_vars_ + i));
-      variables_.push_back(std::move(vi));
-      decision_variable_matrix(row_index, col_index) = variables_.back().get();
-      all_variables_vector_(num_vars_ + i) = variables_.back().get();
+      DecisionVariableScalar vi(type, names[i], num_vars_ + i);
+      variables_.push_back(vi);
+      decision_variable_matrix(row_index, col_index) = variables_.back();
+      all_variables_vector_(num_vars_ + i) = variables_.back();
       if (!is_symmetric) {
         if (row_index + 1 < rows) {
           ++row_index;

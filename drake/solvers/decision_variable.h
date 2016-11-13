@@ -20,6 +20,8 @@ class DecisionVariableScalar {
  public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
+  /** Construct an @ref undefined form with no variables. */
+  DecisionVariableScalar() {}
   /**
    * @return The type of the variable.
    */
@@ -34,7 +36,7 @@ class DecisionVariableScalar {
    * @return The value of the variable. This method is only meaningful after
    * calling Solve() in MathematicalProgram.
    */
-  double value() const { return value_; }
+  double value() const { return *value_; }
 
   /**
    * @return The index of the variable in the optimization program.
@@ -53,24 +55,24 @@ class DecisionVariableScalar {
    * @param index The index of the variable in the optimization program.
    */
   DecisionVariableScalar(VarType type, const std::string& name, size_t index)
-      : type_(type), name_(name), value_(0), index_(index) {}
+      : type_(type), name_(name), value_(new double(0)), index_(index) {}
 
-  void set_value(double new_value) { value_ = new_value; }
+  void set_value(double new_value) { *value_ = new_value; }
 
-  const VarType type_;
-  const std::string name_;
-  double value_;
-  const size_t index_;
+  VarType type_;
+  std::string name_;
+  double* value_;
+  size_t index_;
 };
 
 template<Eigen::Index rows, Eigen::Index cols>
-using DecisionVariableMatrix = Eigen::Matrix<const DecisionVariableScalar*, rows, cols>;
+using DecisionVariableMatrix = Eigen::Matrix<const DecisionVariableScalar, rows, cols>;
 template<Eigen::Index rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-
+using DecisionVariableMatrixXRef = Eigen::Ref<const DecisionVariableMatrixX>;
 
 typedef std::vector<Eigen::Ref<const DecisionVariableMatrixX>> VariableVector;
 
@@ -80,8 +82,7 @@ DecisionVariableMatrixToDoubleMatrix(const Eigen::MatrixBase<Derived>& decision_
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> double_matrix(decision_variable_matrix.rows(), decision_variable_matrix.cols());
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      DRAKE_ASSERT(decision_variable_matrix(i,j));
-      double_matrix(i, j) = decision_variable_matrix(i,j)->value();
+      double_matrix(i, j) = decision_variable_matrix(i,j).value();
     }
   }
   return double_matrix;
@@ -95,8 +96,7 @@ template<typename Derived>
 bool DecisionVariableMatrixCoversIndex(const Eigen::MatrixBase<Derived>& decision_variable_matrix, size_t index) {
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      DRAKE_ASSERT(decision_variable_matrix(i, j));
-      if (decision_variable_matrix(i,j)->index() == index) {
+      if (decision_variable_matrix(i,j).index() == index) {
         return true;
       }
     }

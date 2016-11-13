@@ -1059,7 +1059,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
                 t_rotated_lorentz_value(0), 1E-3);
   });
 
-  // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
+  /*// Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
   // The optimal solution and the costs are still the same, but now we test
   // Lorentz cone (rotated Lorentz cone) constraints with generic nonlinear
   // constraints.
@@ -1085,7 +1085,7 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
     const auto& t_rotated_lorentz_value = DecisionVariableMatrixToDoubleMatrix(t_rotated_lorentz);
     EXPECT_NEAR(cost_expected_rotated_lorentz,
                 t_rotated_lorentz_value(0), 1E-3);
-  });
+  });*/
 }
 
 GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
