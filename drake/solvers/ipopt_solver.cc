@@ -72,7 +72,7 @@ size_t GetGradientMatrix(const Constraint& c,
     for (int i = 0; i < static_cast<int>(m); ++i) {
       for (int j = 0; j < v.size(); ++j) {
         iRow[grad_index] = constraint_idx + i;
-        jCol[grad_index] = v(j, 0)->index();
+        jCol[grad_index] = v(j, 0).index();
         grad_index++;
       }
     }
@@ -113,7 +113,7 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(v(i, 0)->index());
+      this_x(index + i) = tx(v(i, 0).index());
     }
     index += num_v_variables;
   }
@@ -136,7 +136,7 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
     DRAKE_ASSERT(v.cols() == 1);
     for (size_t i = 0; i < c.num_constraints(); i++) {
       for (int j = 0; j < v.size(); j++) {
-        grad[grad_idx++] = ty(i).derivatives()(v(j, 0)->index());
+        grad[grad_idx++] = ty(i).derivatives()(v(j, 0).index());
       }
     }
   }
@@ -239,7 +239,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int k = 0; k < v.size(); ++k) {
-          const int idx = v(k, 0)->index();
+          const int idx = v(k, 0).index();
           x_l[idx] = std::max(lower_bound(var_count), x_l[idx]);
           x_u[idx] = std::min(upper_bound(var_count), x_u[idx]);
           ++var_count;
@@ -436,7 +436,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         int num_v_variables = v.size();
         this_x.conservativeResize(index + num_v_variables);
         for (int i = 0; i < num_v_variables; ++i) {
-          this_x(index + i) = tx(v(i, 0)->index());
+          this_x(index + i) = tx(v(i, 0).index());
         }
         index += num_v_variables;
       }
@@ -447,7 +447,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          cost_cache_->grad[v(j, 0)->index()] += ty(0).derivatives()(v(j, 0)->index());
+          cost_cache_->grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
         }
       }
     }

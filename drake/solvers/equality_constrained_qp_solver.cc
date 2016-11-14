@@ -54,12 +54,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       int num_v_variables = v.rows();
       DRAKE_ASSERT(v.cols() == 1);
       for (int i = 0; i < num_v_variables; ++i) {
-        DRAKE_ASSERT(v(i, 0));
         for (int j = 0; j < num_v_variables; ++j) {
-          DRAKE_ASSERT(v(j, 0));
-          A_full(v(i, 0)->index(), v(j, 0)->index()) += Q(index + i, index + j);
+          A_full(v(i, 0).index(), v(j, 0).index()) += Q(index + i, index + j);
         }
-        b_full(v(i, 0)->index()) -= b(index + i);
+        b_full(v(i, 0).index()) -= b(index + i);
       }
       index += num_v_variables;
     }
@@ -75,9 +73,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {
-        A_full.block(constraint_index, v(i, 0)->index(), n, 1) =
+        A_full.block(constraint_index, v(i, 0).index(), n, 1) =
             c->A().col(var_index + i);
-        A_full.block(v(i, 0)->index(), constraint_index, 1, n) =
+        A_full.block(v(i, 0).index(), constraint_index, 1, n) =
             (c->A().col(var_index + i)).transpose();
       }
       var_index += num_v_variables;
