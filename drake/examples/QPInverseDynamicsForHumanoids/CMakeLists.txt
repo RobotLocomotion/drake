@@ -13,6 +13,7 @@ target_link_libraries(drakeQPController
 if(lcm_FOUND)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
   target_link_libraries(drakeQPControllerLcmTranslator
+    drakeRBM
     drakeLCMTypes
     drakeLCMUtil
     lcmtypes_bot2-core-cpp)
