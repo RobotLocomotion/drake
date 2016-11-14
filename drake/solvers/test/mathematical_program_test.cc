@@ -111,7 +111,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
-
+/*
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
@@ -158,7 +158,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   EXPECT_TRUE(
       CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
 
-  EXPECT_NEAR(b(2), x2->value(), 1e-10);
+  EXPECT_NEAR(b(2), x2.value(), 1e-10);
 
   const auto& xhead_value = DecisionVariableMatrixToDoubleMatrix(xhead);
   EXPECT_TRUE(CompareMatrices(b.head(3), xhead_value, 1e-10,
@@ -202,7 +202,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
         CompareMatrices(b / 3, DecisionVariableMatrixToDoubleMatrix(x), 1e-10, MatrixCompareType::absolute));
   });
 }
-/*
+
 GTEST_TEST(testMathematicalProgram, trivialLinearEquality) {
   MathematicalProgram prog;
 
@@ -848,7 +848,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     });
   }
 }*/
-/*
+
 //
 // Test how an unconstrained QP is dispatched and solved:
 //   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
@@ -969,7 +969,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
 }
-*/
+
 // Solve an SOCP with Lorentz cone and rotated Lorentz cone constraint as a
 // nonlinear optimization problem.
 // The objective is to find the smallest distance from a hyperplane

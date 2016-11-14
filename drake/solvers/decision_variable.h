@@ -4,24 +4,38 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/number_traits.h"
 
 namespace drake {
 namespace solvers {
 /**
  * This class stores the type, the name, the value, and the index of a
  * decision variable in an optimization program.
+ * The DecisionVariableScalar created by MathematicalProgram should have
+ * the same lifespan as the MathematicalProgram object.
  */
 class DecisionVariableScalar {
  public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
-  /** Construct an @ref undefined form with no variables. */
-  DecisionVariableScalar() {}
+  /**
+   * This constructor creates a dummy placeholder, the value_ pointer
+   * is initialized to nullptr. The usage of this function is
+   * @code{.cc}
+   * MathematicalProgram prog;                                         // Creates an optimization program object with no decision variables.
+   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();  // Add a 2 x 1 vector containing two decision variables to the optimization program. This calls the private constructor DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();  // Add a 2 x 1 vector containing two decision variables to the optimization program. This calls the private constructor DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * DecisionVariableMatrix<2, 2> X; // This calls the default constructor DecisionVariableScalar(), X is not related to the optimization program prog yet.
+   * X << x1, x2; // Now X contains the decision variables from the optimization program object prog. The first column of X is x1, the second column of X is x2.
+   * @endcode
+   */
+  DecisionVariableScalar() : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
   /**
    * @return The type of the variable.
    */
@@ -54,27 +68,55 @@ class DecisionVariableScalar {
    * @param name The name of the variable.
    * @param index The index of the variable in the optimization program.
    */
-  DecisionVariableScalar(VarType type, const std::string& name, size_t index)
-      : type_(type), name_(name), value_(new double(0)), index_(index) {}
+  DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+      : type_(type), name_(name), value_(value), index_(index) {}
 
   void set_value(double new_value) { *value_ = new_value; }
 
   VarType type_;
   std::string name_;
-  double* value_;
+  double *value_;
   size_t index_;
 };
+} // namespace solvers
+} // namespace drake
 
+/*namespace Eigen {
+
+// Eigen scalar type traits for Matrix<FunctionalForm>.
+template <>
+struct NumTraits<drake::solvers::DecisionVariableScalar> {
+  enum {
+    // Our set of allowed values is discrete, and no epsilon is allowed during
+    // equality comparison, so treat this as an unsigned integer type.
+    IsInteger = 0,
+    IsSigned = 0,
+    IsComplex = 0,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 1,
+    MulCost = 1
+  };
+
+  template<bool Vectorized>
+  struct Div {
+    enum {
+      Cost = 1
+    };
+  };
+};
+}  // namespace Eigen*/
+
+namespace drake{
+namespace solvers{
 template<Eigen::Index rows, Eigen::Index cols>
-using DecisionVariableMatrix = Eigen::Matrix<const DecisionVariableScalar, rows, cols>;
+using DecisionVariableMatrix = Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
 template<Eigen::Index rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-using DecisionVariableMatrixXRef = Eigen::Ref<const DecisionVariableMatrixX>;
-
-typedef std::vector<Eigen::Ref<const DecisionVariableMatrixX>> VariableVector;
+using VariableVector =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 template<typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
@@ -111,14 +153,14 @@ bool DecisionVariableMatrixCoversIndex(const Eigen::MatrixBase<Derived>& decisio
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
-int GetVariableVectorSize(const VariableVector& vars);
+int GetVariableVectorSize(const drake::solvers::VariableVector& vars);
 
 /**
  * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
  * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
  * scalar).
  */
-bool VariableVectorContainsColumnVectorsOnly(const VariableVector& vars);
+bool VariableVectorContainsColumnVectorsOnly(const drake::solvers::VariableVector& vars);
 
 }  // end namespace solvers
 }  // end namespace drake
