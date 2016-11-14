@@ -183,7 +183,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Set reasonable integrator parameters.
   integrator_->set_maximum_step_size(0.1);
   integrator_->set_minimum_step_size(1e-6);
-  integrator_->set_target_accuracy(1e-5);
+  integrator_->set_target_accuracy(1e-4);
 
   // Re-initialize the integrator.
   integrator_->Initialize();
