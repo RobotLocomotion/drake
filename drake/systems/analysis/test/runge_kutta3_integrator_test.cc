@@ -30,7 +30,11 @@ class RK3IntegratorTest : public ::testing::Test {
   const double kBigDT = 1e-1;    // Big integration step size.
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
+  static int fixed_steps_ = 0;
 };
+
+// Allocate space for static variable
+int RK3IntegratorTest::fixed_steps_;
 
 TEST_F(RK3IntegratorTest, ReqAccuracy) {
   // Set the accuracy.
@@ -92,6 +96,9 @@ TEST_F(RK3IntegratorTest, SpringMassStep) {
   // Get the final position.
   const double kXFinal =
       context_->get_continuous_state()->get_vector().GetAtIndex(0);
+
+  // Store the number of integration steps
+  fixed_steps_ = integrator_->get_num_steps_taken();
 
   // Check the solution.
   EXPECT_NEAR(
@@ -217,6 +224,10 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   EXPECT_GE(integrator_->get_smallest_adapted_step_size_taken(), 0.0);
   EXPECT_GE(integrator_->get_num_steps_taken(), 0);
   EXPECT_NE(integrator_->get_error_estimate(), nullptr);
+
+  // Verify that less computation was performed compared to the fixed step
+  // integrator.
+  EXPECT_LESS(integrator->get_num_steps_taken(), fixed_steps_);
 }
 
 }  // namespace
