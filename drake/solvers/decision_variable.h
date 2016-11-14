@@ -81,7 +81,7 @@ class DecisionVariableScalar {
 } // namespace solvers
 } // namespace drake
 
-/*namespace Eigen {
+namespace Eigen {
 
 // Eigen scalar type traits for Matrix<FunctionalForm>.
 template <>
@@ -104,8 +104,12 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
       Cost = 1
     };
   };
+
+  typedef drake::solvers::DecisionVariableScalar Real;
+  typedef drake::solvers::DecisionVariableScalar Nested;
+  typedef drake::solvers::DecisionVariableScalar Literal;
 };
-}  // namespace Eigen*/
+}  // namespace Eigen
 
 namespace drake{
 namespace solvers{

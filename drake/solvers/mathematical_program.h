@@ -1571,7 +1571,7 @@ class MathematicalProgram {
       num_new_vars = rows * (rows + 1) / 2;
     }
     DRAKE_ASSERT(static_cast<int>(names.size()) == num_new_vars);
-    variables_.resize(num_vars_ + num_new_vars);
+    variables_.conservativeResize(num_vars_ + num_new_vars, Eigen::NoChange);
     x_values_.reserve(num_vars_ + num_new_vars);
     int row_index = 0;
     int col_index = 0;
