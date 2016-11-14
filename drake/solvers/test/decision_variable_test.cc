@@ -32,10 +32,10 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   X_expected.resize(2, 3);
 
 
-  DRAKE_ASSERT(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X1), X_expected, 1E-14, MatrixCompareType::absolute));
-  DRAKE_ASSERT(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(S1), S_expected, 1E-14, MatrixCompareType::absolute));
-  DRAKE_ASSERT(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(x1), x_value, 1E-14, MatrixCompareType::absolute));
-  DRAKE_ASSERT(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2), X_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X1), X_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(S1), S_expected, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(x1), x_value, 1E-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2), X_expected, 1E-14, MatrixCompareType::absolute));
 
   EXPECT_TRUE(VariableVectorContainsColumnVectorsOnly({x1}));
   EXPECT_FALSE(VariableVectorContainsColumnVectorsOnly({X1, S1}));
@@ -45,6 +45,12 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
     EXPECT_TRUE(DecisionVariableMatrixCoversIndex(x1, i + 12));
     EXPECT_TRUE(DecisionVariableMatrixCoversIndex(X2, i + 18));
   }
+
+  DecisionVariableMatrix <2, 6> X_assembled;
+  X_assembled << X1, X2;
+  Eigen::Matrix<double, 2, 6> X_assembled_expected;
+  X_assembled_expected << X_expected, X_expected;
+  EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X_assembled), X_assembled_expected, 1E-10, MatrixCompareType::absolute));
 }
 }  // namespace solvers
 }  // namespace drake
