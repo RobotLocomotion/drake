@@ -5,6 +5,7 @@
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -22,13 +23,13 @@ namespace kuka_iiwa_arm {
 /// - double
 ///
 template <typename T>
-class IiwaWorldSimulator {
+class IiwaWorldSimBuilder {
  public:
   /// A constructor configuring this object to use DrakeLcm, which encapsulates
   /// a _real_ LCM instance
-  IiwaWorldSimulator();
+  IiwaWorldSimBuilder();
 
-  ~IiwaWorldSimulator();
+  ~IiwaWorldSimBuilder();
 
   /// Adds a fixed object specified by its name `object_name` to the
   /// `RigidBodyTree^` at a pose specified by the position `xyz` and
@@ -55,21 +56,19 @@ class IiwaWorldSimulator {
   ///  Wraps drake::multibody::AddFlatTerrainToWorld
   void AddGroundToTree();
 
-  /// Build the Diagram and initialize the Simulator.  No further changes to
-  /// the diagram may occur after this has been called.
-  /// @pre Start() has NOT been called.
-  void Build();
-
-  /// Advance simulated time by the given @p time_step increment in seconds.
-  void StepBy(const T& time_step);
-
-  /// Simulate until the time given by @p final_time
-  void StepTo(const T& final_time);
+  /// Build and return a Diagram.
+  const std::unique_ptr<systems::Diagram<T>> Build();
+//
+//  /// Set the zero configuration
+  void SetZeroConfiguration(systems::Simulator<T> *simulator,
+                            const systems::Diagram<T> *diagram);
 
   // We are neither copyable nor moveable.
-  IiwaWorldSimulator(const IiwaWorldSimulator<T>& other) = delete;
-  IiwaWorldSimulator& operator=(const IiwaWorldSimulator<T>& other) = delete;
+  IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;
+  IiwaWorldSimBuilder& operator=(const IiwaWorldSimBuilder<T>& other) = delete;
 
+  /// Set the parameters related to the penetration and friction throughout the
+  /// world.
   void SetPenetrationContactParameters(double penetration_stiffness,
                                        double penetration_damping,
                                        double contact_friction);
@@ -79,16 +78,18 @@ class IiwaWorldSimulator {
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
       std::make_unique<RigidBodyTree<T>>()};
   lcm::DrakeLcm lcm_;
+  systems::RigidBodyPlant<T>* plant_{nullptr};
+  std::unique_ptr<systems::Diagram<T>> diagram_;
+  //systems::Diagram<T> diagram_;
+  //DiagramBuilder<T> builder_;
 
   // For building.
-  std::unique_ptr<systems::DiagramBuilder<T>> builder_{
-      std::make_unique<systems::DiagramBuilder<T>>()};
   std::map<std::string, std::string> object_urdf_map_;
   int next_object_number_{0};
   bool started_{false};
   bool table_loaded_{false};
 
-  // Map between objects loadable in the simulation and a convinient string
+  // Map between objects loadable in the simulation and a convenient string
   // name.
   std::map<std::string, std::string> object_name_map_{
       {"iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf"},
@@ -97,10 +98,6 @@ class IiwaWorldSimulator {
       {"cylinder",
        "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf"},
       {"cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"}};
-
-  // For simulation.
-  std::unique_ptr<systems::Diagram<T>> diagram_;
-  std::unique_ptr<systems::Simulator<T>> simulator_;
 
   double penetration_stiffness_{3000.0};
   double penetration_damping_{1.0};

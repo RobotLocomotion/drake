@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_simulator.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
 
 namespace drake {
 namespace examples {
@@ -9,13 +9,13 @@ namespace kuka_iiwa_arm {
 namespace {
 
 int main(int argc, char* argv[]) {
-  auto simulator = std::make_unique<IiwaWorldSimulator<double>>();
+  auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
 
-  simulator->AddObjectFixedToWorld(Eigen::Vector3d::Zero() /* xyz */,
+  iiwa_world->AddObjectFixedToWorld(Eigen::Vector3d::Zero() /* xyz */,
                                    Eigen::Vector3d::Zero() /* rpy */, "table");
-  simulator->AddGroundToTree();
+  iiwa_world->AddGroundToTree();
 
-  simulator->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
+  iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
                                              1.0 /* penetration_damping */,
                                              1.0 /* contact friction */);
 
@@ -23,22 +23,26 @@ int main(int argc, char* argv[]) {
 
   Eigen::Vector3d robot_base(-0.25, -0.75, table_top_z_in_world);
 
-  simulator->AddObjectFixedToWorld(robot_base,
+  iiwa_world->AddObjectFixedToWorld(robot_base,
                                    Eigen::Vector3d::Zero() /* rpy */, "iiwa");
 
   Eigen::Vector3d box_base(-0.45, -0.4, table_top_z_in_world + 0.15);
   Eigen::Vector3d cylinder_1_base(-0.5, -0.60, table_top_z_in_world + 0.1);
   Eigen::Vector3d cylinder_2_base(-0.05, -0.75, table_top_z_in_world + 0.1);
 
-  simulator->AddObjectFloatingToWorld(
+  iiwa_world->AddObjectFloatingToWorld(
       cylinder_1_base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
-  simulator->AddObjectFloatingToWorld(
+  iiwa_world->AddObjectFloatingToWorld(
       cylinder_2_base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
-  simulator->AddObjectFloatingToWorld(
+  iiwa_world->AddObjectFloatingToWorld(
       box_base, Eigen::Vector3d::Zero() /* rpy */, "cuboid");
-  simulator->Build();
 
-  simulator->StepTo(3.5 /* final time */);
+  auto diagram = iiwa_world->Build();
+//  auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
+//
+////  iiwa_world->SetZeroConfiguration(simulator.get(), diagram);
+//  simulator->Initialize();
+//  simulator->StepTo(3.5 /* final time */);
 
   return 0;
 }

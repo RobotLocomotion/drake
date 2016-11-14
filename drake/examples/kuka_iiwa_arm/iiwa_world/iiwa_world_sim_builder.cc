@@ -1,6 +1,5 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_simulator.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
 
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -18,10 +17,15 @@
 #include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/framework/primitives/multiplexer.h"
 
+using Eigen::aligned_allocator;
+using Eigen::Vector3d;
+using drake::lcm::DrakeLcm;
+using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kQuaternion;
-using drake::multibody::joints::FloatingBaseType;
-using drake::lcm::DrakeLcm;
+using drake::parsers::ModelInstanceIdTable;
+using drake::parsers::sdf::AddModelInstancesFromSdfFile;
+using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
 using drake::systems::ConstantVectorSource;
 using drake::systems::Context;
 using drake::systems::ContinuousState;
@@ -31,26 +35,23 @@ using drake::systems::DrakeVisualizer;
 using drake::systems::RigidBodyPlant;
 using drake::systems::Simulator;
 using drake::systems::VectorBase;
-using drake::parsers::ModelInstanceIdTable;
-using drake::parsers::sdf::AddModelInstancesFromSdfFile;
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
-using Eigen::aligned_allocator;
-using Eigen::Vector3d;
 using std::allocate_shared;
+using std::make_unique;
 using std::string;
+using std::unique_ptr;
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
 template <typename T>
-IiwaWorldSimulator<T>::IiwaWorldSimulator() {}
+IiwaWorldSimBuilder<T>::IiwaWorldSimBuilder() {}
 
 template <typename T>
-IiwaWorldSimulator<T>::~IiwaWorldSimulator() {}
+IiwaWorldSimBuilder<T>::~IiwaWorldSimBuilder() {}
 
 template <typename T>
-int IiwaWorldSimulator<T>::AddObjectFixedToWorld(Vector3d xyz, Vector3d rpy,
+int IiwaWorldSimBuilder<T>::AddObjectFixedToWorld(Vector3d xyz, Vector3d rpy,
                                                  string object_name) {
   DRAKE_DEMAND(!started_);
 
@@ -61,7 +62,7 @@ int IiwaWorldSimulator<T>::AddObjectFixedToWorld(Vector3d xyz, Vector3d rpy,
 }
 
 template <typename T>
-int IiwaWorldSimulator<T>::AddObjectFloatingToWorld(Vector3d xyz, Vector3d rpy,
+int IiwaWorldSimBuilder<T>::AddObjectFloatingToWorld(Vector3d xyz, Vector3d rpy,
                                                     string object_name) {
   DRAKE_DEMAND(!started_);
 
@@ -72,7 +73,7 @@ int IiwaWorldSimulator<T>::AddObjectFloatingToWorld(Vector3d xyz, Vector3d rpy,
 }
 
 template <typename T>
-int IiwaWorldSimulator<T>::AddObjectToFrame(
+int IiwaWorldSimBuilder<T>::AddObjectToFrame(
     Vector3d xyz, Vector3d rpy, string object_name,
     std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
@@ -104,68 +105,81 @@ int IiwaWorldSimulator<T>::AddObjectToFrame(
 }
 
 template <typename T>
-void IiwaWorldSimulator<T>::AddGroundToTree() {
+void IiwaWorldSimBuilder<T>::AddGroundToTree() {
   drake::multibody::AddFlatTerrainToWorld(rigid_body_tree_.get());
 }
 
 template <typename T>
-void IiwaWorldSimulator<T>::Build() {
+const std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
   DRAKE_DEMAND(!started_);
 
-  auto plant = builder_->template AddSystem<systems::RigidBodyPlant<T>>(
+  unique_ptr<systems::DiagramBuilder<T>> builder{
+     make_unique<systems::DiagramBuilder<T>>()};
+
+  plant_ = builder->template AddSystem<systems::RigidBodyPlant<T>>(
       move(rigid_body_tree_));
-  plant->set_contact_parameters(penetration_stiffness_, penetration_damping_,
+  plant_->set_contact_parameters(penetration_stiffness_, penetration_damping_,
                                 contact_friction_);
 
   // Feed in constant inputs of zero into the RigidBodyPlant.
-  VectorX<T> constant_value(plant->get_input_size());
+  VectorX<T> constant_value(plant_->get_input_size());
   constant_value.setZero();
 
   auto const_source_ =
-      builder_->template AddSystem<ConstantVectorSource<T>>(constant_value);
+      builder->template AddSystem<ConstantVectorSource<T>>(constant_value);
 
-  // Creates and adds LCM publisher for visualization.
-  auto viz_publisher_ = builder_->template AddSystem<DrakeVisualizer>(
-      plant->get_rigid_body_tree(), &lcm_);
+  // Creates and adds a DrakeVisualizer publisher.
+  auto viz_publisher_ = builder->template AddSystem<DrakeVisualizer>(
+      plant_->get_rigid_body_tree(), &lcm_);
 
   // Connects the constant source output port to the RigidBodyPlant's input
   // port. This effectively results in the robot being uncontrolled.
-  builder_->Connect(const_source_->get_output_port(), plant->get_input_port(0));
+  builder->Connect(const_source_->get_output_port(), plant_->get_input_port(0));
 
   // Connects to publisher for visualization.
-  builder_->Connect(plant->get_output_port(0),
+  builder->Connect(plant_->get_output_port(0),
                     viz_publisher_->get_input_port(0));
 
-  builder_->ExportOutput(plant->get_output_port(0));
+  builder->ExportOutput(plant_->get_output_port(0));
 
-  diagram_ = builder_->Build();
+  diagram_ =
+      std::make_unique<systems::Diagram<T>>(builder->Build());
+  //builder->BuildInto(&diagram_);
 
-  simulator_ = std::make_unique<systems::Simulator<T>>(*diagram_);
-  Context<T>* plant_context = diagram_->GetMutableSubsystemContext(
-      simulator_->get_mutable_context(), plant);
-  plant->SetZeroConfiguration(plant_context);
-
-  simulator_->Initialize();
 
   std::cout << "Simulator initialised\n";
-
+  drake::log()->debug("Simulation initialized...");
   started_ = true;
+
+//  return(std::move(diagram));
+  return(std::move(diagram_));
 }
 
 template <typename T>
-void IiwaWorldSimulator<T>::StepBy(const T& time_step) {
-  const T time = simulator_->get_context().get_time();
-  SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-  simulator_->StepTo(time + time_step);
+void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
+    systems::Simulator<T> *simulator,
+    const systems::Diagram<T> *diagram) {
+  DRAKE_DEMAND(simulator != nullptr && diagram != nullptr);
+
+  Context<T>* plant_context = diagram->GetMutableSubsystemContext(
+      simulator->get_mutable_context(), plant_);
+  plant_->SetZeroConfiguration(plant_context);
 }
 
-template <typename T>
-void IiwaWorldSimulator<T>::StepTo(const T& final_time) {
-  simulator_->StepTo(final_time);
-}
+//template <typename T>
+//void IiwaWorldSimBuilder<T>::StepBy(const T& time_step) {
+//  const T time = simulator_->get_context().get_time();
+//  SPDLOG_TRACE(drake::log(), "Time is now {}", time);
+//  simulator_->StepTo(time + time_step);
+//}
+//
+//template <typename T>
+//void IiwaWorldSimBuilder<T>::StepTo(const T& final_time) {
+//  simulator_->StepTo(final_time);
+//}
 
 template <typename T>
-void IiwaWorldSimulator<T>::SetPenetrationContactParameters(
+void IiwaWorldSimBuilder<T>::SetPenetrationContactParameters(
     double penetration_stiffness, double penetration_damping,
     double contact_friction) {
   penetration_stiffness_ = penetration_stiffness;
@@ -173,7 +187,7 @@ void IiwaWorldSimulator<T>::SetPenetrationContactParameters(
   contact_friction_ = contact_friction;
 }
 
-template class DRAKE_EXPORT IiwaWorldSimulator<double>;
+template class DRAKE_EXPORT IiwaWorldSimBuilder<double>;
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
