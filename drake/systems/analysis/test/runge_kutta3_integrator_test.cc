@@ -30,7 +30,7 @@ class RK3IntegratorTest : public ::testing::Test {
   const double kBigDT = 1e-1;    // Big integration step size.
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
-  static int fixed_steps_ = 0;
+  static int fixed_steps_;
 };
 
 // Allocate space for static variable
@@ -227,7 +227,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
 
   // Verify that less computation was performed compared to the fixed step
   // integrator.
-  EXPECT_LESS(integrator->get_num_steps_taken(), fixed_steps_);
+  EXPECT_LT(integrator_->get_num_steps_taken(), fixed_steps_);
 }
 
 }  // namespace
