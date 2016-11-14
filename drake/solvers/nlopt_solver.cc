@@ -36,7 +36,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
-      this_x(index + i) = tx(v(i, 0)->index());
+      this_x(index + i) = tx(v(i, 0).index());
     }
     index += num_v_variables;
   }
@@ -72,7 +72,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
       for (int i = 0; i < num_v_variables; ++i) {
-        this_x(index + i) = tx(v(i, 0)->index());
+        this_x(index + i) = tx(v(i, 0).index());
       }
       index += num_v_variables;
     }
@@ -84,7 +84,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          grad[v(j, 0)->index()] += ty(0).derivatives()(v(j, 0)->index());
+          grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
         }
       }
     }
@@ -219,8 +219,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
         }
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          grad[(result_idx * n) + v(j, 0)->index()] =
-              ty(i).derivatives()(v(j, 0)->index()) * grad_sign;
+          grad[(result_idx * n) + v(j, 0).index()] =
+              ty(i).derivatives()(v(j, 0).index()) * grad_sign;
         }
         result_idx++;
         DRAKE_ASSERT(result_idx <= m);
@@ -321,7 +321,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
-        const int idx = v(k, 0)->index();
+        const int idx = v(k, 0).index();
         xlow[idx] = std::max(lower_bound(var_count), xlow[idx]);
         xupp[idx] = std::min(upper_bound(var_count), xupp[idx]);
         if (x[idx] < xlow[idx]) {
