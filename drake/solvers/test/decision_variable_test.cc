@@ -37,7 +37,7 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(x1), x_value, 1E-14, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2), X_expected, 1E-14, MatrixCompareType::absolute));
 
-  EXPECT_TRUE(VariableVectorContainsColumnVectorsOnly({x1}));
+  EXPECT_TRUE(VariableVectorRefContainsColumnVectorsOnly({x1}));
   EXPECT_FALSE(VariableVectorContainsColumnVectorsOnly({X1, S1}));
   for (int i = 0; i < 6; ++i) {
     EXPECT_TRUE(DecisionVariableMatrixCoversIndex(X1, i));

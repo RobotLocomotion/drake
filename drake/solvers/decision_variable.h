@@ -120,8 +120,8 @@ using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-using VariableVector =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
-
+using VariableVectorRef =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
+using VariableVector = std::vector<DecisionVariableMatrixX>;
 template<typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToDoubleMatrix(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
@@ -157,6 +157,15 @@ bool DecisionVariableMatrixCoversIndex(const Eigen::MatrixBase<Derived>& decisio
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
+int GetVariableVectorRefSize(const drake::solvers::VariableVectorRef& vars);
+
+/**
+ * Given a vector of DecisionVariableMatrix @p vars, computes the TOTAL number
+ * of scalar decision variables stored in @p vars, including duplication.
+ * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
+ * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
+ * x1 for twice.
+ */
 int GetVariableVectorSize(const drake::solvers::VariableVector& vars);
 
 /**
@@ -166,5 +175,11 @@ int GetVariableVectorSize(const drake::solvers::VariableVector& vars);
  */
 bool VariableVectorContainsColumnVectorsOnly(const drake::solvers::VariableVector& vars);
 
+/**
+ * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
+ * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
+ * scalar).
+ */
+bool VariableVectorRefContainsColumnVectorsOnly(const drake::solvers::VariableVectorRef& vars);
 }  // end namespace solvers
 }  // end namespace drake

@@ -1,4 +1,5 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <typeinfo>
 
 #include "gtest/gtest.h"
@@ -60,7 +61,7 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 // TODO(naveenoid) : tests need to be purged of Random initializations.
-/*
+
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
   prog.AddContinuousVariables<1>();
@@ -76,7 +77,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(std::cref(unique));
   prog.AddCost(std::make_shared<Unique>());
   prog.AddCost(std::unique_ptr<Unique>(new Unique));
-}*/
+}
 
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void CheckSolverType(MathematicalProgram& prog,
@@ -112,7 +113,7 @@ void RunNonlinearProgram(MathematicalProgram& prog,
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
-/*
+
 GTEST_TEST(testMathematicalProgram, BoundingBoxTest) {
   // A simple test program to test if the bounding box constraints are added
   // correctly.
@@ -651,7 +652,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
     EXPECT_TRUE(CompareMatrices(y_value, Vector3d(0.5, 0, 3), 1e-4,
                                 MatrixCompareType::absolute));
   });
-}*/
+}
 /*
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
@@ -890,7 +891,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   auto y = prog.AddContinuousVariables(1, "y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableVector vars;
+  VariableVectorRef vars;
   vars.push_back(DecisionVariableVector<1>(x(1)));
   vars.push_back(y);
 
@@ -911,7 +912,7 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   // Problem still has only quadratic costs, so solver should be the same.
   CheckSolverType(prog, "Equality Constrained QP Solver");
 }
-/*
+
 // Test how an equality-constrained QP is dispatched
 //   - on the problem (x1 - 1)^2 + (x2 - 1)^2, with a min at
 //     at (x1=1, x2=1), constrained with (x1 + x2 = 1).
@@ -952,7 +953,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableVector vars;
+  VariableVectorRef vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 
@@ -1098,7 +1099,7 @@ GTEST_TEST(testMathematicalProgram, testSolveSOCPasNLP) {
   A << 0, 1, 2, -1, 2, 3;
   b = Vector2d(1.0, 3.0);
   MinDistanceFromPlaneToOrigin(A, b);
-}*/
+}
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
