@@ -21,6 +21,6 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(drake-lcm-system
     LIBS -ldrakeLCMSystem
     REQUIRES
-      drake-lcm-types
+      drake-lcm-types-cpp
       lcm)
 endif()

@@ -63,8 +63,14 @@ function(drake_install_pkg_config_file _NAME)
     set(_classpath)
   endif()
 
+  if(_LIBS)
+    string(REPLACE ";" " " _libs "${_LIBS}")
+    set(_libs "-L\${libdir} ${_libs}")
+  else()
+    set(_libs)
+  endif()
+
   string(REPLACE ";" " " _cflags "${_CFLAGS}")
-  string(REPLACE ";" " " _libs "${_LIBS}")
   string(REPLACE ";" " " _requires "${_REQUIRES}")
 
   set(_pkg_config_file "${CMAKE_CURRENT_BINARY_DIR}/${_NAME}.pc")

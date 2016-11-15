@@ -24,7 +24,7 @@ if(lcm_FOUND)
     LIBS -ldrakeLCMSystem2
     REQUIRES
       drake-lcm
-      drake-lcm-types
+      drake-lcm-types-cpp
       drake-system-framework)
 endif()
 
