@@ -56,6 +56,9 @@ ikPlanner.plannerPub._setupLocalServer()
 # change the default animation mode of the playback panel
 robotSystem.playbackPanel.animateOnExecute = True
 
+# disable pointwise ik by default
+robotSystem.ikPlanner.getIkOptions().setProperty('Use pointwise', False)
+
 # set the default camera view
 applogic.resetCamera(viewDirection=[-1,0,0], view=app.view)
 
