@@ -75,7 +75,7 @@ class RobotPlanRunner {
 
     while (true) {
       // Call lcm handle until at least one message is processed
-      while (0 == lcm_.handleTimeout(10));
+      while (0 == lcm_.handleTimeout(10)) { }
 
       DRAKE_ASSERT(iiwa_status_.utime != -1);
       cur_time_us = iiwa_status_.utime;
