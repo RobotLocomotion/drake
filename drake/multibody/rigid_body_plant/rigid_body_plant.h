@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -72,6 +73,8 @@ class DRAKE_EXPORT RigidBodyPlant : public LeafSystem<T> {
  public:
   /// Instantiates a %RigidBodyPlant from a Multi-Body Dynamics (MBD) model of
   /// the world in @p tree.  @p tree must not be `nullptr`.
+  // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
+  // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree);
 
   ~RigidBodyPlant() override;
@@ -197,6 +200,22 @@ void DoMapQDotToVelocity(
       VectorBase<T> *generalized_velocity) const override;
 
  private:
+  // Computes the contact results for feeding the corresponding output port.
+  void ComputeContactResults(const Context<T>& context,
+                             ContactResults<T>* contacts) const;
+
+  // Computes the generalized forces on all bodies due to contact.
+  //
+  // @param kinsol         The kinematics of the rigid body system at the time
+  //                       of contact evaluation.
+  // @param[out] contacts  The optional contact results.  If non-null, stores
+  //                       the contact information for consuming on the output
+  //                       port.
+  // @return               The generalized forces across all the bodies due to
+  //                       contact response.
+  VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
+
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
   T penetration_stiffness_{150.0};  // An arbitrarily large number.
@@ -204,8 +223,9 @@ void DoMapQDotToVelocity(
   T friction_coefficient_{1.0};
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
-  int state_output_port_id_;
-  int kinematics_output_port_id_;
+  int state_output_port_id_{};
+  int kinematics_output_port_id_{};
+  int contact_output_port_id_{};
 };
 
 }  // namespace systems

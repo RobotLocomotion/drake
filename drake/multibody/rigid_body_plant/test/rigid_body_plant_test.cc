@@ -288,7 +288,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   VectorXd xc = context_->get_continuous_state()->CopyToVector();
   ASSERT_EQ(xc, desired_state);
 
-  ASSERT_EQ(2, output_->get_num_ports());
+  // 3 outputs: state, kinematic results, contact results
+  ASSERT_EQ(3, output_->get_num_ports());
   const BasicVector<double>* output_state = output_->get_vector_data(0);
   ASSERT_NE(nullptr, output_state);
 

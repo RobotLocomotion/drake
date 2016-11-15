@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -11,27 +10,33 @@ namespace systems {
 
  Ultimately, a contact force consists of an application point, a spatial
  force, and a unit vector. The spatial force includes:
-  - a translational force, that is a pure force applied at a point,
-  - a torque, the rotational force. This is not the same as the moment
-    induced by the translational force.  This torque can arise from a
-    combination of different sources (e.g., torsional friction, the sum of
-    various moments, etc.)
+    - a translational force, that is a pure force applied at a point,
+    - a torque, the rotational force. This is not the same as the moment
+      induced by the translational force.  This torque can arise from a
+      combination of different sources (e.g., torsional friction, the sum of
+      various moments, etc.)
 
-  The unit normal indicates the normal direction of the translational force.
-  Used to decompose the force into normal and tangential components. The
-  normal is typically defined by the contact normal.
+ The unit normal indicates the normal direction of the translational force.
+ Used to decompose the force into normal and tangential components. The
+ normal is typically defined by the contact normal.
 
-  A ContactForce makes no assumptions about the frame in which it is defined
-  except that the vectors representing application point location, contact
-  normal, force, and torque are all expressed in a common frame, with the
-  application point measured from the origin of that frame. Every external
-  instantiation of ContactForce must make it clear which frame is being used.
+ A ContactForce makes no assumptions about the frame in which it is defined
+ except that the vectors representing application point location, contact
+ normal, force, and torque are all expressed in a common frame, with the
+ application point measured from the origin of that frame. Every external
+ instantiation of ContactForce must make it clear which frame is being used.
 
-  @tparam T The scalar type. Must be a valid Eigen scalar.
+ @tparam T The scalar type. Must be a valid Eigen scalar.
+
+ Instantiated templates for the following ScalarTypes are provided:
+    - double
  */
 template <typename T>
-class DRAKE_EXPORT ContactForce {
+class ContactForce {
  public:
+  /** Default constructor.  All values are initialized to NaN. */
+  ContactForce();
+
   /**
    Fully-specified constructor.
 
