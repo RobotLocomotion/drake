@@ -30,12 +30,14 @@ if (lcm_FOUND)
 endif()
 
 set(lcm_dependent_link_libraries)
+set(lcm_dependent_libs)
 set(lcm_dependent_requires)
 if (lcm_FOUND)
   set(lcm_dependent_link_libraries
       ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
       lcm)
+  set(lcm_dependent_libs ${CMAKE_THREAD_LIBS_INIT})
   set(lcm_dependent_requires drake-lcmtypes-cpp lcm)
 endif()
 
@@ -58,7 +60,7 @@ pods_install_libraries(drakeLcm)
 drake_install_pkg_config_file(drake-lcm
     TARGET drakeLcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
-    LIBS -ldrakeLcm
+    LIBS -ldrakeLcm ${lcm_dependent_libs}
     REQUIRES ${lcm_dependent_requires})
 
 if(BUILD_TESTING)
