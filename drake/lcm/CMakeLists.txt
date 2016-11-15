@@ -36,7 +36,7 @@ if (lcm_FOUND)
       ${CMAKE_THREAD_LIBS_INIT}
       drakeLCMTypes
       lcm)
-  set(lcm_dependent_requires drake-lcm-types lcm)
+  set(lcm_dependent_requires drake-lcmtypes-cpp lcm)
 endif()
 
 add_library_with_exports(LIB_NAME drakeLcm SOURCE_FILES

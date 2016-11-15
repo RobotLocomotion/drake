@@ -17,7 +17,7 @@ if(lcm_FOUND)
   drake_install_pkg_config_file(drake-lcm-util
     LIBS -ldrakeLCMUtil -llcmtypes_bot2-core-cpp
     REQUIRES
-      drake-lcm-types
+      drake-lcmtypes-cpp
       drake-trajectories)
 endif()
 

@@ -52,9 +52,14 @@ generate_export_header(drake_lcmtypes)
 target_include_directories(drake_lcmtypes INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
+drake_install_pkg_config_file(drake-lcmtypes
+  LIBS -ldrake_lcm_types)
+
 lcm_add_library(drakeLCMTypes CPP ${cpp_install_headers})
 target_include_directories(drakeLCMTypes INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+
+drake_install_pkg_config_file(drake-lcmtypes-cpp)
 
 lcm_install_headers(
   ${CMAKE_CURRENT_BINARY_DIR}/drake_lcmtypes_export.h
@@ -70,9 +75,6 @@ install(TARGETS drake_lcmtypes drakeLCMTypes
   ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
   INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
-
-drake_install_pkg_config_file(drake-lcm-types
-  LIBS -ldrake_lcm_types)
 
 lcm_install_python(${python_install_sources})
 

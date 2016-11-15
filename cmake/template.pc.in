@@ -12,6 +12,6 @@ Description: @_DESCRIPTION@
 URL: @_URL@
 Version: @_VERSION@
 Requires: @_requires@
-Libs: -L${libdir} @_libs@
+Libs: @_libs@
 Cflags: -I${includedir} @_cflags@
 @_classpath@

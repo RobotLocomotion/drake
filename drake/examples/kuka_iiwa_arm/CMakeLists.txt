@@ -29,7 +29,7 @@ if(lcm_FOUND)
       REQUIRES
         drake-common
         drake-lcm-system
-        drake-lcm-types
+        drake-lcmtypes-cpp
         drake-rbsystem
         drake-shapes)
 
