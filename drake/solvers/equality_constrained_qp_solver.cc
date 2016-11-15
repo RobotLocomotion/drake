@@ -55,12 +55,6 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       DRAKE_ASSERT(v.cols() == 1);
       for (int i = 0; i < num_v_variables; ++i) {
         for (int j = 0; j < num_v_variables; ++j) {
-          std::cout<<"v("<<i<<",0)"<<std::endl;
-          std::cout<<"name()"<<v(i, 0).name()<<std::endl;
-          std::cout<<"index()"<<v(i, 0).index()<<std::endl;
-          std::cout<<"v("<<j<<",0)"<<std::endl;
-          std::cout<<"name()"<<v(j, 0).name()<<std::endl;
-          std::cout<<"index()"<<v(j, 0).index()<<std::endl;
           A_full(v(i, 0).index(), v(j, 0).index()) += Q(index + i, index + j);
         }
         b_full(v(i, 0).index()) -= b(index + i);
