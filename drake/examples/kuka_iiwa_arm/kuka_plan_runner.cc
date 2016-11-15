@@ -60,12 +60,12 @@ class RobotPlanRunner {
 
   void Run() {
     int cur_plan_number = plan_number_;
-    int64_t cur_time_ms = -1;
-    int64_t start_time_ms = -1;
+    int64_t cur_time_us = -1;
+    int64_t start_time_us = -1;
 
     // Initialize the timestamp to an invalid number so we can detect
     // the first message.
-    iiwa_status_.utime = cur_time_ms;
+    iiwa_status_.utime = cur_time_us;
 
     lcmt_iiwa_command iiwa_command;
     iiwa_command.num_joints = kNumJoints;
@@ -83,17 +83,17 @@ class RobotPlanRunner {
       }
 
       DRAKE_ASSERT(iiwa_status_.utime != -1);
-      cur_time_ms = iiwa_status_.utime;
+      cur_time_us = iiwa_status_.utime;
 
       if (plan_) {
         if (plan_number_ != cur_plan_number) {
           std::cout << "Starting new plan." << std::endl;
-          start_time_ms = cur_time_ms;
+          start_time_us = cur_time_us;
           cur_plan_number = plan_number_;
         }
 
         const double cur_traj_time_s =
-            static_cast<double>(cur_time_ms - start_time_ms) / 1e3;
+            static_cast<double>(cur_time_us - start_time_us) / 1e6;
         const auto desired_next = plan_->value(cur_traj_time_s);
 
         iiwa_command.utime = iiwa_status_.utime;
