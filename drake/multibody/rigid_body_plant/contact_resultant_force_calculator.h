@@ -2,9 +2,8 @@
 
 #include <vector>
 
-#include "drake/common/drake_export.h"
-#include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
+#include "drake/multibody/rigid_body_plant/contact_detail.h"
 
 namespace drake {
 namespace systems {
@@ -51,6 +50,12 @@ namespace systems {
  ContactForce (force/torque) can be requested using the appropriate method.
 
  The *order* in which the forces are added has no impact on the final result.
+
+ By default, the contact forces that are added to the calculator are destroyed
+ when the calculator is destroyed.  There is an alternative constructor which
+ allows the caller to provide an STL vector which will accumulate the contact
+ information and allow the caller to persist the data beyond the life span of
+ the calculator.
 
  A Single Force
  ==============
@@ -125,22 +130,61 @@ namespace systems {
  Do not expect `F` to be equal to `F_ab`.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
+
+ Instantiated templates for the following ScalarTypes are provided:
+   - double
  */
 template <typename T>
-class DRAKE_EXPORT ContactResultantForceCalculator {
+class ContactResultantForceCalculator {
  public:
-  /** Default constructor. */
-  ContactResultantForceCalculator() {}
+  /** Default constructor -- no accumulation.  As contact forces are added to
+   the calculator, the force will be added to the set of forces for calculation,
+   but they will be destroyed when the calculator is destroyed.
+   */
+  ContactResultantForceCalculator();
+
+  /** Accumulator constructor.
+
+   This allows the caller to provide a vector into which the contact
+   forces/details can be persisted beyond the life span of the
+   ContactResultantForceCalculator instance.  See the various AddForce methods
+   for details on what is placed in the @p detail_accumulator.
+
+   @param detail_accumulator If non-null, ContactDetail instances will be
+   appended to the vector as they are assigned to the calculator.
+   */
+  ContactResultantForceCalculator(
+      std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator);
 
   /**
-   Adds a new contact force to the calcualtor.
+   Adds a new contact force to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact force, will be appended to that
+   accumulator.
 
    @param force     The contact force.
    */
   void AddForce(const ContactForce<T>& force);
 
   /**
+   Adds a new force to the calculator from a contact detail.  The result of
+   ContactDetail::ComputeContactForce will be used in the calculation.
+
+   If the calculator was initialized with a detail accumulator, the detail will
+   be appended to that accumulator. Otherwise, the detail will be destroyed
+   at the conclusion of this method invocation.
+   @param contact_detail        The contact detail which will provide a
+                                ContactForce for computation.
+   */
+  void AddForce(std::unique_ptr<ContactDetail<T>> contact_detail);
+
+  /**
    Adds a new force to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact information, will be appended to that
+   accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal
                                 direction.
@@ -151,6 +195,10 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
 
   /**
    Adds a new force with an arbitrary pure torque to the calculator.
+
+   If the calculator was initialized with a detail accumulator, an instance of
+   PointContactDetail, with this contact information, will be appended to that
+   accumulator.
    @param application_point     The application point of the force.
    @param normal                The translational force's  unit-length normal
                                 direction.
@@ -192,6 +240,13 @@ class DRAKE_EXPORT ContactResultantForceCalculator {
  private:
   // Aggregator for the force data that has been added.
   std::vector<ContactForce<T>> forces_{};
+
+  // The optional accumulator into which contact details will be added.
+  std::vector<std::unique_ptr<ContactDetail<T>>>* detail_accumulator_{};
+
+  // Given a ContactForce, adds a PointContactDetail to the accumulator if
+  // one is provided.
+  void AccumulateForce(const ContactForce<T>& force);
 };
 }  // namespace systems
 }  // namespace drake
