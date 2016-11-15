@@ -14,7 +14,8 @@ set(DRAKE_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_PKGCONFIG_DIR}"
 # subdirectory of the library installation directory ("lib", "lib32", or
 # "lib64") of the drake project.
 #
-# drake_install_pkg_config_file(<NAME> [DESCRIPTION <description>] [URL <url>]
+# drake_install_pkg_config_file(<NAME> [TARGET <target>]
+#                               [DESCRIPTION <description>] [URL <url>]
 #                               [VERSION <major.minor.patch>]
 #                               [REQUIRES <packages>] [LIBS <flags>]
 #                               [CFLAGS <flags>] [CLASSPATH <classpath>])
@@ -23,6 +24,8 @@ set(DRAKE_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_PKGCONFIG_DIR}"
 #   <NAME>
 #     Name of the pkg-config package. The generated pkg-config file will be
 #     named "<NAME>.pc".
+#   TARGET
+#     Target associated with the pkg-config package. Reserved for future use.
 #   DESCRIPTION
 #     Description field of the package.
 #   URL
@@ -45,8 +48,13 @@ set(DRAKE_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_PKGCONFIG_DIR}"
 # system.
 #------------------------------------------------------------------------------
 function(drake_install_pkg_config_file _NAME)
-  cmake_parse_arguments("" "" "DESCRIPTION;URL;VERSION"
+  cmake_parse_arguments("" "" "DESCRIPTION;TARGET;URL;VERSION"
     "CFLAGS;CLASSPATH;LIBS;REQUIRES" ${ARGN})
+
+  if(_TARGET)
+    # TODO(jamiesnape): Generate _REQUIRES automatically using this property
+    set_target_properties(${_TARGET} PROPERTIES PKG_CONFIG_NAME ${_NAME})
+  endif()
 
   if(NOT _URL)
     set(_URL "http://drake.mit.edu/")

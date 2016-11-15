@@ -4,6 +4,7 @@ target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyCon
 drake_install_headers(RigidBodySystem.h)
 pods_install_libraries(drakeRBSystem)
 drake_install_pkg_config_file(drake-rbsystem
+  TARGET drakeRBSystem
   CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
   LIBS -ldrakeRBSystem
   REQUIRES

@@ -9,6 +9,7 @@ drake_install_headers(
   dircol_trajectory_optimization.h
   direct_trajectory_optimization.h)
 drake_install_pkg_config_file(drake-trajectory-optimization
+  TARGET drakeTrajectoryOptimization
   LIBS -ldrakeTrajectoryOptimization
   REQUIRES
     drake-optimization

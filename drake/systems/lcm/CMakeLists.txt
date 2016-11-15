@@ -21,6 +21,7 @@ if(lcm_FOUND)
     lcmt_drake_signal_translator.h
     serializer.h)
   drake_install_pkg_config_file(drake-lcm-system2
+    TARGET drakeLCMSystem2
     LIBS -ldrakeLCMSystem2
     REQUIRES
       drake-lcm

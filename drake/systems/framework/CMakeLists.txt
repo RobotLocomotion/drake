@@ -85,6 +85,7 @@ drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemFramework)
 drake_install_pkg_config_file(drake-system-framework
+  TARGET drakeSystemFramework
   LIBS -ldrakeSystemFramework
   REQUIRES
     drake-common

@@ -41,6 +41,7 @@ drake_install_headers(
   rigid_body_tree_construction.h)
 
 drake_install_pkg_config_file(drake-rbm
+  TARGET drakeRBM
   LIBS -ldrakeRBM
   REQUIRES
     drake-collision
@@ -50,6 +51,10 @@ drake_install_pkg_config_file(drake-rbm
 
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES ik_options.cc)
 target_link_libraries(drakeIKoptions drakeRBM)
+drake_install_pkg_config_file(drake-ik-options
+  TARGET drakeIKoptions
+  LIBS -ldrakeIKoptions
+  REQUIRES drake-rbm)
 
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
 # moved it into the "C++ and MATLAB shared code" lower section of this file,
@@ -68,8 +73,10 @@ pods_install_libraries(drakeIKoptions)
 drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
   inverse_kinematics_backend.h rigid_body_ik.h)
 drake_install_pkg_config_file(drake-ik
-  LIBS -ldrakeIK -ldrakeIKoptions
+  TARGET drakeIK
+  LIBS -ldrakeIK
   REQUIRES
+    drake-ik-options
     drake-optimization
     drake-rbm
     drake-rigid-body-constraint)

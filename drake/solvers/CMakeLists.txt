@@ -6,6 +6,7 @@ if(gurobi_FOUND)
   pods_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
+    TARGET drakeQP
     LIBS -ldrakeQP
     REQUIRES gurobi)
 endif()
@@ -67,6 +68,7 @@ drake_install_headers(
   )
 pods_install_libraries(drakeOptimization)
 drake_install_pkg_config_file(drake-optimization
+  TARGET drakeOptimization
   LIBS -ldrakeOptimization
   REQUIRES ${optimization_requires})
 

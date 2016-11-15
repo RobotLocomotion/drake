@@ -8,6 +8,7 @@ drake_install_headers(PiecewiseFunction.h PiecewisePolynomial.h trajectory.h
   piecewise_polynomial_trajectory.h
   PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h)
 drake_install_pkg_config_file(drake-trajectories
+  TARGET drakeTrajectories
   LIBS -ldrakeTrajectories
   REQUIRES drake-common)
 

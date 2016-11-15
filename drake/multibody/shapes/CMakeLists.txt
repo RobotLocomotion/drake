@@ -8,4 +8,7 @@ target_link_libraries(drakeShapes spruce)
 pods_install_libraries(drakeShapes)
 drake_install_headers(drake_shapes.h geometry.h element.h visual_element.h)
 drake_install_pkg_config_file(drake-shapes
-  LIBS -ldrakeShapes -lspruce)
+  TARGET drakeShapes
+  LIBS
+    -ldrakeShapes
+    -lspruce)

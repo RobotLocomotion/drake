@@ -18,6 +18,7 @@ drake_install_headers(
   ball.h
   )
 drake_install_pkg_config_file(drake-bouncing-ball
+  TARGET drakeBouncingBall
   LIBS -ldrakeBouncingBall
   REQUIRES
     drake-common

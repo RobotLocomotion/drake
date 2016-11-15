@@ -24,6 +24,7 @@ drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeSystemAnalysis)
 drake_install_pkg_config_file(drake-system-analysis
+  TARGET drakeSystemAnalysis
   LIBS -ldrakeSystemAnalysis
   REQUIRES
     drake-common

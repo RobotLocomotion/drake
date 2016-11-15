@@ -36,6 +36,7 @@ drake_install_headers(
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
 drake_install_pkg_config_file(drake-automotive
+  TARGET drakeAutomotive
   LIBS -ldrakeAutomotive
   REQUIRES
     drake-common
@@ -67,6 +68,7 @@ if(lcm_FOUND)
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
   drake_install_pkg_config_file(drake-automotive-lcm
+    TARGET drakeAutomotiveLcm
     LIBS -ldrakeAutomotiveLcm
     REQUIRES
       drake-automotive

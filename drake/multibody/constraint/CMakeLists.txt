@@ -3,6 +3,7 @@ target_link_libraries(drakeRigidBodyConstraint drakeRBM drakeGeometryUtil)
 pods_install_libraries(drakeRigidBodyConstraint)
 drake_install_headers(rigid_body_constraint.h)
 drake_install_pkg_config_file(drake-rigid-body-constraint
+  TARGET drakeRigidBodyConstraint
   LIBS -ldrakeRigidBodyConstraint
   REQUIRES
     drake-geometry-util
