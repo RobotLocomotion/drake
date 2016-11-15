@@ -53,6 +53,7 @@ target_include_directories(drake_lcmtypes INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 drake_install_pkg_config_file(drake-lcmtypes
+  TARGET drake_lcmtypes
   LIBS -ldrake_lcm_types)
 
 lcm_add_library(drakeLCMTypes CPP ${cpp_install_headers})

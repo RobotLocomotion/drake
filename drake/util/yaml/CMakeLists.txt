@@ -4,6 +4,7 @@ if(yaml-cpp_FOUND)
   pods_install_libraries(drakeYAMLUtil)
   drake_install_headers(yamlUtil.h)
   drake_install_pkg_config_file(drake-yaml-util
+    TARGET drakeYAMLUtil
     LIBS -ldrakeYAMLUtil
     REQUIRES
       drake-rbm

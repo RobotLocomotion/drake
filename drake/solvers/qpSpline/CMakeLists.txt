@@ -3,6 +3,7 @@ target_link_libraries(drakeSplineGeneration drakeTrajectories)
 pods_install_libraries(drakeSplineGeneration)
 drake_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.h SplineInformation.h)
 drake_install_pkg_config_file(drake-spline-generation
+  TARGET drakeSplineGeneration
   LIBS -ldrakeSplineGeneration
   REQUIRES drake-trajectories)
 

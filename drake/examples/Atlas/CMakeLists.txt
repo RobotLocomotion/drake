@@ -5,6 +5,7 @@ drake_install_headers(
         atlas_plant.h
         )
 drake_install_pkg_config_file(drake-atlas-util
+  TARGET drakeAtlasUtil
   LIBS -ldrakeAtlasUtil)
 
 if (lcm_FOUND)

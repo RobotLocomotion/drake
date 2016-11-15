@@ -22,6 +22,7 @@ drake_install_headers(
         roll_pitch_yaw_floating_joint.h
         floating_base_types.h)
 drake_install_pkg_config_file(drake-joints
+  TARGET drakeJoints
   LIBS -ldrakeJoints
   REQUIRES drake-geometry-util)
 add_subdirectory(test)

@@ -20,6 +20,7 @@ target_link_libraries(drakeCollision drakeShapes drakeCommon)
 pods_install_libraries(drakeCollision)
 drake_install_headers(drake_collision.h point_pair.h element.h model.h)
 drake_install_pkg_config_file(drake-collision
+  TARGET drakeCollision
   LIBS -ldrakeCollision
   REQUIRES ${drakeCollision_REQUIRES})
 

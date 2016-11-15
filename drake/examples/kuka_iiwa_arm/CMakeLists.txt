@@ -8,6 +8,7 @@ if(lcm_FOUND)
   drake_install_headers(
       iiwa_common.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm-common
+      TARGET drakeKukaIiwaArmCommon
       LIBS -ldrakeKukaIiwaArmCommon
       REQUIRES drake-rbm)
 
@@ -25,6 +26,7 @@ if(lcm_FOUND)
   drake_install_headers(
       iiwa_simulation.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-arm
+      TARGET drakeKukaIiwaArm
       LIBS -ldrakeKukaIiwaArm
       REQUIRES
         drake-common

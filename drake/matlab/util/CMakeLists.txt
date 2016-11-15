@@ -5,6 +5,7 @@ if(Matlab_FOUND)
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
   pods_install_libraries(drakeMexUtil)
   drake_install_pkg_config_file(drake-mex-util
+    TARGET drakeMexUtil
     LIBS -ldrakeMexUtil
     REQUIRES drake-common)
 
