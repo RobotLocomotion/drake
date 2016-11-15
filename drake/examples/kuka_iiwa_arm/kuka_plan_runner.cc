@@ -74,13 +74,8 @@ class RobotPlanRunner {
     iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
     while (true) {
-      // The argument to handleTimeout is in msec, and should be
-      // safely bigger than e.g. a 200Hz input rate.
-      int handled  = lcm_.handleTimeout(10);
-      if (handled <= 0) {
-        std::cerr << "Failed to receive LCM status." << std::endl;
-        return;
-      }
+      // Call lcm handle until at least one message is processed
+      while (0 == lcm_.handleTimeout(10));
 
       DRAKE_ASSERT(iiwa_status_.utime != -1);
       cur_time_us = iiwa_status_.utime;
