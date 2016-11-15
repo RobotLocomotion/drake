@@ -1,5 +1,6 @@
 #include "drake/automotive/single_lane_ego_and_agent.h"
 
+#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -68,6 +69,7 @@ void SingleLaneEgoAndAgent<T>::SetDefaultState(
 // TODO(jadecastro): Introduce symbolic::Expression scalar type.
 template class SingleLaneEgoAndAgent<double>;
 template class SingleLaneEgoAndAgent<AutoDiffXd>;
+template class SingleLaneEgoAndAgent<symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake
