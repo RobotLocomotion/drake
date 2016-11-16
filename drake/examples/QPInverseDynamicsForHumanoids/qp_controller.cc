@@ -520,6 +520,9 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
   output->mutable_costs().resize(costs.size());
   int ctr = 0;
   VectorX<double> tmp_vec;
+
+  // TODO(hongkai.dai): Solve() function in GurobiSolver or MosekSolver
+  // should return the cost directly.
   for (auto& cost_b : costs) {
     solvers::Constraint* cost = cost_b.constraint().get();
     cost->Eval(cost_b.VariableVectorToVectorXd(), tmp_vec);
