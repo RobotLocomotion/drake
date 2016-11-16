@@ -106,21 +106,21 @@ TEST_F(RK3IntegratorTest, ErrEst) {
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution
-  const double kXTrue =  kC1 * std::cos(kOmega * kBigDT) +
-      kC2 * std::sin(kOmega * kBigDT);
+  const double kXTrue =
+      kC1 * std::cos(kOmega * kBigDT) + kC2 * std::sin(kOmega * kBigDT);
 
   // Get the integrator's solution
   const double kXApprox =
       context_->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Get the error estimate
-  const double err_est = integrator_->get_error_estimate()->
-      get_vector().GetAtIndex(0);
+  const double err_est =
+      integrator_->get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Verify that difference between integration result and true result is
   // captured by the error estimate. The 0.2 below indicates that the error
   // estimate is quite conservative.
-  EXPECT_NEAR(kXApprox, kXTrue, err_est*0.2);
+  EXPECT_NEAR(kXApprox, kXTrue, err_est * 0.2);
 }
 
 // Integrate a purely continuous system with no sampling using error control.
@@ -130,7 +130,6 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 TEST_F(RK3IntegratorTest, SpringMassStepEC) {
-
   // Set integrator parameters: do no error control.
   integrator_->set_maximum_step_size(DT);
   integrator_->set_minimum_step_size(DT);
@@ -148,7 +147,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   spring_mass_->set_position(integrator_->get_mutable_context(),
                              kInitialPosition);
   spring_mass_->set_velocity(integrator_->get_mutable_context(),
-                           kInitialVelocity);
+                             kInitialVelocity);
 
   // Setup c1 and c2 for ODE constants.
   const double kC1 = kInitialPosition;
