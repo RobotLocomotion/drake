@@ -91,15 +91,14 @@ void CheckSolverType(MathematicalProgram& prog,
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RunNonlinearProgram(MathematicalProgram& prog,
                          std::function<void(void)> test_func) {
-  //IpoptSolver ipopt_solver;
+  IpoptSolver ipopt_solver;
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
       std::make_pair("SNOPT", &snopt_solver),
-      std::make_pair("NLopt", &nlopt_solver)
-      //std::make_pair("Ipopt", &ipopt_solver)};
-  };
+      std::make_pair("NLopt", &nlopt_solver),
+      std::make_pair("Ipopt", &ipopt_solver)};
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) {
@@ -653,7 +652,7 @@ GTEST_TEST(testMathematicalProgram, gloptipolyConstrainedMinimization) {
                                 MatrixCompareType::absolute));
   });
 }
-/*
+
 //
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
@@ -697,11 +696,12 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   EXPECT_NO_THROW(prog.Solve());
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
 
@@ -719,17 +719,18 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.AddContinuousVariables(2);
-  auto y = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
+  auto y = prog.AddContinuousVariables<2>();
 
   prog.AddLinearComplementarityConstraint(M, q, {x});
   prog.AddLinearComplementarityConstraint(M, q, {y});
   EXPECT_NO_THROW(prog.Solve());
-
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+  const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+  const auto& y_value = DecisionVariableMatrixToDoubleMatrix(y);
+  EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 
-  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
+  EXPECT_TRUE(CompareMatrices(y_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
 
@@ -751,7 +752,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   // Check that it gives the correct answer as well.
   problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(problem,
-                      [&]() { EXPECT_NEAR(x_var.value(0), 2, kEpsilon); });
+                      [&]() {EXPECT_NEAR(x_var(0).value(), 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -781,7 +782,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Vector1d::Constant(2));
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value(0), 2, kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), 2, kEpsilon);
       // TODO(ggould-tri) test this with a two-sided constraint, once
       // the nlopt wrapper supports those.
     });
@@ -800,8 +801,8 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(1));
     problem.SetInitialGuessForAllVariables(drake::Vector1d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value(0), 1, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), 1, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
     });
   }
 
@@ -819,11 +820,11 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Zero(1));
     problem.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(xy_var.value(0), 1, 0.2);
-      EXPECT_NEAR(xy_var.value(1), -2, 0.2);
+      EXPECT_NEAR(xy_var(0).value(), 1, 0.2);
+      EXPECT_NEAR(xy_var(1).value(), -2, 0.2);
       std::map<Polynomiald::VarType, double> eval_point = {
-          {x.GetSimpleVariable(), xy_var.value(0)},
-          {y.GetSimpleVariable(), xy_var.value(1)}};
+          {x.GetSimpleVariable(), xy_var(0).value()},
+          {y.GetSimpleVariable(), xy_var(1).value()}};
       EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
     });
   }
@@ -836,7 +837,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     const Polynomiald poly = x * x * x * x - x * x + 0.2;
     MathematicalProgram problem;
     const auto x_var = problem.AddContinuousVariables(1);
-    problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
+    problem.SetInitialGuess(x_var, Vector1d::Constant(-0.1));
     const std::vector<Polynomiald::VarType> var_mapping = {
         x.GetSimpleVariable()};
     VectorXPoly polynomials_vec(2, 1);
@@ -845,11 +846,11 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
                                     Eigen::VectorXd::Constant(2, -kInf),
                                     Eigen::VectorXd::Zero(2));
     RunNonlinearProgram(problem, [&]() {
-      EXPECT_NEAR(x_var.value(0), -0.7, 0.2);
-      EXPECT_LE(poly.EvaluateUnivariate(x_var.value(0)), kEpsilon);
+      EXPECT_NEAR(x_var(0).value(), -0.7, 0.2);
+      EXPECT_LE(poly.EvaluateUnivariate(x_var(0).value()), kEpsilon);
     });
   }
-}*/
+}
 
 //
 // Test how an unconstrained QP is dispatched and solved:

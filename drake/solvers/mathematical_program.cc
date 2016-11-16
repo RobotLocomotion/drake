@@ -62,10 +62,10 @@ MathematicalProgram::MathematicalProgram()
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       solver_result_(0),
       required_capabilities_(kNoCapabilities),
-      //ipopt_solver_(new IpoptSolver()),
+      ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),
       snopt_solver_(new SnoptSolver()),
-      //moby_lcp_solver_(new MobyLCPSolver()),
+      moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver())
       //gurobi_solver_(new GurobiSolver()),
@@ -96,10 +96,10 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kGurobiCapabilities) &&
              gurobi_solver_->available()) {
     return gurobi_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
+  }*/ else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
-  }*/ else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
