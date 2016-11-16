@@ -111,9 +111,10 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
-      for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
-        int x_idx = var.index(i);
+    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+        int x_idx = var(i).index();
         x_lb[x_idx] = std::max(x_lb[x_idx], lower_bound[var_count]);
         x_ub[x_idx] = std::min(x_ub[x_idx], upper_bound[var_count]);
         var_count++;
@@ -274,11 +275,12 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   for (const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableMatrix& var : binding.variable_vector()) {
-      for (int i = 0; i < static_cast<int>(var.NumberOfVariables()); ++i) {
+    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+      DRAKE_ASSERT(var.cols() == 1);
+      for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(
-              Eigen::Triplet<double>(var.index(i), 0, c(var_count)));
+              Eigen::Triplet<double>(var(i).index(), 0, c(var_count)));
         }
         var_count++;
       }
