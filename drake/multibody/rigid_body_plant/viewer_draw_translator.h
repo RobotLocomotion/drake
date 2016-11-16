@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -18,8 +17,7 @@ namespace systems {
  * contains the state vector of a RigidBodyTree, and a
  * `drake::lcmt_viewer_draw` message.
  */
-class DRAKE_EXPORT ViewerDrawTranslator
-    : public lcm::LcmAndVectorBaseTranslator {
+class ViewerDrawTranslator : public lcm::LcmAndVectorBaseTranslator {
  public:
   /**
    * A constructor that sets the expected sizes of both the LCM message and
