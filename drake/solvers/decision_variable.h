@@ -120,7 +120,18 @@ using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
 using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
+/**
+ * VariableVectorRef is used for adding constraints/costs in MathematicalProgram,
+ * we use Eigen::Ref so that we can pass in a block of DecisionVariableMatrix as
+ * decision variables.
+ */
 using VariableVectorRef =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
+
+/**
+ * VariableVector is used for storing the decision variabled binded
+ * with each constraint/cost. Each constraint/cost is binded with
+ * a VariableVector, on which the constraint/cost is imposed.
+ */
 using VariableVector = std::vector<DecisionVariableMatrixX>;
 template<typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
