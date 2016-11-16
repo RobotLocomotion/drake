@@ -261,6 +261,24 @@ class MathematicalProgram {
       return count;
     }
 
+    /** WriteThrough()
+     * @brief Writes the elements of @p solution to the bound elements of
+     * the @p output vector.
+     */
+    void WriteThrough(const Eigen::VectorXd& solution,
+                      Eigen::VectorXd* output) const {
+      DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
+      size_t solution_index = 0;
+      for (const auto& var : variable_vector_) {
+        DRAKE_ASSERT(var.cols() == 1);
+        const auto& solution_segment =
+            solution.segment(solution_index, var.rows());
+        output->segment(var(0).index(), var.rows()) =
+            solution_segment;
+        solution_index += var.rows();
+      }
+    }
+
     /**
      * Return the indices of ALL the variables in the bindings.
      * The length of the returned vector is the same as
