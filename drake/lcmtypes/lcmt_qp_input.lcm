@@ -1,0 +1,19 @@
+package drake;
+
+struct lcmt_qp_input {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  int32_t num_contacts;
+  lcmt_contact_information contact_information[num_contacts];
+
+  int32_t num_desired_body_motions;
+  lcmt_desired_body_motion desired_body_motions[num_desired_body_motions];
+
+  lcmt_desired_dof_motions desired_dof_motions;
+
+  lcmt_desired_centroidal_momentum_dot desired_centroidal_momentum_dot;
+
+  // Weight for regularizing contact basis.
+  double w_basis_reg;
+}

@@ -1,0 +1,15 @@
+package drake;
+
+struct lcmt_constrained_values {
+  // Constraint type constants
+  const int8_t HARD = -1, SKIP = 0, SOFT = 1;
+
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  int32_t size;
+
+  int8_t types[size];
+  double weights[size];
+  double values[size];
+}
