@@ -24,17 +24,28 @@ cc_library(
         "drake_gcc48.h",
         "eigen_stl_types.h",
         "eigen_types.h",
-        "number_traits.h",
     ],
     deps = ["@eigen//:eigen", "@spdlog//:spdlog"],
     linkstatic = 1)
 
-# Drake's ScalarType libraries.
+# The generic base for all specific ScalarType-providing libraries.
 DEPS = [":common"]
+cc_library(
+    name = "scalar_type_common",
+    hdrs = [
+        "cond.h",
+        "number_traits.h",
+    ],
+    deps = DEPS,
+    linkstatic = 1)
+
+# Drake's specific ScalarType-providing libraries.
+DEPS = [":common", ":scalar_type_common"]
 cc_library(
     name = "autodiff",
     hdrs = ["autodiff_overloads.h", "eigen_autodiff_types.h"],
-    deps = DEPS, linkstatic = 1)
+    deps = DEPS,
+    linkstatic = 1)
 
 cc_library(
     name = "functional_form",
@@ -55,7 +66,9 @@ cc_library(
     srcs = [
         "symbolic_environment.cc",
         "symbolic_expression.cc",
+        "symbolic_expression_cell.cc",
         "symbolic_formula.cc",
+        "symbolic_formula_cell.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -63,7 +76,9 @@ cc_library(
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
+        "symbolic_expression_cell.h",
         "symbolic_formula.h",
+        "symbolic_formula_cell.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
