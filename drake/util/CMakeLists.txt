@@ -18,8 +18,8 @@ if(lcm_FOUND)
     TARGET drakeLCMUtil
     LIBS
       -ldrakeLCMUtil
-      -llcmtypes_bot2-core-cpp
     REQUIRES
+      # TODO(jamiesnape): Upstream a lcmtypes_bot2-core-cpp.pc file
       drake-lcmtypes-cpp
       drake-trajectories)
 endif()
