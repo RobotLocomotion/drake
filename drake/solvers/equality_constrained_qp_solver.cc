@@ -64,16 +64,16 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
   int constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& c = binding.constraint();
+    auto const& bc = binding.constraint();
     int var_index = 0;
-    const int n = c->A().rows();
+    const int n = bc->A().rows();
     for (const DecisionVariableView& v : binding.variable_list()) {
       A.block(constraint_index, v.index(), n, v.size()) =
-          c->A().middleCols(var_index, v.size());
+          bc->A().middleCols(var_index, v.size());
       var_index += v.size();
     }
     b.segment(constraint_index, n) =
-        c->lower_bound().segment(0, n);  // = c->upper_bound() since it's
+        bc->lower_bound().segment(0, n);  // = c->upper_bound() since it's
     //  an equality constraint
     constraint_index += n;
   }
