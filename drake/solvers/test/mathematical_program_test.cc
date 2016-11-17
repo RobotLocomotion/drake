@@ -156,8 +156,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   prog.SetInitialGuessForAllVariables(Vector4d::Zero());
   prog.Solve();
   auto x_value = DecisionVariableMatrixToDoubleMatrix(x);
-  EXPECT_TRUE(
-      CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
 
   EXPECT_NEAR(b(2), x2.value(), 1e-10);
 
@@ -178,17 +177,17 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y_value, 1e-10,
                               MatrixCompareType::absolute));
   x_value = DecisionVariableMatrixToDoubleMatrix(x);
-  EXPECT_TRUE(
-      CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b, x_value, 1e-10, MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   // Now modify the original constraint by its handle
   con->UpdateConstraint(3 * Matrix4d::Identity(), b);
   prog.Solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, DecisionVariableMatrixToDoubleMatrix(y), 1e-10,
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
+                              DecisionVariableMatrixToDoubleMatrix(y), 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(b / 3, DecisionVariableMatrixToDoubleMatrix(x), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b / 3, DecisionVariableMatrixToDoubleMatrix(x),
+                              1e-10, MatrixCompareType::absolute));
   CheckSolverType(prog, "Linear System Solver");
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
@@ -197,10 +196,11 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // Now solve as a nonlinear program.
   RunNonlinearProgram(prog, [&]() {
-    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, DecisionVariableMatrixToDoubleMatrix(y), 1e-10,
+    EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2,
+                                DecisionVariableMatrixToDoubleMatrix(y), 1e-10,
                                 MatrixCompareType::absolute));
-    EXPECT_TRUE(
-        CompareMatrices(b / 3, DecisionVariableMatrixToDoubleMatrix(x), 1e-10, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(b / 3, DecisionVariableMatrixToDoubleMatrix(x),
+                                1e-10, MatrixCompareType::absolute));
   });
 }
 
@@ -242,8 +242,8 @@ GTEST_TEST(testMathematicalProgram, QuadraticCost) {
   prog.SetInitialGuess(x, Vector4d::Zero());
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-6,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-6, MatrixCompareType::absolute));
   });
 }
 
@@ -287,8 +287,8 @@ GTEST_TEST(testMathematicalProgram, testProblem1) {
   prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-9,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
   });
 }
 
@@ -319,8 +319,8 @@ GTEST_TEST(testMathematicalProgram, testProblem1AsQP) {
   prog.SetInitialGuess(x, expected + .01 * VectorXd::Random(5));
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-9,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-9, MatrixCompareType::absolute));
   });
 }
 
@@ -372,8 +372,8 @@ GTEST_TEST(testMathematicalProgram, testProblem2) {
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -413,8 +413,8 @@ GTEST_TEST(testMathematicalProgram, testProblem2AsQP) {
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -511,16 +511,16 @@ GTEST_TEST(testMathematicalProgram, lowerBoundTest) {
   // larger than others.  IPOPT is particularly sensitive here.
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 
   // Try again with the offsets in the opposite direction.
   prog.SetInitialGuess(x, expected - delta);
   RunNonlinearProgram(prog, [&]() {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-    EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-3,
-                                MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(x_value, expected, 1e-3, MatrixCompareType::absolute));
   });
 }
 
@@ -752,7 +752,7 @@ GTEST_TEST(testMathematicalProgram, linearPolynomialConstraint) {
   // Check that it gives the correct answer as well.
   problem.SetInitialGuessForAllVariables(drake::Vector1d(0));
   RunNonlinearProgram(problem,
-                      [&]() {EXPECT_NEAR(x_var(0).value(), 2, kEpsilon); });
+                      [&]() { EXPECT_NEAR(x_var(0).value(), 2, kEpsilon); });
 }
 
 // The current windows CI build has no solver for generic constraints.  The
@@ -1022,10 +1022,12 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   VectorXd x_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
   prog_lorentz.SetInitialGuess(x_lorentz, x_lorentz_guess);
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value = DecisionVariableMatrixToDoubleMatrix(x_lorentz);
+    const auto& x_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value = DecisionVariableMatrixToDoubleMatrix(t_lorentz);
+    const auto& t_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
@@ -1046,20 +1048,21 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   // NLopt needs a really good starting point to solve SOCP, while SNOPT and
   // IPOPT seems OK with starting point not so close to optimal solution.
   prog_rotated_lorentz.SetInitialGuess(
-      t_rotated_lorentz,
-      drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
+      t_rotated_lorentz, drake::Vector1d(cost_expected_rotated_lorentz + 0.1));
   prog_rotated_lorentz.SetInitialGuess(slack_rotated_lorentz,
                                        drake::Vector1d(1.0));
   VectorXd x_rotated_lorentz_guess = x_expected + 0.1 * VectorXd::Ones(xDim);
   prog_rotated_lorentz.SetInitialGuess(x_rotated_lorentz,
                                        x_rotated_lorentz_guess);
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value = DecisionVariableMatrixToDoubleMatrix(x_rotated_lorentz);
+    const auto& x_rotated_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(x_rotated_lorentz);
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value = DecisionVariableMatrixToDoubleMatrix(t_rotated_lorentz);
-    EXPECT_NEAR(cost_expected_rotated_lorentz,
-                t_rotated_lorentz_value(0), 1E-3);
+    const auto& t_rotated_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(t_rotated_lorentz);
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
+                1E-3);
   });
 
   // Now add a constraint x'*x <= 2*x_expected'*x_expected to the problem.
@@ -1073,21 +1076,25 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
 
   prog_lorentz.AddConstraint(quadratic_constraint, {x_lorentz});
   RunNonlinearProgram(prog_lorentz, [&]() {
-    const auto& x_lorentz_value = DecisionVariableMatrixToDoubleMatrix(x_lorentz);
+    const auto& x_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(x_lorentz);
     EXPECT_TRUE(CompareMatrices(x_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_lorentz_value = DecisionVariableMatrixToDoubleMatrix(t_lorentz);
+    const auto& t_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(t_lorentz);
     EXPECT_NEAR(cost_expected_lorentz, t_lorentz_value(0), 1E-3);
   });
 
   prog_rotated_lorentz.AddConstraint(quadratic_constraint, {x_rotated_lorentz});
   RunNonlinearProgram(prog_rotated_lorentz, [&]() {
-    const auto& x_rotated_lorentz_value = DecisionVariableMatrixToDoubleMatrix(x_rotated_lorentz);
+    const auto& x_rotated_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(x_rotated_lorentz);
     EXPECT_TRUE(CompareMatrices(x_rotated_lorentz_value, x_expected, 1E-5,
                                 MatrixCompareType::absolute));
-    const auto& t_rotated_lorentz_value = DecisionVariableMatrixToDoubleMatrix(t_rotated_lorentz);
-    EXPECT_NEAR(cost_expected_rotated_lorentz,
-                t_rotated_lorentz_value(0), 1E-3);
+    const auto& t_rotated_lorentz_value =
+        DecisionVariableMatrixToDoubleMatrix(t_rotated_lorentz);
+    EXPECT_NEAR(cost_expected_rotated_lorentz, t_rotated_lorentz_value(0),
+                1E-3);
   });
 }
 

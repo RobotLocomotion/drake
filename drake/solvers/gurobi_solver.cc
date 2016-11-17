@@ -198,7 +198,8 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
-        constraint_variable_index[constraint_variable_count] = var(i, 0).index();
+        constraint_variable_index[constraint_variable_count] =
+            var(i, 0).index();
         constraint_variable_count++;
       }
     }
@@ -410,8 +411,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
-    for (const DecisionVariableMatrixX& var :
-        binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int k = 0; k < var.rows(); ++k) {
         const int idx = var(k, 0).index();
