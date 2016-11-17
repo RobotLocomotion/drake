@@ -22,7 +22,7 @@ void DircolTrajectoryOptimization::AddDynamicConstraint(
   for (int i = 0; i < N() - 1; i++) {
     opt_problem()->AddConstraint(
         constraint,
-        {h_vars()(i), x_vars().segment(i * num_states(), num_states() * 2),
+        {h_vars().segment<1>(i), x_vars().segment(i * num_states(), num_states() * 2),
          u_vars().segment(i * num_inputs(), num_inputs() * 2)});
   }
 }
