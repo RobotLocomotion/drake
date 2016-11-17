@@ -993,9 +993,13 @@ T IntegratorBase<T>::CalcErrorNorm() {
   DRAKE_DEMAND(pinvN_dq_err_->size() == gv_err.size());
   DRAKE_DEMAND(weighted_q_err_->size() == gq_err.size());
 
-  // Computes the infinity norm of the unweighted velocity variables.
+  // TODO(edrumwri): Acquire characteristic time properly from the system
+  //                 (i.e., modify the System to provide this value).
+  const double characteristic_time = 1.0;
+
+  // Computes the infinity norm of the weighted velocity variables.
   unweighted_err_ = gv_err.CopyToVector();
-  T v_nrm = (qbar_v_weight * unweighted_err_).
+  T v_nrm = (qbar_v_weight * unweighted_err_ * characteristic_time).
       template lpNorm<Eigen::Infinity>();
 
   // Compute the infinity norm of the weighted auxiliary variables.
