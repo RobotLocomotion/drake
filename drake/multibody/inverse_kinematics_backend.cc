@@ -26,7 +26,7 @@ using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
 using drake::solvers::Constraint;
-using drake::solvers::DecisionVariableMatrix;
+using drake::solvers::DecisionVariableMatrixX;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::SolutionResult;
 
@@ -85,7 +85,7 @@ void SetIKSolverOptions(const IKoptions& ikoptions,
 
 void AddSingleTimeLinearPostureConstraint(
     const double *t, const RigidBodyConstraint* constraint, int nq,
-    const drake::solvers::DecisionVariableMatrix& vars,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     MathematicalProgram* prog) {
   DRAKE_ASSERT(
       constraint->getCategory() ==
@@ -124,7 +124,7 @@ void AddSingleTimeLinearPostureConstraint(
 void AddQuasiStaticConstraint(
     const double *t, const RigidBodyConstraint* constraint,
     KinematicsCacheHelper<double>* kin_helper,
-    const drake::solvers::DecisionVariableMatrix& vars,
+    const drake::solvers::DecisionVariableMatrixX& vars,
     drake::solvers::MathematicalProgram* prog) {
   DRAKE_ASSERT(constraint->getCategory() ==
                RigidBodyConstraint::QuasiStaticConstraintCategory);
@@ -133,7 +133,7 @@ void AddQuasiStaticConstraint(
       static_cast<const QuasiStaticConstraint*>(constraint);
   if (!qsc->isTimeValid(t)) { return; }
   int num_vars = qsc->getNumWeights();
-  DecisionVariableMatrix qsc_vars =
+  drake::solvers::DecisionVariableVectorX qsc_vars =
       prog->AddContinuousVariables(num_vars, "qsc");
   auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
       qsc, kin_helper);
@@ -218,7 +218,7 @@ void inverseKinBackend(
     MathematicalProgram prog;
     SetIKSolverOptions(ikoptions, &prog);
 
-    DecisionVariableMatrix vars =
+    drake::solvers::DecisionVariableVectorX vars =
         prog.AddContinuousVariables(model->get_num_positions());
 
     MatrixXd Q;
@@ -285,7 +285,8 @@ void inverseKinBackend(
     }
 
     SolutionResult result = prog.Solve();
-    q_sol->col(t_index) = vars.value();
+    const VectorXd& vars_value = drake::solvers::DecisionVariableMatrixToDoubleMatrix(vars);
+    q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(prog, result);
   }
 }

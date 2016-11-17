@@ -352,7 +352,8 @@ RigidBodySystem::StateVector<double> getInitialState(
     prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
     prog.Solve();
 
-    x0 << qvar.value(), VectorXd::Zero(sys.tree->get_num_velocities());
+    const VectorXd& qvar_value = drake::solvers::DecisionVariableMatrixToDoubleMatrix(qvar);
+    x0 << qvar_value, VectorXd::Zero(sys.tree->get_num_velocities());
   }
   return x0;
 }
