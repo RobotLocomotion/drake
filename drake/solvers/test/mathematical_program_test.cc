@@ -552,7 +552,6 @@ GTEST_TEST(testMathematicalProgram, sixHumpCamel) {
     const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
     cost->Eval(x_value, ystar);
     for (int i = 0; i < 10; i++) {
-      const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
       cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), y);
       if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
     }
