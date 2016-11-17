@@ -32,7 +32,7 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const Eigen::Ref<const DecisionVariableMatrixX>& v : variable_vector) {
+  for (const DecisionVariableMatrixX& v : variable_vector) {
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
@@ -67,7 +67,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
   for (auto const& binding : prog->GetAllCosts()) {
     size_t index = 0;
-    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
@@ -81,7 +81,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
     cost += ty(0).value();
     if (!grad.empty()) {
-      for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
           grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
@@ -205,7 +205,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   if (grad) {
-    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : *(wrapped->variable_vector)) {
+    for (const DecisionVariableMatrixX& v : *(wrapped->variable_vector)) {
       result_idx = 0;
       for (size_t i = 0; i < num_constraints; i++) {
         if (!wrapped->active_constraints.count(i)) {
@@ -318,7 +318,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
     int var_count = 0;
-    for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
         const int idx = v(k, 0).index();
