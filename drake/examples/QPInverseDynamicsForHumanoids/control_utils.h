@@ -83,8 +83,7 @@ class CartesianSetpoint {
       quat.y() *= -1;
       quat.z() *= -1;
     }
-    Eigen::AngleAxis<Scalar> angle_axis_err(quat_d *
-                                            quat.inverse().normalized());
+    AngleAxis<Scalar> angle_axis_err(quat_d * quat.inverse().normalized());
 
     Vector3<Scalar> pos_err = pose_d_.translation() - pose.translation();
     Vector3<Scalar> rot_err = angle_axis_err.axis() * angle_axis_err.angle();
@@ -102,7 +101,7 @@ class CartesianSetpoint {
 
   bool is_valid() const {
     bool ret = pose_d_.translation().allFinite();
-    ret &= Eigen::Matrix<Scalar, 3, 3>::Identity().isApprox(
+    ret &= Matrix3<Scalar>::Identity().isApprox(
         pose_d_.linear() * pose_d_.linear().transpose(),
         Eigen::NumTraits<Scalar>::epsilon());
     ret &= vel_d_.allFinite();

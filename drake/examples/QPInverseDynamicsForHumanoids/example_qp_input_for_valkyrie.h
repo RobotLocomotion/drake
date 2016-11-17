@@ -9,7 +9,7 @@ namespace qp_inverse_dynamics {
 /**
  * Helper function to make an example QPInput.
  */
-QPInput MakeExampleQPInput(const RigidBodyTree<double>& robot);
+QPInput MakeExampleQPInput(const HumanoidStatus& robot_status);
 
 }  // namespace qp_inverse_dynamics
 }  // namespace examples

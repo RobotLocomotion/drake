@@ -143,7 +143,7 @@ template <typename T>
 void RigidBodyTree<T>::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
 
-  for (size_t i = 0; i < bodies.size() - 1; ) {
+  for (size_t i = 0; i < bodies.size() - 1;) {
     if (bodies[i]->has_parent_body()) {
       auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                [&](std::unique_ptr<RigidBody> const& p) {
@@ -214,10 +214,9 @@ void RigidBodyTree<T>::compile(void) {
       }
       if (!hasChild) {
         cout << "Welding joint " << bodies[i]->getJoint().get_name() << endl;
-        std::unique_ptr<DrakeJoint> joint_unique_ptr(
-            new FixedJoint(
-                bodies[i]->getJoint().get_name(),
-                bodies[i]->getJoint().get_transform_to_parent_body()));
+        std::unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(
+            bodies[i]->getJoint().get_name(),
+            bodies[i]->getJoint().get_transform_to_parent_body()));
         bodies[i]->setJoint(std::move(joint_unique_ptr));
       }
     }
@@ -399,17 +398,16 @@ void RigidBodyTree<T>::drawKinematicTree(
   for (const auto& body : bodies) {
     dotfile << "  " << body->get_name() << " [label=\"" << body->get_name()
             << endl;
-    dotfile << "mass=" << body->get_mass() << ", com="
-            << body->get_center_of_mass().transpose()
-            << endl;
-    dotfile << "spatial inertia=" << endl << body->get_spatial_inertia()
-            << endl;
+    dotfile << "mass=" << body->get_mass()
+            << ", com=" << body->get_center_of_mass().transpose() << endl;
+    dotfile << "spatial inertia=" << endl
+            << body->get_spatial_inertia() << endl;
     dotfile << "\"];" << endl;
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
       dotfile << "  " << body->get_name() << " -> "
-              << body->get_parent()->get_name()
-              << " [label=\"" << joint.get_name() << endl;
+              << body->get_parent()->get_name() << " [label=\""
+              << joint.get_name() << endl;
       dotfile << "transform_to_parent_body=" << endl
               << joint.get_transform_to_parent_body().matrix() << endl;
       //     dotfile << "axis=" << endl << joint.get().matrix() << endl;
@@ -420,8 +418,7 @@ void RigidBodyTree<T>::drawKinematicTree(
     dotfile << "  " << frame->get_name() << " [label=\"" << frame->get_name()
             << " (frame)\"];" << endl;
     dotfile << "  " << frame->get_name() << " -> "
-            << frame->get_rigid_body().get_name()
-            << " [label=\"";
+            << frame->get_rigid_body().get_name() << " [label=\"";
     dotfile << "transform_to_body=" << endl
             << frame->get_transform_to_body().matrix() << endl;
     dotfile << "\"];" << endl;
@@ -429,8 +426,8 @@ void RigidBodyTree<T>::drawKinematicTree(
 
   for (const auto& loop : loops) {
     dotfile << "  " << loop.frameA_->get_rigid_body().get_name() << " -> "
-            << loop.frameB_->get_rigid_body().get_name()
-            << " [label=\"loop " << endl;
+            << loop.frameB_->get_rigid_body().get_name() << " [label=\"loop "
+            << endl;
     dotfile << "transform_to_parent_body=" << endl
             << loop.frameA_->get_transform_to_body().matrix() << endl;
     dotfile << "transform_to_child_body=" << endl
@@ -522,8 +519,10 @@ void RigidBodyTree<T>::getTerrainContactPoints(
     auto group_map = body.get_group_to_collision_ids_map();
     auto map_iter = group_map.find(group_name);
     if (map_iter == group_map.end()) {
-      throw runtime_error("RigidBodyTree::getTerrainContactPoints: "
-        "could not find collision group named: " + group_name);
+      throw runtime_error(
+          "RigidBodyTree::getTerrainContactPoints: "
+          "could not find collision group named: " +
+          group_name);
     }
 
     element_ids = map_iter->second;
@@ -759,6 +758,27 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
+bool RigidBodyTree<T>::AllPairsClosestPoints(
+    const KinematicsCache<double>& cache,
+    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (const auto& body : bodies) {
+    body->appendCollisionElementIdsFromThisBody(ids_to_check);
+  }
+  return AllPairsClosestPointsInSet(cache, ids_to_check, pairs, use_margins);
+}
+
+template <typename T>
+bool RigidBodyTree<T>::AllPairsClosestPointsInSet(
+    const KinematicsCache<double>& cache,
+    const vector<DrakeCollision::ElementId>& ids_to_check,
+    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
+  updateDynamicCollisionElements(cache);
+  return collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
+                                                 *pairs);
+}
+
+template <typename T>
 std::vector<DrakeCollision::PointPair>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
@@ -877,9 +897,8 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
       const KinematicsCacheElement<Scalar>& parent_element =
           cache.getElement(*body.get_parent());
       const DrakeJoint& joint = body.getJoint();
-      auto q_body =
-          q.middleRows(
-              body.get_position_start_index(), joint.get_num_positions());
+      auto q_body = q.middleRows(body.get_position_start_index(),
+                                 joint.get_num_positions());
 
       // transform
       auto T_body_to_parent =
@@ -909,9 +928,8 @@ void RigidBodyTree<T>::doKinematics(KinematicsCache<Scalar>& cache,
           }
         } else {
           // twist
-          auto v_body =
-              v.middleRows(
-                  body.get_velocity_start_index(), joint.get_num_velocities());
+          auto v_body = v.middleRows(body.get_velocity_start_index(),
+                                     joint.get_num_velocities());
 
           TwistVector<Scalar> joint_twist =
               element.motion_subspace_in_world * v_body;
@@ -1127,12 +1145,12 @@ bool RigidBodyTree<T>::is_part_of_model_instances(
   }
 
   return model_instance_id_set.find(body.get_model_instance_id()) !=
-      model_instance_id_set.end();
+         model_instance_id_set.end();
 }
 
 template <typename T>
-double RigidBodyTree<T>::getMass(const std::set<int>& model_instance_id_set)
-const {
+double RigidBodyTree<T>::getMass(
+    const std::set<int>& model_instance_id_set) const {
   double total_mass = 0.0;
   for (const auto& body : bodies) {
     if (is_part_of_model_instances(*body.get(), model_instance_id_set)) {
@@ -1160,8 +1178,8 @@ const {
       if (body.get_mass() > 0) {
         com.noalias() +=
             body.get_mass() *
-                transformPoints(cache, body.get_center_of_mass().cast<Scalar>(),
-                                i, 0);
+            transformPoints(cache, body.get_center_of_mass().cast<Scalar>(), i,
+                            0);
       }
       m += body.get_mass();
     }
@@ -1194,8 +1212,8 @@ RigidBodyTree<T>::centerOfMassJacobianDotTimesV(
     const std::set<int>& model_instance_id_set) const {
   // kinematics cache checks are already being done in
   // centroidalMomentumMatrixDotTimesV
-  auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache,
-      model_instance_id_set);
+  auto cmm_dot_times_v =
+      centroidalMomentumMatrixDotTimesV(cache, model_instance_id_set);
   double total_mass = getMass(model_instance_id_set);
   return cmm_dot_times_v.template bottomRows<kSpaceDimension>() / total_mass;
 }
@@ -1302,13 +1320,11 @@ KinematicPath RigidBodyTree<T>::findKinematicPath(
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
 
-  std::vector<int> start_body_ancestors =
-      FindAncestorBodies(start_body);
+  std::vector<int> start_body_ancestors = FindAncestorBodies(start_body);
   start_body_ancestors.insert(start_body_ancestors.begin(), start_body);
 
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
-  std::vector<int> end_body_ancestors =
-      FindAncestorBodies(end_body);
+  std::vector<int> end_body_ancestors = FindAncestorBodies(end_body);
   end_body_ancestors.insert(end_body_ancestors.begin(), end_body);
 
   // find least common ancestor
@@ -2058,8 +2074,8 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
   for (int i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips the current body if model_instance_id is not -1 and the body's
     // robot ID is not equal to the desired model instance ID.
-    if (model_instance_id != -1
-        && model_instance_id != bodies[i]->get_model_instance_id()) {
+    if (model_instance_id != -1 &&
+        model_instance_id != bodies[i]->get_model_instance_id()) {
       continue;
     }
 
@@ -2107,6 +2123,19 @@ RigidBody* RigidBodyTree<T>::FindBody(const std::string& body_name,
 }
 
 template <typename T>
+const RigidBody* RigidBodyTree<T>::FindBody(
+    DrakeCollision::ElementId element_id) const {
+  auto element = collision_model_->FindElement(element_id);
+  if (element != nullptr) {
+    return element->get_body();
+  }
+  throw std::logic_error(
+      "RigidBodyTree::FindBody: ERROR: Could not find body for collision "
+      "element id: " +
+      std::to_string(element_id) + ".");
+}
+
+template <typename T>
 std::vector<const RigidBody*>
 RigidBodyTree<T>::FindModelInstanceBodies(int model_instance_id) const {
   std::vector<const RigidBody*> result;
@@ -2148,8 +2177,8 @@ shared_ptr<RigidBodyFrame> RigidBodyTree<T>::findFrame(
   for (int i = 0; i < static_cast<int>(frames.size()); ++i) {
     // Skips the current frame if model_instance_id is not -1 and the frame's
     // model instance ID is not equal to the desired model instance ID.
-    if (model_instance_id != -1 && model_instance_id !=
-        frames[i]->get_model_instance_id()) {
+    if (model_instance_id != -1 &&
+        model_instance_id != frames[i]->get_model_instance_id()) {
       continue;
     }
 
@@ -2366,17 +2395,15 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
   for (size_t i = 0; i < loops.size(); ++i) {
     {  // position constraint
-      auto ptA_in_B =
-          transformPoints(cache, Vector3d::Zero(),
-                          loops[i].frameA_->get_frame_index(),
-                          loops[i].frameB_->get_frame_index());
+      auto ptA_in_B = transformPoints(cache, Vector3d::Zero(),
+                                      loops[i].frameA_->get_frame_index(),
+                                      loops[i].frameB_->get_frame_index());
       ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     {  // second position constraint (to constrain orientation)
-      auto axis_A_end_in_B =
-          transformPoints(cache, loops[i].axis_,
-                          loops[i].frameA_->get_frame_index(),
-                          loops[i].frameB_->get_frame_index());
+      auto axis_A_end_in_B = transformPoints(
+          cache, loops[i].axis_, loops[i].frameA_->get_frame_index(),
+          loops[i].frameB_->get_frame_index());
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
@@ -2536,8 +2563,7 @@ void RigidBodyTree<T>::addRobotFromURDFString(
     const std::string& xml_string,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::map<std::string, std::string>& ros_package_map,
-    const std::string& root_dir,
-    const FloatingBaseType floating_base_type,
+    const std::string& root_dir, const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   drake::parsers::urdf::AddModelInstanceFromUrdfStringSearchingInRosPackages(
       xml_string, ros_package_map, root_dir, floating_base_type, weld_to_frame,
@@ -2573,8 +2599,8 @@ void RigidBodyTree<T>::addRobotFromSDF(
     const std::string& filename,
     const FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-  drake::parsers::sdf::AddModelInstancesFromSdfFile(filename,
-      floating_base_type, weld_to_frame, this);
+  drake::parsers::sdf::AddModelInstancesFromSdfFile(
+      filename, floating_base_type, weld_to_frame, this);
 }
 
 template <typename T>

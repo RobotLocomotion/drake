@@ -1,6 +1,11 @@
 set(source_files kinematics_results.cc rigid_body_plant.cc
-  contact_force.cc
-  contact_resultant_force_calculator.cc)
+    contact_detail.cc
+    contact_force.cc
+    contact_info.cc
+    contact_resultant_force_calculator.cc
+    contact_results.cc
+    point_contact_detail.cc
+    )
 
 # The following variables are necessary to conditionally include
 # RigidBodyTreeLcmPublisher in libdrakeRigidBodyPlant.so if LCM exists.
@@ -35,8 +40,13 @@ target_link_libraries(drakeRigidBodyPlant
   drakeOptimization)
 
 drake_install_headers(
-  ${lcm_dependent_header_files}
-  kinematics_results.h rigid_body_plant.h)
+    ${lcm_dependent_header_files}
+    kinematics_results.h rigid_body_plant.h 
+    contact_detail.h
+    contact_results.h
+    contact_info.h
+    )
+
 pods_install_libraries(drakeRigidBodyPlant)
 pods_install_pkg_config_file(drake-rigid-body-plant
   CFLAGS -I${CMAKE_INSTALL_PREFIX}/include
