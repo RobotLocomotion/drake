@@ -1,12 +1,11 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include "drake/common/drake_export.h"
 
 template <typename T>
 class RigidBodyTree;
 
-class DRAKE_EXPORT IKoptions {
+class IKoptions {
  private:
   RigidBodyTree<double> *robot_;
   int nq_;

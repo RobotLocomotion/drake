@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -47,7 +46,6 @@ namespace parsers {
  * @throws A std::runtime_error if the floating_base_type is unrecognized or
  * zero floating joints were added to the model.
  */
-DRAKE_EXPORT
 int AddFloatingJoint(
     multibody::joints::FloatingBaseType floating_base_type,
     const std::vector<int>& body_indices,
