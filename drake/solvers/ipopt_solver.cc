@@ -67,7 +67,7 @@ size_t GetGradientMatrix(const Constraint& c,
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
 
-  for (const Eigen::Ref<const DecisionVariableMatrixX>& v : variable_vector) {
+  for (const DecisionVariableMatrixX& v : variable_vector) {
     DRAKE_ASSERT(v.cols() == 1);
     for (int i = 0; i < static_cast<int>(m); ++i) {
       for (int j = 0; j < v.size(); ++j) {
@@ -109,7 +109,7 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const Eigen::Ref<const DecisionVariableMatrixX>& v : variable_vector) {
+  for (const DecisionVariableMatrixX& v : variable_vector) {
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
@@ -132,7 +132,7 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   // figure out where the derivatives we actually care about are
   // located.
   size_t grad_idx = 0;
-  for (const Eigen::Ref<const DecisionVariableMatrixX>& v : variable_vector) {
+  for (const DecisionVariableMatrixX& v : variable_vector) {
     DRAKE_ASSERT(v.cols() == 1);
     for (size_t i = 0; i < c.num_constraints(); i++) {
       for (int j = 0; j < v.size(); j++) {
@@ -236,7 +236,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       const auto& lower_bound = c->lower_bound();
       const auto& upper_bound = c->upper_bound();
       int var_count = 0;
-      for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int k = 0; k < v.size(); ++k) {
           const int idx = v(k, 0).index();
@@ -431,7 +431,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     for (auto const& binding : problem_->GetAllCosts()) {
       int index = 0;
-      for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         int num_v_variables = v.size();
         this_x.conservativeResize(index + num_v_variables);
@@ -444,7 +444,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       binding.constraint()->Eval(this_x, ty);
 
       cost_cache_->result[0] += ty(0).value();
-      for (const Eigen::Ref<const DecisionVariableMatrixX>& v : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
           cost_cache_->grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
