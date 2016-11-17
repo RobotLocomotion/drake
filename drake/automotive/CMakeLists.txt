@@ -29,9 +29,12 @@ pods_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
+  idm_planner.h
   idm_with_trajectory_agent.h
+  linear_car.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
+  single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )

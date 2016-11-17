@@ -35,14 +35,12 @@ template <typename T>
 IdmPlanner<T>::~IdmPlanner() {}
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
-IdmPlanner<T>::get_ego_port() const {
+const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_ego_port() const {
   return systems::System<T>::get_input_port(0);
 }
 
 template <typename T>
-const systems::SystemPortDescriptor<T>&
-IdmPlanner<T>::get_agent_port() const {
+const systems::SystemPortDescriptor<T>& IdmPlanner<T>::get_agent_port() const {
   return systems::System<T>::get_input_port(1);
 }
 
@@ -54,9 +52,9 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
 
   // Obtain the input/output structures we need to read from and write into.
   const systems::BasicVector<T>* input_ego =
-    this->EvalVectorInput(context, this->get_ego_port().get_index());
+      this->EvalVectorInput(context, this->get_ego_port().get_index());
   const systems::BasicVector<T>* input_agent =
-    this->EvalVectorInput(context, this->get_agent_port().get_index());
+      this->EvalVectorInput(context, this->get_agent_port().get_index());
   systems::BasicVector<T>* const output_vector =
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);

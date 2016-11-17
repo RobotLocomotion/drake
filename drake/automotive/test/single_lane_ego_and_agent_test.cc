@@ -2,11 +2,11 @@
 
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-
-#include "gtest/gtest.h"
 
 using std::make_unique;
 
@@ -98,10 +98,10 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalOutput) {
   EXPECT_EQ(0.0, output_agent->GetAtIndex(1));
 
   // Define a new set of assignments to the states.
-  state_vec_ego->SetAtIndex(0, 1.0);
-  state_vec_ego->SetAtIndex(1, 2.0);
-  state_vec_agent->SetAtIndex(0, 6.0);
-  state_vec_agent->SetAtIndex(1, 4.0);
+  (*state_vec_ego)[0] = 1.0;
+  (*state_vec_ego)[1] = 2.0;
+  (*state_vec_agent)[0] = 6.0;
+  (*state_vec_agent)[1] = 4.0;
 
   dut_.EvalOutput(*context_, output_.get());
 
@@ -129,31 +129,38 @@ TEST_F(SingleLaneEgoAndAgentTest, EvalTimeDerivatives) {
   auto derivatives_ego = state_derivatives(dut_.get_ego_car_system());
   auto derivatives_agent = state_derivatives(dut_.get_agent_car_system());
 
-  // Verify behavior at a new set of state assignments.
-  state_vec_ego->SetAtIndex(0, 0.0);
-  state_vec_ego->SetAtIndex(1, 0.0);
-  state_vec_agent->SetAtIndex(0, 6.0);
-  state_vec_agent->SetAtIndex(1, 0.0);
+  // Verify behavior at a new set of state assignments, where the ego
+  // and agent are both initially at rest, and spaced at a slightly
+  // greater distance than the specified headway distance.
+  (*state_vec_ego)[0] = 0.0;
+  (*state_vec_ego)[1] = 0.0;
+  (*state_vec_agent)[0] = 6.0;
+  (*state_vec_agent)[1] = 0.0;
 
   dut_.EvalTimeDerivatives(*context_, derivatives_.get());
   dut_.EvalOutput(*context_, output_.get());
 
-  // Expected state derivatives wrt. the given states.
+  // Expected state derivatives. Velocity v maps should map to x_dot.
+  // The car should accelerate, as evidenced by a positive v_dot.
   EXPECT_EQ(0.0, derivatives_ego->GetAtIndex(0));
   EXPECT_NEAR(0.555556, derivatives_ego->GetAtIndex(1), 1e-6);
   EXPECT_EQ(0.0, derivatives_agent->GetAtIndex(0));
   EXPECT_EQ(2.7, derivatives_agent->GetAtIndex(1));
 
-  // Verify behavior at yet another set of state assignments.
-  state_vec_ego->SetAtIndex(0, 0.0);
-  state_vec_ego->SetAtIndex(1, 25.0);
-  state_vec_agent->SetAtIndex(0, 10.0);
-  state_vec_agent->SetAtIndex(1, 10.0);
+  // Verify behavior at a new set of state assignments, where the ego
+  // is approaching the agent at a relative velocity of 15 m/s
+  // wrt. the agent, and spaced at a greater distance than the
+  // specified headway distance.
+  (*state_vec_ego)[0] = 0.0;
+  (*state_vec_ego)[1] = 25.0;
+  (*state_vec_agent)[0] = 10.0;
+  (*state_vec_agent)[1] = 10.0;
 
   dut_.EvalTimeDerivatives(*context_, derivatives_.get());
   dut_.EvalOutput(*context_, output_.get());
 
-  // Expected state derivatives wrt. the given states.
+  // Expected state derivatives. Velocity v maps should map to x_dot.
+  // The car should rapidly decelerate, as evidenced by a negative v_dot.
   EXPECT_EQ(25.0, derivatives_ego->GetAtIndex(0));
   EXPECT_NEAR(-411.914474, derivatives_ego->GetAtIndex(1), 1e-6);
   EXPECT_EQ(10.0, derivatives_agent->GetAtIndex(0));

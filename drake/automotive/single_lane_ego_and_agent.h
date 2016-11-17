@@ -54,8 +54,6 @@ class SingleLaneEgoAndAgent : public systems::Diagram<T> {
 
   ~SingleLaneEgoAndAgent() override {}
 
-  bool has_any_direct_feedthrough() const override;
-
   /// Sets the continuous states in @p context to default values.
   void SetDefaultState(systems::Context<T>* context) const;
 

@@ -40,7 +40,7 @@ class IdmPlanner : public systems::LeafSystem<T> {
   const systems::SystemPortDescriptor<T>& get_agent_port() const;
 
   // System<T> overrides.
-  // The output of this system is an algbraic relation of its inputs.
+  // The output of this system is an algebraic relation of its inputs.
   bool has_any_direct_feedthrough() const override { return true; }
 
   void EvalOutput(const systems::Context<T>& context,

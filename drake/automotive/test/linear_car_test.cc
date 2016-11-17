@@ -22,20 +22,14 @@ class LinearCarTest : public ::testing::Test {
     // Set the state to zero initially.
     systems::ContinuousState<double>* xc = continuous_state();
     EXPECT_EQ(2, xc->size());
-    EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+    EXPECT_EQ(1, xc->get_generalized_position().size());
+    EXPECT_EQ(1, xc->get_generalized_velocity().size());
+    EXPECT_EQ(0, xc->get_misc_continuous_state().size());
     xc->SetFromVector(Eigen::VectorXd::Zero(2));
   }
 
   systems::ContinuousState<double>* continuous_state() {
     return context_->get_mutable_continuous_state();
-  }
-
-  static std::unique_ptr<systems::FreestandingInputPort> MakeInput(
-      std::unique_ptr<systems::BasicVector<double>> data) {
-    // TODO(jadecastro): Take advantage of
-    // `SetInputPortToConstantValue` in #4041.
-    return std::unique_ptr<systems::FreestandingInputPort>(
-        new systems::FreestandingInputPort(std::move(data)));
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
@@ -63,7 +57,7 @@ TEST_F(LinearCarTest, Topology) {
 
 TEST_F(LinearCarTest, Output) {
   input_->get_mutable_value() << 1.7;
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   // Define a pointer to where the EvalOutput results end up.
   auto result = output_->get_vector_data(0);
@@ -74,8 +68,8 @@ TEST_F(LinearCarTest, Output) {
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
   // New state propagates to the output.
-  continuous_state()->get_mutable_vector()->SetAtIndex(0, 1.0);
-  continuous_state()->get_mutable_vector()->SetAtIndex(1, 2.0);
+  (*continuous_state()->get_mutable_generalized_position())[0] = 1.0;
+  (*continuous_state()->get_mutable_generalized_velocity())[0] = 2.0;
   dut_->EvalOutput(*context_, output_.get());
   EXPECT_EQ(1.0, result->GetAtIndex(0));
   EXPECT_EQ(2.0, result->GetAtIndex(1));
@@ -84,7 +78,7 @@ TEST_F(LinearCarTest, Output) {
 TEST_F(LinearCarTest, Derivatives) {
   // Assign an arbitrary input value.
   input_->get_mutable_value() << 7.4;
-  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  context_->FixInputPort(0, std::move(input_));
 
   // Define a pointer to where the EvalTimeDerivatives results end up.
   auto result = derivatives_->get_mutable_vector();
@@ -95,8 +89,8 @@ TEST_F(LinearCarTest, Derivatives) {
   EXPECT_EQ(7.4, result->GetAtIndex(1));
 
   // Test at a nontrivial initial condition.
-  continuous_state()->get_mutable_vector()->SetAtIndex(0, 4.2);
-  continuous_state()->get_mutable_vector()->SetAtIndex(1, 5.3);
+  (*continuous_state()->get_mutable_generalized_position())[0] = 4.2;
+  (*continuous_state()->get_mutable_generalized_velocity())[0] = 5.3;
   dut_->EvalTimeDerivatives(*context_, derivatives_.get());
   EXPECT_EQ(5.3, result->GetAtIndex(0));
   EXPECT_EQ(7.4, result->GetAtIndex(1));
