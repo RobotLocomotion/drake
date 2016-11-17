@@ -10,6 +10,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/cond.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic_environment.h"
@@ -230,20 +231,20 @@ class Expression {
     C++'s conditional expression and our @c if_then_else expression in a way the
     arguments are evaluated during the construction.
 
-     - In case of the C++'s conditional expression, @c cond @c ? @c exp_then @c
-       : @c exp_else, the then expression @c exp_then (respectively, the else
+     - In case of the C++'s conditional expression, <tt> cond ? exp_then :
+       exp_else</tt>, the then expression @c exp_then (respectively, the else
        expression @c exp_else) is \b only evaluated when the conditional
        expression @c cond is evaluated to \b true (respectively, when @c cond is
        evaluated to \b false).
 
-     - In case of the symbolic expression, @c if_then_else(@c cond, @c exp_then,
-       @c exp_else), however, \b both arguments @c exp_then and @c exp_else are
-       evaluated first and then passed to the @c if_then_else function.
+     - In case of the symbolic expression, <tt>if_then_else(cond, exp_then,
+       exp_else)</tt>, however, \b both arguments @c exp_then and @c exp_else
+       are evaluated first and then passed to the @c if_then_else function.
 
      @note This function returns an \b expression and it is different from the
      C++'s if-then-else \b statement.
 
-     @note While it is still possible to define @c min, @c max, and @c abs math
+     @note While it is still possible to define <tt> min, max, abs</tt> math
      functions using @c if_then_else expression, it is highly \b recommended to
      use the provided native definitions for them because it allows solvers to
      detect specific math functions and to have a room for special
@@ -304,30 +305,6 @@ Expression min(const Expression& e1, const Expression& e2);
 Expression max(const Expression& e1, const Expression& e2);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
-
-/** @name cond
-  Constructs conditional expression (similar to Lisp's cond).
-
-  @verbatim
-    cond(cond_1, exp_1,
-         cond_2, exp_2,
-            ...,   ...,
-         cond_n, exp_n,
-         exp_{n+1})
-  @endverbatim
-
-  The value returned by the above cond expression is @c exp_1 if @c cond_1 is
-  true; else if @c cond_2 is true then @c exp_2; ... ; else if @c cond_n is true
-  then @c exp_n. If none of the conditions are true, it returns @c exp_{n+1}.
- */
-///@{
-Expression cond(const Expression& e);
-template <typename... Rest>
-Expression cond(const Formula& f_cond, const Expression& e_then, Rest... rest) {
-  return if_then_else(f_cond, e_then, cond(rest...));
-}
-///@}
-
 void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
@@ -397,6 +374,17 @@ operator/=(MatrixL& lhs, double rhs) {
   return lhs /= Expression{rhs};
 }
 }  // namespace symbolic
+
+/** Provides specialization of @c cond function defined in drake/common/cond.h
+ * file. This specialization is required to handle @c double to @c
+ * symbolic::Expression conversion so that we can write one such as <tt>cond(x >
+ * 0.0, 1.0, -1.0)</tt>.
+*/
+template <typename... Rest>
+symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
+                          Rest... rest) {
+  return if_then_else(f_cond, symbolic::Expression{v_then}, cond(rest...));
+}
 
 /** Computes the hash value of a symbolic expression. */
 template <>

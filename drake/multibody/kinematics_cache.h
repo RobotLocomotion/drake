@@ -15,8 +15,8 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/rigid_body.h"
 #include "drake/multibody/joints/drake_joint.h"
+#include "drake/multibody/rigid_body.h"
 
 template <typename T>
 class KinematicsCacheElement {
@@ -33,12 +33,18 @@ class KinematicsCacheElement {
   Eigen::Matrix<T, drake::kTwistSize, Eigen::Dynamic, 0, drake::kTwistSize,
                 DrakeJoint::MAX_NUM_VELOCITIES>
       motion_subspace_in_world;  // gradient w.r.t. q
+
+  // Jacobian matrix of quasi-coordinate variables computed with respect
+  // to generalized coordinate variables.
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_VELOCITIES,
-                DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;  // gradient w.r.t. q
+                DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;
+
+  // Jacobian matrix of generalized coordinate variables computed with respect
+  // to quasi-coordinate variables.
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0,
                 DrakeJoint::MAX_NUM_POSITIONS,
-                DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;  // gradient w.r.t. q
+                DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;
   drake::SquareTwistMatrix<T> inertia_in_world;
   drake::SquareTwistMatrix<T> crb_in_world;
 
@@ -77,11 +83,11 @@ class KinematicsCache {
       RigidBodyKCacheElementPair;
   typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
       RigidBodyKCacheElementPairAllocator;
-  typedef std::unordered_map<
-      RigidBody<double> const*, KinematicsCacheElementT,
-      std::hash<RigidBody<double> const*>,
-      std::equal_to<RigidBody<double> const*>,
-      RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
+  typedef std::unordered_map<RigidBody<double> const*, KinematicsCacheElementT,
+                             std::hash<RigidBody<double> const*>,
+                             std::equal_to<RigidBody<double> const*>,
+                             RigidBodyKCacheElementPairAllocator>
+      RigidBodyToKCacheElementMap;
 
   RigidBodyToKCacheElementMap elements;
   std::vector<RigidBody<double> const*> bodies;
@@ -169,52 +175,87 @@ class KinematicsCache {
     }
   }
 
+  /**
+   * Converts a matrix B, which transforms generalized velocities (v) to an
+   * output space X, to a matrix A, which transforms the time
+   * derivative of generalized coordinates (qdot) to the same output X. For
+   * example, B could be a Jacobian matrix that transforms generalized
+   * velocities to spatial velocities at the end-effector. Formally, this would
+   * be the matrix of partial derivatives of end-effector configuration computed
+   * with respect to quasi-coordinates (ꝗ). This function would allow
+   * transforming that Jacobian so that all partial derivatives would be
+   * computed with respect to qdot.
+   * @param B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @retval A a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @sa transformQDotMappingToVelocityMapping()
+   */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-  transformVelocityMappingToPositionDotMapping(
-      const Eigen::MatrixBase<Derived>& mat) const {
+  transformVelocityMappingToQDotMapping(
+      const Eigen::MatrixBase<Derived>& B) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), get_num_positions());
-    int ret_col_start = 0;
-    int mat_col_start = 0;
+                  Eigen::Dynamic>
+        A(B.rows(), get_num_positions());
+    int A_col_start = 0;
+    int B_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody<double>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.get_num_positions()).noalias() =
-            mat.middleCols(mat_col_start, joint.get_num_velocities()) *
+        A.middleCols(A_col_start, joint.get_num_positions()).noalias() =
+            B.middleCols(B_col_start, joint.get_num_velocities()) *
             element.qdot_to_v;
-        ret_col_start += joint.get_num_positions();
-        mat_col_start += joint.get_num_velocities();
+        A_col_start += joint.get_num_positions();
+        B_col_start += joint.get_num_velocities();
       }
     }
-    return ret;
+    return A;
   }
 
+  /**
+   * Converts a matrix A, which transforms the time derivative of generalized
+   * coordinates (qdot) to an output space X, to a matrix B, which transforms
+   * generalized velocities (v) to the same space X. For example, A could be a
+   * Jacobian matrix that transforms qdot to spatial velocities at the end
+   * effector. Formally, this would be the matrix of partial derivatives of
+   * end-effector configuration computed with respect to the generalized
+   * coordinates (q). This function would allow the user to
+   * transform this Jacobian matrix to the more commonly used one: the matrix of
+   * partial derivatives of end-effector configuration computed with respect to
+   * quasi-coordinates (ꝗ).
+   * @param A a `m x nq` sized matrix, where `nq` is the dimension of the
+   *      generalized coordinates.
+   * @retval B, a `m x nv` sized matrix, where `nv` is the dimension of the
+   *      generalized velocities.
+   * @sa transformVelocityMappingToQDotMapping()
+   */
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                 Eigen::Dynamic>
-  transformPositionDotMappingToVelocityMapping(
-      const Eigen::MatrixBase<Derived>& mat) const {
+  transformQDotMappingToVelocityMapping(
+      const Eigen::MatrixBase<Derived>& A) const {
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> ret(mat.rows(), get_num_velocities());
-    int ret_col_start = 0;
-    int mat_col_start = 0;
+                  Eigen::Dynamic>
+        B(A.rows(), get_num_velocities());
+    int B_col_start = 0;
+    int A_col_start = 0;
     for (auto it = bodies.begin(); it != bodies.end(); ++it) {
       const RigidBody<double>& body = **it;
       if (body.has_parent_body()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
-        ret.middleCols(ret_col_start, joint.get_num_velocities()).noalias() =
-            mat.middleCols(mat_col_start, joint.get_num_positions()) *
+        B.middleCols(B_col_start, joint.get_num_velocities()).noalias() =
+            A.middleCols(A_col_start, joint.get_num_positions()) *
             element.v_to_qdot;
-        ret_col_start += joint.get_num_velocities();
-        mat_col_start += joint.get_num_positions();
+        B_col_start += joint.get_num_velocities();
+        A_col_start += joint.get_num_positions();
       }
     }
-    return ret;
+    return B;
   }
 
   const Eigen::Matrix<T, Eigen::Dynamic, 1>& getQ() const { return q; }
@@ -250,7 +291,7 @@ class KinematicsCache {
 
   int get_num_positions() const { return num_positions; }
 
-  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_positions().")
 #endif
@@ -258,7 +299,7 @@ class KinematicsCache {
 
   int get_num_velocities() const { return num_velocities; }
 
-  // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
+// TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use get_num_velocities().")
 #endif

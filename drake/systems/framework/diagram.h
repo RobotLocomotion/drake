@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/number_traits.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
@@ -394,10 +395,10 @@ class Diagram : public System<T>,
   /// The @p generalized_velocity vector must have the same size and ordering as
   /// the generalized velocity in the ContinuousState that this Diagram reserves
   /// in its context.
-  void DoMapVelocityToConfigurationDerivatives(
+  void DoMapVelocityToQDot(
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const override {
+      VectorBase<T>* qdot) const override {
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
@@ -405,7 +406,7 @@ class Diagram : public System<T>,
     DRAKE_DEMAND(xc != nullptr);
     const int nq = xc->get_generalized_position().size();
     const int nv = xc->get_generalized_velocity().size();
-    DRAKE_DEMAND(nq == configuration_derivatives->size());
+    DRAKE_DEMAND(nq == qdot->size());
     DRAKE_DEMAND(nv == generalized_velocity.size());
 
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -416,7 +417,7 @@ class Diagram : public System<T>,
     // is valid because the DiagramContinuousState guarantees that the subsystem
     // states are concatenated in sorted order.
     int v_index = 0;  // The next index to read in generalized_velocity.
-    int q_index = 0;  // The next index to write in configuration_derivatives.
+    int q_index = 0;  // The next index to write in qdot.
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
@@ -430,13 +431,12 @@ class Diagram : public System<T>,
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
-      // Select the chunk of configuration_derivatives belonging to subsystem i.
+      // Select the chunk of qdot belonging to subsystem i.
       const int num_q = sub_xc->get_generalized_position().size();
-      Subvector<T> dq_slice(configuration_derivatives, q_index, num_q);
+      Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
-      sorted_systems_[i]->MapVelocityToConfigurationDerivatives(
-          *subcontext, v_slice, &dq_slice);
+      sorted_systems_[i]->MapVelocityToQDot(*subcontext, v_slice, &dq_slice);
 
       // Advance the indices.
       v_index += num_v;
@@ -444,42 +444,69 @@ class Diagram : public System<T>,
     }
   }
 
+  /// Computes the next update time based on the configured actions, for scalar
+  /// types that are arithmetic, or aborts for scalar types that are not
+  /// arithmetic.
   void DoCalcNextUpdateTime(const Context<T>& context,
                             UpdateActions<T>* actions) const override {
-    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DoCalcNextUpdateTimeImpl(context, actions);
+  }
+
+ private:
+  // Aborts for scalar types that are not numeric, since there is no reasonable
+  // definition of "next update time" outside of the real line.
+  //
+  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value>::type
+  DoCalcNextUpdateTimeImpl(const Context<T1>& context,
+                           UpdateActions<T1>* actions) const {
+    DRAKE_ABORT_MSG(
+        "The default implementation of Diagram<T>::DoCalcNextUpdateTime "
+        "only works with types that are drake::is_numeric.");
+  }
+
+  // Computes the next update time across all the scheduled events, for
+  // scalar types that are numeric.
+  //
+  // @tparam T1 SFINAE boilerplate for the scalar type. Do not set.
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value>::type DoCalcNextUpdateTimeImpl(
+      const Context<T1>& context, UpdateActions<T1>* actions) const {
+    auto diagram_context = dynamic_cast<const DiagramContext<T1>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    actions->time = std::numeric_limits<T>::infinity();
+    actions->time = std::numeric_limits<T1>::infinity();
 
     // Iterate over the subsystems in sorted order, and harvest the most
     // imminent updates.
-    std::vector<UpdateActions<T>> sub_actions(num_subsystems());
+    std::vector<UpdateActions<T1>> sub_actions(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
-      const Context<T>* subcontext = diagram_context->GetSubsystemContext(i);
+      const Context<T1>* subcontext = diagram_context->GetSubsystemContext(i);
       DRAKE_DEMAND(subcontext != nullptr);
-      const T time = sorted_systems_[i]->CalcNextUpdateTime(*subcontext,
-                                                            &sub_actions[i]);
+      const T1 time =
+          sorted_systems_[i]->CalcNextUpdateTime(*subcontext, &sub_actions[i]);
       if (time < actions->time) {
         actions->time = time;
       }
     }
 
     // If no discrete actions are needed, bail early.
-    if (actions->time == std::numeric_limits<T>::infinity()) {
+    if (actions->time == std::numeric_limits<T1>::infinity()) {
       return;
     }
 
-    std::vector<std::pair<int, UpdateActions<T>>> publishers;
-    std::vector<std::pair<int, UpdateActions<T>>> updaters;
+    std::vector<std::pair<int, UpdateActions<T1>>> publishers;
+    std::vector<std::pair<int, UpdateActions<T1>>> updaters;
     for (int i = 0; i < num_subsystems(); i++) {
       // Ignore the subsystems that aren't among the most imminent updates.
       if (sub_actions[i].time > actions->time) continue;
       if (internal::HasEvent(sub_actions[i],
-                             DiscreteEvent<T>::kPublishAction)) {
+                             DiscreteEvent<T1>::kPublishAction)) {
         publishers.emplace_back(i, sub_actions[i]);
       }
       if (internal::HasEvent(sub_actions[i],
-                             DiscreteEvent<T>::kUpdateAction)) {
+                             DiscreteEvent<T1>::kUpdateAction)) {
         updaters.emplace_back(i, sub_actions[i]);
       }
     }
@@ -487,9 +514,9 @@ class Diagram : public System<T>,
 
     // Request a publish event, if our subsystems want it.
     if (!publishers.empty()) {
-      DiscreteEvent<T> event;
-      event.action = DiscreteEvent<T>::kPublishAction;
-      event.do_publish = std::bind(&Diagram<T>::HandlePublish, this,
+      DiscreteEvent<T1> event;
+      event.action = DiscreteEvent<T1>::kPublishAction;
+      event.do_publish = std::bind(&Diagram<T1>::HandlePublish, this,
                                    std::placeholders::_1, /* context */
                                    publishers);
       actions->events.push_back(event);
@@ -497,9 +524,9 @@ class Diagram : public System<T>,
 
     // Request an update event, if our subsystems want it.
     if (!updaters.empty()) {
-      DiscreteEvent<T> event;
-      event.action = DiscreteEvent<T>::kUpdateAction;
-      event.do_update = std::bind(&Diagram<T>::HandleUpdate, this,
+      DiscreteEvent<T1> event;
+      event.action = DiscreteEvent<T1>::kUpdateAction;
+      event.do_update = std::bind(&Diagram<T1>::HandleUpdate, this,
                                   std::placeholders::_1, /* context */
                                   std::placeholders::_2, /* difference state */
                                   updaters);
@@ -507,7 +534,6 @@ class Diagram : public System<T>,
     }
   }
 
- private:
   // A structural outline of a Diagram, produced by DiagramBuilder.
   struct Blueprint {
     // The ordered subsystem ports that are inputs to the entire diagram.
@@ -832,8 +858,8 @@ class Diagram : public System<T>,
       // Do that system's update actions.
       for (const DiscreteEvent<T>& event : action_details.events) {
         if (event.action == DiscreteEvent<T>::kUpdateAction) {
-          sorted_systems_[index]->EvalDifferenceUpdates(
-              *subcontext, event, subdifference);
+          sorted_systems_[index]->EvalDifferenceUpdates(*subcontext, event,
+                                                        subdifference);
         }
       }
     }

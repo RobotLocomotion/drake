@@ -361,7 +361,7 @@ template <typename Scalar>
 Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDotMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nq = cache.get_num_positions();
-  return cache.transformPositionDotMappingToVelocityMapping(
+  return cache.transformQDotMappingToVelocityMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nq, nq));
 }
 
@@ -369,7 +369,7 @@ template <typename Scalar>
 Matrix<Scalar, Dynamic, Dynamic> positionDotToVelocityMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nv = cache.get_num_velocities();
-  return cache.transformVelocityMappingToPositionDotMapping(
+  return cache.transformVelocityMappingToQDotMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nv, nv));
 }
 
