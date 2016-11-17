@@ -1,3 +1,8 @@
+'''
+Usage: This program should be launched using the command line specified in the
+       kuka_sim.pmd file.
+'''
+
 from director import mainwindowapp
 from director import robotsystem
 from director import applogic
@@ -16,7 +21,8 @@ class KukaSimInfoLabel(object):
         self.label = QtGui.QLabel('')
         statusBar.addPermanentWidget(self.label)
 
-        self.sub = lcmUtils.addSubscriber('IIWA_STATUS', lcmdrake.lcmt_iiwa_status, self.onIiwaStatus)
+        self.sub = lcmUtils.addSubscriber('IIWA_STATUS',
+                                  lcmdrake.lcmt_iiwa_status, self.onIiwaStatus)
         self.sub.setSpeedLimit(30)
 
         self.label.text = '[waiting for sim status]'
@@ -24,13 +30,15 @@ class KukaSimInfoLabel(object):
     def onIiwaStatus(self, msg):
         simTime = msg.utime*1e-6
         simFreq = self.sub.getMessageRate()
-        self.label.text = 'Sim freq: %d hz  |  Sim time: %.2f' % (simFreq, simTime)
+        self.label.text = 'Sim freq: %d hz  |  Sim time: %.2f' % (simFreq,
+                                                                  simTime)
 
 
 def makeRobotSystem(view):
     factory = robotsystem.RobotSystemFactory()
     options = factory.getDisabledOptions()
-    factory.setDependentOptions(options, usePlannerPublisher=True, useTeleop=True)
+    factory.setDependentOptions(options, usePlannerPublisher=True,
+                                         useTeleop=True)
     return factory.construct(view=view, options=options)
 
 
@@ -42,8 +50,10 @@ mainwindowapp.MainWindowPanelFactory().construct(app=app.app, view=app.view)
 robotSystem = makeRobotSystem(app.view)
 
 # add the teleop and playback panels to the mainwindow
-app.app.addWidgetToDock(robotSystem.teleopPanel.widget, QtCore.Qt.RightDockWidgetArea)
-app.app.addWidgetToDock(robotSystem.playbackPanel.widget, QtCore.Qt.BottomDockWidgetArea)
+app.app.addWidgetToDock(robotSystem.teleopPanel.widget,
+                        QtCore.Qt.RightDockWidgetArea)
+app.app.addWidgetToDock(robotSystem.playbackPanel.widget,
+                        QtCore.Qt.BottomDockWidgetArea)
 
 # show sim time in the status bar
 infoLabel = KukaSimInfoLabel(app.mainWindow.statusBar())
