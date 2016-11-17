@@ -48,8 +48,14 @@ namespace systems {
 template <class T>
 class WitnessFunction {
  public:
-  /// Constructs this witness function with a reference to the specified system.
-  WitnessFunction(const System<T>& system) : system_(system) {}
+  /**
+   * Constructs this witness function with a reference to the specified system.
+   * Tolerances for zero are set exactly to zero; i.e., the witness function
+   * will only be treated as zero when it evaluates exactly to zero.
+   */
+  WitnessFunction(const System<T>& system) : system_(system) {
+    tolerance_left_ = tolerance_right_ = 0.0;
+  }
 
   /// Two possible types of witness function output types.
   enum WitnessFunctionType { kContinuous, kDiscontinuous };
@@ -139,8 +145,50 @@ class WitnessFunction {
     return true;
   }
 
- private:
+  /**
+   * Sets a "symmetric" tolerance for zero for the witness function. The witness
+   * function `w()` will be considered to evaluate to zero when:
+   * `-tol <= w() <= tol`. This function is equivalent to:
+   * <pre>
+   *   set_right_tolerance(tol);
+   *   set_left_tolerance(-tol);
+   * </pre>
+   * @throws std::logic_error if @p tol is negative.
+   * TODO(edrumwri): Describe why symmetric tolerances useful.
+   */
+  void set_tolerance(double tol) {
+    if (tol < 0.)
+      throw std::logic_error("Negative tolerance specified.");
+    tolerance_right_ = tol;
+    tolerance_left_ = -tol;
+  }
 
+  /**
+   * Sets a tolerance tolerance for zero from the right of zero. The witness
+   * function `w()` will be considered to evaluate to zero when:
+   * `get_left_tolerance() <= w() <= tol`.
+   * @throws std::logic_error if @p tol is negative.
+   */
+  void set_right_tolerance(double tol) {
+    if (tol < 0.)
+      throw std::logic_error("Negative tolerance specified.");
+    tolerance_right_ = tol;
+  }
+
+  /**
+ * Sets a tolerance tolerance for zero from the left of zero. The witness
+ * function `w()` will be considered to evaluate to zero when:
+ * tol <= w() <= `get_right_tolerance()`.
+ * @throws std::logic_error if @p tol is positive.
+ */
+  void set_left_tolerance(double tol) {
+    if (tol > 0.)
+      throw std::logic_error("Positive tolerance specified.");
+    tolerance_left_ = tol;
+  }
+
+ private:
+  double tolerance_left_, tolerance_right_;
   const System<T>& system_;
 };
 } // namespace systems
