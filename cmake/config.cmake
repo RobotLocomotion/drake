@@ -206,6 +206,25 @@ macro(drake_setup_python)
 
   # Choose your python (major) version
   option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
+
+  if(WITH_PYTHON_3)
+    set(_python_minimum_version 3.0)
+  else()
+    set(_python_minimum_version 2.7)
+  endif()
+
+  find_package(PythonInterp ${_python_minimum_version} MODULE REQUIRED)
+
+  execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}" -c "import sys; print sys.exec_prefix;"
+    OUTPUT_VARIABLE _python_prefix
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  list(APPEND CMAKE_PREFIX_PATH ${_python_prefix})
+
+  find_package(PythonLibs ${_python_minimum_version} MODULE REQUIRED)
+
+  unset(_python_minimum_version)
+  unset(_python_prefix)
 endmacro()
 
 #------------------------------------------------------------------------------
