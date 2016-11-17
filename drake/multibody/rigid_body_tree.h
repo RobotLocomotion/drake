@@ -873,7 +873,7 @@ class DRAKE_EXPORT RigidBodyTree {
    * @return A pointer to the owning RigidBody.
    * @throws std::logic_error if no body can be mapped to the element id.
    */
-  const RigidBody* FindBody(DrakeCollision::ElementId element_id) const;
+  const RigidBody<double>* FindBody(DrakeCollision::ElementId element_id) const;
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
