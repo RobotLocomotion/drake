@@ -12,12 +12,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
 template <typename T>
-class DRAKE_EXPORT RigidBody {
+class RigidBody {
  public:
   RigidBody();
 
@@ -364,7 +363,7 @@ class DRAKE_EXPORT RigidBody {
   void AddCollisionElementsToClique(int clique_id);
 
  public:
-  DRAKE_EXPORT friend std::ostream& operator<<(
+  friend std::ostream& operator<<(
       std::ostream& out, const RigidBody<double>& b);
 
  public:
