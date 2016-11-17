@@ -17,14 +17,14 @@ class RigidBodyFrame {
    * Eigen::Isometry3d matrix.
    *
    */
-  RigidBodyFrame(const std::string& name, RigidBody* body,
+  RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                  const Eigen::Isometry3d& transform_to_body);
 
   /**
    * A constructor where the transform-to-body is specified using
    * Euler angles.
    */
-  RigidBodyFrame(const std::string& name, RigidBody* body,
+  RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                  const Eigen::Vector3d& xyz = Eigen::Vector3d::Zero(),
                  const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
@@ -48,12 +48,12 @@ class RigidBodyFrame {
   /**
    * Returns the rigid body to which this frame is attached.
    */
-  const RigidBody& get_rigid_body() const;
+  const RigidBody<double>& get_rigid_body() const;
 
   /**
    * Returns the rigid body to which this frame is attached.
    */
-  RigidBody* get_mutable_rigid_body();
+  RigidBody<double>* get_mutable_rigid_body();
 
   /**
    * Returns the transform between the coordinate frame that belongs to this
@@ -101,12 +101,12 @@ class RigidBodyFrame {
    * @p rigid_body must remain valid for the lifetime of this `RigidBodyFrame`
    * object.
    */
-  void set_rigid_body(RigidBody* rigid_body);
+  void set_rigid_body(RigidBody<double>* rigid_body);
 
   /**
    * Returns true if this frame's rigid body is equal to the @p rigid_body.
    */
-  bool has_as_rigid_body(RigidBody* rigid_body);
+  bool has_as_rigid_body(RigidBody<double>* rigid_body);
 
   /**
    * Sets the index of this frame. This is the index in the vector of
@@ -128,7 +128,7 @@ class RigidBodyFrame {
 
  private:
   std::string name_;
-  RigidBody* body_{nullptr};
+  RigidBody<double>* body_{nullptr};
   Eigen::Isometry3d transform_to_body_;
   int frame_index_ = 0;  // this will be negative, but will also be gone soon!
 };

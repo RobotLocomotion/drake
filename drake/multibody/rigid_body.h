@@ -15,6 +15,7 @@
 #include "drake/multibody/collision/drake_collision.h"
 #include "drake/multibody/joints/drake_joint.h"
 
+template <typename T>
 class RigidBody {
  public:
   RigidBody();
@@ -362,7 +363,8 @@ class RigidBody {
   void AddCollisionElementsToClique(int clique_id);
 
  public:
-  friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
+  friend std::ostream& operator<<(
+      std::ostream& out, const RigidBody<double>& b);
 
  public:
 #ifndef SWIG

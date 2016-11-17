@@ -265,7 +265,8 @@ class RigidBodyTree {
    * @p model_instance_id_set.
    */
   bool is_part_of_model_instances(
-      const RigidBody& body, const std::set<int>& model_instance_id_set) const;
+      const RigidBody<T>& body,
+      const std::set<int>& model_instance_id_set) const;
 
   /**
    * Computes the total combined mass of a set of model instances.
@@ -400,7 +401,7 @@ class RigidBodyTree {
   /// Convenience alias for rigid body to external wrench map, for use with
   /// inverseDynamics and dynamicsBiasTerm.
   using BodyToWrenchMap = drake::eigen_aligned_std_unordered_map<
-    RigidBody const*, drake::WrenchVector<T>>;
+    RigidBody<double> const*, drake::WrenchVector<T>>;
 #endif
 
   /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator
@@ -418,7 +419,7 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const drake::eigen_aligned_std_unordered_map<
-          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
+          RigidBody<T> const*, drake::WrenchVector<Scalar>>& external_wrenches,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -453,7 +454,7 @@ class RigidBodyTree {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       KinematicsCache<Scalar>& cache,
       const drake::eigen_aligned_std_unordered_map<
-          RigidBody const*, drake::WrenchVector<Scalar>>& external_wrenches,
+          RigidBody<T> const*, drake::WrenchVector<Scalar>>& external_wrenches,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -590,7 +591,7 @@ class RigidBodyTree {
   DrakeCollision::ElementId addCollisionElement(
       const DrakeCollision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      RigidBody& body,
+      RigidBody<T>& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>
@@ -615,7 +616,7 @@ class RigidBodyTree {
   }
 
   void updateCollisionElements(
-      const RigidBody& body,
+      const RigidBody<T>& body,
       const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
 
   void updateStaticCollisionElements();
@@ -635,7 +636,7 @@ class RigidBodyTree {
    *
    * @throws std::runtime_error if an invalid group name is given.
    */
-  void getTerrainContactPoints(const RigidBody& body,
+  void getTerrainContactPoints(const RigidBody<T>& body,
                                Eigen::Matrix3Xd* terrain_points,
                                const std::string& group_name = "") const;
 
@@ -861,7 +862,7 @@ class RigidBodyTree {
    * @throws std::logic_error if multiple matching bodies are found or no
    * matching bodies are found.
    */
-  RigidBody* FindBody(const std::string& body_name,
+  RigidBody<T>* FindBody(const std::string& body_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
@@ -871,7 +872,7 @@ class RigidBodyTree {
    * @return A pointer to the owning RigidBody.
    * @throws std::logic_error if no body can be mapped to the element id.
    */
-  const RigidBody* FindBody(DrakeCollision::ElementId element_id) const;
+  const RigidBody<double>* FindBody(DrakeCollision::ElementId element_id) const;
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
@@ -883,7 +884,7 @@ class RigidBodyTree {
    * @return A vector of pointers to every rigid body belonging to the sepcified
    * model instance.
    */
-  std::vector<const RigidBody*>
+  std::vector<const RigidBody<T>*>
   FindModelInstanceBodies(int model_instance_id) const;
 
 /**
@@ -893,7 +894,7 @@ class RigidBodyTree {
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
 #endif
-  RigidBody* findLink(const std::string& link_name,
+  RigidBody<T>* findLink(const std::string& link_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
 
@@ -967,13 +968,14 @@ class RigidBodyTree {
    * @throws std::runtime_error If either no rigid body is found or multiple
    * matching rigid bodies are found.
    */
-  RigidBody* FindChildBodyOfJoint(const std::string& joint_name,
-                                  int model_instance_id = -1) const;
+  RigidBody<T>* FindChildBodyOfJoint(const std::string& joint_name,
+                                     int model_instance_id = -1) const;
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
 #endif
-  RigidBody* findJoint(const std::string& joint_name, int model_id = -1) const;
+  RigidBody<T>* findJoint(
+          const std::string& joint_name, int model_id = -1) const;
 
   /**
    * Returns the index within the vector of rigid bodies of the rigid body whose
@@ -1022,7 +1024,7 @@ class RigidBodyTree {
    * by calling RigidBodyTree::get_num_bodies(). Note that the body at
    * index 0 represents the world.
    */
-  const RigidBody& get_body(int body_index) const;
+  const RigidBody<T>& get_body(int body_index) const;
 
   /**
    * Returns the number of bodies in this tree. This includes the one body that
@@ -1091,7 +1093,7 @@ class RigidBodyTree {
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
-      RigidBody& body = *bodies[*it];
+      RigidBody<T>& body = *bodies[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
                                          : body.getJoint().get_num_velocities();
       int col_start = in_terms_of_qdot ? body.get_position_start_index()
@@ -1119,19 +1121,19 @@ class RigidBodyTree {
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return A bare, unowned pointer to the @p body.
    */
-  RigidBody* add_rigid_body(std::unique_ptr<RigidBody> body);
+  RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  RigidBody& world() { return *bodies[0]; }
+  RigidBody<T>& world() { return *bodies[0]; }
 
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  const RigidBody& world() const { return *bodies[0]; }
+  const RigidBody<T>& world() const { return *bodies[0]; }
 
   /**
    * An accessor to the number of position states outputted by this rigid body
@@ -1165,7 +1167,7 @@ class RigidBodyTree {
   // TODO(amcastro-tri): make private and start using accessors body(int).
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody>> bodies;
+  std::vector<std::unique_ptr<RigidBody<T>>> bodies;
 
   // Rigid body frames
   std::vector<std::shared_ptr<RigidBodyFrame>> frames;

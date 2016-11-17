@@ -198,7 +198,7 @@ std::vector<int> AutomotiveSimulator<T>::GetModelJointStateSizes() const {
     const int model_instance_id = model_info.first;
     int num_joint_positions{0};
     int num_joint_velocities{0};
-    const std::vector<const RigidBody*> bodies =
+    const std::vector<const RigidBody<T>*> bodies =
         rigid_body_tree_->FindModelInstanceBodies(model_instance_id);
     for (const auto& body : bodies) {
       num_joint_positions += body->getJoint().get_num_positions();

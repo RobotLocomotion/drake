@@ -38,7 +38,7 @@ struct SurfacePoint {
 // To provide a simple access to the appropriate solution for the collision
 // point on each body, a map is used to allow referencing the corresponding
 // solution by body pointer.
-typedef std::unordered_map<const RigidBody*, SurfacePoint>
+typedef std::unordered_map<const RigidBody<double>*, SurfacePoint>
     BodyToSurfacePointMap;
 
 class RBTCollisionTest: public ::testing::Test {
@@ -66,7 +66,7 @@ class RBTCollisionTest: public ::testing::Test {
 
   double tolerance_;
   RigidBodyTree<double> tree_;
-  const RigidBody *small_sphere_, *large_box_;
+  const RigidBody<double> *small_sphere_, *large_box_;
   BodyToSurfacePointMap solution_;
 };
 
@@ -99,8 +99,8 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
   // the maximum depth collision point.
   ASSERT_EQ(1u, collision_pairs.size());
 
-  const RigidBody* bodyA = collision_pairs[0].elementA->get_body();
-  const RigidBody* bodyB = collision_pairs[0].elementB->get_body();
+  const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
+  const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
   EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));

@@ -61,7 +61,7 @@ GTEST_TEST(RigidBodySystemTest, TestLoadURDFWorld) {
   // that they have the correct model name.
   for (auto& body_name :
        {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
-    RigidBody* body = tree.FindBody(body_name);
+    RigidBody<double>* body = tree.FindBody(body_name);
     EXPECT_NE(body, nullptr);
     EXPECT_EQ(body->get_model_name(), "dual_ramps");
   }
@@ -79,8 +79,9 @@ GTEST_TEST(RigidBodySystemTest, MapVelocityToConfigurationDerivativesAndBack) {
   auto tree = make_unique<RigidBodyTree<double>>();
 
   // Add a single free body with a quaternion base.
-  RigidBody* body;
-  tree->add_rigid_body(unique_ptr<RigidBody>(body = new RigidBody()));
+  RigidBody<double>* body;
+  tree->add_rigid_body(
+      unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
   body->set_name("free_body");
   // Sets body to have a non-zero spatial inertia. Otherwise the body gets
   // welded by a fixed joint to the world by RigidBodyTree::compile().
