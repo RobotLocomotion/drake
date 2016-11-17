@@ -3,8 +3,8 @@ add_executable(test_kinematics_cache_checks test_kinematics_cache_checks.cc)
 target_link_libraries(test_kinematics_cache_checks drakeRBM)
 drake_add_test(NAME test_kinematics_cache_checks WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND test_kinematics_cache_checks)
 
-#add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
-#target_link_libraries(benchmark_rigid_body_tree drakeRBM)
+add_executable(benchmark_rigid_body_tree benchmark_rigid_body_tree.cc)
+target_link_libraries(benchmark_rigid_body_tree drakeRBM)
 
 drake_add_cc_test(rigid_body_test)
 target_link_libraries(rigid_body_test drakeRBM)
