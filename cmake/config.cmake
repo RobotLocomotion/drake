@@ -139,9 +139,7 @@ macro(drake_setup_compiler)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     drake_check_compiler("Apple Clang" 7)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    drake_check_compiler("Clang" 3.7)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    drake_check_compiler("MSVC" 19 "19 (VS 2015)")
+    drake_check_compiler("Clang" 3.9)
   endif()
 
   # Set compiler language standard level
