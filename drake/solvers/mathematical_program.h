@@ -584,7 +584,7 @@ class MathematicalProgram {
     }
     return AddBinaryVariables<rows, 1>(names);
   }
-  
+
   /// Add binary variables to this MathematicalProgram.
   /**
    * Add binary variables, appending them to an internal vector of any
