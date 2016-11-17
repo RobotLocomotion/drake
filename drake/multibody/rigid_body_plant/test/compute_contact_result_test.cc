@@ -57,8 +57,8 @@ class ContactResultTest : public ::testing::Test {
  protected:
   // These pointers are merely reference pointers; the underlying instances
   //  are owned by objects which, ultimately, are owned by the test class.
-  RigidBody* body1_{};
-  RigidBody* body2_{};
+  RigidBody<double>* body1_{};
+  RigidBody<double>* body2_{};
   RigidBodyTree<double>* tree_{};
 
   // The point around which the test is run. Each sphere is offset along the
@@ -105,9 +105,10 @@ class ContactResultTest : public ::testing::Test {
 
   // Add a sphere with default radius, placed at the given position.
   //  Returns a raw pointer so that tests can use it for result validation.
-  RigidBody* AddSphere(const Vector3d& pos, const std::string& name) {
-    RigidBody* body;
-    tree_->add_rigid_body(unique_ptr<RigidBody>(body = new RigidBody()));
+  RigidBody<double>* AddSphere(const Vector3d& pos, const std::string& name) {
+    RigidBody<double>* body;
+    tree_->add_rigid_body(
+        unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
     body->set_name(name);
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
@@ -148,8 +149,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   // Confirms that the proper bodies are in contact.
   DrakeCollision::ElementId e1 = info.get_element_id_1();
   DrakeCollision::ElementId e2 = info.get_element_id_2();
-  const RigidBody* b1 = tree_->FindBody(e1);
-  const RigidBody* b2 = tree_->FindBody(e2);
+  const RigidBody<double>* b1 = tree_->FindBody(e1);
+  const RigidBody<double>* b2 = tree_->FindBody(e2);
   ASSERT_NE(e1, e2);
   ASSERT_TRUE(b1 == body1_ || b1 == body2_);
   ASSERT_TRUE(b2 == body1_ || b2 == body2_);
