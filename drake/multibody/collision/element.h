@@ -7,7 +7,6 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
@@ -36,7 +35,7 @@ typedef uintptr_t ElementId;
  *   `RigidBody` *can* possess multiple collision `Element`s, but an `Element`
  *   can only belong to a single `RigidBody`.
  */
-class DRAKE_EXPORT Element : public DrakeShapes::Element {
+class Element : public DrakeShapes::Element {
  public:
   /**
    * Default constructor.
@@ -129,8 +128,7 @@ class DRAKE_EXPORT Element : public DrakeShapes::Element {
   /**
    * A toString method for this class.
    */
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream&,
-                                                        const Element&);
+  friend std::ostream& operator<<(std::ostream&, const Element&);
 
  protected:
   Element(const Element& other);

@@ -12,8 +12,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-class DRAKE_EXPORT QuaternionFloatingJoint
-    : public DrakeJointImpl<QuaternionFloatingJoint> {
+class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
  public:
   QuaternionFloatingJoint(const std::string& name,
                           const Eigen::Isometry3d& transform_to_parent_body)
