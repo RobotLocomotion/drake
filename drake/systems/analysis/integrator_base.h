@@ -169,13 +169,13 @@ class IntegratorBase {
    * values.
    */
   void Reset() {
-    // Kill the error estimate and scaling matrices.
+    // Kill the error estimate and weighting matrices.
     err_est_.reset();
     qbar_weight_.setZero(0);
     z_weight_.setZero(0);
     pinvN_dq_err_.reset();
-    unscaled_err_.setZero(0);
-    scaled_q_err_.reset();
+    unweighted_err_.setZero(0);
+    weighted_q_err_.reset();
 
     // Statistics no longer valid.
     ResetStatistics();
@@ -203,7 +203,7 @@ class IntegratorBase {
    * thrown when attempting to call StepOnceAtMost(). To reinitialize the
    * integrator, Reset() should be called followed by Initialize().
    * @throws std::logic_error If the context has not been set or one of the
-   *         scaling matrix coefficients is set to a negative value (this
+   *         weighting matrix coefficients is set to a negative value (this
    *         check is only performed for integrators that support error
    *         estimation).
    * @sa Reset()
@@ -212,7 +212,7 @@ class IntegratorBase {
     if (!context_) throw std::logic_error("Context has not been set.");
 
     // TODO(edrumwri): Compute qbar_weight_, z_weight_ automatically.
-    // Set error scaling vectors if not already done.
+    // Set error weighting vectors if not already done.
     if (supports_error_estimation()) {
       // Allocate space for the error estimate.
       err_est_ = system_.AllocateTimeDerivatives();
@@ -223,7 +223,7 @@ class IntegratorBase {
       if (qbar_weight_.size() != gv_size) qbar_weight_.setOnes(gv_size);
       if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
-      // Verify that minimum values of the scaling matrices are non-negative.
+      // Verify that minimum values of the weighting matrices are non-negative.
       if (qbar_weight_.minCoeff() < 0 || z_weight_.minCoeff() < 0)
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
@@ -504,7 +504,7 @@ class IntegratorBase {
    * the notion of "quasi-coordinates" ꝗ (pronounced "qbar") which are defined
    * by the equation `ꝗdot = dꝗ/dt = v`. Other than time scaling,
    * quasi-coordinates have the same units as their corresponding velocity
-   * variables. That is, for scaling we need to think
+   * variables. That is, for weighting we need to think
    * of the configuration coordinates in the same physical space as the velocity
    * variables; weight those by their physical significance; and then map back
    * to an instantaneous weighting
@@ -526,18 +526,18 @@ class IntegratorBase {
    * - `nz` miscellaneous continuous state variables `z`.
    *
    * Weights on the generalized velocity variables `v (= dꝗ/dt)` are derived
-   * directly from the weights on `ꝗ`, scaled by a characteristic time. Weights
+   * directly from the weights on `ꝗ`, weighted by a characteristic time. Weights
    * on the actual `nq` generalized coordinates can
    * be calculated efficiently from weights on the quasi-coordinates (details
    * below).
    *
    * <h4>How the weights are used</h4>
    *
-   * The errors in the `ꝗ` and `z` variables are scaled by the diagonal elements
+   * The errors in the `ꝗ` and `z` variables are weighted by the diagonal elements
    * of diagonal weighting matrices Wꝗ and Wz, respectively. (The block-diagonal
    * weighting matrix `Wq` on the original generalized coordinates `q` is
    * calculated from `N` and `Wꝗ`; see below.) In the absence of
-   * other information, the default for all scaling values is one, so `Wꝗ` and
+   * other information, the default for all weighting values is one, so `Wꝗ` and
    * `Wz` are `n × n` and `nz × nz` identity matrices. The weighting matrix `Wv`
    * for the velocity variables is just `Wv = τ*Wꝗ` where `τ` is a
    * "characteristic time" for the system, that is, a quantity in time units
@@ -546,7 +546,7 @@ class IntegratorBase {
    * configuration. Note that larger values of `τ` are more conservative since
    * they increase the velocity weights. Typically we use `τ=1.0` or `0.1`
    * seconds for human-scale mechanical systems.
-   * <!-- TODO(sherm1): provide more guidance for velocity scaling. -->
+   * <!-- TODO(sherm1): provide more guidance for velocity weighting. -->
    *
    * The weighting matrices `Wq`, `Wv`, and `Wz` are used to compute a weighted
    * infinity norm as follows. Although `Wv` and `Wz` are constant, the actual
@@ -580,7 +580,7 @@ class IntegratorBase {
    * matrix); however, `N N⁺ != I`, as `N` has more rows than columns generally.
    * [Nikravesh 1988] shows how such a matrix `N` can be determined and provides
    * more information. Given this relationship between `N` and `N⁺`, we can
-   * relate scaled errors in configuration coordinates `q` to scaled errors in
+   * relate weighted errors in configuration coordinates `q` to weighted errors in
    * generalized quasi-coordinates `ꝗ`, as the following derivation shows: <pre>
    *            v = N⁺ qdot         Inverse kinematic differential equation
    *        dꝗ/dt = N⁺ dq/dt        Use synonyms for v and qdot
@@ -595,7 +595,7 @@ class IntegratorBase {
    * space and the weighted `q` or `qdot` (resp.) variables in configuration
    * space.
    *
-   * Finally, note that a diagonal entry of one of the scaling matrices can
+   * Finally, note that a diagonal entry of one of the weighting matrices can
    * be set to zero to disable error estimation for that state variable
    * (i.e., auxiliary variable or configuration/velocity variable pair), but
    * that setting an entry to a negative value will cause an exception to be
@@ -698,7 +698,7 @@ class IntegratorBase {
    * @throws std::logic_error If the integrator does not support error
    *                          estimation.
    * @returns the norm (a non-negative value)
- */
+   */
   T CalcErrorNorm();
 
   /**
@@ -866,8 +866,8 @@ class IntegratorBase {
   std::unique_ptr<VectorBase<T>> pinvN_dq_err_;
 
   // Vectors used in error norm calculations.
-  VectorX<T> unscaled_err_;
-  std::unique_ptr<VectorBase<T>> scaled_q_err_;
+  VectorX<T> unweighted_err_;
+  std::unique_ptr<VectorBase<T>> weighted_q_err_;
 
   // Variable for indicating when an integrator has been initialized.
   bool initialization_done_{false};
@@ -973,9 +973,9 @@ T IntegratorBase<T>::CalcErrorNorm() {
   // Get the error estimate and necessary vectors.
   const auto& err_est = get_error_estimate();
 
-  // Get scaling matrices.
-  const auto& v_scal = this->get_generalized_state_weight_vector();
-  const auto& z_scal = this->get_misc_state_weight_vector();
+  // Get weighting matrices.
+  const auto& qbar_v_weight = this->get_generalized_state_weight_vector();
+  const auto& z_weight = this->get_misc_state_weight_vector();
 
   // Get the generalized position, velocity, and miscellaneous continuous
   // state vectors.
@@ -983,30 +983,32 @@ T IntegratorBase<T>::CalcErrorNorm() {
   const VectorBase<T>& gv_err = err_est->get_generalized_velocity();
   const VectorBase<T>& gz_err = err_est->get_misc_continuous_state();
 
-  // (re-)Initialize pinvN_dq_err_ and scaled_q_err_, if necessary.
+  // (re-)Initialize pinvN_dq_err_ and weighted_q_err_, if necessary.
   // Reinitialization might be required if the system state variables can
   // change during the course of the simulation.
   if (pinvN_dq_err_ == nullptr) {
     pinvN_dq_err_ = std::make_unique<BasicVector<T>>(gv_err.size());
-    scaled_q_err_ = std::make_unique<BasicVector<T>>(gq_err.size());
+    weighted_q_err_ = std::make_unique<BasicVector<T>>(gq_err.size());
   }
   DRAKE_DEMAND(pinvN_dq_err_->size() == gv_err.size());
-  DRAKE_DEMAND(scaled_q_err_->size() == gq_err.size());
+  DRAKE_DEMAND(weighted_q_err_->size() == gq_err.size());
 
-  // Computes the infinity norm of the un-scaled velocity variables.
-  unscaled_err_ = gv_err.CopyToVector();
-  T v_nrm = (v_scal * unscaled_err_).template lpNorm<Eigen::Infinity>();
+  // Computes the infinity norm of the unweighted velocity variables.
+  unweighted_err_ = gv_err.CopyToVector();
+  T v_nrm = (qbar_v_weight * unweighted_err_).
+      template lpNorm<Eigen::Infinity>();
 
-  // Compute the infinity norm of the scaled auxiliary variables.
-  unscaled_err_ = gz_err.CopyToVector();
-  T z_nrm = (z_scal * unscaled_err_).template lpNorm<Eigen::Infinity>();
+  // Compute the infinity norm of the weighted auxiliary variables.
+  unweighted_err_ = gz_err.CopyToVector();
+  T z_nrm = (z_weight * unweighted_err_).template lpNorm<Eigen::Infinity>();
 
-  // Compute Wq * dq = N * Wv * N+ * dq.
-  unscaled_err_ = gq_err.CopyToVector();
-  system.MapQDotToVelocity(context, unscaled_err_, pinvN_dq_err_.get());
-  system.MapVelocityToQDot(context, v_scal * pinvN_dq_err_->CopyToVector(),
-                           scaled_q_err_.get());
-  T q_nrm = scaled_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
+  // Compute N * Wq * dq = N * Wꝗ * N+ * dq.
+  unweighted_err_ = gq_err.CopyToVector();
+  system.MapQDotToVelocity(context, unweighted_err_, pinvN_dq_err_.get());
+  system.MapVelocityToQDot(context,
+                           qbar_v_weight * pinvN_dq_err_->CopyToVector(),
+                           weighted_q_err_.get());
+  T q_nrm = weighted_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
 
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
   // in the largest value).
@@ -1080,7 +1082,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // this feedback could include throwing a special exception, logging, setting
   // a flag in the integrator that allows throwing an exception, or returning
   // a special status from StepOnceAtMost().
-  if (get_maximum_step_size() < std::numeric_limits<double>::infinity())
+  if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
   if (get_minimum_step_size() > 0) {
     if (new_step_size < get_minimum_step_size())
