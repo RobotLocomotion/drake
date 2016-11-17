@@ -18,7 +18,8 @@ function(drake_check_compiler NAME VERSION)
     set(_version_string "${VERSION}")
   endif()
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${VERSION})
-    message(FATAL_ERROR "${NAME} version must be at least ${_version_string}")
+    message(FATAL_ERROR "${NAME} version must be at least ${_version_string} \
+                         (detected version ${CMAKE_CXX_COMPILER_VERSION})")
   endif()
 endfunction()
 
