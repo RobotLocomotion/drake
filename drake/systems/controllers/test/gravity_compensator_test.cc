@@ -12,9 +12,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/parser_model_instance_id_table.h"
-#include "drake/systems/plants/parser_urdf.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_urdf.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
@@ -25,9 +25,9 @@ namespace systems {
 namespace {
 
 VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
-  RigidBodyTree rigid_body_tree(
+  RigidBodyTree<double> rigid_body_tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
   eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
@@ -46,10 +46,10 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
 class GravityCompensatorTest : public ::testing::Test {
  protected:
   GravityCompensatorTest() {
-    tree_ = std::make_unique<RigidBodyTree>();
+    tree_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-        drake::systems::plants::joints::kFixed, nullptr /* weld to frame */,
+        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree_.get());
   }
 
@@ -60,7 +60,7 @@ class GravityCompensatorTest : public ::testing::Test {
     input_ = make_unique<BasicVector<double>>(7 /* length */);
   }
 
-  std::unique_ptr<RigidBodyTree> tree_;
+  std::unique_ptr<RigidBodyTree<double>> tree_;
   std::unique_ptr<System<double>> gravity_compensator_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;

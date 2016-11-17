@@ -10,9 +10,28 @@
 
   <link name="chassis_floor">
     <inertial>
-      <mass value="57.833"/>
+      <!--  The 2015 Prius has a curb weight of 3,072 lbs. (~1,400 kg)
+      based on the PDF linked below:
+      https://pressroom.toyota.com/releases/
+      toyota+2015+prius+product+specs.download -->
+
+      <!-- Our simplified model as of now assumes that only six links have
+      non-zero weight: the chassis_floor, the body, and the four wheels. The
+      chassis_floor's share of the curb weight is set to 1,360 kg, and the only
+      justification for this otherwise arbitrary value is to bring the center of
+      mass reasonably low.  -->
+
+      <!-- TODO(shensquared): Refine the weight distribution when the model is
+      of higher fidelity. -->
+
+      <mass value="1360"/>
       <origin rpy="0 0 0" xyz="0 0 0" />
-      <inertia ixx="2.71553" ixy="0" ixz="0" iyy="68.9" iyz="0" izz="71.6063"/>
+      <!-- The inertia is calculated by assuming that the chassis_floor link is
+      a cuboid, with its size as specified in the geometry/box/size tag below,
+      and then using the formula from
+      https://en.wikipedia.org/wiki/List_of_moments_of_inertia.-->
+      <inertia ixx="63.858358934" ixy="0" ixz="0" iyy="940.662671467"
+        iyz="0" izz="1004.304312533"/>
     </inertial>
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -25,11 +44,6 @@
     </visual>
   </link>
   <link name="front_axle">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -41,11 +55,6 @@
     </visual>
   </link>
   <link name="left_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="-0.17246 -0.08623  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="__v2">
       <origin rpy="0 0 0.46364" xyz="-0.1086 -0.0543 0"/>
       <geometry>
@@ -66,11 +75,6 @@
     </visual>
   </link>
   <link name="left_hub">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="__visual">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -82,12 +86,7 @@
     </visual>
   </link>
   <link name="tie_rod">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0     -0.4085  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
-    <visual name="v1">
+  <visual name="v1">
       <origin rpy="0 0 0" xyz="0 -0.4085 0"/>
       <geometry>
         <box size="0.061842 0.878847 0.030921"/>
@@ -101,7 +100,8 @@
     <inertial>
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
+      <inertia ixx="0.499912" ixy="0" ixz="0"
+        iyy="0.778439" iyz="0" izz="0.499912"/>
     </inertial>
     <collision name="c1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -119,7 +119,8 @@
       </material>
     </visual>
     <visual name="line1">
-      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963"
+        xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -138,11 +139,6 @@
     </visual>
   </link>
   <link name="right_tie_rod_arm">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="-0.17246  0.08623  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 -0.02228 0"/>
       <geometry>
@@ -163,11 +159,6 @@
     </visual>
   </link>
   <link name="right_hub">
-    <!-- <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial> -->
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -182,7 +173,8 @@
     <inertial>
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
+      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0"
+        izz="0.499912"/>
     </inertial>
     <collision  name="c1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -200,7 +192,8 @@
       </material>
     </visual>
     <visual name="v1">
-      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963"
+        xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -235,7 +228,8 @@
     <inertial>
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
+      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0"
+        izz="0.499912"/>
     </inertial>
     <collision name="c1">
       <origin rpy="0  0  0" xyz="0  0  0"/>
@@ -244,7 +238,8 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963"
+        xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -275,7 +270,8 @@
     <inertial>
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
+      <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0"
+        izz="0.499912"/>
     </inertial>
     <collision name="c1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -284,7 +280,8 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963"
+        xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -313,9 +310,12 @@
   </link>
   <link name="body">
     <inertial>
-      <mass value="5.42794"/>
+      <mass value="54.2794"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00216238" ixy="0" ixz="0" iyy="0.500375" iyz="0" izz="0.501672"/>
+      <!-- TODO(shensquared): Work with Steve to verify the inertia values
+      below are reasonable. -->
+      <inertia ixx="0.0216238" ixy="0" ixz="0"
+        iyy="5.00375" iyz="0" izz="5.01672"/>
     </inertial>
     <visual name="v1">
       <origin rpy="0 0 0" xyz="-2.27 -0.91139 -0.21858"/>
@@ -412,7 +412,8 @@
 
   <loop_joint name="right_pin" type="continuous">
     <axis xyz="0 0 1"/>
-    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.17246 0.08622399999999996733635044  0.03092"/>
+    <link1 link="right_tie_rod_arm" rpy="0 0 0"
+      xyz="-0.17246 0.08622399999999996733635044  0.03092"/>
     <link2 link="tie_rod" rpy="0 0 0" xyz="0 -0.817006 0"/>
   </loop_joint>
 

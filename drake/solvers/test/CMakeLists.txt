@@ -24,7 +24,7 @@ if(dreal_FOUND)
   target_link_libraries(dreal_solver_test drakeOptimization)
 endif()
 
-if(gurobi_FOUND AND snopt_c_FOUND)
+if(gurobi_FOUND AND snopt_FOUND)
   drake_add_cc_test(gurobi_snopt_qp_test)
   target_link_libraries(gurobi_snopt_qp_test drakeOptimization)
 endif()

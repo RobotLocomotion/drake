@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -136,12 +137,8 @@ const {
   return *plant_;
 }
 
-template class
-DRAKE_EXPORT
-PidControlledSpringMassSystem<double>;
-template class
-DRAKE_EXPORT
-PidControlledSpringMassSystem<AutoDiffXd>;
+template class PidControlledSpringMassSystem<double>;
+template class PidControlledSpringMassSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake

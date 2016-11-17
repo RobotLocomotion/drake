@@ -8,4 +8,7 @@ add_subdirectory(plants)
 add_subdirectory(trajectories)
 add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

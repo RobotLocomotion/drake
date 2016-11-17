@@ -1,8 +1,8 @@
 #include <mex.h>
 
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include <cstring>
 /*
  * [active_flag, num_weights, constraint, dconstraint, lower_bound, upper_bound] =
@@ -45,7 +45,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   QuasiStaticConstraint* qsc =
       (QuasiStaticConstraint*)getDrakeMexPointer(prhs[0]);
   bool active = qsc->isActive();
-  RigidBodyTree* model = qsc->getRobotPointer();
+  RigidBodyTree<double>* model = qsc->getRobotPointer();
   int nq = model->get_num_positions();
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   int num_weights = qsc->getNumWeights();

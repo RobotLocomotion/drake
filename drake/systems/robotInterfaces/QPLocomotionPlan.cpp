@@ -7,12 +7,11 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/constants.h"
-#include "drake/common/drake_export.h"  // TODO(tkoolen): exports
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/autodiff_overloads.h"
 #include "drake/math/expmap.h"
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
@@ -75,7 +74,7 @@ std::string primaryBodyOrFrameName(const std::string& full_body_name) {
   return full_body_name.substr(0, i);
 }
 
-QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree& robot,
+QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree<double>& robot,
                                    const QPLocomotionPlanSettings& settings,
                                    const std::string& lcm_channel)
     : robot_(robot),
@@ -476,7 +475,9 @@ bool QPLocomotionPlan::isFinished(double t) const {
   }
 }
 
-const RigidBodyTree& QPLocomotionPlan::getRobot() const { return robot_; }
+const RigidBodyTree<double>& QPLocomotionPlan::getRobot() const {
+  return robot_;
+}
 
 drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const {
   drake::lcmt_zmp_data zmp_data_lcm;
@@ -886,7 +887,8 @@ const std::map<SupportLogicType, std::vector<bool>>
 }
 
 const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
-    const RigidBodyTree& robot, const std::map<Side, std::string>& foot_names) {
+    const RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& foot_names) {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     foot_body_ids[*it] = robot.FindBodyIndex(foot_names.at(*it));
@@ -895,7 +897,8 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(
 }
 
 const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
-    RigidBodyTree& robot, const std::map<Side, std::string>& joint_names) {
+    RigidBodyTree<double>& robot,
+    const std::map<Side, std::string>& joint_names) {
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     int joint_id = robot.FindIndexOfChildBodyOfJoint(joint_names.at(*it));
@@ -904,14 +907,14 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(
   return joint_indices;
 }
 
-template DRAKE_EXPORT drake::lcmt_qp_controller_input
+template drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Matrix<double, -1, 1, 0, -1, 1>,
   Matrix<double, -1, 1, 0, -1, 1>>(
       double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       MatrixBase<Matrix<double, -1, 1, 0, -1, 1>> const&,
       std::vector<bool, std::allocator<bool>> const&);
-template DRAKE_EXPORT drake::lcmt_qp_controller_input
+template drake::lcmt_qp_controller_input
 QPLocomotionPlan::createQPControllerInput<
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>,
   Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0>>>(

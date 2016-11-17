@@ -5,9 +5,10 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_evaluator_interface.h"
@@ -17,43 +18,30 @@
 namespace drake {
 namespace systems {
 
-/** @defgroup systems Modeling Dynamical Systems
- * @{
- * @brief Drake uses a Simulink-inspired description of dynamical systems.
- *
- * Includes basic building blocks (adders, integrators, delays, etc),
- * physics models of mechanical systems, and a growing list of sensors,
- * actuators, controllers, planners, estimators.
- *
- * All dynamical systems derive from the System base class, and must
- * explicitly  declare all State, parameters, and noise/disturbances inputs.
- * The Diagram class permits modeling complex systems from libraries of parts.
- * @}
- */
-
 /// A description of a discrete-time event, which is passed from the simulator
 /// to the recipient System's HandleEvent method.
 template <typename T>
 struct DiscreteEvent {
+  typedef std::function<void(const Context<T>&)> PublishCallback;
+  typedef std::function<void(const Context<T>&, DifferenceState<T>*)>
+  UpdateCallback;
+
   enum ActionType {
     kUnknownAction = 0,  // A default value that causes the handler to abort.
     kPublishAction = 1,  // On a publish action, state does not change.
     kUpdateAction = 2,   // On an update action, discrete state may change.
   };
 
-  /// The system that receives the event.
-  const System<T>* recipient{nullptr};
   /// The type of action the system must take in response to the event.
   ActionType action{kUnknownAction};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kPublishAction. If nullptr, Publish will be used.
-  std::function<void(const Context<T>&)> do_publish{nullptr};
+  PublishCallback do_publish{nullptr};
 
   /// An optional callback, supplied by the recipient, to carry out a
   /// kUpdateAction. If nullptr, DoEvalDifferenceUpdates will be used.
-  std::function<void(const Context<T>&, DifferenceState<T>*)> do_update{
-    nullptr};
+  UpdateCallback do_update{nullptr};
 };
 
 /// A token that identifies the next sample time at which a System must
@@ -246,6 +234,7 @@ class System {
                        UpdateActions<T>* actions) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT(actions != nullptr);
+    actions->events.clear();
     DoCalcNextUpdateTime(context, actions);
     return actions->time;
   }
@@ -335,29 +324,71 @@ class System {
     return;
   }
 
-  /// Transforms the velocity to the derivative of the configuration.
-  /// Generalized velocities (v) and configuration derivatives (qdot) are
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value, or nullptr if the port is not connected.
+  ///
+  /// Throws std::bad_cast if the port is not vector-valued.
+  /// Aborts if the port does not exist.
+  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
+                                        int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalVectorInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the vector-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's value as an Eigen expression.
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
+      const Context<T>& context, int port_index) const {
+    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
+    DRAKE_ASSERT(input_vector != nullptr);
+    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
+    return input_vector->get_value();
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value pointer, or nullptr if the port is not
+  /// connected.
+  const AbstractValue* EvalAbstractInput(const Context<T>& context,
+                                         int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+  }
+
+  /// Causes the abstract-valued port with the given @p port_index to become
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns
+  /// the port's abstract value, or nullptr if the port is not connected.
+  ///
+  /// @tparam V The type of data expected.
+  template <typename V>
+  const V* EvalInputValue(const Context<T>& context, int port_index) const {
+    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
+    return context.template EvalInputValue<V>(parent_,
+                                              get_input_port(port_index));
+  }
+
+  /// Transforms the velocity to the time derivative of generalized
+  /// configuration (qdot). Generalized velocities (v) and qdot are
   /// related linearly by `qdot = N(q) * v` (where `N` may be the identity
   /// matrix). See the alternate signature if you already have the generalized
   /// velocity in an Eigen VectorX object; this signature will copy the
   /// VectorBase into an Eigen object before performing the computation.
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const VectorBase<T>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const {
-    MapVelocityToConfigurationDerivatives(context,
-                                          generalized_velocity.CopyToVector(),
-                                          configuration_derivatives);
+  void MapVelocityToQDot(
+      const Context<T> &context, const VectorBase<T> &generalized_velocity,
+      VectorBase<T> *qdot) const {
+    MapVelocityToQDot(context, generalized_velocity.CopyToVector(), qdot);
   }
 
-  /// Transforms the generalized velocity to the derivative of configuration.
-  /// See alternate signature of MapVelocityToConfigurationDerivatives() for
-  /// more information.
-  void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const {
-    DoMapVelocityToConfigurationDerivatives(context, generalized_velocity,
-                                            configuration_derivatives);
+  /// Transforms the generalized velocity to the time derivative of
+  /// generalized configuration (qdot). See alternate signature of
+  /// MapVelocityToQDot() for more information.
+  void MapVelocityToQDot(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      VectorBase<T>* qdot) const {
+    DoMapVelocityToQDot(context, generalized_velocity, qdot);
   }
 
   /// Transforms the time derivative of configuration to generalized
@@ -372,28 +403,26 @@ class System {
   /// already have `qdot` in an Eigen VectorX object; this signature will
   /// copy the VectorBase into an Eigen object before performing the
   /// computation.
-  // TODO(edrumwri): Evan to verify that N is always left-invertible.
-  void MapConfigurationDerivativesToVelocity(
-      const Context<T>& context, const VectorBase<T>& configuration_derivatives,
-      VectorBase<T>* generalized_velocity) const {
-    MapConfigurationDerivativesToVelocity(
-        context, configuration_derivatives.CopyToVector(),
+  void MapQDotToVelocity(
+      const Context<T> &context, const VectorBase<T> &qdot,
+      VectorBase<T> *generalized_velocity) const {
+    MapQDotToVelocity(
+        context, qdot.CopyToVector(),
         generalized_velocity);
   }
 
   /// Transforms the time derivative of configuration to generalized velocity.
   /// This signature allows using an Eigen VectorX object for faster speed.
-  /// See the other signature of MapConfigurationDerivativesToVelocity() for
-  /// additional information.
-  void MapConfigurationDerivativesToVelocity(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
-      VectorBase<T>* generalized_velocity) const {
-    DoMapConfigurationDerivativesToVelocity(context, configuration_derivatives,
-                                            generalized_velocity);
+  /// See the other signature of MapQDotToVelocity() for additional information.
+  void MapQDotToVelocity(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &configuration_derivatives,
+      VectorBase<T> *generalized_velocity) const {
+    DoMapQDotToVelocity(context, configuration_derivatives,
+                        generalized_velocity);
   }
 
-  // TODO(david-german-tri): MapAccelerationToConfigurationSecondDerivatives.
+  // TODO(david-german-tri): MapAccelerationToQDotDot.
 
   // Sets the name of the system. It is recommended that the name not include
   // the character ':', since that the path delimiter. is "::".
@@ -417,6 +446,25 @@ class System {
     std::stringstream path;
     GetPath(&path);
     return path.str();
+  }
+
+  /// Creates a deep copy of @p from, transmogrified to use the autodiff
+  /// scalar type, with a dynamic-sized vector of partial derivatives. Returns
+  /// nullptr if the template parameter S is not the type of the concrete
+  /// system, or a superclass thereof.
+  ///
+  /// Usage: @code
+  ///   MySystem<double> plant;
+  ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
+  ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
+  /// @p endcode
+  ///
+  /// @tparam S The specific System pointer type to return.
+  template <template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
+      const System<double>& from) {
+    return std::unique_ptr<S<AutoDiffXd>>(
+        dynamic_cast<S<AutoDiffXd>*>(from.DoToAutoDiffXd()));
   }
 
   /// Declares that @p parent is the immediately enclosing Diagram. The
@@ -487,51 +535,6 @@ class System {
     return DeclareOutputPort(kAbstractValued, 0 /* size */, sampling);
   }
 
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value, or nullptr if the port is not connected.
-  ///
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  const BasicVector<T>* EvalVectorInput(const Context<T>& context,
-                                        int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalVectorInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the vector-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an Eigen expression.
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
-      const Context<T>& context, int port_index) const {
-    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).get_size());
-    return input_vector->get_value();
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value pointer, or nullptr if the port is not
-  /// connected.
-  const AbstractValue* EvalAbstractInput(const Context<T>& context,
-                                         int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(parent_, get_input_port(port_index));
-  }
-
-  /// Causes the abstract-valued port with the given @p port_index to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value, or nullptr if the port is not connected.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(parent_,
-                                              get_input_port(port_index));
-  }
-
   /// Returns a mutable Eigen expression for a vector valued output port with
   /// index @p port_index in this system. All InputPorts that directly depend
   /// on this OutputPort will be notified that upstream data has changed, and
@@ -582,55 +585,66 @@ class System {
   }
 
   /// Provides the substantive implementation of
-  /// MapConfigurationDerivativesToVelocity(). This signature can work directly
+  /// MapQDotToVelocity(). This signature can work directly
   /// with an Eigen vector object for faster performance. See the other
-  /// DoMapConfigurationDerivativesToVelocity() signature for additional
+  /// DoMapQDotToVelocity() signature for additional
   /// information.
   ///
   /// The default implementation uses the identity mapping. It throws
   /// std::runtime_error if the @p generalized_velocity and
-  /// @p configuration_derivatives are not the same size. Child classes must
+  /// @p qdot are not the same size. Child classes must
   /// override this function if qdot != v (even if they are the same size).
   ///
   /// Implementations may assume that @p generalized_velocity is of
   /// the same size as the generalized velocity allocated in
   /// AllocateTimeDerivatives(). Implementations that are not
   /// second-order systems may simply do nothing.
-  virtual void DoMapConfigurationDerivativesToVelocity(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& configuration_derivatives,
-      VectorBase<T>* generalized_velocity) const {
+  virtual void DoMapQDotToVelocity(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &qdot,
+      VectorBase<T> *generalized_velocity) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
     // and time derivative of generalized configuration are identically sized
     // but not identical!
-    const int n = configuration_derivatives.size();
+    const int n = qdot.size();
     // You need to override System<T>::DoMapConfigurationDerivativestoVelocity!
     DRAKE_THROW_UNLESS(generalized_velocity->size() == n);
-    generalized_velocity->SetFromVector(configuration_derivatives);
+    generalized_velocity->SetFromVector(qdot);
   }
 
   /**
    * Provides the substantive implementation of
-   * MapVelocityToConfigurationDerivatives(). This signature can work
+   * MapVelocityToQDot(). This signature can work
    * directly with an Eigen vector object for faster performance. See
-   * the other DoMapVelocityToConfigurationDerivatives() signature for
+   * the other DoMapVelocityToQDot() signature for
    * additional information.
    */
-  virtual void DoMapVelocityToConfigurationDerivatives(
-      const Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      VectorBase<T>* configuration_derivatives) const {
+  virtual void DoMapVelocityToQDot(
+      const Context<T> &context,
+      const Eigen::Ref<const VectorX<T>> &generalized_velocity,
+      VectorBase<T>* qdot) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
     // This check will thus not identify cases where the generalized velocity
     // and time derivative of generalized configuration are identically sized
     // but not identical!
     const int n = generalized_velocity.size();
-    // You need to override System<T>::DoMapVelocityToConfigurationDerivatives!
-    DRAKE_THROW_UNLESS(configuration_derivatives->size() == n);
-    configuration_derivatives->SetFromVector(generalized_velocity);
+    // You need to override System<T>::DoMapVelocityToQDot!
+    DRAKE_THROW_UNLESS(qdot->size() == n);
+    qdot->SetFromVector(generalized_velocity);
+  }
+
+  /// NVI implementation of ToAutoDiffXd. Caller takes ownership of the returned
+  /// pointer. Overrides should return a more specific covariant type.
+  /// Templated overrides may assume that they are subclasses of System<double>.
+  ///
+  /// TODO(david-german-tri): Provide a default implementation on LeafSystem,
+  /// then make this method pure virtual.
+  virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
+    DRAKE_ABORT_MSG("Override DoToAutoDiffXd before using ToAutoDiffXd.");
+    return nullptr;
   }
 
   /// Causes an InputPort in the @p context to become up-to-date, delegating to

@@ -13,15 +13,13 @@ namespace automotive {
 /// [1] IDM: Intelligent Driver Model:
 ///    https://en.wikipedia.org/wiki/Intelligent_driver_model
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
-///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
-/// - drake::TaylorVarXd
+/// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
 /// They are already available to link against in libdrakeAutomotive.
+///
 /// @ingroup automotive_systems
 template <typename T>
 class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
@@ -42,6 +40,7 @@ class IdmWithTrajectoryAgent : public systems::LeafSystem<T> {
       const override;
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
 };
 
 }  // namespace automotive

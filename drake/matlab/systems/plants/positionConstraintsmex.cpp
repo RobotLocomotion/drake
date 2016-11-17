@@ -1,7 +1,7 @@
 #include <mex.h>
 
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using namespace Eigen;
 using namespace std;
@@ -14,7 +14,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Usage: [phi, J] = positionConstraintsmex(mex_model_ptr, q) ");
   }
 
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
 
   const size_t nq = model->get_num_positions();
 

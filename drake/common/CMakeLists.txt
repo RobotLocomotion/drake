@@ -18,7 +18,9 @@ set(sources
   polynomial.cc
   symbolic_environment.cc
   symbolic_expression.cc
+  symbolic_expression_cell.cc
   symbolic_formula.cc
+  symbolic_formula_cell.cc
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -27,6 +29,7 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
+  autodiff_overloads.h
   constants.h
   drake_assert.h
   drake_deprecated.h
@@ -45,10 +48,13 @@ set(installed_headers
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
+  symbolic_expression_cell.h
   symbolic_formula.h
+  symbolic_formula_cell.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
+  text_logging_gflags.h
   trig_poly.h
   )
 
@@ -62,7 +68,6 @@ add_library_with_exports(LIB_NAME drakeCommon
   SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeCommon gflags Threads::Threads)
 
-drake_find_package(spdlog CONFIG)
 if(spdlog_FOUND)
   target_compile_definitions(drakeCommon PUBLIC HAVE_SPDLOG)
   target_link_libraries(drakeCommon spdlog::spdlog)
@@ -78,4 +83,6 @@ pods_install_pkg_config_file(drake-common
   REQUIRES
   VERSION 0.0.1)
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

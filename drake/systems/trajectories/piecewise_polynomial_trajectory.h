@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <vector>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/trajectory.h"
 
@@ -12,14 +12,33 @@ namespace drake {
  * A PiecewisePolynomialTrajectory is a Trajectory that is represented by
  * (implemented in terms of) a PiecewisePolynomial.
  */
-class DRAKE_EXPORT PiecewisePolynomialTrajectory : public Trajectory {
+class PiecewisePolynomialTrajectory : public Trajectory {
  public:
+  /**
+   * Construct a PiecewisePolynomialTrajectory from a trajectory matrix.
+   * @param trajectory_matrix Each column represents a particular
+   * time, and the rows of that column contain values for each joint coordinate.
+   * @param times Knot points: the times where the polynomial pieces connect.
+   */
+  explicit PiecewisePolynomialTrajectory(
+      const Eigen::MatrixXd& trajectory_matrix,
+      const std::vector<double>& times);
+
+  /**
+   * Construct a PiecewisePolynomialTrajectory from a PiecewisePolynomial.
+   */
   explicit PiecewisePolynomialTrajectory(
       const PiecewisePolynomial<double>& pp)
       : pp_(pp) {}
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(
-      double t) const override {
+  /**
+   * Evaluate this PiecewisePolynomial at a particular time.
+   * @param t The time to evaluate.
+   * @return a CoefficientMatrix that is the value of the wrapped
+   * PiecewisePolynomial.
+   */
+  PiecewisePolynomial<double>::CoefficientMatrix
+  value(double t) const override {
     return pp_.value(t);
   }
 
@@ -36,7 +55,7 @@ class DRAKE_EXPORT PiecewisePolynomialTrajectory : public Trajectory {
   Eigen::Index cols() const override { return pp_.cols(); }
 
  private:
-  const PiecewisePolynomial<double> pp_;
+  PiecewisePolynomial<double> pp_;
 };
 
 }  // namespace drake

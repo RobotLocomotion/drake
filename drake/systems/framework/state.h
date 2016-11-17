@@ -63,6 +63,12 @@ class State {
     return modal_state_.get();
   }
 
+  void SetFrom(const State<double>& other) {
+    continuous_state_->SetFrom(*other.get_continuous_state());
+    difference_state_->SetFrom(*other.get_difference_state());
+    modal_state_->CopyFrom(*other.get_modal_state());
+  }
+
   // State is not copyable or moveable.
   State(const State& other) = delete;
   State& operator=(const State& other) = delete;

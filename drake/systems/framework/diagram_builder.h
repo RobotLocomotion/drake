@@ -115,6 +115,7 @@ class DiagramBuilder {
                const SystemPortDescriptor<T>& dest) {
     DRAKE_DEMAND(src.get_face() == kOutputPort);
     DRAKE_DEMAND(dest.get_face() == kInputPort);
+    DRAKE_DEMAND(src.get_size() == dest.get_size());
     PortIdentifier dest_id{dest.get_system(), dest.get_index()};
     PortIdentifier src_id{src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);

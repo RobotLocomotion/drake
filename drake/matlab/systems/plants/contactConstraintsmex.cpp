@@ -1,12 +1,12 @@
-#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 
 #include "drake/common/eigen_types.h"
 #include "drake/matlab/util/mexify.h"
 #include "drake/matlab/util/standardMexConversions.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/kinematics_cache.h"
 
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace std;
 using namespace Eigen;
@@ -40,7 +40,7 @@ inline void buildSparseMatrixForContactConstraints(
 
 template <typename Scalar>
 pair<MatrixX<Scalar>, vector<MatrixX<Scalar>>> contactConstraints(
-    const RigidBodyTree &model, const KinematicsCache<Scalar> &cache,
+    const RigidBodyTree<double> &model, const KinematicsCache<Scalar> &cache,
     const Map<const Matrix3Xd> &normals, const Map<const VectorXi> &idxA,
     const Map<const VectorXi> &idxB, const Map<const Matrix3Xd> &xA,
     const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {

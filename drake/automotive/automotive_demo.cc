@@ -3,9 +3,10 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/automotive/automotive_simulator.h"
 #include "drake/automotive/create_trajectory_params.h"
+#include "drake/common/drake_path.h"
+#include "drake/common/text_logging_gflags.h"
 
 DEFINE_int32(num_simple_car, 1, "Number of SimpleCar vehicles");
 DEFINE_int32(num_trajectory_car, 1, "Number of TrajectoryCar vehicles");
@@ -25,16 +26,22 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  // TODO(liang.fok): Generalize this demo to allow arbitrary models to be
+  // specified via command line parameters. This will involve removing some
+  // hard-coded assumptions about the model's geometry. For exeample, the call
+  // to CreateTrajectoryParams() below expects a "car" to have a particular
+  // length and width.
+  const std::string kSdfFile =
+      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   for (int i = 0; i < FLAGS_num_simple_car; ++i) {
-    simulator->AddSimpleCar();
+    simulator->AddSimpleCarFromSdf(kSdfFile);
   }
   for (int i = 0; i < FLAGS_num_trajectory_car; ++i) {
     const auto& params = CreateTrajectoryParams(i);
-    simulator->AddTrajectoryCar(
-        std::get<0>(params),
-        std::get<1>(params),
-        std::get<2>(params));
+    simulator->AddTrajectoryCarFromSdf(kSdfFile, std::get<0>(params),
+                                       std::get<1>(params),
+                                       std::get<2>(params));
   }
 
   simulator->Start();

@@ -4,10 +4,8 @@
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 #include "ValueConstraint.h"
 #include "ContinuityConstraint.h"
-#include "drake/common/drake_export.h"
 
-class DRAKE_EXPORT SplineInformation
-    : public PiecewisePolynomialBase {
+class SplineInformation : public PiecewisePolynomialBase {
  private:
   std::vector<int> segment_polynomial_degrees;
   std::vector<std::vector<ValueConstraint> > value_constraints;

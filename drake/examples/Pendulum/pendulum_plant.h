@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_export.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -72,6 +71,9 @@ class PendulumPlant : public systems::LeafSystem<T> {
 
   std::unique_ptr<systems::BasicVector<T>> AllocateOutputVector(
       const systems::SystemPortDescriptor<T>& descriptor) const override;
+
+  // System<T> override.
+  PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
 
  private:
   T get_tau(const MyContext& context) const {

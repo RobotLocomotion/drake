@@ -98,6 +98,85 @@ You can also set the coding style through the following steps
 3. Go to File > Settings > Editor > Code Style > C/C++
 4. On the right panel, choose Set from > Predefined Style > Google
 
+.. _integrating_cpplint_with_clion:
+
+Integrating Cpplint in CLion
+============================
+This will give you the ability to execute ``cpplint`` on a single file or the full
+project and have the result presented in the CLion console with each warning
+a clickable hyperlink.
+
+Creating the External Tools
+---------------------------
+
+.. role:: raw-html(raw)
+   :format: html
+
+Run ``Cpplint`` on Single File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
+2. Navigate to ``Tools`` > ``External Tools``.
+3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
+4. Add the following values in the following fields:
+
+   :Name: ``Cpplint File``
+   :Description: ``Apply cpplint to the current file.``
+   :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
+   :Parameters: ``$FilePath$``
+   :Working directory: ``$ProjectFileDir$``
+5. Make sure that *only* the following Options are checked (the 
+   ``Synchronize files after execution`` is unnecessary because cpplint is
+   a read-only operation):
+
+   - ``Open Console``
+   - ``Main Menu``
+   - ``Editor Menu``
+   - ``Project views``
+6. Click the ``Output Filters...`` button.
+7. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a filter.
+8. Add the following values in the following fields (and click "OK):
+
+   :Name: ``Extract Links``
+   :Description: ``Convert file/line references into clickable links.``
+   :Regular expression to match output: ``$FILE_PATH$:$LINE$``
+9. Click ``OK`` on the ``Edit filter`` dialog.
+10. Click ``OK`` on the ``Output Filters`` dialog.
+
+Run ``CppLint`` on Full Project
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Repeat the steps from creating the single-file version with the following
+differences:
+
+4. Set the fields as follows:
+
+    :Name: ``Cpplint Project``
+    :Description: ``Apply cpplint to the entire project.``
+    :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
+    :Parameters: <empty>
+    :Working directory: ``$ProjectFileDir$``
+
+Continue on with steps 5 to the end.
+
+Executing
+^^^^^^^^^
+The external tools you've created can be exercised in one of several ways, 
+depending on whether you're doing a single-file or full-project operation.
+
+To check a single file, select the file that you want to be worked on to be
+"active".  This can be done by clicking on the file so the cursor lies in
+the file, or by clicking on the file's tab.  The path to the active file
+will be displayed in the title bar.
+
+Once the file is "active", the ``Cpplint File`` External Tool can be invoked
+in two ways:
+
+1. Right-click on the document (or tab) and select ``External Tools`` > 
+   ``Cpplint File``, or
+2. in the menu bar, select ``Tools`` > ``External Tools`` > ``Cpplint File``
+
+To check the whole project, in the menu bar, select ``Tools`` > 
+``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
+done through the right-click context menu.
 
 Running a C++ executable
 ========================

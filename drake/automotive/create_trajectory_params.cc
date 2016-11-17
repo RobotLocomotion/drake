@@ -54,7 +54,6 @@ Curve2<double> MakeCurve(double radius, double inset) {
 }
 }  // anonymous namespace
 
-DRAKE_EXPORT
 std::tuple<Curve2<double>, double, double> CreateTrajectoryParams(int index) {
   // The possible curves to trace (lanes).
   static const std::vector<Curve2<double>> curves{

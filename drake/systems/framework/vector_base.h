@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -129,6 +130,28 @@ class VectorBase {
   /// Subtract in vector @p rhs to this vector.
   VectorBase& operator-=(const VectorBase<T>& rhs) {
     return PlusEqScaled(T(-1), rhs);
+  }
+
+  /// Computes the infinity norm for this vector.
+  ///
+  /// You should override this method if possible with a more efficient
+  /// approach that leverages structure; the default implementation performs
+  /// element-by-element computations that are likely inefficient. If the
+  /// vector is contiguous, for example, Eigen implementations should be far
+  /// more efficient. Overriding implementations should
+  /// ensure that this operation remains O(N) in the size of
+  /// the value and allocates no memory.
+  virtual T NormInf() const {
+    using std::abs;
+    using std::max;
+    T norm(0);
+    const int count = size();
+    for (int i = 0; i < count; ++i) {
+      T val = abs(GetAtIndex(i));
+      norm = max(norm, val);
+    }
+
+    return norm;
   }
 
   // VectorBase objects are neither copyable nor moveable.

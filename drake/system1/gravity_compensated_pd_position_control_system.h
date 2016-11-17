@@ -4,8 +4,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/system1/System.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 
 namespace drake {
@@ -31,7 +31,7 @@ class GravityCompensatedPDPositionControlSystem {
 
   // Some convenient typedefs.
   typedef std::shared_ptr<RigidBodySystem> RigidBodySystemPtr;
-  typedef std::shared_ptr<RigidBodyTree> RigidBodyTreePtr;
+  typedef std::shared_ptr<RigidBodyTree<double>> RigidBodyTreePtr;
 
   template <typename DerivedA, typename DerivedB>
   GravityCompensatedPDPositionControlSystem(
@@ -56,7 +56,7 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
     auto G = sys_tree_->inverseDynamics(cache_, no_external_wrenches, vd,
@@ -75,7 +75,7 @@ class GravityCompensatedPDPositionControlSystem {
     size_t num_DoF = Kp_.cols();
     KinematicsCache<double> cache_ = sys_tree_->doKinematics(
         toEigen(x).head(num_DoF), toEigen(x).tail(num_DoF));
-    const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+    const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     Eigen::VectorXd vd(num_DoF);
     vd.setZero();
 

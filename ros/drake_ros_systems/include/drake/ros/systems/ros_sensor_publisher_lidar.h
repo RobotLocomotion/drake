@@ -11,8 +11,8 @@
 #include "sensor_msgs/LaserScan.h"
 
 #include "drake/system1/System.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 
 using drake::NullVector;

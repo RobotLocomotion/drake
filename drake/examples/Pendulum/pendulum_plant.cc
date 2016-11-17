@@ -78,8 +78,14 @@ void PendulumPlant<T>::EvalTimeDerivatives(
        b_ * state.thetadot()) / I_);
 }
 
-template class DRAKE_EXPORT PendulumPlant<double>;
-template class DRAKE_EXPORT PendulumPlant<AutoDiffXd>;
+// PendulumPlant has no constructor arguments, so there's no work to do here.
+template <typename T>
+PendulumPlant<AutoDiffXd>* PendulumPlant<T>::DoToAutoDiffXd() const {
+  return new PendulumPlant<AutoDiffXd>();
+}
+
+template class PendulumPlant<double>;
+template class PendulumPlant<AutoDiffXd>;
 
 }  // namespace pendulum
 }  // namespace examples

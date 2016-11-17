@@ -6,7 +6,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/polynomial.h"
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 
@@ -37,8 +36,7 @@
  * under division.
  */
 template <typename CoefficientType = double>
-class DRAKE_EXPORT PiecewisePolynomial
-    : public PiecewisePolynomialBase {
+class PiecewisePolynomial : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;
   typedef Eigen::Matrix<PolynomialType, Eigen::Dynamic, Eigen::Dynamic>
@@ -148,13 +146,13 @@ class DRAKE_EXPORT PiecewisePolynomial
   const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
                                       Eigen::Index col = 0) const;
 
-  virtual int getSegmentPolynomialDegree(int segment_index,
-                                         Eigen::Index row = 0,
-                                         Eigen::Index col = 0) const;
+  int getSegmentPolynomialDegree(int segment_index,
+                                 Eigen::Index row = 0,
+                                 Eigen::Index col = 0) const override;
 
-  virtual Eigen::Index rows() const;
+  Eigen::Index rows() const override;
 
-  virtual Eigen::Index cols() const;
+  Eigen::Index cols() const override;
 
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 

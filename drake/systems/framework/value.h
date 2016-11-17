@@ -5,7 +5,6 @@
 #include <string>
 #include <typeinfo>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -26,7 +25,7 @@ class Value;
 /// latter variants are guaranteed to throw on mismatched types, but may be
 /// slower at runtime.  Prefer using the faster version only in performance-
 /// sensitive code (e.g., inner loops), and the safer version otherwise.
-class DRAKE_EXPORT AbstractValue {
+class AbstractValue {
  public:
   AbstractValue() {}
   virtual ~AbstractValue();

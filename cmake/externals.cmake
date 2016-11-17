@@ -2,23 +2,6 @@ include(ExternalProject)
 
 find_package(Git REQUIRED)
 
-if(CMAKE_GENERATOR STREQUAL "Ninja")
-  # The Ninja generator does not support Fortran, so manually find the Fortran
-  # compiler and set any flags passed in by environment variable
-  find_program(CMAKE_Fortran_COMPILER
-    NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
-    DOC "Fortran compiler")
-  if(CMAKE_Fortran_COMPILER)
-    message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
-  else()
-    message(FATAL_ERROR "Could NOT find Fortran compiler")
-  endif()
-  set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
-    "Flags for Fortran compiler")
-else()
-  enable_language(Fortran)
-endif()
-
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
   set(MAKE_COMMAND "$(MAKE)") # so we can pass through command line arguments
 else()
@@ -186,7 +169,8 @@ macro(drake_add_cmake_external PROJECT)
     Java_JAVAC_EXECUTABLE
     Java_JAVAH_EXECUTABLE
     Java_VERSION_STRING
-    CMAKE_JAVA_COMPILE_FLAGS)
+    CMAKE_JAVA_COMPILE_FLAGS
+    LIB_SUFFIX)
 
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
@@ -207,6 +191,64 @@ macro(drake_add_cmake_external PROJECT)
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
       ${_ext_CMAKE_ARGS})
+
+  if(_ext_TEST)
+    file(APPEND ${CMAKE_BINARY_DIR}/CTestExternals.cmake
+      "subdirs(\"${_ext_BINARY_DIR}\")\n")
+  endif()
+endmacro()
+
+
+#------------------------------------------------------------------------------
+# Internal helper to set up an Autotools external project.
+#------------------------------------------------------------------------------
+macro(drake_add_autotools_external PROJECT)
+  if(NOT DEFINED _ext_BINARY_DIR)
+    set(_ext_BINARY_DIR ${PROJECT_BINARY_DIR}/externals/${PROJECT})
+  endif()
+
+  set(_env_command
+    ${CMAKE_COMMAND} -E env
+    CC=${CMAKE_C_COMPILER}
+    CFLAGS=${CMAKE_C_FLAGS}
+    CXX=${CMAKE_CXX_COMPILER}
+    CXXFLAGS=${CMAKE_CXX_FLAGS}
+    F77=${CMAKE_Fortran_COMPILER}
+    FC=${CMAKE_Fortran_COMPILER}
+    FFLAGS=${CMAKE_Fortran_FLAGS}
+    LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ${_ext_AUTOTOOLS_ENV})
+
+  if(NOT DEFINED _ext_CONFIGURE_COMMAND)
+    set(_ext_CONFIGURE_COMMAND
+      ${_env_command}
+      ${_ext_SOURCE_DIR}/configure
+      --prefix=${CMAKE_INSTALL_PREFIX}
+      ${_ext_AUTOTOOLS_CONFIGURE_ARGS})
+  endif()
+
+  if(CMAKE_VERBOSE_MAKEFILE)
+    set(_ext_VERBOSE "V=1")
+  else()
+    set(_ext_VERBOSE "V=0")
+  endif()
+
+  if(NOT DEFINED _ext_BUILD_COMMAND)
+    set(_ext_BUILD_COMMAND
+      ${_env_command}
+      ${MAKE_COMMAND}
+      ${_ext_VERBOSE})
+  endif()
+
+  if(NOT DEFINED _ext_INSTALL_COMMAND)
+    set(_ext_INSTALL_COMMAND
+      ${_env_command}
+      ${MAKE_COMMAND}
+      ${_ext_VERBOSE}
+      install)
+  endif()
+
+  drake_add_foreign_external(${PROJECT})
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -255,10 +297,12 @@ endmacro()
 # Add an external project.
 #
 # Arguments:
-#   LOCAL  - External is local to the source tree (i.e. not a submodule)
-#   PUBLIC - External is public
-#   CMAKE  - External uses CMake
-#   ALWAYS - External is always built
+#   LOCAL     - External is local to the source tree (i.e. not a submodule)
+#   PUBLIC    - External is public
+#   CMAKE     - External uses CMake
+#   AUTOTOOLS - External uses Autotools
+#   ALWAYS    - External is always built
+#   TEST      - External's tests should be included in the superbuild's tests
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -289,6 +333,14 @@ endmacro()
 #       Additional arguments to be passed to the CMake external's CONFIGURE
 #       step.
 #
+#   AUTOTOOLS_ENV <envvars...>
+#       Additional environment variables to be passed to the Autotools
+#       external's configure command.
+#
+#   AUTOTOOLS_CONFIGURE_ARGS <args...>
+#       Additional arguments to be passed to the Autotools external's configure
+#       command.
+#
 # Arguments with the same name as arguments to `ExternalProject_Add` generally
 # have the same function and are passed through.
 #------------------------------------------------------------------------------
@@ -299,7 +351,7 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE ALWAYS)
+  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
@@ -307,6 +359,8 @@ function(drake_add_external PROJECT)
     GENERATOR
   )
   set(_ext_mv_args
+    AUTOTOOLS_CONFIGURE_ARGS
+    AUTOTOOLS_ENV
     CMAKE_ARGS
     REQUIRES
     DEPENDS
@@ -400,6 +454,8 @@ function(drake_add_external PROJECT)
   set(_ext_VERBOSE)
   if(_ext_CMAKE)
     drake_add_cmake_external(${PROJECT})
+  elseif(_ext_AUTOTOOLS)
+    drake_add_autotools_external(${PROJECT})
   else()
     drake_add_foreign_external(${PROJECT})
   endif()

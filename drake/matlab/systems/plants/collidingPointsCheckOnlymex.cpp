@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using namespace Eigen;
 using namespace std;
@@ -44,8 +44,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   int arg_num = 0;
-  RigidBodyTree* model =
-      static_cast<RigidBodyTree*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree<double>* model =
+      static_cast<RigidBodyTree<double>*>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(
       getDrakeMexPointer(prhs[arg_num++]));
 

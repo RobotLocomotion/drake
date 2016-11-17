@@ -1,9 +1,9 @@
 #include <mex.h>
 
-#include "drake/systems/plants/RigidBodyIK.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "drake/systems/plants/IKoptions.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include "drake/multibody/ik_options.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace std;
@@ -17,7 +17,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
                       "approximateIKmex(model_ptr, q_seed, q_nom, constraint1,"
                       "constraint2,..., ikoptions)");
   }
-  RigidBodyTree *model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double> *model =
+      (RigidBodyTree<double> *)getDrakeMexPointer(prhs[0]);
   int nq = model->get_num_positions();
   Map<VectorXd> q_seed(mxGetPrSafe(prhs[1]), nq);
   Map<VectorXd> q_nom(mxGetPrSafe(prhs[2]), nq);

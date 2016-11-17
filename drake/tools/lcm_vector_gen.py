@@ -15,7 +15,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
-struct DRAKE_EXPORT %(indices)s {
+struct %(indices)s {
   /// The total number of rows (coordinates).
   static const int kNumCoordinates = %(nfields)d;
 
@@ -116,7 +116,6 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -157,8 +156,9 @@ TRANSLATOR_HH_PREAMBLE = """
 
 %(generated_code_warning)s
 
+#include <vector>
+
 #include "%(relative_cxx_dir)s/%(snake)s.h"
-#include "drake/common/drake_export.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/lcmt_%(snake)s_t.hpp"
 
@@ -170,7 +170,7 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class DRAKE_EXPORT %(camel)sTranslator
+class %(camel)sTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
@@ -302,7 +302,7 @@ def generate_code(args):
 
     namespace = args.namespace.split("::")
     opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
-    closing_namespace = "".join(["}  // namespace " + x + "\n" 
+    closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
 
     if args.yaml_file:

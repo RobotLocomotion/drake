@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Eigen/Core>
-#include "drake/common/drake_export.h"
 
 namespace drake {
 
@@ -10,7 +9,7 @@ namespace drake {
  * Each point in the path of the trajectory is represented by a state (a matrix
  * of doubles).
  */
-class DRAKE_EXPORT Trajectory {
+class Trajectory {
  public:
   virtual ~Trajectory() {}
 

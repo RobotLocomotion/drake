@@ -2,9 +2,8 @@
 
 #include <memory>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {
@@ -24,10 +23,10 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup control_systems
 template <typename T>
-class DRAKE_EXPORT GravityCompensator : public LeafSystem<T> {
+class GravityCompensator : public LeafSystem<T> {
  public:
   /// Constructs a gravity compensator for a given `RigidBodyTree`.
-  explicit GravityCompensator(const RigidBodyTree& rigid_body_tree);
+  explicit GravityCompensator(const RigidBodyTree<T>& rigid_body_tree);
 
   /// Sets the output port value to the generalised gravity forces
   /// corresponding to a joint configuration as specified in the input.
@@ -35,7 +34,7 @@ class DRAKE_EXPORT GravityCompensator : public LeafSystem<T> {
                   SystemOutput<T>* output) const override;
 
  private:
-  const RigidBodyTree& rigid_body_tree_;
+  const RigidBodyTree<T>& rigid_body_tree_;
 };
 
 }  // namespace systems

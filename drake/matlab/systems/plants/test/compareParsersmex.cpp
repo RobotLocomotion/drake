@@ -5,8 +5,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/joints/floating_base_types.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
 using namespace Eigen;
@@ -14,10 +14,10 @@ using namespace std;
 
 using drake::CompareMatrices;
 using drake::MatrixCompareType;
-using drake::systems::plants::joints::FloatingBaseType;
-using drake::systems::plants::joints::kFixed;
-using drake::systems::plants::joints::kQuaternion;
-using drake::systems::plants::joints::kRollPitchYaw;
+using drake::multibody::joints::FloatingBaseType;
+using drake::multibody::joints::kFixed;
+using drake::multibody::joints::kQuaternion;
+using drake::multibody::joints::kRollPitchYaw;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
@@ -33,7 +33,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   // first get the model_ptr back from matlab
-  RigidBodyTree* matlab_model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree<double>* matlab_model =
+      (RigidBodyTree<double>*)getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000];
   mxGetString(prhs[1], urdf_file, 1000);
@@ -51,7 +52,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "Drake:compareParsersmex:BadInputs",
         "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyTree* cpp_model = new RigidBodyTree(urdf_file, floating_base_type);
+  RigidBodyTree<double>* cpp_model =
+      new RigidBodyTree<double>(urdf_file, floating_base_type);
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
@@ -122,7 +124,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             "Drake: CompareParserMex: ERROR: H doesn't match: " + explanation);
       }
 
-      const RigidBodyTree::BodyToWrenchMap<double> no_external_wrenches;
+      const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
       auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache,
                                                      no_external_wrenches);
       auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, no_external_wrenches);

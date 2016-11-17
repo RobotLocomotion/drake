@@ -1,16 +1,16 @@
 #pragma once
 
 #include "drake/matlab/util/mexify.h"
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/KinematicPath.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/kinematic_path.h"
 
 template <typename T>
 struct DrakeMexPointerTypeId {
   enum { value = -1 };
 };
 template <>
-struct DrakeMexPointerTypeId<RigidBodyTree> {
+struct DrakeMexPointerTypeId<RigidBodyTree<double>> {
   enum { value = 1 };
 };
 template <>
@@ -47,13 +47,14 @@ bool isDrakeMexPointerOfCorrectType(const mxArray *source, T *,
 /**
  * fromMex specializations
  */
-bool isConvertibleFromMex(const mxArray *source, RigidBodyTree *ptr,
+bool isConvertibleFromMex(const mxArray *source, RigidBodyTree<double> *ptr,
                           std::ostream *log) NOEXCEPT {
   return isDrakeMexPointerOfCorrectType(source, ptr, log);
 }
 
-RigidBodyTree &fromMexUnsafe(const mxArray *source, RigidBodyTree *) {
-  return *static_cast<RigidBodyTree *>(getDrakeMexPointer(source));
+RigidBodyTree<double> &fromMexUnsafe(
+    const mxArray *source, RigidBodyTree<double> *) {
+  return *static_cast<RigidBodyTree<double> *>(getDrakeMexPointer(source));
 }
 
 template <typename Scalar>

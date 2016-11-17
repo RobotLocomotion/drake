@@ -6,7 +6,7 @@ using namespace std;
 using namespace Eigen;
 
 struct SupportDetectData {
-  RigidBodyTree* r;
+  RigidBodyTree<double>* r;
   void* map_ptr;
 };
 

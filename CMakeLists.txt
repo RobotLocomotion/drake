@@ -20,7 +20,6 @@ drake_setup_options()
 
 # External projects in order of dependencies; 'trivial' ones first
 drake_add_external(eigen PUBLIC CMAKE)
-drake_add_external(gurobi)
 drake_add_external(meshconverters PUBLIC CMAKE)
 drake_add_external(mosek PUBLIC)
 drake_add_external(spdlog PUBLIC CMAKE)
@@ -83,6 +82,23 @@ drake_add_external(googletest PUBLIC CMAKE
 drake_add_external(google_styleguide PUBLIC
   BUILD_COMMAND :)
 
+# gurobi
+if(Matlab_FOUND)
+  set(GUROBI_EXTRA_CMAKE_ARGS
+    -DMatlab_ROOT_DIR=${MATLAB_ROOT_DIR}
+    -DWITH_MATLAB=ON)
+else()
+  set(GUROBI_EXTRA_CMAKE_ARGS
+    -DWITH_MATLAB=OFF)
+endif()
+
+drake_add_external(gurobi CMAKE
+  CMAKE_ARGS
+    -DBUILD_TESTING=OFF
+    -DWITH_CPP=ON
+    -DWITH_PYTHON=OFF
+    ${GUROBI_EXTRA_CMAKE_ARGS})
+
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
@@ -93,36 +109,16 @@ else()
   set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
 endif()
 
-drake_add_external(ipopt PUBLIC
-  CONFIGURE_COMMAND
-    ${CMAKE_COMMAND} -E env
-      CC=${IPOPT_C_COMPILER}
-      CFLAGS=${CMAKE_C_FLAGS}
-      CXX=${IPOPT_CXX_COMPILER}
-      CXXFLAGS=${CMAKE_CXX_FLAGS}
-      F77=${CMAKE_Fortran_COMPILER}
-      FC=${CMAKE_Fortran_COMPILER}
-      FFLAGS=${CMAKE_Fortran_FLAGS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-   ./configure
+drake_add_external(ipopt PUBLIC AUTOTOOLS
+  AUTOTOOLS_ENV
+    CC=${IPOPT_C_COMPILER}
+    CXX=${IPOPT_CXX_COMPILER}
+  AUTOTOOLS_CONFIGURE_ARGS
+    --disable-shared
+    --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
     --with-blas=BUILD
     --with-lapack=BUILD
-    --prefix=${CMAKE_INSTALL_PREFIX}
-    --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
-    --disable-shared
-    --with-pic
-  INSTALL_COMMAND
-    # TODO(jamiesnape): Check whether environment variables are actually used
-    ${CMAKE_COMMAND} -E env
-      CC=${IPOPT_C_COMPILER}
-      CFLAGS=${CMAKE_C_FLAGS}
-      CXX=${IPOPT_CXX_COMPILER}
-      CXXFLAGS=${CMAKE_CXX_FLAGS}
-      F77=${CMAKE_Fortran_COMPILER}
-      FC=${CMAKE_Fortran_COMPILER}
-      FFLAGS=${CMAKE_Fortran_FLAGS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-    ${MAKE_COMMAND} install)
+    --with-pic)
 
 # nlopt
 drake_add_external(nlopt PUBLIC CMAKE
@@ -132,6 +128,7 @@ drake_add_external(nlopt PUBLIC CMAKE
     -DBUILD_OCTAVE=OFF
     -DBUILD_MATLAB=OFF
     -DBUILD_GUILE=OFF
+    -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
     -DUSE_SWIG=OFF)
 
 # sedumi
@@ -167,27 +164,10 @@ drake_add_external(octomap PUBLIC CMAKE
   SOURCE_SUBDIR octomap)
 
 # swig_matlab
-drake_add_external(swig_matlab PUBLIC
+drake_add_external(swig_matlab PUBLIC AUTOTOOLS
   PATCH_COMMAND ./autogen.sh
-  CONFIGURE_COMMAND
-    ${CMAKE_COMMAND} -E env
-      CC=${CMAKE_C_COMPILER}
-      CFLAGS=${CMAKE_C_FLAGS}
-      CXX=${CMAKE_CXX_COMPILER}
-      CXXFLAGS=${CMAKE_CXX_FLAGS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-    ./configure
-      --prefix=${CMAKE_INSTALL_PREFIX}
-      --with-matlab
-  INSTALL_COMMAND
-    # TODO(jamiesnape): Check whether environment variables are actually used
-    ${CMAKE_COMMAND} -E env
-      CC=${CMAKE_C_COMPILER}
-      CFLAGS=${CMAKE_C_FLAGS}
-      CXX=${CMAKE_CXX_COMPILER}
-      CXXFLAGS=${CMAKE_CXX_FLAGS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-    ${MAKE_COMMAND} install)
+  AUTOTOOLS_CONFIGURE_ARGS
+    --without-alllang)
 
 # textbook
 if(Matlab_FOUND)
@@ -259,7 +239,7 @@ option(SKIP_DRAKE_BUILD "Build external projects but not drake itself" OFF)
 # drake: For drake, list both compilation AND RUNTIME dependencies. Runtime
 # dependencies are needed because the drake project must configure only after
 # any dependencies used by MATLAB have been installed.
-drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
+drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS TEST
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS
@@ -287,7 +267,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
     -DWITH_SEDUMI:BOOL=${WITH_SEDUMI}
     -DWITH_SIGNALSCOPE:BOOL=${WITH_SIGNALSCOPE}
     -DWITH_SNOPT:BOOL=${WITH_SNOPT}
-    -DWITH_SNOPT_C:BOOL=${WITH_SNOPT}   # TODO(jamiesnape): Fix naming inconsistency and duplication
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
     -DWITH_SPOTLESS:BOOL=${WITH_SPOTLESS}
     -DWITH_SWIG:BOOL=${WITH_SWIG_MATLAB}   # TODO(jamiesnape): Fix naming inconsistency
@@ -329,7 +308,7 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS
 )
 
 # director
-drake_add_external(director PUBLIC CMAKE
+drake_add_external(director PUBLIC CMAKE TEST
   SOURCE_SUBDIR distro/superbuild
   CMAKE_ARGS
     -DUSE_DRAKE=ON

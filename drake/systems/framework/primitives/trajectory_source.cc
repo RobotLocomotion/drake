@@ -26,7 +26,7 @@ void TrajectorySource<T>::EvalOutput(
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class DRAKE_EXPORT TrajectorySource<double>;
+template class TrajectorySource<double>;
 
 }  // namespace systems
 }  // namespace drake

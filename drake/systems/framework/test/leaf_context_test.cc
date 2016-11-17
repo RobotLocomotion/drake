@@ -7,10 +7,13 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
 #include "drake/systems/framework/value.h"
+#include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {
 namespace systems {
@@ -55,14 +58,13 @@ class LeafContextTest : public ::testing::Test {
     std::vector<AbstractValue*> xm;
     xm.push_back(modal_state_.get());
     context_.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
-  }
 
-  std::unique_ptr<AbstractValue> PackValue(int value) {
-    return std::unique_ptr<AbstractValue>(new Value<int>(value));
-  }
-
-  int UnpackValue(const AbstractValue* value) {
-    return dynamic_cast<const Value<int>*>(value)->get_value();
+    // Reserve two numeric parameters, of size 3 and size 4.
+    std::vector<std::unique_ptr<BasicVector<double>>> params;
+    params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
+    params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
+    context_.set_parameters(
+        std::make_unique<Parameters<double>>(std::move(params)));
   }
 
   // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
@@ -149,10 +151,10 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   CacheTicket ticket = ctx.CreateCacheEntry({});
   ctx.InitCachedValue(ticket, PackValue(42));
   const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackValue(value));
+  EXPECT_EQ(42, UnpackIntValue(value));
 
   ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackValue(ctx.GetCachedValue(ticket)));
+  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
 }
 
 TEST_F(LeafContextTest, Clone) {
@@ -232,6 +234,60 @@ TEST_F(LeafContextTest, Clone) {
   // -- Modal (even though it's not owned in context_)
   clone->get_mutable_modal_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_modal_state<int>(0));
+
+  // Verify that the parameters were copied.
+  LeafContext<double>* leaf_clone =
+      dynamic_cast<LeafContext<double>*>(clone.get());
+  EXPECT_EQ(2, leaf_clone->num_numeric_parameters());
+  const BasicVector<double>& param0 = *leaf_clone->get_numeric_parameter(0);
+  EXPECT_EQ(1.0, param0[0]);
+  EXPECT_EQ(2.0, param0[1]);
+  EXPECT_EQ(4.0, param0[2]);
+  const BasicVector<double>& param1 = *leaf_clone->get_numeric_parameter(1);
+  EXPECT_EQ(8.0, param1[0]);
+  EXPECT_EQ(16.0, param1[1]);
+  EXPECT_EQ(32.0, param1[2]);
+  EXPECT_EQ(64.0, param1[3]);
+
+  // Verify that changes to the cloned parameters do not affect the originals.
+  (*leaf_clone->get_mutable_numeric_parameter(0))[0] = 76.0;
+  EXPECT_EQ(1.0, context_.get_numeric_parameter(0)->GetAtIndex(0));
+}
+
+// Tests that a LeafContext<AutoDiffXd> can be initialized from a
+// Leafcontext<double>.
+TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
+  // Set up a target with the same geometry as the source, and no
+  // interesting values.
+  // In actual applications, System<T>::CreateDefaultContext does this.
+  LeafContext<AutoDiffXd> target;
+  target.set_continuous_state(std::make_unique<ContinuousState<AutoDiffXd>>(
+      std::make_unique<BasicVector<AutoDiffXd>>(5),
+      kGeneralizedPositionSize, kGeneralizedVelocitySize,
+      kMiscContinuousStateSize));
+
+  std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> xd;
+  xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(1));
+  xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(2));
+  target.set_difference_state(
+      std::make_unique<DifferenceState<AutoDiffXd>>(std::move(xd)));
+
+  std::vector<std::unique_ptr<AbstractValue>> xm;
+  xm.push_back(PackValue(76));
+  target.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
+
+
+  // Set the target from the source.
+  target.SetTimeStateAndParametersFrom(context_);
+
+  // Verify that time was set.
+  EXPECT_EQ(kTime, target.get_time());
+  // Verify that state was set.
+  const ContinuousState<AutoDiffXd>& xc = *target.get_continuous_state();
+  EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
+  EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
+  EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
+  EXPECT_EQ(128.0, target.get_difference_state(0)->GetAtIndex(0));
 }
 
 }  // namespace systems

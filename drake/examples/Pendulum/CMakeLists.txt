@@ -40,18 +40,16 @@ if(lcm_FOUND)
     drakeRigidBodyPlant
     drakeSystemControllers
     drakeSystemAnalysis)
-  # TODO(sam.creasey) There is currently no non-linear solver on Windows: see
-  # issues #2352, #2569.
-  drake_find_package(snopt_c CONFIG)
-  drake_find_package(NLopt CONFIG)
 
-  if(ipopt_FOUND OR NLopt_FOUND OR snopt_c_FOUND)
+  if(ipopt_FOUND OR NLopt_FOUND OR snopt_FOUND)
     drake_add_test(NAME pendulum_run_swing_up
       COMMAND pendulum_run_swing_up --non-realtime)
   endif()
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 drake_add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run OPTIONAL lcm COMMAND PendulumEnergyShaping.run SIZE large)
 drake_add_matlab_test(NAME examples/Pendulum/globalStability REQUIRES mosek spotless OPTIONAL lcm COMMAND globalStability)
