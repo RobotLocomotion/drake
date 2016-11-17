@@ -561,7 +561,6 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
   double t2 = t(1).value();
   if (is_separated) {
     // Then the hyperplane a' * x = 0.5 * (a'*x1 + t1 + a'*x2 - t2)
-    const auto& a_value = DecisionVariableMatrixToDoubleMatrix(a);
     double b1 = a_value.transpose() * x1 + t1;
     double b2 = a_value.transpose() * x2 - t2;
     double b = 0.5 * (b1 + b2);

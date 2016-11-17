@@ -122,7 +122,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
   drake::solvers::MathematicalProgram prog;
-  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
+  const drake::solvers::DecisionVariableVectorX vdot =
+      prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -266,11 +267,14 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   //      prog.PrintSolution();
 
   StateVector<double> dot(nq + nv);
+
+  Eigen::VectorXd vdot_value =
+      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vdot);
   dot << kinsol.transformQDotMappingToVelocityMapping(
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq)) *
              v,
-      vdot.value();
+      vdot_value;
   return dot;
 }
 
