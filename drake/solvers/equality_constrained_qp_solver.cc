@@ -15,7 +15,6 @@ bool EqualityConstrainedQPSolver::available() const { return true; }
 
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
-
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
   // | G  -A' | | x | = | -c  |
@@ -82,7 +81,6 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Check for positive definite Hessian matrix.
   Eigen::LLT<Eigen::MatrixXd> llt(G);
   if (llt.info() == Eigen::Success) {
-
     // Matrix is positive definite. (inv(Q)*A')' = A*inv(Q) because Q is
     // symmetric.
     Eigen::MatrixXd AiQ_T = llt.solve(A.transpose());
@@ -109,14 +107,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd b_full(num_full_vars);
 
   // Set up the big matrix.
-  A_full.block(0,0,G.rows(),G.cols()) = G;
-  A_full.block(0,G.cols(),A.cols(),A.rows()) = -A.transpose();
-  A_full.block(G.rows(),0,A.rows(),A.cols()) = A;
+  A_full.block(0, 0, G.rows(), G.cols()) = G;
+  A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
+  A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
   A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
 
   // Set up the right hand side vector.
-  b_full.segment(0,G.rows()) = -c;
-  b_full.segment(G.rows(),A.rows()) = b;
+  b_full.segment(0, G.rows()) = -c;
+  b_full.segment(G.rows(), A.rows()) = b;
 
   // Compute the least-squares solution.
   Eigen::VectorXd sol =
