@@ -1,6 +1,7 @@
 if(gurobi_FOUND)
   drake_add_mex(fastQPmex fastQPmex.cpp)
   target_link_libraries(fastQPmex drakeQP)
+
   drake_add_mex(gurobiQPmex gurobiQPmex.cpp)
   target_link_libraries(gurobiQPmex drakeQP)
 endif()
@@ -18,7 +19,11 @@ if(snopt_FOUND)
 endif()
 
 add_subdirectory(qpSpline)
-add_subdirectory(test)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
 add_subdirectory(+drakeFunction)
 add_subdirectory(BMI)
 add_subdirectory(trajectoryOptimization)

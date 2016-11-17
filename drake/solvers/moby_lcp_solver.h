@@ -8,14 +8,12 @@
 
 #include <Eigen/SparseCore>
 
-#include "drake/common/drake_export.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 
-class DRAKE_EXPORT MobyLCPSolver
-    : public MathematicalProgramSolverInterface {
+class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {}

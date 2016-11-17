@@ -8,9 +8,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/number_traits.h"
-#include "drake/math/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/difference_state.h"
@@ -57,6 +57,8 @@ class LeafSystem : public System<T> {
     // Reserve discrete state via delegation to subclass.
     context->set_difference_state(this->AllocateDifferenceState());
     context->set_modal_state(this->AllocateModalState());
+    // Reserve parameters via delegation to subclass.
+    context->set_parameters(this->AllocateParameters());
     return std::unique_ptr<Context<T>>(context.release());
   }
 
@@ -132,6 +134,12 @@ class LeafSystem : public System<T> {
     return std::make_unique<ModalState>();
   }
 
+  /// Reserves the parameters as required by CreateDefaultContext. By default,
+  /// reserves no parameters. Systems with parameters should override.
+  virtual std::unique_ptr<Parameters<T>> AllocateParameters() const {
+    return std::make_unique<Parameters<T>>();
+  }
+
   /// Given a port descriptor, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses can
   /// override to use output vector types other than BasicVector.  The
@@ -139,6 +147,25 @@ class LeafSystem : public System<T> {
   virtual std::unique_ptr<BasicVector<T>> AllocateOutputVector(
       const SystemPortDescriptor<T>& descriptor) const {
     return std::make_unique<BasicVector<T>>(descriptor.get_size());
+  }
+
+  // =========================================================================
+  // New methods for subclasses to use
+
+  /// Extracts the numeric parameters of type U from the @p context at @p index.
+  /// Asserts if the context is not a LeafContext, or if it does not have a
+  /// vector-valued parameter of type U at @p index.
+  template <template <typename> class U = BasicVector>
+  const U<T>& GetNumericParameter(const Context<T>& context,
+                                  int index) const {
+    static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
+                  "U must be a subclass of BasicVector.");
+    const systems::LeafContext<T>& leaf_context =
+        dynamic_cast<const systems::LeafContext<T>&>(context);
+    const auto* const params = dynamic_cast<const U<T>*>(
+        leaf_context.get_numeric_parameter(index));
+    DRAKE_ASSERT(params != nullptr);
+    return *params;
   }
 
   /// Declares that this System has a simple, fixed-period discrete update.
@@ -160,8 +187,21 @@ class LeafSystem : public System<T> {
     PeriodicEvent<T> event;
     event.period_sec = period_sec;
     event.offset_sec = offset_sec;
-    event.event.recipient = this;
     event.event.action = DiscreteEvent<T>::kUpdateAction;
+    periodic_events_ = {event};
+  }
+
+  /// Declares that this System has a simple, fixed-period publish.
+  /// The first tick will be at t = period_sec, and it will recur at every
+  /// period_sec thereafter. On the discrete tick, the system may update
+  /// the discrete state. Clobbers any other periodic behaviors previously
+  /// declared.
+  /// TODO(david-german-tri): Add more sophisticated mutators for more complex
+  /// periodic behaviors.
+  void DeclarePublishPeriodSec(const T& period_sec) {
+    PeriodicEvent<T> event;
+    event.period_sec = period_sec;
+    event.event.action = DiscreteEvent<T>::kPublishAction;
     periodic_events_ = {event};
   }
 

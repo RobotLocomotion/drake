@@ -4,8 +4,6 @@ if(Matlab_FOUND)
 endif()
 
 if(Bullet_FOUND AND Matlab_FOUND)
-  find_package(BLAS MODULE)
-
   if(BLAS_FOUND AND snopt_FOUND)
     drake_add_mex(replanFunnels_mex replanFunnels_mex.cpp)
     target_include_directories(replanFunnels_mex PRIVATE ${BULLET_INCLUDE_DIRS})
@@ -35,4 +33,6 @@ if(Bullet_FOUND AND Matlab_FOUND)
   target_link_libraries(ptToPolyBullet_mex drakeMexUtil ${BULLET_LIBRARIES})
 endif()
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

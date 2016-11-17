@@ -6,7 +6,6 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/polynomial.h"
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 
@@ -37,8 +36,7 @@
  * under division.
  */
 template <typename CoefficientType = double>
-class DRAKE_EXPORT PiecewisePolynomial
-    : public PiecewisePolynomialBase {
+class PiecewisePolynomial : public PiecewisePolynomialBase {
  public:
   typedef Polynomial<CoefficientType> PolynomialType;
   typedef Eigen::Matrix<PolynomialType, Eigen::Dynamic, Eigen::Dynamic>

@@ -1,14 +1,15 @@
 #include "drake/matlab/systems/plants/rigidBodyTreeMexFunctions.h"
 
 #include <typeinfo>
-#include <Eigen/Sparse>
+
+#include <Eigen/SparseCore>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include "drake/matlab/util/makeFunction.h"
 #include "drake/matlab/util/standardMexConversions.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 using namespace std;
 using namespace Eigen;
@@ -360,7 +361,7 @@ template <typename Scalar>
 Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDotMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nq = cache.get_num_positions();
-  return cache.transformPositionDotMappingToVelocityMapping(
+  return cache.transformQDotMappingToVelocityMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nq, nq));
 }
 
@@ -368,7 +369,7 @@ template <typename Scalar>
 Matrix<Scalar, Dynamic, Dynamic> positionDotToVelocityMapping(
     const KinematicsCache<Scalar>& cache) {
   auto nv = cache.get_num_velocities();
-  return cache.transformVelocityMappingToPositionDotMapping(
+  return cache.transformVelocityMappingToQDotMapping(
       Matrix<Scalar, Dynamic, Dynamic>::Identity(nv, nv));
 }
 

@@ -4,8 +4,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/system1/System.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 
 namespace drake {

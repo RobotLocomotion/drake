@@ -5,7 +5,6 @@
 
 #include "QPCommon.h"
 #include "drake/common/eigen_stl_types.h"
-#include "drake/common/drake_export.h"
 #include "drake/solvers/gurobi_qp.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 
@@ -17,7 +16,7 @@
 #define INSTQP_GUROBI_BARHOMOGENEOUS 0
 #define INSTQP_GUROBI_BARCONVTOL (5e-4)
 
-class DRAKE_EXPORT InstantaneousQPController {
+class InstantaneousQPController {
  public:
   InstantaneousQPController(
       std::unique_ptr<RigidBodyTree<double>> robot_in,
@@ -134,11 +133,11 @@ class DRAKE_EXPORT InstantaneousQPController {
   const QPControllerParams& FindParams(const std::string& param_set_name);
 };
 
-DRAKE_EXPORT void applyURDFModifications(
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void applyURDFModifications(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree<double>>& robot,
     const KinematicModifications& modifications);
-DRAKE_EXPORT void applyURDFModifications(
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+void applyURDFModifications(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::unique_ptr<RigidBodyTree<double>>& robot,
     const std::string& urdf_modifications_filename);

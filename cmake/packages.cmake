@@ -78,6 +78,7 @@ macro(drake_find_packages)
   # BEGIN required packages
 
   drake_find_package(Eigen3 CONFIG REQUIRED)
+  add_definitions(-DEIGEN_MPL2_ONLY)  # Per #4065.
   drake_find_package(gflags CONFIG REQUIRED)
   drake_find_package(GTest MODULE REQUIRED)
 
@@ -88,8 +89,9 @@ macro(drake_find_packages)
   drake_find_package(avl CONFIG)
   drake_find_package(bot2-core CONFIG)
   drake_find_package(Bullet MODULE)
-  drake_find_package(gurobi PKG_CONFIG)
+  drake_find_package(gurobi CONFIG)
   drake_find_package(lcm CONFIG)
+  drake_find_package(meshconverters CONFIG)
   drake_find_package(mosek PKG_CONFIG)
   drake_find_package(NLopt CONFIG)
   drake_find_package(octomap CONFIG)

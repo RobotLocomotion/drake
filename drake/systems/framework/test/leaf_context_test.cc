@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -57,6 +58,13 @@ class LeafContextTest : public ::testing::Test {
     std::vector<AbstractValue*> xm;
     xm.push_back(modal_state_.get());
     context_.set_modal_state(std::make_unique<ModalState>(std::move(xm)));
+
+    // Reserve two numeric parameters, of size 3 and size 4.
+    std::vector<std::unique_ptr<BasicVector<double>>> params;
+    params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
+    params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
+    context_.set_parameters(
+        std::make_unique<Parameters<double>>(std::move(params)));
   }
 
   // Mocks up a descriptor that's sufficient to read a FreestandingInputPort
@@ -226,6 +234,24 @@ TEST_F(LeafContextTest, Clone) {
   // -- Modal (even though it's not owned in context_)
   clone->get_mutable_modal_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_modal_state<int>(0));
+
+  // Verify that the parameters were copied.
+  LeafContext<double>* leaf_clone =
+      dynamic_cast<LeafContext<double>*>(clone.get());
+  EXPECT_EQ(2, leaf_clone->num_numeric_parameters());
+  const BasicVector<double>& param0 = *leaf_clone->get_numeric_parameter(0);
+  EXPECT_EQ(1.0, param0[0]);
+  EXPECT_EQ(2.0, param0[1]);
+  EXPECT_EQ(4.0, param0[2]);
+  const BasicVector<double>& param1 = *leaf_clone->get_numeric_parameter(1);
+  EXPECT_EQ(8.0, param1[0]);
+  EXPECT_EQ(16.0, param1[1]);
+  EXPECT_EQ(32.0, param1[2]);
+  EXPECT_EQ(64.0, param1[3]);
+
+  // Verify that changes to the cloned parameters do not affect the originals.
+  (*leaf_clone->get_mutable_numeric_parameter(0))[0] = 76.0;
+  EXPECT_EQ(1.0, context_.get_numeric_parameter(0)->GetAtIndex(0));
 }
 
 // Tests that a LeafContext<AutoDiffXd> can be initialized from a

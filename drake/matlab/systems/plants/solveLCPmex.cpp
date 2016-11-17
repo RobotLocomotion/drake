@@ -4,10 +4,10 @@
 #include <iostream>
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/util/MexWrapper.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/fast_qp.h"
 #include <sstream>
-#include "rigidBodyTreeMexConversions.h"
+#include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -259,11 +259,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   // Convert jacobians to velocity mappings
   const MatrixXd n_velocity =
-      cache.transformPositionDotMappingToVelocityMapping(n);
+      cache.transformQDotMappingToVelocityMapping(n);
   const MatrixXd JL_velocity =
-      cache.transformPositionDotMappingToVelocityMapping(JL);
+      cache.transformQDotMappingToVelocityMapping(JL);
   const auto JP_velocity =
-      cache.transformPositionDotMappingToVelocityMapping(JP);
+      cache.transformQDotMappingToVelocityMapping(JP);
 
   plhs[2] = mxCreateDoubleMatrix(nv, 1, mxREAL);
   Map<VectorXd> wvn(mxGetPrSafe(plhs[2]), nv);
@@ -318,7 +318,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       MatrixXd D_i_possible, D_i_exclude;
       filterByIndices(possible_contact_indices, D_i, D_i_possible);
       D_possible.block(nC * i, 0, nC, nv) =
-          cache.transformPositionDotMappingToVelocityMapping(D_i_possible);
+          cache.transformQDotMappingToVelocityMapping(D_i_possible);
     }
 
     // J in velocity coordinates

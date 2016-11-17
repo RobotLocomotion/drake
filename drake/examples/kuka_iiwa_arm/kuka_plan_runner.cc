@@ -8,19 +8,16 @@
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
 
-#include <iostream>
-#include <memory>
-
 #include <lcm/lcm-cpp.hpp>
 
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -147,51 +144,25 @@ class RobotPlanRunner {
 
     std::cout << traj_mat << std::endl;
 
-    std::vector<PPMatrix> polys;
-    std::vector<double> times;
-
-    // For each timestep, create a PolynomialMatrix for each joint
-    // position.  Each column of traj_ represents a particular time,
-    // and the rows of that column contain values for each joint
-    // coordinate.
-    for (int i = 0; i < plan->num_states; i++) {
-      PPMatrix poly_matrix(traj_mat.rows(), 1);
-      const auto traj_now = traj_mat.col(i);
-
-      // Produce interpolating polynomials for each joint coordinate.
-      for (int row = 0; row < traj_mat.rows(); row++) {
-        Eigen::Vector2d coeffs(0, 0);
-        coeffs[0] = traj_now(row);
-        if (i != plan->num_states - 1) {
-          // Set the coefficient such that it will reach the value of
-          // the next timestep at the time when we advance to the next
-          // piece.  In the event that we're at the end of the
-          // trajectory, this will be left 0.
-          coeffs[1] = ((traj_mat(row, i + 1) - coeffs[0]) /
-                       ((plan->plan[i + 1].utime  -
-                         plan->plan[i].utime) / 1e6));
-        }
-        poly_matrix(row) = PPPoly(coeffs);
-      }
-      polys.push_back(poly_matrix);
-      times.push_back(plan->plan[i].utime / 1e6);
+    std::vector<double> input_time;
+    for (int k = 0; k < static_cast<int>(plan->plan.size()); ++k) {
+      input_time.push_back(plan->plan[k].utime / 1e6);
     }
-    times.push_back(times.back() + 0.01);
-    plan_.reset(new PPType(polys, times));
+    plan_.reset(new PiecewisePolynomialTrajectory(traj_mat, input_time));
     ++plan_number_;
   }
 
   lcm::LCM lcm_;
   const RigidBodyTree<double>& tree_;
   int plan_number_{};
-  std::unique_ptr<PPType> plan_;
+  std::unique_ptr<PiecewisePolynomialTrajectory> plan_;
   lcmt_iiwa_status iiwa_status_;
 };
 
 int do_main(int argc, const char* argv[]) {
   RigidBodyTree<double> tree(
       drake::GetDrakePath() + "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf",
-      drake::systems::plants::joints::kFixed);
+      drake::multibody::joints::kFixed);
 
   RobotPlanRunner runner(tree);
   runner.Run();

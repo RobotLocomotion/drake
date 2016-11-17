@@ -26,19 +26,22 @@ namespace examples {
 namespace qp_inverse_dynamics {
 
 /**
+ * This will be replaced by #4004.
  * A dummy simulator for Valkyrie. This does not perform forward dynamics
  * computation. Instead, it uses the computed acceleration from the qp
  * controller.
  *
- * Input: QPOutput (only using the computed accelerations)
+ * Input: vector based generalized acceleration (vd)
  * Output: bot_core::robot_state_t
  * Output: vector based raw robot state (q, v)
  */
 class ValkyrieSystem : public LeafSystem<double> {
  public:
   explicit ValkyrieSystem(const RigidBodyTree<double>& robot) : robot_(robot) {
-    input_port_index_qp_output_ =
-        DeclareAbstractInputPort(systems::kInheritedSampling).get_index();
+    input_port_index_vd_ =
+        DeclareInputPort(systems::kVectorValued, robot_.get_num_velocities(),
+                         systems::kInheritedSampling).get_index();
+
     output_port_index_robot_state_msg_ =
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
     output_port_index_raw_state_ =
@@ -47,16 +50,18 @@ class ValkyrieSystem : public LeafSystem<double> {
             robot_.get_num_positions() + robot_.get_num_velocities(),
             systems::kInheritedSampling).get_index();
 
-    zero_torque_ = Eigen::VectorXd::Zero(robot_.actuators.size());
+    zero_torque_ = VectorX<double>::Zero(robot_.actuators.size());
 
     DRAKE_ASSERT(this->get_num_input_ports() == 1);
     DRAKE_ASSERT(this->get_num_output_ports() == 2);
 
     set_name("Dummy Valkyrie System");
 
-    joint_names_.resize(robot_.get_num_positions() - kTwistSize);
+    // This is assuming that the RBT's first 6 dof belong to the floating base,
+    // and all the other dof are actuated.
+    actuated_joint_names_.resize(robot_.get_num_positions() - kTwistSize);
     for (int i = kTwistSize; i < robot_.get_num_positions(); ++i) {
-      joint_names_[i - kTwistSize] = robot_.get_position_name(i);
+      actuated_joint_names_[i - kTwistSize] = robot_.get_position_name(i);
     }
   }
 
@@ -88,18 +93,20 @@ class ValkyrieSystem : public LeafSystem<double> {
                   SystemOutput<double>* output) const override {
     const ContinuousState<double>& state =
         *context.get_state().get_continuous_state();
-    Eigen::VectorXd q = state.get_generalized_position().CopyToVector();
-    Eigen::VectorXd v = state.get_generalized_velocity().CopyToVector();
 
     // Outputs:
+    VectorX<double> q = state.get_generalized_position().CopyToVector();
+    VectorX<double> v = state.get_generalized_velocity().CopyToVector();
+
+    // Set lcm message output.
     bot_core::robot_state_t& msg =
         output->GetMutableData(output_port_index_robot_state_msg_)
             ->GetMutableValue<bot_core::robot_state_t>();
-    EncodeRobotStateLcmMsg(joint_names_, context.get_time(), q, v, zero_torque_,
-                           Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero(),
-                           &msg);
+    EncodeRobotStateLcmMsg(actuated_joint_names_, context.get_time(), q, v,
+                           zero_torque_, Vector6<double>::Zero(),
+                           Vector6<double>::Zero(), &msg);
 
-    // Set state output.
+    // Set raw state output.
     BasicVector<double>* output_x =
         output->GetMutableVectorData(output_port_index_raw_state_);
     for (int i = 0; i < robot_.get_num_positions(); ++i) {
@@ -113,10 +120,9 @@ class ValkyrieSystem : public LeafSystem<double> {
   void EvalTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
-    // Get the acceleration from qpouput.
-    const QPOutput* qpout =
-        EvalInputValue<QPOutput>(context, input_port_index_qp_output_);
-    const Eigen::VectorXd& vd = qpout->vd();
+    // Get the accelerations.
+    const BasicVector<double>* vd =
+        EvalVectorInput(context, input_port_index_vd_);
 
     // Get the current state.
     const ContinuousState<double>& state =
@@ -126,7 +132,7 @@ class ValkyrieSystem : public LeafSystem<double> {
     VectorBase<double>* new_v = derivatives->get_mutable_generalized_position();
     VectorBase<double>* new_vd =
         derivatives->get_mutable_generalized_velocity();
-    if (new_v->size() != state_v.size() || new_vd->size() != vd.size()) {
+    if (new_v->size() != state_v.size() || new_vd->size() != vd->size()) {
       throw std::runtime_error("time deriv dimension mismatch.");
     }
 
@@ -135,7 +141,7 @@ class ValkyrieSystem : public LeafSystem<double> {
     }
 
     for (int i = 0; i < new_vd->size(); ++i) {
-      new_vd->SetAtIndex(i, vd(i));
+      new_vd->SetAtIndex(i, vd->GetAtIndex(i));
     }
   }
 
@@ -164,7 +170,7 @@ class ValkyrieSystem : public LeafSystem<double> {
     }
 
     rs->Update(context->get_time(), q->CopyToVector(), v->CopyToVector(),
-               zero_torque_, Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+               zero_torque_, Vector6<double>::Zero(), Vector6<double>::Zero());
     return rs;
   }
 
@@ -220,15 +226,15 @@ class ValkyrieSystem : public LeafSystem<double> {
 
     std::unique_ptr<HumanoidStatus> rs(new HumanoidStatus(robot_));
     rs->Update(context.get_time(), q.CopyToVector(), v.CopyToVector(),
-               zero_torque_, Eigen::Vector6d::Zero(), Eigen::Vector6d::Zero());
+               zero_torque_, Vector6<double>::Zero(), Vector6<double>::Zero());
     return rs;
   }
 
   /**
-   * @return Port for the input: QPOutput.
+   * @return Port for the input: vector based acceleration (vd).
    */
-  inline const SystemPortDescriptor<double>& get_input_port_qp_output() const {
-    return get_input_port(input_port_index_qp_output_);
+  inline const SystemPortDescriptor<double>& get_input_port_vd() const {
+    return get_input_port(input_port_index_vd_);
   }
 
   /**
@@ -249,13 +255,13 @@ class ValkyrieSystem : public LeafSystem<double> {
  private:
   const RigidBodyTree<double>& robot_;
   // only used for publishing.
-  std::vector<std::string> joint_names_;
+  std::vector<std::string> actuated_joint_names_;
 
-  int input_port_index_qp_output_;
+  int input_port_index_vd_;
   int output_port_index_robot_state_msg_;
   int output_port_index_raw_state_;
 
-  Eigen::VectorXd zero_torque_;
+  VectorX<double> zero_torque_;
 };
 
 }  // namespace qp_inverse_dynamics
