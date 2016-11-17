@@ -12,6 +12,7 @@
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -37,25 +38,6 @@ using lcm::LcmSubscriberSystem;
 using lcm::LcmPublisherSystem;
 using multibody::joints::kRollPitchYaw;
 
-// TODO(tkoolen) copied from car_simulation.cc. Where should this live?
-void AddFlatTerrainToWorld(RigidBodyTree<double>* rigid_body_tree,
-                           double box_size, double box_depth) {
-  DrakeShapes::Box geom(Eigen::Vector3d(box_size, box_size, box_depth));
-  Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-  T_element_to_link.translation() << 0, 0,
-      -box_depth / 2;  // top of the box is at z=0
-  RigidBody& world = rigid_body_tree->world();
-  Eigen::Vector4d color;
-  color << 0.9297, 0.7930, 0.6758,
-      1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-  world.AddVisualElement(
-      DrakeShapes::VisualElement(geom, T_element_to_link, color));
-  rigid_body_tree->addCollisionElement(
-      DrakeCollision::Element(geom, T_element_to_link, &world), world,
-      "terrain");
-  rigid_body_tree->updateStaticCollisionElements();
-}
-
 // TODO(tkoolen) shouldn't hard-code. Copied from fixed point file for Valkyrie.
 // Need C++ equivalent of resolveConstraints.
 VectorX<double> RPYValkyrieFixedPointState() {
@@ -79,10 +61,11 @@ int main(int argc, const char** argv) {
           "/examples/Valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
       kRollPitchYaw, nullptr /* weld to frame */, tree_ptr.get());
-  AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
+  multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
+  // Contact parameters set arbitrarily.
   plant.set_contact_parameters(10000., 100., 10.);
   const auto& tree = plant.get_rigid_body_tree();
 
@@ -206,6 +189,7 @@ int main(int argc, const char** argv) {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
+  // Integrator set arbitrarily.
   simulator->reset_integrator<ExplicitEulerIntegrator<double>>(*diagram, 1e-3,
                                                                context);
 
