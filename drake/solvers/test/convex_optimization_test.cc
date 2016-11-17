@@ -4,8 +4,8 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/common/eigen_types.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/eigen_types.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 namespace drake {
@@ -83,8 +83,8 @@ void TestLinearProgram0(const MathematicalProgramSolverInterface& solver) {
 
   Eigen::Vector2d x_expected(1, 2);
   const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-  EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-10,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(x_value, x_expected, 1E-10, MatrixCompareType::absolute));
 }
 
 // Test a simple linear programming problem with only bounding box constraint
@@ -156,8 +156,8 @@ void TestLinearProgram2(const MathematicalProgramSolverInterface& solver) {
 
   Eigen::Vector4d x_expected(0, 0, 15, 25.0 / 3.0);
   const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-  EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-10,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(x_value, x_expected, 1e-10, MatrixCompareType::absolute));
 }
 
 /////////////////////////////////////////
@@ -208,8 +208,8 @@ void TestQuadraticProgram0(const MathematicalProgramSolverInterface& solver) {
 
   Eigen::Vector2d x_expected(0.25, 0.75);
   const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
-  EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-8,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(x_value, x_expected, 1E-8, MatrixCompareType::absolute));
 }
 
 /// Adapt from the simple test on the Gurobi documentation.
@@ -376,7 +376,8 @@ void TestQuadraticProgram4(const MathematicalProgramSolverInterface& solver) {
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 1),
                                    Vector1d::Constant(1), {x.head<2>()});
   prog.AddLinearEqualityConstraint(Eigen::RowVector2d(1, 2),
-                                   Vector1d::Constant(2), {x.segment<1>(0), x.segment<1>(2)});
+                                   Vector1d::Constant(2),
+                                   {x.segment<1>(0), x.segment<1>(2)});
 
   if (solver.SolverName() == "SNOPT") {
     prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
@@ -787,8 +788,9 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
   auto y = prog.AddContinuousVariables(num_nodes, "y");
   auto t = prog.AddContinuousVariables(num_nodes - 1, "t");
   prog.AddBoundingBoxConstraint(end_pos1, end_pos1, {x.head<1>(), y.head<1>()});
-  prog.AddBoundingBoxConstraint(end_pos2, end_pos2,
-                                {x.segment<1>(num_nodes - 1), y.segment<1>(num_nodes - 1)});
+  prog.AddBoundingBoxConstraint(
+      end_pos2, end_pos2,
+      {x.segment<1>(num_nodes - 1), y.segment<1>(num_nodes - 1)});
   prog.AddBoundingBoxConstraint(
       Eigen::VectorXd::Zero(num_nodes - 1),
       Eigen::VectorXd::Constant(num_nodes - 1,
@@ -822,7 +824,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   // sqrt((x(i)-x(i+1))^2 + (y(i) - y(i+1))^2) <= ti + spring_rest_length
   for (int i = 0; i < num_nodes - 1; ++i) {
-    prog.AddLorentzConeConstraint({t_plus_l0.segment<1>(i), x_diff.segment<1>(i), y_diff.segment<1>(i)});
+    prog.AddLorentzConeConstraint(
+        {t_plus_l0.segment<1>(i), x_diff.segment<1>(i), y_diff.segment<1>(i)});
   }
 
   // Add constraint z >= t_1^2 + .. + t_(N-1)^2
@@ -845,8 +848,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
     precision = 2e-2;
   }
   for (int i = 0; i < num_nodes - 1; ++i) {
-    Eigen::Vector2d spring(x(i+1).value() - x(i).value(),
-                           y(i+1).value() - y(i).value());
+    Eigen::Vector2d spring(x(i + 1).value() - x(i).value(),
+                           y(i + 1).value() - y(i).value());
     if (spring.norm() < spring_rest_length) {
       EXPECT_LE(t(i).value(), 1E-3);
       EXPECT_GE(t(i).value(), 0 - 1E-10);
@@ -869,8 +872,8 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
       left_spring_force = (left_spring_length - spring_rest_length) *
                           spring_stiffness * left_spring / left_spring_length;
     }
-    Eigen::Vector2d right_spring(x(i+1).value() - x(i).value(),
-                                 y(i+1).value() - y(i).value());
+    Eigen::Vector2d right_spring(x(i + 1).value() - x(i).value(),
+                                 y(i + 1).value() - y(i).value());
     Eigen::Vector2d right_spring_force;
     double right_spring_length = right_spring.norm();
     if (right_spring_length < spring_rest_length) {
