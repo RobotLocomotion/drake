@@ -17,8 +17,8 @@ namespace solvers {
 /**
  * This class stores the type, the name, the value, and the index of a
  * decision variable in an optimization program.
- * The DecisionVariableScalar created by MathematicalProgram should have
- * the same lifespan as the MathematicalProgram object.
+ * The DecisionVariableScalar created by MathematicalProgram should not outlive
+ * the its creator MathematicalProgram object
  */
 class DecisionVariableScalar {
  public:
@@ -28,14 +28,26 @@ class DecisionVariableScalar {
    * This constructor creates a dummy placeholder, the value_ pointer
    * is initialized to nullptr. The usage of this function is
    * @code{.cc}
-   * MathematicalProgram prog;                                         // Creates an optimization program object with no decision variables.
-   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();  // Add a 2 x 1 vector containing two decision variables to the optimization program. This calls the private constructor DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
-   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();  // Add a 2 x 1 vector containing two decision variables to the optimization program. This calls the private constructor DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
-   * DecisionVariableMatrix<2, 2> X; // This calls the default constructor DecisionVariableScalar(), X is not related to the optimization program prog yet.
-   * X << x1, x2; // Now X contains the decision variables from the optimization program object prog. The first column of X is x1, the second column of X is x2.
+   * MathematicalProgram prog;                                         //
+   * Creates an optimization program object with no decision variables.
+   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();  // Add a
+   * 2 x 1 vector containing two decision variables to the optimization program.
+   * This calls the private constructor DecisionVariableScalar(VarType type,
+   * const std::string &name, double* value, size_t index)
+   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();  // Add a
+   * 2 x 1 vector containing two decision variables to the optimization program.
+   * This calls the private constructor DecisionVariableScalar(VarType type,
+   * const std::string &name, double* value, size_t index)
+   * DecisionVariableMatrix<2, 2> X; // This calls the default constructor
+   * DecisionVariableScalar(), X is not related to the optimization program prog
+   * yet.
+   * X << x1, x2; // Now X contains the decision variables from the optimization
+   * program object prog. The first column of X is x1, the second column of X is
+   * x2.
    * @endcode
    */
-  DecisionVariableScalar() : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
+  DecisionVariableScalar()
+      : type_(VarType::CONTINUOUS), name_(""), value_(nullptr), index_(0) {}
   /**
    * @return The type of the variable.
    */
@@ -68,18 +80,19 @@ class DecisionVariableScalar {
    * @param name The name of the variable.
    * @param index The index of the variable in the optimization program.
    */
-  DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+  DecisionVariableScalar(VarType type, const std::string& name, double* value,
+                         size_t index)
       : type_(type), name_(name), value_(value), index_(index) {}
 
   void set_value(double new_value) { *value_ = new_value; }
 
   VarType type_;
   std::string name_;
-  double *value_;
+  double* value_;
   size_t index_;
 };
-} // namespace solvers
-} // namespace drake
+}  // namespace solvers
+}  // namespace drake
 
 namespace Eigen {
 
@@ -98,11 +111,9 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
     MulCost = 1
   };
 
-  template<bool Vectorized>
+  template <bool Vectorized>
   struct Div {
-    enum {
-      Cost = 1
-    };
+    enum { Cost = 1 };
   };
 
   typedef drake::solvers::DecisionVariableScalar Real;
@@ -111,21 +122,25 @@ struct NumTraits<drake::solvers::DecisionVariableScalar> {
 };
 }  // namespace Eigen
 
-namespace drake{
-namespace solvers{
-template<Eigen::Index rows, Eigen::Index cols>
-using DecisionVariableMatrix = Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
-template<Eigen::Index rows>
+namespace drake {
+namespace solvers {
+template <Eigen::Index rows, Eigen::Index cols>
+using DecisionVariableMatrix =
+    Eigen::Matrix<drake::solvers::DecisionVariableScalar, rows, cols>;
+template <Eigen::Index rows>
 using DecisionVariableVector = DecisionVariableMatrix<rows, 1>;
-using DecisionVariableMatrixX = DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
+using DecisionVariableMatrixX =
+    DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 /**
- * VariableVectorRef is used for adding constraints/costs in MathematicalProgram,
+ * VariableVectorRef is used for adding constraints/costs in
+ * MathematicalProgram,
  * we use Eigen::Ref so that we can pass in a block of DecisionVariableMatrix as
  * decision variables.
  */
-using VariableVectorRef =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
+using VariableVectorRef =
+    std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**
  * VariableVector is used for storing the decision variabled binded
@@ -133,13 +148,16 @@ using VariableVectorRef =  std::vector<Eigen::Ref<const DecisionVariableMatrixX>
  * a VariableVector, on which the constraint/cost is imposed.
  */
 using VariableVector = std::vector<DecisionVariableMatrixX>;
-template<typename Derived>
+template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-DecisionVariableMatrixToDoubleMatrix(const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> double_matrix(decision_variable_matrix.rows(), decision_variable_matrix.cols());
+DecisionVariableMatrixToDoubleMatrix(
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+      double_matrix(decision_variable_matrix.rows(),
+                    decision_variable_matrix.cols());
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      double_matrix(i, j) = decision_variable_matrix(i,j).value();
+      double_matrix(i, j) = decision_variable_matrix(i, j).value();
     }
   }
   return double_matrix;
@@ -149,11 +167,12 @@ DecisionVariableMatrixToDoubleMatrix(const Eigen::MatrixBase<Derived>& decision_
  * Determine if a DecisionVariableMatrix object covers a variable with
  * given index.
  */
-template<typename Derived>
-bool DecisionVariableMatrixCoversIndex(const Eigen::MatrixBase<Derived>& decision_variable_matrix, size_t index) {
+template <typename Derived>
+bool DecisionVariableMatrixCoversIndex(
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix, size_t index) {
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      if (decision_variable_matrix(i,j).index() == index) {
+      if (decision_variable_matrix(i, j).index() == index) {
         return true;
       }
     }
@@ -184,13 +203,15 @@ int GetVariableVectorSize(const drake::solvers::VariableVector& vars);
  * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
  * scalar).
  */
-bool VariableVectorContainsColumnVectorsOnly(const drake::solvers::VariableVector& vars);
+bool VariableVectorContainsColumnVectorsOnly(
+    const drake::solvers::VariableVector& vars);
 
 /**
  * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
  * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
  * scalar).
  */
-bool VariableVectorRefContainsColumnVectorsOnly(const drake::solvers::VariableVectorRef& vars);
+bool VariableVectorRefContainsColumnVectorsOnly(
+    const drake::solvers::VariableVectorRef& vars);
 }  // end namespace solvers
 }  // end namespace drake

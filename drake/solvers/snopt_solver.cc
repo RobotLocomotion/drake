@@ -227,8 +227,8 @@ void EvaluateNonlinearConstraints(
       for (snopt::integer i = 0;
            i < static_cast<snopt::integer>(num_constraints); i++) {
         for (int j = 0; j < v.size(); ++j) {
-          G[(*grad_index)++] =
-              static_cast<snopt::doublereal>(ty(i).derivatives()(v(j, 0).index()));
+          G[(*grad_index)++] = static_cast<snopt::doublereal>(
+              ty(i).derivatives()(v(j, 0).index()));
         }
       }
     }
@@ -282,8 +282,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
     for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
       for (int j = 0; j < v.size(); ++j) {
-        G[v(j, 0).index()] +=
-            static_cast<snopt::doublereal>(ty(0).derivatives()(v(j, 0).index()));
+        G[v(j, 0).index()] += static_cast<snopt::doublereal>(
+            ty(0).derivatives()(v(j, 0).index()));
       }
     }
   }
@@ -383,9 +383,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
         xlow[v(k, 0).index()] = std::max<snopt::doublereal>(
-            static_cast<snopt::doublereal>(lb(var_count)), xlow[v(k, 0).index()]);
+            static_cast<snopt::doublereal>(lb(var_count)),
+            xlow[v(k, 0).index()]);
         xupp[v(k, 0).index()] = std::min<snopt::doublereal>(
-            static_cast<snopt::doublereal>(ub(var_count)), xupp[v(k, 0).index()]);
+            static_cast<snopt::doublereal>(ub(var_count)),
+            xupp[v(k, 0).index()]);
         ++var_count;
       }
     }
@@ -456,8 +458,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
         for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint,
                                                            var_index + k);
              it; ++it) {
-          tripletList.push_back(
-              T(linear_constraint_index + it.row(), v(k, 0).index(), it.value()));
+          tripletList.push_back(T(linear_constraint_index + it.row(),
+                                  v(k, 0).index(), it.value()));
         }
       }
       var_index += v.size();

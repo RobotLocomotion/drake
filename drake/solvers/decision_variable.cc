@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace solvers {
-template<typename T>
+template <typename T>
 int GetVariableVectorSize_impl(const T& vars) {
   int var_dim = 0;
   for (const auto& var : vars) {
@@ -19,7 +19,7 @@ int GetVariableVectorRefSize(const VariableVectorRef& vars) {
   return GetVariableVectorSize_impl(vars);
 }
 
-template<typename T>
+template <typename T>
 bool VariableVectorContainsColumnVectorsOnly_impl(const T& vars) {
   for (const auto& var : vars) {
     if (var.cols() != 1) {

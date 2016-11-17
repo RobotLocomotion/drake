@@ -78,10 +78,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
           }
           ++A_col_idx;
         }
-
       }
       for (int j = 0; j < A.cols(); ++j) {
-
       }
       rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
                             A_nonzero_col_idx.data(), A_nonzero_val.data());
@@ -271,7 +269,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     std::vector<int> var_indices(Q.rows());
     {
       int var_count = 0;
-      for (const auto &var : binding.variable_vector()) {
+      for (const auto& var : binding.variable_vector()) {
         DRAKE_ASSERT(var.cols() == 1);
         for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
           var_indices[var_count] = var(i, 0).index();

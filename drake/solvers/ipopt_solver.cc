@@ -447,7 +447,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
-          cost_cache_->grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
+          cost_cache_->grad[v(j, 0).index()] +=
+              ty(0).derivatives()(v(j, 0).index());
         }
       }
     }

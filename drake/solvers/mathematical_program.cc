@@ -68,7 +68,7 @@ MathematicalProgram::MathematicalProgram()
       moby_lcp_solver_(new MobyLCPSolver()),
       linear_system_solver_(new LinearSystemSolver()),
       equality_constrained_qp_solver_(new EqualityConstrainedQPSolver()),
-      //gurobi_solver_(new GurobiSolver()),
+      // gurobi_solver_(new GurobiSolver()),
       mosek_solver_(new MosekSolver()) {}
 
 SolutionResult MathematicalProgram::Solve() {
