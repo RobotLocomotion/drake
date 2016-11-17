@@ -208,6 +208,40 @@ macro(drake_setup_python)
 
   # Choose your python (major) version
   option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
+
+  if(WITH_PYTHON_3)
+    set(_python_minimum_version 3.0)
+  else()
+    set(_python_minimum_version 2.7)
+  endif()
+
+  find_package(PythonInterp ${_minimum_python_version} MODULE REQUIRED)
+
+  if(APPLE)
+    # Ensure that the Homebrew Python libraries are used if the Homebrew Python
+    # executable is being used.
+    # TODO(jamiesnape): Fix upstream CMake.
+    execute_process(COMMAND "${PYTHON_EXECUTABLE}-config" --prefix
+      RESULT_VARIABLE _python_config_result
+      OUTPUT_VARIABLE _python_config_prefix
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_python_config_result EQUAL 0)
+      find_path(PYTHON_INCLUDE_DIR NAMES Python.h
+        HINTS "${_python_config_prefix}/include"
+        PATH_SUFFIXES
+          python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m
+          python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+      find_library(PYTHON_LIBRARY
+        NAMES python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
+        HINTS "${_python_config_prefix}/lib")
+    endif()
+  endif()
+
+  find_package(PythonLibs ${_minimum_python_version} MODULE REQUIRED)
+
+  unset(_python_config_prefix)
+  unset(_python_config_result)
+  unset(_python_minimum_version)
 endmacro()
 
 #------------------------------------------------------------------------------

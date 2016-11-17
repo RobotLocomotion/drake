@@ -159,8 +159,6 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_C_FLAGS
     CMAKE_CXX_COMPILER
     CMAKE_CXX_FLAGS
-    CMAKE_Fortran_COMPILER
-    CMAKE_Fortran_FLAGS
     CMAKE_EXE_LINKER_FLAGS
     CMAKE_MODULE_LINKER_FLAGS
     CMAKE_SHARED_LINKER_FLAGS
@@ -171,6 +169,36 @@ macro(drake_add_cmake_external PROJECT)
     Java_VERSION_STRING
     CMAKE_JAVA_COMPILE_FLAGS
     LIB_SUFFIX)
+
+  if(_ext_FORTRAN)
+    drake_build_cache_args(_ext_PROPAGATE_CACHE_FORTRAN ${_ext_LIST_SEPARATOR}
+      CMAKE_Fortran_COMPILER
+      CMAKE_Fortran_FLAGS)
+
+    if(_ext_GENERATOR STREQUAL "Ninja")
+      # The Ninja generator does not support Fortran.
+      set(_ext_GENERATOR "Unix Makefiles")
+    endif()
+  else()
+    set(_ext_PROPAGATE_CACHE_FORTRAN)
+  endif()
+
+  if(_ext_MATLAB AND Matlab_FOUND)
+    drake_build_cache_args(_ext_PROPAGATE_CACHE_MATLAB ${_ext_LIST_SEPARATOR}
+      Matlab_ROOT_DIR)
+  else()
+    set(_ext_PROPAGATE_CACHE_MATLAB)
+  endif()
+
+  if(_ext_PYTHON)
+    drake_build_cache_args(_ext_PROPAGATE_CACHE_PYTHON ${_ext_LIST_SEPARATOR}
+      PYTHON_EXECUTABLE
+      PYTHON_INCLUDE_DIRS
+      PYTHON_LIBRARIES
+      PYTHON_VERSION_STRING)
+  else()
+    set(_ext_PROPAGATE_CACHE_PYTHON)
+  endif()
 
   # Set up the external project build
   ExternalProject_Add(${PROJECT}
@@ -190,6 +218,9 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_ARGS
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
+      ${_ext_PROPAGATE_CACHE_FORTRAN}
+      ${_ext_PROPAGATE_CACHE_MATLAB}
+      ${_ext_PROPAGATE_CACHE_PYTHON}
       ${_ext_CMAKE_ARGS})
 
   if(_ext_TEST)
@@ -207,16 +238,23 @@ macro(drake_add_autotools_external PROJECT)
     set(_ext_BINARY_DIR ${PROJECT_BINARY_DIR}/externals/${PROJECT})
   endif()
 
+  if(_ext_FORTRAN)
+    set(_ext_FORTRAN_ENV
+      F77=${CMAKE_Fortran_COMPILER}
+      FC=${CMAKE_Fortran_COMPILER}
+      FFLAGS=${CMAKE_Fortran_FLAGS})
+  else()
+    set(_ext_FORTRAN_ENV)
+  endif()
+
   set(_env_command
     ${CMAKE_COMMAND} -E env
     CC=${CMAKE_C_COMPILER}
     CFLAGS=${CMAKE_C_FLAGS}
     CXX=${CMAKE_CXX_COMPILER}
     CXXFLAGS=${CMAKE_CXX_FLAGS}
-    F77=${CMAKE_Fortran_COMPILER}
-    FC=${CMAKE_Fortran_COMPILER}
-    FFLAGS=${CMAKE_Fortran_FLAGS}
     LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+    ${_ext_FORTRAN_ENV}
     ${_ext_AUTOTOOLS_ENV})
 
   if(NOT DEFINED _ext_CONFIGURE_COMMAND)
@@ -303,6 +341,9 @@ endmacro()
 #   AUTOTOOLS - External uses Autotools
 #   ALWAYS    - External is always built
 #   TEST      - External's tests should be included in the superbuild's tests
+#   FORTRAN   - External uses Fortran
+#   MATLAB    - External uses MATLAB
+#   PYTHON    - External uses Python
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -351,7 +392,7 @@ function(drake_add_external PROJECT)
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
-  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST)
+  set(_ext_flags LOCAL PUBLIC CMAKE AUTOTOOLS ALWAYS TEST FORTRAN MATLAB PYTHON)
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
