@@ -267,6 +267,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   right_hand_side -= ComputeContactForce(kinsol);
 
+  // Derivatives will be stored here temporarily before output.
+  VectorX<T> xdot(get_num_states());
+
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
@@ -285,20 +288,21 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     H_and_neg_JT.conservativeResize(Eigen::NoChange,
                                     H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
-  }
 
-  // Adds [H,-J^T] * [vdot;f] = -C.
-  prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
+    // Adds [H,-J^T] * [vdot;f] = -C.
+    prog.AddLinearEqualityConstraint(H_and_neg_JT, -right_hand_side);
 
-  prog.Solve();
+    prog.Solve();
 
-  VectorX<T> xdot(get_num_states());
-  xdot << kinsol.transformQDotMappingToVelocityMapping(
-              MatrixX<T>::Identity(nq, nq)) *
-              v,
+    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()),
       vdot.value();
-
-  derivatives->SetFromVector(xdot);
+  } else {
+    // No bilateral constraints. Solve (essentially) F=MA for A.
+    Eigen::LLT<MatrixX<T>> llt(H_and_neg_JT);
+    DRAKE_DEMAND(llt.info() == Eigen::Success);
+    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()),
+      llt.solve(-right_hand_side);
+  }
 }
 
 template <typename T>
