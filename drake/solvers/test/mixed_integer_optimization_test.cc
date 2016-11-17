@@ -36,12 +36,13 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram1) {
     prog.AddLinearConstraint(a1, -std::numeric_limits<double>::infinity(), 4);
     Eigen::RowVector2d a2(1, 1);
     prog.AddLinearConstraint(a2, 1, std::numeric_limits<double>::infinity(),
-                             {x(0), x(1)});
+                             {x.head<2>()});
 
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 0, 1);
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                 MatrixCompareType::absolute));
   }
 }
@@ -57,7 +58,7 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
   GetMixedIntegerLinearProgramSolvers(&solvers);
   for (const auto& solver : solvers) {
     MathematicalProgram prog;
-    auto x = prog.AddBinaryVariables(3, "x");
+    auto x = prog.AddBinaryVariables<3>("x");
     Eigen::RowVector3d c(2, 1, -2);
     prog.AddLinearCost(c);
     Eigen::RowVector3d a1(0.7, 0.5, 1);
@@ -66,7 +67,8 @@ GTEST_TEST(TestMixedIntegerOptimization, TestMixedIntegerLinearProgram2) {
     RunSolver(&prog, *solver);
 
     Eigen::Vector3d x_expected(1, 1, 1);
-    EXPECT_TRUE(CompareMatrices(x.value(), x_expected, 1E-6,
+    const auto& x_value = DecisionVariableMatrixToDoubleMatrix(x);
+    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                 MatrixCompareType::absolute));
   }
 }

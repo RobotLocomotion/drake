@@ -533,6 +533,67 @@ class MathematicalProgram {
    * and/or constraints to have any effect during optimization.
    * Callers can also set the initial guess of the decision variables through
    * SetInitialGuess() or SetInitialGuessForAllVariables().
+   * @tparam rows  The number of rows in the new variables.
+   * @tparam cols  The number of columns in the new variables.
+   * @param names An array of strings containing the name for each variable.
+   * @return The DecisionVariableMatrix of size rows x cols, containing the new
+   * vars (not all the vars stored).
+   *
+   * Example:
+   * @code{.cc}
+   * MathematicalProgram prog;
+   * std::array<std::string, 6> names = {"b1", "b2", "b3", "b4", "b5", "b6"};
+   * auto b = prog.AddBinaryVariables<2, 3>(names);
+   * @endcode
+   * This adds a 2 x 3 matrix decision variables into the program.
+   *
+   * The name of the variable is only used for the user for understand.
+   */
+  template<Eigen::Index rows, Eigen::Index cols>
+  DecisionVariableMatrix<rows, cols> AddBinaryVariables(
+      const std::array<std::string, rows * cols>& names) {
+    required_capabilities_ |= kBinaryVariable;
+
+    return AddVariables<rows, cols>(DecisionVariableScalar::VarType::BINARY,
+                        names);
+  }
+
+  /**
+   * Adds vector of binary variables into the optimization program.
+   * @tparam rows The number of rows in the newly added binary variables.
+   * @param names An array of strings containing the name of each variable.
+   * @return A vector containing the newly added variables.
+   */
+  template<Eigen::Index rows>
+  DecisionVariableVector<rows> AddBinaryVariables(const std::array<std::string, rows>& names) {
+    return AddBinaryVariables<rows, 1>(names);
+  }
+
+  /**
+   * Adds vector of binary variables into the optimization program.
+   * @tparam rows The number of rows in the newly added binary variables.
+   * @param name Each newly added binary variable will share the same name. The
+   * default name is "b".
+   * @return A vector containing the newly added variables.
+   */
+  template<Eigen::Index rows>
+  DecisionVariableVector<rows> AddBinaryVariables(const std::string& name = "b") {
+    std::array<std::string, rows> names;
+    for (int i = 0; i < rows; ++i) {
+      names[i] = name;
+    }
+    return AddBinaryVariables<rows, 1>(names);
+  }
+  
+  /// Add binary variables to this MathematicalProgram.
+  /**
+   * Add binary variables, appending them to an internal vector of any
+   * existing vars.
+   * The new variables are initialized to zero.
+   * Callers are expected to add costs
+   * and/or constraints to have any effect during optimization.
+   * Callers can also set the initial guess of the decision variables through
+   * SetInitialGuess() or SetInitialGuessForAllVariables().
    * @param rows  The number of rows in the new variables.
    * @param cols  The number of columns in the new variables.
    * @param names A vector of strings containing the name for each variable.
