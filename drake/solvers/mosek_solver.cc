@@ -79,8 +79,6 @@ MSKrescodee AddLinearConstraintsFromBindings(
           ++A_col_idx;
         }
       }
-      for (int j = 0; j < A.cols(); ++j) {
-      }
       rescode = MSK_putarow(*task, constraint_idx + i, A_nonzero_val.size(),
                             A_nonzero_col_idx.data(), A_nonzero_val.data());
       if (rescode != MSK_RES_OK) {
@@ -304,7 +302,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {
           linear_term_triplets.push_back(
-              Eigen::Triplet<double>(var(i).index(), 0, c(var_count)));
+              Eigen::Triplet<double>(var(i, 0).index(), 0, c(var_count)));
         }
         var_count++;
       }
