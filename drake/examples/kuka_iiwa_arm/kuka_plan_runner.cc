@@ -90,21 +90,8 @@ class RobotPlanRunner {
 
         iiwa_command.utime = iiwa_status_.utime;
 
-        // This is totally arbitrary.  There's no good reason to
-        // implement this as a maximum delta to submit per tick.  What
-        // we actually need is something like a proper
-        // planner/interpolater which spreads the motion out over the
-        // entire duration from current_t to next_t, and commands the
-        // next position taking into account the velocity of the joints
-        // and the distance remaining.
-        const double max_joint_delta = 0.1;
         for (int joint = 0; joint < kNumJoints; joint++) {
-          double joint_delta =
-              desired_next(joint) - iiwa_status_.joint_position_measured[joint];
-          joint_delta = std::max(-max_joint_delta,
-                                 std::min(max_joint_delta, joint_delta));
-          iiwa_command.joint_position[joint] =
-              iiwa_status_.joint_position_measured[joint] + joint_delta;
+          iiwa_command.joint_position[joint] = desired_next(joint);
         }
 
         lcm_.publish(kLcmCommandChannel, &iiwa_command);
