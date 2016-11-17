@@ -57,7 +57,8 @@ void SingleLaneEgoAndAgent<T>::SetDefaultState(
   agent_car_->SetDefaultState(context_agent);
 }
 
-// TODO(jadecastro): Introduce symbolic::Expression scalar type.
+// These instantiations must match the API documentation in
+// single_lane_ego_and_agent.h.
 template class SingleLaneEgoAndAgent<double>;
 template class SingleLaneEgoAndAgent<AutoDiffXd>;
 template class SingleLaneEgoAndAgent<symbolic::Expression>;

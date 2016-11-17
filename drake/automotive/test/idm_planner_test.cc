@@ -23,7 +23,7 @@ class IdmPlannerTest : public ::testing::Test {
   double get_v_0() const { return v_0_; }
 
   void SetInputValue(const std::vector<double>& state) {
-    unsigned int state_size =
+    int state_size =
         dut_->get_ego_port().get_size() + dut_->get_ego_port().get_size();
     DRAKE_DEMAND(state_size == state.size());
     // Get the state values.
