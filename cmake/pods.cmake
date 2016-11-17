@@ -27,7 +27,7 @@
 #
 # Install a (list) of executables to bin/
 function(pods_install_executables)
-    install(TARGETS ${ARGV} RUNTIME DESTINATION bin)
+    install(TARGETS ${ARGV} RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}")
 endfunction()
 
 
@@ -36,7 +36,7 @@ endfunction()
 # Install a (list) of libraries to lib/
 function(pods_install_libraries)
     install(TARGETS ${ARGV}
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
       LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
       ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}")
 endfunction()
@@ -223,7 +223,7 @@ macro(pods_config_search_paths)
 
       # set where files should be installed to
       set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
-      set(EXECUTABLE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
+      set(EXECUTABLE_INSTALL_PATH "${DRAKE_RUNTIME_DIR}")
       set(INCLUDE_INSTALL_PATH "${DRAKE_INCLUDE_DIR}")
 
       # add build/lib/pkgconfig to the pkg-config search path
