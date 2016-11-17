@@ -331,8 +331,14 @@ drake_add_external(signalscope PUBLIC
 drake_add_example(LittleDog OFF
   "planning and control for a small quadruped robot")
 
-drake_add_ros_package(hsrb_description OFF
+# END examples
+###############################################################################
+
+###############################################################################
+# BEGIN ROS packages
+
+drake_add_ros_package(hsrb_description ON
   "the ROS package containing a model of Toyota's Human Support Robot (HSR)")
 
-# END examples
+# END ROS packages
 ###############################################################################
