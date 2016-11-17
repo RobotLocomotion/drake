@@ -303,6 +303,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()),
       llt.solve(-right_hand_side);
   }
+
+  derivatives->SetFromVector(xdot);
 }
 
 template <typename T>
