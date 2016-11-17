@@ -7,10 +7,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/collision/element.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/multibody/collision/element.h"
 
 using std::make_unique;
 using std::move;
@@ -232,7 +232,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // and simply update them then solve on each function eval.
   // How to place something like this in the context?
   drake::solvers::MathematicalProgram prog;
-  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
+  const drake::solvers::DecisionVariableVectorX& vdot =
+      prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree_->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -293,10 +294,17 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   prog.Solve();
 
   VectorX<T> xdot(get_num_states());
+
+  // TODO(hongkai.dai): I should use a templatized vdot_value, with template
+  // parameter T. Actually I am not sure how to convert a DecisionVariableScalar
+  // to other scalar types, like autodiffscalar. I should discuss with
+  // reviewers.
+  const Eigen::VectorXd& vdot_value =
+      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vdot);
   xdot << kinsol.transformQDotMappingToVelocityMapping(
               MatrixX<T>::Identity(nq, nq)) *
               v,
-      vdot.value();
+      vdot_value;
 
   derivatives->SetFromVector(xdot);
 }
