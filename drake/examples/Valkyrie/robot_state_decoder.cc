@@ -1,9 +1,9 @@
 #include "drake/examples/Valkyrie/robot_state_decoder.h"
 
-#include "lcmtypes/bot_core/robot_state_t.hpp"
-
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
 #include "drake/util/lcmUtil.h"
+
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 
 namespace drake {
 namespace systems {
@@ -37,6 +37,7 @@ RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
       joint_name_to_body_(CreateJointNameToBodyMap(tree)) {
   set_name("RobotStateDecoder");
 }
+
 void RobotStateDecoder::EvalOutput(const Context<double>& context,
                                    SystemOutput<double>* output) const {
   // Input: robot_state_t message.
@@ -48,9 +49,13 @@ void RobotStateDecoder::EvalOutput(const Context<double>& context,
   auto& kinematics_cache = output->GetMutableData(kinematics_cache_port_index_)
                                ->GetMutableValue<KinematicsCache<double>>();
 
-  VectorXd q(tree_.get_num_positions());  // TODO(tkoolen): don't allocate anew.
-  VectorXd v(
-      tree_.get_num_velocities());  // TODO(tkoolen): don't allocate anew.
+  // TODO(tkoolen): don't allocate anew.
+  VectorXd q(tree_.get_num_positions());
+  VectorXd v(tree_.get_num_velocities());
+
+  // Uninitialized, have not got a valid lcm message yet.
+  // TODO(siyuan.feng): Need better way to check for this.
+  bool valid_lcm_msg = message.joint_name.size() != 0;
 
   // Floating joint.
   if (floating_body_) {
@@ -64,52 +69,63 @@ void RobotStateDecoder::EvalOutput(const Context<double>& context,
     // TODO(tkoolen): kind of a crude check:
     if (floating_joint.get_num_positions() == kRpySize + kSpaceDimension) {
       // RPY-parameterized floating joint.
-
-      // Translation.
-      q.segment<kSpaceDimension>(position_start) =
+      if (!valid_lcm_msg) {
+        q.setZero();
+        v.setZero();
+      } else {
+        // Translation.
+        q.segment<kSpaceDimension>(position_start) =
           floating_body_to_world.translation();
 
-      // Orientation.
-      auto rpy = rotmat2rpy(floating_body_to_world.linear());
-      q.segment<kRpySize>(position_start + kSpaceDimension) = rpy;
+        // Orientation.
+        auto rpy = rotmat2rpy(floating_body_to_world.linear());
+        q.segment<kRpySize>(position_start + kSpaceDimension) = rpy;
 
-      // Translational velocity.
-      auto translationdot =
+        // Translational velocity.
+        auto translationdot =
           floating_body_twist_in_in_world_aligned_body.tail<kSpaceDimension>();
-      v.segment<kSpaceDimension>(velocity_start) = translationdot;
+        v.segment<kSpaceDimension>(velocity_start) = translationdot;
 
-      // Rotational velocity.
-      Matrix<double, kRpySize, kSpaceDimension> phi;
-      typename Gradient<decltype(phi), Dynamic>::type* dphi = nullptr;
-      typename Gradient<decltype(phi), Dynamic, 2>::type* ddphi = nullptr;
-      angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
-      auto angular_velocity_world =
+        // Rotational velocity.
+        Matrix<double, kRpySize, kSpaceDimension> phi;
+        typename Gradient<decltype(phi), Dynamic>::type* dphi = nullptr;
+        typename Gradient<decltype(phi), Dynamic, 2>::type* ddphi = nullptr;
+        angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
+        auto angular_velocity_world =
           floating_body_twist_in_in_world_aligned_body.head<kSpaceDimension>();
-      auto rpydot = (phi * angular_velocity_world).eval();
-      v.segment<kRpySize>(velocity_start + kSpaceDimension) = rpydot;
+        auto rpydot = (phi * angular_velocity_world).eval();
+        v.segment<kRpySize>(velocity_start + kSpaceDimension) = rpydot;
+      }
     } else if (floating_joint.get_num_positions() ==
                kQuaternionSize + kSpaceDimension) {
       // Quaternion-parameterized floating joint.
-
-      // Translation.
-      q.segment<kSpaceDimension>(position_start) =
+      if (!valid_lcm_msg) {
+        q.setZero();
+        v.setZero();
+        // Set quaternion
+        q.segment<kQuaternionSize>(position_start + kSpaceDimension) =
+            rotmat2quat(Matrix3<double>::Identity());
+      } else {
+        // Translation.
+        q.segment<kSpaceDimension>(position_start) =
           floating_body_to_world.translation();
 
-      // Orientation.
-      auto quat = rotmat2quat(floating_body_to_world.linear());
-      q.segment<kQuaternionSize>(position_start + kSpaceDimension) = quat;
+        // Orientation.
+        auto quat = rotmat2quat(floating_body_to_world.linear());
+        q.segment<kQuaternionSize>(position_start + kSpaceDimension) = quat;
 
-      // Twist.
-      // Transform twist from world-aligned body frame to body frame.
-      Isometry3d world_aligned_body_to_body;
-      world_aligned_body_to_body.linear() =
+        // Twist.
+        // Transform twist from world-aligned body frame to body frame.
+        Isometry3d world_aligned_body_to_body;
+        world_aligned_body_to_body.linear() =
           floating_body_to_world.linear().transpose();
-      world_aligned_body_to_body.translation().setZero();
-      world_aligned_body_to_body.makeAffine();
-      TwistVector<double> floating_body_twist_in_body =
+        world_aligned_body_to_body.translation().setZero();
+        world_aligned_body_to_body.makeAffine();
+        TwistVector<double> floating_body_twist_in_body =
           transformSpatialMotion(world_aligned_body_to_body,
-                                 floating_body_twist_in_in_world_aligned_body);
-      v.segment<kTwistSize>(velocity_start) = floating_body_twist_in_body;
+              floating_body_twist_in_in_world_aligned_body);
+        v.segment<kTwistSize>(velocity_start) = floating_body_twist_in_body;
+      }
     } else {
       DRAKE_ABORT();
     }
@@ -126,6 +142,19 @@ void RobotStateDecoder::EvalOutput(const Context<double>& context,
       q[body.get_position_start_index()] = position;
       v[body.get_velocity_start_index()] = velocity;
     }
+  }
+
+  if (!q.allFinite()) {
+    for (int i = 0; i < tree_.get_num_positions(); i++) {
+      std::cout << tree_.get_position_name(i) << ": " << q[i] << std::endl;
+    }
+    throw std::runtime_error("invalid q");
+  }
+  if (!v.allFinite()) {
+    for (int i = 0; i < tree_.get_num_velocities(); i++) {
+      std::cout << tree_.get_velocity_name(i) << ": " << v[i] << std::endl;
+    }
+    throw std::runtime_error("invalid v");
   }
 
   kinematics_cache.initialize(q, v);
