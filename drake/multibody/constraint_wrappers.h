@@ -24,7 +24,7 @@ template <typename Scalar>
 class KinematicsCacheHelper {
  public:
   explicit KinematicsCacheHelper(
-      const std::vector<std::unique_ptr<RigidBody>>& bodies);
+      const std::vector<std::unique_ptr<RigidBody<Scalar>>>& bodies);
 
   KinematicsCache<Scalar>& UpdateKinematics(
       const Eigen::Ref<const Eigen::VectorXd>& q,

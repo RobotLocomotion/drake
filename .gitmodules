@@ -98,4 +98,4 @@
 	url = https://github.com/RobotLocomotion/lcmtypes.git
 [submodule "ros/hsrb_description"]
 	path = ros/hsrb_description
-	url = git@github.com:ToyotaResearchInstitute/hsrb_description.git
+	url = https://github.com/ToyotaResearchInstitute/hsrb_description.git

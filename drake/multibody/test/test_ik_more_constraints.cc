@@ -28,7 +28,7 @@ namespace {
  */
 std::vector<int> GetJointPositionVectorIndices(
     const RigidBodyTree<double>& tree, const std::string& name) {
-  RigidBody* joint_child_body = tree.FindChildBodyOfJoint(name);
+  RigidBody<double>* joint_child_body = tree.FindChildBodyOfJoint(name);
   int num_positions = joint_child_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
