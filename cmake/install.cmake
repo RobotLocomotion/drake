@@ -12,6 +12,40 @@ set(DRAKE_RUNTIME_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_RUNTIME_DIR}")
 
 
 #------------------------------------------------------------------------------
+# Install a list of header files to the "include" installation directory of the
+# drake project.
+#
+#   drake_install_headers(<files>)
+#
+#   drake_install_headers(FILES <files> [<ARGS>])
+#
+# Arguments:
+#   FILES
+#     List of header file names. File names given as relative paths are
+#     interpreted with respect to the current source directory. Files installed
+#     by this function are given permissions OWNER_READ, OWNER_WRITE, GROUP_READ,
+#     and WORLD_READ.
+#   <ARGS>
+#     Additional arguments to be passed through to install(FILES).
+#------------------------------------------------------------------------------
+function(drake_install_headers)
+  cmake_parse_arguments("" "" "" "FILES" ${ARGN})
+
+  if(NOT _FILES)
+    set(_FILES ${_UNPARSED_ARGUMENTS})
+    set(_UNPARSED_ARGUMENTS)
+  endif()
+
+  file(RELATIVE_PATH _relative_path
+    "${PROJECT_SOURCE_DIR}/"
+    "${CMAKE_CURRENT_SOURCE_DIR}")
+
+  install(FILES ${_FILES}
+    DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${_relative_path}")
+endfunction()
+
+
+#------------------------------------------------------------------------------
 # Generate and install a pkg-config .pc file for a package to the "pkgconfig"
 # subdirectory of the library installation directory ("lib", "lib32", or
 # "lib64") of the drake project.
