@@ -49,7 +49,9 @@ pods_install_libraries(drakeMath)
 drake_install_pkg_config_file(drake-math
   TARGET drakeMath
   LIBS -ldrakeMath
-  REQUIRES drake-common)
+  REQUIRES
+    drake-common
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

@@ -11,4 +11,5 @@ drake_install_pkg_config_file(drake-shapes
   TARGET drakeShapes
   LIBS
     -ldrakeShapes
-    -lspruce)
+    -lspruce
+  REQUIRES eigen3)

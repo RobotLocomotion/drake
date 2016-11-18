@@ -10,7 +10,9 @@ drake_install_headers(PiecewiseFunction.h PiecewisePolynomial.h trajectory.h
 drake_install_pkg_config_file(drake-trajectories
   TARGET drakeTrajectories
   LIBS -ldrakeTrajectories
-  REQUIRES drake-common)
+  REQUIRES
+    drake-common
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
