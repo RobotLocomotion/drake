@@ -47,8 +47,9 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   // Call it as a generic System (by passing in a Context).
   // Should get the same result, but as an affine system.
   auto context = sys.CreateDefaultContext();
-  context->FixInputPort(0,Eigen::Matrix<double,1,1>::Zero());
-  context->get_mutable_continuous_state()->SetFromVector(Eigen::Vector2d::Zero());
+  context->FixInputPort(0, Eigen::Matrix<double, 1, 1>::Zero());
+  context->get_mutable_continuous_state()->SetFromVector(
+      Eigen::Vector2d::Zero());
   std::unique_ptr<systems::AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R);
 
