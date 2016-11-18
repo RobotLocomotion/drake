@@ -241,8 +241,9 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
-  # Set default lib directory name suffix.
-  set(LIB_SUFFIX "" CACHE STRING "lib directory name suffix")
+  # Set default lib directory name suffix
+  set(LIB_SUFFIX "" CACHE STRING
+    "Suffix of library install directory, e.g. '64'")
   mark_as_advanced(LIB_SUFFIX)
 
   drake_setup_compiler()
@@ -251,12 +252,15 @@ macro(drake_setup_platform)
   drake_setup_java()
   drake_setup_python()
 
-  # Set default build
+  # Set default build type
   if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
   endif()
+
+  # Build shared libraries by default
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endmacro()
 
 #------------------------------------------------------------------------------

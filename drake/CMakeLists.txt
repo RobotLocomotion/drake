@@ -28,7 +28,6 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
 endif()
 
 # options
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
