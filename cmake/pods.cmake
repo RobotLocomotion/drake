@@ -23,14 +23,6 @@
 # Distributed with pods version: 12.11.14
 
 
-# pods_install_executables(<executable1> ...)
-#
-# Install a (list) of executables to bin/
-function(pods_install_executables)
-    install(TARGETS ${ARGV} RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}")
-endfunction()
-
-
 # pods_install_libraries(<library1> ...)
 #
 # Install a (list) of libraries to lib/
@@ -215,7 +207,6 @@ macro(pods_config_search_paths)
     if(NOT DEFINED __pods_setup)
       # set where files should be output locally
       set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-      set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
       foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
         string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG)
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIBRARY_OUTPUT_PATH})
@@ -223,8 +214,6 @@ macro(pods_config_search_paths)
 
       # set where files should be installed to
       set(LIBRARY_INSTALL_PATH "${DRAKE_LIBRARY_DIR}")
-      set(EXECUTABLE_INSTALL_PATH "${DRAKE_RUNTIME_DIR}")
-      set(INCLUDE_INSTALL_PATH "${DRAKE_INCLUDE_DIR}")
 
       # add build/lib/pkgconfig to the pkg-config search path
       set(ENV{PKG_CONFIG_PATH} "${DRAKE_PKGCONFIG_DIR}:$ENV{PKG_CONFIG_PATH}")
