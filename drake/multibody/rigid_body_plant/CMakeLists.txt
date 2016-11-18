@@ -43,7 +43,7 @@ target_link_libraries(drakeRigidBodyPlant
 
 drake_install_headers(
     ${lcm_dependent_header_files}
-    kinematics_results.h rigid_body_plant.h 
+    kinematics_results.h rigid_body_plant.h
     contact_detail.h
     contact_results.h
     contact_info.h
@@ -59,6 +59,7 @@ drake_install_pkg_config_file(drake-rigid-body-plant
     drake-optimization
     drake-rbm
     drake-system-framework
+    eigen3
     ${lcm_dependent_requires})
 
 if(BUILD_TESTING)

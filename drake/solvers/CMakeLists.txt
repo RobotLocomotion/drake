@@ -70,7 +70,9 @@ pods_install_libraries(drakeOptimization)
 drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization
-  REQUIRES ${optimization_requires})
+  REQUIRES
+    eigen3
+    ${optimization_requires})
 
 if(ipopt_FOUND)
   pods_use_pkg_config_packages(drakeOptimization ipopt)

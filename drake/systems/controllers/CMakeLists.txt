@@ -7,7 +7,8 @@ pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 drake_install_pkg_config_file(drake-control-util
   TARGET drakeControlUtil
-  LIBS -ldrakeControlUtil)
+  LIBS -ldrakeControlUtil
+  REQUIRES eigen3)
 
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
@@ -25,6 +26,7 @@ if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
       drake-side
       drake-trajectories
       drake-yaml-util
+      eigen3
       lcm)
 
   pods_find_pkg_config(bot2-lcmgl-client)
@@ -41,7 +43,8 @@ pods_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
 drake_install_pkg_config_file(drake-zmp-util
   TARGET drakeZMPUtil
-  LIBS -ldrakeZMPUtil)
+  LIBS -ldrakeZMPUtil
+  REQUIRES eigen3)
 
 # System 2 controllers
 set(system2_sources

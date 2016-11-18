@@ -22,5 +22,6 @@ if(lcm_FOUND)
       drake-side
       drake-spline-generation
       drake-zmp-util
+      eigen3
       lcm)
 endif()

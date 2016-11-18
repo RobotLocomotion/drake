@@ -24,5 +24,7 @@ drake_install_headers(
 drake_install_pkg_config_file(drake-joints
   TARGET drakeJoints
   LIBS -ldrakeJoints
-  REQUIRES drake-geometry-util)
+  REQUIRES
+    drake-geometry-util
+    eigen3)
 add_subdirectory(test)

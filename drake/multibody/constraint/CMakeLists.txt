@@ -7,7 +7,8 @@ drake_install_pkg_config_file(drake-rigid-body-constraint
   LIBS -ldrakeRigidBodyConstraint
   REQUIRES
     drake-geometry-util
-    drake-rbm)
+    drake-rbm
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

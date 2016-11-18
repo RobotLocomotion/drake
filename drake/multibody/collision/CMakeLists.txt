@@ -22,7 +22,9 @@ drake_install_headers(drake_collision.h point_pair.h element.h model.h)
 drake_install_pkg_config_file(drake-collision
   TARGET drakeCollision
   LIBS -ldrakeCollision
-  REQUIRES ${bullet_dependent_requires})
+  REQUIRES
+    ${bullet_dependent_requires}
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

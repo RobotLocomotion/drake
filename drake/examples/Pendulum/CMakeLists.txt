@@ -13,7 +13,8 @@ if(lcm_FOUND)
     LIBS -ldrakePendulumPlant
     REQUIRES
       drake-dynamic-constraint
-      drake-trajectory-optimization)
+      drake-trajectory-optimization
+      eigen3)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics

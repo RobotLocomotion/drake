@@ -10,7 +10,8 @@ drake_install_pkg_config_file(drake-dynamic-constraint
   LIBS -ldrakeDynamicConstraint
   REQUIRES
     drake-common
-    drake-system-framework)
+    drake-system-framework
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

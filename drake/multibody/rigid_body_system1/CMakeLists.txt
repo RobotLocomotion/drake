@@ -11,7 +11,8 @@ drake_install_pkg_config_file(drake-rbsystem
     drake-ik
     drake-optimization
     drake-rbm
-    drake-rigid-body-constraint)
+    drake-rigid-body-constraint
+    eigen3)
 
 if (lcm_FOUND)
   add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)

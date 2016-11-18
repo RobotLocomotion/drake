@@ -6,7 +6,8 @@ drake_install_headers(
         )
 drake_install_pkg_config_file(drake-atlas-util
   TARGET drakeAtlasUtil
-  LIBS -ldrakeAtlasUtil)
+  LIBS -ldrakeAtlasUtil
+  REQUIRES eigen3)
 
 if (lcm_FOUND)
   add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)

@@ -13,7 +13,8 @@ drake_install_pkg_config_file(drake-trajectory-optimization
   LIBS -ldrakeTrajectoryOptimization
   REQUIRES
     drake-optimization
-    drake-trajectories)
+    drake-trajectories
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
