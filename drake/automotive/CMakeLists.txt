@@ -9,12 +9,9 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   curve2.cc
   gen/driving_command.cc
   gen/euler_floating_joint_state.cc
-  gen/idm_with_trajectory_agent_parameters.cc
-  gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
   idm_planner.cc
-  idm_with_trajectory_agent.cc
   linear_car.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
@@ -30,7 +27,6 @@ drake_install_headers(
   create_trajectory_params.h
   curve2.h
   idm_planner.h
-  idm_with_trajectory_agent.h
   linear_car.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
@@ -56,7 +52,6 @@ if(lcm_FOUND)
     automotive_simulator.cc
     gen/driving_command_translator.cc
     gen/euler_floating_joint_state_translator.cc
-    gen/idm_with_trajectory_agent_state_translator.cc
     gen/simple_car_config_translator.cc
     gen/simple_car_state_translator.cc
     )
