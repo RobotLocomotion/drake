@@ -182,6 +182,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   static T JointLimitForce(const DrakeJoint& joint,
                            const T& position, const T& velocity);
 
+  /// Returns descriptor of state output port.
+  const SystemPortDescriptor<T>& state_output_port() const {
+    return System<T>::get_output_port(state_output_port_id_);
+  }
+
+  /// Returns descriptor of KinematicsResults output port.
+  const SystemPortDescriptor<T>& kinematics_results_output_port() const {
+    return System<T>::get_output_port(kinematics_output_port_id_);
+  }
+
  protected:
   // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
