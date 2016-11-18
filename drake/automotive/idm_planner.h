@@ -46,6 +46,8 @@ class IdmPlanner : public systems::LeafSystem<T> {
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
+
   // Disable copy and assignment.
   IdmPlanner(const IdmPlanner<T>&) = delete;
   IdmPlanner& operator=(const IdmPlanner<T>&) = delete;

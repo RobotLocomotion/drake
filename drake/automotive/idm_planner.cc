@@ -14,6 +14,7 @@ namespace automotive {
 
 template <typename T>
 IdmPlanner<T>::IdmPlanner(const T& v_ref) : v_ref_(v_ref) {
+  // TODO(jadecastro): Remove v_ref from the constructor.
   // The reference velocity must be strictly positive.
   DRAKE_ASSERT(v_ref > 0);
 
@@ -59,16 +60,13 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
       output->GetMutableVectorData(0);
   DRAKE_ASSERT(output_vector != nullptr);
 
-  // TODO(jadecastro): Bake in David's new parameter definition API and
-  // remove `IdmWithTrajectoryAgent`.
-  IdmPlannerParameters<T> params;
-  params.set_a(T(1.0));             // max acceleration.
-  params.set_b(T(3.0));             // comfortable braking deceleration.
-  params.set_s_0(T(1.0));           // minimum desired net distance.
-  params.set_time_headway(T(0.1));  // desired time headway to vehicle in front.
-  params.set_delta(T(4.0));         // recommended choice of free-road exponent.
-  params.set_l_a(T(4.5));           // length of leading car.
+  // Obtain the parameters.
+  const int kParamsIndex = 0;
+  const IdmPlannerParameters<T>& params =
+      this->template GetNumericParameter<IdmPlannerParameters>(context,
+                                                               kParamsIndex);
 
+  const T& v_ref = params.v_ref();
   const T& a = params.a();
   const T& b = params.b();
   const T& s_0 = params.s_0();
@@ -88,11 +86,26 @@ void IdmPlanner<T>::EvalOutput(const systems::Context<T>& context,
   DRAKE_DEMAND(x_agent > (l_a + x_ego));
 
   output_vector->SetAtIndex(
-      0, a * (1.0 - pow(v_ego / v_ref_, delta) -
+      0, a * (1.0 - pow(v_ego / v_ref, delta) -
               pow((s_0 + v_ego * time_headway +
                    v_ego * (v_ego - v_agent) / (2 * sqrt(a * b))) /
                       (x_agent - x_ego - l_a),
                   2.0)));
+}
+
+template <typename T>
+std::unique_ptr<systems::Parameters<T>> IdmPlanner<T>::AllocateParameters()
+    const {
+  // Default values from https://en.wikipedia.org/wiki/Intelligent_driver_model.
+  auto params = std::make_unique<IdmPlannerParameters<T>>();
+  params->set_v_ref(v_ref_);         // desired velocity in free traffic.
+  params->set_a(T(1.0));             // max acceleration.
+  params->set_b(T(3.0));             // comfortable braking deceleration.
+  params->set_s_0(T(1.0));           // minimum desired net distance.
+  params->set_time_headway(T(0.1));  // desired time headway to lead vehicle.
+  params->set_delta(T(4.0));  // recommended choice of free-road exponent.
+  params->set_l_a(T(4.5));    // length of leading car.
+  return std::make_unique<systems::Parameters<T>>(std::move(params));
 }
 
 // These instantiations must match the API documentation in

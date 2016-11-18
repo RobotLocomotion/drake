@@ -7,6 +7,7 @@ namespace drake {
 namespace automotive {
 
 const int IdmPlannerParametersIndices::kNumCoordinates;
+const int IdmPlannerParametersIndices::kVRef;
 const int IdmPlannerParametersIndices::kA;
 const int IdmPlannerParametersIndices::kB;
 const int IdmPlannerParametersIndices::kS0;
