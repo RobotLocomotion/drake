@@ -62,7 +62,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 /// Based on the Matrix Sign Function method outlined in this paper:
 /// http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf
 ///
-const Eigen::Solve<Eigen::JacobiSVD<Eigen::MatrixXd>, Eigen::MatrixXd>
+const Eigen::MatrixXd
 ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::MatrixXd>& B,
                                    const Eigen::Ref<const Eigen::MatrixXd>& Q,

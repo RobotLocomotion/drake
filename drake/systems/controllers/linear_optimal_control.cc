@@ -61,7 +61,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       u0 + K * x0);                          // y0
 }
 
-const Eigen::Solve<Eigen::JacobiSVD<Eigen::MatrixXd>, Eigen::MatrixXd>
+const Eigen::MatrixXd
 ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::MatrixXd>& B,
                                    const Eigen::Ref<const Eigen::MatrixXd>& Q,

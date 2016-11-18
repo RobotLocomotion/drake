@@ -36,7 +36,7 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
                               Eigen::Matrix<double, 0, 0>::Zero(), tol,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(linear_lqr->B(),
-                              Eigen::Matrix<double, 0, 1>::Zero(), tol,
+                              Eigen::Matrix<double, 0, 2>::Zero(), tol,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(linear_lqr->C(),
                               Eigen::Matrix<double, 1, 0>::Zero(), tol,
@@ -47,12 +47,14 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   // Call it as a generic System (by passing in a Context).
   // Should get the same result, but as an affine system.
   auto context = sys.CreateDefaultContext();
+  context->FixInputPort(0,Eigen::Matrix<double,1,1>::Zero());
+  context->get_mutable_continuous_state()->SetFromVector(Eigen::Vector2d::Zero());
   std::unique_ptr<systems::AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R);
 
   EXPECT_TRUE(CompareMatrices(lqr->A(), Eigen::Matrix<double, 0, 0>::Zero(),
                               tol, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::Matrix<double, 0, 1>::Zero(),
+  EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::Matrix<double, 0, 2>::Zero(),
                               tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->xDot0(), Eigen::Matrix<double, 0, 1>::Zero(),
                               tol, MatrixCompareType::absolute));
