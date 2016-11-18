@@ -27,3 +27,6 @@ target_link_libraries(contact_detail_test drakeRigidBodyPlant)
 
 drake_add_cc_test(contact_info_test)
 target_link_libraries(contact_info_test drakeRigidBodyPlant)
+
+drake_add_cc_test(kinematics_results_test)
+target_link_libraries(kinematics_results_test drakeRigidBodyPlant)
