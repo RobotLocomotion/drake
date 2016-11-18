@@ -27,6 +27,7 @@ function(drake_option NAME DEFAULT_STATE)
   cmake_parse_arguments(_opt "" "DEPENDS" "" ${_args})
 
   # Join description snippets.
+  set(_description)
   foreach(_snippet IN LISTS _opt_UNPARSED_ARGUMENTS)
     set(_description "${_description} ${_snippet}")
   endforeach()
@@ -97,7 +98,9 @@ function(drake_system_dependency NAME)
   endif()
 
   # Fix up arguments
-  if(NOT _sd_OPTIONAL)
+  if(_sd_OPTIONAL)
+    set(_else)
+  else()
     set(_else "(if OFF, the internal version will be used)")
   endif()
   if(DEFINED _sd_DEPENDS)
