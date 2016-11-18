@@ -7,10 +7,10 @@ pods_install_libraries(drakeTrajectories)
 drake_install_headers(PiecewiseFunction.h PiecewisePolynomial.h trajectory.h
   piecewise_polynomial_trajectory.h
   PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h)
-pods_install_pkg_config_file(drake-trajectories
+drake_install_pkg_config_file(drake-trajectories
+  TARGET drakeTrajectories
   LIBS -ldrakeTrajectories
-  REQUIRES
-  VERSION 0.0.3)
+  REQUIRES drake-common)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
