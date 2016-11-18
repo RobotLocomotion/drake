@@ -251,6 +251,9 @@ macro(drake_setup_options)
       "A version of SWIG with MATLAB support")
   endif()
 
+  drake_optional_external(HSRB_DESCRIPTION ON
+    "A ROS package containing a model of Toyota's HSR version B robot.")
+
   # END external projects that are ON by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are only needed when MATLAB is in use

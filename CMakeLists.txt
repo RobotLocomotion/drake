@@ -339,7 +339,7 @@ drake_add_example(LittleDog OFF
 # the Catkin build system and should only be compiled when Drake is installed as
 # a ROS Catkin package. For details on how to do this, see:
 # http://drake.mit.edu/from_source_ros.html.
-drake_add_external(hsrb_description PUBLIC ALWAYS
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros
+drake_add_external(hsrb_description PUBLIC
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
   BUILD_COMMAND :
   INSTALL_COMMAND :)
