@@ -29,8 +29,8 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
       f_ext;
   f_ext.clear();
 
-  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(cache, f_ext,
-      false /* include velocity terms */);
+  Eigen::VectorXd g = rigid_body_tree_.dynamicsBiasTerm(
+      cache, f_ext, false /* include velocity terms */);
 
   // The size of this system's output vector is equal to the number of
   // actuators while the size of `g` is equal to the number of DOFs. Thus, we
@@ -38,6 +38,12 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   // actuators that are used.
   Eigen::VectorXd actuated_g(rigid_body_tree_.get_num_actuators());
   for (int i = 0; i < rigid_body_tree_.get_num_actuators(); ++i) {
+    // TODO(liang.fok) The assertion below enforces that all actuators are
+    // single DOF. Generalize this method to support multi-DOF actuators
+    // once they exist. See #4153.
+    DRAKE_ASSERT(rigid_body_tree_.actuators.at(i)
+                     .body_->getJoint()
+                     .get_num_positions() == 1);
     int index_in_g =
         rigid_body_tree_.actuators.at(i).body_->get_position_start_index();
     actuated_g[i] = g[index_in_g];
