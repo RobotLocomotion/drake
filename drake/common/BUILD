@@ -23,30 +23,40 @@ cc_library(
         "drake_gcc48.h",
         "eigen_stl_types.h",
         "eigen_types.h",
-        "number_traits.h",
     ],
     deps = ["@eigen//:eigen", "@spdlog//:spdlog"],
     linkstatic = 1)
 
-# Drake's ScalarType libraries.
-DEPS = [":common"]
+# Specific traits and operators that are relevant to all ScalarTypes.
+cc_library(
+    name = "cond",
+    hdrs = ["cond.h"],
+    linkstatic = 1)
+
+cc_library(
+    name = "number_traits",
+    hdrs = ["number_traits.h"],
+    linkstatic = 1)
+
+# Drake's specific ScalarType-providing libraries.
 cc_library(
     name = "autodiff",
     hdrs = ["autodiff_overloads.h", "eigen_autodiff_types.h"],
-    deps = DEPS, linkstatic = 1)
+    deps = [":common"],
+    linkstatic = 1)
 
 cc_library(
     name = "functional_form",
     srcs = ["functional_form.cc"],
     hdrs = ["functional_form.h"],
-    deps = DEPS,
+    deps = [":common"],
     linkstatic = 1)
 
 cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = ["polynomial.h", "trig_poly.h"],
-    deps = DEPS + [":autodiff"],
+    deps = [":common", ":autodiff"],
     linkstatic = 1)
 
 cc_library(
@@ -54,7 +64,9 @@ cc_library(
     srcs = [
         "symbolic_environment.cc",
         "symbolic_expression.cc",
+        "symbolic_expression_cell.cc",
         "symbolic_formula.cc",
+        "symbolic_formula_cell.cc",
         "symbolic_variable.cc",
         "symbolic_variables.cc",
     ],
@@ -62,11 +74,13 @@ cc_library(
         "hash.h",
         "symbolic_environment.h",
         "symbolic_expression.h",
+        "symbolic_expression_cell.h",
         "symbolic_formula.h",
+        "symbolic_formula_cell.h",
         "symbolic_variable.h",
         "symbolic_variables.h",
     ],
-    deps = DEPS,
+    deps = [":common", ":cond", ":number_traits"],
     linkstatic = 1)
 
 # Miscellaneous utilities.
@@ -74,27 +88,27 @@ cc_library(
     name = "drake_path",
     hdrs = ["drake_path.h"],
     testonly = 1,
-    deps = DEPS,
+    deps = [":common"],
     linkstatic = 1)
 
 cc_library(
     name = "eigen_matrix_compare",
     hdrs = ["eigen_matrix_compare.h"],
     testonly = 1,
-    deps = DEPS,
+    deps = [":common"],
     linkstatic = 1)
 
 cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
-    deps = DEPS,
+    deps = [":common"],
     linkstatic = 1)
 
 cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
-    deps = DEPS,
+    deps = [":common"],
     linkstatic = 1)
 
 # TODO(jwnimmer-tri) Re-test and get this working.  Approxmate answer:
