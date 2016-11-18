@@ -12,6 +12,37 @@ set(DRAKE_RUNTIME_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_RUNTIME_DIR}")
 
 
 #------------------------------------------------------------------------------
+# Install a list of runtime targets to the "bin" installation directory of the
+# drake project.
+#
+#   drake_install_executables(<targets>)
+#
+#   drake_install_executables(TARGETS <targets> [<ARGS>])
+#
+# Arguments:
+#   TARGETS
+#     List of runtime targets. Files installed by this function are given
+#     permissions OWNER_EXECUTE, OWNER_READ, OWNER_WRITE, GROUP_READ,
+#     GROUP_EXECUTE, WORLD_READ, and WORLD_EXECUTE.
+#   <ARGS>
+#     Additional arguments to be passed through to install(TARGETS).
+
+#------------------------------------------------------------------------------
+function(drake_install_executables)
+  cmake_parse_arguments("" "" "" "TARGETS" ${ARGN})
+
+  if(NOT _TARGETS)
+    set(_TARGETS ${_UNPARSED_ARGUMENTS})
+    set(_UNPARSED_ARGUMENTS)
+  endif()
+
+  install(TARGETS ${_TARGETS}
+    RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
+    ${_UNPARSED_ARGUMENTS})
+endfunction()
+
+
+#------------------------------------------------------------------------------
 # Install a list of header files to the "include" installation directory of the
 # drake project.
 #
