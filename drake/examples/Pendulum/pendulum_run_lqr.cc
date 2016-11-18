@@ -4,6 +4,8 @@
 #include "drake/common/drake_path.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_optimal_control.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -11,8 +13,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 
 namespace drake {
 namespace examples {
@@ -32,15 +32,19 @@ int do_main(int argc, char* argv[]) {
   auto pendulum_context = pendulum->CreateDefaultContext();
   pendulum->set_theta(pendulum_context.get(), M_PI);
   pendulum->set_thetadot(pendulum_context.get(), 0);
-  pendulum_context->SetInputPortToConstantValue(0, Vector1d::Zero());
+  pendulum_context->FixInputPort(0, Vector1d::Zero());
 
+  // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
+  // The factor of 10 is heuristic, but roughly accounts for the unit conversion
+  // between angles and angular velocity (using the time constant, \sqrt{g/l},
+  // squared).
   Eigen::MatrixXd Q(2, 2);
   Q << 10, 0, 0, 1;
   Eigen::MatrixXd R(1, 1);
   R << 1;
 
-  auto controller =
-      builder.AddSystem(LinearQuadraticRegulator(*pendulum, *pendulum_context, Q, R));
+  auto controller = builder.AddSystem(
+      LinearQuadraticRegulator(*pendulum, *pendulum_context, Q, R));
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
   builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
 

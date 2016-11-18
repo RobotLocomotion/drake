@@ -104,7 +104,7 @@ GTEST_TEST(TestLinearize, FromAffine) {
   x0 << 26, 27, 28;
   context->get_mutable_continuous_state_vector()->SetFromVector(x0);
   double u0 = 29;
-  context->SetInputPortToConstantValue(0, Vector1d::Constant(u0));
+  context->FixInputPort(0, Vector1d::Constant(u0));
 
   // This Context is not an equilibrium point.
   EXPECT_THROW(Linearize(system, *context), std::runtime_error);

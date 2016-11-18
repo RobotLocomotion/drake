@@ -141,18 +141,6 @@ class Context {
   /// subcontexts. Asserts if @p index is out of range.
   virtual void SetInputPort(int index, std::unique_ptr<InputPort> port) = 0;
 
-  /// Creates a FreestandingInputPort to hold the constant value, and
-  /// sets the input port (disconnecting whatever input port was previously
-  /// there).
-  BasicVector<T>* SetInputPortToConstantValue(int index,
-                                   const Eigen::Ref<const VectorX<T>>& data) {
-    auto vec = std::make_unique<BasicVector<T>>(data);
-    BasicVector<T>* ptr = vec.get();
-    SetInputPort(index, std::make_unique<systems::FreestandingInputPort>(
-                            std::move(vec)));
-    return ptr;
-  }
-
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
 
@@ -161,6 +149,17 @@ class Context {
   void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
     SetInputPort(index,
                  std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
+
+  /// Connects a FreestandingInputPort with the given @p value at the given
+  /// @p index. Asserts if @p index is out of range.
+  BasicVector<T>* FixInputPort(int index,
+                               const Eigen::Ref<const VectorX<T>>& data) {
+    auto vec = std::make_unique<BasicVector<T>>(data);
+    BasicVector<T>* ptr = vec.get();
+    SetInputPort(index, std::make_unique<systems::FreestandingInputPort>(
+                            std::move(vec)));
+    return ptr;
   }
 
   /// Evaluates and returns the input port identified by @p descriptor,

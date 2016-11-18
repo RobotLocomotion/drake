@@ -60,7 +60,7 @@ class LinearSystem : public AffineSystem<T> {
 /// Note: The inputs in the Context must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
-///   context->SetInputPortToConstantValue(0,default_input);
+///   context->FixInputPort(0,default_input);
 ///
 /// Note: The inputs, states, and outputs of the returned system are NOT the
 /// same as the original system.  Denote x0,u0 as the nominal state and input
