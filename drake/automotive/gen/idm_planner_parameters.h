@@ -8,24 +8,24 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace automotive {
 
 /// Describes the row indices of a IdmPlannerParameters.
-struct DRAKE_EXPORT IdmPlannerParametersIndices {
+struct IdmPlannerParametersIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 6;
+  static const int kNumCoordinates = 7;
 
   // The index of each individual coordinate.
-  static const int kA = 0;
-  static const int kB = 1;
-  static const int kS0 = 2;
-  static const int kTimeHeadway = 3;
-  static const int kDelta = 4;
-  static const int kLA = 5;
+  static const int kVRef = 0;
+  static const int kA = 1;
+  static const int kB = 2;
+  static const int kS0 = 3;
+  static const int kTimeHeadway = 4;
+  static const int kDelta = 5;
+  static const int kLA = 6;
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -42,6 +42,9 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
 
   /// @name Getters and Setters
   //@{
+  // desired velocity in free traffic
+  const T v_ref() const { return this->GetAtIndex(K::kVRef); }
+  void set_v_ref(const T& v_ref) { this->SetAtIndex(K::kVRef, v_ref); }
   // max acceleration
   const T a() const { return this->GetAtIndex(K::kA); }
   void set_a(const T& a) { this->SetAtIndex(K::kA, a); }
