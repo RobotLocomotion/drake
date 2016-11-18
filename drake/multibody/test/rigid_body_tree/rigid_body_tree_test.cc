@@ -30,28 +30,28 @@ class RigidBodyTreeTest : public ::testing::Test {
     tree_.reset(new RigidBodyTree<double>());
 
     // Defines four rigid bodies.
-    r1b1_ = std::make_unique<RigidBody>();
+    r1b1_ = std::make_unique<RigidBody<double>>();
     r1b1_->set_model_name("robot1");
     r1b1_->set_name("body1");
 
-    r2b1_ = std::make_unique<RigidBody>();
+    r2b1_ = std::make_unique<RigidBody<double>>();
     r2b1_->set_model_name("robot2");
     r2b1_->set_name("body1");
 
-    r3b1_ = std::make_unique<RigidBody>();
+    r3b1_ = std::make_unique<RigidBody<double>>();
     r3b1_->set_model_name("robot3");
     r3b1_->set_name("body1");
 
-    r4b1_ = std::make_unique<RigidBody>();
+    r4b1_ = std::make_unique<RigidBody<double>>();
     r4b1_->set_model_name("robot4");
     r4b1_->set_name("body1");
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;
-  std::unique_ptr<RigidBody> r1b1_{};
-  std::unique_ptr<RigidBody> r2b1_{};
-  std::unique_ptr<RigidBody> r3b1_{};
-  std::unique_ptr<RigidBody> r4b1_{};
+  std::unique_ptr<RigidBody<double>> r1b1_{};
+  std::unique_ptr<RigidBody<double>> r2b1_{};
+  std::unique_ptr<RigidBody<double>> r3b1_{};
+  std::unique_ptr<RigidBody<double>> r4b1_{};
 };
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
@@ -60,8 +60,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
   // RigidBodyTree takes ownership of these bodies.
   // User still has access to these bodies through the raw pointers.
-  RigidBody* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
-  RigidBody* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
+  RigidBody<double>* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
+  RigidBody<double>* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
 
   EXPECT_TRUE(tree_->FindBody("body1", "robot1") != nullptr);
   EXPECT_TRUE(tree_->FindBody("body1", "robot2") != nullptr);
@@ -90,8 +90,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
-  RigidBody* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
-  RigidBody* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
+  RigidBody<double>* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
+  RigidBody<double>* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
 
   // Adds floating joints that connect r1b1_ and r2b1_ to the rigid body tree's
   // world at offset x = 1, y = 1, z = 1.
@@ -126,7 +126,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1_ to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
-  RigidBody* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
+  RigidBody<double>* r1b1 = tree_->add_rigid_body(std::move(r1b1_));
 
   r1b1->add_joint(&tree_->world(),
                   std::make_unique<QuaternionFloatingJoint>(
@@ -134,7 +134,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   // Adds rigid body r2b1_ to the rigid body tree and welds it to r1b1_ with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
-  RigidBody* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
+  RigidBody<double>* r2b1 = tree_->add_rigid_body(std::move(r2b1_));
 
   Eigen::Isometry3d T_r2_to_r1;
   {
@@ -150,8 +150,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
-  RigidBody* r3b1 = tree_->add_rigid_body(std::move(r3b1_));
-  RigidBody* r4b1 = tree_->add_rigid_body(std::move(r4b1_));
+  RigidBody<double>* r3b1 = tree_->add_rigid_body(std::move(r3b1_));
+  RigidBody<double>* r4b1 = tree_->add_rigid_body(std::move(r4b1_));
 
   Eigen::Isometry3d T_r3_and_r4_to_r2;
   {
@@ -240,9 +240,9 @@ TEST_F(RigidBodyTreeTest, TestModelInstanceIdTable) {
 
 // Verifies that each rigid body in @p body_list appears exactly once in
 // @p expected_names.
-void VerifyBodyListIsCorrect(std::vector<const RigidBody*> body_list,
+void VerifyBodyListIsCorrect(std::vector<const RigidBody<double>*> body_list,
                              std::vector<std::string> expected_names) {
-  for (const RigidBody* body : body_list) {
+  for (const RigidBody<double>* body : body_list) {
     EXPECT_NE(std::find(expected_names.begin(), expected_names.end(),
                         body->get_name()),
               expected_names.end());
@@ -291,13 +291,13 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
       model_instance_id_table_3.at(kFourDofModelName);
 
   // Gets the rigid bodies belonging to each model instance.
-  std::vector<const RigidBody*> two_dof_robot_bodies =
+  std::vector<const RigidBody<double>*> two_dof_robot_bodies =
       tree_->FindModelInstanceBodies(two_dof_model_instance_id);
 
-  std::vector<const RigidBody*> three_dof_robot_bodies =
+  std::vector<const RigidBody<double>*> three_dof_robot_bodies =
       tree_->FindModelInstanceBodies(three_dof_model_instance_id);
 
-  std::vector<const RigidBody*> four_dof_robot_bodies =
+  std::vector<const RigidBody<double>*> four_dof_robot_bodies =
       tree_->FindModelInstanceBodies(four_dof_model_instance_id);
 
   // Verifies the sizes of the vectors of rigid bodies are correct.
@@ -306,17 +306,17 @@ TEST_F(RigidBodyTreeTest, TestFindModelInstanceBodies) {
   EXPECT_EQ(four_dof_robot_bodies.size(), 5u);
 
   // Verifies that the model instance IDs and model names are correct.
-  for (const RigidBody* body : two_dof_robot_bodies) {
+  for (const RigidBody<double>* body : two_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), two_dof_model_instance_id);
     EXPECT_EQ(body->get_model_name(), kTwoDofModelName);
   }
 
-  for (const RigidBody* body : three_dof_robot_bodies) {
+  for (const RigidBody<double>* body : three_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), three_dof_model_instance_id);
     EXPECT_EQ(body->get_model_name(), kThreeDofModelName);
   }
 
-  for (const RigidBody* body : four_dof_robot_bodies) {
+  for (const RigidBody<double>* body : four_dof_robot_bodies) {
     EXPECT_EQ(body->get_model_instance_id(), four_dof_model_instance_id);
     EXPECT_EQ(body->get_model_name(), kFourDofModelName);
   }
