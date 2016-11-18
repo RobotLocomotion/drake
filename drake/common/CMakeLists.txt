@@ -83,7 +83,8 @@ drake_install_pkg_config_file(drake-common
   LIBS
     -ldrakeCommon
     -lgflags
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT}
+  REQUIRES eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

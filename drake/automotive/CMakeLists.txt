@@ -40,7 +40,8 @@ drake_install_pkg_config_file(drake-automotive
     drake-rbsystem
     drake-shapes
     drake-system-analysis
-    drake-system-framework)
+    drake-system-framework
+    eigen3)
 
 if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)

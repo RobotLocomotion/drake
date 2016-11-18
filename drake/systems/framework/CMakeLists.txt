@@ -89,7 +89,8 @@ drake_install_pkg_config_file(drake-system-framework
   LIBS -ldrakeSystemFramework
   REQUIRES
     drake-common
-    drake-trajectories)
+    drake-trajectories
+    eigen3)
 
 #add_subdirectory(examples)
 add_subdirectory(primitives)

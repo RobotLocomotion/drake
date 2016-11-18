@@ -5,7 +5,9 @@ drake_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.
 drake_install_pkg_config_file(drake-spline-generation
   TARGET drakeSplineGeneration
   LIBS -ldrakeSplineGeneration
-  REQUIRES drake-trajectories)
+  REQUIRES
+    drake-trajectories
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
