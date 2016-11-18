@@ -332,3 +332,14 @@ drake_add_example(LittleDog OFF
 
 # END examples
 ###############################################################################
+
+# hsrb_description is a ROS package that contains a model of Toyota's Human
+# Support Robot (HSR). The following method call downloads hsrb_description as a
+# submodule in drake-distro/ros/ but does not build or install it since it uses
+# the Catkin build system and should only be compiled when Drake is installed as
+# a ROS Catkin package. For details on how to do this, see:
+# http://drake.mit.edu/from_source_ros.html.
+drake_add_external(hsrb_description PUBLIC
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ros/hsrb_description
+  BUILD_COMMAND :
+  INSTALL_COMMAND :)
