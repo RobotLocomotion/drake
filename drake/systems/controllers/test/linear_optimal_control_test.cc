@@ -58,10 +58,9 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
                               tol, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->C(), Eigen::Matrix<double, 1, 0>::Zero(),
                               tol, MatrixCompareType::absolute));
-  EXPECT_TRUE(
-      CompareMatrices(lqr->D(), -K, tol, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->y0(), Eigen::Matrix<double, 1, 1>::Zero(), tol,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->D(), -K, tol, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->y0(), Eigen::Matrix<double, 1, 1>::Zero(),
+                              tol, MatrixCompareType::absolute));
 }
 
 }  // namespace drake
