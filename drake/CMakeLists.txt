@@ -52,11 +52,6 @@ pods_find_pkg_config(bot2-lcmgl-client)
 pods_find_pkg_config(dreal)
 pods_find_pkg_config(ipopt)
 
-function(drake_install_headers)
-  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${rel_path}")
-endfunction()
-
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
 function(add_library_with_exports)
