@@ -12,8 +12,8 @@
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/system1/System.h"
-#include "drake/multibody/KinematicsCache.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/kinematics_cache.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 
@@ -294,7 +294,7 @@ class DrakeRosTfPublisher {
   // Determines whether a transform should be published for the specified
   // rigid body. A rigid body should be skipped if it is the world link or if
   // it is connected to the world via a fixed joint.
-  bool PublishTfForRigidBody(const RigidBody* rigid_body) {
+  bool PublishTfForRigidBody(const RigidBody<double>* rigid_body) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody
     // that represents the world.
     if (!rigid_body->has_parent_body()) return false;

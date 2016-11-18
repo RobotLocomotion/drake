@@ -1,0 +1,28 @@
+package drake;
+
+struct lcmt_contact_information {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  string body_name;
+  int32_t num_contact_points;
+  int32_t num_basis_per_contact_point;
+
+  // Offsets to individual contact points that are expressed in body frame.
+  double contact_points[3][num_contact_points];
+
+  // Expressed in body frame
+  double normal[3];
+  double mu;
+
+  // Velocity gain used to stabilize contact velocity.
+  // The actual constrained acceleration will be -Kd * xd, where xd is the
+  // measured body velocity.
+  double Kd;
+
+  // Weight of the cost term if using SOFT constraint.
+  double weight;
+
+  // Constraint type, defined in lcmt_constrained_values.
+  int8_t acceleration_constraint_type;
+}

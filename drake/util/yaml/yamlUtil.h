@@ -7,7 +7,7 @@
 
 #include "drake/common/eigen_stl_types.h"
 #include "drake/systems/controllers/QPCommon.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 YAML::Node applyDefaults(const YAML::Node& node,
                          const YAML::Node& default_node);

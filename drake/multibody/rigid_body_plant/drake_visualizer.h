@@ -4,9 +4,8 @@
 
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/common/drake_export.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -39,8 +38,7 @@ namespace systems {
  *
  * @ingroup rigid_body_systems
  */
-class DRAKE_EXPORT DrakeVisualizer
-    : public LeafSystem<double> {
+class DrakeVisualizer : public LeafSystem<double> {
  public:
   /**
    * A constructor that prepares for the transmission of `lcmt_viewer_draw` and

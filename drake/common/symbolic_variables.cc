@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-#include "drake/common/hash_combine.h"
+#include "drake/common/hash.h"
 
 using std::accumulate;
 using std::includes;
@@ -21,13 +21,7 @@ namespace symbolic {
 
 Variables::Variables(std::initializer_list<value_type> init) : vars_(init) {}
 
-size_t Variables::get_hash() const {
-  // Combines hashes of the variables in a set.
-  return accumulate(vars_.begin(), vars_.end(), 0,
-                    [](const size_t h, const Variable& var) {
-                      return hash_combine(h, var.get_hash());
-                    });
-}
+size_t Variables::get_hash() const { return hash_value<set>{}(vars_); }
 
 string Variables::to_string() const {
   ostringstream oss;
@@ -67,6 +61,10 @@ bool Variables::IsStrictSupersetOf(const Variables& vars) const {
 
 bool operator==(const Variables& vars1, const Variables& vars2) {
   return vars1.vars_ == vars2.vars_;
+}
+
+bool operator<(const Variables& vars1, const Variables& vars2) {
+  return vars1.vars_ < vars2.vars_;
 }
 
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.

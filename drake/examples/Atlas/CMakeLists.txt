@@ -4,10 +4,9 @@ drake_install_headers(
         atlasUtil.h
         atlas_plant.h
         )
-pods_install_pkg_config_file(drake-atlas-util
-  LIBS -ldrakeAtlasUtil
-  REQUIRES
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-atlas-util
+  TARGET drakeAtlasUtil
+  LIBS -ldrakeAtlasUtil)
 
 if (lcm_FOUND)
   add_executable(atlas_dynamics_demo atlas_dynamics_demo.cc atlas_plant.cc)
@@ -48,4 +47,6 @@ drake_add_matlab_test(NAME examples/Atlas/runRobotiqTendons COMMAND runRobotiqTe
 
 # drake_add_matlab_test(NAME examples/Atlas/runDRCPracticeTerrain REQUIRES iris mosek COMMAND runDRCPracticeTerrain SIZE large)  # FIXME: see #3149
 
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

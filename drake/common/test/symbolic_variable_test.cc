@@ -1,6 +1,9 @@
 #include "drake/common/symbolic_variable.h"
 
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -9,6 +12,9 @@ namespace symbolic {
 namespace {
 
 using std::move;
+using std::unordered_map;
+using std::unordered_set;
+using std::vector;
 
 // Provides common variables that are used by the following tests.
 class SymbolicVariableTest : public ::testing::Test {
@@ -92,6 +98,27 @@ TEST_F(SymbolicVariableTest, ToString) {
   EXPECT_EQ(w_.to_string(), "w");
 }
 
+// This test checks whether symbolic::Variable is compatible with
+// std::unordered_set.
+TEST_F(SymbolicVariableTest, CompatibleWithUnorderedSet) {
+  unordered_set<Variable, hash_value<Variable>> uset;
+  uset.emplace(x_);
+  uset.emplace(y_);
+}
+
+// This test checks whether symbolic::Variable is compatible with
+// std::unordered_map.
+TEST_F(SymbolicVariableTest, CompatibleWithUnorderedMap) {
+  unordered_map<Variable, Variable, hash_value<Variable>> umap;
+  umap.emplace(x_, y_);
+}
+
+// This test checks whether symbolic::Variable is compatible with
+// std::vector.
+TEST_F(SymbolicVariableTest, CompatibleWithVector) {
+  vector<Variable> vec;
+  vec.push_back(x_);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

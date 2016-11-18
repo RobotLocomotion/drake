@@ -18,8 +18,10 @@ if(lcm_FOUND)
 
   pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
-  pods_install_pkg_config_file(drake-lcm-system
+  drake_install_pkg_config_file(drake-lcm-system
+    TARGET drakeLCMSystem
     LIBS -ldrakeLCMSystem
-    REQUIRES lcm
-    VERSION 0.0.1)
+    REQUIRES
+      drake-lcmtypes-cpp
+      lcm)
 endif()

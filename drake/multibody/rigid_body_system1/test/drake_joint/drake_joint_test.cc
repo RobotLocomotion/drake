@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
@@ -51,7 +51,8 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
+  RigidBody<double>* body =
+      rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");
@@ -113,7 +114,8 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
+  RigidBody<double>* body =
+      rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");

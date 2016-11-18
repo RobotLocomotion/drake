@@ -12,7 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
 #include "drake/multibody/parser_urdf.h"
 
@@ -30,8 +30,8 @@ VectorXd ComputeIiwaGravityTorque(const VectorXd& robot_state) {
       drake::multibody::joints::kFixed);
 
   KinematicsCache<double> cache = rigid_body_tree.doKinematics(robot_state);
-  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<double>>
-      f_ext;
+  eigen_aligned_std_unordered_map<RigidBody<double> const*,
+                                  drake::TwistVector<double>> f_ext;
   f_ext.clear();
 
   return rigid_body_tree.dynamicsBiasTerm(cache, f_ext, false);

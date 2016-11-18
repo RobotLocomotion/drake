@@ -10,15 +10,11 @@
 
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
-#include "drake/common/polynomial.h"
-#include "drake/multibody/IKoptions.h"
-#include "drake/multibody/RigidBodyIK.h"
-#include "drake/multibody/RigidBodyTree.h"
-#include "drake/multibody/constraint/RigidBodyConstraint.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/constraint/rigid_body_constraint.h"
 
 namespace drake {
 namespace examples {

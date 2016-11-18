@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include  <memory>
 
-#include "drake/multibody/joints/FixedJoint.h"
-#include "drake/multibody/joints/HelicalJoint.h"
-#include "drake/multibody/joints/PrismaticJoint.h"
-#include "drake/multibody/joints/QuaternionFloatingJoint.h"
-#include "drake/multibody/joints/RevoluteJoint.h"
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/joints/fixed_joint.h"
+#include "drake/multibody/joints/helical_joint.h"
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 namespace drake {
 namespace systems {

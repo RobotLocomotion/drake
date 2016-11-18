@@ -1,7 +1,7 @@
 #include "drake/multibody/rigid_body_actuator.h"
 
 RigidBodyActuator::RigidBodyActuator(const std::string& name,
-                                     const RigidBody* body,
+                                     const RigidBody<double>* body,
                                      double reduction,
                                      double effort_limit_min,
                                      double effort_limit_max)

@@ -11,7 +11,7 @@
 #include "sensor_msgs/LaserScan.h"
 
 #include "drake/system1/System.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
 #include "drake/system1/vector.h"
 

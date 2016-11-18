@@ -1,4 +1,6 @@
-add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 add_library_with_exports(LIB_NAME drakeBouncingBall SOURCE_FILES
   ball.cc
@@ -15,10 +17,12 @@ drake_install_headers(
   ball-inl.h
   ball.h
   )
-pods_install_pkg_config_file(drake-bouncing-ball
+drake_install_pkg_config_file(drake-bouncing-ball
+  TARGET drakeBouncingBall
   LIBS -ldrakeBouncingBall
   REQUIRES
-  VERSION 0.0.1)
+    drake-common
+    drake-system-framework)
 
 drake_add_matlab_test(NAME examples/bouncing_ball/BallPlant2D.run
   COMMAND BallPlant2D.run)

@@ -1,17 +1,17 @@
 function testURDFmex(urdfs)
 
-urdf_kin_test = fullfile(get_drake_binary_dir(), '/bin/urdfKinTest');
-urdf_manipulator_dynamics_test = fullfile(get_drake_binary_dir(), '/bin/urdfManipulatorDynamicsTest');
+urdf_kin_test = fullfile(get_drake_binary_dir(), '/bin/urdf_kinematics_test');
+urdf_manipulator_dynamics_test = fullfile(get_drake_binary_dir(), '/bin/urdf_manipulator_dynamics_test');
 if ispc
   urdf_kin_test = [urdf_kin_test,'.exe'];
   urdf_manipulator_dynamics_test = [urdf_manipulator_dynamics_test,'.exe'];
 end
 
 if (~exist(urdf_kin_test,'file'))
-  error('Drake:MissingDependency','testURDFmex requires that urdfKinTest is built (from the command line).  skipping this test');
+  error('Drake:MissingDependency','testURDFmex requires that urdf_kinematics_test is built (from the command line).  skipping this test');
 end
 if (~exist(urdf_manipulator_dynamics_test,'file'))
-  error('Drake:MissingDependency','testURDFmex requires that urdfManipulatorDynamicsTest is built (from the command line).  skipping this test');
+  error('Drake:MissingDependency','testURDFmex requires that urdf_manipulator_dynamics_test is built (from the command line).  skipping this test');
 end
 
 tol = .1; % low tolerance because i'm writing finite precision strings to and from the ascii terminal

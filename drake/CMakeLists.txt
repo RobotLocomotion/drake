@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake)
+project(drake VERSION 0.0.0)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
@@ -53,7 +54,7 @@ pods_find_pkg_config(ipopt)
 
 function(drake_install_headers)
   file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
+  install(FILES ${ARGV} DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${rel_path}")
 endfunction()
 
 # A compatibility shim function that declares a library, with a built-in
@@ -162,10 +163,9 @@ endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
+drake_install_pkg_config_file(drake-java
   CLASSPATH drake
-  REQUIRES ${drake_jar_requires}
-  VERSION 0.0.1)
+  REQUIRES ${drake_jar_requires})
 
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 
@@ -188,7 +188,10 @@ if(Matlab_FOUND)
 endif()
 add_subdirectory(examples)
 add_subdirectory(bindings)
-add_subdirectory(regtests)
+
+if(BUILD_TESTING)
+  add_subdirectory(regtests)
+endif()
 
 # setup MATLAB pods-compliance
 include(../cmake/matlab_pods.cmake)

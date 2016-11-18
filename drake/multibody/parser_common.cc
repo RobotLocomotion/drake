@@ -2,10 +2,10 @@
 
 #include <string>
 
-#include "drake/multibody/joints/DrakeJoint.h"
-#include "drake/multibody/joints/QuaternionFloatingJoint.h"
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
-#include "drake/multibody/joints/FixedJoint.h"
+#include "drake/multibody/joints/drake_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 
 namespace drake {
@@ -23,7 +23,7 @@ int AddFloatingJoint(
     const PoseMap* pose_map,
     RigidBodyTree<double>* tree) {
   std::string floating_joint_name;
-  RigidBody* weld_to_body{nullptr};
+  RigidBody<double>* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {

@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace systems {
@@ -55,7 +55,7 @@ GTEST_TEST(URDFParserTest, ParseJointProperties) {
       urdf_string, rigid_body_tree.get());
 
   // Obtains the child link of food_joint.
-  RigidBody* foo_joint_link =
+  RigidBody<double>* foo_joint_link =
       rigid_body_tree->FindChildBodyOfJoint("foo_joint");
   EXPECT_TRUE(foo_joint_link != nullptr);
 

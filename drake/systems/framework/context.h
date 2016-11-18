@@ -99,7 +99,7 @@ class Context {
 
   /// Returns a const pointer to the discrete difference component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
-  const VectorBase<T>* get_difference_state(int index) const {
+  const BasicVector<T>* get_difference_state(int index) const {
     const DifferenceState<T>* xd = get_state().get_difference_state();
     return xd->get_difference_state(index);
   }
@@ -155,6 +155,13 @@ class Context {
 
   /// Returns the number of input ports.
   virtual int get_num_input_ports() const = 0;
+
+  /// Connects a FreestandingInputPort with the given @p value at the given
+  /// @p index. Asserts if @p index is out of range.
+  void FixInputPort(int index, std::unique_ptr<BasicVector<T>> value) {
+    SetInputPort(index,
+                 std::make_unique<FreestandingInputPort>(std::move(value)));
+  }
 
   /// Evaluates and returns the input port identified by @p descriptor,
   /// using the given @p evaluator, which should be the Diagram containing

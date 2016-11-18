@@ -1,8 +1,8 @@
 package drake;
 
 struct lcmt_iiwa_status {
-  // The timestamp in milliseconds.
-  int64_t timestamp;
+  // The timestamp in microseconds.
+  int64_t utime;
 
   int32_t num_joints;
 

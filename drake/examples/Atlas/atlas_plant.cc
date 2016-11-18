@@ -97,7 +97,7 @@ void AtlasPlant::SetUpTerrain() {
   Isometry3d T_element_to_link = Isometry3d::Identity();
   // The top of the box is at z=0.
   T_element_to_link.translation() << 0, 0, -box_depth / 2;
-  RigidBody& world = tree->world();
+  RigidBody<double>& world = tree->world();
   Vector4d color;
   color << 0.9297, 0.7930, 0.6758, 1;
   world.AddVisualElement(

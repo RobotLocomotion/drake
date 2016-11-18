@@ -158,7 +158,7 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
   // vector.
   Subvector<double> configuration_derivatives(derivatives_, 0, 1);
 
-  system_->MapVelocityToConfigurationDerivatives(
+  system_->MapVelocityToQDot(
       *context_, continuous_state->get_generalized_velocity(),
       &configuration_derivatives);
 
@@ -322,8 +322,8 @@ void StepSemiExplicitEuler(
   // Invalidate q-dependent quantities.
   VectorBase<double>* xq = xc->get_mutable_generalized_position();
   auto dxq = derivs.get_mutable_generalized_position();
-  system.MapVelocityToConfigurationDerivatives(context, *xv,
-                                               dxq);  // qdot = N(q)*v
+  system.MapVelocityToQDot(context, *xv,
+                           dxq);  // qdot = N(q)*v
   xq->PlusEqScaled(h, *dxq);                          // xq += h*qdot
 }
 

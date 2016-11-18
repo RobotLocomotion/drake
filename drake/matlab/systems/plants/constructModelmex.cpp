@@ -5,7 +5,7 @@
 #include "drake/matlab/util/drakeMexUtil.h"
 #include "drake/matlab/systems/plants/rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "drake/multibody/joints/DrakeJoints.h"
+#include "drake/multibody/joints/drake_joints.h"
 
 using namespace Eigen;
 using namespace std;
@@ -79,7 +79,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // DEBUG
     // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
-    std::unique_ptr<RigidBody> b(new RigidBody());
+    std::unique_ptr<RigidBody<double>> b(new RigidBody<double>());
     b->set_body_index(i);
 
     b->set_name(mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname")));

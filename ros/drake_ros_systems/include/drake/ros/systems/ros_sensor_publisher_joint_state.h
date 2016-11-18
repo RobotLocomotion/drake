@@ -10,9 +10,9 @@
 #include "sensor_msgs/JointState.h"
 
 #include "drake/system1/System.h"
-#include "drake/multibody/KinematicsCache.h"
+#include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_system1/RigidBodySystem.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/system1/vector.h"
 
 using drake::NullVector;
@@ -94,7 +94,8 @@ class SensorPublisherJointState {
     ::ros::NodeHandle nh;
 
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
+    const RigidBody<double>& world =
+        rigid_body_system->getRigidBodyTree()->world();
 
     // Creates a ROS topic publisher for each robot in the rigid body system.
     // A robot is defined by any link that's connected to the world via a

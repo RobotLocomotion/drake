@@ -1,0 +1,12 @@
+package drake;
+
+struct lcmt_desired_body_motion {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  string body_name;
+  boolean control_during_contact;
+
+  // Should always be of dimension 6, and the first 3 are angular acceleration.
+  lcmt_constrained_values constrained_accelerations;
+}

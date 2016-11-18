@@ -5,7 +5,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/RigidBodyTree.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/matlab/util/drakeMexUtil.h"
 
@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   for (int i = 0; i < cpp_model->bodies.size(); ++i) {
     if (cpp_model->bodies[i]->has_parent_body() &&
         cpp_model->bodies[i]->getJoint().get_num_positions() > 0) {
-      RigidBody* b = matlab_model->FindChildBodyOfJoint(
+      RigidBody<double>* b = matlab_model->FindChildBodyOfJoint(
           cpp_model->bodies[i]->getJoint().get_name());
       if (b == nullptr) continue;
       for (int j = 0; j < b->getJoint().get_num_positions(); ++j) {

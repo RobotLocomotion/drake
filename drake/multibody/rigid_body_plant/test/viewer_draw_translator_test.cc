@@ -8,9 +8,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/RigidBody.h"
-#include "drake/multibody/RigidBodyTree.h"
-#include "drake/multibody/joints/RollPitchYawFloatingJoint.h"
+#include "drake/multibody/rigid_body.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   auto tree = make_unique<RigidBodyTree<double>>();
   for (int i = 0; i < kNumBodies; ++i) {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("body" + std::to_string(i));
     body->set_model_instance_id(tree->add_model_instance());
 
