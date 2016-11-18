@@ -110,19 +110,19 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double C2 = kInitialVelocity / kOmega;
 
   // Integrate for 1 second.
-  const double T_FINAL = 1.0;
+  const double kTFinal = 1.0;
   double t;
-  for (t = 0.0; std::abs(t - T_FINAL) > DT; t += DT)
+  for (t = 0.0; std::abs(t - kTFinal) > DT; t += DT)
     integrator.StepOnceAtMost(INF, INF);
 
   EXPECT_NEAR(context->get_time(), t, DT);  // Should be exact.
 
   // Get the final position.
-  const double kXFinal =
+  const double x_final =
       context->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Check the solution.
-  EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), kXFinal,
+  EXPECT_NEAR(C1 * std::cos(kOmega * t) + C2 * std::sin(kOmega * t), x_final,
               1e-5);
 
   // Verify that integrator statistics are valid

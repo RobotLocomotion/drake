@@ -63,11 +63,11 @@ TEST_F(RK3IntegratorTest, Scaling) {
 
   // Test scaling
   EXPECT_EQ(integrator_->get_mutable_generalized_state_weight_vector().size(),
-            1);
+            2);
   EXPECT_EQ(integrator_->get_mutable_generalized_state_weight_vector()
                 .lpNorm<Eigen::Infinity>(),
             1);
-  EXPECT_EQ(integrator_->get_misc_state_weight_vector().size(), 1);
+  EXPECT_EQ(integrator_->get_misc_state_weight_vector().size(), 2);
   EXPECT_EQ(integrator_->get_mutable_misc_state_weight_vector()
                 .lpNorm<Eigen::Infinity>(),
             1);
@@ -110,8 +110,7 @@ TEST_F(RK3IntegratorTest, ErrEst) {
       kC1 * std::cos(kOmega * kBigDT) + kC2 * std::sin(kOmega * kBigDT);
 
   // Get the integrator's solution
-  const double kXApprox =
-      context_->get_state().get_continuous_state()->get_vector().GetAtIndex(0);
+  const double kXApprox = context_->get_continuous_state_vector().GetAtIndex(0);
 
   // Get the error estimate
   const double err_est =
@@ -119,7 +118,9 @@ TEST_F(RK3IntegratorTest, ErrEst) {
 
   // Verify that difference between integration result and true result is
   // captured by the error estimate. The 0.2 below indicates that the error
-  // estimate is quite conservative.
+  // estimate is quite conservative. (That's because we estimate the error in
+  // the 2nd order integral but propagate the 3rd order integral which is
+  // generally more accurate.)
   EXPECT_NEAR(kXApprox, kXTrue, err_est * 0.2);
 }
 
@@ -159,7 +160,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
     integrator_->StepOnceAtMost(DT, DT);
 
   // Get the final position.
-  const double kXFinal =
+  const double x_final =
       context_->get_continuous_state()->get_vector().GetAtIndex(0);
 
   // Store the number of integration steps
@@ -168,7 +169,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Check the solution.
   EXPECT_NEAR(
       kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
-      kXFinal, 1e-5);
+      x_final, 1e-5);
 
   // Reset the integrator and set reasonable parameters for integration with
   // error control.
@@ -197,7 +198,7 @@ TEST_F(RK3IntegratorTest, SpringMassStepEC) {
   // Check the solution.
   EXPECT_NEAR(
       kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
-      kXFinal, 1e-5);
+      x_final, 1e-5);
 
   // Verify that integrator statistics are valid
   EXPECT_GE(integrator_->get_previous_integration_step_size(), 0.0);

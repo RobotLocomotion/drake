@@ -84,9 +84,7 @@ void RungeKutta3Integrator<T>::DoStepOnceFixedSize(const T& dt) {
   err_est_vec_ = -IntegratorBase<T>::get_interval_start_state();
   xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
   xc->ScaleAndAddToVector(1.0, err_est_vec_);
-  const int count = err_est_vec_.size();
-  for (int i = 0; i < count; ++i)            // Eigen does not currently
-    err_est_vec_[i] = abs(err_est_vec_[i]);  // support iterators.
+  err_est_vec_ = err_est_vec_.cwiseAbs();
   IntegratorBase<T>::get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 }
 

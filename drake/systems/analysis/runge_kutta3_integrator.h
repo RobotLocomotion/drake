@@ -63,8 +63,8 @@ class RungeKutta3Integrator : public IntegratorBase<T> {
   }
 
   /**
- * The integrator supports error estimation.
- */
+   * The integrator supports error estimation.
+   */
   bool supports_error_estimation() const override { return true; }
 
   /// This integrator provides third order error estimates.

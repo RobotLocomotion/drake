@@ -9,7 +9,7 @@ template class RungeKutta3Integrator<double>;
 }  // namespace drake
 
 // TODO(edrumwri): correct compile bug from uncommenting line below.
-// template class DRAKE_EXPORT
+// template class
 // drake::systems::RungeKutta3Integrator<
 // Eigen::AutoDiffScalar<drake::Vector1d>>;
 
