@@ -14,6 +14,7 @@
 #include "drake/systems/framework/system_input.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
+#include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 
 using Eigen::AutoDiffScalar;
@@ -51,7 +52,21 @@ class GravityCompensatorTest : public ::testing::Test {
     gravity_compensator_ = make_unique<GravityCompensator<double>>(*tree_);
     context_ = gravity_compensator_->CreateDefaultContext();
     output_ = gravity_compensator_->AllocateOutput(*context_);
-    input_ = make_unique<BasicVector<double>>(7 /* length */);
+    input_ = make_unique<BasicVector<double>>(tree_->get_num_positions());
+
+    // Checks that the number of input ports in the Gravity Compensator system
+    // and the Context are consistent.
+    ASSERT_EQ(1, gravity_compensator_->get_num_input_ports());
+    ASSERT_EQ(1, context_->get_num_input_ports());
+
+    // Checks that no state variables are allocated in the context.
+    EXPECT_EQ(0, context_->get_continuous_state()->size());
+
+    // Checks that the number of output ports in the Gravity Compensator system
+    // and the SystemOutput are consistent.
+    ASSERT_EQ(1, output_->get_num_ports());
+    ASSERT_EQ(1, gravity_compensator_->get_num_output_ports());
+    ASSERT_NE(nullptr, output_->get_vector_data(0));
   }
 
   std::unique_ptr<RigidBodyTreed> tree_;
@@ -61,11 +76,10 @@ class GravityCompensatorTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-
 // Tests that the expected value of the gravity compensating torque and the
 // value computed by the GravityCompensator for a given joint configuration
-// on the IIWA Arm are identical.
-TEST_F(GravityCompensatorTest, OutputTest) {
+// of the KUKA IIWA Arm are identical.
+TEST_F(GravityCompensatorTest, IiwaOutputTest) {
   // The following curly brace defines a scope that quarantines local variable
   // `tree`, which is of type `std::unique_ptr`. Ownership of `tree` is passed
   // to this unit test's instance of `GravityCompensatorTest`. We quarantine
@@ -80,14 +94,6 @@ TEST_F(GravityCompensatorTest, OutputTest) {
     SetUp(std::move(tree));
   }
 
-  // Checks that the number of input ports in the Gravity Compensator system
-  // and the Context are consistent.
-  ASSERT_EQ(1, gravity_compensator_->get_num_input_ports());
-  ASSERT_EQ(1, context_->get_num_input_ports());
-
-  // Checks that no state variables are allocated in the context.
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
-
   // Defines an arbitrary robot position vector.
   Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(7);
   robot_position << 0.01, -0.01, 0.01, 0.5, 0.01, -0.01, 0.01;
@@ -98,17 +104,56 @@ TEST_F(GravityCompensatorTest, OutputTest) {
   context_->SetInputPort(0, MakeInput(std::move(input_)));
   gravity_compensator_->EvalOutput(*context_, output_.get());
 
-  // Checks that the number of output ports in the Gravity Compensator system
-  // and the SystemOutput are consistent.
-  ASSERT_EQ(1, output_->get_num_ports());
-  ASSERT_EQ(1, gravity_compensator_->get_num_output_ports());
-  const BasicVector<double>* output_vector = output_->get_vector_data(0);
-  ASSERT_NE(nullptr, output_vector);
-
-  VectorXd expected_gravity_vector = ComputeIiwaGravityTorque(*tree_,
-      robot_position);
+  VectorXd expected_gravity_vector =
+      ComputeIiwaGravityTorque(*tree_, robot_position);
 
   // Checks the expected and computed gravity torque.
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
+  EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
+}
+
+// Tests that the expected value of the gravity compensating torque and the
+// value computed by the GravityCompensator for a given joint configuration
+// of an underactuated robot are identical.
+TEST_F(GravityCompensatorTest, UnderactuatedOutputTest) {
+  // The following curly brace defines a scope that quarantines local variable
+  // `tree`, which is of type `std::unique_ptr`. Ownership of `tree` is passed
+  // to this unit test's instance of `GravityCompensatorTest`. We quarantine
+  // this local variable to prevent downstream code from seg faulting by trying
+  // to access `tree` after ownership is transferred.
+  {
+    auto tree = std::make_unique<RigidBodyTreed>();
+    drake::parsers::sdf::AddModelInstancesFromSdfFile(
+        drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
+        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+        tree.get());
+    SetUp(std::move(tree));
+  }
+
+  // Verifies that the model is indeed underactuated (it has 3 positions but
+  // only one actuator).
+  ASSERT_EQ(tree_->get_num_positions(), 3);
+  ASSERT_EQ(tree_->get_num_actuators(), 1);
+
+  // Defines an arbitrary robot position vector.
+  Eigen::VectorXd robot_position = Eigen::VectorXd::Zero(3);
+  robot_position << 0.01, -0.02, 0.05;
+
+  input_->get_mutable_value() << robot_position;
+
+  // Hook input of the expected size.
+  context_->SetInputPort(0, MakeInput(std::move(input_)));
+  gravity_compensator_->EvalOutput(*context_, output_.get());
+
+  const BasicVector<double>* output_vector = output_->get_vector_data(0);
+
+  // Checks that the output vector of the gravity compensator is of size 1
+  // (there's only one actuator).
+  ASSERT_EQ(output_vector->size(), 1);
+
+  // Checks the expected and computed gravity torque.
+  VectorXd expected_gravity_vector =
+      ComputeIiwaGravityTorque(*tree_, robot_position);
   EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
 }
 
