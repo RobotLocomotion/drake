@@ -26,12 +26,6 @@ cc_test(
     size = "small")
 
 cc_test(
-    name = "idm_with_trajectory_agent_test",
-    srcs = ["idm_with_trajectory_agent_test.cc"],
-    deps = DEPS + ["//drake/automotive:idm_with_trajectory_agent"],
-    size = "small")
-
-cc_test(
     name = "linear_car_test",
     srcs = ["linear_car_test.cc"],
     deps = DEPS + ["//drake/automotive:linear_car"],

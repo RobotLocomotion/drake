@@ -25,7 +25,6 @@ lcm_wrap_types(
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
-  lcmt_idm_with_trajectory_agent_state_t.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
