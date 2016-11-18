@@ -7,7 +7,6 @@
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
-#define DRAKE_EXPORT
 
 %{
 #ifdef SWIGPYTHON

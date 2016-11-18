@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/symbolic_variable.h"
 
 namespace drake {
@@ -33,7 +32,7 @@ namespace symbolic {
  *   const bool res = f.Evaluate(env);  // x + y > x - y => 5.0 >= -1.0 => True
  * \endcode
  */
-class DRAKE_EXPORT Environment {
+class Environment {
  public:
   typedef typename drake::symbolic::Variable key_type;
   typedef double mapped_type;
@@ -100,8 +99,7 @@ class DRAKE_EXPORT Environment {
    * @p key, performing an insertion if such key does not already exist. */
   mapped_type& operator[](const key_type& key);
 
-  friend DRAKE_EXPORT std::ostream& operator<<(std::ostream& os,
-                                               const Environment& env);
+  friend std::ostream& operator<<(std::ostream& os, const Environment& env);
 
  private:
   map map_;

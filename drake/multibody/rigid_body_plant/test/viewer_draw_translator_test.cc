@@ -27,7 +27,7 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   auto tree = make_unique<RigidBodyTree<double>>();
   for (int i = 0; i < kNumBodies; ++i) {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("body" + std::to_string(i));
     body->set_model_instance_id(tree->add_model_instance());
 

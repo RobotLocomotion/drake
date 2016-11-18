@@ -58,7 +58,7 @@ using tinyxml2::XMLDocument;
 using drake::multibody::joints::FloatingBaseType;
 
 void ParseSdfInertial(
-    RigidBody* body, XMLElement* node, RigidBodyTree<double>* model,
+    RigidBody<double>* body, XMLElement* node, RigidBodyTree<double>* model,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     PoseMap& pose_map,
     const Isometry3d& T_link) {
@@ -188,7 +188,7 @@ bool ParseSdfGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void ParseSdfVisual(RigidBody* body, XMLElement* node,
+void ParseSdfVisual(RigidBody<double>* body, XMLElement* node,
                     RigidBodyTree<double>* model,
                     const PackageMap& package_map, const string& root_dir,
                     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -240,7 +240,7 @@ void ParseSdfVisual(RigidBody* body, XMLElement* node,
   }
 }
 
-void ParseSdfCollision(RigidBody* body, XMLElement* node,
+void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
                        RigidBodyTree<double>* model,
                        const PackageMap& package_map, const string& root_dir,
                        // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -308,8 +308,8 @@ bool ParseSdfLink(RigidBodyTree<double>* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body{nullptr};
-  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
+  RigidBody<double>* body{nullptr};
+  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody<double>());
   body->set_model_name(model_name);
   body->set_model_instance_id(model_instance_id);
 
@@ -409,7 +409,8 @@ void ParseSdfFrame(RigidBodyTree<double>* rigid_body_tree, XMLElement* node,
   }
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  RigidBody* link = rigid_body_tree->FindBody(body_name, "", model_instance_id);
+  RigidBody<double>* link =
+      rigid_body_tree->FindBody(body_name, "", model_instance_id);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");

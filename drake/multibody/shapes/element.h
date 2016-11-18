@@ -4,11 +4,10 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/shapes/geometry.h"
 
 namespace DrakeShapes {
-class DRAKE_EXPORT Element {
+class Element {
  public:
   Element(const Geometry& geometry_in,
           const Eigen::Isometry3d& T_element_to_local_in)

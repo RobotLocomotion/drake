@@ -5,7 +5,6 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/pose_map.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
@@ -58,7 +57,6 @@ bool parseScalarAttribute(tinyxml2::XMLElement* node,
  * @throws std::invalid_argument If any problem is encountered parsing the three
  * vector value.
  */
-DRAKE_EXPORT
 void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
 
 /**
@@ -74,7 +72,6 @@ void ParseThreeVectorValue(const char* strval, Eigen::Vector3d* val);
  * @throws std::invalid_argument If any problem is encountered parsing the three
  * vector value.
  */
-DRAKE_EXPORT
 void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            Eigen::Vector3d* val);
 
@@ -95,7 +92,6 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
  * @throws std::invalid_argument If any problem is encountered parsing the three
  * vector value.
  */
-DRAKE_EXPORT
 void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
                            const char* element_name, Eigen::Vector3d* val);
 
@@ -117,7 +113,6 @@ void ParseThreeVectorValue(const tinyxml2::XMLElement* node,
  * @throws std::invalid_argument If any problem is encountered parsing the three
  * vector value.
  */
-DRAKE_EXPORT
 void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val);
@@ -131,42 +126,41 @@ void ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
  * @throws std::invalid_argument If any problem is encountered while parsing the
  * double value represented within \p str.
  */
-DRAKE_EXPORT
 double StringToDouble(const std::string& str);
 
 // only writes values if they exist
-DRAKE_EXPORT bool parseVectorAttribute(
+bool parseVectorAttribute(
     const tinyxml2::XMLElement* node,
     const char* attribute_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Vector3d& val);
-DRAKE_EXPORT bool parseVectorAttribute(
+bool parseVectorAttribute(
     const tinyxml2::XMLElement* node,
     const char* attribute_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Vector4d& val);
-DRAKE_EXPORT bool parseVectorValue(
+bool parseVectorValue(
     tinyxml2::XMLElement* node,
     const char* element_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Vector3d& val);
-DRAKE_EXPORT bool parseVectorValue(
+bool parseVectorValue(
     tinyxml2::XMLElement* node,
     const char* element_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Vector4d& val);
-DRAKE_EXPORT bool parseStringValue(
+bool parseStringValue(
     tinyxml2::XMLElement* node,
     const char* element_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     std::string& val);
 
-DRAKE_EXPORT void originAttributesToTransform(
+void originAttributesToTransform(
     tinyxml2::XMLElement* node,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Isometry3d& T);
 
-DRAKE_EXPORT void poseValueToTransform(
+void poseValueToTransform(
     tinyxml2::XMLElement* node, const PoseMap& pose_map,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::Isometry3d& T,
@@ -174,7 +168,7 @@ DRAKE_EXPORT void poseValueToTransform(
 
 typedef std::map<std::string, std::string> PackageMap;
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-DRAKE_EXPORT void populatePackageMap(PackageMap& package_map);
+void populatePackageMap(PackageMap& package_map);
 
 /// Resolves the fully-qualified name of a file. If @p filename starts with
 /// "package:", the ROS packages specified in @p package_map are searched.
@@ -193,6 +187,6 @@ DRAKE_EXPORT void populatePackageMap(PackageMap& package_map);
 ///
 /// @return The file's fully-qualified name or an empty string if the file is
 /// not found or does not exist.
-DRAKE_EXPORT std::string resolveFilename(const std::string& filename,
-                                                const PackageMap& package_map,
-                                                const std::string& root_dir);
+std::string resolveFilename(const std::string& filename,
+                            const PackageMap& package_map,
+                            const std::string& root_dir);

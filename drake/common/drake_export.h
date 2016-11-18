@@ -6,3 +6,5 @@
 
 /// A macro that marks symbols as exported with default visibility.
 #define DRAKE_EXPORT __attribute__((visibility("default")))
+
+#warning This file is deprecated; stop including it.

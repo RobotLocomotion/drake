@@ -4,9 +4,9 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-template <typename Scalar>
-KinematicsCacheHelper<Scalar>::KinematicsCacheHelper(
-    const std::vector<std::unique_ptr<RigidBody>>& bodies)
+template <typename T>
+KinematicsCacheHelper<T>::KinematicsCacheHelper(
+    const std::vector<std::unique_ptr<RigidBody<T>>>& bodies)
     : kinsol_(bodies) {}
 
 template <typename Scalar>

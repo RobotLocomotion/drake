@@ -53,7 +53,7 @@ template <typename ScalarType>
 bool encode(const double& t, const IiwaStatus<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_iiwa_status& msg) {
-  msg.timestamp = static_cast<int64_t>(t * 1000);
+  msg.utime = static_cast<int64_t>(t * 1e6);
   msg.num_joints = wrap.kNumJoints;
   msg.joint_position_measured.resize(msg.num_joints);
   for (int i = 0; i < msg.num_joints; i++) {
@@ -76,7 +76,7 @@ bool decode(const drake::lcmt_iiwa_status& msg,
             double& t,
             // NOLINTNEXTLINE(runtime/references)
             IiwaStatus<ScalarType>& wrap) {
-  t = static_cast<double>(msg.timestamp) / 1000.0;
+  t = static_cast<double>(msg.utime) * 1e-6;
   typename IiwaStatus<ScalarType>::EigenType new_value;
   new_value.resize(msg.num_joints);
   for (int i = 0; i < msg.num_joints; i++) {

@@ -203,36 +203,3 @@ comment on your PR::
 
 The results will be available here:
 https://drake-jenkins.csail.mit.edu/view/Experimental/job/linux-gcc-experimental-matlab-ros/.
-
-.. _drake_catkin_run_car_example:
-
-Running An Example: Car Simulation
-----------------------------------
-
-To run Drake's ROS-powered cars example, first add the
-``ackermann_drive_teleop`` package to the ROS workspace::
-
-    cd ~/dev/drake_catkin_workspace/src
-    git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
-    cd ackermann_drive_teleop
-    git checkout feature/ackermann_drive_stamped
-
-Since a new package was added to the ROS workspace, re-build the workspace
-(note that a build type of ``RelWithDebInfo`` is selected since the simulation
-runs too slowly when compiled in the default ``Debug`` mode)::
-
-    cd ~/dev/drake_catkin_workspace
-    catkin config --cmake-args -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo
-    catkin build
-
-Finally, to run the car simulation demo, execute::
-
-    cd ~/dev/drake_catkin_workspace
-    source devel/setup.bash
-    roslaunch drake_cars_examples single_car_in_stata_garage.launch
-
-To drive the vehicle around in simulation, open another terminal and execute::
-
-    cd ~/dev/drake_catkin_workspace
-    source devel/setup.bash
-    rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7

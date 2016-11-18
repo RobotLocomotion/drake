@@ -3,7 +3,6 @@
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
-#define DRAKE_EXPORT
 
 %{
 #ifdef SWIGPYTHON
@@ -36,8 +35,8 @@
 %template(vectorFloat) std::vector<float>;
 %template(vectorDouble) std::vector<double>;
 %template(mapStringString) std::map<std::string,std::string>;
-%shared_ptr(RigidBody)
-%template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody> >;
+%shared_ptr(RigidBody<double>)
+%template(vectorRigidBody) std::vector<std::shared_ptr<RigidBody<double> > >;
 %shared_ptr(RigidBodyFrame)
 
 %eigen_typemaps(Eigen::VectorXd)
@@ -60,7 +59,7 @@
 %template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, drake::kSpaceDimension, Eigen::Dynamic>;
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
-%ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
+%ignore RigidBody<double>::setJoint(std::unique_ptr<DrakeJoint> joint);
 %include "drake/multibody/rigid_body.h"
 
 %include "drake/multibody/rigid_body_frame.h"
@@ -69,7 +68,7 @@
 %immutable RigidBodyTree::loops;
 
 // unique_ptr confuses SWIG, so we'll ignore it for now
-%ignore RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body);
+%ignore RigidBodyTree<double>::add_rigid_body(std::unique_ptr<RigidBody<double> > body);
 
 // Ignore this member so that it doesn't generate setters/getters.
 // These cause problems since bodies is a vector of unique_ptr's and
@@ -117,7 +116,7 @@
   }
 
   Eigen::Matrix3Xd getTerrainContactPoints(
-      const RigidBody& body,
+      const RigidBody<double>& body,
       const std::string& group_name = "") const {
     Eigen::Matrix3Xd pts;
     $self->getTerrainContactPoints(body, &pts, group_name);
@@ -157,3 +156,4 @@
 }
 
 %template(RigidBodyTree_d) RigidBodyTree<double>;
+%template(RigidBody_d) RigidBody<double>;

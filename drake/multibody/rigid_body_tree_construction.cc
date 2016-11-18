@@ -9,7 +9,7 @@ void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
   Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
   T_element_to_link.translation() << 0, 0,
       -box_depth / 2;  // Top of the box is at z = 0.
-  RigidBody& world = tree->world();
+  RigidBody<double>& world = tree->world();
 
   // Defines a color called "desert sand" according to htmlcsscolor.com.
   Eigen::Vector4d color;

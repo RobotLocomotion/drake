@@ -3,20 +3,19 @@
 #include <bitset>
 #include <memory>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/collision/model.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 
 namespace DrakeCollision {
 
-DRAKE_EXPORT std::unique_ptr<Model> newModel();
+std::unique_ptr<Model> newModel();
 
 typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 
 // Constants
-extern const DRAKE_EXPORT bitmask ALL_MASK;
-extern const DRAKE_EXPORT bitmask NONE_MASK;
-extern const DRAKE_EXPORT bitmask DEFAULT_GROUP;
+extern const bitmask ALL_MASK;
+extern const bitmask NONE_MASK;
+extern const bitmask DEFAULT_GROUP;
 
 }  // namespace DrakeCollision

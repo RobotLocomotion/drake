@@ -4,6 +4,7 @@
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/example_qp_input_for_valkyrie.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -33,14 +34,14 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     // TODO(siyuan.feng): Move these to some param / config file eventually.
     // Set up gains.
     int dim = robot_.get_num_positions();
-    Kp_com_ = Eigen::Vector3d::Constant(40);
-    Kd_com_ = Eigen::Vector3d::Constant(12);
-    Kp_pelvis_ = Eigen::Vector6d::Constant(20);
-    Kd_pelvis_ = Eigen::Vector6d::Constant(8);
-    Kp_torso_ = Eigen::Vector6d::Constant(20);
-    Kd_torso_ = Eigen::Vector6d::Constant(8);
-    Kp_joints_ = Eigen::VectorXd::Constant(dim, 20);
-    Kd_joints_ = Eigen::VectorXd::Constant(dim, 8);
+    Kp_com_ = Vector3<double>::Constant(40);
+    Kd_com_ = Vector3<double>::Constant(12);
+    Kp_pelvis_ = Vector6<double>::Constant(20);
+    Kd_pelvis_ = Vector6<double>::Constant(8);
+    Kp_torso_ = Vector6<double>::Constant(20);
+    Kd_torso_ = Vector6<double>::Constant(8);
+    Kp_joints_ = VectorX<double>::Constant(dim, 20);
+    Kd_joints_ = VectorX<double>::Constant(dim, 8);
     // Don't do feedback on pelvis pose.
     Kp_joints_.head<6>().setZero();
     Kd_joints_.head<6>().setZero();
@@ -53,40 +54,30 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
         context, input_port_index_humanoid_status_);
 
     // Output:
-    QPInput& result = output->GetMutableData(output_port_index_qp_input_)
-                          ->GetMutableValue<QPInput>();
-
-    // Update weights.
-    for (const std::string& joint_name : robot_status->arm_joint_names()) {
-      int idx = robot_status->name_to_position_index().at(joint_name);
-      result.mutable_desired_joint_motions().mutable_weight(idx) = -1;
-      result.mutable_desired_joint_motions().mutable_constraint_type(idx) =
-          ConstraintType::Hard;
-    }
-    for (const std::string& joint_name : robot_status->neck_joint_names()) {
-      int idx = robot_status->name_to_position_index().at(joint_name);
-      result.mutable_desired_joint_motions().mutable_weight(idx) = -1;
-      result.mutable_desired_joint_motions().mutable_constraint_type(idx) =
-          ConstraintType::Hard;
-    }
+    lcmt_qp_input& msg = output->GetMutableData(output_port_index_qp_input_)
+                             ->GetMutableValue<lcmt_qp_input>();
 
     // Update desired accelerations.
-    result.mutable_desired_centroidal_momentum_dot()
+    QPInput qp_input = MakeExampleQPInput(*robot_status);
+    qp_input.mutable_desired_centroidal_momentum_dot()
         .mutable_values()
         .tail<3>() =
         (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
          Kd_com_.array() * robot_status->comd().array()).matrix() *
         robot_.getMass();
 
-    result.mutable_desired_joint_motions().mutable_values() =
+    qp_input.mutable_desired_dof_motions().mutable_values() =
         joint_PDff_.ComputeTargetAcceleration(robot_status->position(),
                                               robot_status->velocity());
-    result.mutable_desired_body_motions().at("pelvis").mutable_values() =
+    qp_input.mutable_desired_body_motions().at("pelvis").mutable_values() =
         pelvis_PDff_.ComputeTargetAcceleration(
             robot_status->pelvis().pose(), robot_status->pelvis().velocity());
-    result.mutable_desired_body_motions().at("torso").mutable_values() =
+    qp_input.mutable_desired_body_motions().at("torso").mutable_values() =
         torso_PDff_.ComputeTargetAcceleration(robot_status->torso().pose(),
                                               robot_status->torso().velocity());
+
+    // Encode and send.
+    EncodeQPInput(qp_input, &msg);
   }
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
@@ -94,7 +85,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     std::unique_ptr<LeafSystemOutput<double>> output(
         new LeafSystemOutput<double>);
     output->add_port(std::unique_ptr<AbstractValue>(
-        new Value<QPInput>(MakeExampleQPInput(robot_))));
+        new Value<lcmt_qp_input>(lcmt_qp_input())));
     return std::move(output);
   }
 
@@ -105,15 +96,15 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   void SetDesired(const HumanoidStatus& robot_status) {
     desired_com_ = robot_status.com();
     pelvis_PDff_ = CartesianSetpoint<double>(
-        robot_status.pelvis().pose(), Eigen::Vector6d::Zero(),
-        Eigen::Vector6d::Zero(), Kp_pelvis_, Kd_pelvis_);
+        robot_status.pelvis().pose(), Vector6<double>::Zero(),
+        Vector6<double>::Zero(), Kp_pelvis_, Kd_pelvis_);
     torso_PDff_ = CartesianSetpoint<double>(
-        robot_status.torso().pose(), Eigen::Vector6d::Zero(),
-        Eigen::Vector6d::Zero(), Kp_torso_, Kd_torso_);
+        robot_status.torso().pose(), Vector6<double>::Zero(),
+        Vector6<double>::Zero(), Kp_torso_, Kd_torso_);
     int dim = robot_status.position().size();
     joint_PDff_ = VectorSetpoint<double>(
-        robot_status.position(), Eigen::VectorXd::Zero(dim),
-        Eigen::VectorXd::Zero(dim), Kp_joints_, Kd_joints_);
+        robot_status.position(), VectorX<double>::Zero(dim),
+        VectorX<double>::Zero(dim), Kp_joints_, Kd_joints_);
   }
 
   /**
@@ -142,16 +133,16 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
   CartesianSetpoint<double> pelvis_PDff_;
   CartesianSetpoint<double> torso_PDff_;
 
-  Eigen::Vector3d desired_com_;
-  Eigen::Vector3d Kp_com_;
-  Eigen::Vector3d Kd_com_;
+  Vector3<double> desired_com_;
+  Vector3<double> Kp_com_;
+  Vector3<double> Kd_com_;
 
-  Eigen::Vector6d Kp_pelvis_;
-  Eigen::Vector6d Kd_pelvis_;
-  Eigen::Vector6d Kp_torso_;
-  Eigen::Vector6d Kd_torso_;
-  Eigen::VectorXd Kp_joints_;
-  Eigen::VectorXd Kd_joints_;
+  Vector6<double> Kp_pelvis_;
+  Vector6<double> Kd_pelvis_;
+  Vector6<double> Kp_torso_;
+  Vector6<double> Kd_torso_;
+  VectorX<double> Kp_joints_;
+  VectorX<double> Kd_joints_;
 };
 
 }  // namespace qp_inverse_dynamics

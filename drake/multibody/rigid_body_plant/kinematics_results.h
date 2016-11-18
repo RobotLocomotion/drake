@@ -2,7 +2,6 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 
@@ -15,7 +14,7 @@ template <typename T> class RigidBodyPlant;
 /// A class containing the kinematics results from a RigidBodyPlant system.
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class DRAKE_EXPORT KinematicsResults {
+class KinematicsResults {
  public:
   /// Returns the number of bodies in the kinematics results.
   int get_num_bodies() const;

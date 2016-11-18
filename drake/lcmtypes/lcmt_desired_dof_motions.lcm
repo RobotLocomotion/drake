@@ -1,0 +1,12 @@
+package drake;
+
+struct lcmt_desired_dof_motions {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  int32_t num_dof;
+  string dof_names[num_dof];
+
+  // Should be same size as num_dof
+  lcmt_constrained_values constrained_accelerations;
+}

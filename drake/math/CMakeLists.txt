@@ -46,10 +46,10 @@ target_link_libraries(drakeMath drakeCommon)
 drake_install_headers(${installed_headers})
 
 pods_install_libraries(drakeMath)
-pods_install_pkg_config_file(drake-math
-  LIBS -ldrakeMath -ldrakeCommon
-  REQUIRES
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-math
+  TARGET drakeMath
+  LIBS -ldrakeMath
+  REQUIRES drake-common)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

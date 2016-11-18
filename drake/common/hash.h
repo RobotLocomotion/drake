@@ -16,6 +16,11 @@ namespace drake {
 template <class T>
 size_t hash_combine(size_t seed, const T& v);
 
+template <class T, class... Rest>
+size_t hash_combine(size_t seed, const T& v, Rest... rest) {
+  return hash_combine(hash_combine(seed, v), rest...);
+}
+
 /** Computes the combined hash value of the elements of an iterator range. */
 template <typename It>
 size_t hash_range(It first, It last) {
@@ -36,7 +41,7 @@ struct hash_value {
 template <class T1, class T2>
 struct hash_value<std::pair<T1, T2>> {
   size_t operator()(const std::pair<T1, T2>& p) {
-    return hash_combine(hash_combine(0, p.first), p.second);
+    return hash_combine(0, p.first, p.second);
   }
 };
 

@@ -1,6 +1,7 @@
 if(gurobi_FOUND)
   drake_add_mex(fastQPmex fastQPmex.cpp)
   target_link_libraries(fastQPmex drakeQP)
+
   drake_add_mex(gurobiQPmex gurobiQPmex.cpp)
   target_link_libraries(gurobiQPmex drakeQP)
 endif()

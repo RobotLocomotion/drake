@@ -356,7 +356,7 @@ vector<int> findPositionIndices(const RigidBodyTree<double>& robot,
   vector<int> position_indices;
   position_indices.reserve(joint_names.size());
   for (const auto& joint_name : joint_names) {
-    const RigidBody& body = *robot.FindChildBodyOfJoint(joint_name);
+    const RigidBody<double>& body = *robot.FindChildBodyOfJoint(joint_name);
     for (int i = 0; i < body.getJoint().get_num_positions(); ++i) {
       position_indices.push_back(body.get_position_start_index() + i);
     }

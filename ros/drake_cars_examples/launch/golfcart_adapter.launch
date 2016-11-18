@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<launch>
-  <group ns="golfcartdj">
-    <node name="golfcart_adapter" pkg="drake_cars_examples" type="golfcart_adapter" output="screen" />
-  </group>
-</launch>

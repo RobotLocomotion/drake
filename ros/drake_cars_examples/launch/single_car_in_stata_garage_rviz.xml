@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<launch>
-  <!-- Start RViz -->
-  <include file="$(find drake_cars_examples)/launch/rviz.xml">
-    <arg name="RVizConfigFile" value="$(find drake_cars_examples)/rviz/single_car_in_stata_garage.rviz" />
-  </include>
-</launch>

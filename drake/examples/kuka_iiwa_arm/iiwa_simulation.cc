@@ -35,7 +35,7 @@ std::shared_ptr<RigidBodySystem> CreateKukaIiwaSystem(void) {
   const std::shared_ptr<RigidBodyTree<double>>& tree =
       rigid_body_system->getRigidBodyTree();
 
-  RigidBody& world = tree->world();
+  RigidBody<double>& world = tree->world();
   Eigen::Vector4d color;
   color << 0.9297, 0.7930, 0.6758,
       1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
@@ -122,7 +122,7 @@ void CheckLimitViolations(
   }
 
   // Ensures the robot's joints are within their position limits.
-  std::vector<std::unique_ptr<RigidBody>>& bodies = tree->bodies;
+  std::vector<std::unique_ptr<RigidBody<double>>>& bodies = tree->bodies;
   for (int robot_state_index = 0, body_index = 0;
        body_index < static_cast<int>(bodies.size()); ++body_index) {
     // Skips rigid bodies without a mobilizer joint. This includes the RigidBody

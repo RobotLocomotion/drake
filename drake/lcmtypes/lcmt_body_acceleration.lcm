@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_body_acceleration {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  string body_name;
+  // Acceleration, in [angular; linear] format.
+  double accelerations[6];
+}

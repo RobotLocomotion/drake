@@ -2,10 +2,9 @@ add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
 drake_install_headers(xmlUtil.h)
-pods_install_pkg_config_file(drake-xml-util
-  LIBS -ldrakeXMLUtil -ldrakeCommmon -ltinyxml2 -lspruce
-  REQUIRES
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-xml-util
+  LIBS -ldrakeXMLUtil -ltinyxml2 -lspruce
+  REQUIRES drake-common)
 
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   parser_model_instance_id_table.cc
@@ -41,13 +40,21 @@ drake_install_headers(
   rigid_body_loop.h
   rigid_body_tree_construction.h)
 
-pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeXMLUtil
+drake_install_pkg_config_file(drake-rbm
+  TARGET drakeRBM
+  LIBS -ldrakeRBM
   REQUIRES
-  VERSION 0.0.1)
+    drake-collision
+    drake-common
+    drake-joints
+    drake-xml-util)
 
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES ik_options.cc)
 target_link_libraries(drakeIKoptions drakeRBM)
+drake_install_pkg_config_file(drake-ik-options
+  TARGET drakeIKoptions
+  LIBS -ldrakeIKoptions
+  REQUIRES drake-rbm)
 
 # Note that drakeIK is published via a SWIG MATLAB wrapper, but we haven't
 # moved it into the "C++ and MATLAB shared code" lower section of this file,
@@ -65,10 +72,14 @@ pods_install_libraries(drakeIK)
 pods_install_libraries(drakeIKoptions)
 drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
   inverse_kinematics_backend.h rigid_body_ik.h)
-pods_install_pkg_config_file(drake-ik
-  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-  REQUIRES drake-rbm
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-ik
+  TARGET drakeIK
+  LIBS -ldrakeIK
+  REQUIRES
+    drake-ik-options
+    drake-optimization
+    drake-rbm
+    drake-rigid-body-constraint)
 
 add_subdirectory(collision)
 add_subdirectory(constraint)

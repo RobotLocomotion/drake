@@ -99,6 +99,7 @@ You can also set the coding style through the following steps
 4. On the right panel, choose Set from > Predefined Style > Google
 
 .. _integrating_cpplint_with_clion:
+
 Integrating Cpplint in CLion
 ============================
 This will give you the ability to execute ``cpplint`` on a single file or the full
@@ -106,13 +107,13 @@ project and have the result presented in the CLion console with each warning
 a clickable hyperlink.
 
 Creating the External Tools
---------------------------
+---------------------------
 
 .. role:: raw-html(raw)
    :format: html
 
 Run ``Cpplint`` on Single File
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
 3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
@@ -142,7 +143,7 @@ Run ``Cpplint`` on Single File
 10. Click ``OK`` on the ``Output Filters`` dialog.
 
 Run ``CppLint`` on Full Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Repeat the steps from creating the single-file version with the following
 differences:
 
@@ -153,6 +154,7 @@ differences:
     :Program: ``$ProjectFileDir$/common/test/cpplint_wrapper.py``
     :Parameters: <empty>
     :Working directory: ``$ProjectFileDir$``
+
 Continue on with steps 5 to the end.
 
 Executing

@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Ensures the robot's joints are within their position limits.
-  const std::vector<std::unique_ptr<RigidBody>>& bodies =
+  const std::vector<std::unique_ptr<RigidBody<double>>>& bodies =
       rigid_body_plant.get_rigid_body_tree().bodies;
   for (int state_index = 0, i = 0; i < static_cast<int>(bodies.size()); ++i) {
     // Skips rigid bodies without a parent. This includes the world.

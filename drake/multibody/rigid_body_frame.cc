@@ -2,11 +2,11 @@
 
 #include "drake/math/roll_pitch_yaw.h"
 
-RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody* body,
+RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                  const Eigen::Isometry3d& transform_to_body)
       : name_(name), body_(body), transform_to_body_(transform_to_body) {}
 
-RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody* body,
+RigidBodyFrame::RigidBodyFrame(const std::string& name, RigidBody<double>* body,
                                const Eigen::Vector3d& xyz,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
@@ -19,9 +19,11 @@ int RigidBodyFrame::get_model_instance_id() const {
 
 const std::string& RigidBodyFrame::get_name() const { return name_; }
 
-const RigidBody& RigidBodyFrame::get_rigid_body() const { return *body_; }
+const RigidBody<double>& RigidBodyFrame::get_rigid_body() const {
+  return *body_;
+}
 
-RigidBody* RigidBodyFrame::get_mutable_rigid_body() {
+RigidBody<double>* RigidBodyFrame::get_mutable_rigid_body() {
   return body_;
 }
 
@@ -41,11 +43,11 @@ void RigidBodyFrame::set_name(const std::string& name) {
   name_ = name;
 }
 
-void RigidBodyFrame::set_rigid_body(RigidBody* rigid_body) {
+void RigidBodyFrame::set_rigid_body(RigidBody<double>* rigid_body) {
   body_ = rigid_body;
 }
 
-bool RigidBodyFrame::has_as_rigid_body(RigidBody* rigid_body) {
+bool RigidBodyFrame::has_as_rigid_body(RigidBody<double>* rigid_body) {
   return body_ == rigid_body;
 }
 

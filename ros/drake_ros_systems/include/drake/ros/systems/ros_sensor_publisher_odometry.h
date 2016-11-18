@@ -74,7 +74,8 @@ class SensorPublisherOdometry {
     ::ros::NodeHandle nh;
 
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_system->getRigidBodyTree()->world();
+    const RigidBody<double>& world =
+        rigid_body_system->getRigidBodyTree()->world();
 
     // Creates a ROS topic publisher for each robot in the rigid body system.
     // A robot is defined by any link that's connected to the world via a
@@ -146,7 +147,7 @@ class SensorPublisherOdometry {
     KinematicsCache<double> cache = rigid_body_tree->doKinematics(q, v);
 
     // Obtains a reference to the world link in the rigid body tree.
-    const RigidBody& world = rigid_body_tree->world();
+    const RigidBody<double>& world = rigid_body_tree->world();
 
     // Publishes an odometry message for each rigid body that's connected via a
     // floating (non-fixed) joint to the world.

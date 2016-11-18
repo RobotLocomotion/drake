@@ -6,14 +6,13 @@
 #include <ostream>
 #include <string>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/hash.h"
 
 namespace drake {
 namespace symbolic {
 
 /** Represents a symbolic variable. */
-class DRAKE_EXPORT Variable {
+class Variable {
  public:
   /** Default constructor (DELETED). */
   Variable() = delete;
@@ -38,8 +37,7 @@ class DRAKE_EXPORT Variable {
   std::string get_name() const;
   std::string to_string() const;
 
-  DRAKE_EXPORT friend std::ostream& operator<<(std::ostream& os,
-                                               const Variable& var);
+  friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
   // Produces a unique ID for a variable.
@@ -49,10 +47,10 @@ class DRAKE_EXPORT Variable {
 };
 
 /// Compare two variables based on their ID values
-DRAKE_EXPORT bool operator<(const Variable& lhs, const Variable& rhs);
+bool operator<(const Variable& lhs, const Variable& rhs);
 
 /// Check equality
-DRAKE_EXPORT bool operator==(const Variable& lhs, const Variable& rhs);
+bool operator==(const Variable& lhs, const Variable& rhs);
 
 }  // namespace symbolic
 

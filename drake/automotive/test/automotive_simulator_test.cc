@@ -73,7 +73,7 @@ void TestSimpleCarWithSdf(const std::string& sdf_filename,
   ASSERT_EQ(1 + num_vehicle_bodies, tree.get_num_bodies());
 
   // Get the rigid bodies belonging to the vehicle's model instance.
-  const std::vector<const RigidBody*> vehicle_bodies =
+  const std::vector<const RigidBody<double>*> vehicle_bodies =
       tree.FindModelInstanceBodies(model_instance_id);
   EXPECT_EQ(vehicle_bodies.size(), num_vehicle_bodies);
 
@@ -168,10 +168,10 @@ void TestTrajectoryCarWithSdf(const std::string& sdf_file_1, int num_bodies_1,
       simulator->AddTrajectoryCarFromSdf(sdf_file_2, curve, 1.0, 10.0);
 
   // Obtain the number of bodies in the models.
-  const std::vector<const RigidBody*> vehicle_bodies_1 =
+  const std::vector<const RigidBody<double>*> vehicle_bodies_1 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_1);
-  const std::vector<const RigidBody*> vehicle_bodies_2 =
+  const std::vector<const RigidBody<double>*> vehicle_bodies_2 =
       simulator->get_rigid_body_tree().FindModelInstanceBodies(
           model_instance_id_2);
   EXPECT_EQ(vehicle_bodies_1.size(), num_bodies_1);

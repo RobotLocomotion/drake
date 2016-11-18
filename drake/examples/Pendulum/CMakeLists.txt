@@ -8,10 +8,12 @@ if(lcm_FOUND)
     drakeTrajectoryOptimization)
   pods_install_libraries(drakePendulumPlant)
   drake_install_headers(pendulum_plant.h pendulum_swing_up.h)
-  pods_install_pkg_config_file(drake-pendulum-system
+  drake_install_pkg_config_file(drake-pendulum-plant
+    TARGET drakePendulumPlant
     LIBS -ldrakePendulumPlant
     REQUIRES
-    VERSION 0.0.1)
+      drake-dynamic-constraint
+      drake-trajectory-optimization)
 
   add_executable(pendulum_run_dynamics pendulum_run_dynamics.cc)
   target_link_libraries(pendulum_run_dynamics

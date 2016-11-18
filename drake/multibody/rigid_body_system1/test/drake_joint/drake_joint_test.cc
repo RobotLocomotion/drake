@@ -51,7 +51,8 @@ GTEST_TEST(DrakeJointTests, TestZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
+  RigidBody<double>* body =
+      rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");
@@ -113,7 +114,8 @@ GTEST_TEST(DrakeJointTests, TestNonZeroOffset) {
 
   // Gets the body whose joint is the one we're looking for. This should return
   // the joint's child body.
-  RigidBody* body = rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
+  RigidBody<double>* body =
+      rbs.getRigidBodyTree()->FindChildBodyOfJoint(kJointName,
       model_instance_id);
 
   EXPECT_EQ(body->get_name(), "link2");

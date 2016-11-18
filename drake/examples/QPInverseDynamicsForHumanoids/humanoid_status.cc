@@ -8,19 +8,19 @@ namespace qp_inverse_dynamics {
 
 // TODO(siyuan.feng): These are hard coded for Valkyrie, and they should be
 // included in the model file or loaded from a separate config file.
-const Eigen::Vector3d HumanoidStatus::kFootToSoleOffset =
-    Eigen::Vector3d(0, 0, -0.09);
-const Eigen::Vector3d HumanoidStatus::kFootToSensorPositionOffset =
-    Eigen::Vector3d(0.0215646, 0.0, -0.051054);
-const Eigen::Matrix3d HumanoidStatus::kFootToSensorRotationOffset =
-    Eigen::Matrix3d(Eigen::AngleAxisd(-M_PI, Eigen::Vector3d::UnitX()));
+const Vector3<double> HumanoidStatus::kFootToSoleOffset =
+    Vector3<double>(0, 0, -0.09);
+const Vector3<double> HumanoidStatus::kFootToSensorPositionOffset =
+    Vector3<double>(0.0215646, 0.0, -0.051054);
+const Matrix3<double> HumanoidStatus::kFootToSensorRotationOffset =
+    Matrix3<double>(AngleAxis<double>(-M_PI, Vector3<double>::UnitX()));
 
 void HumanoidStatus::Update() {
   cache_.initialize(position_, velocity_);
   robot_->doKinematics(cache_, true);
 
   M_ = robot_->massMatrix(cache_);
-  drake::eigen_aligned_std_unordered_map<RigidBody const*,
+  drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
                                          drake::TwistVector<double>> f_ext;
   bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
 
@@ -42,7 +42,7 @@ void HumanoidStatus::Update() {
   for (int i = 0; i < 2; ++i) {
     // Make H1 = H_sensor_to_sole.
     // Assuming the sole frame has the same orientation as the foot frame.
-    Eigen::Isometry3d H1;
+    Isometry3<double> H1;
     H1.linear() = kFootToSensorRotationOffset.transpose();
     H1.translation() = -kFootToSensorPositionOffset + kFootToSoleOffset;
 
@@ -51,7 +51,7 @@ void HumanoidStatus::Update() {
 
     // H2 = transformation from sensor frame to a frame that is aligned with the
     // world frame, and is located at the origin of the foot frame.
-    Eigen::Isometry3d H2;
+    Isometry3<double> H2;
     H2.linear() =
         foot(i).pose().linear() * kFootToSensorRotationOffset.transpose();
     H2.translation() =
@@ -62,7 +62,7 @@ void HumanoidStatus::Update() {
   }
 
   // Compute center of pressure (CoP)
-  Eigen::Vector2d cop_w[2];
+  Vector2<double> cop_w[2];
   double Fz[2] = {foot_wrench_in_world_frame_[Side::LEFT][5],
                   foot_wrench_in_world_frame_[Side::RIGHT][5]};
   for (int i = 0; i < 2; ++i) {

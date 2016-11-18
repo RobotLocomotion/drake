@@ -25,7 +25,7 @@ void GravityCompensator<T>::EvalOutput(const Context<T>& context,
   Eigen::VectorXd q = this->EvalEigenVectorInput(context, 0);
 
   KinematicsCache<T> cache = rigid_body_tree_.doKinematics(q);
-  eigen_aligned_std_unordered_map<RigidBody const*, drake::TwistVector<T>>
+  eigen_aligned_std_unordered_map<RigidBody<T> const*, drake::TwistVector<T>>
       f_ext;
   f_ext.clear();
 

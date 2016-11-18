@@ -4,7 +4,6 @@
 #include <string>
 
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_export.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -41,7 +40,6 @@ namespace urdf {
  * @throws std::runtime_error if the rigid body to which the new
  * `RigidBodyFrame` is attached is not found.
  */
-DRAKE_EXPORT
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const RigidBodyTree<double>& tree, const tinyxml2::XMLElement& link,
     const tinyxml2::XMLElement* pose, const std::string& name,
@@ -66,7 +64,6 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
  * @return A table mapping the names of the models whose instances were just
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
 
@@ -74,7 +71,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
   DRAKE_DEPRECATED(
       "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
 
@@ -103,7 +99,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT ModelInstanceIdTable
+ModelInstanceIdTable
 AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -113,7 +109,6 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
 #ifndef SWIG
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -147,7 +142,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const std::string& root_dir,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -185,7 +179,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     const std::string& urdf_string,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -197,7 +190,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -222,14 +214,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * @return A table mapping the names of the models whose instances were just
  * added to @p tree to their instance IDs, which are unique within @p tree.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
@@ -255,7 +245,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -264,7 +253,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileToWorld().")
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -295,7 +283,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -329,7 +316,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * added to the `RigidBodyTree` to their instance IDs, which are unique within
  * the `RigidBodyTree`.
  */
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const std::string& urdf_filename,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -341,7 +327,6 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
 #ifndef SWIG
   DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 #endif
-DRAKE_EXPORT
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename,
      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).

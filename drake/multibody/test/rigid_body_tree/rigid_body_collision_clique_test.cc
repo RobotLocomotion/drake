@@ -33,8 +33,9 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     I.block(3, 3, 3, 3) << Matrix3d::Identity();
 
     // This body requires a self-collision clique
-    RigidBody* temp_body;
-    tree_->add_rigid_body(unique_ptr<RigidBody>(temp_body = new RigidBody()));
+    RigidBody<double>* temp_body;
+    tree_->add_rigid_body(
+        unique_ptr<RigidBody<double>>(temp_body = new RigidBody<double>()));
     temp_body->set_model_name("robot1");
     temp_body->set_name("body1");
     temp_body->set_spatial_inertia(I);
@@ -44,14 +45,16 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     temp_body->AddCollisionElement("default", body1_collision_element_2_.get());
 
     // These next bodies will *not* require self-collision clique
-    tree_->add_rigid_body(unique_ptr<RigidBody>(body2_ = new RigidBody()));
+    tree_->add_rigid_body(
+        unique_ptr<RigidBody<double>>(body2_ = new RigidBody<double>()));
     body2_->set_model_name("robot2");
     body2_->set_name("body2");
     body2_->set_spatial_inertia(I);
     body2_collision_element_ = make_unique<Element>();
     body2_->AddCollisionElement("default", body2_collision_element_.get());
 
-    tree_->add_rigid_body(unique_ptr<RigidBody>(body3_ = new RigidBody()));
+    tree_->add_rigid_body(
+        unique_ptr<RigidBody<double>>(body3_ = new RigidBody<double>()));
     body3_->set_model_name("robot3");
     body3_->set_name("body3");
     body3_->set_spatial_inertia(I);
@@ -62,8 +65,8 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
 
   // Bodies are owned by the tree. These raw pointers allow post-hoc
   // manipulation.
-  RigidBody* body2_{};
-  RigidBody* body3_{};
+  RigidBody<double>* body2_{};
+  RigidBody<double>* body3_{};
 
   // The collision elements are owned by the test class, the bodies receive
   // raw pointers which they do *not* own.

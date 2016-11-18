@@ -15,6 +15,7 @@
 
 #include "drake/common/hash.h"
 #include "drake/common/symbolic_environment.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
 
@@ -118,10 +119,11 @@ TEST_F(SymbolicExpressionTest, LessKind) {
   const Expression e_tanh{tanh(x_)};
   const Expression e_min{min(x_, y_)};
   const Expression e_max{max(x_, y_)};
+  const Expression e_ite{if_then_else(x_ < y_, x_, y_)};
   CheckOrdering({e_constant, e_var,  e_neg,  e_add,  e_mul,  e_div,
                  e_log,      e_abs,  e_exp,  e_sqrt, e_pow,  e_sin,
                  e_cos,      e_tan,  e_asin, e_acos, e_atan, e_atan2,
-                 e_sinh,     e_cosh, e_tanh, e_min,  e_max});
+                 e_sinh,     e_cosh, e_tanh, e_min,  e_max,  e_ite});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -299,6 +301,17 @@ TEST_F(SymbolicExpressionTest, LessMax) {
   CheckOrdering({max1, max2, max3});
 }
 
+TEST_F(SymbolicExpressionTest, LessIfThenElse) {
+  const Formula f1{x_ < y_};
+  const Formula f2{y_ < z_};
+  const Expression ite1{if_then_else(f1, x_, y_)};
+  const Expression ite2{if_then_else(f1, x_, z_)};
+  const Expression ite3{if_then_else(f1, y_, z_)};
+  const Expression ite4{if_then_else(f2, y_, z_)};
+  const Expression ite5{if_then_else(f2, z_, x_)};
+  CheckOrdering({ite1, ite2, ite3, ite4, ite5});
+}
+
 TEST_F(SymbolicExpressionTest, Variable) {
   EXPECT_EQ(x_.to_string(), var_x_.get_name());
   EXPECT_EQ(y_.to_string(), var_y_.get_name());
@@ -408,7 +421,7 @@ TEST_F(SymbolicExpressionTest, Add1) {
   EXPECT_EQ((0.0 + c3_).to_string(), c3_.to_string());
   EXPECT_PRED2(ExpEqual, c3_ + 0.0, c3_);
   EXPECT_EQ((c3_ + 0.0).to_string(), c3_.to_string());
-  EXPECT_PRED2(ExpEqual, c3_ + c4_, Expression{3.14159 + -2.718});
+  EXPECT_PRED2(ExpEqual, c3_ + c4_, 3.14159 + -2.718);
   EXPECT_EQ((c3_ + c4_).to_string(), Expression{3.14159 + -2.718}.to_string());
   EXPECT_PRED2(ExpEqual, c3_ + x_, 3.14159 + x_);
   EXPECT_EQ((c3_ + x_).to_string(), (3.14159 + x_).to_string());
@@ -545,7 +558,7 @@ TEST_F(SymbolicExpressionTest, Mul1) {
   EXPECT_PRED2(ExpEqual, 1.0 * c3_, c3_);
   EXPECT_PRED2(ExpEqual, c3_ * 1.0, c3_);
 
-  EXPECT_PRED2(ExpEqual, c3_ * c4_, Expression{3.14159 * -2.718});
+  EXPECT_PRED2(ExpEqual, c3_ * c4_, 3.14159 * -2.718);
   EXPECT_PRED2(ExpEqual, c3_ * x_, (3.14159 * x_));
   EXPECT_PRED2(ExpEqual, x_ * c3_, (x_ * 3.14159));
 }
@@ -689,7 +702,7 @@ GTEST_TEST(ExpressionTest, CompatibleWithMap) {
 // std::vector.
 GTEST_TEST(ExpressionTest, CompatibleWithVector) {
   vector<Expression> vec;
-  vec.push_back(Expression{123.0});
+  vec.push_back(123.0);
 }
 
 GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
@@ -1105,6 +1118,71 @@ TEST_F(SymbolicExpressionTest, Max2) {
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
                    std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+}
+
+TEST_F(SymbolicExpressionTest, IfThenElse1) {
+  // should be simplified to 1.0 since (x + 1.0 > x) => true.
+  const Expression ite1 = if_then_else(x_ + 1.0 > x_, 1.0, 0.0);
+  EXPECT_PRED2(ExpEqual, ite1, 1.0);
+
+  // should be simplified to 0.0 since (x > x + 1.0) => false.
+  const Expression ite2 = if_then_else(x_ > x_ + 1.0, 1.0, 0.0);
+  EXPECT_PRED2(ExpEqual, ite2, 0.0);
+
+  // should not be simplified.
+  const Expression ite3 = if_then_else(x_ > y_, 1.0, 0.0);
+  EXPECT_PRED2(ExpNotEqual, ite3, 1.0);
+  EXPECT_PRED2(ExpNotEqual, ite3, 0.0);
+}
+
+TEST_F(SymbolicExpressionTest, IfThenElse2) {
+  const Expression max_fn{if_then_else(x_ > y_, x_, y_)};
+  const Expression min_fn{if_then_else(x_ < y_, x_, y_)};
+
+  const Environment env1{{var_x_, 5.0}, {var_y_, 3.0}};
+  EXPECT_EQ(max_fn.Evaluate(env1), std::max(5.0, 3.0));
+  EXPECT_EQ(min_fn.Evaluate(env1), std::min(5.0, 3.0));
+
+  const Environment env2{{var_x_, 2.0}, {var_y_, 7.0}};
+  EXPECT_EQ(max_fn.Evaluate(env2), std::max(2.0, 7.0));
+  EXPECT_EQ(min_fn.Evaluate(env2), std::min(2.0, 7.0));
+}
+
+TEST_F(SymbolicExpressionTest, IfThenElse3) {
+  const Expression max_fn{if_then_else(x_ > 1.0, y_, z_)};
+  const Variables vars{max_fn.GetVariables()};
+  EXPECT_EQ(vars.size(), 3u);
+}
+
+TEST_F(SymbolicExpressionTest, Cond1) {
+  const Expression e{cond(x_ >= 10, 10, 0.0)};
+  EXPECT_PRED2(ExpEqual, e, if_then_else(x_ >= 10, 10, 0.0));
+
+  EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 0}}), 0.0);
+}
+
+TEST_F(SymbolicExpressionTest, Cond2) {
+  // clang-format off
+  const Expression e{cond(x_ >= 10, 10.0,
+                          x_ >= 5,  5.0,
+                          x_ >= 2,  2.0,
+                                    0.0)};
+  EXPECT_PRED2(ExpEqual, e,
+               if_then_else(x_ >= 10, 10,
+               if_then_else(x_ >= 5,   5,
+               if_then_else(x_ >= 2,   2,
+                                     0.0))));
+  // clang-format on
+
+  EXPECT_EQ(e.Evaluate({{var_x_, 15}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 10}}), 10.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 9}}), 5.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 5}}), 5.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 3}}), 2.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 2}}), 2.0);
+  EXPECT_EQ(e.Evaluate({{var_x_, 1}}), 0.0);
 }
 
 TEST_F(SymbolicExpressionTest, GetVariables) {

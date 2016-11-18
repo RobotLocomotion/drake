@@ -48,6 +48,7 @@ class DiagramContext : public Context<T> {
   /// context allocation only.
   void AddSystem(SystemIndex index, std::unique_ptr<Context<T>> context,
                  std::unique_ptr<SystemOutput<T>> output) {
+    DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
     context->set_parent(this);
@@ -102,20 +103,34 @@ class DiagramContext : public Context<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   void MakeState() {
-    std::vector<ContinuousState<T>*> substates;
+    std::vector<ContinuousState<T>*> sub_xcs;
+    std::vector<BasicVector<T>*> sub_xds;
+    std::vector<AbstractValue*> sub_xms;
     for (auto& context : contexts_) {
-      substates.push_back(context->get_mutable_continuous_state());
+      // Continuous
+      sub_xcs.push_back(context->get_mutable_continuous_state());
+      // Difference
+      const std::vector<BasicVector<T>*>& xd_data =
+          context->get_mutable_difference_state()->get_data();
+      sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
+      // Modal
+      ModalState* xm = context->get_mutable_modal_state();
+      for (int i = 0; i < xm->size(); ++i) {
+        sub_xms.push_back(&xm->get_mutable_modal_state(i));
+      }
     }
+    // The wrapper states do not own the constituent state.
     this->set_continuous_state(
-        std::make_unique<DiagramContinuousState<T>>(substates));
+        std::make_unique<DiagramContinuousState<T>>(sub_xcs));
+    this->set_difference_state(std::make_unique<DifferenceState<T>>(sub_xds));
+    this->set_modal_state(std::make_unique<ModalState>(sub_xms));
   }
 
   /// Returns the output structure for a given constituent system at @p index.
   /// Aborts if @p index is out of bounds, or if no system has been added to the
   /// DiagramContext at that index.
   SystemOutput<T>* GetSubsystemOutput(SystemIndex index) const {
-    const int num_outputs = static_cast<int>(outputs_.size());
-    DRAKE_DEMAND(index >= 0 && index < num_outputs);
+    DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(outputs_[index] != nullptr);
     return outputs_[index].get();
   }
@@ -125,8 +140,7 @@ class DiagramContext : public Context<T> {
   /// DiagramContext at that index.
   /// TODO(david-german-tri): Rename to get_subsystem_context.
   const Context<T>* GetSubsystemContext(SystemIndex index) const {
-    const int num_contexts = static_cast<int>(contexts_.size());
-    DRAKE_DEMAND(index >= 0 && index < num_contexts);
+    DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] != nullptr);
     return contexts_[index].get();
   }
@@ -136,8 +150,7 @@ class DiagramContext : public Context<T> {
   /// DiagramContext at that index.
   /// TODO(david-german-tri): Rename to get_mutable_subsystem_context.
   Context<T>* GetMutableSubsystemContext(SystemIndex index) {
-    const int num_contexts = static_cast<int>(contexts_.size());
-    DRAKE_DEMAND(index >= 0 && index < num_contexts);
+    DRAKE_DEMAND(index >= 0 && index < num_subsystems());
     DRAKE_DEMAND(contexts_[index] != nullptr);
     return contexts_[index].get();
   }
@@ -173,11 +186,10 @@ class DiagramContext : public Context<T> {
  protected:
   DiagramContext<T>* DoClone() const override {
     DRAKE_ASSERT(contexts_.size() == outputs_.size());
-    const int num_subsystems = static_cast<int>(contexts_.size());
-    DiagramContext<T>* clone = new DiagramContext(num_subsystems);
+    DiagramContext<T>* clone = new DiagramContext(num_subsystems());
 
     // Clone all the subsystem contexts and outputs.
-    for (int i = 0; i < num_subsystems; ++i) {
+    for (int i = 0; i < num_subsystems(); ++i) {
       DRAKE_DEMAND(contexts_[i] != nullptr);
       DRAKE_DEMAND(outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
@@ -220,6 +232,11 @@ class DiagramContext : public Context<T> {
   }
 
  private:
+  int num_subsystems() const {
+    DRAKE_ASSERT(contexts_.size() == outputs_.size());
+    return static_cast<int>(contexts_.size());
+  }
+
   std::vector<PortIdentifier> input_ids_;
 
   // The outputs are stored in SystemIndex order, and outputs_ is equal in

@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "drake/common/drake_export.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -25,8 +24,7 @@ namespace systems {
 /// They are already available to link against in libdrakeSystemFramework.
 /// No other values for T are currently supported.
 template <typename T>
-class DRAKE_EXPORT SpringMassStateVector
-    : public BasicVector<T> {
+class SpringMassStateVector : public BasicVector<T> {
  public:
   /// @param initial_position The position of the mass in meters.
   /// @param initial_velocity The velocity of the mass in meters / second.
@@ -73,8 +71,7 @@ class DRAKE_EXPORT SpringMassStateVector
 ///
 /// @ingroup rigid_body_systems
 template <typename T>
-class DRAKE_EXPORT SpringMassSystem
-    : public LeafSystem<T> {
+class SpringMassSystem : public LeafSystem<T> {
  public:
   /// Construct a spring-mass system with a fixed spring constant and given
   /// mass.

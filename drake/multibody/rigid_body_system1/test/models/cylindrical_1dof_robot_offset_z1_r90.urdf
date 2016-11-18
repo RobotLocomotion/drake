@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<robot name="cylindrical_1dof_robot">
+
+  <link name="world">
+  </link>
+
+  <link name="link1">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0" izz="0.005"/>
+      <origin xyz="0 0 0.3"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.3" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+     <material name="Cyan">
+       <color rgba="0 1.0 1.0 1.0"/>
+     </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0.3"/>
+    </collision>
+  </link>
+
+  <link name="link2">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.0325" ixy="0.0" ixz="0.0" iyy="0.0325" iyz="0.0" izz="0.005"/>
+      <origin xyz="0 0 0.3"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.3" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+     <material name="Cyan">
+       <color rgba="0 1.0 1.0 1.0"/>
+     </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.6" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0.3"/>
+    </collision>
+  </link>
+
+  <!--joint between {parent} and link_1-->
+  <!-- Offset the model's world frame by Z = 1m, and Roll = 90 degrees-->
+  <joint name="world_1dof_robot_joint" type="fixed">
+    <origin rpy="1.570796326794896557998982 0 0" xyz="0 0 1.0"/>
+    <parent link="world"/>
+    <child link="link_1"/>
+  </joint>
+
+  <joint name="joint1" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.6" rpy="0 0 0"/>
+    <limit effort="30" velocity="1.0" lower="-1.5708" upper="1.5708" />
+  </joint>
+
+</robot>

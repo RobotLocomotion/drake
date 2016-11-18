@@ -265,9 +265,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   //      prog.PrintSolution();
 
   StateVector<double> dot(nq + nv);
-  dot << kinsol.transformPositionDotMappingToVelocityMapping(
-             Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
-                 nq, nq)) *
+  dot << kinsol.transformQDotMappingToVelocityMapping(
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
+          nq, nq)) *
              v,
       vdot.value();
   return dot;
@@ -300,7 +300,7 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-DRAKE_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+RigidBodySystem::StateVector<double> getInitialState(
     const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->get_num_positions() +
               sys.tree->get_num_velocities());
