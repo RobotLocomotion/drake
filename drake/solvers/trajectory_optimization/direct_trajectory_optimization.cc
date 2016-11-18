@@ -204,7 +204,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
   const auto& u_values = DecisionVariableMatrixToDoubleMatrix(u_vars_);
 
   for (int i = 0; i < N_; i++) {
-    inputs.push_back(u_values.block(i * num_inputs_, 0, num_inputs_, 1));
+    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
   }
   return inputs;
 }
@@ -217,7 +217,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   const auto& x_values = DecisionVariableMatrixToDoubleMatrix(x_vars_);
 
   for (int i = 0; i < N_; i++) {
-    states.push_back(x_values.block(i * num_states_, 0, num_states_, 1));
+    states.push_back(x_values.segment(i * num_states_, num_states_));
   }
   return states;
 }
@@ -237,8 +237,8 @@ void DirectTrajectoryOptimization::GetResultSamples(
   const auto& x_values = DecisionVariableMatrixToDoubleMatrix(x_vars_);
 
   for (int i = 0; i < N_; i++) {
-    inputs->col(i) = u_values.block(i * num_inputs_, 0, num_inputs_, 1);
-    states->col(i) = x_values.block(i * num_states_, 0, num_states_, 1);
+    inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
+    states->col(i) = x_values.segment(i * num_states_, num_states_);
   }
 }
 
