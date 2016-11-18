@@ -51,7 +51,7 @@ class WitnessFunction {
    * Tolerances for zero are set exactly to zero; i.e., the witness function
    * will only be treated as zero when it evaluates exactly to zero.
    */
-  WitnessFunction(const System<T>& system) : system_(system) {
+  explicit WitnessFunction(const System<T>& system) : system_(system) {
     tolerance_left_ = tolerance_right_ = 0.0;
   }
 
@@ -198,5 +198,5 @@ class WitnessFunction {
   double tolerance_left_, tolerance_right_;
   const System<T>& system_;
 };
-} // namespace systems
-} // namespace drake
+}  // namespace systems
+}  // namespace drake
