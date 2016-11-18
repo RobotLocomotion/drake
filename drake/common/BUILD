@@ -20,7 +20,6 @@ cc_library(
         "text_logging.h",
         "constants.h",
         "drake_deprecated.h",
-        "drake_export.h",
         "drake_gcc48.h",
         "eigen_stl_types.h",
         "eigen_types.h",
