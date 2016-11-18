@@ -13,7 +13,7 @@ if(lcm_FOUND)
     drakeTrajectories
     lcmtypes_bot2-core-cpp)
   drake_install_headers(lcmUtil.h)
-  pods_install_libraries(drakeLCMUtil)
+  drake_install_libraries(drakeLCMUtil)
   drake_install_pkg_config_file(drake-lcm-util
     TARGET drakeLCMUtil
     LIBS
@@ -29,7 +29,7 @@ drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
 target_link_libraries(drakeGeometryUtil drakeCommon drakeMath)
-pods_install_libraries(drakeGeometryUtil)
+drake_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
 drake_install_pkg_config_file(drake-geometry-util
   TARGET drakeGeometryUtil
@@ -40,7 +40,7 @@ drake_install_pkg_config_file(drake-geometry-util
     eigen3)
 
 add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
-pods_install_libraries(drakeConvexHull)
+drake_install_libraries(drakeConvexHull)
 drake_install_headers(convexHull.h)
 drake_install_pkg_config_file(drake-convex-hull
   TARGET drakeConvexHull

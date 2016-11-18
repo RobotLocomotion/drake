@@ -56,7 +56,7 @@ endif()
 drake_install_headers(
     ${lcm_dependent_header_files}
     ${lcm_independent_header_files})
-pods_install_libraries(drakeLcm)
+drake_install_libraries(drakeLcm)
 drake_install_pkg_config_file(drake-lcm
     TARGET drakeLcm
     CFLAGS -I${CMAKE_INSTALL_PREFIX}/include

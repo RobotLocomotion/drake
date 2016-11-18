@@ -77,7 +77,7 @@ endif()
 drake_install_headers(${installed_headers})
 
 # Install the library and note Drake's dependency on it.
-pods_install_libraries(drakeCommon)
+drake_install_libraries(drakeCommon)
 drake_install_pkg_config_file(drake-common
   TARGET drakeCommon
   LIBS

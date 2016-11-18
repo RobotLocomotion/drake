@@ -9,7 +9,7 @@ drake_install_pkg_config_file(drake-linear-control
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
-pods_install_libraries(drakeControlUtil)
+drake_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
 drake_install_pkg_config_file(drake-control-util
   TARGET drakeControlUtil
@@ -19,7 +19,7 @@ drake_install_pkg_config_file(drake-control-util
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
-  pods_install_libraries(drakeQPCommon)
+  drake_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
   drake_install_pkg_config_file(drake-qp-common
     TARGET drakeQPCommon
@@ -45,7 +45,7 @@ endif()
 
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
-pods_install_libraries(drakeZMPUtil)
+drake_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
 drake_install_pkg_config_file(drake-zmp-util
   TARGET drakeZMPUtil
@@ -71,7 +71,7 @@ target_link_libraries(drakeSystemControllers
 
 drake_install_headers(${system2_installed_headers})
 
-pods_install_libraries(drakeSystemControllers)
+drake_install_libraries(drakeSystemControllers)
 drake_install_pkg_config_file(drake-system2-controllers
     TARGET drakeSystemControllers
     LIBS -ldrakeSystemControllers

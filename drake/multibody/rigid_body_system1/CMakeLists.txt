@@ -2,7 +2,7 @@ add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp
 target_link_libraries(drakeRBSystem drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIK)
 
 drake_install_headers(RigidBodySystem.h)
-pods_install_libraries(drakeRBSystem)
+drake_install_libraries(drakeRBSystem)
 drake_install_pkg_config_file(drake-rbsystem
   TARGET drakeRBSystem
   CFLAGS -I${CMAKE_INSTALL_PREFIX}/include

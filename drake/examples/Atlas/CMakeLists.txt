@@ -1,5 +1,5 @@
 add_library_with_exports(LIB_NAME drakeAtlasUtil SOURCE_FILES atlasUtil.cpp)
-pods_install_libraries(drakeAtlasUtil)
+drake_install_libraries(drakeAtlasUtil)
 drake_install_headers(
         atlasUtil.h
         atlas_plant.h

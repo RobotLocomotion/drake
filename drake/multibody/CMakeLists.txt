@@ -1,6 +1,6 @@
 add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xml_util.cc)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
-pods_install_libraries(drakeXMLUtil)
+drake_install_libraries(drakeXMLUtil)
 drake_install_headers(xml_util.h)
 drake_install_pkg_config_file(drake-xml-util
   LIBS -ldrakeXMLUtil -ltinyxml2 -lspruce
@@ -23,7 +23,7 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
   $<TARGET_OBJECTS:drakeUtil>)
 target_link_libraries(drakeRBM
   drakeCollision drakeCommon drakeJoints drakeXMLUtil)
-pods_install_libraries(drakeRBM)
+drake_install_libraries(drakeRBM)
 drake_install_headers(
   constraint_wrappers.h
   force_torque_measurement.h
@@ -73,8 +73,8 @@ if (gurobi_FOUND)
 endif ()
 add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK drakeRBM drakeOptimization drakeRigidBodyConstraint drakeIKoptions)
-pods_install_libraries(drakeIK)
-pods_install_libraries(drakeIKoptions)
+drake_install_libraries(drakeIK)
+drake_install_libraries(drakeIKoptions)
 drake_install_headers(constraint_wrappers.h ik_trajectory_helper.h ik_options.h
   inverse_kinematics_backend.h rigid_body_ik.h)
 drake_install_pkg_config_file(drake-ik
