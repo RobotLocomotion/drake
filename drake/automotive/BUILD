@@ -78,14 +78,14 @@ cc_library(
     name = "idm_with_trajectory_agent",
     srcs = ["idm_with_trajectory_agent.cc"],
     hdrs = ["idm_with_trajectory_agent.h"],
-    deps = DEPS,
+    deps = DEPS + ["//drake/common:symbolic"],
     linkstatic = 1)
 
 cc_library(
     name = "simple_car",
     srcs = ["simple_car.cc"],
     hdrs = ["simple_car.h", "simple_car_to_euler_floating_joint.h"],
-    deps = DEPS,
+    deps = DEPS + ["//drake/common:symbolic"],
     linkstatic = 1)
 
 cc_library(
