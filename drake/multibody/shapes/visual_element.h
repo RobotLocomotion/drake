@@ -5,10 +5,9 @@
 #include "drake/multibody/shapes/element.h"
 
 #include "drake/common/eigen_stl_types.h"
-#include "drake/common/drake_export.h"
 
 namespace DrakeShapes {
-class DRAKE_EXPORT VisualElement : public Element {
+class VisualElement : public Element {
  public:
   explicit VisualElement(const Eigen::Isometry3d& T_element_to_local)
       : Element(T_element_to_local),

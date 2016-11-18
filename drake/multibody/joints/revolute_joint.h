@@ -10,8 +10,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
-class DRAKE_EXPORT RevoluteJoint
-    : public FixedAxisOneDoFJoint<RevoluteJoint> {
+class RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint> {
   // disable copy construction and assignment
   // RevoluteJoint(const RevoluteJoint&) = delete;
   // RevoluteJoint& operator=(const RevoluteJoint&) = delete;

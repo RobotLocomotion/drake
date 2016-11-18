@@ -184,7 +184,7 @@ class ContactInformation {
    * lifespan of this obejct.
    * @param num_basis_per_contact_point number of basis per contact point
    */
-  ContactInformation(const RigidBody& body,
+  ContactInformation(const RigidBody<double>& body,
                      int num_basis = kDefaultNumBasisPerContactPoint)
       : body_(&body),
         num_basis_per_contact_point_(num_basis),
@@ -436,8 +436,9 @@ class ContactInformation {
   inline const Matrix3X<double>& contact_points() const {
     return contact_points_;
   }
+
   inline const Vector3<double>& normal() const { return normal_; }
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline int num_basis_per_contact_point() const {
     return num_basis_per_contact_point_;
   }
@@ -454,12 +455,12 @@ class ContactInformation {
   inline int& mutable_num_basis_per_contact_point() {
     return num_basis_per_contact_point_;
   }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   // Offsets of the contact point specified in the body frame.
   Matrix3X<double> contact_points_;
 
@@ -508,7 +509,7 @@ class DesiredBodyMotion : public ConstrainedValues {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit DesiredBodyMotion(const RigidBody& body)
+  explicit DesiredBodyMotion(const RigidBody<double>& body)
       : ConstrainedValues(6), body_(&body), control_during_contact_(false) {}
 
   inline bool is_valid() const {
@@ -539,7 +540,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& body_name() const { return body_->get_name(); }
   inline bool control_during_contact() const { return control_during_contact_; }
 
@@ -547,10 +548,10 @@ class DesiredBodyMotion : public ConstrainedValues {
   inline bool& mutable_control_during_contact() {
     return control_during_contact_;
   }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
 
   // TODO(siyuan.feng) Actually implement this in the qp controller.
   bool control_during_contact_;
@@ -806,7 +807,7 @@ class ResolvedContact {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit ResolvedContact(const RigidBody& body) : body_(&body) {}
+  explicit ResolvedContact(const RigidBody<double>& body) : body_(&body) {}
 
   bool is_valid() const {
     if (!basis_.allFinite() || basis_.minCoeff() < 0) {
@@ -859,7 +860,7 @@ class ResolvedContact {
   }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& body_name() const { return body_->get_name(); }
   inline const VectorX<double>& basis() const { return basis_; }
   inline const Matrix3X<double>& point_forces() const { return point_forces_; }
@@ -878,7 +879,7 @@ class ResolvedContact {
   }
 
   // Setters
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
   inline VectorX<double>& mutable_basis() { return basis_; }
   inline Matrix3X<double>& mutable_point_forces() { return point_forces_; }
   inline Matrix3X<double>& mutable_contact_points() { return contact_points_; }
@@ -893,7 +894,7 @@ class ResolvedContact {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
 
   int num_basis_per_contact_point_;
 
@@ -926,7 +927,7 @@ class BodyAcceleration {
    * @param body Reference to a RigidBody, which must be valid through the
    * lifespan of this obejct.
    */
-  explicit BodyAcceleration(const RigidBody& body)
+  explicit BodyAcceleration(const RigidBody<double>& body)
       : body_(&body), accelerations_(Vector6<double>::Zero()) {}
 
   inline bool is_valid() const { return accelerations_.allFinite(); }
@@ -942,18 +943,18 @@ class BodyAcceleration {
   }
 
   // Getters
-  inline const RigidBody& body() const { return *body_; }
+  inline const RigidBody<double>& body() const { return *body_; }
   inline const std::string& body_name() const { return body_->get_name(); }
   inline const Vector6<double>& accelerations() const { return accelerations_; }
 
   // Setter
   inline Vector6<double>& mutable_accelerations() { return accelerations_; }
-  inline void set_body(const RigidBody& body) { body_ = &body; }
+  inline void set_body(const RigidBody<double>& body) { body_ = &body; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   Vector6<double> accelerations_;
 };
 

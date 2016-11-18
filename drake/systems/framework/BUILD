@@ -12,6 +12,6 @@ cc_library(
     deps = [
         "//drake/common:autodiff",
         "//drake/common:common",
-        "//drake/common:symbolic",
+        "//drake/common:number_traits",
     ],
     linkstatic=1)

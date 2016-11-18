@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
-project(drake)
+project(drake VERSION 0.0.0)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
 
 include(../cmake/config.cmake)
+include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
 
@@ -27,7 +28,6 @@ if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
 endif()
 
 # options
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -50,11 +50,6 @@ include(../cmake/pods.cmake)
 pods_find_pkg_config(bot2-lcmgl-client)
 pods_find_pkg_config(dreal)
 pods_find_pkg_config(ipopt)
-
-function(drake_install_headers)
-  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
-  install(FILES ${ARGV} DESTINATION include/drake/${rel_path})
-endfunction()
 
 # A compatibility shim function that declares a library, with a built-in
 # default of SHARED.
@@ -162,10 +157,9 @@ endif()
 
 add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
 install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
+drake_install_pkg_config_file(drake-java
   CLASSPATH drake
-  REQUIRES ${drake_jar_requires}
-  VERSION 0.0.1)
+  REQUIRES ${drake_jar_requires})
 
 include_directories(SYSTEM "${EIGEN3_INCLUDE_DIRS}")
 

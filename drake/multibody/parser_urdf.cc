@@ -47,7 +47,7 @@ using drake::multibody::joints::kRollPitchYaw;
 
 namespace {
 
-void ParseInertial(RigidBody* body, XMLElement* node) {
+void ParseInertial(RigidBody<double>* body, XMLElement* node) {
   Isometry3d T = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
@@ -309,7 +309,8 @@ bool ParseGeometry(XMLElement* node, const PackageMap& ros_package_map,
 //
 // A warning is printed to std::cerr if a material is not set for the rigid
 // body's visualization.
-void ParseVisual(RigidBody* body, XMLElement* node, RigidBodyTree<double>* tree,
+void ParseVisual(RigidBody<double>* body, XMLElement* node,
+                 RigidBodyTree<double>* tree,
                  MaterialMap* materials, const PackageMap& ros_package_map,
                  const string& root_dir) {
   // Ensures there is a geometry child element. Since this is a required
@@ -432,7 +433,7 @@ void ParseVisual(RigidBody* body, XMLElement* node, RigidBodyTree<double>* tree,
   if (element.hasGeometry()) body->AddVisualElement(element);
 }
 
-void ParseCollision(RigidBody* body, XMLElement* node,
+void ParseCollision(RigidBody<double>* body, XMLElement* node,
                     RigidBodyTree<double>* tree,
                     const PackageMap& ros_package_map, const string& root_dir) {
   Isometry3d T_element_to_link = Isometry3d::Identity();
@@ -488,8 +489,8 @@ bool ParseBody(RigidBodyTree<double>* tree, string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && (std::strcmp(attr, "true") == 0)) return false;
 
-  RigidBody* body{nullptr};
-  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
+  RigidBody<double>* body{nullptr};
+  std::unique_ptr<RigidBody<double>> owned_body(body = new RigidBody<double>());
   body->set_model_name(robot_name);
   body->set_model_instance_id(model_instance_id);
 
@@ -1233,7 +1234,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromUrdfNode(
     const tinyxml2::XMLElement* pose, const string& name,
     int model_instance_id) {
   string body_name = link.Attribute("link");
-  RigidBody* body =
+  RigidBody<double>* body =
       tree.FindBody(body_name, "" /* model_name */, model_instance_id);
   if (body == nullptr) {
     throw runtime_error("ERROR: Couldn't find body \"" + body_name +

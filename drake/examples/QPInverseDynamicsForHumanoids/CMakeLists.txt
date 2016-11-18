@@ -7,12 +7,13 @@ set(qp_inverse_dynamics_controller_src
 add_library(drakeQPController ${qp_inverse_dynamics_controller_src})
 target_link_libraries(drakeQPController
   drakeOptimization
-  drakeRBSystem
+  drakeRBM
   drakeSide)
 
 if(lcm_FOUND)
   add_library(drakeQPControllerLcmTranslator lcm_utils.cc)
   target_link_libraries(drakeQPControllerLcmTranslator
+    drakeRBM
     drakeLCMTypes
     drakeLCMUtil
     lcmtypes_bot2-core-cpp)

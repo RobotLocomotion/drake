@@ -300,7 +300,7 @@ std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
   return result;
 }
 
-DRAKE_EXPORT RigidBodySystem::StateVector<double> getInitialState(
+RigidBodySystem::StateVector<double> getInitialState(
     const RigidBodySystem& sys) {
   VectorXd x0(sys.tree->get_num_positions() +
               sys.tree->get_num_velocities());

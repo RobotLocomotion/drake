@@ -21,8 +21,10 @@ drake_install_headers(
         revolute_joint.h
         roll_pitch_yaw_floating_joint.h
         floating_base_types.h)
-pods_install_pkg_config_file(drake-joints
+drake_install_pkg_config_file(drake-joints
+  TARGET drakeJoints
   LIBS -ldrakeJoints
   REQUIRES
-  VERSION 0.0.1)
+    drake-geometry-util
+    eigen3)
 add_subdirectory(test)

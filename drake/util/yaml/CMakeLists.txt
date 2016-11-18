@@ -3,8 +3,11 @@ if(yaml-cpp_FOUND)
   target_link_libraries(drakeYAMLUtil drakeRBM drakeSide yaml-cpp)
   pods_install_libraries(drakeYAMLUtil)
   drake_install_headers(yamlUtil.h)
-  pods_install_pkg_config_file(drake-yaml-util
+  drake_install_pkg_config_file(drake-yaml-util
+    TARGET drakeYAMLUtil
     LIBS -ldrakeYAMLUtil
-    REQUIRES yaml-cpp
-    VERSION 0.0.1)
+    REQUIRES
+      drake-rbm
+      drake-side
+      yaml-cpp)
 endif()

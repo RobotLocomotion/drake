@@ -13,8 +13,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
+  idm_planner.cc
   idm_with_trajectory_agent.cc
+  linear_car.cc
   simple_car.cc
+  single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -26,16 +29,25 @@ pods_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
+  idm_planner.h
   idm_with_trajectory_agent.h
+  linear_car.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
+  single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
-pods_install_pkg_config_file(drake-automotive
+drake_install_pkg_config_file(drake-automotive
+  TARGET drakeAutomotive
   LIBS -ldrakeAutomotive
   REQUIRES
-  VERSION 0.0.1)
+    drake-common
+    drake-rbsystem
+    drake-shapes
+    drake-system-analysis
+    drake-system-framework
+    eigen3)
 
 if(lcm_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
@@ -57,10 +69,12 @@ if(lcm_FOUND)
     automotive_simulator.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
     )
-  pods_install_pkg_config_file(drake-automotive-lcm
+  drake_install_pkg_config_file(drake-automotive-lcm
+    TARGET drakeAutomotiveLcm
     LIBS -ldrakeAutomotiveLcm
     REQUIRES
-    VERSION 0.0.1)
+      drake-automotive
+      drake-rigid-body-plant)
 
   add_executable(automotive_demo automotive_demo.cc)
   target_link_libraries(automotive_demo drakeAutomotiveLcm drakeLCMTypes)

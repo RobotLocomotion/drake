@@ -293,7 +293,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   // Adds a RigidBody that looks like a box to the tree to achieve some level
   // of unit test coverage for the box geometry.
   {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("box_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
@@ -326,7 +326,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   // Adds a RigidBody that looks like a capsule to the tree to achieve some
   // level of unit test coverage for the box geometry.
   {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("capsule_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
@@ -358,7 +358,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   // Adds a RigidBody that looks like a cylinder to the tree to achieve some
   // level of unit test coverage for the cylinder geometry.
   {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("cylinder_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
@@ -391,7 +391,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   // level of unit test coverage for the mesh geometry. The mesh is specified
   // by an OBJ file.
   {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("mesh_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
@@ -425,7 +425,7 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
   // Adds a RigidBody that looks like a sphere to the tree to achieve some
   // level of unit test coverage for the sphere geometry.
   {
-    auto body = make_unique<RigidBody>();
+    auto body = make_unique<RigidBody<double>>();
     body->set_name("sphere_body");
     body->set_model_instance_id(tree->add_model_instance());
     body->set_mass(1.0);
