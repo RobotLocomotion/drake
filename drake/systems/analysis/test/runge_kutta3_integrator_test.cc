@@ -63,11 +63,11 @@ TEST_F(RK3IntegratorTest, Scaling) {
 
   // Test scaling
   EXPECT_EQ(integrator_->get_mutable_generalized_state_weight_vector().size(),
-            2);
+            1);
   EXPECT_EQ(integrator_->get_mutable_generalized_state_weight_vector()
                 .lpNorm<Eigen::Infinity>(),
             1);
-  EXPECT_EQ(integrator_->get_misc_state_weight_vector().size(), 2);
+  EXPECT_EQ(integrator_->get_misc_state_weight_vector().size(), 1);
   EXPECT_EQ(integrator_->get_mutable_misc_state_weight_vector()
                 .lpNorm<Eigen::Infinity>(),
             1);

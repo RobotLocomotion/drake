@@ -999,8 +999,8 @@ T IntegratorBase<T>::CalcErrorNorm() {
 
   // Computes the infinity norm of the weighted velocity variables.
   unweighted_err_ = gv_err.CopyToVector();
-  T v_nrm = (qbar_v_weight * unweighted_err_ * characteristic_time).
-      template lpNorm<Eigen::Infinity>();
+  T v_nrm = qbar_v_weight.cwiseProduct(unweighted_err_).
+      template lpNorm<Eigen::Infinity>() * characteristic_time;
 
   // Compute the infinity norm of the weighted auxiliary variables.
   unweighted_err_ = gz_err.CopyToVector();
