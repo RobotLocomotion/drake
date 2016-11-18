@@ -26,24 +26,22 @@ namespace systems {
  * constraints change. For example, a rigid, light wing resting on planar
  * ground will be subject to contact forces up to the point that a breeze
  * lifts the wing into the air. In the "resting on ground" case, `g(x) = 0`
- * could represent that the acceleration normal to the ground should be zero. A
- * witness function could help the DAE solver determine the time at which
- * `g(x) = 0` should no longer apply, which in this example would allow the wing
- * to undergo ballistic movement.
+ * could represent the constraint that the acceleration normal to the ground
+ * should be zero. A witness function could help the DAE solver determine the
+ * time at which `g(x) = 0` should no longer apply, which in this example
+ * would allow the wing to rise from the ground and undergo ballistic movement.
  *
  * A classical example of a DAE that can make use of a witness function is
  * the bouncing ball system, which switches between two sets of continuous
  * equations of motion: one when the ball is in ballistic flight and one when
  * the ball is in sustained contact with the ground. Witness functions help
- * a DAE determine when to switch between these sets of equations. 
+ * a DAE solver determine when to switch between these sets of equations.
  *
- * If we modify
- * this example slightly by allowing a strong wind to push the ball upward
- * intermittently, a witness function could be used to determine when contact
- * forces should not be applied (i.e., when the force between the ball and the
- * ground, applied normal to the ground, transitions from a compressive force
- * to a tensile force).
- *
+ * If we modify this example slightly by allowing a strong wind to push the
+ * ball upward intermittently, a witness function could be used to determine
+ * when contact forces should not be applied (i.e., when the force between the
+ * ball and the ground, applied normal to the ground, transitions from a
+ * compressive force to a tensile force).
  */
 template <class T>
 class WitnessFunction {
@@ -82,14 +80,16 @@ class WitnessFunction {
   };
 
   /**
-   * Calculates a conservative estimate of the next event time from the given
-   * context. The default implementation returns zero (no estimate). If
-   * a positive estimate is provided, the estimate of the event time (`te`) is
-   * to be treated as conservative: the event cannot occur before future time
-   * `te` has arrived.
+   * Calculates a conservative estimate of the next zero crossing time from the
+   * given context. The default implementation returns -1.0 (no estimate). If
+   * a positive estimate is provided, the estimate of the zero crossing time
+   * (`te`) is to be treated as conservative: the zero crossing cannot occur
+   * before future time `te` has arrived.
+   * @returns an estimate of the zero crossing time; negative zero crossing
+   *          times indicate that no estimate is available.
    */
-  virtual double CalcConservativeNextEventTime(const Context<T>& t) {
-    return 0.0; }
+  virtual double CalcConservativeNextZeroTime(const Context<T>& t) {
+    return -1.0; }
 
   /**
    * Gets the direction of interest for this witness function. The direction
@@ -136,10 +136,17 @@ class WitnessFunction {
 
   /**
    * Determines whether this witness function should be treated as active for
-   * the given context.
-   * (Example of how this could be used for broad phase collision detection)
+   * the given context over the given interval. The DAE solver will be able
+   * to exploit when a witness function is inactive over an interval of time.
    * The default implementation returns `true`: the witness function will always
    * be treated as active.
+   * @param context the context given the state and time of the system at the
+   *          beginning of the time interval.
+   * @param dt the length of the interval.
+   * @returns `true` if the witness function is active over the interval
+   *           `[context.get_time(), context.get_time()+dt]` and `false`
+   *           otherwise (i.e., the witness function does not cross zero in that
+   *           time interval).
    */
   virtual bool CheckWitnessFunctionActive(const Context<T>& context) {
     return true;
