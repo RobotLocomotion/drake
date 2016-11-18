@@ -102,7 +102,8 @@ class WitnessFunction {
   /**
    *  Returns whether this witness function returns a continuous output or
    *  a discontinuous output. A greater collection of methods for determining
-   *  zero crossings is applicable for witness functions with continuous outputs.
+   *  zero crossings is applicable for witness functions with continuous
+   *  outputs.
    */
   virtual WitnessFunctionType get_event_function_output_type() const = 0;
 
@@ -132,7 +133,8 @@ class WitnessFunction {
    *    function at the given context
    * @sa is_deriv_available()
    */
-  virtual T EvalWitnessDeriv(const Context<T>& context) { return nan(); }
+  virtual T EvalWitnessDeriv(const Context<T>& context) { return
+        std::numeric_limits<typename Eigen::NumTraits<T>::Real>::quiet_NaN(); }
 
   /**
    * Determines whether this witness function should be treated as active for
@@ -153,6 +155,35 @@ class WitnessFunction {
   }
 
   /**
+   * @name Tolerance settings for zero crossings.
+   * @{
+   * This group of functions handles tolerance settings for the witness function
+   * zero crossings. _Some_ non-zero tolerance is desired, as otherwise locating
+   * the zero crossing for the witness function will likely prove to be
+   * computationally infeasible: it is possible that the witness function
+   * computation never yields exactly zero for any floating point argument.
+   * [Press 1994] recommends a tolerance value of ε(|x₀| + |x₁|)/2, where ε
+   * is the machine precision and x₀ < 0 < x₁ are input values (times in our
+   * context) that "bracket" the zero crossing when the witness function is
+   * active. (This has to do with integration step size)
+   *
+   * Although we generally expect the user to use symmetric tolerances for
+   * zero, we expect asymmetric tolerance settings to lead to computational
+   * efficiency or preferred behavior in isolated cases. For a witness function
+   * checking whether two rigid bodies will contact (using signed distance
+   * between the bodies), an asymmetric zero tolerance [0, tol] can ensure that
+   * bodies are not interpenetrating at the computed zero crossing. If we
+   * assume that a root (i.e., zero crossing) finding approach spends roughly
+   * half of its time on either side of zero, an asymmetric tolerance should
+   * be able to increase computational efficiency in certain cases. In the
+   * context of the signed distance between rigid body (the example above),
+   * it is far faster to compute the Euclidean distance for disjoint
+   * configurations than for intersecting ones, at least when bodies' geometries
+   * are polyhedral and convex. A "left" tolerance of 0.0 and a "right"
+   * positive tolerance should speed computation.
+   */
+
+  /**
    * Sets a "symmetric" tolerance for zero for the witness function. The witness
    * function `w()` will be considered to evaluate to zero when:
    * `-tol <= w() <= tol`. This function is equivalent to:
@@ -171,7 +202,7 @@ class WitnessFunction {
   }
 
   /**
-   * Sets a tolerance tolerance for zero from the right of zero. The witness
+   * Sets a tolerance for zero from the right of zero. The witness
    * function `w()` will be considered to evaluate to zero when:
    * `get_left_tolerance() <= w() <= tol`.
    * @throws std::logic_error if @p tol is negative.
@@ -183,7 +214,7 @@ class WitnessFunction {
   }
 
   /**
- * Sets a tolerance tolerance for zero from the left of zero. The witness
+ * Sets a tolerance for zero from the left of zero. The witness
  * function `w()` will be considered to evaluate to zero when:
  * tol <= w() <= `get_right_tolerance()`.
  * @throws std::logic_error if @p tol is positive.
@@ -193,6 +224,10 @@ class WitnessFunction {
       throw std::logic_error("Positive tolerance specified.");
     tolerance_left_ = tol;
   }
+
+  /**
+ * @}
+ */
 
  private:
   double tolerance_left_, tolerance_right_;
