@@ -207,9 +207,16 @@ macro(drake_setup_options)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are ON by default
 
+  drake_optional_external(BULLET ON "Bullet library for collision detection")
+
+  drake_optional_external(CCD ON "Convex shape Collision Detection library")
+
   drake_optional_external(GOOGLE_STYLEGUIDE ON
     DEPENDS "NOT DISABLE_PYTHON"
     "Google code style tools for cpplint.py style checking" ON)
+
+  drake_optional_external(HSRB_DESCRIPTION ON
+    "A ROS package containing a model of Toyota's HSR version B robot.")
 
   drake_optional_external(SPDLOG ON
     "Fast C++ text logging facility\; disabling will turn off text logging")
@@ -218,10 +225,6 @@ macro(drake_setup_options)
     DEPENDS "NOT DISABLE_MATLAB OR NOT DISABLE_PYTHON"
     "Helper tools to build Python & MATLAB wrappers"
     "for C++ libraries with Eigen")
-
-  drake_optional_external(BULLET ON "Bullet library for collision detection")
-
-  drake_optional_external(CCD ON "Convex shape Collision Detection library")
 
   if(NOT WIN32)
     # Not win32 yet; builds, but requires manual installation of VTKk, etc.

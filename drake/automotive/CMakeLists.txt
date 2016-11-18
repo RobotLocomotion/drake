@@ -13,8 +13,11 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/idm_with_trajectory_agent_state.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
+  idm_planner.cc
   idm_with_trajectory_agent.cc
+  linear_car.cc
   simple_car.cc
+  single_lane_ego_and_agent.cc
   trajectory_car.cc
   )
 target_link_libraries(drakeAutomotive
@@ -26,9 +29,12 @@ pods_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
+  idm_planner.h
   idm_with_trajectory_agent.h
+  linear_car.h
   simple_car.h
   simple_car_to_euler_floating_joint.h
+  single_lane_ego_and_agent.h
   trajectory_car.h
   # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.
   )
