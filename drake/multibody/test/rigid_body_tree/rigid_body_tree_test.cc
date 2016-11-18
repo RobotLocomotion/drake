@@ -410,6 +410,32 @@ TEST_F(RigidBodyTreeTest, TestFindChildrenOfBodyAndFindBaseBodies) {
   EXPECT_EQ(list_of_children_bad_instance_id.size(), 0u);
 }
 
+// Tests the correct functionality of RigidBodyTree::get_num_actuators().
+TEST_F(RigidBodyTreeTest, TestGetNumActuators) {
+  std::string filename_2dof_robot =
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_2dof_robot,
+                                                  tree_.get());
+  EXPECT_EQ(tree_->get_num_actuators(), 2);
+
+  tree_.reset(new RigidBodyTree<double>());
+  std::string filename_3dof_robot =
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/three_dof_robot.urdf";
+  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_3dof_robot,
+                                                  tree_.get());
+  EXPECT_EQ(tree_->get_num_actuators(), 3);
+
+  tree_.reset(new RigidBodyTree<double>());
+  std::string filename_4dof_robot =
+      drake::GetDrakePath() +
+      "/multibody/test/rigid_body_tree/four_dof_robot.urdf";
+  AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename_4dof_robot,
+                                                    tree_.get());
+  EXPECT_EQ(tree_->get_num_actuators(), 4);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace plants
