@@ -5,10 +5,13 @@ target_link_libraries(drakeDynamicConstraint
   drakeCommon)
 drake_install_headers(direct_collocation_constraint.h)
 pods_install_libraries(drakeDynamicConstraint)
-pods_install_pkg_config_file(drake-dynamic-constraint
+drake_install_pkg_config_file(drake-dynamic-constraint
+  TARGET drakeDynamicConstraint
   LIBS -ldrakeDynamicConstraint
   REQUIRES
-  VERSION 0.0.0)
+    drake-common
+    drake-system-framework
+    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

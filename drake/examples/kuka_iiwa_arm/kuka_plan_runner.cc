@@ -57,12 +57,12 @@ class RobotPlanRunner {
 
   void Run() {
     int cur_plan_number = plan_number_;
-    int64_t cur_time_ms = -1;
-    int64_t start_time_ms = -1;
+    int64_t cur_time_us = -1;
+    int64_t start_time_us = -1;
 
     // Initialize the timestamp to an invalid number so we can detect
     // the first message.
-    iiwa_status_.timestamp = cur_time_ms;
+    iiwa_status_.utime = cur_time_us;
 
     lcmt_iiwa_command iiwa_command;
     iiwa_command.num_joints = kNumJoints;
@@ -71,45 +71,27 @@ class RobotPlanRunner {
     iiwa_command.joint_torque.resize(kNumJoints, 0.);
 
     while (true) {
-      // The argument to handleTimeout is in msec, and should be
-      // safely bigger than e.g. a 200Hz input rate.
-      int handled  = lcm_.handleTimeout(10);
-      if (handled <= 0) {
-        std::cerr << "Failed to receive LCM status." << std::endl;
-        return;
-      }
+      // Call lcm handle until at least one message is processed
+      while (0 == lcm_.handleTimeout(10)) { }
 
-      DRAKE_ASSERT(iiwa_status_.timestamp != -1);
-      cur_time_ms = iiwa_status_.timestamp;
+      DRAKE_ASSERT(iiwa_status_.utime != -1);
+      cur_time_us = iiwa_status_.utime;
 
       if (plan_) {
         if (plan_number_ != cur_plan_number) {
           std::cout << "Starting new plan." << std::endl;
-          start_time_ms = cur_time_ms;
+          start_time_us = cur_time_us;
           cur_plan_number = plan_number_;
         }
 
         const double cur_traj_time_s =
-            static_cast<double>(cur_time_ms - start_time_ms) / 1e3;
+            static_cast<double>(cur_time_us - start_time_us) / 1e6;
         const auto desired_next = plan_->value(cur_traj_time_s);
 
-        iiwa_command.timestamp = iiwa_status_.timestamp;
+        iiwa_command.utime = iiwa_status_.utime;
 
-        // This is totally arbitrary.  There's no good reason to
-        // implement this as a maximum delta to submit per tick.  What
-        // we actually need is something like a proper
-        // planner/interpolater which spreads the motion out over the
-        // entire duration from current_t to next_t, and commands the
-        // next position taking into account the velocity of the joints
-        // and the distance remaining.
-        const double max_joint_delta = 0.1;
         for (int joint = 0; joint < kNumJoints; joint++) {
-          double joint_delta =
-              desired_next(joint) - iiwa_status_.joint_position_measured[joint];
-          joint_delta = std::max(-max_joint_delta,
-                                 std::min(max_joint_delta, joint_delta));
-          iiwa_command.joint_position[joint] =
-              iiwa_status_.joint_position_measured[joint] + joint_delta;
+          iiwa_command.joint_position[joint] = desired_next(joint);
         }
 
         lcm_.publish(kLcmCommandChannel, &iiwa_command);
