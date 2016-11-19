@@ -167,7 +167,9 @@ class WitnessFunction {
    * [Press 1994] recommends a tolerance value of ε(|x₀| + |x₁|)/2, where ε
    * is the machine precision and x₀ < 0 < x₁ are input values (times in our
    * application) that "bracket" the zero crossing when the witness function is
-   * active. (This has to do with integration step size)
+   * active.
+   * @TODO(edrumwri) Better clarify that this has to do with integration step
+   *   size.
    *
    * Although we generally expect the user to use symmetric tolerances for
    * zero, we expect asymmetric tolerance settings to lead to computational
