@@ -1,0 +1,20 @@
+package drake;
+
+struct lcmt_resolved_contact {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  string body_name;
+
+  int32_t num_basis_per_contact_point;
+  int32_t num_all_basis;
+  double basis[num_all_basis];
+
+  int32_t num_contact_points;
+  double point_forces[3][num_contact_points];
+  double contact_points[3][num_contact_points];
+
+  double equivalent_wrench[6];
+
+  double reference_point[3];
+}

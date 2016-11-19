@@ -69,6 +69,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
+ - [#3973][] The common/drake_export.h header is deprecated and will be removed.
  - [#3685][] Remove support for the Windows platform.
  - [#2610][] RigidBodyTree::getContactPositions and ::getContactPositionsJac are removed.
  - [#2102][] Macports and Cygwin are no longer supported.
@@ -148,3 +149,4 @@ Changes in version v0.9.11 and before are not provided.
 [#3566]: https://github.com/RobotLocomotion/drake/issues/3276
 [#3685]: https://github.com/RobotLocomotion/drake/issues/3685
 [#3902]: https://github.com/RobotLocomotion/drake/issues/3902
+[#3973]: https://github.com/RobotLocomotion/drake/issues/3973

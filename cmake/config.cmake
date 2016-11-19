@@ -18,7 +18,8 @@ function(drake_check_compiler NAME VERSION)
     set(_version_string "${VERSION}")
   endif()
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${VERSION})
-    message(FATAL_ERROR "${NAME} version must be at least ${_version_string}")
+    message(FATAL_ERROR "${NAME} version must be at least ${_version_string} \
+                         (detected version ${CMAKE_CXX_COMPILER_VERSION})")
   endif()
 endfunction()
 
@@ -139,9 +140,7 @@ macro(drake_setup_compiler)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     drake_check_compiler("Apple Clang" 7)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    drake_check_compiler("Clang" 3.7)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    drake_check_compiler("MSVC" 19 "19 (VS 2015)")
+    drake_check_compiler("Clang" 3.9)
   endif()
 
   # Set compiler language standard level
@@ -166,6 +165,48 @@ macro(drake_setup_java)
   else()
     unset(CMAKE_JAVA_COMPILE_FLAGS CACHE)
   endif()
+endmacro()
+
+#------------------------------------------------------------------------------
+# Find and set up Fortran.
+#------------------------------------------------------------------------------
+macro(drake_setup_fortran)
+  option(DISABLE_FORTRAN "Do not use Fortran even if it is supported" OFF)
+  mark_as_advanced(DISABLE_FORTRAN)
+
+  if(NOT DISABLE_FORTRAN)
+    if(CMAKE_GENERATOR STREQUAL "Ninja")
+      # The Ninja generator does not support Fortran, so manually find the Fortran
+      # compiler and set any flags passed in by environment variable
+      find_program(CMAKE_Fortran_COMPILER
+        NAMES "$ENV{FC}" gfortran gfortran-6 gfortran-5 gfortran-4
+        DOC "Fortran compiler")
+      if(CMAKE_Fortran_COMPILER)
+        message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+      else()
+        message(FATAL_ERROR "Could NOT find Fortran compiler")
+      endif()
+      set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
+        "Flags for Fortran compiler")
+    else()
+      enable_language(Fortran)
+
+      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
+        message(FATAL_ERROR "GCC version must be at least 4.9")
+      endif()
+    endif()
+  endif()
+endmacro()
+
+#------------------------------------------------------------------------------
+# Set up Python.
+#------------------------------------------------------------------------------
+macro(drake_setup_python)
+  option(DISABLE_PYTHON "Do not use Python even if it is supported" OFF)
+  mark_as_advanced(DISABLE_PYTHON)
+
+  # Choose your python (major) version
+  option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -200,23 +241,26 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
-  # Set default lib directory name suffix.
-  set(LIB_SUFFIX "" CACHE STRING "lib directory name suffix")
+  # Set default lib directory name suffix
+  set(LIB_SUFFIX "" CACHE STRING
+    "Suffix of library install directory, e.g. '64'")
   mark_as_advanced(LIB_SUFFIX)
 
   drake_setup_compiler()
+  drake_setup_fortran()
   drake_setup_matlab()
   drake_setup_java()
+  drake_setup_python()
 
-  # Choose your python (major) version
-  option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
-
-  # Set default build
+  # Set default build type
   if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "The type of build. Options are: Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
   endif()
+
+  # Build shared libraries by default
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endmacro()
 
 #------------------------------------------------------------------------------

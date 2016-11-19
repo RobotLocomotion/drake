@@ -52,17 +52,15 @@ class LinearSystem : public AffineSystem<T> {
 /// should be linearized.  See note below.
 /// @param equilibrium_check_tolerance Specifies the tolerance on ensuring that
 /// the derivative vector isZero at the nominal operating point.  @default 1e-6.
-/// @retval A LinearSystem that approximates the original system in the
+/// @returns A LinearSystem that approximates the original system in the
 /// vicinity of the operating point.  See note below.
 /// @throws std::runtime_error if the system the operating point is not an
 /// equilibrium point of the system (within the specified tolerance)
 ///
 /// Note: The inputs in the Context must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
-/// reference to a subsystem in a Diagram), or to a FreestandingInputPort
-/// using, e.g.
-///   context->SetInputPort(0,
-///            std::make_unique<FreestandingInputPort>(default_input));
+/// reference to a subsystem in a Diagram), or to a constant value using, e.g.
+///   context->FixInputPort(0,default_input);
 ///
 /// Note: The inputs, states, and outputs of the returned system are NOT the
 /// same as the original system.  Denote x0,u0 as the nominal state and input

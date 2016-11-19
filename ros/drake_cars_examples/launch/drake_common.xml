@@ -1,7 +1,0 @@
-<?xml version="1.0" ?>
-<launch>
-  <!-- Sets the drake/enable_tf_publisher parameter that controls whether Drake publishes tf messages. -->
-  <group ns="drake">
-    <param name="enable_tf_publisher" type="bool" value="true" />
-  </group>
-</launch>

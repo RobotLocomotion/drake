@@ -321,7 +321,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
   // Compute rate of change of momentum hdot.
   auto identity = MatrixXd::Identity(q.size(), q.size());
   auto v_to_qd =
-      kinematics_cache.transformPositionDotMappingToVelocityMapping(identity);
+      kinematics_cache.transformQDotMappingToVelocityMapping(identity);
   auto qd = v_to_qd * v;
   // Convert to MatrixXd to make another explicit instantiation unnecessary.
   auto q_time_autodiff = initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qd));

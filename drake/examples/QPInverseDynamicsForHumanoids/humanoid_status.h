@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/rigid_body_tree_utils.h"
 #include "drake/systems/robotInterfaces/Side.h"
 
@@ -24,8 +25,8 @@ class BodyOfInterest {
    * lifespan of this obejct.
    * @param off Offset expressed in the body frame.
    */
-  BodyOfInterest(const std::string& name, const RigidBody& body,
-                 const Eigen::Vector3d& off)
+  BodyOfInterest(const std::string& name, const RigidBody<double>& body,
+                 const Vector3<double>& off)
       : name_(name), body_(&body), offset_(off) {}
 
   /**
@@ -47,11 +48,11 @@ class BodyOfInterest {
   }
 
   inline const std::string& name() const { return name_; }
-  inline const RigidBody& body() const { return *body_; }
-  inline const Eigen::Isometry3d& pose() const { return pose_; }
-  inline const Eigen::Vector6d& velocity() const { return vel_; }
-  inline const Eigen::MatrixXd& J() const { return J_; }
-  inline const Eigen::Vector6d& Jdot_times_v() const { return Jdot_times_v_; }
+  inline const RigidBody<double>& body() const { return *body_; }
+  inline const Isometry3<double>& pose() const { return pose_; }
+  inline const Vector6<double>& velocity() const { return vel_; }
+  inline const MatrixX<double>& J() const { return J_; }
+  inline const Vector6<double>& Jdot_times_v() const { return Jdot_times_v_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -59,19 +60,19 @@ class BodyOfInterest {
   // Name of the BodyOfInterest
   std::string name_;
   // The link which this BOI is attached to
-  const RigidBody* body_;
+  const RigidBody<double>* body_;
   // Offset is specified in the body frame.
-  Eigen::Vector3d offset_;
+  Vector3<double> offset_;
 
-  Eigen::Isometry3d pose_;
+  Isometry3<double> pose_;
   // This is the task space velocity, or twist of a frame that has the same
   // orientation as the world frame, but located at the origin of the body
   // frame.
-  Eigen::Vector6d vel_;
+  Vector6<double> vel_;
   // Task space Jacobian, xdot = J * v
-  Eigen::MatrixXd J_;
+  MatrixX<double> J_;
   // Task space Jd * v
-  Eigen::Vector6d Jdot_times_v_;
+  Vector6<double> Jdot_times_v_;
 };
 
 /**
@@ -83,13 +84,13 @@ class BodyOfInterest {
 class HumanoidStatus {
  public:
   /// Position offset from the foot frame to the sole frame.
-  static const Eigen::Vector3d kFootToSoleOffset;
+  static const Vector3<double> kFootToSoleOffset;
   /// Position Offset from the foot frame to force torque sensor in the foot
   /// frame.
-  static const Eigen::Vector3d kFootToSensorPositionOffset;
+  static const Vector3<double> kFootToSensorPositionOffset;
   /// Rotation Offset from the foot frame to force torque sensor in the foot
   /// frame.
-  static const Eigen::Matrix3d kFootToSensorRotationOffset;
+  static const Matrix3<double> kFootToSensorRotationOffset;
 
   /**
    * @param robot Reference to a RigidBodyTree, which must be valid through the
@@ -102,13 +103,13 @@ class HumanoidStatus {
         // Valkyrie, and they should be specified in some separate config file.
         bodies_of_interest_{
             BodyOfInterest("pelvis", *robot_->FindBody("pelvis"),
-                           Eigen::Vector3d::Zero()),
+                           Vector3<double>::Zero()),
             BodyOfInterest("torso", *robot_->FindBody("torso"),
-                           Eigen::Vector3d::Zero()),
+                           Vector3<double>::Zero()),
             BodyOfInterest("leftFoot", *robot_->FindBody("leftFoot"),
-                           Eigen::Vector3d::Zero()),
+                           Vector3<double>::Zero()),
             BodyOfInterest("rightFoot", *robot_->FindBody("rightFoot"),
-                           Eigen::Vector3d::Zero()),
+                           Vector3<double>::Zero()),
             BodyOfInterest("leftFootSensor", *robot_->FindBody("leftFoot"),
                            kFootToSensorPositionOffset),
             BodyOfInterest("rightFootSensor", *robot_->FindBody("rightFoot"),
@@ -209,11 +210,11 @@ class HumanoidStatus {
    * @param l_wrench is wrench measured in the sensor frame.
    * @param r_wrench is wrench measured in the sensor frame.
    */
-  void Update(double t, const Eigen::Ref<const Eigen::VectorXd>& q,
-              const Eigen::Ref<const Eigen::VectorXd>& v,
-              const Eigen::Ref<const Eigen::VectorXd>& joint_torque,
-              const Eigen::Ref<const Eigen::Vector6d>& l_wrench,
-              const Eigen::Ref<const Eigen::Vector6d>& r_wrench) {
+  void Update(double t, const Eigen::Ref<const VectorX<double>>& q,
+              const Eigen::Ref<const VectorX<double>>& v,
+              const Eigen::Ref<const VectorX<double>>& joint_torque,
+              const Eigen::Ref<const Vector6<double>>& l_wrench,
+              const Eigen::Ref<const Vector6<double>>& r_wrench) {
     if (q.size() != position_.size() || v.size() != velocity_.size() ||
         joint_torque.size() != joint_torque_.size()) {
       throw std::runtime_error("robot state update dimension mismatch.");
@@ -232,7 +233,7 @@ class HumanoidStatus {
   /**
    * Returns a nominal q.
    */
-  Eigen::VectorXd GetNominalPosition() const { return nominal_position_; }
+  VectorX<double> GetNominalPosition() const { return nominal_position_; }
 
   // Getters
   inline const RigidBodyTree<double>& robot() const { return *robot_; }
@@ -266,28 +267,28 @@ class HumanoidStatus {
   }
 
   inline double time() const { return time_; }
-  inline const Eigen::VectorXd& position() const { return position_; }
-  inline const Eigen::VectorXd& velocity() const { return velocity_; }
-  inline const Eigen::VectorXd& joint_torque() const { return joint_torque_; }
+  inline const VectorX<double>& position() const { return position_; }
+  inline const VectorX<double>& velocity() const { return velocity_; }
+  inline const VectorX<double>& joint_torque() const { return joint_torque_; }
   inline double position(int i) const { return position_[i]; }
   inline double velocity(int i) const { return velocity_[i]; }
   inline double joint_torque(int i) const { return joint_torque_[i]; }
 
-  inline const Eigen::MatrixXd& M() const { return M_; }
-  inline const Eigen::VectorXd& bias_term() const { return bias_term_; }
-  inline const Eigen::Vector3d& com() const { return com_; }
-  inline const Eigen::Vector3d& comd() const { return comd_; }
-  inline const Eigen::MatrixXd& J_com() const { return J_com_; }
-  inline const Eigen::Vector3d& Jdot_times_v_com() const {
+  inline const MatrixX<double>& M() const { return M_; }
+  inline const VectorX<double>& bias_term() const { return bias_term_; }
+  inline const Vector3<double>& com() const { return com_; }
+  inline const Vector3<double>& comd() const { return comd_; }
+  inline const MatrixX<double>& J_com() const { return J_com_; }
+  inline const Vector3<double>& Jdot_times_v_com() const {
     return Jdot_times_v_com_;
   }
-  inline const Eigen::MatrixXd& centroidal_momentum_matrix() const {
+  inline const MatrixX<double>& centroidal_momentum_matrix() const {
     return centroidal_momentum_matrix_;
   }
-  inline const Eigen::Vector6d& centroidal_momentum_matrix_dot_times_v() const {
+  inline const Vector6<double>& centroidal_momentum_matrix_dot_times_v() const {
     return centroidal_momentum_matrix_dot_times_v_;
   }
-  inline const Eigen::Vector6d& centroidal_momentum() const {
+  inline const Vector6<double>& centroidal_momentum() const {
     return centroidal_momentum_;
   }
   inline const BodyOfInterest& pelvis() const { return bodies_of_interest_[0]; }
@@ -307,34 +308,34 @@ class HumanoidStatus {
     else
       return bodies_of_interest_[5];
   }
-  inline const Eigen::Vector2d& cop() const { return cop_; }
-  inline const Eigen::Vector2d& cop_in_sole_frame(Side::SideEnum s) const {
+  inline const Vector2<double>& cop() const { return cop_; }
+  inline const Vector2<double>& cop_in_sole_frame(Side::SideEnum s) const {
     return cop_in_sole_frame_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(
+  inline const Vector6<double>& foot_wrench_in_sole_frame(
       Side::SideEnum s) const {
     return foot_wrench_in_sole_frame_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_raw(Side::SideEnum s) const {
+  inline const Vector6<double>& foot_wrench_raw(Side::SideEnum s) const {
     return foot_wrench_raw_[s];
   }
-  inline const Eigen::Vector6d& foot_wrench_in_world_frame(
+  inline const Vector6<double>& foot_wrench_in_world_frame(
       Side::SideEnum s) const {
     return foot_wrench_in_world_frame_[s];
   }
   inline const BodyOfInterest& foot_sensor(int s) const {
     return foot_sensor(Side::values.at(s));
   }
-  inline const Eigen::Vector2d& cop_in_sole_frame(int s) const {
+  inline const Vector2<double>& cop_in_sole_frame(int s) const {
     return cop_in_sole_frame(Side::values.at(s));
   }
-  inline const Eigen::Vector6d& foot_wrench_in_sole_frame(int s) const {
+  inline const Vector6<double>& foot_wrench_in_sole_frame(int s) const {
     return foot_wrench_in_sole_frame(Side::values.at(s));
   }
-  inline const Eigen::Vector6d& foot_wrench_raw(int s) const {
+  inline const Vector6<double>& foot_wrench_raw(int s) const {
     return foot_wrench_raw(Side::values.at(s));
   }
-  inline const Eigen::Vector6d& foot_wrench_in_world_frame(int s) const {
+  inline const Vector6<double>& foot_wrench_in_world_frame(int s) const {
     return foot_wrench_in_world_frame(Side::values.at(s));
   }
 
@@ -346,7 +347,7 @@ class HumanoidStatus {
 
   // Nominal position for the robot.
   // TODO(siyuan.feng): should read this from the model file eventually.
-  Eigen::VectorXd nominal_position_;
+  VectorX<double> nominal_position_;
 
   // Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;
@@ -365,44 +366,44 @@ class HumanoidStatus {
   double time_;
 
   // Pos and Vel include 6 dof for the floating base.
-  Eigen::VectorXd position_;  /// Position in generalized coordinate
-  Eigen::VectorXd velocity_;  /// Velocity in generalized coordinate
+  VectorX<double> position_;  /// Position in generalized coordinate
+  VectorX<double> velocity_;  /// Velocity in generalized coordinate
   // In the same order as vel, but torque contains only actuated joints.
-  Eigen::VectorXd joint_torque_;  /// Joint torque
+  VectorX<double> joint_torque_;  /// Joint torque
 
-  Eigen::MatrixXd M_;          ///< Inertial matrix
-  Eigen::VectorXd bias_term_;  ///< Bias term: M * vd + h = tau + J^T * lambda
+  MatrixX<double> M_;          ///< Inertial matrix
+  VectorX<double> bias_term_;  ///< Bias term: M * vd + h = tau + J^T * lambda
 
   // Computed from kinematics
-  Eigen::Vector3d com_;               ///< Center of mass
-  Eigen::Vector3d comd_;              ///< Com velocity
-  Eigen::MatrixXd J_com_;             ///< Com Jacobian: comd = J_com * v
-  Eigen::Vector3d Jdot_times_v_com_;  ///< J_com_dot * v
+  Vector3<double> com_;               ///< Center of mass
+  Vector3<double> comd_;              ///< Com velocity
+  MatrixX<double> J_com_;             ///< Com Jacobian: comd = J_com * v
+  Vector3<double> Jdot_times_v_com_;  ///< J_com_dot * v
 
   // Centroidal momentum = [angular; linear] momentum.
   // [angular; linear] = centroidal_momentum_matrix_ * v
-  Eigen::MatrixXd centroidal_momentum_matrix_;
-  Eigen::Vector6d centroidal_momentum_matrix_dot_times_v_;
-  Eigen::Vector6d centroidal_momentum_;
+  MatrixX<double> centroidal_momentum_matrix_;
+  Vector6<double> centroidal_momentum_matrix_dot_times_v_;
+  Vector6<double> centroidal_momentum_;
 
   // A list of body of interest, e.g. pelvis, feet, etc.
   std::vector<BodyOfInterest> bodies_of_interest_;
 
   // Center of pressure
-  Eigen::Vector2d cop_;
+  Vector2<double> cop_;
   // Individual center of pressure in foot frame
-  Eigen::Vector2d cop_in_sole_frame_[2];
+  Vector2<double> cop_in_sole_frame_[2];
 
   // Wrench expressed in a frame that is aligned with the world frame, and
   // is located at the origin of the foot frame.
-  Eigen::Vector6d foot_wrench_in_world_frame_[2];
+  Vector6<double> foot_wrench_in_world_frame_[2];
 
   // Wrench expressed in a frame that is aligned with the foot frame, and
   // is offsetted from the foot frame by kFootToSoleOffset.
-  Eigen::Vector6d foot_wrench_in_sole_frame_[2];
+  Vector6<double> foot_wrench_in_sole_frame_[2];
 
   // Untransformed raw measurement from the foot force torque sensor
-  Eigen::Vector6d foot_wrench_raw_[2];
+  Vector6<double> foot_wrench_raw_[2];
 };
 
 std::ostream& operator<<(std::ostream& out, const HumanoidStatus& robot_status);

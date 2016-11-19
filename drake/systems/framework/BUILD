@@ -10,8 +10,8 @@ cc_library(
     hdrs = glob(["*.h"]),
     srcs = glob(["*.cc"]),
     deps = [
+        "//drake/common:autodiff",
         "//drake/common:common",
-        "//drake/common:symbolic",
-        "//drake/math:autodiff_overloads",
+        "//drake/common:number_traits",
     ],
     linkstatic=1)

@@ -1,12 +1,13 @@
 if(gurobi_FOUND)
   drake_add_mex(fastQPmex fastQPmex.cpp)
   target_link_libraries(fastQPmex drakeQP)
+
   drake_add_mex(gurobiQPmex gurobiQPmex.cpp)
   target_link_libraries(gurobiQPmex drakeQP)
 endif()
 
-drake_add_mex(lqrmex lqrmex.cpp $<TARGET_OBJECTS:drakeUtil>)
-target_link_libraries(lqrmex drakeCommon)
+drake_add_mex(lqrmex lqrmex.cpp)
+target_link_libraries(lqrmex drakeLinearControl)
 
 if(snopt_FOUND)
   drake_add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)

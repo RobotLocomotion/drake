@@ -6,24 +6,24 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
-Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree<double>& r,
+Vector6<double> GetTaskSpaceVel(const RigidBodyTree<double>& r,
                                 const KinematicsCache<double>& cache,
-                                const RigidBody& body,
-                                const Eigen::Vector3d& local_offset) {
+                                const RigidBody<double>& body,
+                                const Vector3<double>& local_offset) {
   const auto& element = cache.getElement(body);
-  Eigen::Vector3d pt = element.transform_to_world.translation();
+  Vector3<double> pt = element.transform_to_world.translation();
 
   // Get the body's task space vel.
   // Converting from Plucker vector (Featherstone's spatial vectors) to spatial
   // vector algebra as defined by Abhinandan Jain.
-  Eigen::Vector6d v = element.twist_in_world;
+  Vector6<double> v = element.twist_in_world;
   v.tail<3>() += v.head<3>().cross(pt);
 
   // Get the global offset between pt and body.
-  Eigen::Isometry3d H_pt_to_body(Eigen::Isometry3d::Identity());
+  Isometry3<double> H_pt_to_body(Isometry3<double>::Identity());
   H_pt_to_body.translation() = local_offset;
   auto H_pt_to_world = element.transform_to_world * H_pt_to_body;
-  Eigen::Vector3d world_offset =
+  Vector3<double> world_offset =
       H_pt_to_world.translation() - element.transform_to_world.translation();
 
   // Add the linear vel from the body rotation.
@@ -32,17 +32,17 @@ Eigen::Vector6d GetTaskSpaceVel(const RigidBodyTree<double>& r,
   return v;
 }
 
-Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
+MatrixX<double> GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
                                      const KinematicsCache<double>& cache,
-                                     const RigidBody& body,
-                                     const Eigen::Vector3d& local_offset) {
+                                     const RigidBody<double>& body,
+                                     const Vector3<double>& local_offset) {
   std::vector<int> v_or_q_indices;
-  Eigen::MatrixXd Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0,
+  MatrixX<double> Jg = r.geometricJacobian(cache, 0, body.get_body_index(), 0,
                                            true, &v_or_q_indices);
-  Eigen::MatrixXd J(6, r.get_num_velocities());
+  MatrixX<double> J(6, r.get_num_velocities());
   J.setZero();
 
-  Eigen::Vector3d points =
+  Vector3<double> points =
       r.transformPoints(cache, local_offset, body.get_body_index(), 0);
 
   int col = 0;
@@ -62,25 +62,25 @@ Eigen::MatrixXd GetTaskSpaceJacobian(const RigidBodyTree<double>& r,
   return J;
 }
 
-Eigen::Vector6d GetTaskSpaceJacobianDotTimesV(
+Vector6<double> GetTaskSpaceJacobianDotTimesV(
     const RigidBodyTree<double>& r, const KinematicsCache<double>& cache,
-    const RigidBody& body, const Eigen::Vector3d& local_offset) {
+    const RigidBody<double>& body, const Vector3<double>& local_offset) {
   // position of point in world
-  Eigen::Vector3d p =
+  Vector3<double> p =
       r.transformPoints(cache, local_offset, body.get_body_index(), 0);
-  Eigen::Vector6d twist = r.relativeTwist(cache, 0, body.get_body_index(), 0);
-  Eigen::Vector6d J_geometric_dot_times_v =
+  Vector6<double> twist = r.relativeTwist(cache, 0, body.get_body_index(), 0);
+  Vector6<double> J_geometric_dot_times_v =
       r.geometricJacobianDotTimesV(cache, 0, body.get_body_index(), 0);
 
   // linear vel of r
-  Eigen::Vector3d pdot = twist.head<3>().cross(p) + twist.tail<3>();
+  Vector3<double> pdot = twist.head<3>().cross(p) + twist.tail<3>();
 
   // each column of Jt = [Jg_omega; Jg_v + Jg_omega.cross(p)]
   // for Jtdot * v, the angular part stays the same,
   // for the linear part:
   //  = [\dot{Jg_v} + \dot{Jg_omega}.cross(p) + Jg_omega.cross(pdot)] * v
   //  = [liner part of JgdotV + angular of JgdotV.cross(p) + omega.cross(pdot)]
-  Eigen::Vector6d Jdv = J_geometric_dot_times_v;
+  Vector6<double> Jdv = J_geometric_dot_times_v;
   Jdv.tail<3>() +=
       twist.head<3>().cross(pdot) + J_geometric_dot_times_v.head<3>().cross(p);
 

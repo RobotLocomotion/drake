@@ -1,25 +1,39 @@
-drake_install_headers(
-  LQR.h)
+
+add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_optimal_control.cc)
+target_link_libraries(drakeLinearControl drakeSystemFramework)
+pods_install_libraries(drakeLinearControl)
+drake_install_headers(linear_optimal_control.h)
+drake_install_pkg_config_file(drake-linear-control
+  TARGET drakeLinearControl
+  LIBS -ldrakeLinearControl)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
 drake_install_headers(controlUtil.h)
-pods_install_pkg_config_file(drake-control-util
+drake_install_pkg_config_file(drake-control-util
+  TARGET drakeControlUtil
   LIBS -ldrakeControlUtil
-  REQUIRES
-  VERSION 0.0.1)
+  REQUIRES eigen3)
 
 if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil lcm)
   pods_install_libraries(drakeQPCommon)
   drake_install_headers(QPCommon.h InstantaneousQPController.h)
-  pods_install_pkg_config_file(drake-qp-common
+  drake_install_pkg_config_file(drake-qp-common
+    TARGET drakeQPCommon
     LIBS -ldrakeQPCommon
     CFLAGS -I\${prefix}/include/lcmtypes
-    REQUIRES drake-control-util
-    VERSION 0.0.1)
+    REQUIRES
+      drake-control-util
+      drake-lcm-util
+      drake-qp
+      drake-side
+      drake-trajectories
+      drake-yaml-util
+      eigen3
+      lcm)
 
   pods_find_pkg_config(bot2-lcmgl-client)
   if(bot2-lcmgl-client_FOUND)
@@ -33,10 +47,10 @@ add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
 pods_install_libraries(drakeZMPUtil)
 drake_install_headers(zmpUtil.h)
-pods_install_pkg_config_file(drake-zmp-util
+drake_install_pkg_config_file(drake-zmp-util
+  TARGET drakeZMPUtil
   LIBS -ldrakeZMPUtil
-  REQUIRES
-  VERSION 0.0.1)
+  REQUIRES eigen3)
 
 # System 2 controllers
 set(system2_sources
@@ -58,10 +72,12 @@ target_link_libraries(drakeSystemControllers
 drake_install_headers(${system2_installed_headers})
 
 pods_install_libraries(drakeSystemControllers)
-pods_install_pkg_config_file(drake-system2-controllers
-    LIBS -ldrakeSystem2Controllers -ldrakeSystemFramework -ldrakeRBM
+drake_install_pkg_config_file(drake-system2-controllers
+    TARGET drakeSystemControllers
+    LIBS -ldrakeSystemControllers
     REQUIRES
-    VERSION 0.0.1)
+      drake-rbm
+      drake-system-framework)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

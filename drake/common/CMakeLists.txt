@@ -18,7 +18,9 @@ set(sources
   polynomial.cc
   symbolic_environment.cc
   symbolic_expression.cc
+  symbolic_expression_cell.cc
   symbolic_formula.cc
+  symbolic_formula_cell.cc
   symbolic_variable.cc
   symbolic_variables.cc
   text_logging.cc
@@ -27,6 +29,7 @@ set(sources
 # List headers that should be installed with Drake so that they
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
+  autodiff_overloads.h
   constants.h
   drake_assert.h
   drake_deprecated.h
@@ -45,7 +48,9 @@ set(installed_headers
   sorted_vectors_have_intersection.h
   symbolic_environment.h
   symbolic_expression.h
+  symbolic_expression_cell.h
   symbolic_formula.h
+  symbolic_formula_cell.h
   symbolic_variable.h
   symbolic_variables.h
   text_logging.h
@@ -73,10 +78,13 @@ drake_install_headers(${installed_headers})
 
 # Install the library and note Drake's dependency on it.
 pods_install_libraries(drakeCommon)
-pods_install_pkg_config_file(drake-common
-  LIBS -ldrakeCommon
-  REQUIRES
-  VERSION 0.0.1)
+drake_install_pkg_config_file(drake-common
+  TARGET drakeCommon
+  LIBS
+    -ldrakeCommon
+    -lgflags
+    ${CMAKE_THREAD_LIBS_INIT}
+  REQUIRES eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

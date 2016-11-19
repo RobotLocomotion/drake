@@ -12,14 +12,19 @@ lcm_wrap_types(
   CPP_HEADERS cpp_install_headers
   PYTHON_SOURCES python_install_sources
   ${java_args}
+  lcmt_body_acceleration.lcm
   lcmt_body_motion_data.lcm
   lcmt_body_wrench_data.lcm
+  lcmt_constrained_values.lcm
+  lcmt_contact_information.lcm
+  lcmt_desired_body_motion.lcm
+  lcmt_desired_centroidal_momentum_dot.lcm
+  lcmt_desired_dof_motions.lcm
   lcmt_drake_signal.lcm
   lcmt_driving_command_t.lcm
   lcmt_euler_floating_joint_state_t.lcm
   lcmt_foot_flag.lcm
   lcmt_force_torque.lcm
-  lcmt_idm_with_trajectory_agent_state_t.lcm
   lcmt_iiwa_command.lcm
   lcmt_iiwa_status.lcm
   lcmt_joint_pd_override.lcm
@@ -27,8 +32,10 @@ lcm_wrap_types(
   lcmt_polynomial.lcm
   lcmt_polynomial_matrix.lcm
   lcmt_qp_controller_input.lcm
+  lcmt_qp_input.lcm
   lcmt_quadrotor_input_t.lcm
   lcmt_quadrotor_output_t.lcm
+  lcmt_resolved_contact.lcm
   lcmt_robot_state.lcm
   lcmt_scope_data.lcm
   lcmt_schunk_command.lcm
@@ -52,23 +59,29 @@ generate_export_header(drake_lcmtypes)
 target_include_directories(drake_lcmtypes INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
+drake_install_pkg_config_file(drake-lcmtypes
+  TARGET drake_lcmtypes
+  LIBS -ldrake_lcm_types)
+
 lcm_add_library(drakeLCMTypes CPP ${cpp_install_headers})
 target_include_directories(drakeLCMTypes INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+
+drake_install_pkg_config_file(drake-lcmtypes-cpp)
 
 lcm_install_headers(
   ${CMAKE_CURRENT_BINARY_DIR}/drake_lcmtypes_export.h
   ${c_install_headers}
   ${cpp_install_headers}
-  DESTINATION include/lcmtypes
+  DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
 install(TARGETS drake_lcmtypes drakeLCMTypes
   EXPORT ${PROJECT_NAME}Targets
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib${LIB_SUFFIX}
-  ARCHIVE DESTINATION lib${LIB_SUFFIX}
-  INCLUDES DESTINATION include/lcmtypes
+  LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+  ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
+  INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
 lcm_install_python(${python_install_sources})
