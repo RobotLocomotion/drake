@@ -224,7 +224,8 @@ class IntegratorBase {
       if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
       // Verify that minimum values of the weighting matrices are non-negative.
-      if (qbar_weight_.minCoeff() < 0 || z_weight_.minCoeff() < 0)
+      if ((qbar_weight_.size() && qbar_weight_.minCoeff() < 0) ||
+          (z_weight_.size() && z_weight_.minCoeff() < 0))
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
@@ -1004,14 +1005,15 @@ T IntegratorBase<T>::CalcErrorNorm() {
 
   // Compute the infinity norm of the weighted auxiliary variables.
   unweighted_err_ = gz_err.CopyToVector();
-  T z_nrm = (z_weight * unweighted_err_).template lpNorm<Eigen::Infinity>();
+  T z_nrm = (z_weight.cwiseProduct(unweighted_err_))
+                .template lpNorm<Eigen::Infinity>();
 
   // Compute N * Wq * dq = N * Wꝗ * N+ * dq.
   unweighted_err_ = gq_err.CopyToVector();
   system.MapQDotToVelocity(context, unweighted_err_, pinvN_dq_err_.get());
-  system.MapVelocityToQDot(context,
-                           qbar_v_weight * pinvN_dq_err_->CopyToVector(),
-                           weighted_q_err_.get());
+  system.MapVelocityToQDot(
+      context, qbar_v_weight.cwiseProduct(pinvN_dq_err_->CopyToVector()),
+      weighted_q_err_.get());
   T q_nrm = weighted_q_err_->CopyToVector().template lpNorm<Eigen::Infinity>();
 
   // TODO(edrumwri): Record the worst offender (which of the norms resulted
