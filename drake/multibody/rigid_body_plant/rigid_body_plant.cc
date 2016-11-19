@@ -227,15 +227,9 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
-
-  // TODO(amcastro-tri): preallocate the optimization problem and constraints,
-  // and simply update them then solve on each function eval.
-  // How to place something like this in the context?
-  drake::solvers::MathematicalProgram prog;
-  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
-
+  
+  // Get the generalized inertia matrix.
   auto H = tree_->massMatrix(kinsol);
-  Eigen::MatrixXd H_and_neg_JT = H;
 
   // There are no external wrenches, but it is a required argument in
   // dynamicsBiasTerm.
@@ -271,6 +265,15 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   VectorX<T> xdot(get_num_states());
 
   if (tree_->getNumPositionConstraints()) {
+    // TODO(amcastro-tri): preallocate the optimization problem and constraints,
+    // and simply update them then solve on each function eval.
+    // How to place something like this in the context?
+    drake::solvers::MathematicalProgram prog;
+
+    auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
+
+    Eigen::MatrixXd H_and_neg_JT = H;
+
     size_t nc = tree_->getNumPositionConstraints();
     // 1/time constant of position constraint satisfaction.
     const T alpha = 5.0;
@@ -294,14 +297,14 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
     prog.Solve();
 
-    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()),
-      vdot.value();
+    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()).
+      transpose(), vdot.value();
   } else {
     // No bilateral constraints. Solve (essentially) F=MA for A.
-    Eigen::LLT<MatrixX<T>> llt(H_and_neg_JT);
+    Eigen::LLT<MatrixX<T>> llt(H);
     DRAKE_DEMAND(llt.info() == Eigen::Success);
-    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()),
-      llt.solve(-right_hand_side);
+    xdot << kinsol.transformVelocityMappingToQDotMapping(v.transpose()).
+      transpose(), llt.solve(-right_hand_side);
   }
 
   derivatives->SetFromVector(xdot);

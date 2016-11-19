@@ -196,6 +196,7 @@ class KinematicsCache {
                 Eigen::Dynamic>
   transformVelocityMappingToQDotMapping(
       const Eigen::MatrixBase<Derived>& B) const {
+    DRAKE_DEMAND(B.cols() == get_num_velocities());
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         A(B.rows(), get_num_positions());
@@ -238,6 +239,7 @@ class KinematicsCache {
                 Eigen::Dynamic>
   transformQDotMappingToVelocityMapping(
       const Eigen::MatrixBase<Derived>& A) const {
+    DRAKE_DEMAND(A.cols() == get_num_positions());
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
                   Eigen::Dynamic>
         B(A.rows(), get_num_velocities());
