@@ -13,7 +13,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  const Eigen::MatrixXd& S =
+  const auto& S =
       ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
@@ -42,8 +42,8 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   auto linear_system = Linearize(system, context);
 
-  const Eigen::MatrixXd& S = ContinuousAlgebraicRiccatiEquation(
-      linear_system->A(), linear_system->B(), Q, R);
+  const auto& S = ContinuousAlgebraicRiccatiEquation(linear_system->A(),
+                                                     linear_system->B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   auto K = R_cholesky.solve(linear_system->B().transpose() * S);
@@ -123,7 +123,8 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(
       lhs, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-  return svd.solve(rhs);
+  Eigen::MatrixXd S = svd.solve(rhs);
+  return S;
 }
 
 }  // namespace systems
