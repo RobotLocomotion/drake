@@ -152,7 +152,9 @@ class Context {
   }
 
   /// Connects a FreestandingInputPort with the given @p value at the given
-  /// @p index. Asserts if @p index is out of range.
+  /// @p index. Asserts if @p index is out of range.  Returns a raw pointer to
+  /// the allocated BasicVector that will remain valid until this input
+  /// port is overwritten or the context is destroyed.
   BasicVector<T>* FixInputPort(int index,
                                const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);

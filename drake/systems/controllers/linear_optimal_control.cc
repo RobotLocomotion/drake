@@ -66,7 +66,7 @@ ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::MatrixXd>& B,
                                    const Eigen::Ref<const Eigen::MatrixXd>& Q,
                                    const Eigen::Ref<const Eigen::MatrixXd>& R) {
-  const size_t n = B.rows(), m = B.cols();
+  const Eigen::Index n = B.rows(), m = B.cols();
 
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
   DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
