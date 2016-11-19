@@ -15,4 +15,21 @@ if(lcm_FOUND)
             drakeRBM
             GTest::GTest GTest::Main)
     drake_add_test(NAME valkyrie_ik_test WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND valkyrie_ik_test)
+
+    add_executable(valkyrie_ik_trajectory valkyrie_ik_trajectory.cc)
+    target_link_libraries(valkyrie_ik_trajectory
+            drakeCommon
+            drakeIK
+            drakeLcm
+            drakeRigidBodyPlant
+            drakeSystemFramework
+            drakeSystemAnalysis
+            drakeRBM
+            drakeRigidBodyConstraint
+            GTest::GTest GTest::Main)
+#    drake_add_test(NAME valkyrie_ik_test WORKING_DIRECTORY
+# "${PROJECT_SOURCE_DIR}" COMMAND valkyrie_ik_test)
+
+
+
 endif()

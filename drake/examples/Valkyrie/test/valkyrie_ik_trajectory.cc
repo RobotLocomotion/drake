@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <numeric>
+#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -10,6 +11,7 @@
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/inverse_kinematics_backend.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -63,13 +65,11 @@ void FindJointAndInsert(const RigidBodyTreed* model, const std::string& name,
                         position_indices.end());
 }
 
-GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
+int DoMain() {
   std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom_additional_contact_"
-          "pts"
-          ".urdf",
+          "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
       drake::multibody::joints::kRollPitchYaw);
 
   for (int i = 0; i < tree->get_num_bodies(); i++)
@@ -79,7 +79,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   // director-generated M-file.
   const double inf = std::numeric_limits<double>::infinity();
   Vector2d tspan;
-  tspan << 0, inf;
+  tspan << 0, 1;
 
   VectorXd reach_start(tree->get_num_positions());
   reach_start << 0.0,  // base_x
@@ -302,33 +302,41 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
 
 
   // 8 Quasistatic constraint
-  QuasiStaticConstraint kc_quasi(tree.get(), tspan);
-  kc_quasi.setShrinkFactor(0.9);
-  kc_quasi.setActive(true);
+  Vector2d tspan1(0, 0.5);
+  Vector2d tspan2(0.5, 1);
+  QuasiStaticConstraint kc_kuasi_start(tree.get(), tspan1);
+  QuasiStaticConstraint kc_kuasi_end(tree.get(), tspan2);
+  kc_kuasi_start.setShrinkFactor(0.9);
+  kc_kuasi_start.setActive(true);
+  kc_kuasi_end.setShrinkFactor(0.9);
+  kc_kuasi_end.setActive(true);
 
   auto leftFootPtr = tree->FindBody("leftFoot");
   Matrix3Xd leftFootContactPts = leftFootPtr->get_contact_points();
   Matrix3Xd l_foot_pts = leftFootContactPts.rightCols(8);
-  kc_quasi.addContact(1, &l_foot, &l_foot_pts);
+  kc_kuasi_start.addContact(1, &l_foot, &l_foot_pts);
+  kc_kuasi_end.addContact(1, &l_foot, &l_foot_pts);
 
   auto rightFootPtr = tree->FindBody("rightFoot");
   Matrix3Xd rightFootContactPts = rightFootPtr->get_contact_points();
   Matrix3Xd r_foot_pts = rightFootContactPts.rightCols(8);
-  kc_quasi.addContact(1, &r_foot, &r_foot_pts);
+  kc_kuasi_start.addContact(1, &r_foot, &r_foot_pts);
+  kc_kuasi_end.addContact(1, &r_foot, &r_foot_pts);
 
   auto leftArmPtr = tree->FindBody("leftForearmLink");
   Matrix3Xd leftArmContactPts = leftArmPtr->get_contact_points();
   std::cout << "left arm contact pts: " << std::endl
             << leftArmContactPts << std::endl;
   int l_forearm = tree->FindBodyIndex("leftForearmLink");
-  kc_quasi.addContact(1, &l_forearm, &leftArmContactPts);
+  kc_kuasi_start.addContact(1, &l_forearm, &leftArmContactPts);
+  kc_kuasi_end.addContact(1, &l_forearm, &leftArmContactPts);
 
   auto rightArmPtr = tree->FindBody("rightForearmLink");
   Matrix3Xd rightArmContactPts = rightArmPtr->get_contact_points();
   std::cout << "right arm contact pts: " << std::endl
             << rightArmContactPts << std::endl;
   int r_forearm = tree->FindBodyIndex("rightForearmLink");
-  kc_quasi.addContact(1, &r_forearm, &rightArmContactPts);
+  kc_kuasi_start.addContact(1, &r_forearm, &rightArmContactPts);
 
   // 9 leftForeArm position constraint
   Vector3d lforearm_pos_lb(-inf, -inf, 0);
@@ -337,7 +345,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
                                           leftArmContactPts, lforearm_pos_lb,
                                           lforearm_pos_ub, tspan);
 
-  // 9 leftForeArm position constraint
+  // 9 rightForeArm position constraint
   Vector3d rforearm_pos_lb(-inf, -inf, 0);
   Vector3d rforearm_pos_ub(inf, inf, 0);
   WorldPositionConstraint kc_rforearm_pos(tree.get(), r_forearm,
@@ -365,7 +373,8 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   constraint_array.push_back(&kc_posture_knee);
   constraint_array.push_back(&kc_posture_larm);
   constraint_array.push_back(&kc_posture_rarm);
-  constraint_array.push_back(&kc_quasi);
+  constraint_array.push_back(&kc_kuasi_start);
+  constraint_array.push_back(&kc_kuasi_end);
   constraint_array.push_back(&kc_lforearm_pos);
   constraint_array.push_back(&kc_rforearm_pos);
   constraint_array.push_back(&no_collision_feet);
@@ -418,26 +427,30 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   Eigen::MatrixXd Qv = 0.05 * Q;
   Eigen::MatrixXd Qa = 0.05 * Q;
 
-
   IKoptions ikoptions(tree.get());
   ikoptions.setQ(Q);
   ikoptions.setQa(Qa);
   ikoptions.setQv(Qv);
 
-  VectorXd q_sol(tree->get_num_positions());
-  VectorXd q_nom = prone_pose;
+  int nT=3;
+  std::vector<double> t = {0, 0.5, 1};
+  Eigen::MatrixXd q_sol(tree->get_num_positions(), nT);
+  Eigen::MatrixXd qdot_sol(tree->get_num_velocities(), nT);
+  Eigen::MatrixXd qddot_sol(tree->get_num_positions(), nT);
+  VectorXd q_nom = prone_pose.replicate(1,nT);
+  VectorXd qdot0 = VectorXd::Zero(tree->get_num_velocities());
   int info;
   std::vector<std::string> infeasible_constraint;
-  inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),
-             constraint_array.data(), ikoptions, &q_sol, &info,
-             &infeasible_constraint);
+  inverseKinTraj(tree.get(), nT, t.data(), qdot0, q_nom, q_nom,
+             constraint_array.size(), constraint_array.data(), ikoptions,
+             &q_sol, &qdot_sol,&qddot_sol, &info, &infeasible_constraint);
 
   // After solving
-  Vector3d com = tree->centerOfMass(cache);
-  EXPECT_EQ(info, 1);
-  EXPECT_GT(com(2), 0);
+  //Vector3d com = tree->centerOfMass(cache);
+  std::cout << "info: " << info << std::endl;
 
   // show it in drake visualizer
+  /*
   VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
   x.setZero();
   x.head(q_sol.size()) = q_sol;
@@ -452,9 +465,16 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput(*context);
   diagram->Publish(*context);
+   */
+  
+  return 0;
 }
 
 }  // namespace
 }  // namespace valkyrie
 }  // namespace examples
 }  // namespace drake
+
+int main() {
+  return drake::examples::valkyrie::DoMain();
+}

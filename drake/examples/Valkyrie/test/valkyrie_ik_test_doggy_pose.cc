@@ -67,9 +67,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::shared_ptr<RigidBodyTreed> tree = std::make_shared<RigidBodyTreed>(
       drake::GetDrakePath() +
           "/examples/Valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom_additional_contact_"
-          "pts"
-          ".urdf",
+          "valkyrie_sim_drake_one_neck_dof_additional_contact_pts.urdf",
       drake::multibody::joints::kRollPitchYaw);
 
   for (int i = 0; i < tree->get_num_bodies(); i++)
