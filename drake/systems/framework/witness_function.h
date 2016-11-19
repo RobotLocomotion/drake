@@ -166,7 +166,7 @@ class WitnessFunction {
    * computation never yields exactly zero for any floating point argument.
    * [Press 1994] recommends a tolerance value of ε(|x₀| + |x₁|)/2, where ε
    * is the machine precision and x₀ < 0 < x₁ are input values (times in our
-   * context) that "bracket" the zero crossing when the witness function is
+   * application) that "bracket" the zero crossing when the witness function is
    * active. (This has to do with integration step size)
    *
    * Although we generally expect the user to use symmetric tolerances for
