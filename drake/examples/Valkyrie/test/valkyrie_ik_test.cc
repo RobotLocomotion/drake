@@ -121,7 +121,51 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
       -0.71,                // 36 leftAnklePitch
       0.0;                  // 37 leftAnkleRoll
 
-  KinematicsCache<double> cache = tree->doKinematics(reach_start);
+  VectorXd prone_pose(tree->get_num_positions());
+  prone_pose << 0.7,  // base_x
+      0.0,            // base_y
+      0.5,            // base_z
+      0.0,            // base_roll
+      2.2,            // base_pitch
+      0.0,            // 5 base_yaw
+      0.0,            // 6 torsoYaw
+      0.0,            // 7 torsoPitch
+      0.0,            // 8 torsoRoll
+      0.0,            // 9 lowerNeckPitch
+      // 0.0,                  // 10 neckYaw
+      // 0.0,                  // 11 upperNeckPitch
+
+      -120.0/180*M_PI,  // 12 rightShoulderPitch [-130, -40]
+      80.0/180*M_PI,   // 13 rightShoulderRoll  [70, 85]
+      0.05,   // 14 rightShoulderYaw [fixed]
+      0.0,   // 15 rightElbowPitch [-6, 120]
+      0.0,   // 16 rightForearmYaw [fixed]
+      0.0,    // 17 rightWristRoll [fixed]
+      -0.49,  // 18 rightWristPitch [fixed]
+
+      -120.0/180*M_PI,  // 19 leftShoulderPitch [-130 -40]
+      -80.0/180*M_PI,  // 20 leftShoulderRoll [-85, -70]
+      -0.05,  // 21 leftShoulderYaw
+      0.0,  // 22 leftElbowPitch [-120, 6]
+      0.0,   // 23 leftForearmYaw
+      0.0,    // 24 leftWristRoll
+      0.49,   // 25 LeftWristPitch
+
+      0.0,      // 26 rightHipYaw
+      0.0,      // 27 rightHipRoll
+      -1.74,    // 28 rightHipPitch
+      0.6,      // 29 rightKneePitch
+      -0.8644,  // 30 rightAnklePitch
+      0.0,      // 31 rightAnkleRoll
+
+      0.0,      // 32 leftHipYaw
+      0.0,      // 33 leftHipRoll
+      -1.74,    // 34 leftHipPitch
+      0.6,      // 35 leftKneePitch
+      -0.8644,  // 36 leftAnklePitch
+      0.0;      // 37 leftAnkleRoll
+
+  KinematicsCache<double> cache = tree->doKinematics(prone_pose);
 
   // 1 Neck Posture Constraint, posture constraints are imposed on q
   PostureConstraint kc_posture_neck(tree.get(), tspan);
@@ -167,6 +211,15 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
                                        rfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
 
+
+  // Pelvis height constraint
+  int pelvis = tree->FindBodyIndex("Pelvis");
+  Vector3d pelvis_pos_lb(-inf, -inf, 0);
+  Vector3d pelvis_pos_ub(inf, inf, 0.5);
+  WorldPositionConstraint kc_pelvis_pos(tree.get(), pelvis, origin,
+                                       pelvis_pos_lb, pelvis_pos_ub, tspan);
+
+
   // 4 Torso posture constraint
   PostureConstraint kc_posture_torso(tree.get(), tspan);
   std::vector<int> torso_idx;
@@ -181,11 +234,9 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   Vector3d torso_ub_relaxed = torso_nominal + torso_half_range;
   torso_lb_relaxed(1) = -5.0 / 180 * M_PI;
   */
-  //bounds as defined in URDF file
-  Vector3d torso_lb(-75.0 / 180 * M_PI, -7.0 / 180 * M_PI,
-                          -13.0 / 180 * M_PI);
-  Vector3d torso_ub(65.0 / 180 * M_PI, 38.0 / 180 * M_PI,
-                          13.0 / 180 * M_PI);
+  // bounds as defined in URDF file
+  Vector3d torso_lb(-75.0 / 180 * M_PI, -7.0 / 180 * M_PI, -13.0 / 180 * M_PI);
+  Vector3d torso_ub(65.0 / 180 * M_PI, 38.0 / 180 * M_PI, 13.0 / 180 * M_PI);
   kc_posture_torso.setJointLimits(3, torso_idx.data(), torso_lb, torso_ub);
 
   // 5 knee posture constraint
@@ -198,7 +249,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   kc_posture_knee.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 6 Left arm posture constraint
-  /*
+
   PostureConstraint kc_posture_larm(tree.get(), tspan);
   std::vector<int> larm_idx;
   FindJointAndInsert(tree.get(), "leftShoulderPitch", &larm_idx);
@@ -208,15 +259,23 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "leftForearmYaw", &larm_idx);
   FindJointAndInsert(tree.get(), "leftWristRoll", &larm_idx);
   FindJointAndInsert(tree.get(), "leftWristPitch", &larm_idx);
-  Eigen::Matrix<double, 7, 1> larm_lb;
-  larm_lb.setZero();
-  for (int i = 0; i < 7; i++) larm_lb(i) = reach_start(larm_idx[i]);
-  Eigen::Matrix<double, 7, 1> larm_ub = larm_lb;
+  Eigen::Matrix<double, 7, 1> larm_nominal;
+  larm_nominal.setZero();
+  for (int i = 0; i < 7; i++) larm_nominal(i) = prone_pose(larm_idx[i]);
+  Eigen::Matrix<double, 7, 1> larm_lb = larm_nominal;
+  Eigen::Matrix<double, 7, 1> larm_ub = larm_nominal;
+  larm_ub[0] = -40.0/180*M_PI;
+  larm_ub[1] = -70.0/180*M_PI;
+  larm_ub[3] = 6.0/180*M_PI;
+
+  larm_lb[0] = -130.0/180*M_PI;
+  larm_lb[1] = -85.0/180*M_PI;
+  larm_lb[3] = -120.0/180*M_PI;
+
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
-  */
+
 
   // 7 Right arm posture constraint
-  /*
   PostureConstraint kc_posture_rarm(tree.get(), tspan);
   std::vector<int> rarm_idx;
   FindJointAndInsert(tree.get(), "rightShoulderPitch", &rarm_idx);
@@ -226,12 +285,21 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   FindJointAndInsert(tree.get(), "rightForearmYaw", &rarm_idx);
   FindJointAndInsert(tree.get(), "rightWristRoll", &rarm_idx);
   FindJointAndInsert(tree.get(), "rightWristPitch", &rarm_idx);
-  Eigen::Matrix<double, 7, 1> rarm_lb;
-  rarm_lb.setZero();
-  for (int i = 0; i < 7; i++) rarm_lb(i) = reach_start(rarm_idx[i]);
-  Eigen::Matrix<double, 7, 1> rarm_ub = rarm_lb;
+  Eigen::Matrix<double, 7, 1> rarm_nominal;
+  rarm_nominal.setZero();
+  for (int i = 0; i < 7; i++) rarm_nominal(i) = prone_pose(rarm_idx[i]);
+  Eigen::Matrix<double, 7, 1> rarm_lb = rarm_nominal;
+  Eigen::Matrix<double, 7, 1> rarm_ub = rarm_nominal;
+  larm_ub[0] = -40.0/180*M_PI;
+  larm_ub[1] = 85.0/180*M_PI;
+  larm_ub[3] = 120.0/180*M_PI;
+
+  larm_lb[0] = -130.0/180*M_PI;
+  larm_lb[1] = 70.0/180*M_PI;
+  larm_lb[3] = -6.0/180*M_PI;
+
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
-  */
+
 
   // 8 Quasistatic constraint
   QuasiStaticConstraint kc_quasi(tree.get(), tspan);
@@ -255,6 +323,13 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   int l_forearm = tree->FindBodyIndex("leftForearmLink");
   kc_quasi.addContact(1, &l_forearm, &leftArmContactPts);
 
+  auto rightArmPtr = tree->FindBody("rightForearmLink");
+  Matrix3Xd rightArmContactPts = rightArmPtr->get_contact_points();
+  std::cout << "right arm contact pts: " << std::endl
+            << rightArmContactPts << std::endl;
+  int r_forearm = tree->FindBodyIndex("rightForearmLink");
+  kc_quasi.addContact(1, &r_forearm, &rightArmContactPts);
+
   // 9 leftForeArm position constraint
   Vector3d lforearm_pos_lb(-inf, -inf, 0);
   Vector3d lforearm_pos_ub(inf, inf, 0);
@@ -262,10 +337,17 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
                                           leftArmContactPts, lforearm_pos_lb,
                                           lforearm_pos_ub, tspan);
 
-  // 10 no collision constraint
+  // 9 leftForeArm position constraint
+  Vector3d rforearm_pos_lb(-inf, -inf, 0);
+  Vector3d rforearm_pos_ub(inf, inf, 0);
+  WorldPositionConstraint kc_rforearm_pos(tree.get(), r_forearm,
+                                          rightArmContactPts, rforearm_pos_lb,
+                                          rforearm_pos_ub, tspan);
+
+  // 11 no collision constraint
   std::vector<int> active_body_idx;
-  //active_body_idx.push_back(l_foot);
-  //active_body_idx.push_back(r_foot);
+  // active_body_idx.push_back(l_foot);
+  // active_body_idx.push_back(r_foot);
   std::set<std::string> active_group_names;
   active_group_names.insert("l_leg");
   active_group_names.insert("r_leg");
@@ -281,21 +363,24 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   constraint_array.push_back(&kc_rfoot_quat);
   constraint_array.push_back(&kc_posture_torso);
   constraint_array.push_back(&kc_posture_knee);
-  // constraint_array.push_back(&kc_posture_larm);
-  // constraint_array.push_back(&kc_posture_rarm);
+  constraint_array.push_back(&kc_posture_larm);
+  constraint_array.push_back(&kc_posture_rarm);
   constraint_array.push_back(&kc_quasi);
   constraint_array.push_back(&kc_lforearm_pos);
+  constraint_array.push_back(&kc_rforearm_pos);
   constraint_array.push_back(&no_collision_feet);
-
+  //constraint_array.push_back(&kc_pelvis_pos);
 
   // setting Q
 
   std::cout << "postions and names: " << std::endl;
-  for(int i=0; i<tree->get_num_positions(); i++)
+  for (int i = 0; i < tree->get_num_positions(); i++)
     std::cout << i << " " << tree->get_position_name(i) << std::endl;
+
 
   VectorXd cost(tree->get_num_positions());
   cost.setOnes();
+  /*
   const int left_hip_pitch_idx = 32;
   const int right_hip_pitch_idx = 26;
   const int left_knee_pitch_idx = 33;
@@ -317,25 +402,22 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::vector<int> torso_rotation_idx = {torso_yaw_idx, torso_roll_idx,
                                          torso_pitch_idx};
 
-  std::vector<int> base_idx = {0,1,2,3,4,5};
-  for(const int & i : base_idx)
-    cost(i) = 0;
+  std::vector<int> base_idx = {0, 1, 2, 3, 4, 5};
+  for (const int& i : base_idx) cost(i) = 0;
+  for (const int& i : torso_rotation_idx) cost(i) = 0.1;
+  for (const int& i : lower_body_pitch_idx) cost(i) = 0;
+  */
 
-  for(const int & i : torso_rotation_idx)
-    cost(i) = 0.1;
-
-  for(const int & i : lower_body_pitch_idx)
-    cost(i) = 0;
-
-  //display all costs
+  // display all costs
   std::cout << "costs are:" << std::endl;
-  for(int i=0; i<cost.size(); i++) {
+  for (int i = 0; i < cost.size(); i++) {
     std::cout << cost(i) << " " << tree->get_position_name(i) << i << std::endl;
   }
 
   Eigen::MatrixXd Q = cost.asDiagonal();
-  Eigen::MatrixXd Qv = 0.05*Q;
-  Eigen::MatrixXd Qa = 0.05*Q;
+  Eigen::MatrixXd Qv = 0.05 * Q;
+  Eigen::MatrixXd Qa = 0.05 * Q;
+
 
   IKoptions ikoptions(tree.get());
   ikoptions.setQ(Q);
@@ -343,7 +425,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   ikoptions.setQv(Qv);
 
   VectorXd q_sol(tree->get_num_positions());
-  VectorXd q_nom = reach_start;
+  VectorXd q_nom = prone_pose;
   int info;
   std::vector<std::string> infeasible_constraint;
   inverseKin(tree.get(), q_nom, q_nom, constraint_array.size(),
