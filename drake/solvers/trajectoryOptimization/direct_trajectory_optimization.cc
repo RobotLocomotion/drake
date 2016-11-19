@@ -189,7 +189,7 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   std::vector<double> times;
   times.resize(N_, 0);
 
-  const auto& h_values = DecisionVariableMatrixToDoubleMatrix(h_vars_);
+  const auto h_values = DecisionVariableMatrixToDoubleMatrix(h_vars_);
   for (int i = 1; i < N_; i++) {
     times[i] = times[i - 1] + h_values(i - 1);
   }
@@ -201,7 +201,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
   std::vector<Eigen::MatrixXd> inputs;
   inputs.reserve(N_);
 
-  const auto& u_values = DecisionVariableMatrixToDoubleMatrix(u_vars_);
+  const auto u_values = DecisionVariableMatrixToDoubleMatrix(u_vars_);
 
   for (int i = 0; i < N_; i++) {
     inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
@@ -214,7 +214,7 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   std::vector<Eigen::MatrixXd> states;
   states.reserve(N_);
 
-  const auto& x_values = DecisionVariableMatrixToDoubleMatrix(x_vars_);
+  const auto x_values = DecisionVariableMatrixToDoubleMatrix(x_vars_);
 
   for (int i = 0; i < N_; i++) {
     states.push_back(x_values.segment(i * num_states_, num_states_));
