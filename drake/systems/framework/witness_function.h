@@ -228,8 +228,8 @@ class WitnessFunction {
   }
 
   /**
- * @}
- */
+   * @}
+   */
 
  private:
   double tolerance_left_, tolerance_right_;
