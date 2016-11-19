@@ -15,14 +15,14 @@ cc_library(
         "text_logging.cc",
     ],
     hdrs = [
-        "drake_assert.h",
-        "drake_throw.h",
-        "text_logging.h",
         "constants.h",
+        "drake_assert.h",
+        "drake_compat.h",
         "drake_deprecated.h",
-        "drake_gcc48.h",
+        "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
+        "text_logging.h",
     ],
     deps = ["@eigen//:eigen", "@spdlog//:spdlog"],
     linkstatic = 1)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/common/drake_gcc48.h"
+#include "drake/common/drake_compat.h"
 
 namespace drake {
 

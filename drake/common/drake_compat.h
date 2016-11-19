@@ -8,8 +8,7 @@
 /// write code using the std::make_unique phrasing, but still support GCC 4.8.
 
 #ifndef DRAKE_DOXYGEN_CXX
-#if defined(__GNUG__) && !defined(__clang__)
-#if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40900
+#if __cplusplus <= 201103L  // If C++11 or earlier, we need our own make_unique.
 
 #include <memory>
 
@@ -21,5 +20,4 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 }  // namespace std
 
 #endif  // version check
-#endif  // compiler check
 #endif  // doxygen check
