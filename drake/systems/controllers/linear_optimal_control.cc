@@ -13,7 +13,8 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  auto S = ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
+  const Eigen::MatrixXd& S =
+      ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   auto K = R_cholesky.solve(system.B().transpose() * S);
@@ -41,8 +42,8 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   auto linear_system = Linearize(system, context);
 
-  auto S = ContinuousAlgebraicRiccatiEquation(linear_system->A(),
-                                              linear_system->B(), Q, R);
+  const Eigen::MatrixXd& S = ContinuousAlgebraicRiccatiEquation(
+      linear_system->A(), linear_system->B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
   auto K = R_cholesky.solve(linear_system->B().transpose() * S);
@@ -61,11 +62,11 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       u0 + K * x0);                          // y0
 }
 
-const Eigen::MatrixXd
-ContinuousAlgebraicRiccatiEquation(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& B,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& Q,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& R) {
+Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
   const Eigen::Index n = B.rows(), m = B.cols();
 
   DRAKE_DEMAND(A.rows() == n && A.cols() == n);
