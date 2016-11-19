@@ -17,7 +17,7 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
       ContinuousAlgebraicRiccatiEquation(system.A(), system.B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  auto K = R_cholesky.solve(system.B().transpose() * S);
+  const auto& K = R_cholesky.solve(system.B().transpose() * S);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
@@ -46,11 +46,11 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
                                                      linear_system->B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  auto K = R_cholesky.solve(linear_system->B().transpose() * S);
+  const auto& K = R_cholesky.solve(linear_system->B().transpose() * S);
 
-  const Eigen::VectorXd x0 =
+  const Eigen::VectorXd& x0 =
       context.get_continuous_state_vector().CopyToVector();
-  auto u0 = system.EvalEigenVectorInput(context, 0);
+  const auto& u0 = system.EvalEigenVectorInput(context, 0);
 
   // Return the affine controller: u = u0 - K(x-x0).
   return std::make_unique<systems::AffineSystem<double>>(
