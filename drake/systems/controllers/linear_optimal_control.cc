@@ -46,7 +46,8 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
                                                      linear_system->B(), Q, R);
 
   Eigen::LLT<Eigen::MatrixXd> R_cholesky(R);
-  const Eigen::MatrixXd K = R_cholesky.solve(linear_system->B().transpose() * S);
+  const Eigen::MatrixXd K =
+      R_cholesky.solve(linear_system->B().transpose() * S);
 
   const Eigen::VectorXd& x0 =
       context.get_continuous_state_vector().CopyToVector();
