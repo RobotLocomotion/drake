@@ -227,7 +227,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): place kinematics cache in the context so it can be
   // reused.
   auto kinsol = tree_->doKinematics(q, v);
-  
+
   // Get the generalized inertia matrix.
   auto H = tree_->massMatrix(kinsol);
 
