@@ -18,7 +18,6 @@ lcm_cc_library(
     lcm_srcs = [
         "lcmt_driving_command_t.lcm",
         "lcmt_euler_floating_joint_state_t.lcm",
-        "lcmt_idm_with_trajectory_agent_state_t.lcm",
         "lcmt_simple_car_config_t.lcm",
         "lcmt_simple_car_state_t.lcm",
     ],
