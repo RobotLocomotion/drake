@@ -1,9 +1,10 @@
 #include "drake/examples/Acrobot/acrobot_plant.h"
 
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include <cmath>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 
 namespace drake {
 namespace examples {
@@ -40,17 +41,19 @@ void AcrobotPlant<T>::EvalTimeDerivatives(
 
   const AcrobotStateVector<T>& x = dynamic_cast<const AcrobotStateVector<T>&>(
       context.get_continuous_state_vector());
-  T tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+  const T tau = this->EvalVectorInput(context, 0)->GetAtIndex(0);
 
   const double I1 = Ic1 + m1 * lc1 * lc1;
   const double I2 = Ic2 + m2 * lc2 * lc2;
   const double m2l1lc2 = m2 * l1 * lc2;  // occurs often!
 
-  T c2 = cos(x.theta2());
-  T s1 = sin(x.theta1()), s2 = sin(x.theta2());
-  T s12 = sin(x.theta1() + x.theta2());
+  using std::sin;
+  using std::cos;
+  const T c2 = cos(x.theta2());
+  const T s1 = sin(x.theta1()), s2 = sin(x.theta2());
+  const T s12 = sin(x.theta1() + x.theta2());
 
-  T h12 = I2 + m2l1lc2 * c2;
+  const T h12 = I2 + m2l1lc2 * c2;
   Eigen::Matrix<T, 2, 2> H;
   H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
 

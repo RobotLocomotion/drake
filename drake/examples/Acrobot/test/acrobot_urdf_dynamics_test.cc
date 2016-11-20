@@ -11,6 +11,8 @@ namespace examples {
 namespace acrobot {
 namespace {
 
+// Tests that the hand-derived dynamics (from the textbook) match the dynamics
+// generated from the urdf via the RigidBodyPlant class.
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto tree = std::make_unique<RigidBodyTree<double>>(
       GetDrakePath() + "/examples/Acrobot/Acrobot.urdf",
@@ -28,7 +30,10 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   Vector1d u;
   auto xdot_rbp = rbp.AllocateTimeDerivatives();
   auto xdot_p = p.AllocateTimeDerivatives();
+  auto y_rbp = rbp.AllocateOutput(*context_rbp);
+  auto y_p = p.AllocateOutput(*context_p);
 
+  srand(42);
   for (int i = 0; i < 100; ++i) {
     x = Eigen::Vector4d::Random();
     u = Vector1d::Random();
@@ -44,6 +49,13 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
 
     EXPECT_TRUE(CompareMatrices(xdot_rbp->CopyToVector(),
                                 xdot_p->CopyToVector(), 1e-8,
+                                MatrixCompareType::absolute));
+
+    rbp.EvalOutput(*context_rbp, y_rbp.get());
+    p.EvalOutput(*context_p, y_p.get());
+
+    EXPECT_TRUE(CompareMatrices(y_rbp->get_vector_data(0)->CopyToVector(),
+                                y_p->get_vector_data(0)->CopyToVector(), 1e-8,
                                 MatrixCompareType::absolute));
   }
 }
