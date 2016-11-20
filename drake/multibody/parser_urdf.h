@@ -8,7 +8,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/xmlUtil.h"
+#include "drake/multibody/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 namespace drake {

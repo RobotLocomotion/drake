@@ -45,6 +45,7 @@ drake_install_headers(
     ${lcm_dependent_header_files}
     kinematics_results.h rigid_body_plant.h
     contact_detail.h
+    contact_force.h
     contact_results.h
     contact_info.h
     )

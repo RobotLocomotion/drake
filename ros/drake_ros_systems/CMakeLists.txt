@@ -22,9 +22,9 @@ catkin_package(
 
 ## Specifies additional locations of header files.
 include_directories(
-  include
   ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")

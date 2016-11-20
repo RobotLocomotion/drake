@@ -7,7 +7,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_gcc48.h"
+#include "drake/common/drake_compat.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
