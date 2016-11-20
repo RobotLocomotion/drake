@@ -15,9 +15,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/solvers/Function.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/function.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 

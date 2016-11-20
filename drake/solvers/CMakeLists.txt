@@ -15,7 +15,7 @@ set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
   mathematical_program.cc moby_lcp_solver.cc
-  system_identification.cpp linear_system_solver.cc
+  system_identification.cc linear_system_solver.cc
   equality_constrained_qp_solver.cc)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
@@ -60,7 +60,7 @@ add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_
 target_link_libraries(drakeOptimization drakeCommon)
 drake_install_headers(
   constraint.h
-  Function.h
+  function.h
   mathematical_program.h
   decision_variable.h
   solution_result.h
