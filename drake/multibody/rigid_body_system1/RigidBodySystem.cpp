@@ -15,7 +15,7 @@
 #include "drake/multibody/parser_sdf.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/pose_map.h"
-#include "drake/multibody/xmlUtil.h"
+#include "drake/multibody/xml_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 #include "spruce.hh"

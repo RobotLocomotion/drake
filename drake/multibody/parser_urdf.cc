@@ -14,7 +14,7 @@
 #include "drake/multibody/material_map.h"
 #include "drake/multibody/parser_common.h"
 #include "drake/multibody/parser_model_instance_id_table.h"
-#include "drake/multibody/xmlUtil.h"
+#include "drake/multibody/xml_util.h"
 
 namespace drake {
 namespace parsers {
