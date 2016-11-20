@@ -19,7 +19,6 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
                             kSize, drake::systems::kContinuousSampling);
     this->DeclareContinuousState(kSize);
   }
-  ~SimpleContinuousTimeSystem() override{};
 
   // xdot = -x + x^3
   void EvalTimeDerivatives(
@@ -55,7 +54,7 @@ int main(int argc, char* argv[]) {
   simulator.StepTo(10);
 
   // make sure the simulation converges to the stable fixed point at x=0
-  DRAKE_ASSERT(xc[0] < 1.0e-4);
+  DRAKE_DEMAND(xc[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory (using vtk?)
 
