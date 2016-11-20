@@ -1,7 +1,7 @@
-add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
+add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xml_util.cc)
 target_link_libraries(drakeXMLUtil drakeCommon tinyxml2 spruce)
 pods_install_libraries(drakeXMLUtil)
-drake_install_headers(xmlUtil.h)
+drake_install_headers(xml_util.h)
 drake_install_pkg_config_file(drake-xml-util
   LIBS -ldrakeXMLUtil -ltinyxml2 -lspruce
   REQUIRES

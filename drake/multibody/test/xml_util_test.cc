@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "drake/multibody/xmlUtil.h"
+#include "drake/multibody/xml_util.h"
 #include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 using Eigen::Vector3d;
