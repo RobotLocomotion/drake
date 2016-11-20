@@ -10,8 +10,8 @@
 // Includes for IK solver.
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
-#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/inverse_kinematics_backend.h"
+#include "drake/multibody/rigid_body_ik.h"
 
 #include "drake/common/drake_path.h"
 #include "drake/lcm/drake_lcm.h"
@@ -21,6 +21,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/framework/primitives/multiplexer.h"
+#include "drake/systems/framework/primitives/trajectory_source.h"
+#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -40,7 +43,7 @@ namespace {
  */
 std::vector<int> GetJointPositionVectorIndices(const RigidBodyTreed* tree,
                                                const std::string& name) {
-  RigidBody* joint_child_body = tree->FindChildBodyOfJoint(name);
+  RigidBody<double>* joint_child_body = tree->FindChildBodyOfJoint(name);
   int num_positions = joint_child_body->getJoint().get_num_positions();
   std::vector<int> ret(static_cast<size_t>(num_positions));
 
@@ -135,21 +138,21 @@ int DoMain() {
       // 0.0,                  // 10 neckYaw
       // 0.0,                  // 11 upperNeckPitch
 
-      -120.0/180*M_PI,  // 12 rightShoulderPitch [-130, -40]
-      80.0/180*M_PI,   // 13 rightShoulderRoll  [70, 85]
-      0.05,   // 14 rightShoulderYaw [fixed]
-      0.0,   // 15 rightElbowPitch [-6, 120]
-      0.0,   // 16 rightForearmYaw [fixed]
-      0.0,    // 17 rightWristRoll [fixed]
-      -0.49,  // 18 rightWristPitch [fixed]
+      -120.0 / 180 * M_PI,  // 12 rightShoulderPitch [-130, -40]
+      80.0 / 180 * M_PI,    // 13 rightShoulderRoll  [70, 85]
+      0.05,                 // 14 rightShoulderYaw [fixed]
+      0.0,                  // 15 rightElbowPitch [-6, 120]
+      0.0,                  // 16 rightForearmYaw [fixed]
+      0.0,                  // 17 rightWristRoll [fixed]
+      -0.49,                // 18 rightWristPitch [fixed]
 
-      -120.0/180*M_PI,  // 19 leftShoulderPitch [-130 -40]
-      -80.0/180*M_PI,  // 20 leftShoulderRoll [-85, -70]
-      -0.05,  // 21 leftShoulderYaw
-      0.0,  // 22 leftElbowPitch [-120, 6]
-      0.0,   // 23 leftForearmYaw
-      0.0,    // 24 leftWristRoll
-      0.49,   // 25 LeftWristPitch
+      -120.0 / 180 * M_PI,  // 19 leftShoulderPitch [-130 -40]
+      -80.0 / 180 * M_PI,   // 20 leftShoulderRoll [-85, -70]
+      -0.05,                // 21 leftShoulderYaw
+      0.0,                  // 22 leftElbowPitch [-120, 6]
+      0.0,                  // 23 leftForearmYaw
+      0.0,                  // 24 leftWristRoll
+      0.49,                 // 25 LeftWristPitch
 
       0.0,      // 26 rightHipYaw
       0.0,      // 27 rightHipRoll
@@ -164,6 +167,46 @@ int DoMain() {
       0.6,      // 35 leftKneePitch
       -0.8644,  // 36 leftAnklePitch
       0.0;      // 37 leftAnkleRoll
+
+  VectorXd squat_pose(tree->get_num_positions());
+  squat_pose << -0.141714353,  // 0
+      0.157190702,             // 1
+      0.665432187,             // 2
+      -0.895860474000000,      // 3
+      0.829941870000000,       // 4
+      -1.15801324000000,       // 5
+      -0.146479404000000,      // 6
+      0.192227111000000,       // 7
+      -0.143599135000000,      // 8
+      0,                       // 9
+      // 0, //10
+      // 0, //11
+      -0.0644158134000000,   // 12
+      1.10416339000000,      // 13
+      -0.00726552442000000,  // 14
+      0.240364862000000,     // 15
+      2.12441686000000,      // 16
+      0.155591530000000,     // 17
+      0.0307877965000000,    // 18
+      -1.92824968000000,     // 19
+      -0.618868790000000,    // 20
+      -0.152318189000000,    // 21
+      -0.213302160000000,    // 22
+      3.14000000000000,      // 23
+      0.00160567432000000,   // 24
+      0.490000000000000,     // 25
+      0.345962604000000,     // 26
+      -0.249349812000000,    // 27
+      -2.37711866000000,     // 28
+      1.15699985000000,      // 29
+      0.0306223996000000,    // 30
+      0.348000000000000,     // 31
+      0.964904798000000,     // 32
+      0.0342466052000000,    // 33
+      -2.42000000000000,     // 34
+      1.90000000000000,      // 35
+      -0.595530575000000,    // 36
+      -0.324304201000000;    // 37
 
   KinematicsCache<double> cache = tree->doKinematics(prone_pose);
 
@@ -211,14 +254,12 @@ int DoMain() {
                                        rfoot_pos_ub, tspan);
   WorldQuatConstraint kc_rfoot_quat(tree.get(), r_foot, rfoot_quat, tol, tspan);
 
-
   // Pelvis height constraint
   int pelvis = tree->FindBodyIndex("Pelvis");
   Vector3d pelvis_pos_lb(-inf, -inf, 0);
   Vector3d pelvis_pos_ub(inf, inf, 0.5);
   WorldPositionConstraint kc_pelvis_pos(tree.get(), pelvis, origin,
-                                       pelvis_pos_lb, pelvis_pos_ub, tspan);
-
+                                        pelvis_pos_lb, pelvis_pos_ub, tspan);
 
   // 4 Torso posture constraint
   PostureConstraint kc_posture_torso(tree.get(), tspan);
@@ -264,16 +305,15 @@ int DoMain() {
   for (int i = 0; i < 7; i++) larm_nominal(i) = prone_pose(larm_idx[i]);
   Eigen::Matrix<double, 7, 1> larm_lb = larm_nominal;
   Eigen::Matrix<double, 7, 1> larm_ub = larm_nominal;
-  larm_ub[0] = -40.0/180*M_PI;
-  larm_ub[1] = -70.0/180*M_PI;
-  larm_ub[3] = 6.0/180*M_PI;
+  larm_ub[0] = -40.0 / 180 * M_PI;
+  larm_ub[1] = -70.0 / 180 * M_PI;
+  larm_ub[3] = 6.0 / 180 * M_PI;
 
-  larm_lb[0] = -130.0/180*M_PI;
-  larm_lb[1] = -85.0/180*M_PI;
-  larm_lb[3] = -120.0/180*M_PI;
+  larm_lb[0] = -130.0 / 180 * M_PI;
+  larm_lb[1] = -85.0 / 180 * M_PI;
+  larm_lb[3] = -120.0 / 180 * M_PI;
 
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
-
 
   // 7 Right arm posture constraint
   PostureConstraint kc_posture_rarm(tree.get(), tspan);
@@ -290,16 +330,15 @@ int DoMain() {
   for (int i = 0; i < 7; i++) rarm_nominal(i) = prone_pose(rarm_idx[i]);
   Eigen::Matrix<double, 7, 1> rarm_lb = rarm_nominal;
   Eigen::Matrix<double, 7, 1> rarm_ub = rarm_nominal;
-  larm_ub[0] = -40.0/180*M_PI;
-  larm_ub[1] = 85.0/180*M_PI;
-  larm_ub[3] = 120.0/180*M_PI;
+  larm_ub[0] = -40.0 / 180 * M_PI;
+  larm_ub[1] = 85.0 / 180 * M_PI;
+  larm_ub[3] = 120.0 / 180 * M_PI;
 
-  larm_lb[0] = -130.0/180*M_PI;
-  larm_lb[1] = 70.0/180*M_PI;
-  larm_lb[3] = -6.0/180*M_PI;
+  larm_lb[0] = -130.0 / 180 * M_PI;
+  larm_lb[1] = 70.0 / 180 * M_PI;
+  larm_lb[3] = -6.0 / 180 * M_PI;
 
   kc_posture_rarm.setJointLimits(7, rarm_idx.data(), rarm_lb, rarm_ub);
-
 
   // 8 Quasistatic constraint
   Vector2d tspan1(0, 0.5);
@@ -378,14 +417,13 @@ int DoMain() {
   constraint_array.push_back(&kc_lforearm_pos);
   constraint_array.push_back(&kc_rforearm_pos);
   constraint_array.push_back(&no_collision_feet);
-  //constraint_array.push_back(&kc_pelvis_pos);
+  // constraint_array.push_back(&kc_pelvis_pos);
 
   // setting Q
 
   std::cout << "postions and names: " << std::endl;
   for (int i = 0; i < tree->get_num_positions(); i++)
     std::cout << i << " " << tree->get_position_name(i) << std::endl;
-
 
   VectorXd cost(tree->get_num_positions());
   cost.setOnes();
@@ -432,41 +470,69 @@ int DoMain() {
   ikoptions.setQa(Qa);
   ikoptions.setQv(Qv);
 
-  int nT=3;
+  int nT = 3;
   std::vector<double> t = {0, 0.5, 1};
   Eigen::MatrixXd q_sol(tree->get_num_positions(), nT);
   Eigen::MatrixXd qdot_sol(tree->get_num_velocities(), nT);
   Eigen::MatrixXd qddot_sol(tree->get_num_positions(), nT);
-  VectorXd q_nom = prone_pose.replicate(1,nT);
+  Eigen::MatrixXd q_nom = prone_pose.replicate(1, nT);
   VectorXd qdot0 = VectorXd::Zero(tree->get_num_velocities());
-  int info;
+  // int info;
+  std::vector<int> info_v(nT, 0);
   std::vector<std::string> infeasible_constraint;
+  /*
   inverseKinTraj(tree.get(), nT, t.data(), qdot0, q_nom, q_nom,
              constraint_array.size(), constraint_array.data(), ikoptions,
              &q_sol, &qdot_sol,&qddot_sol, &info, &infeasible_constraint);
+  */
+  inverseKinPointwise(tree.get(), nT, t.data(), q_nom, q_nom,
+                      constraint_array.size(), constraint_array.data(),
+                      ikoptions, &q_sol, info_v.data(), &infeasible_constraint);
 
   // After solving
-  //Vector3d com = tree->centerOfMass(cache);
-  std::cout << "info: " << info << std::endl;
+  // Vector3d com = tree->centerOfMass(cache);
+  // std::cout << "info: " << info << std::endl;
+  for (int i = 0; i < info_v.size(); i++) {
+    std::cout << "info " << i << ": " << info_v[i] << std::endl;
+  }
+
+  std::unique_ptr<PiecewisePolynomialTrajectory> poly_trajectory =
+      std::make_unique<PiecewisePolynomialTrajectory>(q_sol, t);
 
   // show it in drake visualizer
-  /*
-  VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
+
+  // VectorXd x(tree->get_num_positions() + tree->get_num_velocities());
+  VectorXd x(tree->get_num_velocities());
   x.setZero();
-  x.head(q_sol.size()) = q_sol;
+  // x.head(q_sol.size()) = q_sol;
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
+  auto input_mux = builder.AddSystem<systems::Multiplexer<double>>(
+      std::vector<int>{tree->get_num_positions(), tree->get_num_velocities()});
+  auto traj_source =
+      builder.AddSystem<systems::TrajectorySource<double>>(*poly_trajectory);
   auto source = builder.AddSystem<systems::ConstantVectorSource>(x);
+  builder.Connect(traj_source->get_output_port(0),
+                  input_mux->get_input_port(0));
+  builder.Connect(source->get_output_port(), input_mux->get_input_port(1));
+
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  builder.Connect(source->get_output_port(), publisher->get_input_port(0));
+
+  builder.Connect(input_mux->get_output_port(0), publisher->get_input_port(0));
   auto diagram = builder.Build();
 
-  auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
-  diagram->Publish(*context);
-   */
-  
+  systems::Simulator<double> simulator(*diagram);
+  // systems::Context<double>* context = simulator.get_mutable_context();
+
+  simulator.Initialize();
+
+  simulator.StepTo(1.0);
+
+  // auto context = diagram->CreateDefaultContext();
+  // auto output = diagram->AllocateOutput(*context);
+  // diagram->Publish(*context);
+
   return 0;
 }
 
@@ -475,6 +541,4 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
-  return drake::examples::valkyrie::DoMain();
-}
+int main() { return drake::examples::valkyrie::DoMain(); }
