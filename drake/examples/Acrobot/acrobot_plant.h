@@ -11,8 +11,9 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/// A model of a simple pendulum
-/// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = u @f]
+/// The Acrobot - a canonical underactuated system as described in <a
+/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
+/// of Underactuated Robotics</a>.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
