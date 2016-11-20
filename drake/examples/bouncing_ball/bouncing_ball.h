@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/examples/bouncing_ball/ball-inl.h"
+#include "drake/examples/bouncing_ball/ball.h"
 
 namespace drake {
 namespace bouncing_ball {
