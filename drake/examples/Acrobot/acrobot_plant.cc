@@ -1,6 +1,5 @@
 #include "drake/examples/Acrobot/acrobot_plant.h"
 
-#include "drake/examples/Acrobot/gen/acrobot_output_vector.h"
 #include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
 
 #include "drake/common/drake_throw.h"
@@ -19,15 +18,17 @@ AcrobotPlant<T>::AcrobotPlant() {
   this->DeclareInputPort(systems::kVectorValued, 1,
                          systems::kContinuousSampling);
   this->DeclareContinuousState(kNumDOF * 2);  // Position + velocity.
-  this->DeclareOutputPort(systems::kVectorValued, kNumDOF,
+  this->DeclareOutputPort(systems::kVectorValued, kNumDOF * 2,
                           systems::kContinuousSampling);
 }
 
 template <typename T>
 void AcrobotPlant<T>::EvalOutput(const systems::Context<T>& context,
                                  systems::SystemOutput<T>* output) const {
-  output->GetMutableVectorData(0)->SetFromVector(
-      context.get_continuous_state_vector().CopyToVector().topRows(2));
+  output->GetMutableVectorData(0)->set_value(
+      dynamic_cast<const AcrobotStateVector<T>&>(
+          context.get_continuous_state_vector())
+          .get_value());
 }
 
 // Compute the actual physics.
@@ -86,8 +87,8 @@ AcrobotPlant<T>::AllocateContinuousState() const {
 template <typename T>
 std::unique_ptr<systems::BasicVector<T>> AcrobotPlant<T>::AllocateOutputVector(
     const systems::SystemPortDescriptor<T>& descriptor) const {
-  DRAKE_THROW_UNLESS(descriptor.get_size() == kNumDOF);
-  return std::make_unique<AcrobotOutputVector<T>>();
+  DRAKE_THROW_UNLESS(descriptor.get_size() == kNumDOF * 2);
+  return std::make_unique<AcrobotStateVector<T>>();
 }
 
 // AcrobotPlant has no constructor arguments, so there's no work to do here.
