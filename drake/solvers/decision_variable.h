@@ -18,7 +18,7 @@ namespace solvers {
  * This class stores the type, the name, the value, and the index of a
  * decision variable in an optimization program.
  * The DecisionVariableScalar created by MathematicalProgram should not outlive
- * the its creator MathematicalProgram object
+ * its creator MathematicalProgram object.
  */
 class DecisionVariableScalar {
  public:
@@ -135,9 +135,8 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 /**
  * VariableVectorRef is used for adding constraints/costs in
- * MathematicalProgram,
- * we use Eigen::Ref so that we can pass in a block of DecisionVariableMatrix as
- * decision variables.
+ * MathematicalProgram, we use Eigen::Ref so that we can pass in a 
+ * block of DecisionVariableMatrix as decision variables.
  */
 using VariableVectorRef =
     std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
@@ -164,7 +163,7 @@ DecisionVariableMatrixToDoubleMatrix(
 }
 
 /**
- * Determine if a DecisionVariableMatrix object covers a variable with
+ * Determine if a DecisionVariableMatrix object contains a variable with
  * given index.
  */
 template <typename Derived>
