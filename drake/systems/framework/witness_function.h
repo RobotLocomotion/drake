@@ -48,13 +48,16 @@ namespace systems {
 template <class T>
 class WitnessFunction {
  public:
+  virtual ~WitnessFunction() {}
+  WitnessFunction(const WitnessFunction&) = delete;
+  WitnessFunction& operator=(const WitnessFunction&) = delete;
+
   /**
    * Constructs this witness function with a reference to the specified system.
    * Tolerances for zero are set exactly to zero; i.e., the witness function
    * will only be treated as zero when it evaluates exactly to zero.
    */
-  explicit WitnessFunction(const System<T>& system) : system_(system) {
-    tolerance_left_ = tolerance_right_ = 0.0;
+  explicit WitnessFunction() {
   }
 
   /// Two possible types of witness function output types.
@@ -114,7 +117,12 @@ class WitnessFunction {
    * @param context the context at which to evaluate the witness function
    * @returns a scalar that indicates the status of the witness function.
    */
-  // TODO(edrumwri): Ping edrumwri if it is desired to return a vector
+  // TODO(edrumwri): Ping edrumwri if it is desired to return a vector:
+  // A system will generally utilize a set of witness functions. A zero crossing
+  // will occur when _any_ of those witness functions cross zero. It may be
+  // the case that multiple witness functions use the results from a single
+  // computation. In that case, returning a vector from this function would
+  // allow performing the computation just once.
   virtual T EvalWitnessFunction(const Context<T>& context) = 0;
 
   /**
@@ -196,7 +204,6 @@ class WitnessFunction {
    *   set_left_tolerance(-tol);
    * </pre>
    * @throws std::logic_error if @p tol is negative.
-   * TODO(edrumwri): Describe why symmetric tolerances useful.
    */
   void set_tolerance(double tol) {
     if (tol < 0.)
@@ -234,7 +241,8 @@ class WitnessFunction {
    */
 
  private:
-  double tolerance_left_, tolerance_right_;
+  double tolerance_left_{0.0};   // Tolerance for zero from right side of zero.
+  double tolerance_right_{0.0};  // Tolerance for zero from left side of zero.
   const System<T>& system_;
 };
 }  // namespace systems
