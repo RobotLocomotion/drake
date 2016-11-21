@@ -18,7 +18,10 @@ then
   exit 1
 fi
 
-CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.7}
+mkdir -p $drake/lcmtypes
+mkdir -p $mydir/gen
+
+CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
 
 # Call the code generator to produce an LCM message, a translator, and
 # a Drake BasicVector.
