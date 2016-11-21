@@ -421,8 +421,8 @@ VectorX<T> RigidBodyPlant<T>::ComputeContactForce(
   // TODO(amcastro-tri): get rid of this const_cast.
   // Unfortunately collisionDetect() modifies the collision model in the RBT
   // when updating the collision element poses.
-  const_cast<RigidBodyTree<T>*>(tree_.get())
-      ->AllPairsClosestPoints(kinsol, &pairs);
+  pairs = const_cast<RigidBodyTree<T>*>(tree_.get())
+      ->ComputeMaximumDepthCollisionPoints(kinsol, true);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
