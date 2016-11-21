@@ -4,8 +4,8 @@
 #include <string>
 
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -15,8 +15,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 
 /// A helper class to construct and run KUKA IIWA World simulations; i.e.
-/// Simulations setting up the KUKA IIWA robot arm and various objects for
-/// manipulation.
+/// Simulation setting up the KUKA IIWA robot arm and various objects for
+/// to manipulate.
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
@@ -56,12 +56,12 @@ class IiwaWorldSimBuilder {
   ///  Wraps drake::multibody::AddFlatTerrainToWorld
   void AddGroundToTree();
 
-  /// Build and return a Diagram.
-  const std::unique_ptr<systems::Diagram<T>> Build();
-//
-//  /// Set the zero configuration
-  void SetZeroConfiguration(systems::Simulator<T> *simulator,
-                            const systems::Diagram<T> *diagram);
+  /// Builds a diagram and assigned it to a Simulator
+  std::unique_ptr<systems::Diagram<T>> Build();
+  //
+  //  /// Set the zero configuration
+  void SetZeroConfiguration(systems::Simulator<T>* simulator,
+                            const systems::Diagram<T>* diagram);
 
   // We are neither copyable nor moveable.
   IiwaWorldSimBuilder(const IiwaWorldSimBuilder<T>& other) = delete;
@@ -73,31 +73,20 @@ class IiwaWorldSimBuilder {
                                        double penetration_damping,
                                        double contact_friction);
 
+  void AddObjectUrdf(const std::string& object_name,
+                     const std::string& urdf_path);
+
  private:
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
       std::make_unique<RigidBodyTree<T>>()};
   lcm::DrakeLcm lcm_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
-  std::unique_ptr<systems::Diagram<T>> diagram_;
-  //systems::Diagram<T> diagram_;
-  //DiagramBuilder<T> builder_;
-
-  // For building.
-  std::map<std::string, std::string> object_urdf_map_;
-  int next_object_number_{0};
-  bool started_{false};
-  bool table_loaded_{false};
 
   // Map between objects loadable in the simulation and a convenient string
   // name.
-  std::map<std::string, std::string> object_name_map_{
-      {"iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf"},
-      {"table",
-       "/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf"},
-      {"cylinder",
-       "/examples/kuka_iiwa_arm/models/objects/simple_cylinder.urdf"},
-      {"cuboid", "/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"}};
+  std::map<std::string, std::string> object_urdf_map_;
+  bool started_{false};
 
   double penetration_stiffness_{3000.0};
   double penetration_damping_{1.0};

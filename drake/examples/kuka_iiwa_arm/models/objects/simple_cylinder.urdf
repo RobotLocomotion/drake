@@ -4,7 +4,8 @@
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <mass value="0.25" />
-      <inertia ixx="0.01703125" ixy="0" ixz="0" iyy="0.01703125" iyz="0" izz="0.0003125" />
+      <inertia ixx="0.01703125" ixy="0" ixz="0" iyy="0.01703125" iyz="0"
+      izz="0.0003125" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
