@@ -758,27 +758,6 @@ void RigidBodyTree<T>::potentialCollisions(
 }
 
 template <typename T>
-bool RigidBodyTree<T>::AllPairsClosestPoints(
-    const KinematicsCache<double>& cache,
-    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
-  vector<DrakeCollision::ElementId> ids_to_check;
-  for (const auto& body : bodies) {
-    body->appendCollisionElementIdsFromThisBody(ids_to_check);
-  }
-  return AllPairsClosestPointsInSet(cache, ids_to_check, pairs, use_margins);
-}
-
-template <typename T>
-bool RigidBodyTree<T>::AllPairsClosestPointsInSet(
-    const KinematicsCache<double>& cache,
-    const vector<DrakeCollision::ElementId>& ids_to_check,
-    std::vector<DrakeCollision::PointPair>* pairs, bool use_margins) {
-  updateDynamicCollisionElements(cache);
-  return collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
-                                                 *pairs);
-}
-
-template <typename T>
 std::vector<DrakeCollision::PointPair>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
@@ -788,21 +767,33 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
                                                        contact_points);
   size_t num_contact_points = contact_points.size();
 
+  // TODO(SeanCurtis-TRI): Once the bullet collision detection *properly* takes
+  // the Element::CanCollideWith method into account, this can be removed.
+  // But, for now, ComputeMaximumDepthCollisionPoints may produce collision
+  // information for pairs that shouldn't be considered. This code filters the
+  // results into `valid_pairs` with the expectation of removal after drake
+  // collision filters are fully integrated into the collision model.
+  std::vector<DrakeCollision::PointPair> valid_pairs;
+  valid_pairs.reserve(contact_points.size());
   for (size_t i = 0; i < num_contact_points; ++i) {
-    // Get bodies' transforms.
-    const RigidBody<T>& bodyA = *contact_points[i].elementA->get_body();
-    const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
+    auto& pair = contact_points[i];
+    if (pair.elementA->CanCollideWith(pair.elementB)) {
+      // Get bodies' transforms.
+      const RigidBody<T>& bodyA = *pair.elementA->get_body();
+      const Isometry3d& TA = cache.getElement(bodyA).transform_to_world;
 
-    const RigidBody<T>& bodyB = *contact_points[i].elementB->get_body();
-    const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
+      const RigidBody<T>& bodyB = *pair.elementB->get_body();
+      const Isometry3d& TB = cache.getElement(bodyB).transform_to_world;
 
-    // Transform to bodies' frames.
-    // Note:
-    // Eigen assumes aliasing by default and therefore this operation is safe.
-    contact_points[i].ptA = TA.inverse() * contact_points[i].ptA;
-    contact_points[i].ptB = TB.inverse() * contact_points[i].ptB;
+      // Transform to bodies' frames.
+      // Note:
+      // Eigen assumes aliasing by default and therefore this operation is safe.
+      pair.ptA = TA.inverse() * contact_points[i].ptA;
+      pair.ptB = TB.inverse() * contact_points[i].ptB;
+      valid_pairs.push_back(pair);
+    }
   }
-  return contact_points;
+  return valid_pairs;
 }
 
 template <typename T>
