@@ -1624,6 +1624,8 @@ class MathematicalProgram {
       DecisionVariableScalar::VarType type, const T& names, bool is_symmetric,
       Eigen::Ref<DecisionVariableMatrixX> decision_variable_matrix) {
     switch (type) {
+      case DecisionVariableScalar::VarType::CONTINUOUS:
+        break;
       case DecisionVariableScalar::VarType::BINARY :
         required_capabilities_ |= kBinaryVariable;
         break;
