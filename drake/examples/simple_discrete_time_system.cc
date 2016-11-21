@@ -20,7 +20,6 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
                             drake::systems::kDiscreteSampling);
     this->DeclareDifferenceState(kSize);
   }
-  ~SimpleDiscreteTimeSystem() override{};
 
   // x[n+1] = x[n]^3
   void DoEvalDifferenceUpdates(
@@ -55,7 +54,7 @@ int main(int argc, char* argv[]) {
   simulator.StepTo(10);
 
   // make sure the simulation converges to the stable fixed point at x=0
-  DRAKE_ASSERT(xd.get_difference_state(0)->GetAtIndex(0) < 1.0e-4);
+  DRAKE_DEMAND(xd.get_difference_state(0)->GetAtIndex(0) < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory (using vtk?)
 
