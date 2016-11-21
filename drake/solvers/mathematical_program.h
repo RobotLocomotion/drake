@@ -202,14 +202,16 @@ class MathematicalProgram {
   template <typename C>
   class Binding {
    public:
-    Binding(const std::shared_ptr<C>& c, const VariableVector& v)
-        : constraint_(c), variable_vector_(v) {}
+    Binding(const std::shared_ptr<C>& c, const VariableList& v)
+        : constraint_(c), variable_list_(v) {}
 
-    Binding(const std::shared_ptr<C>& c, const VariableVectorRef& v)
+    Binding(const std::shared_ptr<C>& c, const VariableListRef& v)
         : constraint_(c) {
-      variable_vector_.resize(v.size());
-      for (int i = 0; i < static_cast<int>(v.size()); ++i) {
-        variable_vector_[i] = v[i];
+      variable_list_.resize(v.size());
+      auto v_it = v.begin();
+      for(auto& variable_list_it : variable_list_) {
+        variable_list_it = *v_it;
+        ++v_it;
       }
     }
     template <typename U>
@@ -221,17 +223,17 @@ class MathematicalProgram {
 
     const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-    const VariableVector& variable_vector() const { return variable_vector_; }
+    const VariableList& variable_vector() const { return variable_list_; }
 
     /**
      * Get an Eigen vector containing all variable values. This only works if
-     * every element in variable_vector_ is a column vector.
+     * every element in variable_list_ is a column vector.
      * @return A Eigen::VectorXd for all the variables in the variable vector.
      */
-    Eigen::VectorXd VariableVectorToVectorXd() const {
+    Eigen::VectorXd VariableListToVectorXd() const {
       size_t dim = 0;
       Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_vector_) {
+      for (const auto& var : variable_list_) {
         DRAKE_ASSERT(var.cols() == 1);
         X.segment(dim, var.rows()) = DecisionVariableMatrixToDoubleMatrix(var);
         dim += var.rows();
@@ -239,12 +241,12 @@ class MathematicalProgram {
       return X;
     }
 
-    /** Covers()
+    /**
      * @brief returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
-    bool Covers(size_t index) const {
-      for (const auto& view : variable_vector_) {
-        if (DecisionVariableMatrixCoversIndex(view, index)) {
+    bool ContainsVariableIndex(size_t index) const {
+      for (const auto& view : variable_list_) {
+        if (DecisionVariableMatrixContainsIndex(view, index)) {
           return true;
         }
       }
@@ -255,7 +257,7 @@ class MathematicalProgram {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       size_t count = 0;
-      for (const auto& view : variable_vector_) {
+      for (const auto& view : variable_list_) {
         count += view.size();
       }
       return count;
@@ -269,7 +271,7 @@ class MathematicalProgram {
                       Eigen::VectorXd* output) const {
       DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
-      for (const auto& var : variable_vector_) {
+      for (const auto& var : variable_list_) {
         DRAKE_ASSERT(var.cols() == 1);
         const auto& solution_segment =
             solution.segment(solution_index, var.rows());
@@ -280,7 +282,7 @@ class MathematicalProgram {
 
    private:
     std::shared_ptr<C> constraint_;
-    VariableVector variable_vector_;
+    VariableList variable_list_;
   };
 
   template <typename F>
@@ -343,9 +345,7 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddVariables<2,
-   * 3>(DecisionVariableScalar::VarType::CONTINUOUS,
-   *  {"x1", "x2", "x3", "x4", "x5", "x6"});
+   * auto x = prog.AddVariables<2, 3>(DecisionVariableScalar::VarType::CONTINUOUS, {"x1", "x2", "x3", "x4", "x5", "x6"});
    * @endcode
    * This adds a matrix of size 2 x 3 as new variables into the optimization
    * program.
@@ -694,8 +694,8 @@ class MathematicalProgram {
    * @param vars The decision variables on which the cost depend.
    */
   void AddCost(const std::shared_ptr<Constraint>& obj,
-               const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+               const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(Binding<Constraint>(obj, vars));
   }
@@ -720,7 +720,7 @@ class MathematicalProgram {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  AddCost(F&& f, const VariableVectorRef& vars) {
+  AddCost(F&& f, const VariableListRef& vars) {
     auto c = MakeCost(std::forward<F>(f));
     AddCost(c, vars);
     return c;
@@ -741,7 +741,7 @@ class MathematicalProgram {
   // Provide an explicit alternative for this case.
   template <typename F>
   std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
-                                      const VariableVectorRef& vars) {
+                                      const VariableListRef& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
     AddCost(c, vars);
@@ -758,10 +758,10 @@ class MathematicalProgram {
    * the linear cost data structure.
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
-               const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+               const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearCost;
-    int var_dim = GetVariableVectorRefSize(vars);
+    int var_dim = size(vars);
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
     linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
   }
@@ -773,7 +773,7 @@ class MathematicalProgram {
    */
   template <typename DerivedC>
   std::shared_ptr<LinearConstraint> AddLinearCost(
-      const Eigen::MatrixBase<DerivedC>& c, const VariableVectorRef& vars) {
+      const Eigen::MatrixBase<DerivedC>& c, const VariableListRef& vars) {
     using Scalar = typename DerivedC::Scalar;
     auto cost = std::make_shared<LinearConstraint>(
         c, drake::Vector1<Scalar>::Constant(
@@ -802,10 +802,10 @@ class MathematicalProgram {
    * the quadratic cost data structure.
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
-               const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+               const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kQuadraticCost;
-    int var_dim = GetVariableVectorRefSize(vars);
+    int var_dim = size(vars);
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
@@ -817,7 +817,7 @@ class MathematicalProgram {
   std::shared_ptr<QuadraticConstraint> AddQuadraticErrorCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired,
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     auto cost = std::make_shared<QuadraticConstraint>(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity());
@@ -843,7 +843,7 @@ class MathematicalProgram {
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
-      const Eigen::MatrixBase<Derivedb>& b, const VariableVectorRef& vars) {
+      const Eigen::MatrixBase<Derivedb>& b, const VariableListRef& vars) {
     auto cost = std::make_shared<QuadraticConstraint>(
         Q, b, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity());
@@ -878,7 +878,7 @@ class MathematicalProgram {
    * expensive solver.
    */
   void AddConstraint(std::shared_ptr<Constraint> con,
-                     const VariableVectorRef& vars) {
+                     const VariableListRef& vars) {
     required_capabilities_ |= kGenericConstraint;
     generic_constraints_.push_back(Binding<Constraint>(con, vars));
   }
@@ -888,10 +888,10 @@ class MathematicalProgram {
    * of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
-                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = GetVariableVectorRefSize(vars);
+    int var_dim = size(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
   }
@@ -904,7 +904,7 @@ class MathematicalProgram {
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableVectorRef& vars) {
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableListRef& vars) {
     auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
@@ -936,7 +936,7 @@ class MathematicalProgram {
   template <typename DerivedA>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double lb, double ub,
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearConstraint(a, drake::Vector1d(lb), drake::Vector1d(ub),
                                vars);
@@ -962,10 +962,10 @@ class MathematicalProgram {
    * subset of the decision variables (defined in the vars parameter).
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearEqualityConstraint;
-    int var_dim = GetVariableVectorRefSize(vars);
+    int var_dim = size(vars);
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_equality_constraints_.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
@@ -993,7 +993,7 @@ class MathematicalProgram {
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq, const VariableVectorRef& vars) {
+      const Eigen::MatrixBase<DerivedB>& beq, const VariableListRef& vars) {
     auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
     AddConstraint(constraint, vars);
     return constraint;
@@ -1024,7 +1024,7 @@ class MathematicalProgram {
   template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& a, double beq,
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     DRAKE_ASSERT(a.rows() == 1);
     return AddLinearEqualityConstraint(a, drake::Vector1d(beq), vars);
   }
@@ -1049,10 +1049,10 @@ class MathematicalProgram {
    * the decision variables.
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
-                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = GetVariableVectorRefSize(vars);
+    int var_dim = size(vars);
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
     bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
   }
@@ -1065,7 +1065,7 @@ class MathematicalProgram {
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableVectorRef& vars) {
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableListRef& vars) {
     auto constraint = std::make_shared<BoundingBoxConstraint>(lb, ub);
     AddConstraint(constraint, vars);
     return constraint;
@@ -1103,11 +1103,8 @@ class MathematicalProgram {
    */
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const DecisionVariableVector<1>& var) {
-    VariableVectorRef var_vector;
-    var_vector.reserve(1);
-    var_vector.push_back(var);
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
-                                    var_vector);
+                                    {var});
   }
 
   /**
@@ -1121,8 +1118,8 @@ class MathematicalProgram {
    * @f]
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
-                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLorentzConeConstraint;
     lorentz_cone_constraint_.push_back(
         Binding<LorentzConeConstraint>(con, vars));
@@ -1139,7 +1136,7 @@ class MathematicalProgram {
    * @f]
    */
   std::shared_ptr<LorentzConeConstraint> AddLorentzConeConstraint(
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     auto constraint = std::make_shared<LorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
@@ -1172,8 +1169,8 @@ class MathematicalProgram {
    * @param vars A std::vector of DecisionVariableMatrix.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
-                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kRotatedLorentzConeConstraint;
     rotated_lorentz_cone_constraint_.push_back(
         Binding<RotatedLorentzConeConstraint>(con, vars));
@@ -1196,7 +1193,7 @@ class MathematicalProgram {
    * @endcode
    */
   std::shared_ptr<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     auto constraint = std::make_shared<RotatedLorentzConeConstraint>();
     AddConstraint(constraint, vars);
     return constraint;
@@ -1226,8 +1223,8 @@ class MathematicalProgram {
   std::shared_ptr<LinearComplementarityConstraint>
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
-                                     const VariableVectorRef& vars) {
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+                                     const VariableListRef& vars) {
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     required_capabilities_ |= kLinearComplementarityConstraint;
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -1271,12 +1268,12 @@ class MathematicalProgram {
       const VectorXPoly& polynomials,
       const std::vector<Polynomiald::VarType>& poly_vars,
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
-      const VariableVectorRef& vars) {
+      const VariableListRef& vars) {
     // Polynomials that are actually affine (a sum of linear terms + a
     // constant) can be special-cased.  Other polynomials are treated as
     // generic for now.
     // TODO(ggould-tri) There may be other such special easy cases.
-    DRAKE_ASSERT(VariableVectorRefContainsColumnVectorsOnly(vars));
+    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
     bool all_affine = true;
     for (int i = 0; i < polynomials.rows(); i++) {
       if (!polynomials[i].IsAffine()) {

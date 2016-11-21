@@ -266,9 +266,9 @@ SystemIdentification<T>::EstimateParameters(
 
   // Build up our optimization problem's decision variables.
   MathematicalProgram problem;
-  const auto parameter_variables =
+  DecisionVariableVectorX parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
-  const auto error_variables =
+  DecisionVariableVectorX error_variables =
       problem.AddContinuousVariables(num_err_terms, "error");
 
   // Create any necessary VarType IDs.  We build up two lists of VarType:

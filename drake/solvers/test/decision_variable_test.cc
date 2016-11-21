@@ -40,13 +40,13 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2),
                               X_expected, 1E-14, MatrixCompareType::absolute));
 
-  EXPECT_TRUE(VariableVectorRefContainsColumnVectorsOnly({x1}));
-  EXPECT_FALSE(VariableVectorContainsColumnVectorsOnly({X1, S1}));
+  EXPECT_TRUE(VariableListRefContainsColumnVectorsOnly({x1}));
+  EXPECT_FALSE(VariableListContainsColumnVectorsOnly({X1, S1}));
   for (int i = 0; i < 6; ++i) {
-    EXPECT_TRUE(DecisionVariableMatrixCoversIndex(X1, i));
-    EXPECT_TRUE(DecisionVariableMatrixCoversIndex(S1, i + 6));
-    EXPECT_TRUE(DecisionVariableMatrixCoversIndex(x1, i + 12));
-    EXPECT_TRUE(DecisionVariableMatrixCoversIndex(X2, i + 18));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X1, i));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(S1, i + 6));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(x1, i + 12));
+    EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X2, i + 18));
   }
 
   DecisionVariableMatrix<2, 6> X_assembled;

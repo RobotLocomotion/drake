@@ -122,7 +122,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
   drake::solvers::MathematicalProgram prog;
-  const drake::solvers::DecisionVariableVectorX vdot =
+  drake::solvers::DecisionVariableVectorX vdot =
       prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);

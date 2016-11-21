@@ -1,5 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-function"
-#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <typeinfo>
 
 #include "gtest/gtest.h"
@@ -145,7 +143,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // First, add four variables set equal by four equations
   // to equal a random vector
-  auto const& x = prog.AddContinuousVariables(4);
+  auto x = prog.AddContinuousVariables<4>();
 
   auto x2 = x(2);
   auto xhead = x.head(3);
@@ -170,7 +168,7 @@ GTEST_TEST(testMathematicalProgram, trivialLinearSystem) {
 
   // Add two more variables with a very slightly more complicated
   // constraint and solve again. Should still be a linear system.
-  auto const& y = prog.AddContinuousVariables<2>();
+  auto y = prog.AddContinuousVariables<2>();
   prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.Solve();
   const auto& y_value = DecisionVariableMatrixToDoubleMatrix(y);
@@ -864,7 +862,7 @@ GTEST_TEST(testMathematicalProgram, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
 // umbrella of the Equality Constrained QP Solver.
 GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   MathematicalProgram prog;
-  auto x = prog.AddContinuousVariables(2);
+  auto x = prog.AddContinuousVariables<2>();
   MatrixXd Q(2, 2);
   // clang-format off
   Q << 1.0, 0.0,
@@ -888,11 +886,11 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
   CheckSolverType(prog, "Equality Constrained QP Solver");
 
   // Add one more variable and constrain a view into them.
-  auto y = prog.AddContinuousVariables(1, "y");
+  auto y = prog.AddContinuousVariables<1>("y");
   Q << 2.0, 0.0, 0.0, 2.0;
   c << -5.0, -2.0;
-  VariableVectorRef vars;
-  vars.push_back(DecisionVariableVector<1>(x(1)));
+  VariableListRef vars;
+  vars.push_back(x.segment<1>(1));
   vars.push_back(y);
 
   prog.AddQuadraticCost(Q, c, vars);
@@ -953,7 +951,7 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
   Vector2d constraint2(2);
   constraint2 << 2., -1.;
   // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-  VariableVectorRef vars;
+  VariableListRef vars;
   vars.push_back(x.segment(0, 1));
   vars.push_back(y);
 

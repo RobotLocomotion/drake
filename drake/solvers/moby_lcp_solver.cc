@@ -137,7 +137,7 @@ SolutionResult MobyLCPSolver::Solve(MathematicalProgram& prog) const {
   for (size_t i = 0; i < prog.num_vars(); i++) {
     int coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.Covers(i)) {
+      if (binding.ContainsVariableIndex(i)) {
         coverings++;
       }
     }
