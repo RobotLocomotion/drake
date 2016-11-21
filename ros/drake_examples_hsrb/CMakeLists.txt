@@ -28,6 +28,7 @@ link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 
 add_executable(demo1 src/demo1.cc)
 target_link_libraries(demo1 ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}
   drakeAutomotive
   drakeCommon
   drakeJoints

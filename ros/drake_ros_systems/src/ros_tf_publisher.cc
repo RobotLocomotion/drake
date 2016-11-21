@@ -6,16 +6,17 @@ namespace systems {
 using std::make_unique;
 
 template <typename T>
-RosTfPublisher2<T>::RosTfPublisher2(const RigidBodyTree<T>& tree)
+RosTfPublisher<T>::RosTfPublisher(const RigidBodyTree<T>& tree)
     : tree_(tree) {
-  this->DeclareInputPort(kVectorValued, tree.get_num_positions(),
-                         kContinuousSampling);
+  const int vector_size =
+      tree.get_num_positions() + tree.get_num_velocities();
+  this->DeclareInputPort(kVectorValued, vector_size, kContinuousSampling);
   LoadEnableParameter();
   Init();
 }
 
 template <typename T>
-void RosTfPublisher2<T>::Init() {
+void RosTfPublisher<T>::Init() {
   // Initializes the time stamp of the previous transmission to be zero.
   previous_send_time_.sec = 0;
   previous_send_time_.nsec = 0;
@@ -99,19 +100,18 @@ void RosTfPublisher2<T>::Init() {
 }
 
 template <typename T>
-void RosTfPublisher2<T>::DoPublish(const Context<double>& context) const {
+void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
+  if (!enable_tf_publisher_) return;
+
   // Aborts if insufficient time has passed since the last transmission. This
   // is to avoid flooding the ROS topic.
   ::ros::Time current_time = ::ros::Time::now();
   if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
     return;
-
   previous_send_time_ = current_time;
 
-  // Aborts publishing tf messages if enable_tf_publisher_ is true.
-  if (!enable_tf_publisher_) return;
-
-  Eigen::VectorXd q = this->EvalEigenVectorInput(context, 0);
+  Eigen::VectorXd u = this->EvalEigenVectorInput(context, 0);
+  auto q = u.head(tree_.get_num_positions());
   KinematicsCache<double> cache = tree_.doKinematics(q);
 
   // Publishes the transforms for the bodies in the tree.
@@ -125,7 +125,7 @@ void RosTfPublisher2<T>::DoPublish(const Context<double>& context) const {
     auto message_in_map = transform_messages_.find(key);
     if (message_in_map == transform_messages_.end()) {
       throw std::runtime_error(
-          "ERROR: RosTfPublisher2: Unable to find transform message using "
+          "ERROR: RosTfPublisher: Unable to find transform message using "
           "key \"" + key + "\".");
     }
 
@@ -168,7 +168,7 @@ void RosTfPublisher2<T>::DoPublish(const Context<double>& context) const {
     auto message_in_map = transform_messages_.find(key);
     if (message_in_map == transform_messages_.end()) {
       throw std::runtime_error(
-          "ERROR: RosTfPublisher2: Unable to find transform message using "
+          "ERROR: RosTfPublisher: Unable to find transform message using "
           "key \"" + key + "\".");
     }
 
@@ -179,7 +179,7 @@ void RosTfPublisher2<T>::DoPublish(const Context<double>& context) const {
 }
 
 template <typename T>
-void RosTfPublisher2<T>::LoadEnableParameter() {
+void RosTfPublisher<T>::LoadEnableParameter() {
   const int kMaxNumTries = 10;
   int num_get_attempts{0};
   bool continue_query{true};
@@ -201,7 +201,7 @@ void RosTfPublisher2<T>::LoadEnableParameter() {
   }
 }
 
-template class RosTfPublisher2<double>;
+template class RosTfPublisher<double>;
 
 }  // namespace systems
 }  // namespace drake

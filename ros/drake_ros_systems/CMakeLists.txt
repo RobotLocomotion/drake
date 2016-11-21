@@ -11,7 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
     sensor_msgs
     tf)
 
-find_package(Eigen3 REQUIRED)
+# find_package(Eigen3 REQUIRED)
+set(EIGEN3_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include/eigen3)
+set(EIGEN3_FOUND true)
 
 catkin_package(
   INCLUDE_DIRS include

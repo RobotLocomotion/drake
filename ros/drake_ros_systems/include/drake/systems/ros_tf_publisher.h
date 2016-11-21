@@ -24,7 +24,7 @@ namespace systems {
  * @ingroup control_systems
  */
 template <typename T>
-class RosTfPublisher2 : public LeafSystem<T> {
+class RosTfPublisher : public LeafSystem<T> {
  public:
   // Specifies the minimum period in seconds between successive transmissions of
   // of tf transforms. This is to prevent flooding the tf ROS topic.
@@ -33,7 +33,7 @@ class RosTfPublisher2 : public LeafSystem<T> {
   /**
    * Constructs a ROS tf publisher for a given `RigidBodyTree
    */
-  explicit RosTfPublisher2(const RigidBodyTree<T>& rigid_body_tree);
+  explicit RosTfPublisher(const RigidBodyTree<T>& rigid_body_tree);
 
   /**
    * Takes the current state of the RigidBodyTree and publishes ROS tf messages
@@ -74,7 +74,7 @@ class RosTfPublisher2 : public LeafSystem<T> {
       transform_messages_;
 
   // The previous time the transform messages were sent.
-  mutable ros::Time previous_send_time_;
+  mutable ::ros::Time previous_send_time_;
 
   // Determines whether tf messages should be published.
   bool enable_tf_publisher_{true};

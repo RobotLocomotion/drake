@@ -22,6 +22,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/primitives/constant_vector_source.h"
+#include "drake/systems/ros_tf_publisher.h"
 #include "drake/multibody/parser_urdf.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -36,26 +37,24 @@ namespace drake {
 using lcm::DrakeLcm;
 using multibody::AddFlatTerrainToWorld;
 using parsers::urdf::AddModelInstanceFromUrdfString;
+using ros::GetRosParameterOrThrow;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
+using systems::RosTfPublisher;
 using systems::Simulator;
 
-namespace ros {
 namespace hsr {
 namespace {
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
 
-/**
- * Toyota Human Support Robot (HSR) Simulator.
- */
 int exec(int argc, char* argv[]) {
   // Parses the command line arguments.
-  ::ros::init(argc, argv, "hsr_demo_1");
+  ::ros::init(argc, argv, "drake_hsrb_demo_1");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -96,12 +95,15 @@ int exec(int argc, char* argv[]) {
     plant->set_contact_parameters(
         penetration_stiffness, penetration_damping, friction_coefficient);
   }
+  DRAKE_ASSERT(plant != nullptr);
 
   const RigidBodyTreed& tree = plant->get_rigid_body_tree();
 
   // Instantiates a system for visualizing the model.
   lcm::DrakeLcm lcm;
   auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+  builder.Connect(plant->get_output_port(0),
+                  visualizer->get_input_port(0));
 
   // Instantiates a constant vector source for issuing zero-torque commands to
   // the RigidBodyPlant.
@@ -109,13 +111,10 @@ int exec(int argc, char* argv[]) {
   constant_vector.setZero();
   auto constant_zero_source =
       builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
-
-  // Connects the zero-source system to the RigidBodyPlant.
   builder.Cascade(*constant_zero_source, *plant);
 
-  // Connects the RigidBodyPlant to the visualizer.
-  builder.Connect(plant->get_output_port(0),
-                  visualizer->get_input_port(0));
+  auto ros_tf_publisher = builder.AddSystem<RosTfPublisher<double>>(tree);
+  builder.Connect(plant->get_output_port(0), ros_tf_publisher->get_input_port(0));
 
   auto diagram = builder.Build();
   lcm.StartReceiveThread();
@@ -153,9 +152,8 @@ int exec(int argc, char* argv[]) {
 
 }  // namespace
 }  // namespace hsr
-}  // namespace ros
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::ros::hsr::exec(argc, argv);
+  return drake::hsr::exec(argc, argv);
 }
