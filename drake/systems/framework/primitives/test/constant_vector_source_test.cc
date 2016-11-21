@@ -37,11 +37,6 @@ class ConstantVectorSourceTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-// Tests that the name of the ConstantVectorSource is correct.
-TEST_F(ConstantVectorSourceTest, TestSystemName) {
-  EXPECT_EQ(source_->get_name(), "ConstantVectorSource");
-}
-
 // Tests that the output of the ConstantVectorSource is correct.
 TEST_F(ConstantVectorSourceTest, OutputTest) {
   // TODO(amcastro-tri): we should be able to ask:
