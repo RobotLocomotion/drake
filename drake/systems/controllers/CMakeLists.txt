@@ -1,7 +1,7 @@
 
 add_library_with_exports(LIB_NAME drakeLinearControl SOURCE_FILES linear_optimal_control.cc)
 target_link_libraries(drakeLinearControl drakeSystemFramework)
-pods_install_libraries(drakeLinearControl)
+drake_install_libraries(drakeLinearControl)
 drake_install_headers(linear_optimal_control.h)
 drake_install_pkg_config_file(drake-linear-control
   TARGET drakeLinearControl
