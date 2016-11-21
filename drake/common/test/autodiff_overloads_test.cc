@@ -5,13 +5,14 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/common/cond.h"
 #include "drake/common/eigen_types.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
-namespace math {
+namespace common {
 namespace {
 
 // Tests correctness of isinf
@@ -61,6 +62,110 @@ GTEST_TEST(AutodiffOverloadsTest, Pow) {
   EXPECT_DOUBLE_EQ(dzdx * 1.1 + dzdy * 1.0, z.derivatives()[1]);
 }
 
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse1) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, x * x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 2 * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse2) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{-10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, x * x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 3 * x.value() * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse3) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, x + 1, x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 1);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse4) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{-10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, x, x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 1);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse5) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{-10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, -x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 3 * x.value() * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, IfThenElse6) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{if_then_else(x >= 0, -x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], -1);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond1) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{-10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 0, x * x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 3 * x.value() * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond2) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{10.0, DerType{1, 0}};
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 0, x * x, x * x * x)};
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 2 * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond3) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{10.0, DerType{1, 0}};
+  // clang-format off
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 10, 10 * x * x,
+                                        x >= 5, 5 * x * x * x,
+                                        x >= 3, -3 * x,
+                                        x * x)};
+  // clang-format on
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 10 * 2 * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond4) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{8.0, DerType{1, 0}};
+  // clang-format off
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 10, 10 * x * x,
+                                        x >= 5, 5 * x * x * x,
+                                        x >= 3, -3 * x,
+                                        x * x)};
+  // clang-format on
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 5 * 3 * x.value() * x.value());
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond5) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{4.0, DerType{1, 0}};
+  // clang-format off
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 10, 10 * x * x,
+                                        x >= 5, 5 * x * x * x,
+                                        x >= 3, -3 * x,
+                                        x * x)};
+  // clang-format on
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], -3);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, Cond6) {
+  using DerType = Eigen::Vector2d;
+  Eigen::AutoDiffScalar<DerType> x{2.0, DerType{1, 0}};
+  // clang-format off
+  Eigen::AutoDiffScalar<DerType> y{cond(x >= 10, 10 * x * x,
+                                        x >= 5, 5 * x * x * x,
+                                        x >= 3, -3 * x,
+                                        x * x)};
+  // clang-format on
+  EXPECT_DOUBLE_EQ(y.derivatives()[0], 2 * x.value());
+}
+
 }  // namespace
-}  // namespace math
+}  // namespace common
 }  // namespace drake
