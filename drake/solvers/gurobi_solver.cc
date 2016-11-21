@@ -192,7 +192,7 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     DRAKE_ASSERT(Q.rows() == constraint_variable_dimension);
 
     // constraint_variable_index[i] is the index of the i'th decision variable
-    // binding.VariableVectorToVectorXd(i).
+    // binding.VariableListToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
     for (const DecisionVariableMatrixX& var : binding.variable_vector()) {

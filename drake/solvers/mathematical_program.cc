@@ -1,4 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "drake/solvers/mathematical_program.h"
 
 #include "drake/solvers/equality_constrained_qp_solver.h"

@@ -26,8 +26,8 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
 }
 
 TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
-                               const VariableVector& variable_vector) {
-  size_t var_count = GetVariableVectorSize(variable_vector);
+                               const VariableList& variable_vector) {
+  size_t var_count = size(variable_vector);
 
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
@@ -97,14 +97,14 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 /// which take only a single pointer argument.
 struct WrappedConstraint {
   WrappedConstraint(const Constraint* constraint_in,
-                    const VariableVector* variable_vector_in)
+                    const VariableList* variable_vector_in)
       : constraint(constraint_in),
         variable_vector(variable_vector_in),
         force_bounds(false),
         force_upper(false) {}
 
   const Constraint* constraint;
-  const VariableVector* variable_vector;
+  const VariableList* variable_vector;
   bool force_bounds;  ///< force usage of only upper or lower bounds
   bool force_upper;   ///< Only used if force_bounds is set.  Selects
                       ///< which bounds are being tested (lower bound

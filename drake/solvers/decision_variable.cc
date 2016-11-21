@@ -11,11 +11,11 @@ int GetVariableVectorSize_impl(const T& vars) {
   }
   return var_dim;
 }
-int GetVariableVectorSize(const VariableVector& vars) {
+int size(const VariableList &vars) {
   return GetVariableVectorSize_impl(vars);
 }
 
-int GetVariableVectorRefSize(const VariableVectorRef& vars) {
+int size(const VariableListRef &vars) {
   return GetVariableVectorSize_impl(vars);
 }
 
@@ -29,11 +29,11 @@ bool VariableVectorContainsColumnVectorsOnly_impl(const T& vars) {
   return true;
 }
 
-bool VariableVectorContainsColumnVectorsOnly(const VariableVector& vars) {
+bool VariableListContainsColumnVectorsOnly(const VariableList &vars) {
   return VariableVectorContainsColumnVectorsOnly_impl(vars);
 }
 
-bool VariableVectorRefContainsColumnVectorsOnly(const VariableVectorRef& vars) {
+bool VariableListRefContainsColumnVectorsOnly(const VariableListRef &vars) {
   return VariableVectorContainsColumnVectorsOnly_impl(vars);
 }
 

@@ -27,23 +27,31 @@ class DecisionVariableScalar {
   /**
    * This constructor creates a dummy placeholder, the value_ pointer
    * is initialized to nullptr. The usage of this function is
+   *
    * @code{.cc}
-   * MathematicalProgram prog;                                         //
-   * Creates an optimization program object with no decision variables.
-   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();  // Add a
-   * 2 x 1 vector containing two decision variables to the optimization program.
-   * This calls the private constructor DecisionVariableScalar(VarType type,
-   * const std::string &name, double* value, size_t index)
-   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();  // Add a
-   * 2 x 1 vector containing two decision variables to the optimization program.
-   * This calls the private constructor DecisionVariableScalar(VarType type,
-   * const std::string &name, double* value, size_t index)
-   * DecisionVariableMatrix<2, 2> X; // This calls the default constructor
-   * DecisionVariableScalar(), X is not related to the optimization program prog
-   * yet.
-   * X << x1, x2; // Now X contains the decision variables from the optimization
-   * program object prog. The first column of X is x1, the second column of X is
-   * x2.
+   * // Creates an optimization program object
+   * // with no decision variables.
+   * MathematicalProgram prog;
+   *
+   * // Add a 2 x 1 vector containing two
+   * // decision variables to the optimization program.
+   * // This calls the private constructor
+   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
+   *
+   * // // Add 2 x 1 vector containing two
+   * // decision variables to the optimization program.
+   * // This calls the private constructor
+   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
+   *
+   * // This calls the default constructor DecisionVariableScalar(),
+   * // X is not related to the optimization program prog yet.
+   * DecisionVariableMatrix<2, 2> X;
+   *
+   * // Now X contains the decision variables from the optimization program object prog.
+   * // The first column of X is x1, the second column of X is x2.
+   * X << x1, x2;
    * @endcode
    */
   DecisionVariableScalar()
@@ -138,15 +146,21 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
  * MathematicalProgram, we use Eigen::Ref so that we can pass in a 
  * block of DecisionVariableMatrix as decision variables.
  */
-using VariableVectorRef =
-    std::vector<Eigen::Ref<const DecisionVariableMatrixX>>;
+using VariableListRef =
+    std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**
  * VariableVector is used for storing the decision variabled binded
  * with each constraint/cost. Each constraint/cost is binded with
  * a VariableVector, on which the constraint/cost is imposed.
  */
-using VariableVector = std::vector<DecisionVariableMatrixX>;
+using VariableList = std::list<DecisionVariableMatrixX>;
+
+/**
+ * Given a DecisionVariableMatrix object, return the Eigen::Matrix that
+ * stores the values of each decision variable.
+ * @param decision_variable_matrix A DecisionVariableMatrix object.
+ */
 template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToDoubleMatrix(
@@ -167,8 +181,8 @@ DecisionVariableMatrixToDoubleMatrix(
  * given index.
  */
 template <typename Derived>
-bool DecisionVariableMatrixCoversIndex(
-    const Eigen::MatrixBase<Derived>& decision_variable_matrix, size_t index) {
+bool DecisionVariableMatrixContainsIndex(
+    const Eigen::MatrixBase<Derived> &decision_variable_matrix, size_t index) {
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
       if (decision_variable_matrix(i, j).index() == index) {
@@ -180,37 +194,37 @@ bool DecisionVariableMatrixCoversIndex(
 }
 
 /**
- * Given a vector of DecisionVariableMatrix @p vars, computes the TOTAL number
+ * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
  * of scalar decision variables stored in @p vars, including duplication.
  * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
-int GetVariableVectorRefSize(const drake::solvers::VariableVectorRef& vars);
+int size(const drake::solvers::VariableListRef &vars);
 
 /**
- * Given a vector of DecisionVariableMatrix @p vars, computes the TOTAL number
+ * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
  * of scalar decision variables stored in @p vars, including duplication.
  * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
-int GetVariableVectorSize(const drake::solvers::VariableVector& vars);
+int size(const drake::solvers::VariableList &vars);
+
+/**
+ * Given a list of DecisionVariableMatrix @p vars, returns true if all
+ * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
+ * scalar).
+ */
+bool VariableListContainsColumnVectorsOnly(
+    const drake::solvers::VariableList &vars);
 
 /**
  * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
  * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
  * scalar).
  */
-bool VariableVectorContainsColumnVectorsOnly(
-    const drake::solvers::VariableVector& vars);
-
-/**
- * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
- * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
- * scalar).
- */
-bool VariableVectorRefContainsColumnVectorsOnly(
-    const drake::solvers::VariableVectorRef& vars);
+bool VariableListRefContainsColumnVectorsOnly(
+    const drake::solvers::VariableListRef &vars);
 }  // end namespace solvers
 }  // end namespace drake

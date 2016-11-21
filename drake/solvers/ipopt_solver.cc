@@ -41,8 +41,8 @@ size_t GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
 /// @param[out] num_grad number of gradients
 /// @return number of constraints
 size_t GetNumGradients(const Constraint& c,
-                       const VariableVector& variable_vector, Index* num_grad) {
-  size_t var_count = GetVariableVectorSize(variable_vector);
+                       const VariableList& variable_vector, Index* num_grad) {
+  size_t var_count = size(variable_vector);
 
   const size_t num_constraints = c.num_constraints();
   *num_grad = num_constraints * var_count;
@@ -62,7 +62,7 @@ size_t GetNumGradients(const Constraint& c,
 ///
 /// @return the number of row/column pairs filled in.
 size_t GetGradientMatrix(const Constraint& c,
-                         const VariableVector& variable_vector,
+                         const VariableList& variable_vector,
                          Index constraint_idx, Index* iRow, Index* jCol) {
   const size_t m = c.num_constraints();
   size_t grad_index = 0;
@@ -95,7 +95,7 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 ///
 /// @return number of gradient entries populated
 size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
-                          const VariableVector& variable_vector, Number* result,
+                          const VariableList& variable_vector, Number* result,
                           Number* grad) {
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the TaylorVecXd this_x to evaluate
@@ -104,7 +104,7 @@ size_t EvaluateConstraint(const Eigen::VectorXd& xvec, const Constraint& c,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  size_t var_count = GetVariableVectorSize(variable_vector);
+  size_t var_count = size(variable_vector);
 
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
