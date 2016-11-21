@@ -165,8 +165,8 @@ using VariableList = std::list<DecisionVariableMatrixX>;
  */
 template <typename Derived, typename T>
 Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-DecisionVariableMatrixToOtherTypes(
-    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
+DecisionVariableMatrixToValueMatrix(
+    const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
   Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       double_matrix(decision_variable_matrix.rows(),
                     decision_variable_matrix.cols());
@@ -188,7 +188,7 @@ template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToDoubleMatrix(
     const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  return DecisionVariableMatrixToOtherTypes<Derived, double>(
+  return DecisionVariableMatrixToValueMatrix<Derived, double>(
       decision_variable_matrix);
 }
 

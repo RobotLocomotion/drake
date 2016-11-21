@@ -295,7 +295,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   VectorX<T> xdot(get_num_states());
 
-  const auto& vdot_value = drake::solvers::DecisionVariableMatrixToOtherTypes<
+  const auto& vdot_value = drake::solvers::DecisionVariableMatrixToValueMatrix<
       drake::solvers::DecisionVariableVectorX, T>(vdot);
   xdot << kinsol.transformQDotMappingToVelocityMapping(
               MatrixX<T>::Identity(nq, nq)) *
