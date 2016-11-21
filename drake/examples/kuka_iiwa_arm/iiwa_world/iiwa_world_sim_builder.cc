@@ -181,7 +181,7 @@ void IiwaWorldSimBuilder<T>::AddObjectUrdf(const std::string& object_name,
       std::pair<std::string, std::string>(object_name, urdf_path));
 }
 
-template class DRAKE_EXPORT IiwaWorldSimBuilder<double>;
+template class IiwaWorldSimBuilder<double>;
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

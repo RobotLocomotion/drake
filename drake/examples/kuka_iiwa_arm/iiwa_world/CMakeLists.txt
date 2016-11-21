@@ -11,9 +11,10 @@ if(lcm_FOUND)
   pods_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       iiwa_world_sim_builder.h)
-  pods_install_pkg_config_file(drake-kuka-iiwa-world
+  drake_install_pkg_config_file(drake-kuka-iiwa-world
+      TARGET drakeKukaIiwaWorld
       LIBS -ldrakeKukaIiwaWorld
-      REQUIRES
+      REQUIRES drake-kuka-iiwa-arm-common
       VERSION 0.0.1)
 
   add_executable(iiwa_world_demo iiwa_world_demo.cc)
