@@ -9,6 +9,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   curve2.cc
   gen/driving_command.cc
   gen/euler_floating_joint_state.cc
+  gen/idm_planner_parameters.cc
   gen/simple_car_config.cc
   gen/simple_car_state.cc
   idm_planner.cc

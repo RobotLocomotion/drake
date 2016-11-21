@@ -30,6 +30,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  cond.h
   constants.h
   drake_assert.h
   drake_compat.h
@@ -42,6 +43,7 @@ set(installed_headers
   eigen_stl_types.h
   eigen_types.h
   functional_form.h
+  hash.h
   nice_type_name.h
   number_traits.h
   polynomial.h
