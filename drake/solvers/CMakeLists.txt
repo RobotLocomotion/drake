@@ -113,8 +113,6 @@ if(mosek_FOUND)
   target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
 endif()
 
-add_subdirectory(qpSpline)
-
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()

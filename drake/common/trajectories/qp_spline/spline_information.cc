@@ -1,4 +1,4 @@
-#include "drake/solvers/qpSpline/SplineInformation.h"
+#include "drake/common/trajectories/qp_spline/spline_information.h"
 
 #include <vector>
 

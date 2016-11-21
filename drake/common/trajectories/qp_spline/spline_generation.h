@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/solvers/qpSpline/SplineInformation.h"
+#include "drake/common/trajectories/qp_spline/spline_information.h"
 
 class ConstraintMatrixSingularError : public std::runtime_error {
  public:

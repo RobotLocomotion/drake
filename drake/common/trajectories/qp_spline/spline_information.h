@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "drake/common/trajectories/piecewise_polynomial_base.h"
-#include "drake/solvers/qpSpline/ValueConstraint.h"
-#include "drake/solvers/qpSpline/ContinuityConstraint.h"
+#include "drake/common/trajectories/qp_spline/continuity_constraint.h"
+#include "drake/common/trajectories/qp_spline/value_constraint.h"
 
 class SplineInformation : public PiecewisePolynomialBase {
  private:

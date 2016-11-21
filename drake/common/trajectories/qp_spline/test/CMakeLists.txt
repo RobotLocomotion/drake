@@ -1,0 +1,2 @@
+drake_add_cc_test(spline_generation_test)
+target_link_libraries(spline_generation_test drakeSplineGeneration)
