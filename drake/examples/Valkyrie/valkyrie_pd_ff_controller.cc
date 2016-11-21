@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -94,7 +95,8 @@ void ValkyriePDAndFeedForwardController::EvalOutput(
     double Kp = Kp_(q_index);
     double Kd = Kd_(v_index);
 
-    if (isnan(state->getQ()(q_index)) || isnan(state->getV()(v_index))) {
+    if (std::isnan(state->getQ()(q_index)) ||
+        std::isnan(state->getV()(v_index))) {
       std::cerr << actuator.name_ << ", q: " << state->getQ()(q_index)
                 << ", v: " << state->getV()(v_index) << std::endl;
       throw std::runtime_error("state error.");
