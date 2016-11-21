@@ -27,6 +27,7 @@ template <typename T>
 RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
     : tree_(move(tree)) {
   DRAKE_DEMAND(tree_ != nullptr);
+  this->set_name("RigidBodyPlant");
 
   // The input to this system are the generalized forces commanded on the
   // actuators.
