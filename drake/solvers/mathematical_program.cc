@@ -113,23 +113,5 @@ SolutionResult MathematicalProgram::Solve() {
   }
 }
 
-DecisionVariableVectorX MathematicalProgram::GetVariable(
-    const std::string& name) const {
-  DecisionVariableVectorX decision_variable_vec;
-  int var_count = 0;
-  for (int i = 0; i < static_cast<int>(num_vars_); ++i) {
-    if (name.compare(variables_(i).name()) == 0) {
-      ++var_count;
-      decision_variable_vec.resize(var_count);
-      decision_variable_vec[var_count - 1] = variables_(i);
-    }
-  }
-
-  if (var_count == 0) {
-    throw std::runtime_error("unable to find variable: " + name);
-  }
-  return decision_variable_vec;
-}
-
 }  // namespace solvers
 }  // namespace drake
