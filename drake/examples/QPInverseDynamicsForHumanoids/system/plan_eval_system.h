@@ -42,7 +42,7 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     Kd_torso_ = Vector6<double>::Constant(8);
     Kp_joints_ = VectorX<double>::Constant(dim, 20);
     Kd_joints_ = VectorX<double>::Constant(dim, 8);
-    // Don't do feedback on pelvis pose.
+    // Don't do feedback on pelvis in the generalized coordinates.
     Kp_joints_.head<6>().setZero();
     Kd_joints_.head<6>().setZero();
   }
@@ -57,14 +57,15 @@ class PlanEvalSystem : public systems::LeafSystem<double> {
     lcmt_qp_input& msg = output->GetMutableData(output_port_index_qp_input_)
                              ->GetMutableValue<lcmt_qp_input>();
 
+    Vector3<double> com_err = desired_com_ - robot_status->com();
+    Vector3<double> comd_err = -robot_status->comd();
+
     // Update desired accelerations.
     QPInput qp_input = MakeExampleQPInput(*robot_status);
     qp_input.mutable_desired_centroidal_momentum_dot()
-        .mutable_values()
-        .tail<3>() =
-        (Kp_com_.array() * (desired_com_ - robot_status->com()).array() -
-         Kd_com_.array() * robot_status->comd().array()).matrix() *
-        robot_.getMass();
+        .mutable_values().tail<3>() = robot_.getMass() *
+        (Kp_com_.array() * com_err.array() +
+         Kd_com_.array() * comd_err.array()).matrix();
 
     qp_input.mutable_desired_dof_motions().mutable_values() =
         joint_PDff_.ComputeTargetAcceleration(robot_status->position(),

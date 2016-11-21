@@ -46,7 +46,7 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
         DeclareAbstractOutputPort(systems::kInheritedSampling).get_index();
 
     // TODO(siyuan.fent): Load gains from some config.
-    int act_size = robot_.get_num_velocities();
+    int act_size = static_cast<int>(robot_.actuators.size());
     k_q_p_ = VectorX<double>::Zero(act_size);
     k_q_i_ = VectorX<double>::Zero(act_size);
     k_qd_p_ = VectorX<double>::Zero(act_size);
@@ -74,31 +74,28 @@ class JointLevelControllerSystem : public systems::LeafSystem<double> {
     // Make bot_core::atlas_command_t message.
     msg.utime = static_cast<uint64_t>(rs->time() * 1e6);
 
-    // TODO(siyuan.feng): clean this chunk up when #4004 is merged.
-    // For this particular dummy simulation environment, I am abusing
-    // bot_core::atlas_command_t to transport generalized acceleration
-    // as opposed to joint torques.
-    // The following encoding is not the typical for atlas_command_t,
-    // and I will fix this when the real simulator lands
-    // (#4004).
-
-    // This should really be robot_.actuator.size(), and everything in
-    // robot_.actuator order instead of dof order, joint names need to change
-    // as well.
-    int act_size = robot_.get_num_velocities();
+    int act_size = static_cast<int>(robot_.actuators.size());
     msg.num_joints = act_size;
     msg.joint_names.resize(msg.num_joints);
     msg.position.resize(msg.num_joints);
     msg.velocity.resize(msg.num_joints);
     msg.effort.resize(msg.num_joints);
-    VectorX<double> act_torques = qp_output->dof_torques();
+
+    // bot_core::atlas_command_t assumes the joints are in actuator ordering.
+    // dof torque = RigidBodyTree.B * actuator torque.
+    // Assuming no coupling among joints,
+    // actuator torque = RigidBodyTree.B.transpose() * dof torque
+    VectorX<double> act_torques =
+        robot_.B.transpose() * qp_output->dof_torques();
+    if (act_torques.size() != act_size) {
+      throw std::runtime_error("torque dimension mismatch.");
+    }
+
     // Set desired position, velocity and torque for all actuators.
     for (int i = 0; i < act_size; ++i) {
-      msg.joint_names[i] = robot_.get_position_name(i);
+      msg.joint_names[i] = robot_.actuators[i].name_;
       msg.position[i] = 0;
-      // This is abusing the velocity channel to transport acceleration.
-      msg.velocity[i] = qp_output->vd()[i];
-      // This should have been actuator torque not dof torque.
+      msg.velocity[i] = 0;
       msg.effort[i] = act_torques[i];
     }
 

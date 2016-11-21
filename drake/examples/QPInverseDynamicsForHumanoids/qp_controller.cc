@@ -584,6 +584,17 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
           point_forces_.segment<3>(point_force_index);
       point_force_index += 3;
     }
+
+    // Compute acceleration for contact body.
+    MatrixX<double> J_body = GetTaskSpaceJacobian(
+        rs.robot(), rs.cache(), resolved_contact.body(),
+        Vector3<double>::Zero());
+    Vector6<double> Jdv_body = GetTaskSpaceJacobianDotTimesV(
+        rs.robot(), rs.cache(), resolved_contact.body(),
+        Vector3<double>::Zero());
+
+    resolved_contact.mutable_body_acceleration() =
+        J_body * vd.value() + Jdv_body;
   }
 
   // Set output accelerations.
@@ -731,6 +742,8 @@ std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact) {
     out << contact.point_forces().col(j).transpose() << std::endl;
   out << "equivalent wrench in world aligned body frame: "
       << contact.equivalent_wrench().transpose() << std::endl;
+  out << "body acceleration: "
+      << contact.body_acceleration().transpose() << std::endl;
   out << "reference point in world frame: " << contact.reference_point()
       << std::endl;
   return out;
