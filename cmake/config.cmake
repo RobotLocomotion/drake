@@ -54,7 +54,6 @@ macro(drake_setup_matlab)
           MX_LIBRARY
           SIMULINK)
     else()
-      unset(MATLAB_EXECUTABLE CACHE)
       set(Matlab_FOUND OFF)
       message(STATUS "MATLAB was not found.")
     endif()

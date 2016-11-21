@@ -44,6 +44,10 @@ endfunction()
 #------------------------------------------------------------------------------
 function(drake_fixup_commands PREFIX)
   foreach(_fc_command ${ARGN})
+    # Some variables may not be defined unless a particular package or program
+    # is found or if a value is specified by the user on the command line. The
+    # effect of the variable may be different between being undefined and empty,
+    # so do not try to define it.
     if(DEFINED ${PREFIX}_${_fc_command})
       if(${PREFIX}_${_fc_command} STREQUAL ":")
         set(${PREFIX}_${_fc_command} ${CMAKE_COMMAND} -E sleep 0 PARENT_SCOPE)
