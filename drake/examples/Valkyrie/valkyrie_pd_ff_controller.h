@@ -7,9 +7,9 @@
 namespace drake {
 namespace systems {
 
-class ValkyriePDFFController : public systems::LeafSystem<double> {
+class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
  public:
-  ValkyriePDFFController(const RigidBodyTree<double>& robot,
+  ValkyriePDAndFeedForwardController(const RigidBodyTree<double>& robot,
                          const VectorX<double>& nominal_position,
                          const VectorX<double>& nominal_torque,
                          const VectorX<double>& Kp, const VectorX<double>& Kd);
@@ -42,8 +42,8 @@ class ValkyriePDFFController : public systems::LeafSystem<double> {
   int input_port_index_kinematics_result_;
   int output_port_index_atlas_command_;
 
-  VectorX<double> q_d_;
-  VectorX<double> trq_ff_;
+  VectorX<double> desired_position_;
+  VectorX<double> feedforward_torque_;
   VectorX<double> Kp_;
   VectorX<double> Kd_;
 };

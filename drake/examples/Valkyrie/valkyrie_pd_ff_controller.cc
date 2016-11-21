@@ -28,14 +28,14 @@ namespace systems {
 using lcm::LcmSubscriberSystem;
 using lcm::LcmPublisherSystem;
 
-ValkyriePDFFController::ValkyriePDFFController(
+ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
     const RigidBodyTree<double>& robot,
     const VectorX<double>& nominal_position,
     const VectorX<double>& nominal_torque,
     const VectorX<double>& Kp, const VectorX<double>& Kd)
       : robot_(robot),
-      q_d_(nominal_position),
-      trq_ff_(nominal_torque),
+      desired_position_(nominal_position),
+      feedforward_torque_(nominal_torque),
       Kp_(Kp),
       Kd_(Kd) {
   input_port_index_kinematics_result_ =
@@ -47,15 +47,16 @@ ValkyriePDFFController::ValkyriePDFFController(
     throw std::runtime_error("Invalid Kp.");
   if (!Kd_.allFinite())
     throw std::runtime_error("Invalid Kd.");
-  if (!q_d_.allFinite())
+  if (!desired_position_.allFinite())
     throw std::runtime_error("Invalid set point.");
-  if (!trq_ff_.allFinite())
+  if (!feedforward_torque_.allFinite())
     throw std::runtime_error("Invalid feedforward torque.");
 
   set_name("pd_and_ff_controller_for_val");
 }
 
-void ValkyriePDFFController::EvalOutput(const Context<double>& context,
+void ValkyriePDAndFeedForwardController::EvalOutput(
+                  const Context<double>& context,
                   SystemOutput<double>* output) const {
   // State input
   const KinematicsCache<double>* state =
@@ -84,11 +85,11 @@ void ValkyriePDFFController::EvalOutput(const Context<double>& context,
     int q_index = body.get_position_start_index();
     int v_index = body.get_velocity_start_index();
 
-    double q_err = q_d_(q_index) - state->getQ()(q_index);
+    double q_err = desired_position_(q_index) - state->getQ()(q_index);
     double v_err = 0 - state->getV()(v_index);
 
     msg.joint_names[act_ctr] = actuator.name_;
-    msg.position[act_ctr] = static_cast<float>(q_d_(q_index));
+    msg.position[act_ctr] = static_cast<float>(desired_position_(q_index));
     msg.velocity[act_ctr] = 0.0;
     double Kp = Kp_(q_index);
     double Kd = Kd_(v_index);
@@ -99,7 +100,8 @@ void ValkyriePDFFController::EvalOutput(const Context<double>& context,
       throw std::runtime_error("state error.");
     }
 
-    msg.effort[act_ctr] = Kp * q_err + Kd * v_err + trq_ff_(v_index);
+    msg.effort[act_ctr] =
+        Kp * q_err + Kd * v_err + feedforward_torque_(v_index);
     act_ctr++;
   }
 
@@ -159,8 +161,8 @@ void run_valkyrie_pd_ff_controller() {
   DiagramBuilder<double> builder;
   RobotStateDecoder* state_decoder =
       builder.AddSystem(std::make_unique<RobotStateDecoder>(robot));
-  ValkyriePDFFController* controller =
-      builder.AddSystem(std::make_unique<ValkyriePDFFController>(
+  ValkyriePDAndFeedForwardController* controller =
+      builder.AddSystem(std::make_unique<ValkyriePDAndFeedForwardController>(
           robot, examples::valkyrie::RPYValkyrieFixedPointState().head(
                      kRPYValkyrieDoF),
           examples::valkyrie::RPYValkyrieFixedPointTorque(), Kp, Kd));
