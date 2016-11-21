@@ -23,7 +23,7 @@ target_link_libraries(drakeAutomotive
   drakeSystemAnalysis
   drakeSystemFramework
   )
-pods_install_libraries(drakeAutomotive)
+drake_install_libraries(drakeAutomotive)
 drake_install_headers(
   create_trajectory_params.h
   curve2.h
@@ -60,7 +60,7 @@ if(lcm_FOUND)
     drakeAutomotive
     drakeRigidBodyPlant
     )
-  pods_install_libraries(drakeAutomotiveLcm)
+  drake_install_libraries(drakeAutomotiveLcm)
   drake_install_headers(
     automotive_simulator.h
     # N.B. The gen/*.h headers are installed by gen/CMakeLists.txt.

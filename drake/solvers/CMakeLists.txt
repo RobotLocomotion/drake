@@ -3,7 +3,7 @@ if(gurobi_FOUND)
   target_include_directories(drakeQP PUBLIC ${gurobi_INCLUDE_DIRS})
   target_link_libraries(drakeQP gurobi)
 
-  pods_install_libraries(drakeQP)
+  drake_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
     TARGET drakeQP
@@ -66,7 +66,7 @@ drake_install_headers(
   solution_result.h
   system_identification.h
   )
-pods_install_libraries(drakeOptimization)
+drake_install_libraries(drakeOptimization)
 drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization

@@ -12,7 +12,7 @@ if(lcm_FOUND)
     drakeLcm
     ${CMAKE_THREAD_LIBS_INIT})
 
-  pods_install_libraries(drakeLCMSystem2)
+  drake_install_libraries(drakeLCMSystem2)
   drake_install_headers(
     lcm_publisher_system.h
     lcm_subscriber_system.h

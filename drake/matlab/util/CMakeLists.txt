@@ -3,7 +3,7 @@ if(Matlab_FOUND)
   target_link_libraries(drakeMexUtil drakeCommon)
 
   drake_install_headers(drakeMexUtil.h MexWrapper.h)
-  pods_install_libraries(drakeMexUtil)
+  drake_install_libraries(drakeMexUtil)
   drake_install_pkg_config_file(drake-mex-util
     TARGET drakeMexUtil
     LIBS -ldrakeMexUtil

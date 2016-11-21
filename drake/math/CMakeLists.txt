@@ -45,7 +45,7 @@ target_link_libraries(drakeMath drakeCommon)
 
 drake_install_headers(${installed_headers})
 
-pods_install_libraries(drakeMath)
+drake_install_libraries(drakeMath)
 drake_install_pkg_config_file(drake-math
   TARGET drakeMath
   LIBS -ldrakeMath

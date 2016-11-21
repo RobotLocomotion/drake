@@ -10,9 +10,6 @@
 #   pods_find_pkg_config(...)
 #
 # C/C++
-#   pods_install_libraries(...)
-#   pods_install_executables(...)
-#
 #   pods_use_pkg_config_packages(...)
 #
 # Python
@@ -21,17 +18,6 @@
 # ----
 # File: pods.cmake
 # Distributed with pods version: 12.11.14
-
-
-# pods_install_libraries(<library1> ...)
-#
-# Install a (list) of libraries to lib/
-function(pods_install_libraries)
-    install(TARGETS ${ARGV}
-      RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
-      LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
-      ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}")
-endfunction()
 
 
 # pods_install_python_packages(<src_dir1> ...)
