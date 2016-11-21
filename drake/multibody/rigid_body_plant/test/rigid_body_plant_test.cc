@@ -36,13 +36,6 @@ std::unique_ptr<FreestandingInputPort> MakeInput(
   return make_unique<FreestandingInputPort>(std::move(data));
 }
 
-// Tests that the name of the RigidBodyPlant is correct.
-GTEST_TEST(RigidBodyPlantTest, TestSystemName) {
-  auto tree = make_unique<RigidBodyTree<double>>();
-  RigidBodyPlant<double> plant(move(tree));
-  EXPECT_EQ(plant.get_name(), "RigidBodyPlant");
-}
-
 // Tests the ability to load a URDF model instance into the world of a rigid
 // body system.
 GTEST_TEST(RigidBodyPlantTest, TestLoadURDFWorld) {

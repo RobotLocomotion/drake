@@ -35,7 +35,7 @@ namespace toyota_hsrb {
  * The systems::RigidBodyPlant contains a systems::RigidBodyTree modeling
  * Toyota's HSRb robot.
  */
-std::tuple<std::unique_ptr<Diagram<double>, RigidBodyPlant*>>
+std::tuple<std::unique_ptr<Diagram<double>>, RigidBodyPlant*>
 CreateHsrPlantDiagram(const std::string& urdf_string,
     double penetration_stiffness,
     double penetration_damping,

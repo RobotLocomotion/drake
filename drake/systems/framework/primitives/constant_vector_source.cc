@@ -15,7 +15,6 @@ template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value)
     : source_value_(source_value) {
-  this->set_name("ConstantVectorSource");
   const int n = static_cast<int>(source_value.rows());
   this->DeclareOutputPort(kVectorValued, n, kContinuousSampling);
 }
