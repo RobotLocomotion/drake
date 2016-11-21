@@ -57,7 +57,7 @@ class WitnessFunction {
    * Tolerances for zero are set exactly to zero; i.e., the witness function
    * will only be treated as zero when it evaluates exactly to zero.
    */
-  explicit WitnessFunction() {
+  WitnessFunction() {
   }
 
   /// Two possible types of witness function output types.
