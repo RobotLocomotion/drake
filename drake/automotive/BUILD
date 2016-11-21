@@ -18,7 +18,7 @@ cc_library(
     hdrs = [
         "gen/driving_command.h",
         "gen/euler_floating_joint_state.h",
-        "gen/idm_planner_parameters.cc",
+        "gen/idm_planner_parameters.h",
         "gen/simple_car_config.h",
         "gen/simple_car_state.h",
     ],
@@ -79,7 +79,7 @@ cc_library(
     name = "single_lane_ego_and_agent",
     srcs = ["single_lane_ego_and_agent.cc"],
     hdrs = ["single_lane_ego_and_agent.h"],
-    deps = DEPS + ["//drake/common:symbolic"],
+    deps = DEPS + [":linear_car", ":idm_planner"],
     linkstatic = 1)
 
 cc_library(

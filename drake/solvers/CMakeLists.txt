@@ -3,7 +3,7 @@ if(gurobi_FOUND)
   target_include_directories(drakeQP PUBLIC ${gurobi_INCLUDE_DIRS})
   target_link_libraries(drakeQP gurobi)
 
-  pods_install_libraries(drakeQP)
+  drake_install_libraries(drakeQP)
   drake_install_headers(fast_qp.h gurobi_qp.h)
   drake_install_pkg_config_file(drake-qp
     TARGET drakeQP
@@ -15,7 +15,7 @@ set(optimization_files)
 set(optimization_requires)
 list(APPEND optimization_files
   mathematical_program.cc moby_lcp_solver.cc
-  system_identification.cpp linear_system_solver.cc
+  system_identification.cc linear_system_solver.cc
   equality_constrained_qp_solver.cc)
 pods_find_pkg_config(ipopt)
 if (ipopt_FOUND)
@@ -60,13 +60,13 @@ add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_
 target_link_libraries(drakeOptimization drakeCommon)
 drake_install_headers(
   constraint.h
-  Function.h
+  function.h
   mathematical_program.h
   decision_variable.h
   solution_result.h
   system_identification.h
   )
-pods_install_libraries(drakeOptimization)
+drake_install_libraries(drakeOptimization)
 drake_install_pkg_config_file(drake-optimization
   TARGET drakeOptimization
   LIBS -ldrakeOptimization

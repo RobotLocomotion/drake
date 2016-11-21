@@ -4,7 +4,7 @@ target_link_libraries(drakeControlledSpringMassSystemPlant
     drakeSpringMassSystemPlant
     drakeSystemControllers
     drakeSystemFramework)
-pods_install_libraries(drakeControlledSpringMassSystemPlant)
+drake_install_libraries(drakeControlledSpringMassSystemPlant)
 drake_install_headers(controlled_spring_mass_system.h)
 
 drake_install_pkg_config_file(drake-controlled-spring-mass-system-plant

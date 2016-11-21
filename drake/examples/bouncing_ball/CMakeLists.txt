@@ -10,7 +10,7 @@ target_link_libraries(drakeBouncingBall
   drakeCommon
   drakeSystemFramework
   )
-pods_install_libraries(drakeBouncingBall)
+drake_install_libraries(drakeBouncingBall)
 drake_install_headers(
   bouncing_ball-inl.h
   bouncing_ball.h

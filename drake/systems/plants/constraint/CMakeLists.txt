@@ -4,7 +4,7 @@ target_link_libraries(drakeDynamicConstraint
   drakeSystemFramework
   drakeCommon)
 drake_install_headers(direct_collocation_constraint.h)
-pods_install_libraries(drakeDynamicConstraint)
+drake_install_libraries(drakeDynamicConstraint)
 drake_install_pkg_config_file(drake-dynamic-constraint
   TARGET drakeDynamicConstraint
   LIBS -ldrakeDynamicConstraint
