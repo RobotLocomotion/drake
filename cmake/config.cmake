@@ -206,12 +206,19 @@ macro(drake_setup_python)
 
   # Choose your python (major) version
   option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
+
+  if(WITH_PYTHON_3)
+    find_package(Python 3 MODULE REQUIRED)
+  else()
+    find_package(Python 2.7 MODULE REQUIRED)
+  endif()
 endmacro()
 
 #------------------------------------------------------------------------------
 # Add local CMake modules to CMake search path.
 #------------------------------------------------------------------------------
 function(drake_setup_cmake BASE_PATH)
+  set(CMAKE_MODULE_PATH "${BASE_PATH}")
   file(GLOB _versions RELATIVE ${BASE_PATH} "${BASE_PATH}/*/")
   foreach(_version ${_versions})
     if(IS_DIRECTORY "${BASE_PATH}/${_version}")
