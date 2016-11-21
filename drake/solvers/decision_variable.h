@@ -36,20 +36,23 @@ class DecisionVariableScalar {
    * // Add a 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double*
+   * value, size_t index)
    * DecisionVariableVector<2> x1 = prog.AddContinuousVariables<2>();
    *
    * // // Add 2 x 1 vector containing two
    * // decision variables to the optimization program.
    * // This calls the private constructor
-   * // DecisionVariableScalar(VarType type, const std::string &name, double* value, size_t index)
+   * // DecisionVariableScalar(VarType type, const std::string &name, double*
+   * value, size_t index)
    * DecisionVariableVector<2> x2 = prog.AddContinuousVariables<2>();
    *
    * // This calls the default constructor DecisionVariableScalar(),
    * // X is not related to the optimization program prog yet.
    * DecisionVariableMatrix<2, 2> X;
    *
-   * // Now X contains the decision variables from the optimization program object prog.
+   * // Now X contains the decision variables from the optimization program
+   * object prog.
    * // The first column of X is x1, the second column of X is x2.
    * X << x1, x2;
    * @endcode
@@ -143,11 +146,10 @@ using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 /**
  * VariableVectorRef is used for adding constraints/costs in
- * MathematicalProgram, we use Eigen::Ref so that we can pass in a 
+ * MathematicalProgram, we use Eigen::Ref so that we can pass in a
  * block of DecisionVariableMatrix as decision variables.
  */
-using VariableListRef =
-    std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
+using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**
  * VariableVector is used for storing the decision variabled binded
@@ -161,19 +163,33 @@ using VariableList = std::list<DecisionVariableMatrixX>;
  * stores the values of each decision variable.
  * @param decision_variable_matrix A DecisionVariableMatrix object.
  */
-template <typename Derived>
-Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
-DecisionVariableMatrixToDoubleMatrix(
+template <typename Derived, typename T>
+Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+DecisionVariableMatrixToOtherTypes(
     const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+  Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       double_matrix(decision_variable_matrix.rows(),
                     decision_variable_matrix.cols());
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
-      double_matrix(i, j) = decision_variable_matrix(i, j).value();
+      double_matrix(i, j) =
+          static_cast<T>(decision_variable_matrix(i, j).value());
     }
   }
   return double_matrix;
+}
+
+/**
+ * Given a DecisionVariableMatrix object, return the Eigen::Matrix that
+ * stores the values of each decision variable.
+ * @param decision_variable_matrix A DecisionVariableMatrix object.
+ */
+template <typename Derived>
+Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+DecisionVariableMatrixToDoubleMatrix(
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
+  return DecisionVariableMatrixToOtherTypes<Derived, double>(
+      decision_variable_matrix);
 }
 
 /**
@@ -182,7 +198,7 @@ DecisionVariableMatrixToDoubleMatrix(
  */
 template <typename Derived>
 bool DecisionVariableMatrixContainsIndex(
-    const Eigen::MatrixBase<Derived> &decision_variable_matrix, size_t index) {
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix, size_t index) {
   for (int i = 0; i < decision_variable_matrix.rows(); ++i) {
     for (int j = 0; j < decision_variable_matrix.cols(); ++j) {
       if (decision_variable_matrix(i, j).index() == index) {
@@ -200,7 +216,7 @@ bool DecisionVariableMatrixContainsIndex(
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
-int size(const drake::solvers::VariableListRef &vars);
+int size(const drake::solvers::VariableListRef& vars);
 
 /**
  * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
@@ -209,7 +225,7 @@ int size(const drake::solvers::VariableListRef &vars);
  * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
  * x1 for twice.
  */
-int size(const drake::solvers::VariableList &vars);
+int size(const drake::solvers::VariableList& vars);
 
 /**
  * Given a list of DecisionVariableMatrix @p vars, returns true if all
@@ -217,7 +233,7 @@ int size(const drake::solvers::VariableList &vars);
  * scalar).
  */
 bool VariableListContainsColumnVectorsOnly(
-    const drake::solvers::VariableList &vars);
+    const drake::solvers::VariableList& vars);
 
 /**
  * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
@@ -225,6 +241,6 @@ bool VariableListContainsColumnVectorsOnly(
  * scalar).
  */
 bool VariableListRefContainsColumnVectorsOnly(
-    const drake::solvers::VariableListRef &vars);
+    const drake::solvers::VariableListRef& vars);
 }  // end namespace solvers
 }  // end namespace drake

@@ -209,7 +209,7 @@ class MathematicalProgram {
         : constraint_(c) {
       variable_list_.resize(v.size());
       auto v_it = v.begin();
-      for(auto& variable_list_it : variable_list_) {
+      for (auto& variable_list_it : variable_list_) {
         variable_list_it = *v_it;
         ++v_it;
       }
