@@ -32,7 +32,7 @@ macro(drake_setup_matlab)
   if(DISABLE_MATLAB)
     message(STATUS "MATLAB is disabled.")
     unset(MATLAB_EXECUTABLE CACHE)
-    unset(Matlab_FOUND)
+    set(Matlab_FOUND OFF)
   else()
     # Look for the MATLAB executable. This does not use find_package(Matlab)
     # because that is "really good at finding MATLAB", and we only want to
@@ -47,15 +47,15 @@ macro(drake_setup_matlab)
       unset(_matlab_realpath)
       unset(_matlab_bindir)
 
-      if(MATLAB_EXECUTABLE)
-        find_package(Matlab MODULE
-          COMPONENTS
-            MAIN_PROGRAM
-            MEX_COMPILER
-            MX_LIBRARY
-            SIMULINK)
-      endif()
+      find_package(Matlab MODULE
+        COMPONENTS
+          MAIN_PROGRAM
+          MEX_COMPILER
+          MX_LIBRARY
+          SIMULINK)
     else()
+      unset(MATLAB_EXECUTABLE CACHE)
+      set(Matlab_FOUND OFF)
       message(STATUS "MATLAB was not found.")
     endif()
   endif()
