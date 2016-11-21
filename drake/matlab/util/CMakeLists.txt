@@ -55,7 +55,7 @@ if(Matlab_FOUND)
 endif()
 
 # Mex debugging tools:
-if(0)  # NOT WIN32
+if(0)
   drake_add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
   target_link_libraries(drake_debug_mex drakeMexUtil)
 
@@ -98,7 +98,7 @@ if(0)  # NOT WIN32
   install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
     DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif()  # NOT WIN32
+endif()
 
 add_subdirectory(geometry/test)
 
