@@ -1,4 +1,4 @@
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 #include <iostream>
 #include <random>

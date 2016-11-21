@@ -2,10 +2,10 @@
 
 #include <memory>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_input.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 #include "gtest/gtest.h"
 

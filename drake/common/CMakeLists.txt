@@ -91,3 +91,5 @@ drake_install_pkg_config_file(drake-common
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+add_subdirectory(trajectories)

@@ -1,7 +1,8 @@
-#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
-#include <stdexcept>
-#include <sstream>
+#include "drake/common/trajectories/piecewise_polynomial_base.h"
+
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 PiecewisePolynomialBase::PiecewisePolynomialBase(
     std::vector<double> const& segment_times)

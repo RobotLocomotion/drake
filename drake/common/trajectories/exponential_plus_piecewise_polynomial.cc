@@ -1,6 +1,8 @@
-#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include <unsupported/Eigen/MatrixFunctions>
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+
 #include <stdexcept>
+
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include "drake/common/drake_assert.h"
 

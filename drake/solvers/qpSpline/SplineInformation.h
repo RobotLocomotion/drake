@@ -1,9 +1,10 @@
 #pragma once
 
 #include <vector>
-#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
-#include "ValueConstraint.h"
-#include "ContinuityConstraint.h"
+
+#include "drake/common/trajectories/piecewise_polynomial_base.h"
+#include "drake/solvers/qpSpline/ValueConstraint.h"
+#include "drake/solvers/qpSpline/ContinuityConstraint.h"
 
 class SplineInformation : public PiecewisePolynomialBase {
  private:

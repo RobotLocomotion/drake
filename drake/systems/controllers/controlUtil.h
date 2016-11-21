@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_stl_types.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 const int m_surface_tangents =
     2;  // number of faces in the friction cone approx

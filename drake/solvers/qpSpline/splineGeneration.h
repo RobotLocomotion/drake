@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/qpSpline/SplineInformation.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 class ConstraintMatrixSingularError : public std::runtime_error {
  public:

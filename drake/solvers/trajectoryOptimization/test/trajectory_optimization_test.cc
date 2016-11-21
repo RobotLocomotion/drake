@@ -3,8 +3,8 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 
 using std::vector;
 using Eigen::MatrixXd;

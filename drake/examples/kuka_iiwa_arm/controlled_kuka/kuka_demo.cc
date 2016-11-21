@@ -5,6 +5,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_path.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -23,7 +24,6 @@
 #include "drake/systems/framework/primitives/demultiplexer.h"
 #include "drake/systems/framework/primitives/multiplexer.h"
 #include "drake/systems/framework/primitives/trajectory_source.h"
-#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
 
 DEFINE_double(simulation_sec, 0.5, "Number of seconds to simulate.");
 
