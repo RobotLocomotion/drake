@@ -107,7 +107,7 @@ class DecisionVariableScalar {
 
 namespace Eigen {
 
-// Eigen scalar type traits for Matrix<FunctionalForm>.
+/// Eigen scalar type traits for Matrix<DecisionVariableScalar>.
 template <>
 struct NumTraits<drake::solvers::DecisionVariableScalar> {
   enum {
@@ -145,16 +145,16 @@ using DecisionVariableMatrixX =
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
 /**
- * VariableVectorRef is used for adding constraints/costs in
+ * VariableListRef is used for adding constraints/costs in
  * MathematicalProgram, we use Eigen::Ref so that we can pass in a
  * block of DecisionVariableMatrix as decision variables.
  */
 using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 
 /**
- * VariableVector is used for storing the decision variabled binded
+ * VariableList is used for storing the decision variabled binded
  * with each constraint/cost. Each constraint/cost is binded with
- * a VariableVector, on which the constraint/cost is imposed.
+ * a VariableList, on which the constraint/cost is imposed.
  */
 using VariableList = std::list<DecisionVariableMatrixX>;
 

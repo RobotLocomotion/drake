@@ -564,8 +564,6 @@ class MathematicalProgram {
   template <Eigen::Index rows, Eigen::Index cols>
   DecisionVariableMatrix<rows, cols> AddBinaryVariables(
       const std::array<std::string, rows * cols>& names) {
-    required_capabilities_ |= kBinaryVariable;
-
     return AddVariables<rows, cols>(DecisionVariableScalar::VarType::BINARY,
                                     names);
   }
@@ -680,13 +678,6 @@ class MathematicalProgram {
     return AddVariables(DecisionVariableScalar::VarType::CONTINUOUS, rows, rows,
                         true, names);
   }
-
-  /**
-   * @param name of the variable.
-   * @return A DecisionVariableMatrix that contains all decision variables,
-   * whose name equals to \param name.
-   */
-  DecisionVariableVectorX GetVariable(const std::string& name) const;
 
   /**
    * Add a generic cost to the optimization program.
@@ -929,8 +920,8 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param lb A scalar, the lower bound.
    * @param ub A scalar, the upper bound.
-   * @param vars A std::vector of variables. Each element in the
-   * std::vector is a DecisionVariableMatrix object, which contains
+   * @param vars Each element in the container
+   * is a DecisionVariableMatrix object, which contains
    * a matrix of decision variables.
    */
   template <typename DerivedA>
@@ -1019,7 +1010,7 @@ class MathematicalProgram {
    * @f]
    * @param a A row vector.
    * @param beq A scalar.
-   * @param vars A std::vector of DecisionVariableMatrix.
+   * @param vars The decision variables on which the constraint is imposed.
    */
   template <typename DerivedA>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -1166,7 +1157,7 @@ class MathematicalProgram {
    * @f[ x_0 x_1 \ge x_2^2 + x_3^2 + ... + x_{N-1}^2 @f]
    * @f[ x_0\ge 0, x_1\ge 0 @f]
    * @param con A pointer to a RotatedLorentzConeConstraint object.
-   * @param vars A std::vector of DecisionVariableMatrix.
+   * @param vars The decision variables on which the constraint is imposed.
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const VariableListRef& vars) {
@@ -1177,7 +1168,7 @@ class MathematicalProgram {
   }
 
   /**
-   * @param vars A std::vector of DecisionVariableMatrix.
+   * @param vars The decision variables on which the constraint is imposed.
    * Each DecisionVariableMatrix object should have only one column.
    * Example: if you want to add the rotated Lorentz cone constraint
    * <!--
@@ -1632,6 +1623,13 @@ class MathematicalProgram {
   void AddVariables_impl(
       DecisionVariableScalar::VarType type, const T& names, bool is_symmetric,
       Eigen::Ref<DecisionVariableMatrixX> decision_variable_matrix) {
+    switch (type) {
+      case DecisionVariableScalar::VarType::BINARY :
+        required_capabilities_ |= kBinaryVariable;
+        break;
+      default:
+        throw std::runtime_error("Unknown variable type");
+    }
     int rows = decision_variable_matrix.rows();
     int cols = decision_variable_matrix.cols();
     DRAKE_ASSERT(!is_symmetric || rows == cols);
