@@ -295,12 +295,8 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
 
   VectorX<T> xdot(get_num_states());
 
-  // TODO(hongkai.dai): I should use a templatized vdot_value, with template
-  // parameter T. Actually I am not sure how to convert a DecisionVariableScalar
-  // to other scalar types, like autodiffscalar. I should discuss with
-  // reviewers.
-  const Eigen::VectorXd& vdot_value =
-      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vdot);
+  const auto& vdot_value = drake::solvers::DecisionVariableMatrixToOtherTypes<
+      drake::solvers::DecisionVariableVectorX, T>(vdot);
   xdot << kinsol.transformQDotMappingToVelocityMapping(
               MatrixX<T>::Identity(nq, nq)) *
               v,
