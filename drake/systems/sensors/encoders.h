@@ -14,7 +14,8 @@ namespace sensors {
 ///
 /// @ingroup sensor_systems
 template <typename T>
-class RotaryEncoders : systems::LeafSystem<T> {
+class RotaryEncoders : public systems::LeafSystem<T> {
+ public:
   /// Specifies one ticks_per_revolution count for every element of the input
   /// port.
   explicit RotaryEncoders(

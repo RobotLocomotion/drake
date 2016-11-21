@@ -6,3 +6,7 @@ drake_install_headers(encoders.h)
 drake_install_pkg_config_file(drake-sensors
     TARGET drakeSensors
     LIBS -ldrakeSensors)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

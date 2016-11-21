@@ -1,0 +1,3 @@
+
+drake_add_cc_test(encoders_test encoders_test.cc)
+target_link_libraries(encoders_test drakeSensors)
