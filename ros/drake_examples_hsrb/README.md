@@ -2,8 +2,8 @@
 
 ## Introduction
 
-This ROS package contains example applications of Drake being used with Toyota's
-Human Support Robot version B (HSRb).
+This ROS package contains example Drake simulations using Toyota's Human Support
+Robot version B (HSRb).
 
 ## Installation
 
@@ -15,14 +15,22 @@ being installed into a ROS workspace called `drake_catkin_workspace`.
 
 ### Demo 1 - Dynamics
 
-This loads an HSRb robot into Drake and starts a dynamics simulation. The robot
-is uncontrolled meaning the simulation simply shows the effects of gravity. It
-also starts `RViz` for visualization and `roscore` for connecting the simulator
-with the visualizer.
+This loads an HSRb into Drake and starts a simulation. The robot is uncontrolled
+meaning the only motions observed are those due to the effects of gravity. Two
+visualizers are used: (1) Drake Visualizer and (2) RViz.
+
+First start Drake Visualizer. This is necessary until
+[#3075](https://github.com/RobotLocomotion/drake/issues/3075) is resolved.
+
+```
+roscd
+./install/bin/drake-visualizer
+```
+
+Next start the simulation:
 
 ```
 roslaunch drake_examples_hsrb demo1.launch
-
 ```
 
 The robot should be visible in RViz. Because Drake is running at a low real-time
@@ -61,22 +69,11 @@ source devel/setup.bash
 roslaunch drake_examples_hsrb load_model.launch
 ```
 
-Start `gdb` and tell it to load and execute the demo. The example below run
-`hsr_demo_1_dynamics`:
+Start `gdb` and tell it to load and execute the demo. The example below runs
+`demo1`:
 
 ```
 cd drake_catkin_workspace
 source devel/setup.bash
 gdb -ex run --args `rospack find drake_examples_hsrb`/../../../devel/lib/drake_examples_hsrb/demo1
 ```
-
-To run demo 2, replace the last command with:
-
-```
-gdb -ex run --args `rospack find drake_examples_hsrb`/../../../devel/lib/drake_examples_hsrb/demo2
-```
-
-
-Demo 2:
-  - When compiled in Debug mode, runs with a real-time factor of:
-       0.0039 on my Macbook Pro

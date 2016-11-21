@@ -1,11 +1,9 @@
 /**
  * @file
  *
- * Implements a Drake + HSRb demo that is not controlled, i.e., the robot
- * remains stationary and its arm falls due to gravity. The purpose of this demo
- * is to illustrate the ability to load and simulate the robot's model in Drake.
- * The only parts of ROS used in this demo are the ROS parameter server and the
- * Catkin build system. The visualizer is Drake's and the middleware is LCM. See
+ * Implements a Drake + HSRb demo that is uncontrolled, i.e., the robot remains
+ * stationary and its arm falls due to gravity. The purpose of this demo is to
+ * illustrate the ability to load and simulate the robot in Drake.
  * README.md for instructions on how to run this demo.
  */
 #include <algorithm>
@@ -16,17 +14,15 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/examples/toyota_hsrb/hsrb_diagram_factories.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/systems/analysis/simulator.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/ros/parameter_server.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/primitives/constant_vector_source.h"
 #include "drake/systems/ros_tf_publisher.h"
-#include "drake/multibody/parser_urdf.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 
 using std::make_unique;
 using std::move;
@@ -35,18 +31,20 @@ using std::unique_ptr;
 namespace drake {
 
 using lcm::DrakeLcm;
-using multibody::AddFlatTerrainToWorld;
-using parsers::urdf::AddModelInstanceFromUrdfString;
+// using multibody::AddFlatTerrainToWorld;
+// using parsers::urdf::AddModelInstanceFromUrdfString;
 using ros::GetRosParameterOrThrow;
-using systems::ConstantVectorSource;
+// using systems::ConstantVectorSource;
 using systems::Context;
+using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::DrakeVisualizer;
+// using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::RosTfPublisher;
 using systems::Simulator;
 
-namespace hsr {
+namespace examples {
+namespace toyota_hsrb {
 namespace {
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
@@ -58,77 +56,52 @@ int exec(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
-
-  ::ros::NodeHandle ros_node;
-
-  std::string urdf_string =
-      GetRosParameterOrThrow<std::string>("/robot_description");
+  lcm::DrakeLcm lcm;
+  // ::ros::NodeHandle ros_node;
 
   DiagramBuilder<double> builder;
-  RigidBodyPlant<double>* plant{nullptr};
+  const Diagram<double>* plant_diagram{nullptr};
+  const RigidBodyPlant<double>* plant{nullptr};
 
-  // The following curly brace prevents leakage of variable `tree` outside of
-  // this scope. Ownership of `tree` is passed to the RigidBodyPlant, and we
-  // want to avoid downstream code from trying to access a `tree` that is a
-  // nullptr since that'll result in a seg fault.
   {
-    // Instantiates a model of the world.
-    auto tree = make_unique<RigidBodyTreed>();
-    AddModelInstanceFromUrdfString(
-        urdf_string,
-        "." /* root directory */,
-        multibody::joints::kQuaternion,
-        nullptr /* weld to frame */,
-        tree.get());
-    AddFlatTerrainToWorld(tree.get());
-
-    // Instantiates a RigidBodyPlant to simulate the model.
-    plant = builder.template AddSystem<RigidBodyPlant<double>>(move(tree));
-
-    // Sets the contact parameters.
+    std::string urdf_string =
+        GetRosParameterOrThrow<std::string>("/robot_description");
     double penetration_stiffness =
         GetRosParameterOrThrow<double>("penetration_stiffness");
     double penetration_damping =
         GetRosParameterOrThrow<double>("penetration_damping");
     double friction_coefficient =
         GetRosParameterOrThrow<double>("friction_coefficient");
-    plant->set_contact_parameters(
-        penetration_stiffness, penetration_damping, friction_coefficient);
+
+    plant_diagram = builder.AddSystem(
+        CreateDemo1Diagram(urdf_string, penetration_stiffness,
+                           penetration_damping, friction_coefficient, &lcm));
+    DRAKE_DEMAND(plant_diagram != nullptr);
+
+    plant = GetRigidBodyPlant(plant_diagram);
+    auto ros_tf_publisher = builder.AddSystem<RosTfPublisher<double>>(
+        plant->get_rigid_body_tree());
+    builder.Connect(plant_diagram->get_output_port(0),
+        ros_tf_publisher->get_input_port(0));
   }
-  DRAKE_ASSERT(plant != nullptr);
 
-  const RigidBodyTreed& tree = plant->get_rigid_body_tree();
-
-  // Instantiates a system for visualizing the model.
-  lcm::DrakeLcm lcm;
-  auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
-  builder.Connect(plant->get_output_port(0),
-                  visualizer->get_input_port(0));
-
-  // Instantiates a constant vector source for issuing zero-torque commands to
-  // the RigidBodyPlant.
-  VectorX<double> constant_vector(plant->get_input_port(0).get_size());
-  constant_vector.setZero();
-  auto constant_zero_source =
-      builder.template AddSystem<ConstantVectorSource<double>>(constant_vector);
-  builder.Cascade(*constant_zero_source, *plant);
-
-  auto ros_tf_publisher = builder.AddSystem<RosTfPublisher<double>>(tree);
-  builder.Connect(plant->get_output_port(0), ros_tf_publisher->get_input_port(0));
-
-  auto diagram = builder.Build();
+  auto demo_diagram = builder.Build();
   lcm.StartReceiveThread();
 
-  Simulator<double> simulator(*diagram);
+  Simulator<double> simulator(*demo_diagram);
 
   // TODO(liang.fok): Modify System 2.0 to not require the following
   // initialization.
   //
   // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
+  systems::Context<double>* plant_diagram_context =
+      demo_diagram->GetMutableSubsystemContext(
+          simulator.get_mutable_context(), plant_diagram);
+
   systems::Context<double>* plant_context =
-      diagram->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), plant);
+      plant_diagram->GetMutableSubsystemContext(
+          plant_diagram_context, plant);
   plant->SetZeroConfiguration(plant_context);
 
   simulator.Initialize();
@@ -151,9 +124,10 @@ int exec(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace hsr
+}  // namespace toyota_hsrb
+}  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::hsr::exec(argc, argv);
+  return drake::examples::toyota_hsrb::exec(argc, argv);
 }
