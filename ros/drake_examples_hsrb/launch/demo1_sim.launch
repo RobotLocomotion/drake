@@ -3,8 +3,8 @@
   <include file="$(find drake_examples_hsrb)/launch/load_model.launch" />
 
   <!--
-    Sets the parameter that controls whether Drake publishes tf messages.
-    Starts the simulation.
+    Sets the parameter that controls whether Drake publishes tf messages and
+    then starts the simulation.
   -->
   <group ns="drake">
     <param name="enable_tf_publisher" type="bool" value="true" />

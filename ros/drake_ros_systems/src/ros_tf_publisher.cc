@@ -78,7 +78,7 @@ void RosTfPublisher<T>::Init() {
     message->header.frame_id = frame->get_rigid_body().get_name();
     message->child_frame_id = frame->get_name();
 
-    // Frames are fixed to a particular rigid body. The following code saves
+    // Frames are fixed to a particular RigidBody. The following code saves
     // the transformation in the frame's geometry_msgs::TransformStamped
     // message. This can be done once during initialization since it will
     // not change over time.
@@ -103,8 +103,8 @@ template <typename T>
 void RosTfPublisher<T>::DoPublish(const Context<double>& context) const {
   if (!enable_tf_publisher_) return;
 
-  // Aborts if insufficient time has passed since the last transmission. This
-  // is to avoid flooding the ROS topic.
+  // Aborts if less than kMinTransmitPeriod_ has elapsed since the last
+  // transmission to avoid flooding the ROS topic.
   ::ros::Time current_time = ::ros::Time::now();
   if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
     return;

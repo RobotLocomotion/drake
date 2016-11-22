@@ -21,8 +21,7 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
     ${CMAKE_INSTALL_PREFIX}/include
-    ${CMAKE_INSTALL_PREFIX}/include/lcmtypes
-    )
+    ${CMAKE_INSTALL_PREFIX}/include/lcmtypes)
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 

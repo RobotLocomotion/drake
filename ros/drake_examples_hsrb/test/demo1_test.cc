@@ -17,7 +17,6 @@ namespace toyota_hsrb {
 namespace {
 
 GTEST_TEST(DrakeExamplesToyotaHsrbTest, TestSim) {
-  // Parses the command line arguments.
   lcm::DrakeLcm lcm;
   std::unique_ptr<Diagram<double>> demo_diagram;
 

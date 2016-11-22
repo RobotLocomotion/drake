@@ -1,13 +1,6 @@
 #include "drake/examples/toyota_hsrb/demo1_common.h"
 
-// #include <algorithm>
-// #include <chrono>
-// #include <gflags/gflags.h>
-
-// #include "ros/ros.h"
-
 #include "drake/common/drake_assert.h"
-// #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/toyota_hsrb/hsrb_diagram_factories.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/ros/parameter_server.h"

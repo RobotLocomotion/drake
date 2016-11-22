@@ -17,12 +17,14 @@ namespace drake {
 namespace systems {
 
 /**
- * TODO(liang.fok) Add a description of this class.
+ * Publishes ROS TF messages for visualizing a RigidBodyTree. It is designed to
+ * take as input a RigidBodyTree's generalized state, which is typically
+ * ouputted by a RigidBodyPlant.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
- * The only valid type is double.
  *
- * @ingroup control_systems
+ * Instantiated templates for the following scalar types @p T are provided:
+ * - double
  */
 template <typename T>
 class RosTfPublisher : public LeafSystem<T> {

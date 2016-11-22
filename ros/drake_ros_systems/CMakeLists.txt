@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(drake_ros_systems)
 
-# Old CMakeLists:
-# https://github.com/RobotLocomotion/drake/pull/4119/files#diff-2408fbb12d01f506bcb8c7c72c2c6ce2
-
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(catkin REQUIRED COMPONENTS
