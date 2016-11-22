@@ -1,7 +1,6 @@
 #pragma once
 
 #include <limits>
-#include <random>
 #include <vector>
 
 #include <Eigen/Core>
@@ -189,16 +188,6 @@ class PiecewisePolynomial : public PiecewisePolynomialBase {
                                 Eigen::Index col_start = 0);
 
   PiecewisePolynomial slice(int start_segment_index, int num_segments);
-
-  /// Obtains a random PiecewisePolynomial of the specified size.
-  /**
-   * Obtains a PiecewisePolynomial with the given \p segment_times. Each segment
-   * will have a matrix of random Polynomials of the specified size.
-   */
-  static PiecewisePolynomial random(
-      Eigen::Index rows, Eigen::Index cols,
-      Eigen::Index num_coefficients_per_polynomial,
-      const std::vector<double>& segment_times);
 
  protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t,

@@ -1,5 +1,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/test/random_polynomial_matrix.h"
+#include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 #include "drake/math/random_rotation.h"
 #include "drake/util/lcmUtil.h"
 
@@ -8,7 +9,8 @@
 using namespace std;
 using namespace Eigen;
 
-using drake::MatrixCompareType;
+namespace drake {
+namespace {
 
 // TODO(jwnimmer-tri) Unit tests should not use unseeded randomness.
 
@@ -51,8 +53,8 @@ GTEST_TEST(TestLcmUtil, testPiecewisePolynomial) {
   std::vector<double> segment_times =
       PiecewiseFunction::randomSegmentTimes(num_segments, generator);
   PiecewisePolynomial<double> piecewise_polynomial =
-      PiecewisePolynomial<double>::random(rows, cols, num_coefficients,
-                                          segment_times);
+      test::MakeRandomPiecewisePolynomial<double>(
+          rows, cols, num_coefficients, segment_times);
   drake::lcmt_piecewise_polynomial msg;
   encodePiecewisePolynomial(piecewise_polynomial, msg);
   auto piecewise_polynomial_back = decodePiecewisePolynomial(msg);
@@ -103,3 +105,7 @@ GTEST_TEST(TestLcmUtil, testTwist) {
   EXPECT_TRUE(
       CompareMatrices(twist, twist_back, 0.0, MatrixCompareType::absolute));
 }
+
+}  // namespace
+}  // namespace drake
+

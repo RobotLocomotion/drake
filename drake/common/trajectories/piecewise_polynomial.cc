@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/test/random_polynomial_matrix.h"
 
 using std::runtime_error;
 using std::vector;
@@ -321,26 +320,6 @@ Eigen::Index PiecewisePolynomial<CoefficientType>::cols() const {
   else
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
-}
-
-// TODO(jwnimmer-tri) This method should move into legacy test-only code (in
-// other words, some other class and header).  Unseeded randomness leads to
-// hard-to-debug failures.
-template <typename CoefficientType>
-PiecewisePolynomial<CoefficientType> PiecewisePolynomial<
-  CoefficientType>::random(Eigen::Index rows, Eigen::Index cols,
-                           Eigen::Index num_coefficients_per_polynomial,
-                           const std::vector<double>& segment_times) {
-  Eigen::Index num_segments =
-      static_cast<Eigen::Index>(segment_times.size() - 1);
-  std::vector<PolynomialMatrix> polynomials;
-  for (Eigen::Index segment_index = 0; segment_index < num_segments;
-       ++segment_index) {
-    polynomials.push_back(
-        drake::test::RandomPolynomialMatrix<CoefficientType>(
-            num_coefficients_per_polynomial, rows, cols));
-  }
-  return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }
 
 template class PiecewisePolynomial<double>;
