@@ -1,8 +1,10 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <vector>
-#include "drake/systems/trajectories/PiecewiseFunction.h"
+
+#include <Eigen/Core>
+
+#include "drake/common/trajectories/piecewise_function.h"
 
 class PiecewisePolynomialBase : public PiecewiseFunction {
  public:

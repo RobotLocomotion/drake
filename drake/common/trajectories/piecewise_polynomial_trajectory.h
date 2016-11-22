@@ -1,10 +1,11 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <vector>
 
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/systems/trajectories/trajectory.h"
+#include <Eigen/Core>
+
+#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
 

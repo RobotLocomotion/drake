@@ -1,0 +1,8 @@
+drake_add_cc_test(piecewise_polynomial_test)
+target_link_libraries(piecewise_polynomial_test drakeTrajectories)
+
+drake_add_cc_test(exponential_plus_piecewise_polynomial_test)
+target_link_libraries(exponential_plus_piecewise_polynomial_test drakeTrajectories)
+
+drake_add_cc_test(piecewise_polynomial_trajectory_test)
+target_link_libraries(piecewise_polynomial_trajectory_test drakeTrajectories)

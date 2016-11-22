@@ -1,10 +1,11 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <vector>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_assert.h"
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 
 /**
  * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)

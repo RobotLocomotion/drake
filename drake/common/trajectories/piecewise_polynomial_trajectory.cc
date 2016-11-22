@@ -1,4 +1,4 @@
-#include "drake/systems/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 
 #include <vector>
 
