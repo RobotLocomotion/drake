@@ -91,7 +91,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     // Solve using least-squares A*inv(G)*A'y = A*inv(W)*c + b for `y`.
     Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
 
-    // Solve W*x = A'y - c
+    // Solve G*x = A'y - c
     prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
     prog.SetSolverResult("Equality Constrained QP Solver", 0);
     return SolutionResult::kSolutionFound;
