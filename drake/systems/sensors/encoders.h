@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -37,14 +38,22 @@ class RotaryEncoders : public systems::LeafSystem<T> {
   void EvalOutput(const systems::Context<T>& context,
                   systems::SystemOutput<T>* output) const override;
 
+  /// Calibration offsets are defined as parameters.
+  std::unique_ptr<systems::Parameters<T>> AllocateParameters() const override;
+
+  /// Set the calibration offset parameters.
+  void set_calibration_offsets(
+      systems::Context<T>* context,
+      const Eigen::Ref<VectorX<T>>& calibration_offsets) const;
+
+  /// Retreive the calibration offset parameters.
+  Eigen::VectorBlock<const VectorX<T>> get_calibration_offsets(
+      const systems::Context<T>& context) const;
+
  private:
   const unsigned int num_encoders_;          /// Dimension of the output port.
   const std::vector<unsigned int> indices_;  /// Selects from the input port.
   const std::vector<unsigned int> ticks_per_revolution_;  /// For quantization.
-
-  // TODO(russt): Make this a parameter.
-  const std::vector<double>
-      calibration_offset_;  // The zero position, in radians.
 };
 
 }  // namespace sensors
