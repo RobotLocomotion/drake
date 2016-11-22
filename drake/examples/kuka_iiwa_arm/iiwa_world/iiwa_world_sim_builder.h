@@ -76,6 +76,9 @@ class IiwaWorldSimBuilder {
   void AddObjectUrdf(const std::string& object_name,
                      const std::string& urdf_path);
 
+  /// Returns the size of the input port for the plant being built in the
+  /// diagram.
+  int GetPlantInputSize(void);
  private:
   // For both building and simulation.
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{

@@ -1,6 +1,13 @@
-#include <iostream>
+#include <gflags/gflags.h>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_world_sim_builder.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/primitives/constant_vector_source.h"
+
+
+DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
+              "Number of seconds to simulate.");
 
 namespace drake {
 namespace examples {
@@ -8,10 +15,11 @@ namespace kuka_iiwa_arm {
 
 namespace {
 
-int main(int argc, char* argv[]) {
+int DoMain() {
   auto iiwa_world = std::make_unique<IiwaWorldSimBuilder<double>>();
 
-  // Adding URDFs
+  // Adds models to the simulation builder. Instances of these models can be
+  // subsequently added to the world.
   iiwa_world->AddObjectUrdf("iiwa", "/examples/kuka_iiwa_arm/urdf/iiwa14.urdf");
   iiwa_world->AddObjectUrdf(
       "table",
@@ -29,27 +37,54 @@ int main(int argc, char* argv[]) {
   iiwa_world->SetPenetrationContactParameters(4500 /* penetration_stiffness */,
                                               1.0 /* penetration_damping */,
                                               1.0 /* contact friction */);
-  double table_top_z_in_world = 0.736 + 0.057 / 2;
-  Eigen::Vector3d robot_base(-0.25, -0.75, table_top_z_in_world);
-  iiwa_world->AddObjectFixedToWorld(robot_base,
+
+  // The z coordinate of the top of the table in the world frame.
+  const double kTableTopZInWorld = 0.736 + 0.057 / 2;
+
+  // The positions of the IIWA robot, two cylinders and the cuboid was fixed
+  // in a manner that they are distributed over the surface of the heavy duty
+  // table. Only the positions are set, as the default orientations are used
+  // in each case.
+  const Eigen::Vector3d kRobotBase(-0.25, -0.75, kTableTopZInWorld);
+  const Eigen::Vector3d kBoxBase(-0.45, -0.4, kTableTopZInWorld + 0.15);
+  const Eigen::Vector3d kCylinder1Base(-0.5, -0.60, kTableTopZInWorld + 0.1);
+  const Eigen::Vector3d kCylinder2Base(-0.05, -0.75, kTableTopZInWorld + 0.1);
+
+  iiwa_world->AddObjectFixedToWorld(kRobotBase,
                                     Eigen::Vector3d::Zero() /* rpy */, "iiwa");
-  Eigen::Vector3d box_base(-0.45, -0.4, table_top_z_in_world + 0.15);
-  Eigen::Vector3d cylinder_1_base(-0.5, -0.60, table_top_z_in_world + 0.1);
-  Eigen::Vector3d cylinder_2_base(-0.05, -0.75, table_top_z_in_world + 0.1);
+  iiwa_world->AddObjectFloatingToWorld(
+      kCylinder1Base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
+  iiwa_world->AddObjectFloatingToWorld(
+      kCylinder2Base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
+  iiwa_world->AddObjectFloatingToWorld(
+      kBoxBase, Eigen::Vector3d::Zero() /* rpy */, "cuboid");
 
-  iiwa_world->AddObjectFloatingToWorld(
-      cylinder_1_base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
-  iiwa_world->AddObjectFloatingToWorld(
-      cylinder_2_base, Eigen::Vector3d::Zero() /* rpy */, "cylinder");
-  iiwa_world->AddObjectFloatingToWorld(
-      box_base, Eigen::Vector3d::Zero() /* rpy */, "cuboid");
+  std::cout<<"About to call build\n";
+  auto robot_world_system = iiwa_world->Build();
+  std::cout<<"Back in calling function \n";
+  std::unique_ptr<drake::systems::DiagramBuilder<double>> builder{
+      std::make_unique<drake::systems::DiagramBuilder<double>>()};
 
-  auto diagram = iiwa_world->Build();
+  // Instantiates a constant source that outputs a vector of zeros.
+  VectorX<double> constant_value(iiwa_world->GetPlantInputSize());
+  constant_value.setZero();
+
+  std::cout<<"Building source\n";
+  auto const_source_ =
+      builder->template AddSystem<drake::systems::ConstantVectorSource<double>>(constant_value);
+  // Connects the constant source's output port to the RigidBodyPlant's input
+  // port. This effectively results in the robot being uncontrolled.
+  builder->Connect(const_source_->get_output_port(),
+                   robot_world_system->get_input_port(0));
+
+  std::cout<<"building new diagram\n";
+  auto diagram = builder->Build();
+
   auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
   iiwa_world->SetZeroConfiguration(simulator.get(), diagram.get());
 
   simulator->Initialize();
-  simulator->StepTo(3.5 /* final time */);
+  simulator->StepTo(FLAGS_simulation_sec);
 
   return 0;
 }
@@ -60,5 +95,6 @@ int main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::kuka_iiwa_arm::main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::kuka_iiwa_arm::DoMain();
 }
