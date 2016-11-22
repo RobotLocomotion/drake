@@ -88,7 +88,7 @@ if(ipopt_FOUND)
   # BLAS.
   #
   # This should probably be a test for the GNU linker instead of a platform.
-  if (NOT (APPLE OR WIN32))
+  if(NOT APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif()
@@ -112,8 +112,6 @@ if(mosek_FOUND)
   target_include_directories(drakeOptimization PUBLIC ${mosek_INCLUDE_DIRS})
   target_link_libraries(drakeOptimization ${mosek_LIBRARIES})
 endif()
-
-add_subdirectory(qpSpline)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

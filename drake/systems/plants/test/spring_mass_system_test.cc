@@ -1,10 +1,3 @@
-#ifdef _MSC_VER
-// Suppress ugly Eigen internal warning in PartialPivLU's solver, correctly
-// caught by Microsoft C++, and an irrelevant GTest warning.
-
-#pragma warning(disable : 4800 4275)
-#endif
-
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 #include <memory>
