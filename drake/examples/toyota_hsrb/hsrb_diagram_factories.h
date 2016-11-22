@@ -13,18 +13,6 @@ namespace examples {
 namespace toyota_hsrb {
 
 /**
- * Defines the name of the RigidBodyPlant system.
- */
-// static const char* const kPlantName;
-
-/**
- * Obtains the RigidBodyPlant from within the provided diagram. The provided
- * diagram must contain a subsystem that is named "RigidBodyPlant".
- */
-// const systems::RigidBodyPlant<double>* GetRigidBodyPlant(
-//     const systems::Diagram<double>* diagram);
-
-/**
  * Creates and returns a systems::Diagram containing a systems::RigidBodyPlant
  * with a model of Toyota's HSRb robot that's connected to a DrakeVisualizer.
  * It has one input port that's connected to the plant's input port zero, and

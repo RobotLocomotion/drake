@@ -32,22 +32,6 @@ using parsers::urdf::AddModelInstanceFromUrdfString;
 namespace examples {
 namespace toyota_hsrb {
 
-// const char* const kPlantName = "RigidBodyPlant";
-
-// const RigidBodyPlant<double>* GetRigidBodyPlant(
-//     const Diagram<double>* diagram) {
-//   std::vector<const systems::System<double>*> systems =
-//       diagram->GetSystems();
-//   const RigidBodyPlant<double>* plant{nullptr};
-//   for (unsigned int i = 0; i < systems.size(); ++i) {
-//     if (systems[i]->get_name() == kPlantName) {
-//       plant = dynamic_cast<const RigidBodyPlant<double>*>(systems[i]);
-//     }
-//   }
-//   DRAKE_DEMAND(plant != nullptr);
-//   return plant;
-// }
-
 unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
     const string& hsrb_urdf_string, double penetration_stiffness,
     double penetration_damping, double friction_coefficient,

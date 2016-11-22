@@ -2,9 +2,9 @@
  * @file
  *
  * Implements a Drake + HSRb demo that is uncontrolled, i.e., the robot remains
- * stationary and its arm falls due to gravity. The purpose of this demo is to
- * illustrate the ability to load and simulate the robot in Drake.
- * README.md for instructions on how to run this demo.
+ * stationary and its arm falls due to gravity. This demo illustrates the
+ * ability to load and simulate the HSRb in Drake. See README.md for
+ * instructions on how to run this demo.
  */
 #include <algorithm>
 #include <chrono>
@@ -31,14 +31,10 @@ using std::unique_ptr;
 namespace drake {
 
 using lcm::DrakeLcm;
-// using multibody::AddFlatTerrainToWorld;
-// using parsers::urdf::AddModelInstanceFromUrdfString;
 using ros::GetRosParameterOrThrow;
-// using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-// using systems::DrakeVisualizer;
 using systems::RigidBodyPlant;
 using systems::RosTfPublisher;
 using systems::Simulator;
@@ -51,13 +47,11 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
     "Number of seconds to simulate.");
 
 int exec(int argc, char* argv[]) {
-  // Parses the command line arguments.
   ::ros::init(argc, argv, "hsrb_demo_1");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
   lcm::DrakeLcm lcm;
-  // ::ros::NodeHandle ros_node;
 
   DiagramBuilder<double> builder;
   const Diagram<double>* plant_diagram{nullptr};
@@ -83,7 +77,6 @@ int exec(int argc, char* argv[]) {
     plant_diagram = plant_diagram_ptr.get();
     DRAKE_DEMAND(plant_diagram != nullptr);
 
-    // plant = GetRigidBodyPlant(plant_diagram);
     std::unique_ptr<Diagram<double>> input_diagram_ptr =
         CreateHsrbDemo1Diagram(*plant, std::move(plant_diagram_ptr));
 
@@ -103,7 +96,7 @@ int exec(int argc, char* argv[]) {
   Simulator<double> simulator(*demo_diagram);
 
   // TODO(liang.fok): Modify System 2.0 to not require the following
-  // initialization.
+  // initialization. See #4191.
   //
   // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
