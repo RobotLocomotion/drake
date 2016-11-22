@@ -10,8 +10,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/math/cross_product.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace examples {
