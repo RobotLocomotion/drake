@@ -17,6 +17,7 @@
 #include "drake/multibody/pose_map.h"
 #include "drake/multibody/xml_util.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/util/drakeGeometryUtil.h"
 
 #include "spruce.hh"
 

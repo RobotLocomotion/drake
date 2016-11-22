@@ -10,3 +10,7 @@ drake_install_pkg_config_file(drake-spring-mass-system-plant
     TARGET drakeSpringMassSystemPlant
     LIBS -ldrakeSpringMassSystemPlant
     REQUIRES drake-system-framework)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

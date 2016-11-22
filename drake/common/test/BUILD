@@ -22,7 +22,7 @@ cc_test(
 cc_test(
     name = "double_overloads_test",
     srcs = ["double_overloads_test.cc"],
-    size = "small", deps = DEPS + ["//drake/common:double"])
+    size = "small", deps = DEPS + ["//drake/common:double", "//drake/common:cond"])
 
 cc_test(
     name = "drake_assert_test",
