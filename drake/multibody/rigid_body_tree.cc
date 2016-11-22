@@ -54,6 +54,7 @@ using drake::kSpaceDimension;
 using drake::kTwistSize;
 
 using drake::math::autoDiffToGradientMatrix;
+using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
 
