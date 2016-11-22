@@ -24,7 +24,7 @@ First start Drake Visualizer. This is necessary until
 
 ```
 roscd
-./install/bin/drake-visualizer
+./install/bin/drake-visualizer &
 ```
 
 Next start the simulation:
@@ -39,6 +39,11 @@ necessary because some bodies in the robot have very small inertias. Perhaps
 once variable time-step integrators are supported, the simulation can be sped up
 without becoming unstable.
 
+To run the unit test for this demo:
+
+```
+rostest drake_examples_hsrb demo1_test.test
+```
 
 ## Debugging
 
