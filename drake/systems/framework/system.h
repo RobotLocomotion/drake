@@ -614,7 +614,7 @@ class System {
       VectorBase<T> *generalized_velocity) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
-    // This check will thus not identify cases Fwhere the generalized velocity
+    // This check will thus not identify cases where the generalized velocity
     // and time derivative of generalized configuration are identically sized
     // but not identical!
     const int n = qdot.size();

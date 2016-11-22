@@ -43,6 +43,9 @@ class Integrator : public LeafSystem<T> {
                            ContinuousState<T>* derivatives) const override;
 
  protected:
+  // Returns an Integrator<AutoDiffXd> with the same dimensions as this
+  // Integrator.
+  Integrator<AutoDiffXd>* DoToAutoDiffXd() const override;
   // LeafSystem<T> override
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
 };
