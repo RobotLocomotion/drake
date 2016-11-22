@@ -13,6 +13,18 @@ lcm_cc_library(
     linkstatic = 1)
 
 lcm_cc_library(
+    name = "viewer",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_viewer_command.lcm",
+        "lcmt_viewer_draw.lcm",
+        "lcmt_viewer_geometry_data.lcm",
+        "lcmt_viewer_link_data.lcm",
+        "lcmt_viewer_load_robot.lcm",
+    ],
+    linkstatic = 1)
+
+lcm_cc_library(
     name = "automotive",
     lcm_package = "drake",
     lcm_srcs = [
