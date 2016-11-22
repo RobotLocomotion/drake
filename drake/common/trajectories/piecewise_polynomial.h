@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/polynomial.h"
-#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
+#include "drake/common/trajectories/piecewise_polynomial_base.h"
 
 /// A scalar multi-variate piecewise polynomial.
 /**

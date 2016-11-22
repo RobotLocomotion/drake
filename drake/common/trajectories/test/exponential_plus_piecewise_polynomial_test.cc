@@ -1,4 +1,4 @@
-#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 
 #include <cmath>
 #include <random>

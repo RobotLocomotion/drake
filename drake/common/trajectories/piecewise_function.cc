@@ -1,4 +1,4 @@
-#include "drake/systems/trajectories/PiecewiseFunction.h"
+#include "drake/common/trajectories/piecewise_function.h"
 
 #include <algorithm>
 #include <stdexcept>
