@@ -37,6 +37,14 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
+  // Default realtime rate should be zero.
+  EXPECT_TRUE(simulator.get_target_realtime_rate() == 0.);
+
+  simulator.set_target_realtime_rate(1.25);
+  EXPECT_TRUE(simulator.get_target_realtime_rate() == 1.25);
+
+  EXPECT_TRUE(std::isnan(simulator.get_actual_realtime_rate()));
+
   // Set the integrator default step size.
   const double DT = 1e-3;
 
@@ -105,6 +113,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, DT,
                                                               context);
 
+  simulator.set_target_realtime_rate(0.5);
   // set the integrator and initialize the simulator
   simulator.Initialize();
 
@@ -120,6 +129,26 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
 
   // Current time is 1. An earlier final time should fail.
   EXPECT_THROW(simulator.StepTo(0.5), std::runtime_error);
+}
+
+// Because of arbitrary possible delays we can't do a very careful test of
+// the realtime rate control. However, we can at least say that the simulation
+// should not proceed much *faster* than the rate we select.
+GTEST_TEST(SimulatorTest, RealtimeRate) {
+  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  simulator.set_target_realtime_rate(1.); // No faster than 1X real time.
+  simulator.get_mutable_context()->set_time(0.);
+  simulator.Initialize();
+  simulator.StepTo(1.); // Simulate for 1 simulated second.
+  EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 1.1);
+
+  simulator.set_target_realtime_rate(5.); // No faster than 5X real time.
+  simulator.get_mutable_context()->set_time(0.);
+  simulator.Initialize();
+  simulator.StepTo(1.); // Simulate for 1 more simulated second.
+  EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
 // Repeat the previous test but now the continuous steps are interrupted
