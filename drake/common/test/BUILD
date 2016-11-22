@@ -20,6 +20,11 @@ cc_test(
     size = "small", deps = DEPS + ["//drake/common:autodiff"])
 
 cc_test(
+    name = "double_overloads_test",
+    srcs = ["double_overloads_test.cc"],
+    size = "small", deps = DEPS + ["//drake/common:double"])
+
+cc_test(
     name = "drake_assert_test",
     srcs = ["drake_assert_test.cc"],
     size = "small", deps = DEPS)

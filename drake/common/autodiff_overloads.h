@@ -6,6 +6,10 @@
 /// the STL version and the overloaded version to match the type of the
 /// arguments. We could alternatively have placed them in the Eigen
 /// namespace, but since we don't own that, we don't wish to pollute it.
+///
+/// @note The if_then_else and cond functions for AutoDiffScalar are in
+/// namespace drake because cond is defined in namespace drake in
+/// "drake/common/cond.h" file.
 
 #pragma once
 
@@ -13,6 +17,8 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
+
+#include "drake/common/cond.h"
 
 /// Overloads round to mimic std::round from <cmath>.
 template <typename DerType>
@@ -95,3 +101,34 @@ const Eigen::AutoDiffScalar<DerType>& max(
 }
 }
 #endif  // EIGEN_VERSION...
+
+namespace drake {
+/// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
+/// Eigen's generic expressions, we use casting to the plain object after
+/// applying Eigen::internal::remove_all. It is based on the Eigen's
+/// implementation of min/max function for AutoDiffScalar type
+/// (https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).
+template <typename DerType1, typename DerType2>
+inline Eigen::AutoDiffScalar<
+    typename Eigen::internal::remove_all<DerType1>::type::PlainObject>
+if_then_else(bool f_cond, const Eigen::AutoDiffScalar<DerType1>& x,
+             const Eigen::AutoDiffScalar<DerType2>& y) {
+  typedef Eigen::AutoDiffScalar<
+      typename Eigen::internal::remove_all<DerType1>::type::PlainObject>
+      ADS1;
+  typedef Eigen::AutoDiffScalar<
+      typename Eigen::internal::remove_all<DerType2>::type::PlainObject>
+      ADS2;
+  static_assert(std::is_same<ADS1, ADS2>::value,
+                "The derivative types must match.");
+  return f_cond ? ADS1(x) : ADS2(y);
+}
+
+/// Provides special case of cond expression for Eigen::AutoDiffScalar type.
+template <typename DerType, typename... Rest>
+Eigen::AutoDiffScalar<
+    typename Eigen::internal::remove_all<DerType>::type::PlainObject>
+cond(bool f_cond, const Eigen::AutoDiffScalar<DerType>& e_then, Rest... rest) {
+  return if_then_else(f_cond, e_then, cond(rest...));
+}
+}  // namespace drake
