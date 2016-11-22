@@ -35,12 +35,7 @@ template <>
 struct TtoDouble<double> {
   static double convert(const double& scalar) { return scalar; }
 };
-template <>
-struct TtoDouble<float> {
-  static double convert(const float& scalar) {
-    return static_cast<double>(scalar);
-  }
-};
+
 }
 
 template <typename T>
