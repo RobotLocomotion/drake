@@ -26,7 +26,7 @@ include_directories(
 
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 
-add_executable(demo1 src/demo1.cc)
+add_executable(demo1 src/demo1.cc src/demo1_common.cc)
 target_link_libraries(demo1
     ${catkin_LIBRARIES}
     drakeAutomotive
@@ -48,7 +48,8 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest_gtest(
       demo1_test
       test/demo1_test.test
-      test/demo1_test.cc)
+      test/demo1_test.cc
+      src/demo1_common.cc)
   target_link_libraries(demo1_test
       ${catkin_LIBRARIES}
       drakeAutomotive

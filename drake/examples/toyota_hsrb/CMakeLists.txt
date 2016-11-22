@@ -6,7 +6,7 @@ target_link_libraries(drakeHsrb
     drakeRBM
     drakeRigidBodyPlant
     drakeSystemFramework)
-pods_install_libraries(drakeHsrb)
+drake_install_libraries(drakeHsrb)
 drake_install_headers(
     hsrb_diagram_factories.h)
 drake_install_pkg_config_file(drake-toyota-hsrb

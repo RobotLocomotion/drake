@@ -194,10 +194,8 @@ void RosTfPublisher<T>::LoadEnableParameter() {
     }
   }
 
-  if (enable_tf_publisher_) {
-    ROS_INFO("Enabling TF publisher!");
-  } else {
-    ROS_INFO("Disabling TF publisher!");
+  if (!enable_tf_publisher_) {
+    ROS_INFO("RosTfPublisher: Disabling TF publisher!");
   }
 }
 
