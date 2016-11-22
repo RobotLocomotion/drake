@@ -9,7 +9,7 @@ if(lcm_FOUND)
       drakeRigidBodyPlant
       drakeSystemAnalysis
       gflags)
-  pods_install_libraries(drakeKukaIiwaWorld)
+  drake_install_libraries(drakeKukaIiwaWorld)
   drake_install_headers(
       iiwa_world_sim_builder.h)
   drake_install_pkg_config_file(drake-kuka-iiwa-world
