@@ -229,6 +229,7 @@ getSubMatrixGradient(
 }
 
 template <typename DerivedA, typename DerivedB>
+// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
                           const Eigen::MatrixBase<DerivedB>& dM_submatrix,
                           const std::vector<int>& rows,
@@ -253,6 +254,7 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
 template <int QSubvectorSize, typename DerivedA, typename DerivedB,
           std::size_t NRows, std::size_t NCols>
 void setSubMatrixGradient(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedA>& dM,
     const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols,
@@ -275,6 +277,7 @@ void setSubMatrixGradient(
 
 template <int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
 void setSubMatrixGradient(
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedDM>& dM,
     const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col,
     typename DerivedDM::Index M_rows, typename DerivedDM::Index q_start = 0,
