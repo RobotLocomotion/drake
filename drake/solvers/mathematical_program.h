@@ -624,8 +624,6 @@ class MathematicalProgram {
    */
   DecisionVariableMatrixX AddBinaryVariables(
       size_t rows, size_t cols, const std::vector<std::string>& names) {
-    required_capabilities_ |= kBinaryVariable;
-
     return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, cols,
                         false, names);
   }
