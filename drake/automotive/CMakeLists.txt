@@ -1,4 +1,5 @@
 add_subdirectory(gen)
+add_subdirectory(maliput)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
@@ -14,6 +15,7 @@ add_library_with_exports(LIB_NAME drakeAutomotive SOURCE_FILES
   gen/simple_car_state.cc
   idm_planner.cc
   linear_car.cc
+  maliput/api/road_geometry.cc
   simple_car.cc
   single_lane_ego_and_agent.cc
   trajectory_car.cc
