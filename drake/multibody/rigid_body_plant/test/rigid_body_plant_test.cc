@@ -70,7 +70,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadURDFWorld) {
 // Unit tests the generalized velocities to generalized coordinates time
 // derivatives for a free body with a quaternion base.
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
-  const double kTol = 1e-10;     // Test succeeds at one order of magnitude
+  const double kTol = 2e-13;     // Test succeeds at one order of magnitude
                                  // greater tolerance on my machine.
   const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
@@ -126,12 +126,6 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   // coordinates.
   plant.MapVelocityToQDot(*context, generalized_velocities,
                           &positions_derivatives);
-
-  // For zero rotation the velocity vector in the body's frame and in the
-  // world's frame is the same.
-  EXPECT_EQ(v0[0], positions_derivatives.GetAtIndex(0));
-  EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
-  EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
 
   // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
   const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments

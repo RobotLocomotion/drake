@@ -66,6 +66,16 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     }
   }
 
+  /**
+   * Computes a matrix that transforms the time derivative of generalized 
+   * configuration to generalized velocity _for given configuration @p q_.
+   * @param q the generalized configuration 
+   * @param qdot_to_v a nv × nq sized matrix, where nv is the dimension of
+   *        generalized velocities and nq is the dimension of generalized
+   *        coordinates, that converts time derivatives of generalized
+   *        coordinates to generalized velocities _for given configuration 
+   *        @p q_.
+   */
   template <typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
@@ -79,6 +89,30 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     }
 
     qdot_to_v.resize(get_num_velocities(), get_num_positions());
+
+    // Get the quaternion values.
+    auto quat =
+        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
+    const auto qw = quat[0];
+    const auto qx = quat[1];
+    const auto qy = quat[2];
+    const auto qz = quat[3];
+
+    // First three rows correspond to rigid body translation. Transformation
+    // from time derivative of generalized position to generalized velocity
+    // is just the identity matrix.
+    qdot_to_v.block(0,0,3,3).setIdentity();
+    qdot_to_v.block(0,3,3,4).setZero();
+
+    // TODO(edrumwri): finish comment
+    // TODO(edrumwri): give Nikravesh reference
+    // Next three rows correspond to a ...
+    qdot_to_v.block(3,0,3,3).setZero();
+    qdot_to_v.block(3,3,3,4) <<  -qx,  qw, -qz,  qy,
+                                 -qy,  qz,  qw, -qx,
+                                 -qz, -qy,  qx,  qw;
+    qdot_to_v.block(3,3,3,4) *= 2.;
+/*
     typedef typename DerivedQ::Scalar Scalar;
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
@@ -95,6 +129,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
         RTransposeM * dquattildedquat;
     qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
     qdot_to_v.template block<3, 4>(3, 3).setZero();
+*/
   }
 
   template <typename DerivedQ>
@@ -105,11 +140,32 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
                             DrakeJoint::MAX_NUM_VELOCITIES>& v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
                             Eigen::Dynamic>* dv_to_qdot) const {
-    typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(get_num_positions(), get_num_velocities());
 
+    // First three columns correspond to rigid body translation. Transformation
+    // from generalized velocity to time derivative of generalized coordinates
+    // is just the identity matrix.
+    v_to_qdot.block(0,0,3,3).setIdentity();
+    v_to_qdot.block(3,0,3,3).setZero();
+
+    // Get the quaternion values.
     auto quat =
         q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
+    const auto qw = quat[0];
+    const auto qx = quat[1];
+    const auto qy = quat[2];
+    const auto qz = quat[3];
+
+    // TODO(edrumwri): finish comment
+    // TODO(edrumwri): give Nikravesh reference
+    // Next four columns correspond to a ...
+    v_to_qdot.block(0,3,4,3).setZero();
+    v_to_qdot.block(3,3,4,3) <<  -qx, -qy, -qz, 
+                                  qw,  qz, -qy, 
+                                 -qz,  qw,  qx, 
+                                  qy, -qx,  qw;
+    v_to_qdot.block(3,3,4,3) *= 0.5;
+/*
     auto R = drake::math::quat2rotmat(quat);
 
     Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
@@ -137,6 +193,7 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     v_to_qdot.template block<3, 3>(0, 3) = R;
     v_to_qdot.template block<4, 3>(3, 0).noalias() = M * R;
     v_to_qdot.template block<4, 3>(3, 3).setZero();
+*/
   }
 
   template <typename DerivedV>
