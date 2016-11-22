@@ -104,34 +104,32 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     qdot_to_v.block(0,0,3,3).setIdentity();
     qdot_to_v.block(0,3,3,4).setZero();
 
-    // TODO(edrumwri): finish comment
-    // TODO(edrumwri): give Nikravesh reference
-    // Next three rows correspond to a ...
+    // The next four rows correspond to the "G" matrix in the equation:
+    // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
+    // unit quaternion and ω is the angular velocity vector defined in the
+    // world frame. This equation was taken from:
+    // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
+    //     Hall, New Jersey, 1988. Equation 105 
+
+    // Next three rows correspond to the matrix 
     qdot_to_v.block(3,0,3,3).setZero();
     qdot_to_v.block(3,3,3,4) <<  -qx,  qw, -qz,  qy,
                                  -qy,  qz,  qw, -qx,
                                  -qz, -qy,  qx,  qw;
     qdot_to_v.block(3,3,3,4) *= 2.;
-/*
-    typedef typename DerivedQ::Scalar Scalar;
-    auto quat =
-        q.template middleRows<drake::kQuaternionSize>(drake::kSpaceDimension);
-    auto R = drake::math::quat2rotmat(quat);
-
-    Eigen::Matrix<Scalar, 4, 1> quattilde;
-    typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
-                                   drake::kQuaternionSize,
-                                   1>::type dquattildedquat;
-    drake::math::NormalizeVector(quat, quattilde, &dquattildedquat);
-    auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
-    qdot_to_v.template block<3, 3>(0, 0).setZero();
-    qdot_to_v.template block<3, 4>(0, 3).noalias() =
-        RTransposeM * dquattildedquat;
-    qdot_to_v.template block<3, 3>(3, 0) = R.transpose();
-    qdot_to_v.template block<3, 4>(3, 3).setZero();
-*/
   }
 
+  /**
+   * Computes a matrix that transforms the generalized velocity to the time 
+   * derivative of generalized configuration to generalized velocity _for given 
+   * configuration @p q_.
+   * @param q the generalized configuration 
+   * @param v_to_qdoc a nq × nv sized matrix, where nv is the dimension of
+   *        generalized velocities and nq is the dimension of generalized
+   *        coordinates, that converts generalized velocities to time 
+   *        derivatives of generalized coordinates _for given configuration 
+   *        @p q_.
+   */
   template <typename DerivedQ>
   void v2qdot(const Eigen::MatrixBase<DerivedQ>& q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic,
@@ -156,44 +154,19 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     const auto qy = quat[2];
     const auto qz = quat[3];
 
-    // TODO(edrumwri): finish comment
-    // TODO(edrumwri): give Nikravesh reference
-    // Next four columns correspond to a ...
+    // The next four columns correspond to the transpose of the "G" matrix
+    // used in qdot2v(). Specifically, this matrix serves the function:
+    // de/dt = 1/2 G' ω, where e = [ qw qx qy qz ] are the values of the
+    // unit quaternion and ω is the angular velocity vector defined in the
+    // world frame. This matrix was taken from:
+    // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
+    //     Hall, New Jersey, 1988. Equation 106 
     v_to_qdot.block(0,3,4,3).setZero();
     v_to_qdot.block(3,3,4,3) <<  -qx, -qy, -qz, 
                                   qw,  qz, -qy, 
                                  -qz,  qw,  qx, 
                                   qy, -qx,  qw;
     v_to_qdot.block(3,3,4,3) *= 0.5;
-/*
-    auto R = drake::math::quat2rotmat(quat);
-
-    Eigen::Matrix<Scalar, drake::kQuaternionSize, drake::kSpaceDimension> M;
-    if (dv_to_qdot) {
-      auto dR = drake::math::dquat2rotmat(quat);
-      typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
-                                     1>::type dM;
-      angularvel2quatdotMatrix(quat, M, &dM);
-
-      dv_to_qdot->setZero(v_to_qdot.size(), get_num_positions());
-
-      setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<3>(0), intRange<3>(3),
-                              v_to_qdot.rows(), 3);
-      auto dMR = matGradMultMat(M, R, dM, dR);
-      setSubMatrixGradient<4>(*dv_to_qdot, dMR, intRange<4>(3), intRange<3>(0),
-                              v_to_qdot.rows(), 3);
-    } else {
-      angularvel2quatdotMatrix(
-          quat, M,
-          (typename drake::math::Gradient<decltype(M), drake::kQuaternionSize,
-                                          1>::type*)nullptr);
-    }
-
-    v_to_qdot.template block<3, 3>(0, 0).setZero();
-    v_to_qdot.template block<3, 3>(0, 3) = R;
-    v_to_qdot.template block<4, 3>(3, 0).noalias() = M * R;
-    v_to_qdot.template block<4, 3>(3, 3).setZero();
-*/
   }
 
   template <typename DerivedV>
