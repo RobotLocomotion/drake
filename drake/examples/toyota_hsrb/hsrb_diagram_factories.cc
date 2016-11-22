@@ -34,8 +34,8 @@ namespace toyota_hsrb {
 
 unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
     const string& hsrb_urdf_string, double penetration_stiffness,
-    double penetration_damping, double friction_coefficient,
-    lcm::DrakeLcm* lcm, RigidBodyPlant<double>** plant) {
+    double penetration_damping, double friction_coefficient, lcm::DrakeLcm* lcm,
+    RigidBodyPlant<double>** plant) {
   DiagramBuilder<double> builder;
   RigidBodyPlant<double>* plant_ptr{nullptr};
 
@@ -46,12 +46,9 @@ unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
   {
     // Instantiates a model of the world.
     auto tree = make_unique<RigidBodyTreed>();
-    AddModelInstanceFromUrdfString(
-        hsrb_urdf_string,
-        "." /* root directory */,
-        multibody::joints::kQuaternion,
-        nullptr /* weld to frame */,
-        tree.get());
+    AddModelInstanceFromUrdfString(hsrb_urdf_string, "." /* root directory */,
+                                   multibody::joints::kQuaternion,
+                                   nullptr /* weld to frame */, tree.get());
     AddFlatTerrainToWorld(tree.get());
 
     // Instantiates a RigidBodyPlant containing the tree.
@@ -67,8 +64,7 @@ unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
 
   // Instantiates a system for visualizing the model.
   auto visualizer = builder.AddSystem<DrakeVisualizer>(tree, lcm);
-  builder.Connect(plant_ptr->get_output_port(0),
-                  visualizer->get_input_port(0));
+  builder.Connect(plant_ptr->get_output_port(0), visualizer->get_input_port(0));
 
   builder.ExportInput(plant_ptr->get_input_port(0));
   builder.ExportOutput(plant_ptr->get_output_port(0));
@@ -77,9 +73,9 @@ unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
   return builder.Build();
 }
 
-std::unique_ptr<Diagram<double>>
-CreateHsrbDemo1Diagram(const RigidBodyPlant<double>& plant,
-                       std::unique_ptr<Diagram<double>> plant_diagram){
+std::unique_ptr<Diagram<double>> CreateHsrbDemo1Diagram(
+    const RigidBodyPlant<double>& plant,
+    std::unique_ptr<Diagram<double>> plant_diagram) {
   DiagramBuilder<double> builder;
 
   Diagram<double>* plant_diagram_ptr =
