@@ -124,6 +124,7 @@ initializeAutoDiffGivenGradientMatrix(
 template <typename DerivedGradient, typename DerivedAutoDiff>
 void gradientMatrixToAutoDiff(
     const Eigen::MatrixBase<DerivedGradient>& gradient,
+    // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix) {
   typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
   auto nx = gradient.cols();
