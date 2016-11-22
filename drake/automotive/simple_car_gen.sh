@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Generates the source files for LCM messages and BasicVectors used in 
+# Generates the source files for LCM messages and BasicVectors used in
 # SimpleCar.
 
-me=$(readlink -f "$0")
+me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
 mydir=$(dirname "$me")
 drake=$(dirname "$mydir")
 
