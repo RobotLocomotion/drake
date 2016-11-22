@@ -6,6 +6,8 @@
 #include <Eigen/Core>
 #include "gtest/gtest.h"
 
+#include "drake/common/trajectories/test/random_piecewise_polynomial.h"
+
 using std::default_random_engine;
 using std::uniform_real_distribution;
 
@@ -28,7 +30,7 @@ void testSimpleCase() {
   default_random_engine generator;
   auto segment_times =
       PiecewiseFunction::randomSegmentTimes(num_segments, generator);
-  auto polynomial_part = PiecewisePolynomial<CoefficientType>::random(
+  auto polynomial_part = test::MakeRandomPiecewisePolynomial<CoefficientType>(
       1, 1, num_coefficients, segment_times);
 
   ExponentialPlusPiecewisePolynomial<CoefficientType> expPlusPp(

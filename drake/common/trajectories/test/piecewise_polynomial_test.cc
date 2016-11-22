@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 
 using Eigen::Matrix;
 using std::default_random_engine;
@@ -34,8 +35,8 @@ void testIntegralAndDerivative() {
   vector<double> segment_times =
       PiecewiseFunction::randomSegmentTimes(num_segments, generator);
   PiecewisePolynomialType piecewise =
-      PiecewisePolynomial<CoefficientType>::random(rows, cols, num_coefficients,
-                                                   segment_times);
+      test::MakeRandomPiecewisePolynomial<CoefficientType>(
+          rows, cols, num_coefficients, segment_times);
 
   // differentiate integral, get original back
   PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
@@ -77,10 +78,10 @@ void testBasicFunctionality() {
     vector<double> segment_times =
         PiecewiseFunction::randomSegmentTimes(num_segments, generator);
     PiecewisePolynomialType piecewise1 =
-        PiecewisePolynomial<CoefficientType>::random(
+        test::MakeRandomPiecewisePolynomial<CoefficientType>(
             rows, cols, num_coefficients, segment_times);
     PiecewisePolynomialType piecewise2 =
-        PiecewisePolynomial<CoefficientType>::random(
+        test::MakeRandomPiecewisePolynomial<CoefficientType>(
             rows, cols, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
@@ -129,7 +130,8 @@ void testValueOutsideOfRange() {
   vector<double> segment_times =
       PiecewiseFunction::randomSegmentTimes(6, generator);
   PiecewisePolynomialType piecewise =
-      PiecewisePolynomial<CoefficientType>::random(3, 4, 5, segment_times);
+      test::MakeRandomPiecewisePolynomial<CoefficientType>(
+          3, 4, 5, segment_times);
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getStartTime()),
                               piecewise.value(piecewise.getStartTime() - 1.0),
