@@ -1,22 +1,16 @@
-/// @file
-/// THIS FILE IS DEPRECATED.
-/// Its contents are moving into drake/math.
-
 #pragma once
 
 #include <array>
-
-#include <cmath>
-#include <stdexcept>
 #include <vector>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
-
-#include "drake/math/gradient.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/math/gradient.h"
+
+namespace drake {
+namespace math {
 
 template <std::size_t Size>
 std::array<int, Size> intRange(int start) {
@@ -291,3 +285,6 @@ void setSubMatrixGradient(
   dM.template block<1, QSubvectorSize>(row + col * M_rows, q_start, 1,
                                        q_subvector_size) = dM_submatrix;
 }
+
+}  // namespace math
+}  // namespace drake

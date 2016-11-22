@@ -25,6 +25,7 @@ set(installed_headers
   eigen_sparse_triplet.h
   expmap.h
   gradient.h
+  gradient_util.h
   jacobian.h
   normalize_vector.h
   quaternion.h

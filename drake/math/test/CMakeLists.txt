@@ -9,6 +9,9 @@ drake_add_cc_test(eigen_sparse_triplet_test)
 drake_add_cc_test(expmap_test)
 target_link_libraries(expmap_test drakeCommon)
 
+drake_add_cc_test(NAME gradient_util_test SIZE medium)
+target_link_libraries(gradient_util_test drakeGeometryUtil)
+
 drake_add_cc_test(NAME rotation_conversion_test SIZE medium)
 target_link_libraries(rotation_conversion_test drakeCommon)
 
