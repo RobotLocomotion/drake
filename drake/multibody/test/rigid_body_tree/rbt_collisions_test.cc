@@ -122,6 +122,9 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 // A large box with a single sphere on top of it (penetrating into the box).
 // A second sphere lies on top of the first (also penetrating.)  However, the
 // two spheres are connected by a joint, so their penetration is *not* reported.
+// By convention, any links/bodies that are connected by a joint cannot be
+// considered for collision because their collision geometry will typically
+// overlap in a physically meaningless manner.
 class RBTCollisionCliqueTest: public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -155,7 +158,6 @@ class RBTCollisionCliqueTest: public ::testing::Test {
 // This unit test assesses the correct return from
 // RigidBodyTree::ComputeMaximumDepthCollisionPoints.
 // This evaluates the results of a box and two penetrating but linked spheres.
-// Should produce a single contact.
 TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
