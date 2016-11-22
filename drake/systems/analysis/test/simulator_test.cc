@@ -5,6 +5,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/systems/analysis/explicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
@@ -122,6 +123,46 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   EXPECT_THROW(simulator.StepTo(0.5), std::runtime_error);
 }
 
+// Test ability to swap integrators mid-stream.
+GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
+  const double kSpring = 300.0;  // N/m
+  const double kMass = 2.0;      // kg
+
+  // set the integrator default step size
+  const double dt = 1e-3;
+
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+
+  // Get the context.
+  auto context = simulator.get_mutable_context();
+
+  // Create the integrator.
+  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, dt,
+                                                              context);
+
+  // set the integrator and initialize the simulator
+  simulator.Initialize();
+
+  // Simulate for 1/2 second.
+  simulator.StepTo(0.5);
+
+  // Reset the integrator.
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(
+      simulator.get_system(), dt, simulator.get_mutable_context());
+
+  // Simulate to 1 second..
+  simulator.StepTo(1.);
+
+  EXPECT_NEAR(context->get_time(), 1., 1e-8);
+
+  // Number of steps will have been reset.
+  EXPECT_EQ(simulator.get_num_steps_taken(), 500);
+}
+
 // Repeat the previous test but now the continuous steps are interrupted
 // by a discrete sample every 1/30 second. The step size doesn't divide that
 // evenly so we should get some step size modification here.
@@ -129,14 +170,14 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double kSpring = 300.0;  // N/m
   const double kMass = 2.0;      // kg
 
-  // set the integrator default step size
-  const double DT = 1e-3;
+  // Set the integrator default step size.
+  const double dt = 1e-3;
 
-  // create the mass spring system and the simulator
+  // Create the mass spring system and the simulator.
   analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  // get the context
+  // Get the context.
   auto context = simulator.get_mutable_context();
 
   // TODO(edrumwri): remove this when discrete state has been created
@@ -144,18 +185,18 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   // Create the discrete state
   context->set_difference_state(std::make_unique<DifferenceState<double>>());
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial condition using the Simulator's internal context.
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
 
-  // create the integrator and initialize it
+  // Create the integrator and initialize it.
   auto integrator = simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-      spring_mass, DT, context);
+      spring_mass, dt, context);
   integrator->Initialize();
 
-  // set the integrator and initialize the simulator
+  // Set the integrator and initialize the simulator.
   simulator.Initialize();
 
-  // simulate up to one second
+  // Simulate to one second.
   simulator.StepTo(1.);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
