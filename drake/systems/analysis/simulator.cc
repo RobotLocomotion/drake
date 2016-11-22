@@ -36,7 +36,7 @@ struct TtoDouble<double> {
   static double convert(const double& scalar) { return scalar; }
 };
 
-}
+}  // namespace
 
 template <typename T>
 void Simulator<T>::PauseIfTooFast() const {

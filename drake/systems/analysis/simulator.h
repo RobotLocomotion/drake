@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <limits>
 #include <tuple>
@@ -102,10 +103,18 @@ class Simulator {
    */
   void StepTo(const T& boundary_time);
 
-  /** Slow the simulation down to synchronize with real time when it would
-   * otherwise run too fast. Normally the %Simulator takes steps as quickly as
-   * it can. You can request that it slow down to synchronize with real time by
-   * providing a realtime rate greater than zero here.
+  /** Slow the simulation down to *approximately* synchronize with real time
+   * when it would otherwise run too fast. Normally the %Simulator takes steps
+   * as quickly as it can. You can request that it slow down to synchronize with
+   * real time by providing a realtime rate greater than zero here.
+   *
+   * @warning No guarantees can be made about how accurately the simulation
+   * can be made to track real time, even if computation is fast enough. That's
+   * because the system utilities used to implement this do not themselves
+   * provide such guarantees. So this is likely to work nicely for visualization
+   * purposes where human perception is the only concern. For any other uses
+   * you should consider whether approximate real time is adequate for your
+   * purposes.
    *
    * @note If the full-speed simulation is already slower than real time you
    * can't speed it up with this call! Instead consider requesting less
