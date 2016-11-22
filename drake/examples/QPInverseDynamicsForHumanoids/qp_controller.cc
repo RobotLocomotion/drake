@@ -566,6 +566,8 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
       drake::solvers::DecisionVariableMatrixToDoubleMatrix(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
+  const auto& vd_value =
+      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
     if (output->mutable_resolved_contacts().find(contact.body_name()) ==
@@ -615,12 +617,10 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
         Vector3<double>::Zero());
 
     resolved_contact.mutable_body_acceleration() =
-        J_body * vd.value() + Jdv_body;
+        J_body * vd_value + Jdv_body;
   }
 
   // Set output accelerations.
-  const auto& vd_value =
-      drake::solvers::DecisionVariableMatrixToDoubleMatrix(vd_);
   output->mutable_vd() = vd_value;
   output->mutable_comdd() = rs.J_com() * output->vd() + rs.Jdot_times_v_com();
   output->mutable_centroidal_momentum_dot() =
