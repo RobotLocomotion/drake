@@ -70,10 +70,6 @@ function(drake_setup_java_for_matlab)
     # Set arguments for running MATLAB
     set(_args -nodesktop -nodisplay -nosplash)
     set(_input_file /dev/null)
-    if(WIN32)
-      set(_args ${_args} -wait)
-      set(_input_file NUL)
-    endif()
     set(_logfile "${CMAKE_CURRENT_BINARY_DIR}/drake_setup_java_for_matlab.log")
 
     # Ask MATLAB for its JVM version

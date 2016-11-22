@@ -6,7 +6,7 @@ if(Matlab_FOUND)
     target_link_libraries(octomapWrapper drakeMexUtil octomap)
   endif()
 
-  if(lcm_FOUND AND NOT WIN32)
+  if(lcm_FOUND)
     drake_add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp $<TARGET_OBJECTS:drakeUtil>)
     target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeZMPUtil drakeMexUtil)
 

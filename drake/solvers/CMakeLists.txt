@@ -88,7 +88,7 @@ if(ipopt_FOUND)
   # BLAS.
   #
   # This should probably be a test for the GNU linker instead of a platform.
-  if (NOT (APPLE OR WIN32))
+  if(NOT APPLE)
     set(CMAKE_SHARED_LINKER_FLAGS
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif()
