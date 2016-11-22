@@ -3,6 +3,7 @@
 add_library_with_exports(LIB_NAME drakeHsrb SOURCE_FILES
     hsrb_diagram_factories.cc)
 target_link_libraries(drakeHsrb
+    drakeLcm
     drakeRBM
     drakeRigidBodyPlant
     drakeSystemFramework)
@@ -13,6 +14,7 @@ drake_install_pkg_config_file(drake-toyota-hsrb
     TARGET drakeHsrb
     LIBS -ldrakeHsrb
     REQUIRES
+      drake-lcm
       drake-rbm
       drake-rigid-body-plant
       drake-system-framework)
