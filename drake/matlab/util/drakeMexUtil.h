@@ -21,7 +21,7 @@
 
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/util/drakeGradientUtil.h"
+#include "drake/math/gradient_util.h"
 
 using drake::math::autoDiffToValueMatrix;
 using drake::math::autoDiffToGradientMatrix;
