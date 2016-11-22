@@ -21,6 +21,7 @@ using Eigen::VectorXd;
 using drake::common::test::MeasureExecutionTime;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using drake::math::gradientMatrixToAutoDiff;
 using std::cout;
 using std::default_random_engine;
 using std::endl;

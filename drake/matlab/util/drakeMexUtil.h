@@ -310,7 +310,7 @@ taylorVarToEigen(const mxArray* taylor_var) {
   auto gradient_matrix =
       matlabToEigenMap<GradientType::type::RowsAtCompileTime,
                        GradientType::type::ColsAtCompileTime>(mxGetCell(df, 0));
-  gradientMatrixToAutoDiff(gradient_matrix, ret);
+  drake::math::gradientMatrixToAutoDiff(gradient_matrix, ret);
   return ret;
 }
 
