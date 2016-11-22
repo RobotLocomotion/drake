@@ -1,10 +1,11 @@
-#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
+
+#include <iostream>
+#include <numeric>
+#include <sstream>
+#include <stdexcept>
 
 #include <Eigen/Dense>
-#include <iostream>
-#include <sstream>
-#include <numeric>
-#include <stdexcept>
 
 #include "drake/common/drake_assert.h"
 

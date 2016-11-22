@@ -25,3 +25,5 @@ drake_install_pkg_config_file(drake-trajectories
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+add_subdirectory(qp_spline)

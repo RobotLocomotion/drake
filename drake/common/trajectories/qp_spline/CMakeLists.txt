@@ -1,7 +1,17 @@
-add_library_with_exports(LIB_NAME drakeSplineGeneration SOURCE_FILES splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
+add_library_with_exports(LIB_NAME drakeSplineGeneration SOURCE_FILES
+    continuity_constraint.cc
+    spline_generation.cc
+    spline_information.cc
+    value_constraint.cc
+    )
 target_link_libraries(drakeSplineGeneration drakeTrajectories)
 drake_install_libraries(drakeSplineGeneration)
-drake_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.h SplineInformation.h)
+drake_install_headers(
+    continuity_constraint.h
+    spline_generation.h
+    spline_information.h
+    value_constraint.h
+    )
 drake_install_pkg_config_file(drake-spline-generation
   TARGET drakeSplineGeneration
   LIBS -ldrakeSplineGeneration

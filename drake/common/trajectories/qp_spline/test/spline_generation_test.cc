@@ -1,4 +1,4 @@
-#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/common/trajectories/qp_spline/spline_generation.h"
 
 #include <vector>
 
