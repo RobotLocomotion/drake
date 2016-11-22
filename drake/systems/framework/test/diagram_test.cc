@@ -240,6 +240,67 @@ TEST_F(DiagramTest, EvalTimeDerivatives) {
   EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
 }
 
+/// Tests that a diagram can be transmogrified to AutoDiffXd.
+TEST_F(DiagramTest, ToAutoDiffXd) {
+  std::unique_ptr<System<AutoDiffXd>> ad_diagram =
+      System<double>::ToAutoDiffXd(*diagram_);
+  std::unique_ptr<Context<AutoDiffXd>> context =
+      ad_diagram->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<AutoDiffXd>> output =
+      ad_diagram->AllocateOutput(*context);
+
+  // Set up some inputs, computing gradients with respect to every other input.
+/// adder0_: (input0_ + input1_) -> A
+/// adder1_: (A + input2_)       -> B, output 0
+/// adder2_: (A + B)             -> output 1
+/// integrator1_: A              -> C
+/// integrator2_: C              -> output 2
+  auto input0 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  auto input1 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  auto input2 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  for (int i = 0; i < 3; ++i) {
+    (*input0)[i].value() = 1 + 0.1 * i;
+    (*input0)[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    (*input1)[i].value() = 2 + 0.2 * i;
+    (*input1)[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    (*input2)[i].value() = 3 + 0.3 * i;
+    (*input2)[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+  }
+  context->FixInputPort(0, std::move(input0));
+  context->FixInputPort(1, std::move(input1));
+  context->FixInputPort(2, std::move(input2));
+
+  ad_diagram->EvalOutput(*context, output.get());
+  ASSERT_EQ(kSize, output->get_num_ports());
+
+  // Spot-check some values and gradients.
+  // A = [1.0 + 2.0, 1.1 + 2.2, 1.2 + 2.4]
+  // output0 = B = A + [3.0, 3.3, 3.6]
+  const BasicVector<AutoDiffXd>* output0 = output->get_vector_data(0);
+  EXPECT_DOUBLE_EQ(1.2 + 2.4 + 3.6, (*output0)[2].value());
+  // ∂B[2]/∂input0,1,2[2] is 1.  Other partials are zero.
+  for (int i = 0; i < 9; ++i) {
+    if (i == 2 || i == 5 || i == 8) {
+      EXPECT_EQ(1.0, (*output0)[2].derivatives()[i]);
+    } else {
+      EXPECT_EQ(0.0, (*output0)[2].derivatives()[i]);
+    }
+  }
+  // output1 = A + B = 2A + [3.0, 3.3, 3.6]
+  const BasicVector<AutoDiffXd>* output1 = output->get_vector_data(1);
+  EXPECT_DOUBLE_EQ(2 * (1.1 + 2.2) + 3.3, (*output1)[1].value());
+  // ∂B[1]/∂input0,1[1] is 2. ∂B[1]/∂input2[1] is 1.  Other partials are zero.
+  for (int i = 0; i < 9; ++i) {
+    if (i == 1 || i == 4) {
+      EXPECT_EQ(2.0, (*output1)[1].derivatives()[i]);
+    } else if (i == 7) {
+      EXPECT_EQ(1.0, (*output1)[1].derivatives()[i]);
+    } else {
+      EXPECT_EQ(0.0, (*output1)[1].derivatives()[i]);
+    }
+  }
+}
+
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {

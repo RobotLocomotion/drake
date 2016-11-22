@@ -464,16 +464,23 @@ class System {
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
       const System<double>& from) {
     // Capture the copy as System<AutoDiffXd>.
-    std::unique_ptr<System<AutoDiffXd>> copy(from.DoToAutoDiffXd());
+    std::unique_ptr<System<AutoDiffXd>> clone(from.DoToAutoDiffXd());
     // Attempt to downcast to S<AutoDiffXd>.
-    S<AutoDiffXd>* downcast = dynamic_cast<S<AutoDiffXd>*>(copy.get());
+    S<AutoDiffXd>* downcast = dynamic_cast<S<AutoDiffXd>*>(clone.get());
     // If the downcast fails, return nullptr, letting the copy be deleted.
     if (downcast == nullptr) {
       return nullptr;
     }
     // If the downcast succeeds, redo it, taking ownership this time.
     return std::unique_ptr<S<AutoDiffXd>>(
-        dynamic_cast<S<AutoDiffXd>*>(copy.release()));
+        dynamic_cast<S<AutoDiffXd>*>(clone.release()));
+  }
+
+  /// Creates a deep copy of this System, transmogrified to use the autodiff
+  /// scalar type, with a dynamic-sized vector of partial derivatives.
+  /// Concrete Systems may shadow this with a more specific return type.
+  std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
+    return std::unique_ptr<System<AutoDiffXd>>(DoToAutoDiffXd());
   }
 
   /// Declares that @p parent is the immediately enclosing Diagram. The
@@ -614,7 +621,7 @@ class System {
       VectorBase<T> *generalized_velocity) const {
     // In the particular case where generalized velocity and generalized
     // configuration are not even the same size, we detect this error and abort.
-    // This check will thus not identify cases Fwhere the generalized velocity
+    // This check will thus not identify cases where the generalized velocity
     // and time derivative of generalized configuration are identically sized
     // but not identical!
     const int n = qdot.size();
