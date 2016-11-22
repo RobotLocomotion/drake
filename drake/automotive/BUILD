@@ -79,7 +79,9 @@ cc_library(
     name = "single_lane_ego_and_agent",
     srcs = ["single_lane_ego_and_agent.cc"],
     hdrs = ["single_lane_ego_and_agent.h"],
-    deps = DEPS + [":linear_car", ":idm_planner"],
+    deps = DEPS + [
+        "//drake/systems/framework/primitives:constant_vector_source",
+        ":linear_car", ":idm_planner"],
     linkstatic = 1)
 
 cc_library(
