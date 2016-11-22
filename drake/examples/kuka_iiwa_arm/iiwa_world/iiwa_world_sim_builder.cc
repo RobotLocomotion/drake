@@ -81,26 +81,25 @@ int IiwaWorldSimBuilder<T>::AddObjectToFrame(
   std::size_t extension_location =
       object_urdf_map_[object_name].find_last_of(".");
 
-  if (extension_location >= object_urdf_map_[object_name].size()) {
-    return -1;
-  }
+  DRAKE_DEMAND(extension_location < object_urdf_map_[object_name].size());
+
   std::string extension =
       object_urdf_map_[object_name].substr(extension_location + 1);
 
   parsers::ModelInstanceIdTable table;
-  if (extension.compare("urdf") == 0) {
+
+  DRAKE_DEMAND(extension == "urdf" || extension == "sdf");
+
+  if (extension == "urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         drake::GetDrakePath() + object_urdf_map_[object_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
 
-  } else if (extension.compare("sdf") == 0) {
+  } else if (extension == "sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
         drake::GetDrakePath() + object_urdf_map_[object_name],
         floating_base_type, weld_to_frame, rigid_body_tree_.get());
-  } else {
-    return -1;
   }
-
   const int model_instance_id = table.begin()->second;
   return model_instance_id;
 }
@@ -126,33 +125,32 @@ std::unique_ptr<systems::Diagram<T>> IiwaWorldSimBuilder<T>::Build() {
 
   DRAKE_DEMAND(plant_->get_num_actuators() > 0);
 
-  // Feed in constant inputs of zero into the RigidBodyPlant.
-  VectorX<T> constant_value(plant_->get_input_size());
-  constant_value.setZero();
-
-  auto const_source_ =
-      builder->template AddSystem<ConstantVectorSource<T>>(constant_value);
 
   // Creates and adds a DrakeVisualizer publisher.
   auto viz_publisher_ = builder->template AddSystem<DrakeVisualizer>(
       plant_->get_rigid_body_tree(), &lcm_);
 
-  // Connects the constant source output port to the RigidBodyPlant's input
-  // port. This effectively results in the robot being uncontrolled.
-  builder->Connect(const_source_->get_output_port(), plant_->get_input_port(0));
-
   // Connects to publisher for visualization.
   builder->Connect(plant_->get_output_port(0),
                    viz_publisher_->get_input_port(0));
 
+  // Exposing output and input port.
   builder->ExportOutput(plant_->get_output_port(0));
+  builder->ExportInput(plant_->get_input_port(0));
+
+  std::cout<<"About to build\n";
 
   auto diagram = builder->Build();
 
   drake::log()->debug("Simulation initialized...");
   started_ = true;
 
-  return (std::move(diagram));
+  std::cout<<"About to return diagram\n";
+
+  std::unique_ptr<Diagram<T>> dg(std::move(diagram));
+
+  std::cout<<"About to return dg\n";
+  return (std::move(dg));
 }
 
 template <typename T>
@@ -179,6 +177,11 @@ void IiwaWorldSimBuilder<T>::AddObjectUrdf(const std::string& object_name,
                                            const std::string& urdf_path) {
   object_urdf_map_.insert(
       std::pair<std::string, std::string>(object_name, urdf_path));
+}
+
+template <typename T>
+int IiwaWorldSimBuilder<T>::GetPlantInputSize() {
+  return(plant_->get_input_size());
 }
 
 template class IiwaWorldSimBuilder<double>;
