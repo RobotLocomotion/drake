@@ -580,7 +580,7 @@ int QPController::Control(const HumanoidStatus& rs, const QPInput& input,
     resolved_contact.set_body(contact.body());
     // Copy basis.
     resolved_contact.mutable_basis() =
-        basis_value.block(basis_index, 0, contact.num_basis(), 1);
+        basis_value.segment(basis_index, contact.num_basis());
     basis_index += contact.num_basis();
     resolved_contact.mutable_num_basis_per_contact_point() =
         contact.num_basis_per_contact_point();
