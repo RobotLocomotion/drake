@@ -28,6 +28,7 @@ using Eigen::VectorXd;
 using Eigen::VectorXi;
 using drake::math::autoDiffToGradientMatrix;
 using drake::math::autoDiffToValueMatrix;
+using drake::math::gradientMatrixToAutoDiff;
 using drake::math::initializeAutoDiffTuple;
 using drake::math::quatDiff;
 using drake::math::quatDiffAxisInvar;
