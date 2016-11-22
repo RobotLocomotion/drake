@@ -83,9 +83,6 @@ TEST_F(AffineSystemTest, Output) {
 class FeedthroughAffineSystemTest : public ::testing::Test {
  public:
 
-  FeedthroughAffineSystemTest() {}
-  void SetUp()  {}
-
   void SetDCornerElement(double d_1_1_element) {
     d_1_1_element_ = d_1_1_element;
   }
