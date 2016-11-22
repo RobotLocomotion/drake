@@ -945,13 +945,14 @@ void IntegratorBase<T>::StepErrorControlled(const T& dt_max,
       ideal_next_step_size_ = current_step_size;
       if (isnan(get_actual_initial_step_size_taken()))
         set_actual_initial_step_size_taken(current_step_size);
-    } else {
-      report_error_check_failure();
 
       // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
-          get_smallest_adapted_step_size_taken() < current_step_size)
+          (current_step_size < get_smallest_adapted_step_size_taken() &&
+              current_step_size < dt_max))
         set_smallest_adapted_step_size_taken(current_step_size);
+    } else {
+      report_error_check_failure();
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
