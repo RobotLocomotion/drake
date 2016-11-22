@@ -43,26 +43,26 @@ target_link_libraries(demo1
     gflags
     lcm)
 
-if (CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
-  add_rostest_gtest(
-      demo1_test
-      test/demo1_test.test
-      test/demo1_test.cc)
-  target_link_libraries(demo1_test
-      ${catkin_LIBRARIES}
-      drakeAutomotive
-      drakeCommon
-      drakeHsrb
-      drakeJoints
-      drakeLcm
-      drakeRBM
-      drakeRBSystem
-      drakeRigidBodyConstraint
-      drakeRigidBodyPlant
-      drakeShapes
-      drakeSystemFramework
-      lcm)
-  set_target_properties(demo1_test
-      PROPERTIES EXCLUDE_FROM_ALL FALSE)
-endif()
+# if (CATKIN_ENABLE_TESTING)
+#   find_package(rostest REQUIRED)
+#   add_rostest_gtest(
+#       demo1_test
+#       test/demo1_test.test
+#       test/demo1_test.cc)
+#   target_link_libraries(demo1_test
+#       ${catkin_LIBRARIES}
+#       drakeAutomotive
+#       drakeCommon
+#       drakeHsrb
+#       drakeJoints
+#       drakeLcm
+#       drakeRBM
+#       drakeRBSystem
+#       drakeRigidBodyConstraint
+#       drakeRigidBodyPlant
+#       drakeShapes
+#       drakeSystemFramework
+#       lcm)
+#   set_target_properties(demo1_test
+#       PROPERTIES EXCLUDE_FROM_ALL FALSE)
+# endif()

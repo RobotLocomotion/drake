@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -24,31 +25,24 @@ namespace toyota_hsrb {
 //     const systems::Diagram<double>* diagram);
 
 /**
- * Creates and returns a 2-tuple consisting of (1) an unique pointer to a
- * systems::Diagram and (2) a pointer to the diagram's systems::RigidBodyPlant.
- *
- * The returned systems::Diagram contains the plant connected to a
- * DrakeVisualizer. It contains one input port that's connected to the plant's
- * input port zero, and one output port that's connected to the plant's output
- * port zero.
- *
- * The systems::RigidBodyPlant contains a systems::RigidBodyTree modeling
- * Toyota's HSRb robot.
+ * Creates and returns a systems::Diagram containing a systems::RigidBodyPlant
+ * with a model of Toyota's HSRb robot that's connected to a DrakeVisualizer.
+ * It has one input port that's connected to the plant's input port zero, and
+ * one output port that's connected to the plant's output port zero.
  */
-std::tuple<std::unique_ptr<Diagram<double>>, RigidBodyPlant*>
-CreateHsrPlantDiagram(const std::string& urdf_string,
-    double penetration_stiffness,
-    double penetration_damping,
-    double friction_coefficient,
-    lcm::DrakeLcm* lcm);
+std::unique_ptr<systems::Diagram<double>> CreateHsrbPlantDiagram(
+    const std::string& hsrb_urdf_string, double penetration_stiffness,
+    double penetration_damping, double friction_coefficient,
+    lcm::DrakeLcm* lcm, systems::RigidBodyPlant<double>** plant);
 
 /**
- * Wraps the provided diagram with a constant source input. The returned Diagram
- * has no input ports and one output port that's wired to the output port of
- * @p plant_diagram.
+ * Adds a constant source input to @p plant_diagram and returns the resulting
+ * diagram. The returned Diagram has no input ports and one output port that's
+ * wired to the output port zero of @p plant_diagram.
  */
-std::unique_ptr<Diagram<double>
-CreateHsrDemo1Diagram(std::unique_ptr<Diagram<double> plant_diagram);
+std::unique_ptr<systems::Diagram<double>>
+CreateHsrbDemo1Diagram(const systems::RigidBodyPlant<double>& plant,
+	                   std::unique_ptr<systems::Diagram<double>> plant_diagram);
 
 }  // namespace toyota_hsrb
 }  // namespace examples

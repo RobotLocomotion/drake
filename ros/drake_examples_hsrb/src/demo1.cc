@@ -52,7 +52,7 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
 
 int exec(int argc, char* argv[]) {
   // Parses the command line arguments.
-  ::ros::init(argc, argv, "drake_hsrb_demo_1");
+  ::ros::init(argc, argv, "hsrb_demo_1");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
@@ -61,7 +61,8 @@ int exec(int argc, char* argv[]) {
 
   DiagramBuilder<double> builder;
   const Diagram<double>* plant_diagram{nullptr};
-  const RigidBodyPlant<double>* plant{nullptr};
+  RigidBodyPlant<double>* plant{nullptr};
+  const Diagram<double>* input_diagram{nullptr};
 
   {
     std::string urdf_string =
@@ -73,16 +74,27 @@ int exec(int argc, char* argv[]) {
     double friction_coefficient =
         GetRosParameterOrThrow<double>("friction_coefficient");
 
-    plant_diagram = builder.AddSystem(
-        CreateDemo1Diagram(urdf_string, penetration_stiffness,
-                           penetration_damping, friction_coefficient, &lcm));
+    std::unique_ptr<Diagram<double>> plant_diagram_ptr = CreateHsrbPlantDiagram(
+        urdf_string, penetration_stiffness, penetration_damping,
+        friction_coefficient, &lcm, &plant);
+    DRAKE_DEMAND(plant_diagram_ptr != nullptr);
+    DRAKE_DEMAND(plant != nullptr);
+
+    plant_diagram = plant_diagram_ptr.get();
     DRAKE_DEMAND(plant_diagram != nullptr);
 
-    plant = GetRigidBodyPlant(plant_diagram);
+    // plant = GetRigidBodyPlant(plant_diagram);
+    std::unique_ptr<Diagram<double>> input_diagram_ptr =
+        CreateHsrbDemo1Diagram(*plant, std::move(plant_diagram_ptr));
+
+    input_diagram =
+        builder.AddSystem(std::move(input_diagram_ptr));
+    DRAKE_DEMAND(input_diagram != nullptr);
+
     auto ros_tf_publisher = builder.AddSystem<RosTfPublisher<double>>(
         plant->get_rigid_body_tree());
-    builder.Connect(plant_diagram->get_output_port(0),
-        ros_tf_publisher->get_input_port(0));
+    builder.Connect(input_diagram->get_output_port(0),
+                    ros_tf_publisher->get_input_port(0));
   }
 
   auto demo_diagram = builder.Build();
@@ -95,13 +107,18 @@ int exec(int argc, char* argv[]) {
   //
   // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
-  systems::Context<double>* plant_diagram_context =
+  systems::Context<double>* input_diagram_context =
       demo_diagram->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), plant_diagram);
+          simulator.get_mutable_context(), input_diagram);
+
+  systems::Context<double>* plant_diagram_context =
+      input_diagram->GetMutableSubsystemContext(
+          input_diagram_context, plant_diagram);
 
   systems::Context<double>* plant_context =
       plant_diagram->GetMutableSubsystemContext(
           plant_diagram_context, plant);
+
   plant->SetZeroConfiguration(plant_context);
 
   simulator.Initialize();
