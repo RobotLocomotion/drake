@@ -40,9 +40,15 @@ cc_library(
 
 # Drake's specific ScalarType-providing libraries.
 cc_library(
+    name = "double",
+    srcs = ["double_overloads.cc"],
+    hdrs = ["double_overloads.h"],
+    linkstatic = 1)
+
+cc_library(
     name = "autodiff",
     hdrs = ["autodiff_overloads.h", "eigen_autodiff_types.h"],
-    deps = [":common"],
+    deps = [":common", ":cond"],
     linkstatic = 1)
 
 cc_library(
