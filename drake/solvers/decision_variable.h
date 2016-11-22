@@ -163,7 +163,7 @@ using VariableList = std::list<DecisionVariableMatrixX>;
  * stores the values of each decision variable.
  * @param decision_variable_matrix A DecisionVariableMatrix object.
  */
-template <typename Derived, typename T>
+template <typename T, typename Derived>
 Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToValueMatrix(
     const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
@@ -188,7 +188,7 @@ template <typename Derived>
 Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToDoubleMatrix(
     const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
-  return DecisionVariableMatrixToValueMatrix<Derived, double>(
+  return DecisionVariableMatrixToValueMatrix<double, Derived>(
       decision_variable_matrix);
 }
 
