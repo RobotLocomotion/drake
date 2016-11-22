@@ -345,7 +345,9 @@ class MathematicalProgram {
    * Example:
    * @code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.AddVariables<2, 3>(DecisionVariableScalar::VarType::CONTINUOUS, {"x1", "x2", "x3", "x4", "x5", "x6"});
+   * auto x = prog.AddVariables<2,
+   * 3>(DecisionVariableScalar::VarType::CONTINUOUS, {"x1", "x2", "x3", "x4",
+   * "x5", "x6"});
    * @endcode
    * This adds a matrix of size 2 x 3 as new variables into the optimization
    * program.
@@ -410,7 +412,10 @@ class MathematicalProgram {
    */
   DecisionVariableVectorX AddContinuousVariables(
       std::size_t rows, const std::string& name = "x") {
-    std::vector<std::string> names(rows, name);
+    std::vector<std::string> names(rows);
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[i] = name + std::to_string(num_vars_ + i);
+    }
     return AddContinuousVariables(rows, names);
   }
 
@@ -453,9 +458,12 @@ class MathematicalProgram {
    * @see AddContinuousVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  const DecisionVariableMatrixX AddContinuousVariables(std::size_t rows,
-                                                       std::size_t cols) {
-    std::vector<std::string> names(rows * cols, "x");
+  const DecisionVariableMatrixX AddContinuousVariables(
+      std::size_t rows, std::size_t cols, const std::string& name = "x") {
+    std::vector<std::string> names(rows * cols);
+    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+      names[i] = name + std::to_string(num_vars_ + i);
+    }
     return AddContinuousVariables(rows, cols, names);
   }
   /// Add continuous variables to this MathematicalProgram.
@@ -531,7 +539,7 @@ class MathematicalProgram {
       const std::string& name = "x") {
     std::array<std::string, rows> names;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name;
+      names[i] = name + std::to_string(num_vars_);
     }
     return AddContinuousVariables<rows>(names);
   }
@@ -592,7 +600,7 @@ class MathematicalProgram {
       const std::string& name = "b") {
     std::array<std::string, rows> names;
     for (int i = 0; i < rows; ++i) {
-      names[i] = name;
+      names[i] = name + std::to_string(num_vars_ + i);
     }
     return AddBinaryVariables<rows, 1>(names);
   }
@@ -635,8 +643,12 @@ class MathematicalProgram {
    * @see AddBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableMatrixX AddBinaryVariables(size_t rows, size_t cols) {
-    std::vector<std::string> names = std::vector<std::string>(rows * cols, "b");
+  DecisionVariableMatrixX AddBinaryVariables(size_t rows, size_t cols,
+                                             const std::string& name = "b") {
+    std::vector<std::string> names = std::vector<std::string>(rows * cols);
+    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+      names[i] = name + std::to_string(num_vars_ + i);
+    }
     return AddBinaryVariables(rows, cols, names);
   }
 
@@ -646,21 +658,13 @@ class MathematicalProgram {
    * @see AddBinaryVariables(size_t rows, size_t cols, const
    * std::vector<std::string>& names);
    */
-  DecisionVariableVectorX AddBinaryVariables(size_t rows) {
-    std::vector<std::string> names = std::vector<std::string>(rows, "b");
-    return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
-  }
-
-  /**
-   * Add binary variables to this MathematicalProgram, all new variables are
-   * assigned the same name.
-   * @see AddBinaryVariables(size_t rows, size_t cols, const
-   * std::vector<std::string>& names);
-   */
   DecisionVariableVectorX AddBinaryVariables(size_t rows,
-                                             const std::string& name) {
-    std::vector<std::string> names = std::vector<std::string>(rows, name);
-    return AddBinaryVariables(rows, 1, names);
+                                             const std::string& name = "b") {
+    std::vector<std::string> names = std::vector<std::string>(rows);
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[i] = name + std::to_string(num_vars_ + i);
+    }
+    return AddVariables(DecisionVariableScalar::VarType::BINARY, rows, names);
   }
 
   /**
@@ -1624,7 +1628,7 @@ class MathematicalProgram {
     switch (type) {
       case DecisionVariableScalar::VarType::CONTINUOUS:
         break;
-      case DecisionVariableScalar::VarType::BINARY :
+      case DecisionVariableScalar::VarType::BINARY:
         required_capabilities_ |= kBinaryVariable;
         break;
       default:
