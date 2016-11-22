@@ -7,10 +7,21 @@
 #include "drake/ros/parameter_server.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
-// #include "drake/systems/framework/diagram.h"
+#include "drake/systems/framework/diagram.h"
+#include "drake/systems/ros_tf_publisher.h"
 #include "ros/ros.h"
 
 namespace drake {
+
+using lcm::DrakeLcm;
+using ros::GetRosParameterOrThrow;
+using systems::Context;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::RigidBodyPlant;
+using systems::RosTfPublisher;
+using systems::Simulator;
+
 namespace examples {
 namespace toyota_hsrb {
 namespace {
@@ -28,26 +39,37 @@ GTEST_TEST(DrakeExamplesToyotaHsrbTest, TestSim) {
   double friction_coefficient =
       GetRosParameterOrThrow<double>("friction_coefficient");
 
-  auto plant_diagram = CreateDemo1Diagram(
-    urdf_string, penetration_stiffness,
-    penetration_damping, friction_coefficient, &lcm);
+  const Diagram<double>* plant_diagram{nullptr};
+  RigidBodyPlant<double>* plant{nullptr};
+  std::unique_ptr<Diagram<double>> plant_diagram_ptr = CreateHsrbPlantDiagram(
+      urdf_string, penetration_stiffness, penetration_damping,
+      friction_coefficient, &lcm, &plant);
+  DRAKE_DEMAND(plant_diagram_ptr != nullptr);
+  DRAKE_DEMAND(plant != nullptr);
+
+  plant_diagram = plant_diagram_ptr.get();
+  DRAKE_DEMAND(plant_diagram != nullptr);
+
+  std::unique_ptr<Diagram<double>> input_diagram =
+        CreateHsrbDemo1Diagram(*plant, std::move(plant_diagram_ptr));
 
   lcm.StartReceiveThread();
 
-  Simulator<double> simulator(*plant_diagram);
+  Simulator<double> simulator(*input_diagram);
 
   // TODO(liang.fok): Modify System 2.0 to not require the following
-  // initialization.
+  // initialization. See #4191.
   //
   // Zeros the rigid body plant's state. This is necessary because it is by
   // default initialized to a vector a NaN values.
-  systems::Context<double>* plant_context =
-      plant_diagram->GetMutableSubsystemContext(
+  systems::Context<double>* plant_diagram_context =
+      input_diagram->GetMutableSubsystemContext(
           simulator.get_mutable_context(), plant_diagram);
 
-  EXPECT_NE(plant_context, nullptr);
+  systems::Context<double>* plant_context =
+      plant_diagram->GetMutableSubsystemContext(
+          plant_diagram_context, plant);
 
-  const RigidBodyPlant<double>* plant = GetRigidBodyPlant(plant_diagram);
   plant->SetZeroConfiguration(plant_context);
 
   simulator.Initialize();
