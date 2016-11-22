@@ -81,17 +81,17 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Check for positive definite Hessian matrix.
   Eigen::LLT<Eigen::MatrixXd> llt(G);
   if (llt.info() == Eigen::Success) {
-    // Matrix is positive definite. (inv(Q)*A')' = A*inv(Q) because Q is
+    // Matrix is positive definite. (inv(G)*A')' = A*inv(G) because G is
     // symmetric.
-    Eigen::MatrixXd AiQ_T = llt.solve(A.transpose());
+    Eigen::MatrixXd AiG_T = llt.solve(A.transpose());
 
     // Compute a full pivoting, QR factorization.
-    Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiQ_T);
+    Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiG_T);
 
-    // Solve using least-squares A*inv(Q)*A'y = A*inv(Q)*c + b for `y`.
-    Eigen::VectorXd lambda = qr.solve(AiQ_T.transpose() * c + b);
+    // Solve using least-squares A*inv(G)*A'y = A*inv(W)*c + b for `y`.
+    Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
 
-    // Solve Q*x = A'y - c
+    // Solve W*x = A'y - c
     prog.SetDecisionVariableValues(llt.solve(A.transpose() * lambda - c));
     prog.SetSolverResult("Equality Constrained QP Solver", 0);
     return SolutionResult::kSolutionFound;
