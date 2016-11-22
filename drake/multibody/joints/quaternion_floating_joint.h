@@ -101,22 +101,20 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // First three rows correspond to rigid body translation. Transformation
     // from time derivative of generalized position to generalized velocity
     // is just the identity matrix.
-    qdot_to_v.block(0,0,3,3).setIdentity();
-    qdot_to_v.block(0,3,3,4).setZero();
+    qdot_to_v.block(0, 0, 3, 3).setIdentity();
+    qdot_to_v.block(0, 3, 3, 4).setZero();
 
     // The next four rows correspond to the "G" matrix in the equation:
     // 2 G de/dt = ω, where e = [ qw qx qy qz ] are the values of the
     // unit quaternion and ω is the angular velocity vector defined in the
     // world frame. This equation was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
-    //     Hall, New Jersey, 1988. Equation 105 
-
-    // Next three rows correspond to the matrix 
-    qdot_to_v.block(3,0,3,3).setZero();
-    qdot_to_v.block(3,3,3,4) <<  -qx,  qw, -qz,  qy,
-                                 -qy,  qz,  qw, -qx,
-                                 -qz, -qy,  qx,  qw;
-    qdot_to_v.block(3,3,3,4) *= 2.;
+    //     Hall, New Jersey, 1988. Equation 105.
+    qdot_to_v.block(3, 0, 3, 3).setZero();
+    qdot_to_v.block(3, 3, 3, 4) <<  -qx,  qw, -qz,  qy,
+                                    -qy,  qz,  qw, -qx,
+                                    -qz, -qy,  qx,  qw;
+    qdot_to_v.block(3, 3, 3, 4) *= 2.;
   }
 
   /**
@@ -143,8 +141,8 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // First three columns correspond to rigid body translation. Transformation
     // from generalized velocity to time derivative of generalized coordinates
     // is just the identity matrix.
-    v_to_qdot.block(0,0,3,3).setIdentity();
-    v_to_qdot.block(3,0,3,3).setZero();
+    v_to_qdot.block(0, 0, 3, 3).setIdentity();
+    v_to_qdot.block(3, 0, 3, 3).setZero();
 
     // Get the quaternion values.
     auto quat =
@@ -160,13 +158,13 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
     // unit quaternion and ω is the angular velocity vector defined in the
     // world frame. This matrix was taken from:
     // - P. Nikravesh, Computer-Aided Analysis of Mechanical Systems. Prentice
-    //     Hall, New Jersey, 1988. Equation 106 
-    v_to_qdot.block(0,3,4,3).setZero();
-    v_to_qdot.block(3,3,4,3) <<  -qx, -qy, -qz, 
-                                  qw,  qz, -qy, 
-                                 -qz,  qw,  qx, 
-                                  qy, -qx,  qw;
-    v_to_qdot.block(3,3,4,3) *= 0.5;
+    //     Hall, New Jersey, 1988. Equation 106.
+    v_to_qdot.block(0, 3, 4, 3).setZero();
+    v_to_qdot.block(3, 3, 4, 3) <<  -qx, -qy, -qz,
+                                     qw,  qz, -qy,
+                                    -qz,  qw,  qx,
+                                     qy, -qx,  qw;
+    v_to_qdot.block(3, 3, 4, 3) *= 0.5;
   }
 
   template <typename DerivedV>
