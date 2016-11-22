@@ -185,6 +185,9 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   const RigidBody<double>* bodyA = collision_pairs[0].elementA->get_body();
   const RigidBody<double>* bodyB = collision_pairs[0].elementB->get_body();
 
+  EXPECT_EQ(bodyA, large_box_);
+  EXPECT_EQ(bodyB, small_sphere_1_);
+
   EXPECT_NEAR(-0.1, collision_pairs[0].distance, tolerance_);
   EXPECT_TRUE(collision_pairs[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
 
