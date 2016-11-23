@@ -26,11 +26,11 @@ class RotaryEncoders : public systems::LeafSystem<T> {
   /// use in the output.
   /// @param input_port_size Dimension of the expected input signal
   /// @param input_vector_indices List of indices
-  RotaryEncoders(const int input_port_size,
+  RotaryEncoders(const unsigned int input_port_size,
                  const std::vector<unsigned int>& input_vector_indices);
 
   /// Sets both the quantization parameters and the selector parameters.
-  RotaryEncoders(const int input_port_size,
+  RotaryEncoders(const unsigned int input_port_size,
                  const std::vector<unsigned int>& input_vector_indices,
                  const std::vector<unsigned int>& ticks_per_revolution);
 

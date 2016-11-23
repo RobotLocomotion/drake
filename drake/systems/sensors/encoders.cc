@@ -25,7 +25,7 @@ RotaryEncoders<T>::RotaryEncoders(
 
 template <typename T>
 RotaryEncoders<T>::RotaryEncoders(
-    const int input_port_size,
+    const unsigned int input_port_size,
     const std::vector<unsigned int>& input_vector_indices)
     : num_encoders_(input_vector_indices.size()),
       indices_(input_vector_indices) {
@@ -39,7 +39,7 @@ RotaryEncoders<T>::RotaryEncoders(
 
 template <typename T>
 RotaryEncoders<T>::RotaryEncoders(
-    const int input_port_size,
+    const unsigned int input_port_size,
     const std::vector<unsigned int>& input_vector_indices,
     const std::vector<unsigned int>& ticks_per_revolution)
     : num_encoders_(input_vector_indices.size()),
