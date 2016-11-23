@@ -38,7 +38,8 @@ class AffineLinearSystemTest : public ::testing::Test {
     return std::make_unique<FreestandingInputPort>(std::move(data));
   }
 
-  static Eigen::MatrixXd make_2x2_matrix(double a, double b, double c, double d) {
+  static Eigen::MatrixXd make_2x2_matrix(
+      double a, double b, double c, double d) {
     Eigen::MatrixXd m(2, 2);
     m << a, b, c, d;
     return m;
@@ -65,7 +66,6 @@ class AffineLinearSystemTest : public ::testing::Test {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
-
 };
 
 }  // namespace systems

@@ -82,7 +82,6 @@ TEST_F(AffineSystemTest, Output) {
 
 class FeedthroughAffineSystemTest : public ::testing::Test {
  public:
-
   void SetDCornerElement(double d_1_1_element) {
     d_1_1_element_ = d_1_1_element;
   }
@@ -105,6 +104,7 @@ class FeedthroughAffineSystemTest : public ::testing::Test {
     dut_ = make_unique<AffineSystem<double>>(A_, B_, xDot0_, C_, D_, y0_);
     dut_->set_name("test_feedtroughaffine_system");
   }
+
  protected:
   // The Device Under Test is an AffineSystem<double>.
   unique_ptr<AffineSystem<double>> dut_;
