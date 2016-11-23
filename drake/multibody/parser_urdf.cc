@@ -1136,7 +1136,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     RigidBodyTree<double>* tree) {
   XMLDocument xml_doc;
   xml_doc.Parse(urdf_string.c_str());
-  return ParseUrdf(&xml_doc, ros_package_map, root_dir, kRollPitchYaw,
+  return ParseUrdf(&xml_doc, ros_package_map, root_dir, floating_base_type,
                    weld_to_frame, tree);
 }
 

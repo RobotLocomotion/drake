@@ -4,6 +4,7 @@ project(drake_ros_systems)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(catkin REQUIRED COMPONENTS
+    drake_ros_common
     roscpp
     sensor_msgs
     tf)
@@ -37,9 +38,21 @@ target_link_libraries(${PROJECT_NAME}
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   include_directories(${CMAKE_INSTALL_PREFIX}/include)
+
   add_rostest_gtest(ros_test test/ros_test.test test/ros_test.cc)
   target_link_libraries(ros_test ${catkin_LIBRARIES})
   set_target_properties(ros_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
+
+  add_rostest_gtest(ros_tf_publisher_test test/ros_tf_publisher_test.test
+      test/ros_tf_publisher_test.cc
+      src/ros_tf_publisher.cc)
+  target_link_libraries(ros_tf_publisher_test
+      ${catkin_LIBRARIES}
+      drakeCommon
+      drakeJoints
+      drakeRBM
+      drakeSystemFramework)
+  set_target_properties(ros_tf_publisher_test PROPERTIES EXCLUDE_FROM_ALL FALSE)
 endif()
 
 install(DIRECTORY include/${PROJECT_NAME}/
