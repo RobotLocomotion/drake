@@ -58,12 +58,14 @@ class Context {
   /// Returns a mutable pointer to the continuous component of the state,
   /// which may be of size zero.
   ContinuousState<T>* get_mutable_continuous_state() {
+    InvalidateContinuousStateVectorDependents();
     return get_mutable_state()->get_mutable_continuous_state();
   }
 
   /// Returns a mutable pointer to the continuous state, devoid of second-order
   /// structure. The vector may be of size zero.
   VectorBase<T>* get_mutable_continuous_state_vector() {
+    InvalidateContinuousStateVectorDependents();
     return get_mutable_continuous_state()->get_mutable_vector();
   }
 
@@ -288,6 +290,10 @@ class Context {
     }
     // In the abstract-valued case, there is nothing else to check.
   }
+
+  /// Invalidates values dependent on the continuous state of the system.
+  /// No-op by default.
+  virtual void InvalidateContinuousStateVectorDependents() const {}
 
  protected:
   /// Contains the return-type-covariant implementation of Clone().

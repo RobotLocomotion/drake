@@ -183,6 +183,12 @@ class DiagramContext : public Context<T> {
 
   State<T>* get_mutable_state() override { return &state_; }
 
+  void InvalidateContinuousStateVectorDependents() const final {
+    for (auto& context : contexts_) {
+      context->InvalidateContinuousStateVectorDependents();
+    }
+  }
+
  protected:
   DiagramContext<T>* DoClone() const override {
     DRAKE_ASSERT(contexts_.size() == outputs_.size());

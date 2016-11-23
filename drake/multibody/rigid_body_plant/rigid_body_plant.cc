@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant_context.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/multibody/collision/element.h"
 
@@ -48,6 +49,65 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree)
 
 template <typename T>
 RigidBodyPlant<T>::~RigidBodyPlant() {}
+
+template<typename T>
+std::unique_ptr<Context<T>> RigidBodyPlant<T>::CreateDefaultContext() const {
+  std::unique_ptr<RigidBodyPlantContext<T>>
+      context(new RigidBodyPlantContext<T>(*this));
+  // Reserve inputs that have already been declared.
+  context->SetNumInputPorts(this->get_num_input_ports());
+  // Reserve continuous state via delegation to subclass.
+  context->set_continuous_state(this->AllocateContinuousState());
+  // Reserve discrete state via delegation to subclass.
+  context->set_difference_state(this->AllocateDifferenceState());
+  context->set_modal_state(this->AllocateModalState());
+  // Reserve parameters via delegation to subclass.
+  context->set_parameters(this->AllocateParameters());
+  return std::unique_ptr<Context<T>>(context.release());
+}
+
+template<typename T>
+const KinematicsCache<T>& RigidBodyPlant<T>::GetKinematicsCache(
+    const Context<T>& context) const {
+  auto rbp_context = dynamic_cast<const RigidBodyPlantContext<T>*>(&context);
+  KinematicsCache<T>& kinematics_cache = rbp_context->kinematics_cache_;
+  if (!rbp_context->is_kinematics_cache_valid_) {
+    auto x =
+        dynamic_cast<const BasicVector<T> &>(
+            context.get_continuous_state_vector()).get_value();
+    const int nq = get_num_positions();
+    const int nv = get_num_velocities();
+    const VectorX<T> q = x.topRows(nq);
+    const VectorX<T> v = x.bottomRows(nv);
+
+    kinematics_cache.initialize(q, v);
+    tree_->doKinematics(kinematics_cache, true);
+    rbp_context->is_kinematics_cache_valid_ = true;
+  }
+  return kinematics_cache;
+}
+
+template<typename T>
+const ContactResults<T>& RigidBodyPlant<T>::GetContactResults(
+    const Context<T>& context) const {
+  auto rbp_context = dynamic_cast<const RigidBodyPlantContext<T>*>(&context);
+  if (!rbp_context->is_contact_results_valid_) {
+    UpdateCachedContactResults(context);
+    rbp_context->is_contact_results_valid_ = true;
+  }
+  return rbp_context->contact_results_;
+}
+
+template<typename T>
+const VectorX<T>& RigidBodyPlant<T>::GetGeneralizedContactForces(
+    const Context<T>& context) const {
+  auto rbp_context = dynamic_cast<const RigidBodyPlantContext<T>*>(&context);
+  if (!rbp_context->is_contact_results_valid_) {
+    UpdateCachedContactResults(context);
+    rbp_context->is_contact_results_valid_ = true;
+  }
+  return rbp_context->generalized_contact_forces_;
+}
 
 // TODO(liang.fok) Remove this method once a more advanced contact modeling
 // framework is available.
@@ -196,7 +256,10 @@ void RigidBodyPlant<T>::EvalOutput(const Context<T>& context,
   // Evaluates the contact results output port.
   auto& contact_results = output->GetMutableData(contact_output_port_id_)
                               ->template GetMutableValue<ContactResults<T>>();
-  ComputeContactResults(context, &contact_results);
+
+  // Copy here since ContactResults are cached in the context but results are
+  // written to output.
+  contact_results = GetContactResults(context);
 }
 
 template <typename T>
@@ -222,11 +285,12 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
-  VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = x.bottomRows(nv);
-  // TODO(amcastro-tri): place kinematics cache in the context so it can be
-  // reused.
-  auto kinsol = tree_->doKinematics(q, v);
+  const VectorX<T> q = x.topRows(nq);
+  const VectorX<T> v = x.bottomRows(nv);
+
+  // TODO(amcastro-tri): Unfortunately RBT::massMatrix takes a non-const cache.
+  KinematicsCache<T>& kinsol =
+      const_cast<KinematicsCache<T>&>(GetKinematicsCache(context));
 
   // TODO(amcastro-tri): preallocate the optimization problem and constraints,
   // and simply update them then solve on each function eval.
@@ -265,7 +329,7 @@ void RigidBodyPlant<T>::EvalTimeDerivatives(
     }
   }
 
-  right_hand_side -= ComputeContactForce(kinsol);
+  right_hand_side -= GetGeneralizedContactForces(context);
 
   if (tree_->getNumPositionConstraints()) {
     size_t nc = tree_->getNumPositionConstraints();
@@ -323,11 +387,9 @@ void RigidBodyPlant<T>::DoMapQDotToVelocity(
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
-  VectorX<T> q = x.topRows(nq);
+  const VectorX<T> q = x.topRows(nq);
 
-  // TODO(amcastro-tri): place kinematics cache in the context so it can be
-  // reused.
-  auto kinsol = tree_->doKinematics(q);
+  const KinematicsCache<T>& kinsol = GetKinematicsCache(context);
 
   generalized_velocity->SetFromVector(
       kinsol.transformQDotMappingToVelocityMapping(
@@ -356,12 +418,10 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
   // TODO(amcastro-tri): we would like to compile here with `auto` instead of
   // `VectorX<T>`. However it seems we get some sort of block from a block which
   // is not instantiated in drakeRBM.
-  VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = generalized_velocity;
+  const VectorX<T> q = x.topRows(nq);
+  const VectorX<T> v = generalized_velocity;
 
-  // TODO(amcastro-tri): place kinematics cache in the context so it can be
-  // reused.
-  auto kinsol = tree_->doKinematics(q, v);
+  const KinematicsCache<T>& kinsol = GetKinematicsCache(context);
 
   configuration_dot->SetFromVector(
       kinsol.transformVelocityMappingToQDotMapping(v.transpose()));
@@ -392,25 +452,15 @@ T RigidBodyPlant<T>::JointLimitForce(const DrakeJoint& joint, const T& position,
 }
 
 template <typename T>
-void RigidBodyPlant<T>::ComputeContactResults(
-    const Context<T>& context, ContactResults<T>* contacts) const {
-  DRAKE_ASSERT(contacts != nullptr);
-  contacts->Clear();
-
-  // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
-  // because the data is not properly accessible in the cache.  This is
-  // boilerplate drawn from EvalDerivatives.  See that code for further
-  // comments
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
-  const int nq = get_num_positions();
-  const int nv = get_num_velocities();
-  VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = x.bottomRows(nv);
-  auto kinsol = tree_->doKinematics(q, v);
-
-  ComputeContactForce(kinsol, contacts);
+void RigidBodyPlant<T>::UpdateCachedContactResults(
+    const Context<T> &context) const {
+  auto rbp_context = dynamic_cast<const RigidBodyPlantContext<T>*>(&context);
+  ContactResults<T>& contacts = rbp_context->contact_results_;
+  const KinematicsCache<T>& cache = GetKinematicsCache(context);
+  contacts.Clear();
+  VectorX<T>& generalized_contact_forces =
+      rbp_context->generalized_contact_forces_;
+  generalized_contact_forces = ComputeContactForce(cache, &contacts);
 }
 
 template <typename T>

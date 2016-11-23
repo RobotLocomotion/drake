@@ -142,6 +142,10 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
 
   // System<T> overrides.
+
+  /// Creates a specific RigidBodyPlantContext with cached entries.
+  std::unique_ptr<Context<T>> CreateDefaultContext() const override;
+
   /// Allocates two output ports, one for the RigidBodyPlant state and one for
   /// KinematicsResults.
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -209,9 +213,9 @@ void DoMapQDotToVelocity(
       VectorBase<T> *generalized_velocity) const override;
 
  private:
-  // Computes the contact results for feeding the corresponding output port.
-  void ComputeContactResults(const Context<T>& context,
-                             ContactResults<T>* contacts) const;
+  // Updates cached context results in the context. This call might also trigger
+  // the update of kinematics if they are invalid in the context.
+  void UpdateCachedContactResults(const Context<T> &context) const;
 
   // Computes the generalized forces on all bodies due to contact.
   //
@@ -224,6 +228,24 @@ void DoMapQDotToVelocity(
   //                       contact response.
   VectorX<T> ComputeContactForce(const KinematicsCache<T>& kinsol,
                                  ContactResults<T>* contacts = nullptr) const;
+
+  // Returns a constant reference to the KinematicsCache object cached in the
+  // context.
+  // The cached kinematics are recomputed if invalid and thus re-validated.
+  const KinematicsCache<T>& GetKinematicsCache(const Context<T>& context) const;
+
+  // Returns a constant references to the ContactResults object cached in the
+  // context.
+  // The cached contact results are updated if they are invalid and thus
+  // re-validated
+  const ContactResults<T>& GetContactResults(const Context<T>& context) const;
+
+  // Returns a constant references to the ContactResults object cached in the
+  // context.
+  // The cached contact results are updated if they are invalid and thus
+  // re-validated
+  const VectorX<T>& GetGeneralizedContactForces(
+      const Context<T>& context) const;
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.
