@@ -18,7 +18,7 @@ GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
     msg << "ERROR: GravityCompensator: The model is under-actuated!\n"
         << "  - size of gravity vector: " << tree.get_num_positions() << "\n"
         << "  - number of actuators: " << tree.get_num_actuators();
-    throw std::runtime_error(msg.str());
+    DRAKE_ABORT_MSG(msg.str().c_str());
   }
 }
 

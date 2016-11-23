@@ -105,16 +105,15 @@ TEST_F(GravityCompensatorTest, IiwaOutputTest) {
   EXPECT_EQ(expected_gravity_vector, output_vector->get_value());
 }
 
-// Tests that the expected value of the gravity compensating torque and the
-// value computed by the GravityCompensator for a given joint configuration
-// of an underactuated robot are identical.
-TEST_F(GravityCompensatorTest, UnderactuatedOutputTest) {
+// Tests that the GravityCompensator will abort if it is provided an
+// underactuated model.
+TEST_F(GravityCompensatorTest, UnderactuatedModelTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
       drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
-  EXPECT_THROW(SetUp(std::move(tree)), std::runtime_error);
+  EXPECT_DEATH(SetUp(std::move(tree)), ".*");
 }
 
 }  // namespace

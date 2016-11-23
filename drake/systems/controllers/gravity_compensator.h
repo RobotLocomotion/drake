@@ -18,7 +18,7 @@ namespace systems {
 /// number of generalized positions in the `RigidBodyTree` and the size of the
 /// output corresponds to the number of actuators. Note that the current
 /// implementation assumes that every DoF of the `RigidBodyPlant` is actuated.
-/// If an under-actuated system is provided, an exception will be thrown.
+/// If an under-actuated system is provided, the process will abort.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup control_systems
@@ -27,8 +27,8 @@ class GravityCompensator : public LeafSystem<T> {
  public:
   /// Constructs a gravity compensator for the given @tree. The provided @p tree
   /// must be fully actuated, i.e., the number of actuators must equal the
-  /// number of positions in the RigidBodyTree. Otherwise, a std::runtime_error
-  /// with be thrown.
+  /// number of positions in the RigidBodyTree. Otherwise, the process will
+  /// abort.
   explicit GravityCompensator(const RigidBodyTree<T>& tree);
 
   /// Sets the output port value to the generalized gravity forces
