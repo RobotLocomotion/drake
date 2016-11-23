@@ -158,8 +158,14 @@ void IiwaWorldSimBuilder<T>::SetZeroConfiguration(
     systems::Simulator<T>* simulator, const systems::Diagram<T>* diagram) {
   DRAKE_DEMAND(simulator != nullptr && diagram != nullptr);
 
+  std::cout<<"Getting mutable subsystem context\n";
+  auto sim = simulator->get_mutable_context();
+
+  std::cout<<"getting diagram mutable context\n";
+
   Context<T>* plant_context = diagram->GetMutableSubsystemContext(
-      simulator->get_mutable_context(), plant_);
+      sim, plant_);
+  std::cout<<"Setting plants 0 config\n";
   plant_->SetZeroConfiguration(plant_context);
 }
 

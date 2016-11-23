@@ -59,31 +59,57 @@ int DoMain() {
   iiwa_world->AddObjectFloatingToWorld(
       kBoxBase, Eigen::Vector3d::Zero() /* rpy */, "cuboid");
 
-  std::cout<<"About to call build\n";
-  auto robot_world_system = iiwa_world->Build();
-  std::cout<<"Back in calling function \n";
   std::unique_ptr<drake::systems::DiagramBuilder<double>> builder{
       std::make_unique<drake::systems::DiagramBuilder<double>>()};
+
+  std::cout<<"About to call build\n";
+  auto robot_world_system =
+      builder->template AddSystem<drake::systems::Diagram<double>>(iiwa_world->Build());
+  std::cout<<"Back in calling function \n";
 
   // Instantiates a constant source that outputs a vector of zeros.
   VectorX<double> constant_value(iiwa_world->GetPlantInputSize());
   constant_value.setZero();
+  std::cout<<"Constant value :"<<constant_value<<"\n";
 
   std::cout<<"Building source\n";
   auto const_source_ =
-      builder->template AddSystem<drake::systems::ConstantVectorSource<double>>(constant_value);
+      builder->template
+          AddSystem<drake::systems::ConstantVectorSource<double>>(constant_value);
+  builder->ExportOutput(robot_world_system->get_output_port(0));
+
+
   // Connects the constant source's output port to the RigidBodyPlant's input
   // port. This effectively results in the robot being uncontrolled.
+//  builder->Cascade(*const_source_,*robot_world_system);
   builder->Connect(const_source_->get_output_port(),
                    robot_world_system->get_input_port(0));
+
+  // Exposing output and input port.
+ // builder->ExportInput(plant_->get_input_port(0));
 
   std::cout<<"building new diagram\n";
   auto diagram = builder->Build();
 
+  std::cout<<"Finished rebuilding a new diagram\n";
+
+//
+//  if(diagram->SortOrderIsCorrect())
+//    std::cout<<"sort order is correct\n";
+//  else
+//    std::cout<<"sort order is not correct\n";
+
+  std::cout<<"Building simulator\n";
   auto simulator = std::make_unique<systems::Simulator<double>>(*diagram);
+
+
+
+  std::cout<<"Setting 0 zonfiguration\n";
   iiwa_world->SetZeroConfiguration(simulator.get(), diagram.get());
 
+  std::cout<<"Initializing simulation\n";
   simulator->Initialize();
+  std::cout<<"Starting StepTo\n";
   simulator->StepTo(FLAGS_simulation_sec);
 
   return 0;
