@@ -581,8 +581,8 @@ void RunEllipsoidsSeparation(const Eigen::MatrixBase<DerivedX1>& x1,
     auto u2 = prog_intersect.AddContinuousVariables(R2.cols(), "u2");
     auto y = prog_intersect.AddContinuousVariables(kXdim, "y");
 
-    auto slack = prog_intersect.AddContinuousVariables(1, "slack");
-    prog_intersect.AddBoundingBoxConstraint(1, 1, slack);
+    auto slack = prog_intersect.AddContinuousVariables<1>("slack");
+    prog_intersect.AddBoundingBoxConstraint(1, 1, slack(0));
 
     prog_intersect.AddLorentzConeConstraint({slack, u1});
     prog_intersect.AddLorentzConeConstraint({slack, u2});
@@ -657,11 +657,11 @@ void SolveQPasSOCP(const Eigen::MatrixBase<DerivedQ>& Q,
   MathematicalProgram prog_socp;
 
   auto x_socp = prog_socp.AddContinuousVariables(kXdim, "x");
-  auto y = prog_socp.AddContinuousVariables(1, "y");
-  auto z = prog_socp.AddContinuousVariables(1, "z");
+  auto y = prog_socp.AddContinuousVariables<1>("y");
+  auto z = prog_socp.AddContinuousVariables<1>("z");
   auto w = prog_socp.AddContinuousVariables(kXdim, "w");
 
-  prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z);
+  prog_socp.AddBoundingBoxConstraint(2.0, 2.0, z(0));
   prog_socp.AddRotatedLorentzConeConstraint({y, z, w});
 
   Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);

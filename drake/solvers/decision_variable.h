@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 #include <Eigen/Core>
@@ -144,19 +145,91 @@ using DecisionVariableMatrixX =
     DecisionVariableMatrix<Eigen::Dynamic, Eigen::Dynamic>;
 using DecisionVariableVectorX = DecisionVariableVector<Eigen::Dynamic>;
 
-/**
- * VariableListRef is used for adding constraints/costs in
- * MathematicalProgram, we use Eigen::Ref so that we can pass in a
- * block of DecisionVariableMatrix as decision variables.
- */
-using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
+class VariableList {
+ public:
+  VariableList(const std::list<Eigen::Ref<const DecisionVariableMatrixX>>&
+                   variable_list);
 
-/**
- * VariableList is used for storing the decision variabled binded
- * with each constraint/cost. Each constraint/cost is binded with
- * a VariableList, on which the constraint/cost is imposed.
- */
-using VariableList = std::list<DecisionVariableMatrixX>;
+  /**
+   * Return all the stored DecisionVariableMatrix.
+   */
+  std::list<DecisionVariableMatrixX> variables() const { return variables_; }
+
+  /**
+   * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
+   * of unique scalar decision variables stored in @p vars.
+   * Example
+   * @code{.cc}
+   * // Create a mathematical program with no decision variables.
+   * MathematicalProgram prog;
+   *
+   * // Add a vector containing 4 decision variables.
+   * auto x = prog.AddContinuousVariables<4>();
+   *
+   * // x1 contains x(0), x(1), x(2).
+   * DecisionVariableVector<3> x1 = x.head<3>();
+   *
+   * // x2 contains x(2), x(3).
+   * DecisionVariableVector<2> x2 = x.tail<2>();
+   *
+   * // Construct a VariableList containing both x1 and x2.
+   * VariableList var_list({x1, x2});
+   *
+   * std::cout<<"The number of unique variables is "<<
+   * var_list.num_unique_variables() << std::endl;
+   *
+   * @endcode
+   *
+   * The output is
+   * <pre>
+   * The size of variable list (including duplication) is 5.
+   * </pre>
+   */
+  size_t num_unique_variables() const { return unique_variables_.size(); }
+
+  /**
+   * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
+   * of scalar decision variables stored in @p vars, including duplication.
+   * Example
+   * @code{.cc}
+   * // Create a mathematical program with no decision variables.
+   * MathematicalProgram prog;
+   *
+   * // Add a vector containing 4 decision variables.
+   * auto x = prog.AddContinuousVariables<4>();
+   *
+   * // x1 contains x(0), x(1), x(2).
+   * DecisionVariableVector<3> x1 = x.head<3>();
+   *
+   * // x2 contains x(2), x(3).
+   * DecisionVariableVector<2> x2 = x.tail<2>();
+   *
+   * // Construct a VariableList containing both x1 and x2.
+   * VariableList var_list({x1, x2});
+   *
+   * std::cout<<"The size of variable list (including duplication) is "<<
+   * var_list.size() << std::endl;
+   *
+   * @endcode
+   *
+   * The output is
+   * <pre>
+   * The size of variable list (including duplication) is 5.
+   * </pre>
+   */
+  size_t size() const { return size_; }
+
+  /**
+   * Determine if the DecisionVariableMatrix stored are all column vectors.
+   */
+  bool column_vectors_only() const { return column_vectors_only_; }
+
+ private:
+  std::list<DecisionVariableMatrixX> variables_;
+  size_t size_;
+  bool column_vectors_only_;
+  std::unordered_set<size_t> unique_variables_;
+};
 
 /**
  * Given a DecisionVariableMatrix object, return the Eigen::Matrix that
@@ -166,7 +239,7 @@ using VariableList = std::list<DecisionVariableMatrixX>;
 template <typename T, typename Derived>
 Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
 DecisionVariableMatrixToValueMatrix(
-    const Eigen::MatrixBase<Derived> &decision_variable_matrix) {
+    const Eigen::MatrixBase<Derived>& decision_variable_matrix) {
   Eigen::Matrix<T, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       double_matrix(decision_variable_matrix.rows(),
                     decision_variable_matrix.cols());
@@ -209,38 +282,6 @@ bool DecisionVariableMatrixContainsIndex(
   return false;
 }
 
-/**
- * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
- * of scalar decision variables stored in @p vars, including duplication.
- * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
- * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
- * x1 for twice.
- */
-int size(const drake::solvers::VariableListRef& vars);
-
-/**
- * Given a list of DecisionVariableMatrix @p vars, computes the TOTAL number
- * of scalar decision variables stored in @p vars, including duplication.
- * So if vars[0] contains decision variable x0, x1, x2, vars[1] contains
- * variable x1, x3, then GetVariableVectorSize(vars) will return 5, and count
- * x1 for twice.
- */
-int size(const drake::solvers::VariableList& vars);
-
-/**
- * Given a list of DecisionVariableMatrix @p vars, returns true if all
- * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
- * scalar).
- */
-bool VariableListContainsColumnVectorsOnly(
-    const drake::solvers::VariableList& vars);
-
-/**
- * Given a std::vector of DecisionVariableMatrix @p vars, returns true if all
- * DecisionVariableMatrix objects have only 1 column (thus a column vector or a
- * scalar).
- */
-bool VariableListRefContainsColumnVectorsOnly(
-    const drake::solvers::VariableListRef& vars);
+using VariableListRef = std::list<Eigen::Ref<const DecisionVariableMatrixX>>;
 }  // end namespace solvers
 }  // end namespace drake

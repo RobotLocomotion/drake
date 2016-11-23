@@ -69,7 +69,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
       A_nonzero_col_idx.reserve(A.cols());
       A_nonzero_val.reserve(A.cols());
       int A_col_idx = 0;
-      for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& var :
+           binding.variable_list().variables()) {
         DRAKE_ASSERT(var.cols() == 1);
         for (int k = 0; k < static_cast<int>(var.rows()); ++k) {
           if (std::abs(A(i, A_col_idx)) > Eigen::NumTraits<double>::epsilon()) {
@@ -115,7 +116,8 @@ MSKrescodee AddBoundingBoxConstraints(const MathematicalProgram& prog,
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         int x_idx = var(i).index();
@@ -172,7 +174,8 @@ MSKrescodee AddSecondOrderConeConstraints(
   for (auto const& binding : second_order_cone_constraints) {
     std::vector<int> cone_var_indices(binding.GetNumElements());
     int var_count = 0;
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         cone_var_indices[var_count] = var(i, 0).index();
@@ -267,7 +270,7 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
     std::vector<int> var_indices(Q.rows());
     {
       int var_count = 0;
-      for (const auto& var : binding.variable_vector()) {
+      for (const auto& var : binding.variable_list().variables()) {
         DRAKE_ASSERT(var.cols() == 1);
         for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
           var_indices[var_count] = var(i, 0).index();
@@ -297,7 +300,8 @@ MSKrescodee AddCosts(const MathematicalProgram& prog, MSKtask_t* task) {
   for (const auto& binding : prog.linear_costs()) {
     int var_count = 0;
     const auto& c = binding.constraint()->A();
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         if (std::abs(c(var_count)) > Eigen::NumTraits<double>::epsilon()) {

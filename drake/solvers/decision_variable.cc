@@ -2,44 +2,24 @@
 
 namespace drake {
 namespace solvers {
-namespace {
-template<typename T>
-int GetVariableVectorSize_impl(const T &vars) {
-  int var_dim = 0;
-  for (const auto &var : vars) {
-    DRAKE_ASSERT(var.cols() == 1);
-    var_dim += var.rows();
-  }
-  return var_dim;
-}
+VariableList::VariableList(
+    const std::list<Eigen::Ref<const DecisionVariableMatrixX>>& variable_list) {
+  variables_.resize(variable_list.size());
+  size_ = 0;
+  column_vectors_only_ = true;
+  auto variable_list_it = variable_list.begin();
+  for (auto& var : variables_) {
+    var = *variable_list_it;
+    ++variable_list_it;
+    size_ += var.size();
+    column_vectors_only_ &= (var.cols() == 1);
 
-template <typename T>
-bool VariableVectorContainsColumnVectorsOnly_impl(const T& vars) {
-  for (const auto& var : vars) {
-    if (var.cols() != 1) {
-      return false;
+    for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
+      for (int j = 0; j < static_cast<int>(var.cols()); ++j) {
+        unique_variables_.insert(var(i, j).index());
+      }
     }
   }
-  return true;
 }
-}  // namespace
-
-int size(const VariableList &vars) {
-  return GetVariableVectorSize_impl(vars);
-}
-
-int size(const VariableListRef &vars) {
-  return GetVariableVectorSize_impl(vars);
-}
-
-
-bool VariableListContainsColumnVectorsOnly(const VariableList &vars) {
-  return VariableVectorContainsColumnVectorsOnly_impl(vars);
-}
-
-bool VariableListRefContainsColumnVectorsOnly(const VariableListRef &vars) {
-  return VariableVectorContainsColumnVectorsOnly_impl(vars);
-}
-
 }  // namespace solvers
 }  // namespace drake

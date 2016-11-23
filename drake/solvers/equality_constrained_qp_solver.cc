@@ -50,7 +50,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     size_t index = 0;
     const auto& Q = binding.constraint()->Q();
     const auto& b = binding.constraint()->b();
-    for (const auto& v : binding.variable_vector()) {
+    for (const auto& v : binding.variable_list().variables()) {
       int num_v_variables = v.rows();
       DRAKE_ASSERT(v.cols() == 1);
       for (int i = 0; i < num_v_variables; ++i) {
@@ -69,7 +69,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const auto& v : binding.variable_vector()) {
+    for (const auto& v : binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {

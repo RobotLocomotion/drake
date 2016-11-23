@@ -33,7 +33,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
     auto const& c = binding.constraint();
     size_t n = c->A().rows();
     size_t var_index = 0;
-    for (const auto& v : binding.variable_vector()) {
+    for (const auto& v : binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.rows();
       for (int i = 0; i < num_v_variables; ++i) {

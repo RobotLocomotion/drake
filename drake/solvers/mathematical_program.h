@@ -206,24 +206,17 @@ class MathematicalProgram {
         : constraint_(c), variable_list_(v) {}
 
     Binding(const std::shared_ptr<C>& c, const VariableListRef& v)
-        : constraint_(c) {
-      variable_list_.resize(v.size());
-      auto v_it = v.begin();
-      for (auto& variable_list_it : variable_list_) {
-        variable_list_it = *v_it;
-        ++v_it;
-      }
-    }
+        : constraint_(c), variable_list_(v) {}
     template <typename U>
     Binding(
         const Binding<U>& b,
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-        : Binding(b.constraint(), b.variable_vector()) {}
+        : Binding(b.constraint(), b.variable_list()) {}
 
     const std::shared_ptr<C>& constraint() const { return constraint_; }
 
-    const VariableList& variable_vector() const { return variable_list_; }
+    const VariableList& variable_list() const { return variable_list_; }
 
     /**
      * Get an Eigen vector containing all variable values. This only works if
@@ -233,7 +226,7 @@ class MathematicalProgram {
     Eigen::VectorXd VariableListToVectorXd() const {
       size_t dim = 0;
       Eigen::VectorXd X(GetNumElements());
-      for (const auto& var : variable_list_) {
+      for (const auto& var : variable_list_.variables()) {
         DRAKE_ASSERT(var.cols() == 1);
         X.segment(dim, var.rows()) = DecisionVariableMatrixToDoubleMatrix(var);
         dim += var.rows();
@@ -245,7 +238,7 @@ class MathematicalProgram {
      * @brief returns true iff the given @p index of the enclosing
      * MathematicalProgram is included in this Binding.*/
     bool ContainsVariableIndex(size_t index) const {
-      for (const auto& view : variable_list_) {
+      for (const auto& view : variable_list_.variables()) {
         if (DecisionVariableMatrixContainsIndex(view, index)) {
           return true;
         }
@@ -256,11 +249,7 @@ class MathematicalProgram {
     size_t GetNumElements() const {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
-      size_t count = 0;
-      for (const auto& view : variable_list_) {
-        count += view.size();
-      }
-      return count;
+      return variable_list_.size();
     }
 
     /** WriteThrough()
@@ -271,7 +260,7 @@ class MathematicalProgram {
                       Eigen::VectorXd* output) const {
       DRAKE_ASSERT(static_cast<size_t>(solution.rows()) == GetNumElements());
       size_t solution_index = 0;
-      for (const auto& var : variable_list_) {
+      for (const auto& var : variable_list_.variables()) {
         DRAKE_ASSERT(var.cols() == 1);
         const auto& solution_segment =
             solution.segment(solution_index, var.rows());
@@ -688,9 +677,10 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<Constraint>& obj,
                const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kGenericCost;
-    generic_costs_.push_back(Binding<Constraint>(obj, vars));
+    generic_costs_.push_back(Binding<Constraint>(obj, var_list));
   }
 
   /**
@@ -752,11 +742,12 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<LinearConstraint>& obj,
                const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearCost;
-    int var_dim = size(vars);
+    int var_dim = var_list.size();
     DRAKE_ASSERT(obj->A().rows() == 1 && obj->A().cols() == var_dim);
-    linear_costs_.push_back(Binding<LinearConstraint>(obj, vars));
+    linear_costs_.push_back(Binding<LinearConstraint>(obj, var_list));
   }
 
   /**
@@ -796,11 +787,12 @@ class MathematicalProgram {
    */
   void AddCost(const std::shared_ptr<QuadraticConstraint>& obj,
                const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kQuadraticCost;
-    int var_dim = size(vars);
+    int var_dim = var_list.size();
     DRAKE_ASSERT(obj->Q().rows() == var_dim && obj->b().rows() == var_dim);
-    quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
+    quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, var_list));
   }
 
   /**
@@ -882,11 +874,12 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LinearConstraint> con,
                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = size(vars);
+    int var_dim = var_list.size();
     DRAKE_ASSERT(con->A().cols() == var_dim);
-    linear_constraints_.push_back(Binding<LinearConstraint>(con, vars));
+    linear_constraints_.push_back(Binding<LinearConstraint>(con, var_list));
   }
 
   /**
@@ -956,12 +949,13 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearEqualityConstraint;
-    int var_dim = size(vars);
+    int var_dim = var_list.size();
     DRAKE_ASSERT(con->A().cols() == var_dim);
     linear_equality_constraints_.push_back(
-        Binding<LinearEqualityConstraint>(con, vars));
+        Binding<LinearEqualityConstraint>(con, var_list));
   }
 
   /** AddLinearEqualityConstraint
@@ -1043,11 +1037,12 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<BoundingBoxConstraint> con,
                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearConstraint;
-    int var_dim = size(vars);
+    int var_dim = var_list.size();
     DRAKE_ASSERT(con->num_constraints() == static_cast<size_t>(var_dim));
-    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, vars));
+    bbox_constraints_.push_back(Binding<BoundingBoxConstraint>(con, var_list));
   }
 
   /** AddBoundingBoxConstraint
@@ -1085,19 +1080,8 @@ class MathematicalProgram {
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const DecisionVariableScalar& var) {
     DecisionVariableMatrix<1, 1> var_matrix(var);
-    return AddBoundingBoxConstraint(lb, ub, var_matrix);
-  }
-
-  /**
-   * Add bounds for a single variable
-   * @param lb Lower bound.
-   * @param ub Upper bound.
-   * @param var The decision variable.
-   */
-  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
-      double lb, double ub, const DecisionVariableVector<1>& var) {
     return AddBoundingBoxConstraint(drake::Vector1d(lb), drake::Vector1d(ub),
-                                    {var});
+                                    {var_matrix});
   }
 
   /**
@@ -1112,10 +1096,11 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<LorentzConeConstraint> con,
                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLorentzConeConstraint;
     lorentz_cone_constraint_.push_back(
-        Binding<LorentzConeConstraint>(con, vars));
+        Binding<LorentzConeConstraint>(con, var_list));
   }
 
   /**
@@ -1163,10 +1148,11 @@ class MathematicalProgram {
    */
   void AddConstraint(std::shared_ptr<RotatedLorentzConeConstraint> con,
                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kRotatedLorentzConeConstraint;
     rotated_lorentz_cone_constraint_.push_back(
-        Binding<RotatedLorentzConeConstraint>(con, vars));
+        Binding<RotatedLorentzConeConstraint>(con, var_list));
   }
 
   /**
@@ -1217,7 +1203,8 @@ class MathematicalProgram {
   AddLinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                      const Eigen::MatrixBase<Derivedq>& q,
                                      const VariableListRef& vars) {
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     required_capabilities_ |= kLinearComplementarityConstraint;
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -1236,7 +1223,7 @@ class MathematicalProgram {
 
     auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
     linear_complementarity_constraints_.push_back(
-        Binding<LinearComplementarityConstraint>(constraint, vars));
+        Binding<LinearComplementarityConstraint>(constraint, var_list));
     return constraint;
   }
 
@@ -1266,7 +1253,8 @@ class MathematicalProgram {
     // constant) can be special-cased.  Other polynomials are treated as
     // generic for now.
     // TODO(ggould-tri) There may be other such special easy cases.
-    DRAKE_ASSERT(VariableListRefContainsColumnVectorsOnly(vars));
+    VariableList var_list(vars);
+    DRAKE_ASSERT(var_list.column_vectors_only());
     bool all_affine = true;
     for (int i = 0; i < polynomials.rows(); i++) {
       if (!polynomials[i].IsAffine()) {

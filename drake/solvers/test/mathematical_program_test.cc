@@ -1033,12 +1033,12 @@ void MinDistanceFromPlaneToOrigin(const MatrixXd& A, const VectorXd b) {
   auto x_rotated_lorentz =
       prog_rotated_lorentz.AddContinuousVariables(xDim, "x");
   auto slack_rotated_lorentz =
-      prog_rotated_lorentz.AddContinuousVariables(1, "slack");
+      prog_rotated_lorentz.AddContinuousVariables<1>("slack");
   prog_rotated_lorentz.AddRotatedLorentzConeConstraint(
       {t_rotated_lorentz, slack_rotated_lorentz, x_rotated_lorentz});
   prog_rotated_lorentz.AddLinearEqualityConstraint(A, b, {x_rotated_lorentz});
   prog_rotated_lorentz.AddBoundingBoxConstraint(1.0, 1.0,
-                                                slack_rotated_lorentz);
+                                                slack_rotated_lorentz(0));
   prog_rotated_lorentz.AddLinearCost(drake::Vector1d(1.0), {t_rotated_lorentz});
 
   double cost_expected_rotated_lorentz = x_expected.squaredNorm();

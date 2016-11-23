@@ -40,8 +40,10 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X2),
                               X_expected, 1E-14, MatrixCompareType::absolute));
 
-  EXPECT_TRUE(VariableListRefContainsColumnVectorsOnly({x1}));
-  EXPECT_FALSE(VariableListContainsColumnVectorsOnly({X1, S1}));
+  VariableList var_list1({X1, S1});
+  EXPECT_FALSE(var_list1.column_vectors_only());
+  VariableList var_list2({x1});
+  EXPECT_TRUE(var_list2.column_vectors_only());
   for (int i = 0; i < 6; ++i) {
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(X1, i));
     EXPECT_TRUE(DecisionVariableMatrixContainsIndex(S1, i + 6));
@@ -56,6 +58,14 @@ GTEST_TEST(TestDecisionVariable, TestDecisionVariableValue) {
   EXPECT_TRUE(CompareMatrices(DecisionVariableMatrixToDoubleMatrix(X_assembled),
                               X_assembled_expected, 1E-10,
                               MatrixCompareType::absolute));
+
+
+  EXPECT_EQ(VariableList({X1}).num_unique_variables(), 6);
+  EXPECT_EQ(VariableList({X1}).size(), 6);
+  EXPECT_EQ(VariableList({X1, X1}).num_unique_variables(), 6);
+  EXPECT_EQ(VariableList({X1, X1}).size(), 12);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).num_unique_variables(), 6);
+  EXPECT_EQ(VariableList({X1, X1.row(1)}).size(), 9);
 }
 }  // namespace solvers
 }  // namespace drake

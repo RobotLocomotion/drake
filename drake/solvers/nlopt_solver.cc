@@ -26,13 +26,13 @@ Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
 }
 
 TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
-                               const VariableList& variable_vector) {
-  size_t var_count = size(variable_vector);
+                               const VariableList& variable_list) {
+  size_t var_count = variable_list.size();
 
   auto tx = math::initializeAutoDiff(xvec);
   TaylorVecXd this_x(var_count);
   size_t index = 0;
-  for (const DecisionVariableMatrixX& v : variable_vector) {
+  for (const DecisionVariableMatrixX& v : variable_list.variables()) {
     DRAKE_ASSERT(v.cols() == 1);
     int num_v_variables = v.size();
     for (int i = 0; i < num_v_variables; ++i) {
@@ -67,7 +67,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
   for (auto const& binding : prog->GetAllCosts()) {
     size_t index = 0;
-    for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& v :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       int num_v_variables = v.size();
       this_x.conservativeResize(index + num_v_variables);
@@ -81,7 +82,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
     cost += ty(0).value();
     if (!grad.empty()) {
-      for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
+      for (const DecisionVariableMatrixX& v :
+           binding.variable_list().variables()) {
         DRAKE_ASSERT(v.cols() == 1);
         for (int j = 0; j < v.size(); ++j) {
           grad[v(j, 0).index()] += ty(0).derivatives()(v(j, 0).index());
@@ -97,14 +99,14 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 /// which take only a single pointer argument.
 struct WrappedConstraint {
   WrappedConstraint(const Constraint* constraint_in,
-                    const VariableList* variable_vector_in)
+                    const VariableList* variable_list_in)
       : constraint(constraint_in),
-        variable_vector(variable_vector_in),
+        variable_list(variable_list_in),
         force_bounds(false),
         force_upper(false) {}
 
   const Constraint* constraint;
-  const VariableList* variable_vector;
+  const VariableList* variable_list;
   bool force_bounds;  ///< force usage of only upper or lower bounds
   bool force_upper;   ///< Only used if force_bounds is set.  Selects
                       ///< which bounds are being tested (lower bound
@@ -176,7 +178,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   TaylorVecXd ty(num_constraints);
-  TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_vector));
+  TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
   c->Eval(this_x, ty);
 
   const Eigen::VectorXd& lower_bound = c->lower_bound();
@@ -205,7 +207,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   if (grad) {
-    for (const DecisionVariableMatrixX& v : *(wrapped->variable_vector)) {
+    for (const DecisionVariableMatrixX& v :
+         wrapped->variable_list->variables()) {
       result_idx = 0;
       for (size_t i = 0; i < num_constraints; i++) {
         if (!wrapped->active_constraints.count(i)) {
@@ -240,13 +243,13 @@ void WrapConstraint(const _Binding& binding, double constraint_tol,
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_eq(binding.constraint().get(),
-                               &binding.variable_vector());
+                               &binding.variable_list());
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
   WrappedConstraint wrapped_in(binding.constraint().get(),
-                               &binding.variable_vector());
+                               &binding.variable_list());
 
   bool is_pure_inequality = true;
   const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
@@ -318,7 +321,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
     int var_count = 0;
-    for (const DecisionVariableMatrixX& v : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& v :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(v.cols() == 1);
       for (int k = 0; k < v.size(); ++k) {
         const int idx = v(k, 0).index();

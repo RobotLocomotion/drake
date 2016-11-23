@@ -72,8 +72,8 @@ int AddLorentzConeConstraints(GRBmodel* model,
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_vector();
-    for (const DecisionVariableMatrixX& var : variable_list) {
+    auto variable_list = binding.variable_list();
+    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         variable_indices.push_back(static_cast<int>(var(i, 0).index()));
@@ -123,8 +123,8 @@ int AddRotatedLorentzConeConstraint(GRBmodel* model,
     int num_constraint_variable = static_cast<int>(binding.GetNumElements());
     std::vector<int> variable_indices;
     variable_indices.reserve(static_cast<size_t>(num_constraint_variable));
-    auto variable_list = binding.variable_vector();
-    for (const DecisionVariableMatrixX& var : variable_list) {
+    auto variable_list = binding.variable_list();
+    for (const DecisionVariableMatrixX& var : variable_list.variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         variable_indices.push_back(static_cast<int>(var(i, 0).index()));
@@ -195,7 +195,8 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     // binding.VariableListToVectorXd(i).
     std::vector<int> constraint_variable_index(constraint_variable_dimension);
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         constraint_variable_index[constraint_variable_count] =
@@ -231,7 +232,8 @@ int AddCosts(GRBmodel* model, const MathematicalProgram& prog,
     const auto& constraint = binding.constraint();
     Eigen::RowVectorXd c = constraint->A();
     int constraint_variable_count = 0;
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         b_nonzero_coefs.push_back(Eigen::Triplet<double>(
@@ -298,7 +300,8 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable.
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         variable_indices.push_back(var(i, 0).index());
@@ -318,7 +321,8 @@ int ProcessLinearConstraints(GRBmodel* model, MathematicalProgram& prog,
     // variable_indices[i] is the index of the i'th variable
     std::vector<int> variable_indices;
     variable_indices.reserve(var_dim);
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int i = 0; i < static_cast<int>(var.rows()); ++i) {
         variable_indices.push_back(var(i, 0).index());
@@ -411,7 +415,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
     int var_idx = 0;
-    for (const DecisionVariableMatrixX& var : binding.variable_vector()) {
+    for (const DecisionVariableMatrixX& var :
+         binding.variable_list().variables()) {
       DRAKE_ASSERT(var.cols() == 1);
       for (int k = 0; k < var.rows(); ++k) {
         const int idx = var(k, 0).index();
