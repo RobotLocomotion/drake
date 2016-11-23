@@ -1,4 +1,4 @@
-#include "drake/solvers/trajectoryOptimization/dircol_trajectory_optimization.h"
+#include "drake/solvers/trajectory_optimization/dircol_trajectory_optimization.h"
 
 #include <stdexcept>
 
