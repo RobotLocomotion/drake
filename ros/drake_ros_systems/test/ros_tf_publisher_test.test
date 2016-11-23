@@ -1,0 +1,4 @@
+<launch>
+  <test pkg="drake_ros_systems" test-name="ros_tf_publisher_test"
+        type="ros_tf_publisher_test" />
+</launch>

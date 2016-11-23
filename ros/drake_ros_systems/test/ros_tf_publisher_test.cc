@@ -7,16 +7,10 @@ namespace systems {
 namespace test {
 namespace {
 
-GTEST_TEST(RosTest, TestRosNode) {
-  // Verifies that ros core is running.
-  bool ros_master_exists = ros::master::check();
-  EXPECT_TRUE(ros_master_exists);
+GTEST_TEST(RosTfPublisherTest, TestRosTfPublisher) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+  auto publisher = make_unique<RosTfPublisher<double>>(*tree);
 
-  if (ros_master_exists) {
-    // Tests the ability to instantiate a ROS node.
-    ros::NodeHandle nh;
-    EXPECT_TRUE(nh.ok());
-  }
 }
 
 }  // namespace

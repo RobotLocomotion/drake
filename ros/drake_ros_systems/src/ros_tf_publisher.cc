@@ -199,6 +199,12 @@ void RosTfPublisher<T>::LoadEnableParameter() {
   }
 }
 
+template <typename T>
+const std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>&
+    RosTfPublisher<T>::get_transform_messages() const {
+  return transform_messages_;
+}
+
 template class RosTfPublisher<double>;
 
 }  // namespace systems

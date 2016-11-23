@@ -52,6 +52,14 @@ class RosTfPublisher : public LeafSystem<T> {
                   SystemOutput<double>* output) const
       override {}
 
+  // TODO(liang.fok) Remove this method once we have a proper mock-ROS-topic
+  // framework in place.
+  /**
+   * An accessor to the transform messages that were transmitted.
+   */
+  const std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>&
+      get_transform_messages() const;
+
  private:
   // Initializes the transform_messages_ table.
   void Init();
