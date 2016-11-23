@@ -13,6 +13,12 @@ new_http_archive(
     strip_prefix = "googletest-release-1.7.0",
 )
 
+git_repository(
+    name   = "gflags",
+    commit = "a69b2544d613b4bee404988710503720c487119a",
+    remote = "https://github.com/gflags/gflags.git"
+)
+
 new_git_repository(
     name = "eigen",
     remote = "https://github.com/RobotLocomotion/eigen-mirror.git",
