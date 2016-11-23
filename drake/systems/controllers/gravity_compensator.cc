@@ -15,7 +15,7 @@ GravityCompensator<T>::GravityCompensator(const RigidBodyTree<T>& tree)
                           kContinuousSampling);
   if (tree.get_num_positions() != tree_.get_num_actuators()) {
     std::stringstream msg;
-    msg << "ERROR: GravityCompensator: The model is under-actuated!\n"
+    msg << "The model is under-actuated!\n"
         << "  - size of gravity vector: " << tree.get_num_positions() << "\n"
         << "  - number of actuators: " << tree.get_num_actuators();
     DRAKE_ABORT_MSG(msg.str().c_str());
