@@ -30,14 +30,9 @@ drake_add_external(yalmip PUBLIC CMAKE MATLAB)
 drake_add_external(avl PUBLIC CMAKE FORTRAN)
 
 # bullet
-if(WIN32)
-  set(BULLET_EXTRA_CMAKE_ARGS -DUSE_MSVC_RUNTIME_LIBRARY_DLL=ON)
-else()
-  set(BULLET_EXTRA_CMAKE_ARGS -DBUILD_SHARED_LIBS=ON)
-endif()
-
 drake_add_external(bullet PUBLIC CMAKE
   CMAKE_ARGS
+    -DBUILD_SHARED_LIBS=ON
     -DBUILD_BULLET2_DEMOS=OFF
     -DBUILD_CPU_DEMOS=OFF
     -DBUILD_EXTRAS=OFF
@@ -77,7 +72,6 @@ drake_add_external(gflags PUBLIC CMAKE
 drake_add_external(googletest PUBLIC CMAKE
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=ON
-    -DGTEST_CREATE_SHARED_LIBRARY=1 # Needed for parameterized tests on Windows
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 
 # google_styleguide
