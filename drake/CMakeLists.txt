@@ -174,7 +174,10 @@ if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 add_subdirectory(examples)
-add_subdirectory(bindings)
+
+if(Matlab_FOUND OR NOT DISABLE_PYTHON)
+  add_subdirectory(bindings)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(regtests)
