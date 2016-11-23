@@ -105,6 +105,12 @@ cc_library(
     linkstatic = 1)
 
 cc_library(
+    name = "is_approx_equal_matrix",
+    hdrs = ["is_approx_equal_matrix.h"],
+    deps = [":common"],
+    linkstatic = 1)
+
+cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
