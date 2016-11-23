@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/encoders.h"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "drake/common/autodiff_overloads.h"
@@ -66,17 +67,17 @@ void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
 
     // Calibration.
     y(i) = this->EvalVectorInput(context, 0)->GetAtIndex(index) -
-           calibration_offset(index);
+           calibration_offset(i);
 
     // Quantization.
     if (!ticks_per_revolution_.empty()) {
-//      using std::floor;
-//      using std::abs;
-//      using std::copysign;
+      using std::abs;
+      using std::floor;
+      using std::copysign;
       // Round towards zero
       y(i) =
-          copysign(floor(ticks_per_revolution_[i] * abs(y(i)) / (2.0 * M_PI)) *
-                       2.0 * M_PI / ticks_per_revolution_[i],
+          copysign(floor(ticks_per_revolution_[i] * abs(y(i)) / M_2_PI) *
+                       M_2_PI / ticks_per_revolution_[i],
                    y(i));
     }
   }

@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/encoders.h"
 
+#include <cmath>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -15,6 +16,9 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   const std::vector<unsigned int> tick_counts = {100, 50};
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
 
+  Eigen::Vector2d ticks_per_radian;
+  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
   auto measurement = output->get_vector_data(0);
@@ -25,14 +29,43 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   srand(42);
   for (unsigned int i=0; i<10; i++) {
     angle = Eigen::Vector2d::Random();
-    for (unsigned int j=0; j<2; j++)
-      desired_measurement(j) = 2.0*M_PI/tick_counts[j]*floor(angle(j)*tick_counts[j]/(2.0*M_PI));
+    using std::floor;  using std::ceil;
+    for (unsigned int j=0; j<2; j++) {
+      if (angle(j)<0.0)
+        desired_measurement(j) = ceil(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
+      else
+        desired_measurement(j) = floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
+    }
 
     context->FixInputPort(0,angle);
     encoders.EvalOutput(*context,output.get());
 
-    std::cout << "angle = " << angle.transpose() << std::endl;
-    std::cout << "measurement = " << measurement->CopyToVector().transpose() << std::endl;
+    EXPECT_TRUE(CompareMatrices(desired_measurement, measurement->CopyToVector(), tol,
+                                MatrixCompareType::absolute));
+  }
+}
+
+// Test with the simple selector-only constructor.
+GTEST_TEST(TestEncoders, SelectorOnly) {
+  // Construct a system with no quantization, and only inputs 2 and 3 are passed.
+  const std::vector<unsigned int> indices = {1, 2};
+  systems::sensors::RotaryEncoders<double> encoders(4,indices);
+
+  auto context = encoders.CreateDefaultContext();
+  auto output = encoders.AllocateOutput(*context);
+  auto measurement = output->get_vector_data(0);
+
+  double tol = 1e-10;
+  Eigen::Vector4d angle;
+  Eigen::Vector2d desired_measurement;
+
+  srand(42);
+  for (unsigned int i=0; i<10; i++) {
+    angle = Eigen::Vector4d::Random();
+    desired_measurement = angle.segment(1,2);
+
+    context->FixInputPort(0,angle);
+    encoders.EvalOutput(*context,output.get());
 
     EXPECT_TRUE(CompareMatrices(desired_measurement, measurement->CopyToVector(), tol,
                                 MatrixCompareType::absolute));
@@ -45,6 +78,9 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
 
   const std::vector<unsigned int> tick_counts = {100, 50};
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
+
+  Eigen::Vector2d ticks_per_radian;
+  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -64,8 +100,13 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
     context->FixInputPort(0,angle);
 
     angle -= offsets;
-    for (unsigned int j=0; j<2; j++)
-      desired_measurement(j) = 2.0*M_PI/tick_counts[j]*floor(angle(j)*tick_counts[j]/(2.0*M_PI));
+    using std::floor;  using std::ceil;
+    for (unsigned int j=0; j<2; j++) {
+      if (angle(j)<0.0)
+        desired_measurement(j) = ceil(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
+      else
+        desired_measurement(j) = floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
+    }
 
     encoders.EvalOutput(*context,output.get());
 
@@ -73,4 +114,5 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
                                 MatrixCompareType::absolute));
   }
 }
+
 }  // namespace drake

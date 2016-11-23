@@ -14,57 +14,67 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 
+namespace Eigen {
+
 /// Overloads round to mimic std::round from <cmath>.
-template <typename DerType>
-double round(const Eigen::AutoDiffScalar<DerType>& x) {
+template<typename DerType>
+double round(const Eigen::AutoDiffScalar<DerType> &x) {
   using std::round;
   return round(x.value());
 }
 
 /// Overloads isinf to mimic std::isinf from <cmath>.
-template <typename DerType>
-bool isinf(const Eigen::AutoDiffScalar<DerType>& x) {
+template<typename DerType>
+bool isinf(const Eigen::AutoDiffScalar<DerType> &x) {
   using std::isinf;
   return isinf(x.value());
 }
 
 /// Overloads isnan to mimic std::isnan from <cmath>.
-template <typename DerType>
-bool isnan(const Eigen::AutoDiffScalar<DerType>& x) {
+template<typename DerType>
+bool isnan(const Eigen::AutoDiffScalar<DerType> &x) {
   using std::isnan;
   return isnan(x.value());
 }
 
 /// Overloads floor to mimic std::floor from <cmath>.
-template <typename DerType>
-double floor(const Eigen::AutoDiffScalar<DerType>& x) {
+template<typename DerType>
+double floor(const Eigen::AutoDiffScalar<DerType> &x) {
   using std::floor;
   return floor(x.value());
 }
 
 /// Overloads ceil to mimic std::ceil from <cmath>.
-template <typename DerType>
-double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
+template<typename DerType>
+double ceil(const Eigen::AutoDiffScalar<DerType> &x) {
   using std::ceil;
   return ceil(x.value());
 }
 
-template <typename DerTypeA, typename DerTypeB>
+/// Overloads copysign from <cmath>.
+template<typename DerTypeA, typename DerTypeB>
 Eigen::AutoDiffScalar<DerTypeA> copysign(
-    const Eigen::AutoDiffScalar<DerTypeA>& x,
-    const DerTypeB& y) {
-  if (x*y < 0) return -x;
+    const Eigen::AutoDiffScalar<DerTypeA> &x,
+    const DerTypeB &y) {
+  if (x * y < 0) return -x;
   else return x;
 };
+
+/// Overloads copysign from <cmath>.
+template<typename DerType>
+double copysign(double x, const Eigen::AutoDiffScalar<DerType> &y) {
+  if (x * y < 0) return -x;
+  else return x;
+}
 
 
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
 /// chain rule.
-template <typename DerTypeA, typename DerTypeB>
+template<typename DerTypeA, typename DerTypeB>
 Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
-    const Eigen::AutoDiffScalar<DerTypeA>& base,
-    const Eigen::AutoDiffScalar<DerTypeB>& exponent) {
+    const Eigen::AutoDiffScalar<DerTypeA> &base,
+    const Eigen::AutoDiffScalar<DerTypeB> &exponent) {
   // The two AutoDiffScalars being exponentiated must have the same matrix
   // type. This includes, but is not limited to, the same scalar type and
   // the same dimension.
@@ -72,10 +82,10 @@ Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
                              typename DerTypeB::PlainObject>::value,
                 "The derivative types must match.");
 
-  const auto& x = base.value();
-  const auto& xgrad = base.derivatives();
-  const auto& y = exponent.value();
-  const auto& ygrad = exponent.derivatives();
+  const auto &x = base.value();
+  const auto &xgrad = base.derivatives();
+  const auto &y = exponent.value();
+  const auto &ygrad = exponent.derivatives();
 
   using std::pow;
   using std::log;
@@ -87,9 +97,10 @@ Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
       // df/dv_i = (∂f/∂x * dx/dv_i) + (∂f/∂y * dy/dv_i)
       // ∂f/∂x is y*x^(y-1)
       y * pow(x, y - 1) * xgrad +
-      // ∂f/∂y is (x^y)*ln(x)
-      x_to_the_y * log(x) * ygrad);
+          // ∂f/∂y is (x^y)*ln(x)
+          x_to_the_y * log(x) * ygrad);
 }
+
 #endif  // EIGEN_VERSION...
 
 #if !EIGEN_VERSION_AT_LEAST(3, 2, 93)  // False when built via Drake superbuild.
@@ -104,3 +115,5 @@ const Eigen::AutoDiffScalar<DerType>& max(
 }
 }
 #endif  // EIGEN_VERSION...
+
+} // namespace Eigen
