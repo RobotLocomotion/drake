@@ -9,6 +9,7 @@
 
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -16,6 +17,10 @@
 
 namespace drake {
 namespace systems {
+
+// TODO(siyuan.feng): I am hard coding force torque between certain bodies
+// with only the "world", not the environment, because the current
+// implementation of collision groups doesn't work properly.
 
 /// Assembles information from various input ports into a robot_state_t LCM
 /// message, presented on an output port.
@@ -25,10 +30,8 @@ class RobotStateEncoder final : public LeafSystem<double> {
   static const size_t kTorqueYIndex = 1;
   static const size_t kForceZIndex = 5;
 
-  explicit RobotStateEncoder(
-      const RigidBodyTree<double>& tree,
-      const std::vector<std::string>& ft_sensor_attached_body_names,
-      const std::vector<Isometry3<double>>& ft_sensor_offsets_in_body_frame);
+  RobotStateEncoder(const RigidBodyTree<double>& tree,
+                    const std::vector<RigidBodyFrame>& ft_sensor_info);
 
   ~RobotStateEncoder() override;
 
@@ -94,15 +97,9 @@ class RobotStateEncoder final : public LeafSystem<double> {
   // These are used for force torque sensors.
   // The first part is the body that the sensor is attached to, and the second
   // part is local offset within the body frame.
-  std::vector<std::pair<const RigidBody<double>*, Isometry3<double>>>
-      force_torque_sensors_;
+  const std::vector<RigidBodyFrame> force_torque_sensor_info_;
 
-  // TODO(siyuan.feng): I am hard coding force torque between certain bodies
-  // with only the "world", not the environment, because the current
-  // implementation of collision groups doesn't work properly.
-  const RigidBody<double>& world_;
-
-  // Index into force_torque_sensors_
+  // Index into force_torque_sensor_info_
   int l_foot_ft_sensor_idx_ = -1;
   int r_foot_ft_sensor_idx_ = -1;
   int l_hand_ft_sensor_idx_ = -1;

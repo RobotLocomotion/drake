@@ -66,12 +66,14 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   }
 
   // RobotStateEncoder and RobotStateDecoder.
-  std::vector<std::string> FT_sensor_attached_body_names = {"leftFoot",
-                                                            "rightFoot"};
-  std::vector<Isometry3<double>> FT_sensor_offset_in_body_frame(
-      FT_sensor_attached_body_names.size(), Isometry3<double>::Identity());
-  auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
-      tree, FT_sensor_attached_body_names, FT_sensor_offset_in_body_frame);
+  std::vector<RigidBodyFrame> force_torque_sensor_info = {
+      RigidBodyFrame("leftFootFTSensor", tree.FindBody("leftFoot"),
+                     Isometry3<double>::Identity()),
+      RigidBodyFrame("rightFootFTSensor", tree.FindBody("rightFoot"),
+                     Isometry3<double>::Identity())};
+
+  auto& robot_state_encoder =
+      *builder.AddSystem<RobotStateEncoder>(tree, force_torque_sensor_info);
   auto& robot_state_decoder = *builder.AddSystem<RobotStateDecoder>(tree);
 
   // Connections.

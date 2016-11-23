@@ -8,6 +8,7 @@
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/system_port_descriptor.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
 
@@ -28,8 +29,7 @@ namespace systems {
 
 RobotStateEncoder::RobotStateEncoder(
     const RigidBodyTree<double>& tree,
-    const std::vector<std::string>& ft_sensor_attached_body_names,
-    const std::vector<Isometry3<double>>& ft_sensor_offsets_in_body_frame)
+    const std::vector<RigidBodyFrame>& ft_sensor_info)
     : tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
@@ -41,28 +41,18 @@ RobotStateEncoder::RobotStateEncoder(
       contact_results_port_index_(
           DeclareAbstractInputPort(kContinuousSampling).get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
-      world_(*tree_.FindBody("world")) {
-  if (ft_sensor_attached_body_names.size() !=
-      ft_sensor_offsets_in_body_frame.size()) {
-    throw std::runtime_error(
-        "FT sensor size doesn't match FT sensor offset size");
-  }
+      force_torque_sensor_info_(ft_sensor_info) {
+  int sensor_idx = 0;
+  for (const auto& sensor : force_torque_sensor_info_) {
+    const std::string& name = sensor.get_rigid_body().get_name();
 
-  force_torque_sensors_.resize(ft_sensor_offsets_in_body_frame.size());
-  for (size_t i = 0; i < ft_sensor_offsets_in_body_frame.size(); ++i) {
-    const std::string& name = ft_sensor_attached_body_names[i];
-    force_torque_sensors_[i] =
-        std::pair<const RigidBody<double>*, Isometry3<double>>(
-            tree_.FindBody(name), ft_sensor_offsets_in_body_frame[i]);
     // TODO(siyuan.feng): this needs to not be hard coded.
-    if (name.compare("leftFoot") == 0)
-      l_foot_ft_sensor_idx_ = static_cast<int>(i);
-    if (name.compare("rightFoot") == 0)
-      r_foot_ft_sensor_idx_ = static_cast<int>(i);
-    if (name.compare("leftPalm") == 0)
-      l_hand_ft_sensor_idx_ = static_cast<int>(i);
-    if (name.compare("rightPalm") == 0)
-      r_hand_ft_sensor_idx_ = static_cast<int>(i);
+    if (name.compare("leftFoot") == 0) l_foot_ft_sensor_idx_ = sensor_idx;
+    if (name.compare("rightFoot") == 0) r_foot_ft_sensor_idx_ = sensor_idx;
+    if (name.compare("leftPalm") == 0) l_hand_ft_sensor_idx_ = sensor_idx;
+    if (name.compare("rightPalm") == 0) r_hand_ft_sensor_idx_ = sensor_idx;
+
+    sensor_idx++;
   }
 
   set_name("RobotStateEncoder");
@@ -238,15 +228,16 @@ void RobotStateEncoder::SetForceTorque(
     const ContactResults<double>& contact_results,
     bot_core::robot_state_t* message) const {
   std::vector<SpatialForce<double>> wrench_in_sensor_frame(
-      force_torque_sensors_.size());
+      force_torque_sensor_info_.size());
 
-  for (size_t i = 0; i < force_torque_sensors_.size(); ++i) {
-    const RigidBody<double>& body = *force_torque_sensors_[i].first;
+  for (size_t i = 0; i < force_torque_sensor_info_.size(); ++i) {
+    const RigidBody<double>& body =
+        force_torque_sensor_info_[i].get_rigid_body();
     SpatialForce<double> wrench =
         GetSpatialForceActingOnBody1ByBody2InBody1Frame(
-            kinematics_results, contact_results, body, world_);
-    wrench_in_sensor_frame[i] =
-        transformSpatialForce(force_torque_sensors_[i].second, wrench);
+            kinematics_results, contact_results, body, tree_.world());
+    wrench_in_sensor_frame[i] = transformSpatialForce(
+        force_torque_sensor_info_[i].get_transform_to_body(), wrench);
   }
 
   auto& force_torque = message->force_torque;
