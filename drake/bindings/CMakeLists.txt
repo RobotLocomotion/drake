@@ -8,7 +8,9 @@ if(SWIG_EXECUTABLE)
   if(NOT DISABLE_PYTHON)
     add_subdirectory(python)
   endif()
-  add_subdirectory(matlab/test)
+  if(Matlab_FOUND)
+    add_subdirectory(matlab/test)
+  endif()
 else()
   message("
   --------------------------------------------------------------------------------
