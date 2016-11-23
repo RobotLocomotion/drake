@@ -162,7 +162,7 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  tolerance_ = 4.0*Eigen::NumTraits<double>::epsilon();
+  tolerance_ = 4.0 * Eigen::NumTraits<double>::epsilon();
 
   int nq = tree_.get_num_positions();
   int nv = tree_.get_num_velocities();

@@ -773,6 +773,7 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   // information for pairs that shouldn't be considered. This code filters the
   // results into `valid_pairs` with the expectation of removal after drake
   // collision filters are fully integrated into the collision model.
+  // See issue #4204 (https://github.com/RobotLocomotion/drake/issues/4204).
   std::vector<DrakeCollision::PointPair> valid_pairs;
   valid_pairs.reserve(contact_points.size());
   for (size_t i = 0; i < num_contact_points; ++i) {
