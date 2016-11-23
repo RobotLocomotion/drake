@@ -10,22 +10,46 @@
 namespace drake {
 namespace systems {
 
+/**
+ * RK3-specific initialization function.
+ * @throws std::logic_error if *neither* the initial step size target nor the
+ *           maximum step size have been set before calling.
+ */
 template <class T>
 void RungeKutta3Integrator<T>::DoInitialize() {
+  using std::isnan;
+
   // Set an artificial step size target, if not set already.
   if (!(IntegratorBase<T>::get_initial_step_size_target() <
         IntegratorBase<T>::get_maximum_step_size()))
+
+    // Verify that maximum step size has been set.
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error("Neither initial step size target nor maximum "
+                                 "step size has been set!");
+
     IntegratorBase<T>::request_initial_step_size_target(
         IntegratorBase<T>::get_maximum_step_size());
 }
 
+/**
+ * RK3-specific stepping function.
+ * @throws std::logic_error if the integrator target accuracy has not been
+ *         specified.
+ */
 template <class T>
 bool RungeKutta3Integrator<T>::DoStepOnceAtMost(const T& dt_max) {
+  using std::isnan;
+
   // TODO(edrumwri): move derivative evaluation at t0 to the simulator where
   // it can be used for efficient guard function zero finding.
   auto& system = IntegratorBase<T>::get_system();
   auto& context = IntegratorBase<T>::get_context();
   system.EvalTimeDerivatives(context, derivs0_.get());
+
+  // Verify that target accuracy has been set.
+  if (isnan(this->get_accuracy_in_use()))
+    throw std::logic_error("Integrator target accuracy has not been set.");
 
   // Call the generic error controlled stepper.
   IntegratorBase<T>::StepErrorControlled(dt_max, derivs0_.get());

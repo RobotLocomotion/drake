@@ -58,6 +58,10 @@ TEST_F(RK3IntegratorTest, ErrorEst) {
 
 // Test scaling vectors
 TEST_F(RK3IntegratorTest, Scaling) {
+  // Setting maximum integrator step size is necessary to prevent integrator
+  // from throwing an exception.
+  integrator_->set_maximum_step_size(kBigDT);
+
   // Initialize the integrator to set weight vector sizes.
   integrator_->Initialize();
 
@@ -71,6 +75,57 @@ TEST_F(RK3IntegratorTest, Scaling) {
   EXPECT_EQ(integrator_->get_mutable_misc_state_weight_vector()
                 .lpNorm<Eigen::Infinity>(),
             1);
+}
+
+// Tests the ability to setup the integrator robustly (i.e., with minimal
+// user knowledge).
+TEST_F(RK3IntegratorTest, BulletProofSetup) {
+  // Setup the initial position and initial velocity
+  const double kInitialPosition = 0.1;
+  const double kInitialVelocity = 0.0;
+  const double kOmega = std::sqrt(kSpring / kMass);
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass_->set_position(integrator_->get_mutable_context(),
+                             kInitialPosition);
+  spring_mass_->set_velocity(integrator_->get_mutable_context(),
+                             kInitialVelocity);
+
+  // Setup c1 and c2 for ODE constants.
+  const double kC1 = kInitialPosition;
+  const double kC2 = kInitialVelocity / kOmega;
+
+  // Initialize the integrator.
+  EXPECT_THROW(integrator_->Initialize(), std::logic_error);
+
+  // Set the maximum step size and try again.
+  integrator_->set_maximum_step_size(kBigDT);
+  integrator_->Initialize();
+
+  // First attempt to step should result in a logic error because accuracy
+  // has not been set.
+  EXPECT_THROW(integrator_->StepOnceAtMost(1.0, 1.0), std::logic_error);
+
+  // Now set accuracy and try again.
+  integrator_->set_target_accuracy(1e-3);
+
+  // StepOnceAtFixedSize for 1 second.
+  const double kTFinal = 1.0;
+  double t_remaining = kTFinal - context_->get_time();
+  do {
+    integrator_->StepOnceAtMost(t_remaining, t_remaining);
+    t_remaining = kTFinal - context_->get_time();
+  } while (t_remaining > 0.0);
+
+  // Get the final position.
+  const double x_final =
+      context_->get_continuous_state()->get_vector().GetAtIndex(0);
+
+  // Check the solution. We're not really looking for accuracy here, just
+  // want to make sure that the value is finite.
+  EXPECT_NEAR(
+      kC1 * std::cos(kOmega * kTFinal) + kC2 * std::sin(kOmega * kTFinal),
+      x_final, 1e0);
 }
 
 // Tests the error estimation capabilities.
