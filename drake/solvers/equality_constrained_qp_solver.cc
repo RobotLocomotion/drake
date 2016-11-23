@@ -17,8 +17,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
-  // | G  -A' | | x | = | -c  |
-  // | A   0  | | y | = |  b |
+  // | G  A' | | x | = | -c |
+  // | A  0  | | y | = |  b |
   // for problem variables x and Lagrange multiplier variables y. This
   // corresponds to the QP:
   // minimize 1/2 x'*G*x + c'*x
@@ -32,8 +32,17 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // decomposition. Approach (1) could be made slightly faster by using a
   // QR factorization instead. It could be made considerably faster than that
   // if the A matrix were known to have full row rank, which would allow
-  // a symmetric LDL' factorization to be used.
-
+  // a symmetric LDL' factorization to be used. As long as the quadratic
+  // cost matrix is symmetric and positive definite, both approaches should
+  // yield the same optimal point; the same set of Lagrange multipliers is
+  // not guaranteed (but the Lagrange multipliers are not currently being
+  // returned to the user).
+  //
+  // This implementation was conducted using [Nocedal 1999], Ch. 16 (Quadratic
+  // Programming).  It is recommended that programmers desiring to modify this 
+  // code have a solid understanding of equality constrained quadratic 
+  // programming before proceeding.
+  // - J. Nocedal and S. Wright. Numerical Optimization. Springer, 1999.
   DRAKE_ASSERT(prog.generic_constraints().empty());
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.linear_constraints().empty());
@@ -98,7 +107,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   // The following code assumes that the Hessian is not positive definite.
-  // It uses the singular value decomposition, which is generally overkill.
+  // It uses the singular value decomposition, which is generally overkill but
+  // does provide a useful fallback in the case that the range space approach
+  // above fails.
 
   // The expanded problem introduces a Lagrangian multiplier for each
   // linear equality constraint.
