@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/solvers/constraint.h"
-#include "drake/solvers/trajectoryOptimization/direct_trajectory_optimization.h"
+#include "drake/solvers/trajectory_optimization/direct_trajectory_optimization.h"
 
 namespace drake {
 namespace solvers {
