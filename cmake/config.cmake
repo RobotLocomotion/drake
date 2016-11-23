@@ -250,7 +250,6 @@ macro(drake_setup_platform)
   mark_as_advanced(LIB_SUFFIX)
 
   drake_setup_compiler()
-  drake_setup_fortran()
   drake_setup_matlab()
   drake_setup_java()
   drake_setup_python()
@@ -282,6 +281,9 @@ macro(drake_setup_superbuild)
       FORCE)
   endif()
   message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+
+  # Drake itself does not contain Fortran code.
+  drake_setup_fortran()
 endmacro()
 
 ###############################################################################
