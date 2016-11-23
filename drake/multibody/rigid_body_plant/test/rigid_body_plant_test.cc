@@ -122,6 +122,15 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   ASSERT_EQ(positions_derivatives.size(), kNumPositions);
   ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
 
+  plant.MapVelocityToQDot(*context, generalized_velocities, 
+                          &positions_derivatives);
+
+  // For zero rotation the velocity vector in the body's frame and in the
+  // world's frame is the same.
+  EXPECT_EQ(v0[0], positions_derivatives.GetAtIndex(0));
+  EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
+  EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
+
   // Test using example computed from Octave + RPI Matlab simulator.
 
   // Update the orientation.
