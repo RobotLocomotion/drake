@@ -227,6 +227,13 @@ class ContactResultantForceCalculator {
    */
   ContactForce<T> ComputeResultant() const;
 
+  /**
+   Compute the resultant contact force with respect to a given reference point.
+   The force part is the summation of all individual components, and the torque
+   part is the summation of all pure torque + 'r X f'
+   */
+  ContactForce<T> ComputeResultant(const Vector3<T>& reference_point) const;
+
   // Neither movable or copyable.
   ContactResultantForceCalculator(
       const ContactResultantForceCalculator& other) = delete;

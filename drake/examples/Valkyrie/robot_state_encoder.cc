@@ -1,6 +1,11 @@
+#include <list>
+
 #include "drake/examples/Valkyrie/robot_state_encoder.h"
 #include "drake/common/constants.h"
 #include "drake/examples/Valkyrie/robot_state_lcmtype_util.h"
+#include "drake/multibody/rigid_body_plant/contact_force.h"
+#include "drake/multibody/rigid_body_plant/contact_results.h"
+#include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/framework/system_port_descriptor.h"
 #include "drake/util/drakeUtil.h"
@@ -21,7 +26,10 @@ using Eigen::Translation3d;
 namespace drake {
 namespace systems {
 
-RobotStateEncoder::RobotStateEncoder(const RigidBodyTree<double>& tree)
+RobotStateEncoder::RobotStateEncoder(
+    const RigidBodyTree<double>& tree,
+    const std::vector<std::string>& ft_sensor_attached_body_names,
+    const std::vector<Isometry3<double>>& ft_sensor_offsets_in_body_frame)
     : tree_(CheckTreeIsRobotStateLcmTypeCompatible(tree)),
       floating_body_(tree.bodies[1]->getJoint().is_floating()
                          ? tree.bodies[1].get()
@@ -30,9 +38,33 @@ RobotStateEncoder::RobotStateEncoder(const RigidBodyTree<double>& tree)
           DeclareAbstractOutputPort(kContinuousSampling).get_index()),
       kinematics_results_port_index_(
           DeclareAbstractInputPort(kContinuousSampling).get_index()),
+      contact_results_port_index_(
+          DeclareAbstractInputPort(kContinuousSampling).get_index()),
       effort_port_indices_(DeclareEffortInputPorts()),
-      foot_wrench_port_indices_(DeclareWrenchInputPorts()),
-      hand_wrench_port_indices_(DeclareWrenchInputPorts()) {
+      world_(*tree_.FindBody("world")) {
+  if (ft_sensor_attached_body_names.size() !=
+      ft_sensor_offsets_in_body_frame.size()) {
+    throw std::runtime_error(
+        "FT sensor size doesn't match FT sensor offset size");
+  }
+
+  force_torque_sensors_.resize(ft_sensor_offsets_in_body_frame.size());
+  for (size_t i = 0; i < ft_sensor_offsets_in_body_frame.size(); ++i) {
+    const std::string& name = ft_sensor_attached_body_names[i];
+    force_torque_sensors_[i] =
+        std::pair<const RigidBody<double>*, Isometry3<double>>(
+            tree_.FindBody(name), ft_sensor_offsets_in_body_frame[i]);
+    // TODO(siyuan.feng): this needs to not be hard coded.
+    if (name.compare("leftFoot") == 0)
+      l_foot_ft_sensor_idx_ = static_cast<int>(i);
+    if (name.compare("rightFoot") == 0)
+      r_foot_ft_sensor_idx_ = static_cast<int>(i);
+    if (name.compare("leftPalm") == 0)
+      l_hand_ft_sensor_idx_ = static_cast<int>(i);
+    if (name.compare("rightPalm") == 0)
+      r_hand_ft_sensor_idx_ = static_cast<int>(i);
+  }
+
   set_name("RobotStateEncoder");
 }
 
@@ -43,8 +75,17 @@ void RobotStateEncoder::EvalOutput(const Context<double>& context,
   auto& message = output->GetMutableData(lcm_message_port_index_)
                       ->GetMutableValue<robot_state_t>();
   message.utime = static_cast<int64_t>(context.get_time() * 1e6);
-  SetStateAndEfforts(context, &message);
-  SetForceTorque(context, &message);
+
+  const auto& contact_results =
+      EvalAbstractInput(context, contact_results_port_index_)
+          ->GetValue<ContactResults<double>>();
+
+  const auto& kinematics_results =
+      EvalAbstractInput(context, kinematics_results_port_index_)
+          ->GetValue<KinematicsResults<double>>();
+
+  SetStateAndEfforts(kinematics_results, context, &message);
+  SetForceTorque(kinematics_results, contact_results, &message);
 }
 
 std::unique_ptr<SystemOutput<double>> RobotStateEncoder::AllocateOutput(
@@ -67,19 +108,14 @@ const SystemPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
   return get_input_port(kinematics_results_port_index_);
 }
 
+const SystemPortDescriptor<double>& RobotStateEncoder::contact_results_port()
+    const {
+  return get_input_port(contact_results_port_index_);
+}
+
 const SystemPortDescriptor<double>& RobotStateEncoder::effort_port(
     const RigidBodyActuator& actuator) const {
   return get_input_port(effort_port_indices_.at(&actuator));
-}
-
-const SystemPortDescriptor<double>& RobotStateEncoder::foot_contact_wrench_port(
-    const Side& side) const {
-  return get_input_port(foot_wrench_port_indices_.at(side));
-}
-
-const SystemPortDescriptor<double>& RobotStateEncoder::hand_contact_wrench_port(
-    const Side& side) const {
-  return get_input_port(hand_wrench_port_indices_.at(side));
 }
 
 std::map<const RigidBodyActuator*, int>
@@ -90,8 +126,7 @@ RobotStateEncoder::DeclareEffortInputPorts() {
   const int actuator_effort_length = 1;
   for (const auto& actuator : tree_.actuators) {
     ret[&actuator] = DeclareInputPort(kVectorValued, actuator_effort_length,
-                                      kContinuousSampling)
-                         .get_index();
+                                      kContinuousSampling).get_index();
   }
   return ret;
 }
@@ -105,12 +140,9 @@ std::map<Side, int> RobotStateEncoder::DeclareWrenchInputPorts() {
   return ret;
 }
 
-void RobotStateEncoder::SetStateAndEfforts(const Context<double>& context,
-                                           robot_state_t* message) const {
-  const auto& kinematics_results =
-      EvalAbstractInput(context, kinematics_results_port_index_)
-          ->GetValue<KinematicsResults<double>>();
-
+void RobotStateEncoder::SetStateAndEfforts(
+    const KinematicsResults<double>& kinematics_results,
+    const Context<double>& context, robot_state_t* message) const {
   if (floating_body_) {
     // Pose of floating body with respect to world.
     Isometry3d floating_body_to_world =
@@ -162,47 +194,91 @@ void RobotStateEncoder::SetStateAndEfforts(const Context<double>& context,
   message->utime = static_cast<int64_t>(1e6 * context.get_time());
 }
 
-void RobotStateEncoder::SetForceTorque(const Context<double>& context,
-                                       bot_core::robot_state_t* message) const {
+SpatialForce<double>
+RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
+    const KinematicsResults<double>& kinematics_results,
+    const ContactResults<double>& contact_results,
+    const RigidBody<double>& body1, const RigidBody<double>& body2) const {
+  std::list<ContactForce<double>> contact_forces;
+  for (int i = 0; i < contact_results.get_num_contacts(); ++i) {
+    const ContactInfo<double>& contact_info =
+        contact_results.get_contact_info(i);
+    const RigidBody<double>& b1 =
+        *tree_.FindBody(contact_info.get_element_id_1());
+    const RigidBody<double>& b2 =
+        *tree_.FindBody(contact_info.get_element_id_2());
+    if (b1.get_name().compare(body1.get_name()) == 0 &&
+        b2.get_name().compare(body2.get_name()) == 0) {
+      contact_forces.push_back(contact_info.get_resultant_force());
+    }
+    if (b2.get_name().compare(body1.get_name()) == 0 &&
+        b1.get_name().compare(body2.get_name()) == 0) {
+      contact_forces.push_back(
+          contact_info.get_resultant_force().reaction_force());
+    }
+  }
+
+  ContactResultantForceCalculator<double> calc;
+  const Vector3<double>& reference_point =
+      kinematics_results.get_pose_in_world(body1).translation();
+
+  for (const ContactForce<double>& f : contact_forces) calc.AddForce(f);
+
+  SpatialForce<double> wrench_in_world_aligned_body_frame =
+      calc.ComputeResultant(reference_point).get_spatial_force();
+  Isometry3<double> world_aligned_to_body_frame(Isometry3<double>::Identity());
+  world_aligned_to_body_frame.linear() =
+      kinematics_results.get_pose_in_world(body1).linear().transpose();
+  return transformSpatialForce(world_aligned_to_body_frame,
+                               wrench_in_world_aligned_body_frame);
+}
+
+void RobotStateEncoder::SetForceTorque(
+    const KinematicsResults<double>& kinematics_results,
+    const ContactResults<double>& contact_results,
+    bot_core::robot_state_t* message) const {
+  std::vector<SpatialForce<double>> wrench_in_sensor_frame(
+      force_torque_sensors_.size());
+
+  for (size_t i = 0; i < force_torque_sensors_.size(); ++i) {
+    const RigidBody<double>& body = *force_torque_sensors_[i].first;
+    SpatialForce<double> wrench =
+        GetSpatialForceActingOnBody1ByBody2InBody1Frame(
+            kinematics_results, contact_results, body, world_);
+    wrench_in_sensor_frame[i] =
+        transformSpatialForce(force_torque_sensors_[i].second, wrench);
+  }
+
   auto& force_torque = message->force_torque;
-  {
-    auto left_foot_wrench =
-        EvalVectorInput(context, foot_wrench_port_indices_.at(Side::LEFT))
-            ->get_value();
-    force_torque.l_foot_force_z =
-        static_cast<float>(left_foot_wrench[kForceZIndex]);
-    force_torque.l_foot_torque_x =
-        static_cast<float>(left_foot_wrench[kTorqueXIndex]);
-    force_torque.l_foot_torque_y =
-        static_cast<float>(left_foot_wrench[kTorqueYIndex]);
+
+  if (l_foot_ft_sensor_idx_ != -1) {
+    const SpatialForce<double>& wrench =
+        wrench_in_sensor_frame.at(l_foot_ft_sensor_idx_);
+    force_torque.l_foot_force_z = static_cast<float>(wrench[kForceZIndex]);
+    force_torque.l_foot_torque_x = static_cast<float>(wrench[kTorqueXIndex]);
+    force_torque.l_foot_torque_y = static_cast<float>(wrench[kTorqueYIndex]);
   }
-  {
-    auto right_foot_wrench =
-        EvalVectorInput(context, foot_wrench_port_indices_.at(Side::RIGHT))
-            ->get_value();
-    force_torque.r_foot_force_z =
-        static_cast<float>(right_foot_wrench[kForceZIndex]);
-    force_torque.r_foot_torque_x =
-        static_cast<float>(right_foot_wrench[kTorqueXIndex]);
-    force_torque.r_foot_torque_y =
-        static_cast<float>(right_foot_wrench[kTorqueYIndex]);
+  if (r_foot_ft_sensor_idx_ != -1) {
+    const SpatialForce<double>& wrench =
+        wrench_in_sensor_frame.at(r_foot_ft_sensor_idx_);
+    force_torque.r_foot_force_z = static_cast<float>(wrench[kForceZIndex]);
+    force_torque.r_foot_torque_x = static_cast<float>(wrench[kTorqueXIndex]);
+    force_torque.r_foot_torque_y = static_cast<float>(wrench[kTorqueYIndex]);
   }
-  {
-    auto left_hand_wrench =
-        EvalVectorInput(context, hand_wrench_port_indices_.at(Side::LEFT))
-            ->get_value();
-    eigenVectorToCArray(left_hand_wrench.head<kSpaceDimension>(),
+  if (l_hand_ft_sensor_idx_ != -1) {
+    const SpatialForce<double>& wrench =
+        wrench_in_sensor_frame.at(l_hand_ft_sensor_idx_);
+    eigenVectorToCArray(wrench.head<kSpaceDimension>(),
                         force_torque.l_hand_torque);
-    eigenVectorToCArray(left_hand_wrench.tail<kSpaceDimension>(),
+    eigenVectorToCArray(wrench.tail<kSpaceDimension>(),
                         force_torque.l_hand_force);
   }
-  {
-    auto right_hand_wrench =
-        EvalVectorInput(context, hand_wrench_port_indices_.at(Side::RIGHT))
-            ->get_value();
-    eigenVectorToCArray(right_hand_wrench.head<kSpaceDimension>(),
+  if (r_hand_ft_sensor_idx_ != -1) {
+    const SpatialForce<double>& wrench =
+        wrench_in_sensor_frame.at(r_hand_ft_sensor_idx_);
+    eigenVectorToCArray(wrench.head<kSpaceDimension>(),
                         force_torque.r_hand_torque);
-    eigenVectorToCArray(right_hand_wrench.tail<kSpaceDimension>(),
+    eigenVectorToCArray(wrench.tail<kSpaceDimension>(),
                         force_torque.r_hand_force);
   }
 }

@@ -192,6 +192,11 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(kinematics_output_port_id_);
   }
 
+  /// Returns descriptor of ContactResults output port.
+  const SystemPortDescriptor<T>& contact_results_output_port() const {
+    return System<T>::get_output_port(contact_output_port_id_);
+  }
+
  protected:
   // LeafSystem<T> override.
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;

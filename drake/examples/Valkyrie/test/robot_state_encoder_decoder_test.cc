@@ -24,6 +24,11 @@ using bot_core::robot_state_t;
 
 using multibody::joints::FloatingBaseType;
 
+// This tests encoding and decoding of kinematics information to and from
+// bot_core::robot_state_t. It does not test encoding or decoding of the force
+// torque information, partially because it's not possible to construct
+// properly contact related objects outside RigidBodyPlant, and thus hard to
+// add a unit test.
 void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
@@ -60,34 +65,13 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
     effort_sources.emplace(make_pair(&actuator, effort_source));
   }
 
-  // Wrench sources.
-  map<Side, System<double>*> hand_wrench_sensors;
-  map<Side, System<double>*> foot_wrench_sensors;
-  eigen_aligned_std_map<Side, Vector6<double>> hand_wrenches;
-  eigen_aligned_std_map<Side, Vector6<double>> foot_wrenches;
-  double wrenches_start = 0.0;
-  for (Side side : Side::values) {
-    // Hand.
-    Vector6<double> hand_wrench;
-    hand_wrench.setLinSpaced(wrenches_start,
-                             wrenches_start + hand_wrench.size() - 1.0);
-    wrenches_start += hand_wrench.size();
-    hand_wrench_sensors[side] =
-        builder.AddSystem<ConstantVectorSource>(hand_wrench);
-    hand_wrenches[side] = hand_wrench;
-
-    // Foot.
-    Vector6<double> foot_wrench;
-    foot_wrench.setLinSpaced(wrenches_start,
-                             wrenches_start + foot_wrench.size() - 1.0);
-    wrenches_start += foot_wrench.size();
-    foot_wrench_sensors[side] =
-        builder.AddSystem<ConstantVectorSource>(foot_wrench);
-    foot_wrenches[side] = foot_wrench;
-  }
-
   // RobotStateEncoder and RobotStateDecoder.
-  auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(tree);
+  std::vector<std::string> FT_sensor_attached_body_names = {"leftFoot",
+                                                            "rightFoot"};
+  std::vector<Isometry3<double>> FT_sensor_offset_in_body_frame(
+      FT_sensor_attached_body_names.size(), Isometry3<double>::Identity());
+  auto& robot_state_encoder = *builder.AddSystem<RobotStateEncoder>(
+      tree, FT_sensor_attached_body_names, FT_sensor_offset_in_body_frame);
   auto& robot_state_decoder = *builder.AddSystem<RobotStateDecoder>(tree);
 
   // Connections.
@@ -96,13 +80,6 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
     const auto& effort_source = actuator_and_effort_source.second;
     builder.Connect(effort_source->get_output_port(0),
                     robot_state_encoder.effort_port(*actuator));
-  }
-
-  for (Side side : Side::values) {
-    builder.Connect(hand_wrench_sensors.at(side)->get_output_port(0),
-                    robot_state_encoder.hand_contact_wrench_port(side));
-    builder.Connect(foot_wrench_sensors.at(side)->get_output_port(0),
-                    robot_state_encoder.foot_contact_wrench_port(side));
   }
 
   builder.Connect(kinematics_results_source.get_output_port(0),
@@ -142,42 +119,6 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
                 msg_output.joint_position[i], tolerance);
     EXPECT_NEAR(v[body.get_velocity_start_index()],
                 msg_output.joint_velocity[i], tolerance);
-  }
-
-  const auto& force_torque = msg_output.force_torque;
-
-  // Check left foot wrench.
-  const auto& left_foot_wrench = foot_wrenches.at(Side::LEFT);
-  EXPECT_NEAR(force_torque.l_foot_torque_x,
-              left_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
-  EXPECT_NEAR(force_torque.l_foot_torque_y,
-              left_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
-  EXPECT_NEAR(force_torque.l_foot_force_z,
-              left_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
-
-  // Check left hand wrench.
-  const auto& left_hand_wrench = hand_wrenches.at(Side::LEFT);
-  for (int i = 0; i < kSpaceDimension; i++) {
-    EXPECT_NEAR(force_torque.l_hand_torque[i], left_hand_wrench[i], tolerance);
-    EXPECT_NEAR(force_torque.l_hand_force[i],
-                left_hand_wrench[kSpaceDimension + i], tolerance);
-  }
-
-  // Check right foot wrench.
-  const auto& right_foot_wrench = foot_wrenches.at(Side::RIGHT);
-  EXPECT_NEAR(force_torque.r_foot_torque_x,
-              right_foot_wrench[RobotStateEncoder::kTorqueXIndex], tolerance);
-  EXPECT_NEAR(force_torque.r_foot_torque_y,
-              right_foot_wrench[RobotStateEncoder::kTorqueYIndex], tolerance);
-  EXPECT_NEAR(force_torque.r_foot_force_z,
-              right_foot_wrench[RobotStateEncoder::kForceZIndex], tolerance);
-
-  // Check right hand wrench.
-  const auto& right_hand_wrench = hand_wrenches.at(Side::RIGHT);
-  for (int i = 0; i < kSpaceDimension; i++) {
-    EXPECT_NEAR(force_torque.r_hand_torque[i], right_hand_wrench[i], tolerance);
-    EXPECT_NEAR(force_torque.r_hand_force[i],
-                right_hand_wrench[kSpaceDimension + i], tolerance);
   }
 
   // Test conversion back to KinematicsCache.

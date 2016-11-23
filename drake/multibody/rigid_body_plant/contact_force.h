@@ -60,6 +60,10 @@ class ContactForce {
   ContactForce(const Vector3<T>& application_point, const Vector3<T>& normal,
                const Vector3<T>& force);
 
+  ContactForce reaction_force() const {
+    return ContactForce(application_point_, -normal_, -force_, -torque_);
+  }
+
   // Contact force is copyable and movable
   ContactForce(const ContactForce& other) = default;
   ContactForce& operator=(const ContactForce& other) = default;
