@@ -49,6 +49,15 @@ double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
   return ceil(x.value());
 }
 
+template <typename DerTypeA, typename DerTypeB>
+Eigen::AutoDiffScalar<DerTypeA> copysign(
+    const Eigen::AutoDiffScalar<DerTypeA>& x,
+    const DerTypeB& y) {
+  if (x*y < 0) return -x;
+  else return x;
+};
+
+
 #if EIGEN_VERSION_AT_LEAST(3, 2, 93)  // True when built via Drake superbuild.
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
 /// chain rule.

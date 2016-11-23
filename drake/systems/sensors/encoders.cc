@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -56,20 +57,27 @@ template <typename T>
 void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
                                    systems::SystemOutput<T>* output) const {
   auto y = output->GetMutableVectorData(0)->get_mutable_value();
-  const auto& calibration_offset = this->GetNumericParameter(context,0).get_value();
+  const auto& calibration_offset =
+      this->GetNumericParameter(context, 0).get_value();
 
   // Loop through the outputs.
   for (unsigned int i = 0; i < num_encoders_; i++) {
     const unsigned int index = indices_.empty() ? i : indices_[i];
 
     // Calibration.
-    y(i) = this->EvalVectorInput(context, 0)->GetAtIndex(index) - calibration_offset(index);
+    y(i) = this->EvalVectorInput(context, 0)->GetAtIndex(index) -
+           calibration_offset(index);
 
     // Quantization.
-    // TODO(russt): need to use ceil for negative values instead of floor.
     if (!ticks_per_revolution_.empty()) {
-      y(i) = floor(ticks_per_revolution_[i] * y(i) / (2.0 * M_PI)) * 2.0 *
-             M_PI / ticks_per_revolution_[i];
+//      using std::floor;
+//      using std::abs;
+//      using std::copysign;
+      // Round towards zero
+      y(i) =
+          copysign(floor(ticks_per_revolution_[i] * abs(y(i)) / (2.0 * M_PI)) *
+                       2.0 * M_PI / ticks_per_revolution_[i],
+                   y(i));
     }
   }
 }
@@ -77,8 +85,10 @@ void RotaryEncoders<T>::EvalOutput(const systems::Context<T>& context,
 template <typename T>
 std::unique_ptr<systems::Parameters<T>> RotaryEncoders<T>::AllocateParameters()
     const {
-    // Use parameters for the (unnamed) calibration offsets.
-    return std::make_unique<systems::Parameters<T>>(std::make_unique<systems::BasicVector<T>>(Eigen::Matrix<T,Eigen::Dynamic,1>::Zero(num_encoders_)));
+  // Use parameters for the (unnamed) calibration offsets.
+  return std::make_unique<systems::Parameters<T>>(
+      std::make_unique<systems::BasicVector<T>>(
+          Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(num_encoders_)));
 }
 
 template <typename T>
@@ -87,14 +97,15 @@ void RotaryEncoders<T>::set_calibration_offsets(
     const Eigen::Ref<VectorX<T>>& calibration_offsets) const {
   auto leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
   DRAKE_DEMAND(leaf_context != nullptr);
-  DRAKE_DEMAND(calibration_offsets.rows()==num_encoders_);
-  leaf_context->set_parameters(std::make_unique<systems::Parameters<T>>(std::make_unique<systems::BasicVector<T>>(calibration_offsets)));
+  DRAKE_DEMAND(calibration_offsets.rows() == num_encoders_);
+  leaf_context->set_parameters(std::make_unique<systems::Parameters<T>>(
+      std::make_unique<systems::BasicVector<T>>(calibration_offsets)));
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
     const systems::Context<T>& context) const {
-  return this->template GetNumericParameter(context,0).get_value();
+  return this->template GetNumericParameter(context, 0).get_value();
 }
 
 template class RotaryEncoders<double>;

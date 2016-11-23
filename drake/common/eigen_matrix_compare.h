@@ -31,8 +31,8 @@ enum class MatrixCompareType { absolute, relative };
 template <typename DerivedA, typename DerivedB>
 bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                      const Eigen::MatrixBase<DerivedB>& m2,
-                     double tolerance,
-                     MatrixCompareType compare_type,
+                     double tolerance = 0.0,
+                     MatrixCompareType compare_type = MatrixCompareType::absolute,
                      std::string* explanation = nullptr) {
   bool result = true;
   std::string error_message;
