@@ -5,7 +5,7 @@ find_program(SWIG_EXECUTABLE swig
   PATHS ${CMAKE_INSTALL_PREFIX}/bin NO_DEFAULT_PATH)
 if(SWIG_EXECUTABLE)
   add_subdirectory(swig)
-  if(PYTHON_EXECUTABLE)
+  if(NOT DISABLE_PYTHON)
     add_subdirectory(python)
   endif()
   add_subdirectory(matlab/test)

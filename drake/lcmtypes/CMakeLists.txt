@@ -84,7 +84,9 @@ install(TARGETS drake_lcmtypes drakeLCMTypes
   INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/lcmtypes"
 )
 
-lcm_install_python(${python_install_sources})
+if(NOT DISABLE_PYTHON)
+  lcm_install_python(${python_install_sources})
+endif()
 
 if(JAVA_FOUND)
   if(NOT TARGET lcm-java)
