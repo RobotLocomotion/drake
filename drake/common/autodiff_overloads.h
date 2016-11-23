@@ -2,10 +2,16 @@
 /// Overloads for STL mathematical operations on AutoDiffScalar.
 ///
 /// Used via argument-dependent lookup (ADL). These functions appear
-/// in the global namespace so that ADL can automatically choose between
+/// in the Eigen namespace so that ADL can automatically choose between
 /// the STL version and the overloaded version to match the type of the
-/// arguments. We could alternatively have placed them in the Eigen
-/// namespace, but since we don't own that, we don't wish to pollute it.
+/// arguments. The proper use would be e.g.
+///
+/// \code{.cc}
+///    void mymethod() {
+///       using std::isinf;
+///       isinf(myval);
+///    }
+/// \endcode{}
 ///
 /// @note The if_then_else and cond functions for AutoDiffScalar are in
 /// namespace drake because cond is defined in namespace drake in
@@ -58,10 +64,12 @@ double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
 }
 
 /// Overloads copysign from <cmath>.
-template <typename DerTypeA, typename DerTypeB>
-Eigen::AutoDiffScalar<DerTypeA> copysign(
-    const Eigen::AutoDiffScalar<DerTypeA>& x, const DerTypeB& y) {
-  if (x * y < 0)
+template <typename DerType, typename T>
+Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
+                                        const T& y) {
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
     return -x;
   else
     return x;
@@ -70,7 +78,9 @@ Eigen::AutoDiffScalar<DerTypeA> copysign(
 /// Overloads copysign from <cmath>.
 template <typename DerType>
 double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
-  if (x * y < 0)
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
     return -x;
   else
     return x;
