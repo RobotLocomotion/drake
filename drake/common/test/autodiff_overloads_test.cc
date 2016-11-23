@@ -35,40 +35,40 @@ GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
 }
 
 GTEST_TEST(AutodiffOverloadsTests, CopySign) {
-  Eigen::AutoDiffScalar<Eigen::Vector2d> x,y,z;
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x, y, z;
   x.derivatives() = Eigen::VectorXd::Unit(2, 0);
   y.derivatives() = Eigen::VectorXd::Unit(2, 1);
 
   // Positive, positive.
   x.value() = 1.1;
   y.value() = 2.5;
-  z = copysign(x,y);
+  z = copysign(x, y);
   EXPECT_DOUBLE_EQ(z.value(), x.value());
   EXPECT_TRUE(CompareMatrices(z.derivatives(), x.derivatives()));
 
   // Positive, negative.
   x.value() = 1.1;
   y.value() = -2.5;
-  z = copysign(x,y);
+  z = copysign(x, y);
   EXPECT_DOUBLE_EQ(z.value(), -x.value());
   EXPECT_TRUE(CompareMatrices(z.derivatives(), -x.derivatives()));
 
   // Negative, positive.
   x.value() = -1.1;
   y.value() = 2.5;
-  z = copysign(x,y);
+  z = copysign(x, y);
   EXPECT_DOUBLE_EQ(z.value(), -x.value());
   EXPECT_TRUE(CompareMatrices(z.derivatives(), -x.derivatives()));
 
   // Negative, negative.
   x.value() = -1.1;
   y.value() = -2.5;
-  z = copysign(x,y);
+  z = copysign(x, y);
   EXPECT_DOUBLE_EQ(z.value(), x.value());
   EXPECT_TRUE(CompareMatrices(z.derivatives(), x.derivatives()));
 
   // Test w/ double y (Negative, positive).
-  z = copysign(x,2.5);
+  z = copysign(x, 2.5);
   EXPECT_DOUBLE_EQ(z.value(), -x.value());
   EXPECT_TRUE(CompareMatrices(z.derivatives(), -x.derivatives()));
 }
